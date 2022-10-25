@@ -102,38 +102,43 @@ module Bundler
 
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
-        deleted_dep = @dependencies.delete(current) if current.type == :development
+        if current.requirement != dep.requirement
+          current_requirement_open = current.requirements_list.include?(">= 0")
 
-        unless deleted_dep
-          if current.requirement != dep.requirement
-            return if dep.type == :development
+          if current.type == :development
+            @dependencies.delete(current)
 
+            unless current_requirement_open || dep.type == :development
+              Bundler.ui.warn "A gemspec development dependency (#{dep.name}, #{current.requirement}) is being overridden by a Gemfile dependency (#{dep.name}, #{dep.requirement}).\n" \
+                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n" \
+            end
+          else
             update_prompt = ""
 
             if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current.requirements_list.include?(">= 0")
+              if dep.requirements_list.include?(">= 0") && !current_requirement_open
                 update_prompt = ". Gem already added"
               else
                 update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
 
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current.requirements_list.include?(">= 0")
+                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
               end
             end
 
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                             "#{update_prompt}"
-          elsif current.source != dep.source
-            return if dep.type == :development
-            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
-          else
-            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                            "You should probably keep only one of them.\n" \
-                            "Remove any duplicate entries and specify the gem only once.\n" \
-                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "#{update_prompt}"
           end
+        elsif current.source != dep.source
+          return if dep.type == :development
+          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
+        elsif current.type != :development && dep.type != :development
+          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                          "You should probably keep only one of them.\n" \
+                          "Remove any duplicate entries and specify the gem only once.\n" \
+                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
         end
       end
 
