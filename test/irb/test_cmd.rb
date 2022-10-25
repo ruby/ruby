@@ -414,10 +414,8 @@ module TestIRB
           "help 'String#gsub'\n",
           "\n",
         ])
-      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       out, err = capture_output do
         irb.eval_input
       end
@@ -437,10 +435,8 @@ module TestIRB
           "help 'String#gsub'\n",
           "\n",
         ])
-      IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       out, err = capture_output do
         IRB::TestHelper.without_rdoc do
           irb.eval_input
