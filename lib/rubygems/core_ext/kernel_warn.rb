@@ -16,7 +16,7 @@ if RUBY_VERSION >= "2.5" && !Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES
 
     module_function define_method(:warn) {|*messages, **kw|
       unless uplevel = kw[:uplevel]
-        if Gem.java_platform?
+        if Gem.java_platform? && RUBY_VERSION < "3.1"
           return original_warn.bind(self).call(*messages)
         else
           return original_warn.bind(self).call(*messages, **kw)

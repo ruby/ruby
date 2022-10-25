@@ -152,6 +152,17 @@ extern "C" {
 extern "C" {
     pub fn rb_method_basic_definition_p(klass: VALUE, mid: ID) -> ::std::os::raw::c_int;
 }
+pub const RUBY_Qfalse: ruby_special_consts = 0;
+pub const RUBY_Qnil: ruby_special_consts = 4;
+pub const RUBY_Qtrue: ruby_special_consts = 20;
+pub const RUBY_Qundef: ruby_special_consts = 36;
+pub const RUBY_IMMEDIATE_MASK: ruby_special_consts = 7;
+pub const RUBY_FIXNUM_FLAG: ruby_special_consts = 1;
+pub const RUBY_FLONUM_MASK: ruby_special_consts = 3;
+pub const RUBY_FLONUM_FLAG: ruby_special_consts = 2;
+pub const RUBY_SYMBOL_FLAG: ruby_special_consts = 12;
+pub const RUBY_SPECIAL_SHIFT: ruby_special_consts = 8;
+pub type ruby_special_consts = u32;
 #[repr(C)]
 pub struct RBasic {
     pub flags: VALUE,
@@ -408,7 +419,7 @@ pub type shape_id_t = u32;
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
-    pub iv_count: attr_index_t,
+    pub next_iv_index: attr_index_t,
     pub type_: u8,
     pub parent_id: shape_id_t,
 }
@@ -1244,7 +1255,9 @@ pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 200;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 201;
 pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 202;
 pub type ruby_vminsn_type = u32;
-pub type rb_iseq_callback = ::std::option::Option<unsafe extern "C" fn(arg1: *const rb_iseq_t)>;
+pub type rb_iseq_callback = ::std::option::Option<
+    unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
+>;
 extern "C" {
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
@@ -1540,7 +1553,7 @@ extern "C" {
     pub fn rb_assert_cme_handle(handle: VALUE);
 }
 extern "C" {
-    pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback);
+    pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
 }
 extern "C" {
     pub fn rb_yjit_obj_written(

@@ -551,7 +551,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     end
 
     if replace_rdoc_ref_all
-      `git commit --amend --no-edit`
+      `git commit --amend --no-edit --all`
     end
 
     puts "Update commit message: #{sha}"

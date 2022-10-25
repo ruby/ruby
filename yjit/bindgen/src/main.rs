@@ -66,6 +66,9 @@ fn main() {
         // From include/ruby/internal/config.h
         .allowlist_var("USE_RVARGC")
 
+        // From include/ruby/internal/special_consts.h
+        .allowlist_type("ruby_special_consts")
+
         // From include/ruby/internal/intern/string.h
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")

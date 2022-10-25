@@ -536,9 +536,14 @@ extend Module.new {
 
   def timestamp_file(name, target_prefix = nil)
     if @gemname and name == '$(TARGET_SO_DIR)'
-      name = "$(arch)/gems/#{@gemname}#{target_prefix}"
+      gem = true
+      name = "$(gem_platform)/$(ruby_version)/gems/#{@gemname}#{target_prefix}"
     end
-    super.sub(%r[/\.extout\.(?:-\.)?], '/.')
+    path = super.sub(%r[/\.extout\.(?:-\.)?], '/.')
+    if gem
+      nil while path.sub!(%r[/\.(gem_platform|ruby_version)\.-(?=\.)], '/$(\1)/')
+    end
+    path
   end
 
   def configuration(srcdir)

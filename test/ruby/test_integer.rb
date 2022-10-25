@@ -247,6 +247,13 @@ class TestInteger < Test::Unit::TestCase
     end;
   end
 
+  def test_Integer_when_to_str
+    def (obj = Object.new).to_str
+      "0x10"
+    end
+    assert_equal(16, Integer(obj))
+  end
+
   def test_int_p
     assert_not_predicate(1.0, :integer?)
     assert_predicate(1, :integer?)

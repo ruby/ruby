@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::cmp;
 use std::fmt;
 use std::mem;
 use std::rc::Rc;
@@ -7,11 +6,9 @@ use std::rc::Rc;
 use crate::backend::x86_64::JMP_PTR_BYTES;
 #[cfg(target_arch = "aarch64")]
 use crate::backend::arm64::JMP_PTR_BYTES;
-use crate::backend::ir::Assembler;
-use crate::backend::ir::Target;
 use crate::virtualmem::WriteError;
 
-#[cfg(feature = "asm_comments")]
+#[cfg(feature = "disasm")]
 use std::collections::BTreeMap;
 
 use crate::codegen::CodegenGlobals;
@@ -72,7 +69,7 @@ pub struct CodeBlock {
     label_refs: Vec<LabelRef>,
 
     // Comments for assembly instructions, if that feature is enabled
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // True for OutlinedCb
@@ -104,7 +101,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
-            #[cfg(feature = "asm_comments")]
+            #[cfg(feature = "disasm")]
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
@@ -154,7 +151,7 @@ impl CodeBlock {
         // We could remember the last write_pos in page2 and let set_page use that position,
         // but you need to waste some space for keeping write_pos for every single page.
         // It doesn't seem necessary for performance either. So we're currently not doing it.
-        let mut dst_pos = self.page_size * page_idx + self.page_start();
+        let dst_pos = self.page_size * page_idx + self.page_start();
         if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
             // Reset dropped_bytes
             self.dropped_bytes = false;
@@ -217,14 +214,17 @@ impl CodeBlock {
     }
 
     /// Return the address ranges of a given address range that this CodeBlock can write.
+    #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
         let mut addrs = vec![];
-        let mut start = start_ptr.raw_ptr() as usize;
-        let codeblock_end = self.get_ptr(self.get_mem_size()).raw_ptr() as usize;
-        let end = std::cmp::min(end_ptr.raw_ptr() as usize, codeblock_end);
+        let mut start = start_ptr.into_usize();
+        let region_start = self.get_ptr(0).into_usize();
+        let region_end = self.get_ptr(self.get_mem_size()).into_usize();
+        let end = std::cmp::min(end_ptr.into_usize(), region_end);
         while start < end {
-            let current_page = start / self.page_size * self.page_size;
-            let page_end = std::cmp::min(end, current_page + self.page_end()) as usize;
+            let current_page = region_start +
+                (start.saturating_sub(region_start) / self.page_size * self.page_size);
+            let page_end = std::cmp::min(end, current_page + self.page_end());
             addrs.push((start, page_end));
             start = current_page + self.page_size + self.page_start();
         }
@@ -240,7 +240,7 @@ impl CodeBlock {
 
     /// Add an assembly comment if the feature is on.
     /// If not, this becomes an inline no-op.
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     pub fn add_comment(&mut self, comment: &str) {
         let cur_ptr = self.get_write_ptr().into_usize();
 
@@ -252,11 +252,11 @@ impl CodeBlock {
             this_line_comments.push(comment.to_string());
         }
     }
-    #[cfg(not(feature = "asm_comments"))]
+    #[cfg(not(feature = "disasm"))]
     #[inline]
     pub fn add_comment(&mut self, _: &str) {}
 
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }

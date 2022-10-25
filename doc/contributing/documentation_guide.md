@@ -137,6 +137,19 @@ or [list](rdoc-ref:RDoc::Markup@Simple+Lists)
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
+### \Method Names
+
+For a method name in text:
+
+- For a method in the current class or module,
+  use a double-colon for a singleton method,
+  or a hash mark for an instance method:
+  <tt>::bar</tt>, <tt>#baz</tt>.
+- Otherwise, include the class or module name
+  and use a dot for a singleton method,
+  or a hash mark for an instance method:
+  <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.

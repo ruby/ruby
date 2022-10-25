@@ -1,37 +1,27 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-//use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
+#[cfg(feature = "stats")]
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
 use InsnOpnd::*;
 
-use std::cell::RefCell;
-use std::cell::RefMut;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::c_uint;
 use std::ptr;
-use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
-
-// A block that can be invalidated needs space to write a jump.
-// We'll reserve a minimum size for any block that could
-// be invalidated. In this case the JMP takes 5 bytes, but
-// gen_send_general will always MOV the receiving object
-// into place, so 2 bytes are always written automatically.
-//pub const JUMP_SIZE_IN_BYTES: usize = 3;
 
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
@@ -650,7 +640,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     asm.compile(cb);
 
-    if (cb.has_dropped_bytes()) {
+    if cb.has_dropped_bytes() {
         None
     } else {
         Some(code_ptr)
@@ -920,9 +910,7 @@ fn gen_dupn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let n = jit_get_arg(jit, 0).as_usize();
 
     // In practice, seems to be only used for n==2
     if n != 2 {
@@ -1045,9 +1033,9 @@ fn gen_putspecialobject(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let object_type = jit_get_arg(jit, 0);
+    let object_type = jit_get_arg(jit, 0).as_usize();
 
-    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE.as_usize()) {
+    if object_type == VM_SPECIAL_OBJECT_VMCORE.as_usize() {
         let stack_top = ctx.stack_push(Type::UnknownHeap);
         let frozen_core = unsafe { rb_mRubyVMFrozenCore };
         asm.mov(stack_top, frozen_core.into());
@@ -1066,17 +1054,17 @@ fn gen_setn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let n: VALUE = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
     let top_val = ctx.stack_pop(0);
-    let dst_opnd = ctx.stack_opnd(n.into());
+    let dst_opnd = ctx.stack_opnd(n.try_into().unwrap());
     asm.mov(
         dst_opnd,
         top_val
     );
 
     let mapping = ctx.get_opnd_mapping(StackOpnd(0));
-    ctx.set_opnd_mapping(StackOpnd(n.into()), mapping);
+    ctx.set_opnd_mapping(StackOpnd(n.try_into().unwrap()), mapping);
 
     KeepCompiling
 }
@@ -1088,10 +1076,10 @@ fn gen_topn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
-    let top_n_val = ctx.stack_opnd(nval.into());
-    let mapping = ctx.get_opnd_mapping(StackOpnd(nval.into()));
+    let top_n_val = ctx.stack_opnd(n.try_into().unwrap());
+    let mapping = ctx.get_opnd_mapping(StackOpnd(n.try_into().unwrap()));
     let loc0 = ctx.stack_push_mapping(mapping);
     asm.mov(loc0, top_n_val);
 
@@ -1105,8 +1093,7 @@ fn gen_adjuststack(
     _cb: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let n = jit_get_arg(jit, 0).as_usize();
     ctx.stack_pop(n);
     KeepCompiling
 }
@@ -1247,7 +1234,7 @@ fn gen_splatarray(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 0);
+    let flag = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
@@ -1296,7 +1283,7 @@ fn gen_newrange(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 0);
+    let flag = jit_get_arg(jit, 0).as_usize();
 
     // rb_range_new() allocates and can raise
     jit_prepare_routine_call(jit, ctx, asm);
@@ -1383,33 +1370,33 @@ fn gen_expandarray(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 1);
-    let VALUE(flag_value) = flag;
+    // Both arguments are rb_num_t which is unsigned
+    let num = jit_get_arg(jit, 0).as_usize();
+    let flag = jit_get_arg(jit, 1).as_usize();
 
     // If this instruction has the splat flag, then bail out.
-    if flag_value & 0x01 != 0 {
+    if flag & 0x01 != 0 {
         gen_counter_incr!(asm, expandarray_splat);
         return CantCompile;
     }
 
     // If this instruction has the postarg flag, then bail out.
-    if flag_value & 0x02 != 0 {
+    if flag & 0x02 != 0 {
         gen_counter_incr!(asm, expandarray_postarg);
         return CantCompile;
     }
 
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // num is the number of requested values. If there aren't enough in the
-    // array then we're going to push on nils.
-    let num = jit_get_arg(jit, 0);
     let array_type = ctx.get_opnd_type(StackOpnd(0));
     let array_opnd = ctx.stack_pop(1);
 
+    // num is the number of requested values. If there aren't enough in the
+    // array then we're going to push on nils.
     if matches!(array_type, Type::Nil) {
         // special case for a, b = nil pattern
         // push N nils onto the stack
-        for _i in 0..(num.into()) {
+        for _ in 0..num {
             let push_opnd = ctx.stack_push(Type::Nil);
             asm.mov(push_opnd, Qnil.into());
         }
@@ -1430,7 +1417,7 @@ fn gen_expandarray(
     );
 
     // If we don't actually want any values, then just return.
-    if num == VALUE(0) {
+    if num == 0 {
         return KeepCompiling;
     }
 
@@ -1473,9 +1460,10 @@ fn gen_expandarray(
     let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
     // Loop backward through the array and push each element onto the stack.
-    for i in (0..(num.as_i32())).rev() {
+    for i in (0..num).rev() {
         let top = ctx.stack_push(Type::Unknown);
-        asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
+        let offset = i32::try_from(i * SIZEOF_VALUE).unwrap();
+        asm.mov(top, Opnd::mem(64, ary_opnd, offset));
     }
 
     KeepCompiling
@@ -2158,7 +2146,7 @@ fn gen_setinstancevariable(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let id = jit_get_arg(jit, 0);
+    let id = jit_get_arg(jit, 0).as_usize();
     let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
 
     // Save the PC and SP because the callee may allocate
@@ -2174,7 +2162,7 @@ fn gen_setinstancevariable(
         vec![
             Opnd::const_ptr(jit.iseq as *const u8),
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
-            Opnd::UImm(id.into()),
+            id.into(),
             val_opnd,
             Opnd::const_ptr(ic as *const u8),
         ]
@@ -2282,20 +2270,20 @@ fn gen_concatstrings(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let n = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, asm);
 
-    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n.as_isize())));
+    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n as isize)));
 
-    // call rb_str_concat_literals(long n, const VALUE *strings);
+    // call rb_str_concat_literals(size_t n, const VALUE *strings);
     let return_value = asm.ccall(
         rb_str_concat_literals as *const u8,
-        vec![Opnd::UImm(n.into()), values_ptr]
+        vec![n.into(), values_ptr]
     );
 
-    ctx.stack_pop(n.as_usize());
+    ctx.stack_pop(n);
     let stack_ret = ctx.stack_push(Type::CString);
     asm.mov(stack_ret, return_value);
 
@@ -3221,8 +3209,7 @@ fn gen_branchif(
     };
 
     // Test if any bit (outside of the Qnil bit) is on
-    // RUBY_Qfalse  /* ...0000 0000 */
-    // RUBY_Qnil    /* ...0000 1000 */
+    // See RB_TEST()
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
@@ -3299,8 +3286,7 @@ fn gen_branchunless(
         gen_direct_jump(jit, ctx, target, asm);
     } else {
         // Test if any bit (outside of the Qnil bit) is on
-        // RUBY_Qfalse  /* ...0000 0000 */
-        // RUBY_Qnil    /* ...0000 1000 */
+        // See RB_TEST()
         let not_qnil = !Qnil.as_i64();
         asm.test(val_opnd, not_qnil.into());
 
@@ -3371,7 +3357,6 @@ fn gen_branchnil(
         gen_direct_jump(jit, ctx, target, asm);
     } else {
         // Test if the value is Qnil
-        // RUBY_Qnil    /* ...0000 1000 */
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
         // Generate the branch instructions
         gen_branch(
@@ -5748,7 +5733,7 @@ fn gen_getglobal(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let gid = jit_get_arg(jit, 0);
+    let gid = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we might make a Ruby call for warning
     jit_prepare_routine_call(jit, ctx, asm);
@@ -5770,7 +5755,7 @@ fn gen_setglobal(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let gid = jit_get_arg(jit, 0);
+    let gid = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
@@ -5884,7 +5869,7 @@ fn gen_toregexp(
         rb_ary_tmp_new_from_values as *const u8,
         vec![
             Opnd::Imm(0),
-            Opnd::UImm(jit_get_arg(jit, 1).as_u64()),
+            cnt.into(),
             values_ptr,
         ]
     );
@@ -6537,10 +6522,15 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-        let code_page_size = get_option!(code_page_size);
+
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
+            use std::cell::RefCell;
+            use std::rc::Rc;
+
+            let code_page_size = get_option!(code_page_size);
+
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming

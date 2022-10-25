@@ -36,6 +36,9 @@ typedef struct ruby_cmdline_options {
     unsigned int do_split: 1;
     unsigned int do_search: 1;
     unsigned int setids: 2;
+#if USE_YJIT
+    unsigned int yjit: 1;
+#endif
 } ruby_cmdline_options_t;
 
 struct ruby_opt_message {

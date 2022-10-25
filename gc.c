@@ -1381,6 +1381,27 @@ tick(void)
     return val;
 }
 
+/* Implementation for macOS PPC by @nobu
+ * See: https://github.com/ruby/ruby/pull/5975#discussion_r890045558
+ */
+#elif defined(__POWERPC__) && defined(__APPLE__)
+typedef unsigned long long tick_t;
+#define PRItick "llu"
+
+static __inline__ tick_t
+tick(void)
+{
+    unsigned long int upper, lower, tmp;
+    # define mftbu(r) __asm__ volatile("mftbu   %0" : "=r"(r))
+    # define mftb(r)  __asm__ volatile("mftb    %0" : "=r"(r))
+        do {
+            mftbu(upper);
+            mftb(lower);
+            mftbu(tmp);
+        } while (tmp != upper);
+    return ((tick_t)upper << 32) | lower;
+}
+
 #elif defined(__aarch64__) &&  defined(__GNUC__)
 typedef unsigned long tick_t;
 #define PRItick "lu"
@@ -3091,40 +3112,28 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
 
     size_t size;
-    bool embed = true;
 #if USE_RVARGC
     size = rb_obj_embedded_size(index_tbl_num_entries);
     if (!rb_gc_size_allocatable_p(size)) {
         size = sizeof(struct RObject);
-        embed = false;
     }
 #else
     size = sizeof(struct RObject);
-    if (index_tbl_num_entries > ROBJECT_EMBED_LEN_MAX) {
-        embed = false;
-    }
 #endif
 
-#if USE_RVARGC
     VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
-#else
-    VALUE obj = newobj_of(klass, flags, Qundef, Qundef, Qundef, wb_protected, size);
-#endif
 
-    if (embed) {
 #if USE_RVARGC
-        uint32_t capa = (uint32_t)((rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-        GC_ASSERT(capa >= index_tbl_num_entries);
-
-        ROBJECT(obj)->numiv = capa;
-        for (size_t i = 0; i < capa; i++) {
-            ROBJECT(obj)->as.ary[i] = Qundef;
-        }
+    uint32_t capa = (uint32_t)((rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+    ROBJECT(obj)->numiv = capa;
 #endif
+
+#if RUBY_DEBUG
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+    for (size_t i = 0; i < ROBJECT_NUMIV(obj); i++) {
+        ptr[i] = Qundef;
     }
-    else {
-        rb_ensure_iv_list_size(obj, 0, index_tbl_num_entries);
-    }
+#endif
 
     return obj;
 }
@@ -3680,7 +3689,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
                 VALUE klass = RBASIC_CLASS(obj);
 
                 // Increment max_iv_count if applicable, used to determine size pool allocation
-                uint32_t num_of_ivs = shape->iv_count;
+                uint32_t num_of_ivs = shape->next_iv_index;
                 if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
                     RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
                 }
@@ -3709,9 +3718,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
             xfree(RCLASS_SUPERCLASSES(obj));
         }
-#if SIZEOF_SERIAL_T != SIZEOF_VALUE && USE_RVARGC
-        xfree(RCLASS(obj)->class_serial_ptr);
-#endif
 
 #if !USE_RVARGC
         if (RCLASS_EXT(obj))
@@ -9358,8 +9364,10 @@ rb_gc_writebarrier(VALUE a, VALUE b)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
-    if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
+    if (RGENGC_CHECK_MODE) {
+        if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
+        if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
+    }
 
   retry:
     if (!is_incremental_marking(objspace)) {
@@ -10473,11 +10481,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 
         uint32_t capa = (uint32_t)((slot_size - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         ROBJECT(v)->numiv = capa;
-
-        // Fill end with Qundef
-        for (uint32_t i = numiv; i < capa; i++) {
-            ptr[i] = Qundef;
-        }
     }
 #endif
 

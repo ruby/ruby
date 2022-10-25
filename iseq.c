@@ -1435,6 +1435,9 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     f = rb_file_open_str(file, "r");
 
+    rb_execution_context_t *ec = GET_EC();
+    VALUE v = rb_vm_push_frame_fname(ec, file);
+
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
     ast = (rb_ast_t *)rb_parser_load_file(parser, file);
@@ -1453,6 +1456,9 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
                                          rb_realpath_internal(Qnil, file, 1),
                                          1, NULL, 0, ISEQ_TYPE_TOP, &option));
     rb_ast_dispose(ast);
+
+    rb_vm_pop_frame(ec);
+    RB_GC_GUARD(v);
     return ret;
 }
 

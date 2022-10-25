@@ -22,7 +22,6 @@ capstone = { version = "0.10.0", optional = true }
 # For debugging, `make V=1` shows exact cargo invocation.
 disasm = ["capstone"]
 stats = []
-asm_comments = []
 
 [profile.dev]
 opt-level = 0

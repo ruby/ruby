@@ -527,6 +527,16 @@ fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     unsafe { payload_non_null.as_mut() }.unwrap()
 }
 
+/// Iterate over all existing ISEQs
+pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
+    unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
+        callback(iseq);
+    }
+    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
+    unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+
 /// Free the per-iseq payload
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
@@ -1477,7 +1487,7 @@ fn gen_block_series_body(
             if iseq_location.contains(substr) {
                 let last_block = last_blockref.borrow();
                 println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid.idx, last_block.end_idx);
-                println!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
+                print!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
             }
         }
     }

@@ -963,7 +963,7 @@ ar_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 
 static int
 ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg,
-                     st_data_t never)
+                 st_data_t never)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, ret = 0, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -984,13 +984,13 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
 
             switch (retval) {
               case ST_CHECK: {
-                  pair = RHASH_AR_TABLE_REF(hash, i);
-                  if (pair->key == never) break;
-                  ret = ar_find_entry_hint(hash, hint, key);
-                  if (ret == RHASH_AR_TABLE_MAX_BOUND) {
-                      retval = (*func)(0, 0, arg, 1);
-                      return 2;
-                  }
+                pair = RHASH_AR_TABLE_REF(hash, i);
+                if (pair->key == never) break;
+                ret = ar_find_entry_hint(hash, hint, key);
+                if (ret == RHASH_AR_TABLE_MAX_BOUND) {
+                    retval = (*func)(0, 0, arg, 1);
+                    return 2;
+                }
               }
               case ST_CONTINUE:
                 break;
@@ -998,11 +998,11 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
               case ST_REPLACE:
                 return 0;
               case ST_DELETE: {
-                  if (!ar_cleared_entry(hash, i)) {
-                      ar_clear_entry(hash, i);
-                      RHASH_AR_TABLE_SIZE_DEC(hash);
-                  }
-                  break;
+                if (!ar_cleared_entry(hash, i)) {
+                    ar_clear_entry(hash, i);
+                    RHASH_AR_TABLE_SIZE_DEC(hash);
+                }
+                break;
               }
             }
         }
@@ -1346,15 +1346,8 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
+hash_iter_status_check(int status)
 {
-    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
-    int status;
-
-    if (error) return ST_STOP;
-    status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
-    /* TODO: rehash check? rb_raise(rb_eRuntimeError, "rehash occurred during iteration"); */
-
     switch (status) {
       case ST_DELETE:
         return ST_DELETE;
@@ -1363,31 +1356,38 @@ hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
       case ST_STOP:
         return ST_STOP;
     }
+
     return ST_CHECK;
+}
+
+static int
+hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
+
+    if (error) return ST_STOP;
+
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+    /* TODO: rehash check? rb_raise(rb_eRuntimeError, "rehash occurred during iteration"); */
+
+    return hash_iter_status_check(status);
 }
 
 static int
 hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
-    int status;
-    st_table *tbl;
 
     if (error) return ST_STOP;
-    tbl = RHASH_ST_TABLE(arg->hash);
-    status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
+    st_table *tbl = RHASH_ST_TABLE(arg->hash);
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
     if (RHASH_ST_TABLE(arg->hash) != tbl) {
-    	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
+        rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
-    switch (status) {
-      case ST_DELETE:
-        return ST_DELETE;
-      case ST_CONTINUE:
-        break;
-      case ST_STOP:
-        return ST_STOP;
-    }
-    return ST_CHECK;
+
+    return hash_iter_status_check(status);
 }
 
 static int

@@ -1094,7 +1094,7 @@ impl Assembler
     pub fn compile(self, cb: &mut CodeBlock) -> Vec<u32>
     {
         #[cfg(feature = "disasm")]
-        let start_addr = cb.get_write_ptr().raw_ptr();
+        let start_addr = cb.get_write_ptr();
 
         let alloc_regs = Self::get_alloc_regs();
         let gc_offsets = self.compile_with_regs(cb, alloc_regs);
@@ -1102,7 +1102,7 @@ impl Assembler
         #[cfg(feature = "disasm")]
         if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
             use crate::disasm::dump_disasm_addr_range;
-            let end_addr = cb.get_write_ptr().raw_ptr();
+            let end_addr = cb.get_write_ptr();
             dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
         }
         gc_offsets

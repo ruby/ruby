@@ -221,10 +221,16 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal([1,2], Complex.polar(1,2).polar)
     assert_equal(Complex.polar(1.0, Math::PI * 2 / 3), Complex.polar(1, Math::PI * 2 / 3))
 
-    assert_in_out_err([], <<-'end;', ['OK'], [])
-      Complex.polar(1, Complex(1, 0))
-      puts :OK
-    end;
+    one = 1+0i
+    c = Complex.polar(0, one)
+    assert_equal(0, c)
+    assert_predicate(c.real, :real?)
+    c = Complex.polar(one, 0)
+    assert_equal(1, c)
+    assert_predicate(c.real, :real?)
+    c = Complex.polar(one)
+    assert_equal(1, c)
+    assert_predicate(c.real, :real?)
   end
 
   def test_uplus
@@ -1139,15 +1145,34 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_canonicalize_polar
-    obj = Class.new(Numeric) do
-      def initialize
-        @x = 2
+    error = "not a real"
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(1i)
+    end
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(1i, 0)
+    end
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(0, 1i)
+    end
+    n = Class.new(Numeric) do
+      def initialize(x = 1)
+        @x = x
       end
       def real?
         (@x -= 1) > 0
       end
-    end.new
-    assert_raise(TypeError) do
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(obj)
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(obj, 0)
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
       Complex.polar(1, obj)
     end
   end

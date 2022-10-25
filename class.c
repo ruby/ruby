@@ -208,9 +208,6 @@ class_alloc(VALUE flags, VALUE klass)
 
 #if USE_RVARGC
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
-# if SIZEOF_SERIAL_T != SIZEOF_VALUE
-    RCLASS(obj)->class_serial_ptr = ZALLOC(rb_serial_t);
-# endif
 #else
     obj->ptr = ZALLOC(rb_classext_t);
 #endif
@@ -226,7 +223,6 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
-    RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_ALLOCATOR(obj) = 0;
 
@@ -1589,6 +1585,33 @@ rb_class_subclasses(VALUE klass)
     return class_descendants(klass, true);
 }
 
+/*
+ *  call-seq:
+ *     attached_object -> object
+ *
+ *  Returns the object for which the receiver is the singleton class.
+ *
+ *  Raises an TypeError if the class is not a singleton class.
+ *
+ *     class Foo; end
+ *
+ *     Foo.singleton_class.attached_object        #=> Foo
+ *     Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
+ *     Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
+ *     TrueClass.attached_object                  #=> TypeError: `TrueClass' is not a singleton class
+ *     NilClass.attached_object                   #=> TypeError: `NilClass' is not a singleton class
+ */
+
+VALUE
+rb_class_attached_object(VALUE klass)
+{
+    if (!FL_TEST(klass, FL_SINGLETON)) {
+        rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
+    }
+
+    return rb_attr_get(klass, id_attached);
+}
+
 static void
 ins_methods_push(st_data_t name, st_data_t ary)
 {
@@ -2116,9 +2139,7 @@ singleton_class_of(VALUE obj)
     klass = METACLASS_OF(obj);
     if (!(FL_TEST(klass, FL_SINGLETON) &&
           rb_attr_get(klass, id_attached) == obj)) {
-        rb_serial_t serial = RCLASS_SERIAL(klass);
         klass = rb_make_metaclass(obj, klass);
-        RCLASS_SERIAL(klass) = serial;
     }
 
     RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));

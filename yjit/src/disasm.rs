@@ -1,9 +1,14 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
+#[cfg(feature = "disasm")]
 use crate::asm::CodeBlock;
+#[cfg(feature = "disasm")]
+use crate::codegen::CodePtr;
+#[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
+#[cfg(feature = "disasm")]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb
@@ -80,8 +85,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         let blockid = block.get_blockid();
         if blockid.idx >= start_idx && blockid.idx < end_idx {
             let end_idx = block.get_end_idx();
-            let start_addr = block.get_start_addr().unwrap().raw_ptr();
-            let end_addr = block.get_end_addr().unwrap().raw_ptr();
+            let start_addr = block.get_start_addr().unwrap();
+            let end_addr = block.get_end_addr().unwrap();
             let code_size = block.code_size();
 
             // Write some info about the current block
@@ -96,14 +101,17 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             writeln!(out, "== {:=<60}", block_ident).unwrap();
 
             // Disassemble the instructions
-            out.push_str(&disasm_addr_range(global_cb, start_addr, (start_addr as usize + code_size) as *const u8));
+            for (start_addr, end_addr) in global_cb.writable_addrs(start_addr, end_addr) {
+                out.push_str(&disasm_addr_range(global_cb, start_addr, end_addr));
+                writeln!(out).unwrap();
+            }
 
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
                 // Compute the size of the gap between this block and the next
                 let next_block = block_list[block_idx + 1].borrow();
-                let next_start_addr = next_block.get_start_addr().unwrap().raw_ptr();
-                let gap_size = (next_start_addr as usize) - (end_addr as usize);
+                let next_start_addr = next_block.get_start_addr().unwrap();
+                let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
@@ -117,24 +125,26 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
 }
 
 #[cfg(feature = "disasm")]
-pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8, dump_disasm: &DumpDisasm) {
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
     use std::fs::File;
     use std::io::Write;
 
-    let disasm = disasm_addr_range(cb, start_addr, end_addr);
-    if disasm.len() > 0 {
-        match dump_disasm {
-            DumpDisasm::Stdout => println!("{disasm}"),
-            DumpDisasm::File(path) => {
-                let mut f = File::options().append(true).create(true).open(path).unwrap();
-                f.write_all(disasm.as_bytes()).unwrap();
-            }
-        };
+    for (start_addr, end_addr) in cb.writable_addrs(start_addr, end_addr) {
+        let disasm = disasm_addr_range(cb, start_addr, end_addr);
+        if disasm.len() > 0 {
+            match dump_disasm {
+                DumpDisasm::Stdout => println!("{disasm}"),
+                DumpDisasm::File(path) => {
+                    let mut f = File::options().create(true).append(true).open(path).unwrap();
+                    f.write_all(disasm.as_bytes()).unwrap();
+                }
+            };
+        }
     }
 }
 
 #[cfg(feature = "disasm")]
-pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8) -> String {
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     let mut out = String::from("");
 
     // Initialize capstone
@@ -158,8 +168,8 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const
     cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions
-    let code_size = end_addr as usize - start_addr as usize;
-    let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
+    let code_size = end_addr - start_addr;
+    let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
     // For each instruction in this block

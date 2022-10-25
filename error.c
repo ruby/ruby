@@ -668,7 +668,7 @@ bug_important_message(FILE *out, const char *const msg, size_t len)
 
 #undef CRASH_REPORTER_MAY_BE_CREATED
 #if defined(__APPLE__) && \
-    (!defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6)
+    (!defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6 || defined(__POWERPC__)) /* 10.6 PPC case */
 # define CRASH_REPORTER_MAY_BE_CREATED
 #endif
 static void

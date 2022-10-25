@@ -12157,6 +12157,40 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
     const bool builtin_inline_p = (bool)ibf_load_small_value(load, &reading_pos);
 
+    // setup fname and dummy frame
+    VALUE path = ibf_load_object(load, location_pathobj_index);
+    {
+        VALUE realpath = Qnil;
+
+        if (RB_TYPE_P(path, T_STRING)) {
+            realpath = path = rb_fstring(path);
+        }
+        else if (RB_TYPE_P(path, T_ARRAY)) {
+            VALUE pathobj = path;
+            if (RARRAY_LEN(pathobj) != 2) {
+                rb_raise(rb_eRuntimeError, "path object size mismatch");
+            }
+            path = rb_fstring(RARRAY_AREF(pathobj, 0));
+            realpath = RARRAY_AREF(pathobj, 1);
+            if (!NIL_P(realpath)) {
+                if (!RB_TYPE_P(realpath, T_STRING)) {
+                    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
+                             "(%x), path=%+"PRIsVALUE,
+                             realpath, TYPE(realpath), path);
+                }
+                realpath = rb_fstring(realpath);
+            }
+        }
+        else {
+            rb_raise(rb_eRuntimeError, "unexpected path object");
+        }
+        rb_iseq_pathobj_set(iseq, path, realpath);
+    }
+
+    // push dummy frame
+    rb_execution_context_t *ec = GET_EC();
+    VALUE dummy_frame = rb_vm_push_frame_fname(ec, path);
+
 #undef IBF_BODY_OFFSET
 
     load_body->type = type;
@@ -12225,33 +12259,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load->current_buffer = &load->global_buffer;
 #endif
 
-    {
-        VALUE realpath = Qnil, path = ibf_load_object(load, location_pathobj_index);
-        if (RB_TYPE_P(path, T_STRING)) {
-            realpath = path = rb_fstring(path);
-        }
-        else if (RB_TYPE_P(path, T_ARRAY)) {
-            VALUE pathobj = path;
-            if (RARRAY_LEN(pathobj) != 2) {
-                rb_raise(rb_eRuntimeError, "path object size mismatch");
-            }
-            path = rb_fstring(RARRAY_AREF(pathobj, 0));
-            realpath = RARRAY_AREF(pathobj, 1);
-            if (!NIL_P(realpath)) {
-                if (!RB_TYPE_P(realpath, T_STRING)) {
-                    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
-                             "(%x), path=%+"PRIsVALUE,
-                             realpath, TYPE(realpath), path);
-                }
-                realpath = rb_fstring(realpath);
-            }
-        }
-        else {
-            rb_raise(rb_eRuntimeError, "unexpected path object");
-        }
-        rb_iseq_pathobj_set(iseq, path, realpath);
-    }
-
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, location_base_label_index));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, location_label_index));
 
@@ -12259,6 +12266,9 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load->current_buffer = saved_buffer;
 #endif
     verify_call_cache(iseq);
+
+    RB_GC_GUARD(dummy_frame);
+    rb_vm_pop_frame(ec);
 }
 
 struct ibf_dump_iseq_list_arg

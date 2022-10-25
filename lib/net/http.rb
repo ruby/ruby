@@ -397,7 +397,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.2.2"
+    VERSION = "0.3.0"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
@@ -1013,13 +1013,14 @@ module Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      begin
-        s = Socket.tcp conn_addr, conn_port, @local_host, @local_port, connect_timeout: @open_timeout
-      rescue => e
-        e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) #for compatibility with previous versions
-        raise e, "Failed to open TCP connection to " +
-          "#{conn_addr}:#{conn_port} (#{e.message})"
-      end
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+        begin
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        rescue => e
+          raise e, "Failed to open TCP connection to " +
+            "#{conn_addr}:#{conn_port} (#{e.message})"
+        end
+      }
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?

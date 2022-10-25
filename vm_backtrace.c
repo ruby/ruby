@@ -37,10 +37,8 @@ inline static int
 calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
     VM_ASSERT(iseq);
-    VM_ASSERT(ISEQ_BODY(iseq));
-    VM_ASSERT(ISEQ_BODY(iseq)->iseq_encoded);
-    VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
-    if (! pc) {
+
+    if (pc == NULL) {
         if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_TOP) {
             VM_ASSERT(! ISEQ_BODY(iseq)->local_table);
             VM_ASSERT(! ISEQ_BODY(iseq)->local_table_size);
@@ -53,6 +51,10 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         return 1;
     }
     else {
+        VM_ASSERT(ISEQ_BODY(iseq));
+        VM_ASSERT(ISEQ_BODY(iseq)->iseq_encoded);
+        VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
+
         ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
         VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
@@ -1557,7 +1559,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
     for (i=0; i<limit && cfp != end_cfp;) {
-        if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc != 0) {
             if (start > 0) {
                 start--;
                 continue;

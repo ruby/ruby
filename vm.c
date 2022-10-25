@@ -488,13 +488,6 @@ jit_exec(rb_execution_context_t *ec)
 
 #define PROCDEBUG 0
 
-rb_serial_t
-rb_next_class_serial(void)
-{
-    rb_serial_t class_serial = NEXT_CLASS_SERIAL();
-    return class_serial;
-}
-
 VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_mRubyVMFrozenCore;
@@ -532,7 +525,6 @@ unsigned int    ruby_vm_event_local_num;
 
 rb_serial_t ruby_vm_constant_cache_invalidations = 0;
 rb_serial_t ruby_vm_constant_cache_misses = 0;
-rb_serial_t ruby_vm_class_serial = 1;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
 static const struct rb_callcache vm_empty_cc = {
@@ -612,7 +604,6 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *    {
  *      :constant_cache_invalidations=>2,
  *      :constant_cache_misses=>14,
- *      :class_serial=>546,
  *      :global_cvar_state=>27
  *    }
  *
@@ -624,7 +615,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -644,7 +635,6 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
     S(constant_cache_invalidations);
     S(constant_cache_misses);
-        S(class_serial);
         S(global_cvar_state);
 #undef S
 
@@ -656,7 +646,6 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
-    SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
 
@@ -3149,19 +3138,22 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
-            rb_gc_mark_movable(cfp->self);
-            rb_gc_mark_movable((VALUE)cfp->iseq);
-            rb_gc_mark_movable((VALUE)cfp->block_code);
 
-            if (!VM_ENV_LOCAL_P(ep)) {
-                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
-                }
+            if (VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
+                rb_gc_mark_movable(cfp->self);
+                rb_gc_mark_movable((VALUE)cfp->iseq);
+                rb_gc_mark_movable((VALUE)cfp->block_code);
 
-                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
-                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
+                if (!VM_ENV_LOCAL_P(ep)) {
+                    const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                    if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                        rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                    }
+
+                    if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                        rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
+                        rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
+                    }
                 }
             }
 

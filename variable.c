@@ -1018,7 +1018,7 @@ generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
         }
     }
     FL_SET((VALUE)*k, FL_EXIVAR);
-    ivtbl = gen_ivtbl_resize(ivtbl, ivup->shape->iv_count);
+    ivtbl = gen_ivtbl_resize(ivtbl, ivup->shape->next_iv_index);
     // Reinsert in to the hash table because ivtbl might be a newly resized chunk of memory
     *v = (st_data_t)ivtbl;
     ivup->ivtbl = ivtbl;
@@ -1404,9 +1404,6 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize)
         newptr = obj_ivar_heap_realloc(obj, len, newsize);
     }
 
-    for (; len < newsize; len++) {
-        newptr[len] = Qundef;
-    }
 #if USE_RVARGC
     ROBJECT(obj)->numiv = newsize;
 #else
@@ -1438,7 +1435,7 @@ rb_ensure_generic_iv_list_size(VALUE obj, uint32_t newsize)
 void
 rb_init_iv_list(VALUE obj)
 {
-    uint32_t newsize = (uint32_t)(rb_shape_get_shape(obj)->iv_count * 2.0);
+    uint32_t newsize = (uint32_t)(rb_shape_get_shape(obj)->next_iv_index * 2.0);
     uint32_t len = ROBJECT_NUMIV(obj);
     rb_ensure_iv_list_size(obj, len, newsize < len ? len : newsize);
 }
@@ -1453,7 +1450,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 
     if (!rb_shape_get_iv_index(shape, id, &index)) {
         shape = rb_shape_get_next(shape, obj, id);
-        index = shape->iv_count - 1;
+        index = shape->next_iv_index - 1;
     }
 
     uint32_t len = ROBJECT_NUMIV(obj);
@@ -1496,32 +1493,28 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
 #else
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-          ROBJECT_SET_SHAPE_ID(obj, shape_id);
-          break;
+        ROBJECT_SET_SHAPE_ID(obj, shape_id);
+        break;
       case T_CLASS:
       case T_MODULE:
-          {
-              RCLASS_EXT(obj)->shape_id = shape_id;
-              break;
-          }
+        RCLASS_EXT(obj)->shape_id = shape_id;
+        break;
       default:
-          {
-              if (shape_id != FROZEN_ROOT_SHAPE_ID) {
-                  struct gen_ivtbl *ivtbl = 0;
-                  RB_VM_LOCK_ENTER();
-                  {
-                      st_table* global_iv_table = generic_ivtbl(obj, 0, false);
+        if (shape_id != FROZEN_ROOT_SHAPE_ID) {
+            struct gen_ivtbl *ivtbl = 0;
+            RB_VM_LOCK_ENTER();
+            {
+                st_table* global_iv_table = generic_ivtbl(obj, 0, false);
 
-                      if (st_lookup(global_iv_table, obj, (st_data_t *)&ivtbl)) {
-                          ivtbl->shape_id = shape_id;
-                      }
-                      else {
-                          rb_bug("Expected shape_id entry in global iv table");
-                      }
-                  }
-                  RB_VM_LOCK_LEAVE();
-              }
-          }
+                if (st_lookup(global_iv_table, obj, (st_data_t *)&ivtbl)) {
+                    ivtbl->shape_id = shape_id;
+                }
+                else {
+                    rb_bug("Expected shape_id entry in global iv table");
+                }
+            }
+            RB_VM_LOCK_LEAVE();
+        }
     }
 #endif
 
@@ -1597,12 +1590,7 @@ rb_ivar_defined(VALUE obj, ID id)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        if (RCLASS_IV_TBL(obj) && lock_st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id)) {
-            return Qtrue;
-        }
-        else {
-            return Qfalse;
-        }
+        return RBOOL(RCLASS_IV_TBL(obj) && lock_st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id));
       default:
         return RBOOL(rb_shape_get_iv_index(rb_shape_get_shape(obj), id, &index));
     }
@@ -1612,21 +1600,22 @@ typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
 st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
 static void
-iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_foreach_callback_func *callback, st_data_t arg) {
+iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_foreach_callback_func *callback, st_data_t arg)
+{
     switch ((enum shape_type)shape->type) {
-        case SHAPE_ROOT:
-            return;
-        case SHAPE_IVAR:
-            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
-            VALUE val = iv_list[shape->iv_count - 1];
-            if (val != Qundef) {
-                callback(shape->edge_name, val, arg);
-            }
-            return;
-        case SHAPE_IVAR_UNDEF:
-        case SHAPE_FROZEN:
-            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
-            return;
+      case SHAPE_ROOT:
+        return;
+      case SHAPE_IVAR:
+        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
+        VALUE val = iv_list[shape->next_iv_index - 1];
+        if (val != Qundef) {
+            callback(shape->edge_name, val, arg);
+        }
+        return;
+      case SHAPE_IVAR_UNDEF:
+      case SHAPE_FROZEN:
+        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
+        return;
     }
 }
 
@@ -1756,7 +1745,7 @@ rb_ivar_count(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_get_shape(obj)->iv_count > 0) {
+        if (rb_shape_get_shape(obj)->next_iv_index > 0) {
             st_index_t i, count, num = ROBJECT_IV_COUNT(obj);
             const VALUE *const ivptr = ROBJECT_IVPTR(obj);
             for (i = count = 0; i < num; ++i) {
