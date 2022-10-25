@@ -121,7 +121,7 @@ class Dir
 
     # Dedicated random number generator
     RANDOM = Random.new
-    class << Random # :nodoc:
+    class << RANDOM # :nodoc:
       # Maximum random number
       MAX = 36**6 # < 0x100000000
 
