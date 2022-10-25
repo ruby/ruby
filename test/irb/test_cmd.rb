@@ -429,7 +429,7 @@ module TestIRB
       assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the help command to match one of the possible outputs")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
-      load "irb/cmd/help.rb"
+      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
     end
 
     def test_help_without_rdoc
@@ -454,7 +454,7 @@ module TestIRB
       assert_match(/=> IRB::ExtendCommand::Help\n/, out)
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
-      load "irb/cmd/help.rb"
+      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
     end
 
     def test_irb_load
