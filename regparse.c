@@ -3799,6 +3799,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	}
 	else { /* string */
 	  p = tok->backp + enclen(enc, tok->backp, end);
+	  if (p > end) return ONIGERR_END_PATTERN_AT_ESCAPE;
 	}
       }
       break;
