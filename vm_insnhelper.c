@@ -1169,7 +1169,23 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            goto general_path;
+            if (UNLIKELY(!rb_ractor_main_p())) {
+                // For two reasons we can only use the fast path on the main
+                // ractor.
+                // First, only the main ractor is allowed to set ivars on classes
+                // and modules. So we can skip locking.
+                // Second, other ractors need to check the shareability of the
+                // values returned from the class ivars.
+                goto general_path;
+            }
+
+            ivar_list = RCLASS_IVPTR(obj);
+
+#if !SHAPE_IN_BASIC_FLAGS
+            shape_id = RCLASS_SHAPE_ID(obj);
+#endif
+
+            break;
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {

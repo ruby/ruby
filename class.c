@@ -406,7 +406,7 @@ copy_tables(VALUE clone, VALUE orig)
         RCLASS_CONST_TBL(clone) = 0;
     }
     RCLASS_M_TBL(clone) = 0;
-    {
+    if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
 
         rb_iv_tbl_copy(clone, orig);
