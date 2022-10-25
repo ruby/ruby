@@ -520,7 +520,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       skipped = true
     elsif /^CONFLICT/ =~ result
       result = pipe_readlines(%W"git status --porcelain -z")
-      result.map! {|line| line[/\A.U (.*)/, 1]}
+      result.map! {|line| line[/\A(?:.U|AA) (.*)/, 1]}
       result.compact!
       ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
