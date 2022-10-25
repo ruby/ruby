@@ -134,7 +134,15 @@ impl CodeBlock {
         }
 
         // Move the other CodeBlock to the same page if it'S on the furthest page
-        self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
+        self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &|other_cb, dst_ptr| {
+            // compile_with_regs will not invalidate i-cache for other_cb. Doing it there could
+            // result in invalidating a lot more than necessary when other_cb jumps from a
+            // position early in the page, which cannot be filtered by writable_addrs well.
+            // So invalidating it here is more efficient than that.
+            other_cb.with_icache_invalidation(|other_cb| {
+                jmp_ptr(other_cb, dst_ptr);
+            });
+        });
 
         return !self.dropped_bytes;
     }
@@ -260,6 +268,18 @@ impl CodeBlock {
             self.page_size
         };
         page_end - self.page_end_reserve // reserve space to jump to the next page
+    }
+
+    fn with_icache_invalidation<F: Fn(&mut Self)>(&mut self, block: F) {
+        #[cfg(all(not(test), target_arch = "aarch64"))]
+        let start = self.get_write_ptr();
+        block(self);
+        #[cfg(all(not(test), target_arch = "aarch64"))]
+        {
+            let end = self.get_write_ptr();
+            use crate::cruby::rb_yjit_icache_invalidate;
+            unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
+        }
     }
 
     /// Call a given function with page_end_reserve = 0
