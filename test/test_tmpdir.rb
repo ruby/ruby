@@ -47,6 +47,18 @@ class TestTmpdir < Test::Unit::TestCase
     end
   end
 
+  def test_tmpdir_not_empty_parent
+    Dir.mktmpdir do |tmpdir|
+      envs = %w[TMPDIR TMP TEMP]
+      oldenv = envs.each_with_object({}) {|v, h| h[v] = ENV.delete(v)}
+      ENV[envs[0]] = ""
+      ENV[envs[1]] = tmpdir
+      assert_equal(tmpdir, Dir.tmpdir)
+    ensure
+      ENV.update(oldenv)
+    end
+  end
+
   def test_no_homedir
     bug7547 = '[ruby-core:50793]'
     home, ENV["HOME"] = ENV["HOME"], nil

@@ -19,8 +19,10 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def self.tmpdir
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir = ENV[name]|
-      next if !dir
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name]) or dir.empty?
+      end
       dir = File.expand_path(dir)
       stat = File.stat(dir) rescue next
       case
