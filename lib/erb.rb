@@ -1019,9 +1019,7 @@ class ERB
     #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)
-      s.to_s.b.gsub(/[^a-zA-Z0-9_\-.~]/n) { |m|
-        sprintf("%%%02X", m.unpack1("C"))
-      }
+      CGI.escapeURIComponent(s.to_s)
     end
     alias u url_encode
     module_function :u
