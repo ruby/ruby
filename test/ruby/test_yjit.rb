@@ -825,12 +825,126 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_code_gc
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      return :not_paged unless add_pages(100) # prepare freeable pages
+      code_gc # first code GC
+      return :not_compiled1 unless compiles { nil } # should be JITable again
+
+      code_gc # second code GC
+      return :not_compiled2 unless compiles { nil } # should be JITable again
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 2
+
+      :ok
+    RUBY
+  end
+
+  def test_on_stack_code_gc_call
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      fiber = Fiber.new {
+        # Loop to call the same basic block again after Fiber.yield
+        while true
+          Fiber.yield(nil.to_i)
+        end
+      }
+
+      return :not_paged1 unless add_pages(400) # go to a page without initial ocb code
+      return :broken_resume1 if fiber.resume != 0 # JIT the fiber
+      code_gc # first code GC, which should not free the fiber page
+      return :broken_resume2 if fiber.resume != 0 # The code should be still callable
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 1
+
+      :ok
+    RUBY
+  end
+
+  def test_on_stack_code_gc_twice
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      fiber = Fiber.new {
+        # Loop to call the same basic block again after Fiber.yield
+        while Fiber.yield(nil.to_i); end
+      }
+
+      return :not_paged1 unless add_pages(400) # go to a page without initial ocb code
+      return :broken_resume1 if fiber.resume(true) != 0 # JIT the fiber
+      code_gc # first code GC, which should not free the fiber page
+
+      return :not_paged2 unless add_pages(300) # add some stuff to be freed
+      # Not calling fiber.resume here to test the case that the YJIT payload loses some
+      # information at the previous code GC. The payload should still be there, and
+      # thus we could know the fiber ISEQ is still on stack on this second code GC.
+      code_gc # second code GC, which should still not free the fiber page
+
+      return :not_paged3 unless add_pages(200) # attempt to overwrite the fiber page (it shouldn't)
+      return :broken_resume2 if fiber.resume(true) != 0 # The fiber code should be still fine
+
+      return :broken_resume3 if fiber.resume(false) != nil # terminate the fiber
+      code_gc # third code GC, freeing a page that used to be on stack
+
+      return :not_paged4 unless add_pages(100) # check everything still works
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 3
+
+      :ok
+    RUBY
+  end
+
+  def test_code_gc_with_many_iseqs
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok, mem_size: 1)
+      fiber = Fiber.new {
+        # Loop to call the same basic block again after Fiber.yield
+        while true
+          Fiber.yield(nil.to_i)
+        end
+      }
+
+      return :not_paged1 unless add_pages(500) # use some pages
+      return :broken_resume1 if fiber.resume != 0 # leave an on-stack code as well
+
+      add_pages(2000) # use a whole lot of pages to run out of 1MiB
+      return :broken_resume2 if fiber.resume != 0 # on-stack code should be callable
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count == 0
+
+      :ok
+    RUBY
+  end
+
+  private
+
+  def code_gc_helpers
+    <<~'RUBY'
+      def compiles(&block)
+        failures = RubyVM::YJIT.runtime_stats[:compilation_failure]
+        block.call
+        failures == RubyVM::YJIT.runtime_stats[:compilation_failure]
+      end
+
+      def add_pages(num_jits)
+        pages = RubyVM::YJIT.runtime_stats[:compiled_page_count]
+        num_jits.times { return false unless eval('compiles { nil.to_i }') }
+        pages.nil? || pages < RubyVM::YJIT.runtime_stats[:compiled_page_count]
+      end
+
+      def code_gc
+        RubyVM::YJIT.simulate_oom! # bump write_pos
+        eval('proc { nil }.call') # trigger code GC
+      end
+    RUBY
+  end
+
   def assert_no_exits(script)
     assert_compiles(script)
   end
 
   ANY = Object.new
-  def assert_compiles(test_script, insns: [], call_threshold: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil)
+  def assert_compiles(test_script, insns: [], call_threshold: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil, mem_size: nil)
     reset_stats = <<~RUBY
       RubyVM::YJIT.runtime_stats
       RubyVM::YJIT.reset_stats!
@@ -864,7 +978,7 @@ class TestYJIT < Test::Unit::TestCase
       #{write_results}
     RUBY
 
-    status, out, err, stats = eval_with_jit(script, call_threshold: call_threshold)
+    status, out, err, stats = eval_with_jit(script, call_threshold:, mem_size:)
 
     assert status.success?, "exited with status #{status.to_i}, stderr:\n#{err}"
 
@@ -918,12 +1032,13 @@ class TestYJIT < Test::Unit::TestCase
     s.chars.map { |c| c.ascii_only? ? c : "\\u%x" % c.codepoints[0] }.join
   end
 
-  def eval_with_jit(script, call_threshold: 1, timeout: 1000)
+  def eval_with_jit(script, call_threshold: 1, timeout: 1000, mem_size: nil)
     args = [
       "--disable-gems",
       "--yjit-call-threshold=#{call_threshold}",
       "--yjit-stats"
     ]
+    args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
     out, err, status = EnvUtil.invoke_ruby(args,

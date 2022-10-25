@@ -69,7 +69,7 @@ static VALUE rb_cFiberPool;
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
 
-#define jit_cont_enabled mjit_enabled // To be used by YJIT later
+#define jit_cont_enabled (mjit_enabled || rb_yjit_enabled_p())
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,

@@ -51,6 +51,8 @@ pub trait Allocator {
     fn mark_writable(&mut self, ptr: *const u8, size: u32) -> bool;
 
     fn mark_executable(&mut self, ptr: *const u8, size: u32);
+
+    fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool;
 }
 
 /// Pointer into a [VirtualMemory].
@@ -89,6 +91,15 @@ impl<A: Allocator> VirtualMemory<A> {
     /// pointer so be careful dereferencing it.
     pub fn start_ptr(&self) -> CodePtr {
         CodePtr(self.region_start)
+    }
+
+    pub fn end_ptr(&self) -> CodePtr {
+        CodePtr(self.region_start.wrapping_add(self.mapped_region_bytes))
+    }
+
+    /// Size of the region in bytes that we have allocated physical memory for.
+    pub fn mapped_region_size(&self) -> usize {
+        self.mapped_region_bytes
     }
 
     /// Size of the region in bytes where writes could be attempted.
@@ -177,6 +188,12 @@ impl<A: Allocator> VirtualMemory<A> {
         // Make mapped region executable
         self.allocator.mark_executable(region_start, mapped_region_bytes);
     }
+
+    /// Free a range of bytes. start_ptr must be memory page-aligned.
+    pub fn free_bytes(&mut self, start_ptr: CodePtr, size: u32) {
+        assert_eq!(start_ptr.into_usize() % self.page_size_bytes, 0);
+        self.allocator.mark_unused(start_ptr.0, size);
+    }
 }
 
 impl CodePtr {
@@ -235,6 +252,10 @@ mod sys {
         fn mark_executable(&mut self, ptr: *const u8, size: u32) {
             unsafe { rb_yjit_mark_executable(ptr as VoidPtr, size) }
         }
+
+        fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool {
+            unsafe { rb_yjit_mark_unused(ptr as VoidPtr, size) }
+        }
     }
 }
 
@@ -258,6 +279,7 @@ pub mod tests {
     enum AllocRequest {
         MarkWritable{ start_idx: usize, length: usize },
         MarkExecutable{ start_idx: usize, length: usize },
+        MarkUnused{ start_idx: usize, length: usize },
     }
     use AllocRequest::*;
 
@@ -297,6 +319,13 @@ pub mod tests {
 
             // We don't try to execute generated code in cfg(test)
             // so no need to actually request executable memory.
+        }
+
+        fn mark_unused(&mut self, ptr: *const u8, length: u32) -> bool {
+            let index = self.bounds_check_request(ptr, length);
+            self.requests.push(MarkUnused { start_idx: index, length: length.as_usize() });
+
+            true
         }
     }
 
