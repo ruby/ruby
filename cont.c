@@ -2269,7 +2269,7 @@ root_fiber_alloc(rb_thread_t *th)
 
     VM_ASSERT(DATA_PTR(fiber_value) == NULL);
     VM_ASSERT(fiber->cont.type == FIBER_CONTEXT);
-    VM_ASSERT(fiber->status == FIBER_RESUMED);
+    VM_ASSERT(FIBER_RESUMED_P(fiber));
 
     th->root_fiber = fiber;
     DATA_PTR(fiber_value) = fiber;
