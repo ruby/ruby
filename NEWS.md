@@ -327,6 +327,12 @@ The following deprecated APIs are removed.
 
 ### MJIT
 
+* The MJIT compiler is re-implemented in Ruby as a standard library `mjit`.
+* MJIT compiler is executed under a forked Ruby process instead of
+  doing it in a native thread called MJIT worker. [[Feature #18968]]
+  * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
+* MinGW is no longer supported. [[Feature #18824]]
+
 ## Static analysis
 
 ### RBS
@@ -381,3 +387,5 @@ The following deprecated APIs are removed.
 [Feature #18630]: https://bugs.ruby-lang.org/issues/18630
 [Feature #18589]: https://bugs.ruby-lang.org/issues/18589
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
+[Feature #18824]: https://bugs.ruby-lang.org/issues/18824
+[Feature #18968]: https://bugs.ruby-lang.org/issues/18968
