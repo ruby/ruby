@@ -56,7 +56,7 @@ jobs:
 
           - test_task: "check"
             configure: "--enable-yjit=dev"
-            yjit_opts: "--yjit-call-threshold=1"
+            yjit_opts: "--yjit-call-threshold=1 --yjit-verify-ctx"
 
           - test_task: "test-all TESTS=--repeat-count=2"
             configure: "--enable-yjit=dev"
