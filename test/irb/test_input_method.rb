@@ -3,7 +3,7 @@
 require "test/unit"
 require "irb"
 
-require_relative "test_helper"
+require_relative "helper"
 
 module TestIRB
   class TestRelineInputMethod < Test::Unit::TestCase

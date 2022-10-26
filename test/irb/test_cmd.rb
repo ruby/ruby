@@ -3,7 +3,7 @@ require "test/unit"
 require "irb"
 require "irb/extend-command"
 
-require_relative "test_helper"
+require_relative "helper"
 
 module TestIRB
   class ExtendCommand < Test::Unit::TestCase
