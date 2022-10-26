@@ -708,6 +708,23 @@ impl Assembler
             }
         }
 
+        /// Call emit_jmp_ptr and immediately invalidate the written range.
+        /// This is needed when next_page also moves other_cb that is not invalidated
+        /// by compile_with_regs. Doing it here allows you to avoid invalidating a lot
+        /// more than necessary when other_cb jumps from a position early in the page.
+        /// This invalidates a small range of cb twice, but we accept the small cost.
+        fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+            #[cfg(not(test))]
+            let start = cb.get_write_ptr();
+            emit_jmp_ptr(cb, dst_ptr);
+            #[cfg(not(test))]
+            {
+                let end = cb.get_write_ptr();
+                use crate::cruby::rb_yjit_icache_invalidate;
+                unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
+            }
+        }
+
         // dbg!(&self.insns);
 
         // List of GC offsets
@@ -1018,7 +1035,7 @@ impl Assembler
             };
 
             // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr) {
+            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr_with_invalidation) {
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
             } else {
