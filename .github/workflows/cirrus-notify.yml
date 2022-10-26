@@ -1,0 +1,29 @@
+on:
+  check_suite:
+    type: ['completed']
+name: Cirrus CI failure notification
+jobs:
+  cirrus-notify:
+    name: After Cirrus CI Failure
+    if: >-
+      github.event.check_suite.app.name == 'Cirrus CI'
+      && github.event.check_suite.conclusion != 'success'
+      && github.event.check_suite.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - uses: ruby/action-slack@v3.0.0
+        with:
+          payload: |
+            {
+              "ci": "Cirrus CI",
+              "env": "Cirrus CI",
+              "url": "https://cirrus-ci.com/github/ruby/ruby",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
