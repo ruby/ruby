@@ -23,14 +23,14 @@ class TestTmpdir < Test::Unit::TestCase
           ENV[e] = tmpdirx
           assert_not_equal(tmpdirx, assert_warn('') {Dir.tmpdir})
           File.write(tmpdirx, "")
-          assert_not_equal(tmpdirx, assert_warn(/not a directory/) {Dir.tmpdir})
+          assert_not_equal(tmpdirx, assert_warn(/\A#{e} is not a directory/) {Dir.tmpdir})
           File.unlink(tmpdirx)
           ENV[e] = tmpdir
           assert_equal(tmpdir, Dir.tmpdir)
           File.chmod(0555, tmpdir)
-          assert_not_equal(tmpdir, assert_warn(/not writable/) {Dir.tmpdir})
+          assert_not_equal(tmpdir, assert_warn(/\A#{e} is not writable/) {Dir.tmpdir})
           File.chmod(0777, tmpdir)
-          assert_not_equal(tmpdir, assert_warn(/world-writable/) {Dir.tmpdir})
+          assert_not_equal(tmpdir, assert_warn(/\A#{e} is world-writable/) {Dir.tmpdir})
           newdir = Dir.mktmpdir("d", tmpdir) do |dir|
             assert_file.directory? dir
             assert_equal(tmpdir, File.dirname(dir))
