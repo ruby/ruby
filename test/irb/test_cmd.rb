@@ -422,9 +422,6 @@ module TestIRB
         irb.eval_input
       end
 
-      # the help command lazily loads rdoc by redefining the execute method
-      assert_match(/discarding old execute/, err) unless RUBY_ENGINE == 'truffleruby'
-
       # the former is what we'd get without document content installed, like on CI
       # the latter is what we may get locally
       possible_rdoc_output = [/Nothing known about String#gsub/, /Returns a copy of self with all occurrences of the given pattern/]
@@ -450,8 +447,6 @@ module TestIRB
         end
       end
 
-      # since LoadError will be raised, the execute won't be redefined
-      assert_no_match(/discarding old execute/, err)
       # if it fails to require rdoc, it only returns the command object
       assert_match(/=> IRB::ExtendCommand::Help\n/, out)
     ensure
