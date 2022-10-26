@@ -22,9 +22,11 @@ jobs:
             {
               "ci": "Cirrus CI",
               "env": "Cirrus CI",
-              "url": "https://cirrus-ci.com/github/ruby/ruby",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
+              "url": "https://github.com/ruby/ruby/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.event.check_suite.head_commit.id }}",
+              "branch": "${{ github.event.check_suite.head_branch }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        # head_branch can be null. checking it here to see GITHUB_CONTEXT on master.
+        if: ${{ github.event.check_suite.head_branch == 'master' }}
