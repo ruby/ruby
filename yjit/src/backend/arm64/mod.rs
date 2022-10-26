@@ -165,8 +165,8 @@ impl Assembler
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
-                    if imm <= 0 {
-                        asm.load(opnd)
+                    if imm == 0 {
+                        Opnd::Reg(XZR_REG)
                     } else if (dest_num_bits == 64 &&
                                 BitmaskImmediate::try_from(imm as u64).is_ok()) ||
                             (dest_num_bits == 32 &&
@@ -1353,7 +1353,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         // Assert that a load and a test instruction were written.
-        assert_eq!(8, cb.get_write_pos());
+        assert_eq!(4, cb.get_write_pos());
     }
 
     #[test]

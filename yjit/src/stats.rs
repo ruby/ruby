@@ -217,6 +217,14 @@ make_counters! {
     invokesuper_me_changed,
     invokesuper_block,
 
+    invokeblock_none,
+    invokeblock_iseq_arg0_splat,
+    invokeblock_iseq_block_changed,
+    invokeblock_iseq_tag_changed,
+    invokeblock_ifunc,
+    invokeblock_proc,
+    invokeblock_symbol,
+
     leave_se_interrupt,
     leave_interp_return,
     leave_start_pc_non_zero,

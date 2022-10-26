@@ -269,6 +269,9 @@ pub enum InsnOpnd {
     // The value is self
     SelfOpnd,
 
+    // Captured block's self
+    CapturedSelfOpnd,
+
     // Temporary stack operand with stack index
     StackOpnd(u16),
 }
@@ -296,6 +299,9 @@ pub struct Context {
 
     // Type we track for self
     self_type: Type,
+
+    // Type we track for captured block's self
+    captured_self_type: Type,
 
     // Mapping of temp stack entries to types we track
     temp_mapping: [TempMapping; MAX_TEMP_TYPES],
@@ -1141,6 +1147,7 @@ impl Context {
     pub fn get_opnd_type(&self, opnd: InsnOpnd) -> Type {
         match opnd {
             SelfOpnd => self.self_type,
+            CapturedSelfOpnd => self.captured_self_type,
             StackOpnd(idx) => {
                 let idx = idx as u16;
                 assert!(idx < self.stack_size);
@@ -1182,6 +1189,7 @@ impl Context {
 
         match opnd {
             SelfOpnd => self.self_type.upgrade(opnd_type),
+            CapturedSelfOpnd => self.self_type.upgrade(opnd_type),
             StackOpnd(idx) => {
                 let idx = idx as u16;
                 assert!(idx < self.stack_size);
@@ -1217,6 +1225,7 @@ impl Context {
 
         match opnd {
             SelfOpnd => (MapToSelf, opnd_type),
+            CapturedSelfOpnd => unreachable!("not used for captured self"),
             StackOpnd(idx) => {
                 let idx = idx as u16;
                 assert!(idx < self.stack_size);
@@ -1238,6 +1247,7 @@ impl Context {
     pub fn set_opnd_mapping(&mut self, opnd: InsnOpnd, (mapping, opnd_type): (TempMapping, Type)) {
         match opnd {
             SelfOpnd => unreachable!("self always maps to self"),
+            CapturedSelfOpnd => unreachable!("not used for captured self"),
             StackOpnd(idx) => {
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
