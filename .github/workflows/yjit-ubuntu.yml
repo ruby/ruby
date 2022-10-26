@@ -135,7 +135,7 @@ jobs:
           BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@v3.0.0
         with:
           payload: |
             {
@@ -143,7 +143,7 @@ jobs:
               "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.configure }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
