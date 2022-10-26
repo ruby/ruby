@@ -3,6 +3,8 @@ require "test/unit"
 require "irb"
 require "irb/extend-command"
 
+require_relative "test_helper"
+
 module TestIRB
   class ExtendCommand < Test::Unit::TestCase
     class TestInputMethod < ::IRB::InputMethod
@@ -443,7 +445,7 @@ module TestIRB
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
       out, err = capture_output do
-        without_rdoc do
+        IRB::TestHelper.without_rdoc do
           irb.eval_input
         end
       end

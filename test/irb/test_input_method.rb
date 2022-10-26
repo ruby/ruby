@@ -3,6 +3,8 @@
 require "test/unit"
 require "irb"
 
+require_relative "test_helper"
+
 module TestIRB
   class TestRelineInputMethod < Test::Unit::TestCase
     def setup
@@ -76,7 +78,7 @@ module TestIRB
 
       IRB.conf[:USE_AUTOCOMPLETE] = true
 
-      without_rdoc do
+      IRB::TestHelper.without_rdoc do
         IRB::RelineInputMethod.new
       end
 
