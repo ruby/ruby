@@ -112,7 +112,7 @@ static inline char *container_of_or_null_(void *member_ptr, size_t offset)
  *		return i;
  *	}
  */
-#if HAVE_TYPEOF
+#if defined(HAVE_TYPEOF) && HAVE_TYPEOF
 #define ccan_container_of_var(member_ptr, container_var, member) \
 	ccan_container_of(member_ptr, typeof(*container_var), member)
 #else
@@ -131,7 +131,7 @@ static inline char *container_of_or_null_(void *member_ptr, size_t offset)
  * structure memory layout.
  *
  */
-#if HAVE_TYPEOF
+#if defined(HAVE_TYPEOF) && HAVE_TYPEOF
 #define ccan_container_off_var(var, member)		\
 	ccan_container_off(typeof(*var), member)
 #else
