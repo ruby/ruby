@@ -1462,7 +1462,7 @@ static void
 io_buffer_validate_type(size_t size, size_t offset)
 {
     if (offset > size) {
-        rb_raise(rb_eArgError, "Type extends beyond end of buffer! (offset=%ld > size=%ld)", offset, size);
+        rb_raise(rb_eArgError, "Type extends beyond end of buffer! (offset=%"PRIdSIZE" > size=%"PRIdSIZE")", offset, size);
     }
 }
 
