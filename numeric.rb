@@ -10,6 +10,16 @@ class Numeric
   end
 
   #
+  # call-seq:
+  #    num.real  ->  self
+  #
+  # Returns self.
+  #
+  def real
+    return self
+  end
+
+  #
   #  call-seq:
   #     num.integer?  ->  true or false
   #
@@ -41,6 +51,36 @@ class Numeric
   #
   def infinite?
     return nil
+  end
+
+  #
+  # call-seq:
+  #    num.imag       ->  0
+  #    num.imaginary  ->  0
+  #
+  # Returns zero.
+  #
+  def imaginary
+    return 0;
+  end
+
+  def imag
+    return 0;
+  end
+
+  #
+  # call-seq:
+  #    num.conj       ->  self
+  #    num.conjugate  ->  self
+  #
+  # Returns self.
+  #
+  def conjugate
+    return self
+  end
+
+  def conj
+    return self
   end
 end
 
@@ -243,6 +283,26 @@ class Integer
   #    3.ceildiv(1.2) # => 3
   def ceildiv(other)
     -div(-other)
+  end
+
+  #
+  # call-seq:
+  #    int.numerator  ->  self
+  #
+  # Returns self.
+  #
+  def numerator
+    return self
+  end
+
+  #
+  # call-seq:
+  #    int.denominator  ->  1
+  #
+  # Returns 1.
+  #
+  def denominator
+    return 1
   end
 end
 
