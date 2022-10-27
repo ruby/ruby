@@ -5637,13 +5637,31 @@ rb_io_close(VALUE io)
  *  call-seq:
  *    close -> nil
  *
- *  Closes the stream, if it is open, after flushing any buffered writes
- *  to the operating system; does nothing if the stream is already closed.
- *  A stream is automatically closed when claimed by the garbage collector.
+ *  Closes the stream for both reading and writing
+ *  if open for either or both; returns +nil+.
  *
- *  If the stream was opened by IO.popen, #close sets global variable <tt>$?</tt>.
+ *  If the stream is open for writing, flushes any buffered writes
+ *  to the operating system before closing.
  *
- *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
+ *  If the stream was opened by IO.popen, sets global variable <tt>$?</tt>
+ *  (child exit status).
+ *
+ *  Example:
+ *
+ *    IO.popen('ruby', 'r+') do |pipe|
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close
+ *      STDOUT.puts $?
+ *      STDOUT.puts pipe.closed?
+ *    end
+ *
+ *  Output:
+ *
+ *    false
+ *    pid 13760 exit 0
+ *    true
+ *
+ *  Related: IO#close_read, IO#close_write, IO#closed?.
  */
 
 static VALUE
@@ -5694,17 +5712,23 @@ io_close(VALUE io)
  *  Returns +true+ if the stream is closed for both reading and writing,
  *  +false+ otherwise:
  *
- *    f = File.new('t.txt')
- *    f.close        # => nil
- *    f.closed?      # => true
- *    f = IO.popen('/bin/sh','r+')
- *    f.close_write  # => nil
- *    f.closed?      # => false
- *    f.close_read   # => nil
- *    f.closed?      # => true
+ *    IO.popen('ruby', 'r+') do |pipe|
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_read
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_write
+ *      STDOUT.puts pipe.closed?
+ *    end
  *
+ *  Output:
+ *
+ *    false
+ *    false
+ *    true
  *
  *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
+ *
+ *  Related: IO#close_read, IO#close_write, IO#close.
  */
 
 
@@ -5731,17 +5755,33 @@ rb_io_closed(VALUE io)
  *  call-seq:
  *    close_read -> nil
  *
- *  Closes the read end of a duplexed stream (i.e., one that is both readable
- *  and writable, such as a pipe); does nothing if already closed:
+ *  Closes the stream for reading if open for reading;
+ *  returns +nil+.
  *
- *    f = IO.popen('/bin/sh','r+')
- *    f.close_read
- *    f.readlines # Raises IOError
+ *  If the stream was opened by IO.popen and is also closed for writing,
+ *  sets global variable <tt>$?</tt> (child exit status).
+ *
+ *  Example:
+ *
+ *    IO.popen('ruby', 'r+') do |pipe|
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_write
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_read
+ *      STDOUT.puts $?
+ *      STDOUT.puts pipe.closed?
+ *    end
+ *
+ *  Output:
+ *
+ *    false
+ *    false
+ *    pid 14748 exit 0
+ *    true
  *
  *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
- *  Raises an exception if the stream is not duplexed.
- *
+ *  Related: IO#close, IO#close_write, IO#closed?.
  */
 
 static VALUE
@@ -5789,14 +5829,33 @@ rb_io_close_read(VALUE io)
  *  call-seq:
  *    close_write -> nil
  *
- *  Closes the write end of a duplexed stream (i.e., one that is both readable
- *  and writable, such as a pipe); does nothing if already closed:
+ *  Closes the stream for writing if open for writing;
+ *  returns +nil+:
  *
- *    f = IO.popen('/bin/sh', 'r+')
- *    f.close_write
- *    f.print 'nowhere' # Raises IOError.
+ *  Flushes any buffered writes to the operating system before closing.
+ *
+ *  If the stream was opened by IO.popen and is also closed for reading,
+ *  sets global variable <tt>$?</tt> (child exit status).
+ *
+ *    IO.popen('ruby', 'r+') do |pipe|
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_read
+ *      STDOUT.puts pipe.closed?
+ *      pipe.close_write
+ *      STDOUT.puts $?
+ *      STDOUT.puts pipe.closed?
+ *    end
+ *
+ *  Output:
+ *
+ *    false
+ *    false
+ *    pid 15044 exit 0
+ *    true
  *
  *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
+ *
+ *  Related: IO#close, IO#close_read, IO#closed?.
  */
 
 static VALUE
