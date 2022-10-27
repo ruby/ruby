@@ -6,7 +6,7 @@ class Numeric
   #  Returns +true+ if +num+ is a real number (i.e. not Complex).
   #
   def real?
-    return true
+    true
   end
 
   #
@@ -16,7 +16,7 @@ class Numeric
   # Returns self.
   #
   def real
-    return self
+    self
   end
 
   #
@@ -29,7 +29,7 @@ class Numeric
   #      1.integer?     #=> true
   #
   def integer?
-    return false
+    false
   end
 
   #
@@ -39,7 +39,7 @@ class Numeric
   #  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
   #
   def finite?
-    return true
+    true
   end
 
   #
@@ -50,7 +50,7 @@ class Numeric
   #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
   #
   def infinite?
-    return nil
+    nil
   end
 
   #
@@ -61,12 +61,15 @@ class Numeric
   # Returns zero.
   #
   def imaginary
-    return 0;
+    0
   end
 
+  alias imag imaginary
+=begin
   def imag
-    return 0;
+    0
   end
+=end
 
   #
   # call-seq:
@@ -76,12 +79,15 @@ class Numeric
   # Returns self.
   #
   def conjugate
-    return self
+    self
   end
 
+  alias conj conjugate
+=begin
   def conj
-    return self
+    self
   end
+=end
 end
 
 class Integer
@@ -186,7 +192,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, this always returns +true+.
   def integer?
-    return true
+    true
   end
 
   alias magnitude abs
@@ -218,7 +224,7 @@ class Integer
   #
   #  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
   def ord
-    return self
+    self
   end
 
   #
@@ -248,7 +254,7 @@ class Integer
   #
   #  #to_int is an alias for #to_i.
   def to_i
-    return self
+    self
   end
 
   #  call-seq:
@@ -256,7 +262,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, returns +self+.
   def to_int
-    return self
+    self
   end
 
   # call-seq:
@@ -292,7 +298,7 @@ class Integer
   # Returns self.
   #
   def numerator
-    return self
+    self
   end
 
   #
@@ -302,7 +308,7 @@ class Integer
   # Returns 1.
   #
   def denominator
-    return 1
+    1
   end
 end
 
@@ -336,7 +342,7 @@ class Float
   # Since +float+ is already a Float, returns +self+.
   #
   def to_f
-    return self
+    self
   end
 
   #
