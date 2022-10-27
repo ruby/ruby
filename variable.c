@@ -1020,22 +1020,22 @@ generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 }
 
 static void
-gen_ivtbl_mark(const struct gen_ivtbl *ivtbl)
+gen_ivtbl_mark_and_update(struct gen_ivtbl *ivtbl)
 {
     uint32_t i;
 
     for (i = 0; i < ivtbl->numiv; i++) {
-        rb_gc_mark(ivtbl->ivptr[i]);
+        rb_gc_mark_and_move(&ivtbl->ivptr[i]);
     }
 }
 
 void
-rb_mark_generic_ivar(VALUE obj)
+rb_mark_and_update_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-        gen_ivtbl_mark(ivtbl);
+        gen_ivtbl_mark_and_update(ivtbl);
     }
 }
 
