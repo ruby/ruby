@@ -65,11 +65,6 @@ class Numeric
   end
 
   alias imag imaginary
-=begin
-  def imag
-    0
-  end
-=end
 
   #
   # call-seq:
@@ -83,11 +78,6 @@ class Numeric
   end
 
   alias conj conjugate
-=begin
-  def conj
-    self
-  end
-=end
 end
 
 class Integer
