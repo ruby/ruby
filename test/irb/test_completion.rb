@@ -211,6 +211,96 @@ module TestIRB
       end
     end
 
+    class TestPerfectMatching < TestCompletion
+      def setup
+        # trigger PerfectMatchedProc to set up RDocRIDriver constant
+        IRB::InputCompletor::PerfectMatchedProc.("foo", bind: binding)
+
+        @original_use_stdout = IRB::InputCompletor::RDocRIDriver.use_stdout
+        # force the driver to use stdout so it doesn't start a pager and interrupt tests
+        IRB::InputCompletor::RDocRIDriver.use_stdout = true
+      end
+
+      def teardown
+        IRB::InputCompletor::RDocRIDriver.use_stdout = @original_use_stdout
+      end
+
+      def test_perfectly_matched_namespace_triggers_document_display
+        omit unless has_rdoc_content?
+
+        out, err = capture_output do
+          IRB::InputCompletor::PerfectMatchedProc.("String", bind: binding)
+        end
+
+        assert_empty(err)
+
+        assert_include(out, " S\bSt\btr\bri\bin\bng\bg")
+      end
+
+      def test_perfectly_matched_multiple_namespaces_triggers_document_display
+        result = nil
+        out, err = capture_output do
+          result = IRB::InputCompletor::PerfectMatchedProc.("{}.nil?", bind: binding)
+        end
+
+        assert_empty(err)
+
+        # check if there're rdoc contents (e.g. CI doesn't generate them)
+        if has_rdoc_content?
+          # if there's rdoc content, we can verify by checking stdout
+          # rdoc generates control characters for formatting method names
+          assert_include(out, "P\bPr\bro\boc\bc.\b.n\bni\bil\bl?\b?") # Proc.nil?
+          assert_include(out, "H\bHa\bas\bsh\bh.\b.n\bni\bil\bl?\b?") # Hash.nil?
+        else
+          # this is a hacky way to verify the rdoc rendering code path because CI doesn't have rdoc content
+          # if there are multiple namespaces to be rendered, PerfectMatchedProc renders the result with a document
+          # which always returns the bytes rendered, even if it's 0
+          assert_equal(0, result)
+        end
+      end
+
+      def test_not_matched_namespace_triggers_nothing
+        result = nil
+        out, err = capture_output do
+          result = IRB::InputCompletor::PerfectMatchedProc.("Stri", bind: binding)
+        end
+
+        assert_empty(err)
+        assert_empty(out)
+        assert_nil(result)
+      end
+
+      def test_perfect_matching_stops_without_rdoc
+        result = nil
+
+        out, err = capture_output do
+          IRB::TestHelper.without_rdoc do
+            result = IRB::InputCompletor::PerfectMatchedProc.("String", bind: binding)
+          end
+        end
+
+        assert_empty(err)
+        assert_not_match(/from ruby core/, out)
+        assert_nil(result)
+      end
+
+      def test_perfect_matching_handles_nil_namespace
+        out, err = capture_output do
+          # symbol literal has `nil` doc namespace so it's a good test subject
+          assert_nil(IRB::InputCompletor::PerfectMatchedProc.(":aiueo", bind: binding))
+        end
+
+        assert_empty(err)
+        assert_empty(out)
+      end
+
+      private
+
+      def has_rdoc_content?
+        File.exist?(RDoc::RI::Paths::BASE)
+      end
+    end
+
     def test_complete_symbol
       %w"UTF-16LE UTF-7".each do |enc|
         "K".force_encoding(enc).to_sym
@@ -231,10 +321,6 @@ module TestIRB
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A.", bind: binding))
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A(", bind: binding))
       assert_empty(IRB::InputCompletor.retrieve_completion_data("::A)", bind: binding))
-    end
-
-    def test_complete_symbol_failure
-      assert_nil(IRB::InputCompletor::PerfectMatchedProc.(":aiueo", bind: binding))
     end
 
     def test_complete_reserved_words
