@@ -3,6 +3,8 @@ require "test/unit"
 require "pathname"
 require "irb"
 
+require_relative "helper"
+
 module TestIRB
   class TestCompletion < Test::Unit::TestCase
     def setup
