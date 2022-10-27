@@ -2626,9 +2626,6 @@ fn gen_opt_aref(
         return EndBlock;
     }
 
-    // Remember the context on entry for adding guard chains
-    let starting_context = *ctx;
-
     // Specialize base on compile time values
     let comptime_idx = jit_peek_at_stack(jit, ctx, 0);
     let comptime_recv = jit_peek_at_stack(jit, ctx, 1);
@@ -2641,29 +2638,21 @@ fn gen_opt_aref(
             return CantCompile;
         }
 
-        // Pop the stack operands
-        let idx_opnd = ctx.stack_pop(1);
-        let recv_opnd = ctx.stack_pop(1);
-        let recv_reg = asm.load(recv_opnd);
+        // Get the stack operands
+        let idx_opnd = ctx.stack_opnd(0);
+        let recv_opnd = ctx.stack_opnd(1);
 
-        // if (SPECIAL_CONST_P(recv)) {
-        // Bail if receiver is not a heap object
-        asm.test(recv_reg, (RUBY_IMMEDIATE_MASK as u64).into());
-        asm.jnz(side_exit.into());
-        asm.cmp(recv_reg, Qfalse.into());
-        asm.je(side_exit.into());
-        asm.cmp(recv_reg, Qnil.into());
-        asm.je(side_exit.into());
-
-        // Bail if recv has a class other than ::Array.
+        // Guard that the receiver is an ::Array
         // BOP_AREF check above is only good for ::Array.
-        asm.cmp(unsafe { rb_cArray }.into(), Opnd::mem(64, recv_reg, RUBY_OFFSET_RBASIC_KLASS));
-        jit_chain_guard(
-            JCC_JNE,
+        jit_guard_known_klass(
             jit,
-            &starting_context,
+            ctx,
             asm,
             ocb,
+            unsafe { rb_cArray },
+            recv_opnd,
+            StackOpnd(1),
+            comptime_recv,
             OPT_AREF_MAX_CHAIN_DEPTH,
             side_exit,
         );
@@ -2678,6 +2667,9 @@ fn gen_opt_aref(
         {
             let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
             let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
+
+            // Pop the argument and the receiver
+            ctx.stack_pop(2);
 
             // Push the return value onto the stack
             let stack_ret = ctx.stack_push(Type::Unknown);
