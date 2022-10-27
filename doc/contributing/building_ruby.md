@@ -18,6 +18,7 @@
     * libffi
     * libyaml
     * libexecinfo (FreeBSD)
+    * rustc - 1.58.1 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
 3. Checkout the CRuby source code:
 
