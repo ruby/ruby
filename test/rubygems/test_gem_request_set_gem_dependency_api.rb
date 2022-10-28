@@ -183,7 +183,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal [dep("a")], @set.dependencies
 
-    assert_equal %w[git://github.com/example/repository.git master],
+    assert_equal %w[https://github.com/example/repository.git master],
                  @git_set.repositories["a"]
 
     expected = { "a" => Gem::Requirement.create("!") }
@@ -196,7 +196,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     assert_equal [dep("a")], @set.dependencies
 
-    assert_equal %w[git://github.com/example/example.git master],
+    assert_equal %w[https://github.com/example/example.git master],
                  @git_set.repositories["a"]
 
     expected = { "a" => Gem::Requirement.create("!") }
