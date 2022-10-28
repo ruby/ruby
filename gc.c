@@ -5217,7 +5217,9 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     if (gc_is_moveable_obj(objspace, src)) {
         GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
 
+        asan_unlock_freelist(free_page);
         VALUE dest = (VALUE)free_page->freelist;
+        asan_lock_freelist(free_page);
         asan_unpoison_object(dest, false);
         if (!dest) {
             /* if we can't get something from the freelist then the page must be
