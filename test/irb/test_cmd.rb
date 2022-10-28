@@ -415,6 +415,7 @@ module TestIRB
           "\n",
         ])
       IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:VERBOSE] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
       out, _ = capture_output do
         irb.eval_input
@@ -436,6 +437,7 @@ module TestIRB
           "\n",
         ])
       IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:VERBOSE] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
       out, _ = capture_output do
         IRB::TestHelper.without_rdoc do
