@@ -113,7 +113,17 @@ module TestIRB
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
-      assert_match expected, irb.context.main.irb_info.to_s
+      info = irb.context.main.irb_info
+      capture_output do
+        # Reline::Core#ambiguous_width may access STDOUT, not $stdout
+        stdout = STDOUT.dup
+        STDOUT.reopen(IO::NULL, "w")
+        info = info.to_s
+      ensure
+        STDOUT.reopen(stdout)
+        stdout.close
+      end
+      assert_match expected, info
     ensure
       ENV["LANG"] = lang_backup
       ENV["LC_ALL"] = lc_all_backup
