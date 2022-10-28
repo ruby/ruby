@@ -162,6 +162,11 @@ module RubyVM::YJIT
     end
   end
 
+  # Free and recompile all existing JIT code
+  def self.code_gc
+    Primitive.rb_yjit_code_gc
+  end
+
   def self.simulate_oom!
     Primitive.rb_yjit_simulate_oom_bang
   end

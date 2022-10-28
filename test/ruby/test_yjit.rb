@@ -830,10 +830,10 @@ class TestYJIT < Test::Unit::TestCase
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages
-      code_gc # first code GC
+      RubyVM::YJIT.code_gc # first code GC
       return :not_compiled1 unless compiles { nil } # should be JITable again
 
-      code_gc # second code GC
+      RubyVM::YJIT.code_gc # second code GC
       return :not_compiled2 unless compiles { nil } # should be JITable again
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
@@ -854,7 +854,7 @@ class TestYJIT < Test::Unit::TestCase
 
       return :not_paged1 unless add_pages(400) # go to a page without initial ocb code
       return :broken_resume1 if fiber.resume != 0 # JIT the fiber
-      code_gc # first code GC, which should not free the fiber page
+      RubyVM::YJIT.code_gc # first code GC, which should not free the fiber page
       return :broken_resume2 if fiber.resume != 0 # The code should be still callable
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
@@ -873,19 +873,19 @@ class TestYJIT < Test::Unit::TestCase
 
       return :not_paged1 unless add_pages(400) # go to a page without initial ocb code
       return :broken_resume1 if fiber.resume(true) != 0 # JIT the fiber
-      code_gc # first code GC, which should not free the fiber page
+      RubyVM::YJIT.code_gc # first code GC, which should not free the fiber page
 
       return :not_paged2 unless add_pages(300) # add some stuff to be freed
       # Not calling fiber.resume here to test the case that the YJIT payload loses some
       # information at the previous code GC. The payload should still be there, and
       # thus we could know the fiber ISEQ is still on stack on this second code GC.
-      code_gc # second code GC, which should still not free the fiber page
+      RubyVM::YJIT.code_gc # second code GC, which should still not free the fiber page
 
       return :not_paged3 unless add_pages(200) # attempt to overwrite the fiber page (it shouldn't)
       return :broken_resume2 if fiber.resume(true) != 0 # The fiber code should be still fine
 
       return :broken_resume3 if fiber.resume(false) != nil # terminate the fiber
-      code_gc # third code GC, freeing a page that used to be on stack
+      RubyVM::YJIT.code_gc # third code GC, freeing a page that used to be on stack
 
       return :not_paged4 unless add_pages(100) # check everything still works
 
@@ -932,11 +932,6 @@ class TestYJIT < Test::Unit::TestCase
         pages = RubyVM::YJIT.runtime_stats[:compiled_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
         pages.nil? || pages < RubyVM::YJIT.runtime_stats[:compiled_page_count]
-      end
-
-      def code_gc
-        RubyVM::YJIT.simulate_oom! # bump write_pos
-        eval('proc { nil }.call') # trigger code GC
       end
     RUBY
   end
