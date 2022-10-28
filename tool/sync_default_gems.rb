@@ -439,11 +439,14 @@ def message_filter(repo, sha)
       subject.gsub!(/\G.{,67}[^\s.,][.,]*\K\s+/, "\n")
     end
   end
+  url = "#{url}/commit/#{sha[0,10]}\n"
   if log
     conv[log]
     log.sub!(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-      "\n\n" "#{url}/commit/#{sha[0,10]}\n"
+      "\n\n#{url}"
     }
+  else
+    log = url
   end
   print subject, "\n\n", log
 end
