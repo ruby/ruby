@@ -44,7 +44,7 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
+    @CONF[:USE_COLORIZE] = (nc = ENV['NO_COLOR']).nil? || nc.empty?
     @CONF[:USE_AUTOCOMPLETE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
