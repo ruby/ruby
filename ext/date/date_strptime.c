@@ -18,12 +18,6 @@ static const char *month_names[] = {
     "October", "November", "December",
 };
 
-static const char *extz_pats[] = {
-    ":z",
-    "::z",
-    ":::z"
-};
-
 #define sizeof_array(o) (sizeof o / sizeof o[0])
 
 #define f_negate(x) rb_funcall(x, rb_intern("-@"), 0)
@@ -185,12 +179,11 @@ date__strptime_internal(const char *str, size_t slen,
 		{
 		    int i;
 
-		    for (i = 0; i < (int)sizeof_array(extz_pats); i++)
-			if (strncmp(extz_pats[i], &fmt[fi],
-					strlen(extz_pats[i])) == 0) {
-			    fi += i;
-			    goto again;
-			}
+		    for (i = 1; i < 3 && fi + i < flen && fmt[fi+i] == ':'; ++i);
+		    if (fmt[fi+i] == 'z') {
+			fi += i - 1;
+			goto again;
+		    }
 		    fail();
 		}
 
