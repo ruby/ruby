@@ -134,6 +134,13 @@ module Gem
   end
 
   ##
+  # The path to standard location of the user's state file.
+
+  def self.state_file
+    @state_file ||= File.join(Gem.state_home, "gem", "last_update_check").tap(&Gem::UNTAINT)
+  end
+
+  ##
   # The path to standard location of the user's cache directory.
 
   def self.cache_home
@@ -145,6 +152,13 @@ module Gem
 
   def self.data_home
     @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, ".local", "share"))
+  end
+
+  ##
+  # The path to standard location of the user's state directory.
+
+  def self.state_home
+    @data_home ||= (ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state"))
   end
 
   ##

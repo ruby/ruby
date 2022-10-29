@@ -41,24 +41,22 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
     return false if Gem.disable_system_update_message
     return false if ci?
 
-    # check makes sense only when we can store of last try
-    # otherwise we will not be able to prevent annoying update message
+    # check makes sense only when we can store timestamp of last try
+    # otherwise we will not be able to prevent "annoying" update message
     # on each command call
-    return unless Gem.configuration.config_file_writable?
+    return unless Gem.configuration.state_file_writable?
 
     # load time of last check, ensure the difference is enough to repeat the suggestion
     check_time = Time.now.to_i
-    last_update_check = Gem.configuration[:last_update_check] || 0
+    last_update_check = Gem.configuration.last_update_check
     return false if (check_time - last_update_check) < ONE_WEEK
 
     # compare current and latest version, this is the part where
     # latest rubygems spec is fetched from remote
-    (Gem.rubygems_version < Gem.latest_rubygems_version).tap do |eglible|
-      if eglible
-        # store the time of last successful check into config file
-        Gem.configuration[:last_update_check] = check_time
-        Gem.configuration.write
-      end
+    if (Gem.rubygems_version < Gem.latest_rubygems_version)
+      # store the time of last successful check into state file
+      Gem.configuration.last_update_check = check_time
+      return true
     end
   rescue # don't block install command on any problem
     false
