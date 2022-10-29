@@ -10,16 +10,12 @@
 static const char *day_names[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday",
     "Thursday", "Friday", "Saturday",
-    "Sun", "Mon", "Tue", "Wed",
-    "Thu", "Fri", "Sat"
 };
 
 static const char *month_names[] = {
     "January", "February", "March", "April",
     "May", "June", "July", "August", "September",
     "October", "November", "December",
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
 static const char *merid_names[] = {
@@ -209,10 +205,12 @@ date__strptime_internal(const char *str, size_t slen,
 		    int i;
 
 		    for (i = 0; i < (int)sizeof_array(day_names); i++) {
-			size_t l = strlen(day_names[i]);
-			if (strncasecmp(day_names[i], &str[si], l) == 0) {
+			const char *day_name = day_names[i];
+			size_t l = strlen(day_name);
+			if ((slen - si >= l && strncasecmp(day_name, &str[si], l) == 0) ||
+			    (slen - si >= (l = 3) && strncasecmp(day_name, &str[si], l) == 0)) {
 			    si += l;
-			    set_hash("wday", INT2FIX(i % 7));
+			    set_hash("wday", INT2FIX(i));
 			    goto matched;
 			}
 		    }
@@ -225,10 +223,12 @@ date__strptime_internal(const char *str, size_t slen,
 		    int i;
 
 		    for (i = 0; i < (int)sizeof_array(month_names); i++) {
-			size_t l = strlen(month_names[i]);
-			if (strncasecmp(month_names[i], &str[si], l) == 0) {
+			const char *month_name = month_names[i];
+			size_t l = strlen(month_name);
+			if ((slen - si >= l && strncasecmp(month_name, &str[si], l) == 0) ||
+			    (slen - si >= (l = 3) && strncasecmp(month_name, &str[si], l) == 0)) {
 			    si += l;
-			    set_hash("mon", INT2FIX((i % 12) + 1));
+			    set_hash("mon", INT2FIX(i + 1));
 			    goto matched;
 			}
 		    }
