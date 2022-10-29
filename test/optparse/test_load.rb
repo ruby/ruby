@@ -27,6 +27,8 @@ class TestOptionParserLoad < Test::Unit::TestCase
   def assert_load(result)
     assert new_parser.load
     assert_equal(result, @result)
+    assert new_parser.load(into: into = {})
+    assert_equal({test: result}, into)
   end
 
   def setup_options(env, dir, suffix = nil)
