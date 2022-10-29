@@ -1903,10 +1903,13 @@ XXX
   # directory ~/.options, then the basename with '.options' suffix
   # under XDG and Haiku standard places.
   #
-  def load(filename = nil)
+  # The optional +into+ keyword argument works exactly like that accepted in
+  # method #parse.
+  #
+  def load(filename = nil, into: nil)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      return true if load(File.expand_path(basename, '~/.options'), into: into) rescue nil
       basename << ".options"
       return [
         # XDG
@@ -1918,11 +1921,11 @@ XXX
         '~/config/settings',
       ].any? {|dir|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir)) rescue nil
+        load(File.expand_path(basename, dir), into: into) rescue nil
       }
     end
     begin
-      parse(*IO.readlines(filename).each {|s| s.chomp!})
+      parse(*IO.readlines(filename).each {|s| s.chomp!}, into: into)
       true
     rescue Errno::ENOENT, Errno::ENOTDIR
       false
