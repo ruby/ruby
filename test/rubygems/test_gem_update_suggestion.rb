@@ -27,7 +27,7 @@ class TestUpdateSuggestion < Gem::TestCase
     original_config, Gem.configuration[:prevent_update_suggestion] = Gem.configuration[:prevent_update_suggestion], nil
     original_env, ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"], nil
     original_disable, Gem.disable_system_update_message = Gem.disable_system_update_message, nil
-    Gem.configuration[:last_update_check] = nil
+    Gem.configuration.last_update_check = 0
 
     Gem.ui.stub :tty?, tty do
       Gem.stub :rubygems_version, rubygems_version do
@@ -61,10 +61,10 @@ class TestUpdateSuggestion < Gem::TestCase
     with_eglible_environment(cmd: @cmd) do
       Time.stub :now, 123456789 do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration[:last_update_check], 123456789
+        assert_equal Gem.configuration.last_update_check, 123456789
 
         # test last check is written to config file
-        assert File.read(Gem.configuration.config_file_name).match("last_update_check: 123456789")
+        assert File.read(Gem.configuration.state_file_name).match("123456789")
       end
     end
   end
@@ -122,7 +122,7 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update_unwrittable_config
     with_eglible_environment(ci: true, cmd: @cmd) do
-      Gem.configuration.stub :config_file_writable?, false do
+      Gem.configuration.stub :state_file_writable?, false do
         refute @cmd.eglible_for_update?
       end
     end
@@ -130,7 +130,7 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update_notification_delay
     with_eglible_environment(cmd: @cmd) do
-      Gem.configuration[:last_update_check] = Time.now.to_i
+      Gem.configuration.last_update_check = Time.now.to_i
       refute @cmd.eglible_for_update?
     end
   end
