@@ -60,7 +60,7 @@ num_pattern_p(const char *s)
 #define NUM_PATTERN_P() num_pattern_p(&fmt[fi + 1])
 
 static long
-read_digits(const char *s, VALUE *n, size_t width)
+read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 {
     size_t l;
 
@@ -68,7 +68,7 @@ read_digits(const char *s, VALUE *n, size_t width)
         return 0;
 
     l = 0;
-    while (ISDIGIT(s[l])) {
+    while (l < slen && ISDIGIT(s[l])) {
         if (++l == width) break;
     }
 
@@ -116,7 +116,7 @@ do { \
 #define READ_DIGITS(n,w) \
 do { \
     size_t l; \
-    l = read_digits(&str[si], &n, w); \
+    l = read_digits(&str[si], slen - si, &n, w); \
     if (l == 0) \
 	fail();	\
     si += l; \
@@ -156,6 +156,14 @@ date__strptime_internal(const char *str, size_t slen,
     si = fi = 0;
 
     while (fi < flen) {
+	if (isspace((unsigned char)fmt[fi])) {
+	    while (si < slen && isspace((unsigned char)str[si]))
+		si++;
+	    while (++fi < flen && isspace((unsigned char)fmt[fi]));
+	    continue;
+	}
+
+	if (si >= slen) fail();
 
 	switch (fmt[fi]) {
 	  case '%':
@@ -576,7 +584,7 @@ date__strptime_internal(const char *str, size_t slen,
 
 		    b = rb_backref_get();
 		    rb_match_busy(b);
-		    m = f_match(pat, rb_usascii_str_new2(&str[si]));
+		    m = f_match(pat, rb_usascii_str_new(&str[si], slen - si));
 
 		    if (!NIL_P(m)) {
 			VALUE s, l, o;
@@ -608,22 +616,13 @@ date__strptime_internal(const char *str, size_t slen,
 		if (str[si] != '%')
 		    fail();
 		si++;
-		if (fi < flen)
-		    if (str[si] != fmt[fi])
+		if (fi < flen) {
+		    if (si >= slen || str[si] != fmt[fi])
 			fail();
-		si++;
+		    si++;
+		}
 		goto matched;
 	    }
-	  case ' ':
-	  case '\t':
-	  case '\n':
-	  case '\v':
-	  case '\f':
-	  case '\r':
-	    while (isspace((unsigned char)str[si]))
-		si++;
-	    fi++;
-	    break;
 	  default:
 	  ordinal:
 	    if (str[si] != fmt[fi])
