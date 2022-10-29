@@ -5649,10 +5649,10 @@ rb_io_close(VALUE io)
  *  Example:
  *
  *    IO.popen('ruby', 'r+') do |pipe|
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close
- *      STDOUT.puts $?
- *      STDOUT.puts pipe.closed?
+ *      puts $?
+ *      puts pipe.closed?
  *    end
  *
  *  Output:
@@ -5713,11 +5713,11 @@ io_close(VALUE io)
  *  +false+ otherwise:
  *
  *    IO.popen('ruby', 'r+') do |pipe|
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_read
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_write
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *    end
  *
  *  Output:
@@ -5764,12 +5764,12 @@ rb_io_closed(VALUE io)
  *  Example:
  *
  *    IO.popen('ruby', 'r+') do |pipe|
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_write
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_read
- *      STDOUT.puts $?
- *      STDOUT.puts pipe.closed?
+ *      puts $?
+ *      puts pipe.closed?
  *    end
  *
  *  Output:
@@ -5838,12 +5838,12 @@ rb_io_close_read(VALUE io)
  *  sets global variable <tt>$?</tt> (child exit status).
  *
  *    IO.popen('ruby', 'r+') do |pipe|
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_read
- *      STDOUT.puts pipe.closed?
+ *      puts pipe.closed?
  *      pipe.close_write
- *      STDOUT.puts $?
- *      STDOUT.puts pipe.closed?
+ *      puts $?
+ *      puts pipe.closed?
  *    end
  *
  *  Output:
