@@ -18,11 +18,6 @@ static const char *month_names[] = {
     "October", "November", "December",
 };
 
-static const char *merid_names[] = {
-    "am", "pm",
-    "a.m.", "p.m."
-};
-
 static const char *extz_pats[] = {
     ":z",
     "::z",
@@ -402,18 +397,19 @@ date__strptime_internal(const char *str, size_t slen,
 
 	      case 'P':
 	      case 'p':
+		if (slen - si < 2) fail();
 		{
-		    int i;
-
-		    for (i = 0; i < 4; i++) {
-			size_t l = strlen(merid_names[i]);
-			if (strncasecmp(merid_names[i], &str[si], l) == 0) {
-			    si += l;
-			    set_hash("_merid", INT2FIX((i % 2) == 0 ? 0 : 12));
-			    goto matched;
-			}
+		    char c = str[si];
+		    const int hour = (c == 'P' || c == 'p') ? 12 : 0;
+		    if (!hour && !(c == 'A' || c == 'a')) fail();
+		    if ((c = str[si+1]) == '.') {
+			if (slen - si < 4 || str[si+3] != '.') fail();
+			c = str[si += 2];
 		    }
-		    fail();
+		    if (!(c == 'M' || c == 'm')) fail();
+		    si += 2;
+		    set_hash("_merid", INT2FIX(hour));
+		    goto matched;
 		}
 
 	      case 'Q':
