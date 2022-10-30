@@ -1,6 +1,7 @@
 # vcs
 require 'fileutils'
 require 'optparse'
+require 'pp'
 
 # This library is used by several other tools/ scripts to detect the current
 # VCS in use (e.g. SVN, Git) or to interact with that VCS.
@@ -9,6 +10,22 @@ ENV.delete('PWD')
 
 class VCS
   DEBUG_OUT = STDERR.dup
+
+  def self.dump(obj, pre = nil)
+    out = DEBUG_OUT
+    @pp ||= PP.new(out)
+    @pp.guard_inspect_key do
+      if pre
+        @pp.group(pre.size, pre) {
+          obj.pretty_print(@pp)
+        }
+      else
+        obj.pretty_print(@pp)
+      end
+      @pp.flush
+      out << "\n"
+    end
+  end
 end
 
 unless File.respond_to? :realpath
@@ -19,14 +36,14 @@ unless File.respond_to? :realpath
 end
 
 def IO.pread(*args)
-  VCS::DEBUG_OUT.puts(args.inspect) if $DEBUG
+  VCS.dump(args, "args: ") if $DEBUG
   popen(*args) {|f|f.read}
 end
 
 module DebugPOpen
   refine IO.singleton_class do
     def popen(*args)
-      VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+      VCS.dump(args, "args: ") if $DEBUG
       super
     end
   end
@@ -34,7 +51,7 @@ end
 using DebugPOpen
 module DebugSystem
   def system(*args)
-    VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+    VCS.dump(args, "args: ") if $DEBUG
     exception = false
     opts = Hash.try_convert(args[-1])
     if RUBY_VERSION >= "2.6"
@@ -394,7 +411,7 @@ class VCS
     def commit
       args = %W"#{COMMAND} commit"
       if dryrun?
-        VCS::DEBUG_OUT.puts(args.inspect)
+        VCS.dump(args, "commit: ")
         return true
       end
       system(*args)
@@ -411,7 +428,7 @@ class VCS
       if srcdir
         opts[:chdir] ||= srcdir
       end
-      VCS::DEBUG_OUT.puts cmds.inspect if debug?
+      VCS.dump(cmds, "cmds: ") if debug? and !$DEBUG
       cmds
     end
 
@@ -421,7 +438,7 @@ class VCS
 
     def cmd_read_at(srcdir, cmds)
       result = without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
-      VCS::DEBUG_OUT.puts result.inspect if debug?
+      VCS.dump(result, "result: ") if debug?
       result
     end
 
@@ -516,7 +533,7 @@ class VCS
     def initialize(*)
       super
       @srcdir = File.realpath(@srcdir)
-      VCS::DEBUG_OUT.puts @srcdir.inspect if debug?
+      VCS.dump(@srcdir, "srcdir: ") if debug?
       self
     end
 
@@ -721,13 +738,13 @@ class VCS
 
     def commit(opts = {})
       args = [COMMAND, "push"]
-      args << "-n" if dryrun
+      args << "-n" if dryrun?
       remote, branch = upstream
       args << remote
       branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
         branches.each do |b|
-          VCS::DEBUG_OUT.puts((args + [b]).inspect)
+          VCS.dump(args + [b], "commit: ")
         end
         return true
       end
@@ -757,7 +774,7 @@ class VCS
       commits.each_with_index do |l, i|
         r, a, c = l.split(' ')
         dcommit = [COMMAND, "svn", "dcommit"]
-        dcommit.insert(-2, "-n") if dryrun
+        dcommit.insert(-2, "-n") if dryrun?
         dcommit << "--add-author-from" unless a == c
         dcommit << r
         system(*dcommit) or return false
