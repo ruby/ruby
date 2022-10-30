@@ -260,7 +260,7 @@ Note: We're only listing outstanding class updates.
     * net-ftp 0.2.0
     * net-imap 0.3.1
     * net-pop 0.1.2
-    * net-smtp 0.3.2
+    * net-smtp 0.3.3
     * rbs 2.7.0
     * typeprof 0.21.3
     * debug 1.6.3
