@@ -2,6 +2,7 @@
 require 'fileutils'
 require 'optparse'
 require 'pp'
+require 'tempfile'
 
 # This library is used by several other tools/ scripts to detect the current
 # VCS in use (e.g. SVN, Git) or to interact with that VCS.
@@ -419,8 +420,21 @@ class VCS
   end
 
   class GIT < self
-    register(".git") { |path, dir| File.exist?(File.join(path, dir)) }
-    COMMAND = ENV["GIT"] || 'git'
+    register(".git") do |path, dir|
+      SAFE_DIRECTORIES ||=
+        begin
+          command = ENV["GIT"] || 'git'
+          IO.popen(%W"#{command} config --global --get-all safe.directory", &:read).split("\n")
+        rescue
+          command = nil
+          []
+        ensure
+          VCS.dump(SAFE_DIRECTORIES, "safe.directory: ") if $DEBUG
+          COMMAND = command
+        end
+
+      COMMAND and File.exist?(File.join(path, dir))
+    end
 
     def cmd_args(cmds, srcdir = nil)
       (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
@@ -459,7 +473,14 @@ class VCS
     def _get_revisions(path, srcdir = nil)
       ref = Branch === path ? path.to_str : 'HEAD'
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref]]).rstrip
+      last = nil
+      IO.pipe do |r, w|
+        last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref, err: w]]).rstrip
+        w.close
+        unless r.eof?
+          raise "#{COMMAND} rev-parse failed\n#{r.read.gsub(/^(?=\s*\S)/, '  ')}"
+        end
+      end
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^CommitDate:\s+(.*)/, 1]
@@ -521,18 +542,34 @@ class VCS
     end
 
     def without_gitconfig
-      envs = %w'HOME XDG_CONFIG_HOME GIT_SYSTEM_CONFIG GIT_CONFIG_SYSTEM'.each_with_object({}) do |v, h|
+      envs = (%w'HOME XDG_CONFIG_HOME' + ENV.keys.grep(/\AGIT_/)).each_with_object({}) do |v, h|
         h[v] = ENV.delete(v)
-        ENV[v] = NullDevice if v.start_with?('GIT_')
       end
+      ENV['GIT_CONFIG_SYSTEM'] = NullDevice
+      ENV['GIT_CONFIG_GLOBAL'] = global_config
       yield
     ensure
       ENV.update(envs)
     end
 
+    def global_config
+      return NullDevice if SAFE_DIRECTORIES.empty?
+      unless @gitconfig
+        @gitconfig = Tempfile.new(%w"vcs_ .gitconfig")
+        @gitconfig.close
+        ENV['GIT_CONFIG_GLOBAL'] = @gitconfig.path
+        SAFE_DIRECTORIES.each do |dir|
+          system(*%W[#{COMMAND} config --global --add safe.directory #{dir}])
+        end
+        VCS.dump(`#{COMMAND} config --global --get-all safe.directory`, "safe.directory: ") if debug?
+      end
+      @gitconfig.path
+    end
+
     def initialize(*)
       super
       @srcdir = File.realpath(@srcdir)
+      @gitconfig = nil
       VCS.dump(@srcdir, "srcdir: ") if debug?
       self
     end
