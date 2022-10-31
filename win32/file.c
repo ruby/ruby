@@ -591,50 +591,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     return result;
 }
 
-VALUE
-rb_readlink(VALUE path, rb_encoding *resultenc)
-{
-    DWORD len;
-    VALUE wtmp = 0, wpathbuf, str;
-    rb_w32_reparse_buffer_t rbuf, *rp = &rbuf;
-    WCHAR *wpath, *wbuf;
-    rb_encoding *enc;
-    UINT cp, path_cp;
-    int e;
-
-    FilePathValue(path);
-    enc = rb_enc_get(path);
-    cp = path_cp = code_page(enc);
-    if (cp == INVALID_CODE_PAGE) {
-        path = fix_string_encoding(path, enc);
-        cp = CP_UTF8;
-    }
-    len = MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), NULL, 0);
-    wpath = ALLOCV_N(WCHAR, wpathbuf, len+1);
-    MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), wpath, len);
-    wpath[len] = L'\0';
-    e = rb_w32_read_reparse_point(wpath, rp, sizeof(rbuf), &wbuf, &len);
-    if (e == ERROR_MORE_DATA) {
-        size_t size = rb_w32_reparse_buffer_size(len + 1);
-        rp = ALLOCV(wtmp, size);
-        e = rb_w32_read_reparse_point(wpath, rp, size, &wbuf, &len);
-    }
-    ALLOCV_END(wpathbuf);
-    if (e) {
-        ALLOCV_END(wtmp);
-        if (e != -1)
-            rb_syserr_fail_path(rb_w32_map_errno(e), path);
-        else /* not symlink; maybe volume mount point */
-            rb_syserr_fail_path(EINVAL, path);
-    }
-    enc = resultenc;
-    path_cp = code_page(enc);
-    len = lstrlenW(wbuf);
-    str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, path_cp, enc);
-    ALLOCV_END(wtmp);
-    return str;
-}
-
 int
 rb_file_load_ok(const char *path)
 {
