@@ -74,7 +74,22 @@ module Reline::Terminfo
     #extern 'char *tparm(const char *str, ...)'
     @tiparm = Fiddle::Function.new(curses_dl['tparm'], [Fiddle::TYPE_VOIDP, Fiddle::TYPE_VARIADIC], Fiddle::TYPE_VOIDP)
   end
-  # TODO: add int tigetflag(char *capname) and int tigetnum(char *capname)
+  begin
+    #extern 'int tigetflag(char *str)'
+    @tigetflag = Fiddle::Function.new(curses_dl['tigetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  rescue Fiddle::DLError
+    # OpenBSD lacks tigetflag
+    #extern 'int tgetflag(char *str)'
+    @tigetflag = Fiddle::Function.new(curses_dl['tgetflag'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  end
+  begin
+    #extern 'int tigetnum(char *str)'
+    @tigetnum = Fiddle::Function.new(curses_dl['tigetnum'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  rescue Fiddle::DLError
+    # OpenBSD lacks tigetnum
+    #extern 'int tgetnum(char *str)'
+    @tigetnum = Fiddle::Function.new(curses_dl['tgetnum'], [Fiddle::TYPE_VOIDP], Fiddle::TYPE_INT)
+  end
 
   def self.setupterm(term, fildes)
     errret_int = String.new("\x00" * 8, encoding: 'ASCII-8BIT')
@@ -120,6 +135,28 @@ module Reline::Terminfo
       new_args << Fiddle::TYPE_INT << a
     end
     @tiparm.(str, *new_args).to_s
+  end
+
+  def self.tigetflag(capname)
+    flag = @tigetflag.(capname).to_i
+    case flag
+    when -1
+      raise TerminfoError, "not boolean capability: #{capname}"
+    when 0
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    flag
+  end
+
+  def self.tigetnum(capname)
+    num = @tigetnum.(capname).to_i
+    case num
+    when -2
+      raise TerminfoError, "not numeric capability: #{capname}"
+    when -1
+      raise TerminfoError, "can't find capability: #{capname}"
+    end
+    num
   end
 
   def self.enabled?
