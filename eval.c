@@ -831,7 +831,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
-    VALUE klass = me->owner;
+    VALUE klass = CALLABLE_METHOD_ENTRY_EXT(me)->owner;
     VALUE self = cfp->self;
     ID mid = me->called_id;
 

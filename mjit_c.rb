@@ -325,7 +325,6 @@ module RubyVM::MJIT
       defined_class: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), defined_class)")],
       def: [CType::Pointer.new { self.rb_method_definition_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), def)")],
       called_id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), called_id)")],
-      owner: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), owner)")],
     )
   end
 

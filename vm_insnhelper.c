@@ -32,7 +32,7 @@
 #endif
 
 extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
-extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
+extern void rb_method_definition_set(rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
@@ -3256,8 +3256,8 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
     }
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, vm_ci_mid(ci), me->owner, Qundef);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, CALLABLE_METHOD_ENTRY_EXT(me)->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, vm_ci_mid(ci), CALLABLE_METHOD_ENTRY_EXT(me)->owner, Qundef);
 
     vm_push_frame(ec, NULL, frame_type, recv,
                   block_handler, (VALUE)me,
@@ -3272,8 +3272,8 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 
     rb_vm_pop_frame(ec);
 
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, vm_ci_mid(ci), me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, vm_ci_mid(ci), CALLABLE_METHOD_ENTRY_EXT(me)->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, CALLABLE_METHOD_ENTRY_EXT(me)->owner, me->def->original_id);
 
     return val;
 }
@@ -3410,8 +3410,8 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
     const rb_callable_method_entry_t *cme;
 
     if (orig_me->defined_class == 0) {
-        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
+        VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, CALLABLE_METHOD_ENTRY_EXT(orig_me)->owner);
+        VM_ASSERT(RB_TYPE_P(CALLABLE_METHOD_ENTRY_EXT(orig_me)->owner, T_MODULE));
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
         if (me->def->alias_count + me->def->complemented_count == 0) {
@@ -3704,7 +3704,7 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
     for (; cref; cref = CREF_NEXT(cref)) {
-        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
+        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), CALLABLE_METHOD_ENTRY_EXT(vm_cc_cme(cc))->owner);
         if (NIL_P(refinement)) continue;
 
         const rb_callable_method_entry_t *const ref_me =
@@ -3892,10 +3892,10 @@ vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb
 #define VM_CALL_METHOD_ATTR(var, func, nohook) \
     if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
-                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef); \
+                        vm_ci_mid(ci), CALLABLE_METHOD_ENTRY_EXT(vm_cc_cme(cc))->owner, Qundef); \
         var = func; \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id, \
-                        vm_ci_mid(ci), vm_cc_cme(cc)->owner, (var)); \
+                        vm_ci_mid(ci), CALLABLE_METHOD_ENTRY_EXT(vm_cc_cme(cc))->owner, (var)); \
     } \
     else { \
         nohook; \

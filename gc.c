@@ -2995,6 +2995,14 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3, TRUE, size);
 }
 
+VALUE
+rb_imemo_new_with_size(enum imemo_type type, size_t size)
+{
+    VM_ASSERT(size >= sizeof(RVALUE));
+    VALUE flags = T_IMEMO | (type << FL_USHIFT);
+    return newobj_of(Qfalse, flags, Qfalse, Qfalse, Qfalse, TRUE, size);
+}
+
 static VALUE
 rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
@@ -6639,7 +6647,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
     const rb_method_definition_t *def = me->def;
 
-    gc_mark(objspace, me->owner);
+    gc_mark(objspace, METHOD_ENTRY_EXT(me)->owner);
     gc_mark(objspace, me->defined_class);
 
     if (def) {
@@ -10127,7 +10135,7 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
 
-    UPDATE_IF_MOVED(objspace, me->owner);
+    UPDATE_IF_MOVED(objspace, METHOD_ENTRY_EXT(me)->owner);
     UPDATE_IF_MOVED(objspace, me->defined_class);
 
     if (def) {
@@ -14003,7 +14011,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                              METHOD_ENTRY_INVALIDATED(me) ? ",inv" : "",
                              me->def ? rb_method_type_name(me->def->type) : "NULL",
                              me->def ? me->def->alias_count : -1,
-                             (void *)me->owner, // obj_info(me->owner),
+                             (void *)METHOD_ENTRY_EXT(me)->owner, // obj_info(me->extra->owner),
                              (void *)me->defined_class); //obj_info(me->defined_class)));
 
                     if (me->def) {

@@ -1715,7 +1715,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
         }
         else {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(METHOD_ENTRY_EXT(me)->owner));
             id = me->def->original_id;
             me = rb_method_entry_without_refinements(klass, id, &iclass);
         }
@@ -1727,7 +1727,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
-    RB_OBJ_WRITE(method, &data->owner, original_me->owner);
+    RB_OBJ_WRITE(method, &data->owner, METHOD_ENTRY_EXT(original_me)->owner);
     RB_OBJ_WRITE(method, &data->me, me);
 
     return method;
@@ -1765,7 +1765,7 @@ static inline VALUE
 method_entry_defined_class(const rb_method_entry_t *me)
 {
     VALUE defined_class = me->defined_class;
-    return defined_class ? defined_class : me->owner;
+    return defined_class ? defined_class : METHOD_ENTRY_EXT(me)->owner;
 }
 
 /**********************************************************************
@@ -2221,16 +2221,16 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
 
     if (is_method) {
         struct METHOD *method = (struct METHOD *)DATA_PTR(body);
-        if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
-            !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
-            if (FL_TEST(method->me->owner, FL_SINGLETON)) {
+        if (METHOD_ENTRY_EXT(method->me)->owner != mod && !RB_TYPE_P(METHOD_ENTRY_EXT(method->me)->owner, T_MODULE) &&
+            !RTEST(rb_class_inherited_p(mod, METHOD_ENTRY_EXT(method->me)->owner))) {
+            if (FL_TEST(METHOD_ENTRY_EXT(method->me)->owner, FL_SINGLETON)) {
                 rb_raise(rb_eTypeError,
                          "can't bind singleton method to a different class");
             }
             else {
                 rb_raise(rb_eTypeError,
                          "bind argument must be a subclass of % "PRIsVALUE,
-                         method->me->owner);
+                         METHOD_ENTRY_EXT(method->me)->owner);
             }
         }
         rb_method_entry_set(mod, id, method->me, scope_visi->method_visi);
@@ -2590,13 +2590,13 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         me = data->me;
     }
 
-    if (RB_TYPE_P(me->owner, T_MODULE)) {
+    if (RB_TYPE_P(METHOD_ENTRY_EXT(me)->owner, T_MODULE)) {
         if (!clone) {
             // if we didn't previously clone the method entry, then we need to clone it now
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        VALUE ic = rb_class_search_ancestor(klass, me->owner);
+        VALUE ic = rb_class_search_ancestor(klass, METHOD_ENTRY_EXT(me)->owner);
         if (ic) {
             klass = ic;
             iclass = ic;
@@ -2852,7 +2852,7 @@ original_method_entry(VALUE mod, ID id)
     while ((me = rb_method_entry(mod, id)) != 0) {
         const rb_method_definition_t *def = me->def;
         if (def->type != VM_METHOD_TYPE_ZSUPER) break;
-        mod = RCLASS_SUPER(me->owner);
+        mod = RCLASS_SUPER(METHOD_ENTRY_EXT(me)->owner);
         id = def->original_id;
     }
     return me;
@@ -3129,7 +3129,7 @@ method_inspect(VALUE method)
     }
 
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
-        defined_class = data->me->def->body.alias.original_me->owner;
+        defined_class = METHOD_ENTRY_EXT(data->me->def->body.alias.original_me)->owner;
     }
     else {
         defined_class = method_entry_defined_class(data->me);
@@ -3363,7 +3363,7 @@ method_super_method(VALUE method)
     if (!iclass) return Qnil;
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
-            data->me->def->body.alias.original_me->owner));
+            METHOD_ENTRY_EXT(data->me->def->body.alias.original_me)->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {
@@ -3373,7 +3373,7 @@ method_super_method(VALUE method)
     if (!super_class) return Qnil;
     me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
     if (!me) return Qnil;
-    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
+    return mnew_internal(me, METHOD_ENTRY_EXT(me)->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*

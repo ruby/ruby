@@ -756,8 +756,8 @@ rb_vm_pop_cfunc_frame(void)
     rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, Qnil);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, CALLABLE_METHOD_ENTRY_EXT(me)->owner, Qnil);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, CALLABLE_METHOD_ENTRY_EXT(me)->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
 
@@ -1995,7 +1995,7 @@ check_redefined_method(ID mid, VALUE value, void *data)
     const rb_method_entry_t *me = (rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
-    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+    if (newme != me) rb_vm_check_redefinition_opt_method(me, METHOD_ENTRY_EXT(me)->owner);
 
     return ID_TABLE_CONTINUE;
 }
@@ -2166,7 +2166,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                 EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self,
                                               rb_vm_frame_method_entry(ec->cfp)->def->original_id,
                                               rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                              rb_vm_frame_method_entry(ec->cfp)->owner,
+                                              CALLABLE_METHOD_ENTRY_EXT(rb_vm_frame_method_entry(ec->cfp))->owner,
                                               bmethod_return_value);
 
                 VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
@@ -2176,7 +2176,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                     rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
                                             rb_vm_frame_method_entry(ec->cfp)->def->original_id,
                                             rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                            rb_vm_frame_method_entry(ec->cfp)->owner,
+                                            CALLABLE_METHOD_ENTRY_EXT(rb_vm_frame_method_entry(ec->cfp))->owner,
                                             bmethod_return_value, TRUE);
                 }
                 THROW_DATA_CONSUMED_SET(err);
@@ -2421,9 +2421,9 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                 EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
                                               rb_vm_frame_method_entry(ec->cfp)->def->original_id,
                                               rb_vm_frame_method_entry(ec->cfp)->called_id,
-                                              rb_vm_frame_method_entry(ec->cfp)->owner, Qnil);
+                                              CALLABLE_METHOD_ENTRY_EXT(rb_vm_frame_method_entry(ec->cfp))->owner, Qnil);
                 RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec,
-                                                rb_vm_frame_method_entry(ec->cfp)->owner,
+                                                CALLABLE_METHOD_ENTRY_EXT(rb_vm_frame_method_entry(ec->cfp))->owner,
                                                 rb_vm_frame_method_entry(ec->cfp)->def->original_id);
             }
             rb_vm_pop_frame(ec);
@@ -2646,7 +2646,7 @@ rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *cal
     if (me) {
         if (idp) *idp = me->def->original_id;
         if (called_idp) *called_idp = me->called_id;
-        if (klassp) *klassp = me->owner;
+        if (klassp) *klassp = CALLABLE_METHOD_ENTRY_EXT(me)->owner;
         return TRUE;
     }
     else {

@@ -1667,10 +1667,10 @@ method_entry_i(ID key, VALUE value, void *data)
     rb_method_visibility_t type;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-        VALUE owner = me->owner;
+        VALUE owner = METHOD_ENTRY_EXT(me)->owner;
         me = rb_resolve_refined_method(Qnil, me);
         if (!me) return ID_TABLE_CONTINUE;
-        if (!arg->recur && me->owner != owner) return ID_TABLE_CONTINUE;
+        if (!arg->recur && METHOD_ENTRY_EXT(me)->owner != owner) return ID_TABLE_CONTINUE;
     }
     if (!st_is_member(arg->list, key)) {
         if (UNDEFINED_METHOD_ENTRY_P(me)) {

@@ -136,8 +136,8 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
         }
     }
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, CALLABLE_METHOD_ENTRY_EXT(me)->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, CALLABLE_METHOD_ENTRY_EXT(me)->owner, Qnil);
     {
         rb_control_frame_t *reg_cfp = ec->cfp;
 
@@ -152,8 +152,8 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
         CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
         rb_vm_pop_frame(ec);
     }
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, CALLABLE_METHOD_ENTRY_EXT(me)->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, CALLABLE_METHOD_ENTRY_EXT(me)->owner, me->def->original_id);
 
     return val;
 }
@@ -841,7 +841,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
         else if (visi == METHOD_VISI_PROTECTED &&
                  scope == CALL_PUBLIC) {
 
-            VALUE defined_class = me->owner;
+            VALUE defined_class = CALLABLE_METHOD_ENTRY_EXT(me)->owner;
             if (RB_TYPE_P(defined_class, T_ICLASS)) {
                 defined_class = RBASIC(defined_class)->klass;
             }

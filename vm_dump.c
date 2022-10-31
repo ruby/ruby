@@ -173,8 +173,8 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             if (IMEMO_TYPE_P(me, imemo_ment)) {
                 fprintf(stderr, "  me:\n");
                 fprintf(stderr, "    called_id: %s, type: %s\n", rb_id2name(me->called_id), rb_method_type_name(me->def->type));
-                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, me->owner));
-                if (me->owner != me->defined_class) {
+                fprintf(stderr, "    owner class: %s\n", rb_raw_obj_info(buff, 0x100, CALLABLE_METHOD_ENTRY_EXT(me)->owner));
+                if (CALLABLE_METHOD_ENTRY_EXT(me)->owner != me->defined_class) {
                     fprintf(stderr, "    defined_class: %s\n", rb_raw_obj_info(buff, 0x100, me->defined_class));
                 }
             }

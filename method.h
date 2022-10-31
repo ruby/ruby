@@ -51,12 +51,22 @@ typedef struct rb_cref_struct {
 
 /* method data type */
 
+typedef struct rb_method_entry_ext_struct {
+    VALUE owner;
+} rb_method_entry_ext_t;
+
+typedef struct rb_callable_method_entry_ext_struct {
+    const VALUE owner;
+} rb_callable_method_entry_ext_t;
+
 typedef struct rb_method_entry_struct {
     VALUE flags;
     VALUE defined_class;
     struct rb_method_definition_struct * const def;
     ID called_id;
-    VALUE owner;
+#if !USE_RVARGC
+    struct rb_method_entry_extra_struct * ext;
+#endif
 } rb_method_entry_t;
 
 typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
@@ -64,8 +74,19 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
     const VALUE defined_class;
     struct rb_method_definition_struct * const def;
     ID called_id;
-    const VALUE owner;
+#if !USE_RVARGC
+    const struct rb_callable_method_entry_extra_struct * ext;
+#endif
 } rb_callable_method_entry_t;
+
+
+#if USE_RVARGC
+#  define METHOD_ENTRY_EXT(c) ((rb_method_entry_ext_t *)((char *)(c) + sizeof(rb_method_entry_t)))
+#  define CALLABLE_METHOD_ENTRY_EXT(c) ((rb_callable_method_entry_ext_t *)((char *)(c) + sizeof(rb_callable_method_entry_t)))
+#else
+#  define METHOD_ENTRY_EXT(c) (c->ext)
+#  define CALLABLE_METHOD_ENTRY_EXT(c) (c->ext)
+#endif
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))

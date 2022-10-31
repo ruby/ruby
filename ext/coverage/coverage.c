@@ -253,7 +253,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
             VALUE klass;
             const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
             if (me != me2) continue;
-            klass = me->owner;
+            klass = METHOD_ENTRY_EXT(me)->owner;
             if (RB_TYPE_P(klass, T_ICLASS)) {
                 rb_bug("T_ICLASS");
             }
