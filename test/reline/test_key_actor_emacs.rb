@@ -2329,4 +2329,26 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor(1)
     assert_cursor_max(1)
   end
+
+  def test_unix_line_discard
+    input_keys("\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    input_keys("\C-b\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(1)
+    assert_line('c')
+    input_keys("\C-f\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+  end
 end
