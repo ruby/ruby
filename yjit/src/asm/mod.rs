@@ -209,17 +209,25 @@ impl CodeBlock {
         self.page_size
     }
 
-    /// Return the number of code pages that have been allocated by the VirtualMemory.
-    pub fn num_pages(&self) -> usize {
+    /// Return the number of code pages that have been mapped by the VirtualMemory.
+    pub fn num_mapped_pages(&self) -> usize {
         let mapped_region_size = self.mem_block.borrow().mapped_region_size();
         // CodeBlock's page size != VirtualMem's page size on Linux,
         // so mapped_region_size % self.page_size may not be 0
         ((mapped_region_size - 1) / self.page_size) + 1
     }
 
+    /// Return the number of code pages that have been reserved by the VirtualMemory.
+    pub fn num_virtual_pages(&self) -> usize {
+        let virtual_region_size = self.mem_block.borrow().virtual_region_size();
+        // CodeBlock's page size != VirtualMem's page size on Linux,
+        // so mapped_region_size % self.page_size may not be 0
+        ((virtual_region_size - 1) / self.page_size) + 1
+    }
+
     /// Return the number of code pages that have been freed and not used yet.
     pub fn num_freed_pages(&self) -> usize {
-        (0..self.num_pages()).filter(|&page_idx| self.has_freed_page(page_idx)).count()
+        (0..self.num_mapped_pages()).filter(|&page_idx| self.has_freed_page(page_idx)).count()
     }
 
     pub fn has_freed_page(&self, page_idx: usize) -> bool {
@@ -303,7 +311,7 @@ impl CodeBlock {
     pub fn code_size(&self) -> usize {
         let mut size = 0;
         let current_page_idx = self.write_pos / self.page_size;
-        for page_idx in 0..self.num_pages() {
+        for page_idx in 0..self.num_mapped_pages() {
             if page_idx == current_page_idx {
                 // Count only actually used bytes for the current page.
                 size += (self.write_pos % self.page_size).saturating_sub(self.page_start());
@@ -546,7 +554,7 @@ impl CodeBlock {
         }
 
         // Check which pages are still in use
-        let mut pages_in_use = vec![false; self.num_pages()];
+        let mut pages_in_use = vec![false; self.num_mapped_pages()];
         // For each ISEQ, we currently assume that only code pages used by inline code
         // are used by outlined code, so we mark only code pages used by inlined code.
         for_each_on_stack_iseq_payload(|iseq_payload| {
@@ -560,9 +568,13 @@ impl CodeBlock {
         }
 
         // Let VirtuamMem free the pages
-        let freed_pages: Vec<usize> = pages_in_use.iter().enumerate()
+        let mut freed_pages: Vec<usize> = pages_in_use.iter().enumerate()
             .filter(|&(_, &in_use)| !in_use).map(|(page, _)| page).collect();
         self.free_pages(&freed_pages);
+
+        // Append virtual pages in case RubyVM::YJIT.code_gc is manually triggered.
+        let mut virtual_pages: Vec<usize> = (self.num_mapped_pages()..self.num_virtual_pages()).collect();
+        freed_pages.append(&mut virtual_pages);
 
         // Invalidate everything to have more compact code after code GC.
         // This currently patches every ISEQ, which works, but in the future,

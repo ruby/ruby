@@ -162,6 +162,11 @@ module RubyVM::YJIT
     end
   end
 
+  # Free and recompile all existing JIT code
+  def self.code_gc
+    Primitive.rb_yjit_code_gc
+  end
+
   def self.simulate_oom!
     Primitive.rb_yjit_simulate_oom_bang
   end
@@ -214,14 +219,14 @@ module RubyVM::YJIT
       $stderr.puts "compilation_failure:   " + ("%10d" % compilation_failure) if compilation_failure != 0
       $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
-      $stderr.puts "compiled_page_count:   " + ("%10d" % stats[:compiled_page_count])
       $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])
-      $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
       $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
       $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
       $stderr.puts "freed_code_size:       " + ("%10d" % stats[:freed_code_size])
+      $stderr.puts "live_page_count:       " + ("%10d" % stats[:live_page_count])
+      $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
 
