@@ -381,8 +381,8 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         // GCed code size
         hash_aset_usize!(hash, "freed_code_size", freed_page_count * cb.page_size());
 
-        // Compiled pages
-        hash_aset_usize!(hash, "compiled_page_count", cb.num_mapped_pages() - freed_page_count);
+        // Live pages
+        hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
     }
 
     // If we're not generating stats, the hash is done
