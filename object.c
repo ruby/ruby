@@ -298,20 +298,22 @@ init_copy(VALUE dest, VALUE obj)
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
 
-    rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
+    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+        rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
 
-    // If the object is frozen, the "dup"'d object will *not* be frozen,
-    // so we need to copy the frozen shape's parent to the new object.
-    if (rb_shape_frozen_shape_p(shape_to_set)) {
-        shape_to_set = rb_shape_get_shape_by_id(shape_to_set->parent_id);
+        // If the object is frozen, the "dup"'d object will *not* be frozen,
+        // so we need to copy the frozen shape's parent to the new object.
+        if (rb_shape_frozen_shape_p(shape_to_set)) {
+            shape_to_set = rb_shape_get_shape_by_id(shape_to_set->parent_id);
+        }
+
+        // shape ids are different
+        rb_shape_set_shape(dest, shape_to_set);
     }
 
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
     }
-
-    // shape ids are different
-    rb_shape_set_shape(dest, shape_to_set);
 }
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
