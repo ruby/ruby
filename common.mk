@@ -1228,13 +1228,8 @@ $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
 $(srcdir)/revision.h: $(REVISION_H)
 
-revision.$(HAVE_BASERUBY:no=tmp)::
-	$(Q) $(NULLCMD) > $@
-revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(tooldir)/file2lastrev.rb $(REVISION_FORCE)
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
-
-$(REVISION_H): revision.tmp
-	-$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
+$(REVISION_H):
+	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y $(srcdir)/defs/id.def $(srcdir)/ext/ripper/depend
 	$(ECHO) generating $@
