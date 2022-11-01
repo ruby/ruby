@@ -1,6 +1,20 @@
 class IO
   # other IO methods are defined in io.c
 
+  READABLE = Primitive.cconst! 'INT2NUM(RUBY_IO_READABLE)'
+  WRITABLE = Primitive.cconst! 'INT2NUM(RUBY_IO_WRITABLE)'
+  PRIORITY = Primitive.cconst! 'INT2NUM(RUBY_IO_PRIORITY)'
+
+  # Set I/O position from the beginning
+  SEEK_SET = Primitive.cconst! 'INT2FIX(SEEK_SET)'
+
+  # Set I/O position from the current position
+  SEEK_CUR = Primitive.cconst! 'INT2FIX(SEEK_CUR)'
+
+  # Set I/O position from the end
+  SEEK_END = Primitive.cconst! 'INT2FIX(SEEK_END)'
+
+
   # call-seq:
   #    ios.read_nonblock(maxlen [, options])              -> string
   #    ios.read_nonblock(maxlen, outbuf [, options])      -> outbuf

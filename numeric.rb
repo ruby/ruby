@@ -326,6 +326,98 @@ end if false
 
 class Float
   #
+  #	The base of the floating point, or number of unique digits used to
+  #	represent the number.
+  #
+  #  Usually defaults to 2 on most systems, which would represent a base-10 decimal.
+  #
+  RADIX = Primitive.cconst! 'INT2FIX(FLT_RADIX)'
+
+  #
+  # The number of base digits for the +double+ data type.
+  #
+  # Usually defaults to 53.
+  #
+  MANT_DIG = Primitive.cconst! 'INT2FIX(DBL_MANT_DIG)'
+
+  #
+  #	The minimum number of significant decimal digits in a double-precision
+  #	floating point.
+  #
+  #	Usually defaults to 15.
+  #
+  DIG = Primitive.cconst! 'INT2FIX(DBL_DIG)'
+
+  #
+  #	The smallest possible exponent value in a double-precision floating
+  #	point.
+  #
+  #	Usually defaults to -1021.
+  #
+  MIN_EXP = Primitive.cconst! 'INT2FIX(DBL_MIN_EXP)'
+
+  #
+  #	The largest possible exponent value in a double-precision floating
+  #	point.
+  #
+  #	Usually defaults to 1024.
+  #
+  MAX_EXP = Primitive.cconst! 'INT2FIX(DBL_MAX_EXP)'
+
+  #
+  #	The smallest negative exponent in a double-precision floating point
+  #	where 10 raised to this power minus 1.
+  #
+  #	Usually defaults to -307.
+  #
+  MIN_10_EXP = Primitive.cconst! 'INT2FIX(DBL_MIN_10_EXP)'
+
+  #
+  #	The largest positive exponent in a double-precision floating point where
+  #	10 raised to this power minus 1.
+  #
+  #	Usually defaults to 308.
+  #
+  MAX_10_EXP = Primitive.cconst! 'INT2FIX(DBL_MAX_10_EXP)'
+
+  #
+  #	The smallest positive normalized number in a double-precision floating point.
+  #
+  #	Usually defaults to 2.2250738585072014e-308.
+  #
+  #	If the platform supports denormalized numbers,
+  #	there are numbers between zero and Float::MIN.
+  #	0.0.next_float returns the smallest positive floating point number
+  #	including denormalized numbers.
+  #
+  MIN = Primitive.cconst! 'DBL2NUM(DBL_MIN)'
+
+  #
+  #	The largest possible integer in a double-precision floating point number.
+  #
+  #	Usually defaults to 1.7976931348623157e+308.
+  #
+  MAX = Primitive.cconst! 'DBL2NUM(DBL_MAX)';
+
+  #
+  #	The difference between 1 and the smallest double-precision floating
+  #	point number greater than 1.
+  #
+  #	Usually defaults to 2.2204460492503131e-16.
+  #
+  EPSILON = Primitive.cconst! 'DBL2NUM(DBL_EPSILON)'
+
+  #
+  #	An expression representing positive infinity.
+  #
+  INFINITY = Primitive.cconst! 'DBL2NUM(HUGE_VAL)'
+
+  #
+  #	An expression representing a value which is "not a number".
+  #
+  NAN = Primitive.cconst! 'DBL2NUM(nan(""))'
+
+  #
   # call-seq:
   #    float.to_f  ->  self
   #

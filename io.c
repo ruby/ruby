@@ -14929,10 +14929,6 @@ Init_IO(void)
 
     rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
-    rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));
-    rb_define_const(rb_cIO, "WRITABLE", INT2NUM(RUBY_IO_WRITABLE));
-    rb_define_const(rb_cIO, "PRIORITY", INT2NUM(RUBY_IO_PRIORITY));
-
     /* exception to wait for reading. see IO.select. */
     rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");
     /* exception to wait for writing. see IO.select. */
@@ -15055,12 +15051,6 @@ Init_IO(void)
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
     rb_define_method(rb_cIO, "seek", rb_io_seek_m, -1);
-    /* Set I/O position from the beginning */
-    rb_define_const(rb_cIO, "SEEK_SET", INT2FIX(SEEK_SET));
-    /* Set I/O position from the current position */
-    rb_define_const(rb_cIO, "SEEK_CUR", INT2FIX(SEEK_CUR));
-    /* Set I/O position from the end */
-    rb_define_const(rb_cIO, "SEEK_END", INT2FIX(SEEK_END));
 #ifdef SEEK_DATA
     /* Set I/O position to the next location containing data */
     rb_define_const(rb_cIO, "SEEK_DATA", INT2FIX(SEEK_DATA));
