@@ -298,6 +298,10 @@ init_copy(VALUE dest, VALUE obj)
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
 
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        rb_obj_copy_ivar(dest, obj);
+    }
+
     if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
         rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
 
@@ -309,10 +313,6 @@ init_copy(VALUE dest, VALUE obj)
 
         // shape ids are different
         rb_shape_set_shape(dest, shape_to_set);
-    }
-
-    if (RB_TYPE_P(obj, T_OBJECT)) {
-        rb_obj_copy_ivar(dest, obj);
     }
 }
 

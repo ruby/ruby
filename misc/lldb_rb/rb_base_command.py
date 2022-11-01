@@ -19,8 +19,8 @@ class RbBaseCommand:
 
         imemo_types = target.FindFirstType("enum imemo_type")
 
-        for member in imemo_types.GetEnumMembers():
-            g[member.GetName()] = member.GetValueAsUnsigned()
+        #for member in imemo_types.GetEnumMembers():
+        #    g[member.GetName()] = member.GetValueAsUnsigned()
 
         for enum in target.FindFirstGlobalVariable("ruby_dummy_gdb_enums"):
             enum = enum.GetType()
