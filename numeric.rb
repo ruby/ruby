@@ -249,8 +249,8 @@ class Integer
   #
   # With no block given, returns an Enumerator.
   def times
-    unless Primitive.block_given_p
-      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, int_dotimes_size)'
+    unless block_given?
+      return to_enum(:times) { self < 0 ? 0 : self }
     end
     i = 0
     while i < self

@@ -5657,24 +5657,6 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
-static VALUE
-block_given_p(rb_execution_context_t *ec, VALUE self)
-{
-    return rb_block_given_p() ? Qtrue : Qfalse;
-}
-
-static VALUE
-int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
-{
-    if (FIXNUM_P(num)) {
-        if (NUM2LONG(num) <= 0) return INT2FIX(0);
-    }
-    else {
-        if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
-    }
-    return num;
-}
-
 /*
  *  call-seq:
  *    round(ndigits= 0, half: :up) -> integer
