@@ -1581,17 +1581,17 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_IVAR:
         iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), callback, itr_data);
         VALUE * iv_list;
-        switch(BUILTIN_TYPE(itr_data->obj)) {
-            case T_OBJECT:
-              iv_list = ROBJECT_IVPTR(itr_data->obj);
-              break;
-            case T_CLASS:
-            case T_MODULE:
-              iv_list = RCLASS_IVPTR(itr_data->obj);
-              break;
-            default:
-              iv_list = itr_data->ivtbl->ivptr;
-              break;
+        switch (BUILTIN_TYPE(itr_data->obj)) {
+          case T_OBJECT:
+            iv_list = ROBJECT_IVPTR(itr_data->obj);
+            break;
+          case T_CLASS:
+          case T_MODULE:
+            iv_list = RCLASS_IVPTR(itr_data->obj);
+            break;
+          default:
+            iv_list = itr_data->ivtbl->ivptr;
+            break;
         }
         VALUE val = iv_list[shape->next_iv_index - 1];
         if (val != Qundef) {
