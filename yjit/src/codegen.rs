@@ -5049,7 +5049,7 @@ fn gen_send_iseq(
     };
 
     // Create a context for the callee
-    let mut callee_ctx = Context::new(); // Was DEFAULT_CTX
+    let mut callee_ctx = Context::default();
 
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
@@ -6870,7 +6870,7 @@ mod tests {
 
         return (
             JITState::new(&block),
-            Context::new(),
+            Context::default(),
             Assembler::new(),
             CodeBlock::new_dummy(256 * 1024),
             OutlinedCb::wrap(CodeBlock::new_dummy(256 * 1024)),
@@ -6913,18 +6913,19 @@ mod tests {
         asm.compile(&mut cb);
 
         assert_eq!(status, KeepCompiling);
-        assert_eq!(context.diff(&Context::new()), 0);
+        assert_eq!(context.diff(&Context::default()), 0);
         assert_eq!(cb.get_write_pos(), 0);
     }
 
     #[test]
     fn test_gen_pop() {
         let (mut jit, _, mut asm, _cb, mut ocb) = setup_codegen();
-        let mut context = Context::new_with_stack_size(1);
+        let mut context = Context::default();
+        context.stack_push(Type::Fixnum);
         let status = gen_pop(&mut jit, &mut context, &mut asm, &mut ocb);
 
         assert_eq!(status, KeepCompiling);
-        assert_eq!(context.diff(&Context::new()), 0);
+        assert_eq!(context.diff(&Context::default()), 0);
     }
 
     #[test]
