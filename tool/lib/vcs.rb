@@ -424,12 +424,12 @@ class VCS
       SAFE_DIRECTORIES ||=
         begin
           command = ENV["GIT"] || 'git'
-          IO.popen(%W"#{command} config --global --get-all safe.directory", &:read).split("\n")
+          dirs = IO.popen(%W"#{command} config --global --get-all safe.directory", &:read).split("\n")
         rescue
           command = nil
-          []
+          dirs = []
         ensure
-          VCS.dump(SAFE_DIRECTORIES, "safe.directory: ") if $DEBUG
+          VCS.dump(dirs, "safe.directory: ") if $DEBUG
           COMMAND = command
         end
 
