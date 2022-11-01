@@ -846,7 +846,12 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         generic_ctx.stack_size = ctx.stack_size;
         generic_ctx.sp_offset = ctx.sp_offset;
 
-        // Mutate the incoming context
+        debug_assert_ne!(
+            usize::MAX,
+            ctx.diff(&generic_ctx),
+            "should substitute a compatible context",
+        );
+
         return generic_ctx;
     }
 
