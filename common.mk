@@ -7714,6 +7714,7 @@ io.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 io.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 io.$(OBJEXT): {$(VPATH)}io.c
 io.$(OBJEXT): {$(VPATH)}io.h
+io.$(OBJEXT): {$(VPATH)}io.rb
 io.$(OBJEXT): {$(VPATH)}io.rbinc
 io.$(OBJEXT): {$(VPATH)}io/buffer.h
 io.$(OBJEXT): {$(VPATH)}method.h
