@@ -6,6 +6,8 @@ use std::rc::Rc;
 use crate::backend::x86_64::JMP_PTR_BYTES;
 #[cfg(target_arch = "aarch64")]
 use crate::backend::arm64::JMP_PTR_BYTES;
+use crate::core::IseqPayload;
+use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
 use crate::stats::incr_counter;
@@ -571,6 +573,10 @@ impl CodeBlock {
         let mut freed_pages: Vec<usize> = pages_in_use.iter().enumerate()
             .filter(|&(_, &in_use)| !in_use).map(|(page, _)| page).collect();
         self.free_pages(&freed_pages);
+        // Avoid accumulating freed pages for future code GC
+        for_each_off_stack_iseq_payload(|iseq_payload: &mut IseqPayload| {
+            iseq_payload.pages.clear();
+        });
 
         // Append virtual pages in case RubyVM::YJIT.code_gc is manually triggered.
         let mut virtual_pages: Vec<usize> = (self.num_mapped_pages()..self.num_virtual_pages()).collect();
