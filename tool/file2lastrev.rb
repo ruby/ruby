@@ -8,6 +8,7 @@ require 'optparse'
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
 require File.expand_path('../lib/vcs', __FILE__)
+require File.expand_path('../lib/output', __FILE__)
 
 Program = $0
 
@@ -20,6 +21,7 @@ def self.format=(format)
 end
 @suppress_not_found = false
 @limit = 20
+@output = Output.new
 
 time_format = '%Y-%m-%dT%H:%M:%S%z'
 vcs = nil
@@ -51,6 +53,7 @@ OptionParser.new {|opts|
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
+  @output.def_options(opts)
   opts.order! rescue abort "#{File.basename(Program)}: #{$!}\n#{opts}"
   begin
     vcs = VCS.detect(srcdir || ".", vcs_options, opts.new)
@@ -69,7 +72,7 @@ formatter =
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      vcs.revision_header(last, modified, modified, branch, title, limit: @limit)
+      vcs.revision_header(last, modified, modified, branch, title, limit: @limit).join("\n")
     }
   when :doxygen
     Proc.new {|last, changed|
@@ -86,7 +89,7 @@ formatter =
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    puts formatter[*vcs.get_revisions(arg)]
+    @output.write(formatter[*vcs.get_revisions(arg)]+"\n")
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
