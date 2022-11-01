@@ -287,12 +287,12 @@ typedef uint128_t DSIZE_T;
     RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
 
 /**
- * Identical to #RB_ALLOCV_N(), except it  implicitly assumes the type of array
- * is ::VALUE.
+ * Identical to #RB_ALLOCV_N(), except that it allocates a number of bytes and
+ * returns a void* .
  *
  * @param   v  A variable to hold the just-in-case opaque Ruby object.
  * @param   n  Size of allocation, in bytes.
- * @return  An array of `n` bytes of ::VALUE.
+ * @return  A void pointer to `n` bytes storage.
  * @note    `n` may be evaluated twice.
  */
 #define RB_ALLOCV(v, n)        \
