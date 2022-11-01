@@ -56,7 +56,7 @@ class VPath
     opt.on("-I", "--srcdir=DIR", "add a directory to search path") {|dir|
       @additional << dir
     }
-    opt.on("-L", "--vpath=PATH LIST", "add directories to search path") {|dirs|
+    opt.on("-L", "--vpath=PATH-LIST", "add directories to search path") {|dirs|
       @additional << [dirs]
     }
     opt.on("--path-separator=SEP", /\A(?:\W\z|\.(\W).+)/, "separator for vpath") {|sep, vsep|
