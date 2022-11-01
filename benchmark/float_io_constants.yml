@@ -1,0 +1,38 @@
+benchmark:
+  Float_RADIX: |
+    Float::RADIX
+  Float_MANT_DIG: |
+    Float::MANT_DIG
+  Float_DIG: |
+    Float::DIG
+  Float_MIN_EXP: |
+    Float::MIN_EXP
+  Float_MAX_EXP: |
+    Float::MAX_EXP
+  Float_MIN_10_EXP: |
+    Float::MIN_10_EXP
+  Float_MAX_10_EXP: |
+    Float::MAX_10_EXP
+  Float_MIN: |
+    Float::MIN
+  Float_MAX: |
+    Float::MAX
+  Float_EPSILON: |
+    Float::EPSILON
+  Float_INFINITY: |
+    Float::INFINITY
+  Float_NAN: |
+    Float::NAN
+  IO_READABLE:
+    IO::READABLE
+  IO_WRITABLE: |
+    IO::WRITABLE
+  IO_PRIORITY: |
+    IO::PRIORITY
+  IO_SEEK_SET: |
+    IO::SEEK_SET
+  IO_SEEK_CUR: |
+    IO::SEEK_CUR
+  IO_SEEK_END: |
+    IO::SEEK_END
+loop_count: 20000000
