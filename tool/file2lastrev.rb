@@ -11,17 +11,17 @@ require File.expand_path('../lib/vcs', __FILE__)
 
 Program = $0
 
-@output = nil
-def self.output=(output)
-  if @output and @output != output
+@format = nil
+def self.format=(format)
+  if @format and @format != format
     raise "you can specify only one of --changed, --revision.h and --doxygen"
   end
-  @output = output
+  @format = format
 end
 @suppress_not_found = false
 @limit = 20
 
-format = '%Y-%m-%dT%H:%M:%S%z'
+time_format = '%Y-%m-%dT%H:%M:%S%z'
 vcs = nil
 OptionParser.new {|opts|
   opts.banner << " paths..."
@@ -33,17 +33,17 @@ OptionParser.new {|opts|
     srcdir = path
   end
   opts.on("--changed", "changed rev") do
-    self.output = :changed
+    self.format = :changed
   end
   opts.on("--revision.h", "RUBY_REVISION macro") do
-    self.output = :revision_h
+    self.format = :revision_h
   end
   opts.on("--doxygen", "Doxygen format") do
-    self.output = :doxygen
+    self.format = :doxygen
   end
   opts.on("--modified[=FORMAT]", "modified time") do |fmt|
-    self.output = :modified
-    format = fmt if fmt
+    self.format = :modified
+    time_format = fmt if fmt
   end
   opts.on("--limit=NUM", "limit branch name length (#@limit)", Integer) do |n|
     @limit = n
@@ -61,8 +61,8 @@ OptionParser.new {|opts|
   end
 }
 
-output =
-  case @output
+formatter =
+  case @format
   when :changed, nil
     Proc.new {|last, changed|
       changed
@@ -77,16 +77,16 @@ output =
     }
   when :modified
     Proc.new {|last, changed, modified|
-      modified.strftime(format)
+      modified.strftime(time_format)
     }
   else
-    raise "unknown output format `#{@output}'"
+    raise "unknown output format `#{@format}'"
   end
 
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    puts output[*vcs.get_revisions(arg)]
+    puts formatter[*vcs.get_revisions(arg)]
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
