@@ -3733,10 +3733,23 @@ AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 
 AC_SUBST(MJIT_SUPPORT)
 
+AC_CHECK_TOOL(RUSTC, [rustc], [no])
+
 AC_ARG_ENABLE(yjit,
         AS_HELP_STRING([--enable-yjit],
         [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
-        [YJIT_SUPPORT=$enableval], [YJIT_SUPPORT=no])
+        [YJIT_SUPPORT=$enableval],
+
+        [
+            AS_IF([test x"$RUSTC" != "xno"],
+
+                AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit=mir -o /dev/null ],
+
+                    [YJIT_SUPPORT=yes],
+                    [YJIT_SUPPORT=no]),
+
+                [YJIT_SUPPORT=no])
+        ])
 
 CARGO=
 CARGO_BUILD_ARGS=
