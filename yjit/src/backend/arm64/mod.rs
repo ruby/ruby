@@ -1352,7 +1352,7 @@ mod tests {
         asm.test(Opnd::Reg(X0_REG), Opnd::Imm(-7));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        // Assert that a load and a test instruction were written.
+        // Assert that a test instruction is written.
         assert_eq!(4, cb.get_write_pos());
     }
 
