@@ -69,7 +69,7 @@ formatter =
   case @format
   when :changed, nil
     Proc.new {|last, changed|
-      changed
+      changed || ""
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
@@ -90,7 +90,9 @@ formatter =
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    @output.write(formatter[*vcs.get_revisions(arg)]+"\n", overwrite: true)
+    data = formatter[*vcs.get_revisions(arg)]
+    data.sub!(/(?<!\A|\n)\z/, "\n")
+    @output.write(data, overwrite: true)
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
