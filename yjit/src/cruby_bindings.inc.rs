@@ -966,6 +966,9 @@ pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 extern "C" {
+    pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;
+}
+extern "C" {
     pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
 }
 extern "C" {
@@ -1431,6 +1434,9 @@ extern "C" {
     pub fn rb_get_iseq_body_stack_max(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
 }
 extern "C" {
+    pub fn rb_get_iseq_flags_has_lead(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
     pub fn rb_get_iseq_flags_has_opt(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
@@ -1452,7 +1458,10 @@ extern "C" {
     pub fn rb_get_iseq_flags_has_block(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
-    pub fn rb_get_iseq_flags_has_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
+    pub fn rb_get_iseq_flags_ambiguous_param0(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
     pub fn rb_get_iseq_body_param_keyword(
