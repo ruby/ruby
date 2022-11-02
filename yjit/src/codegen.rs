@@ -5073,7 +5073,7 @@ fn gen_send_iseq(
     }
 
     let recv_type = if captured_self {
-        ctx.get_opnd_type(CapturedSelfOpnd)
+        Type::Unknown // we don't track the type information of captured->self for now
     } else {
         ctx.get_opnd_type(StackOpnd(argc.try_into().unwrap()))
     };
