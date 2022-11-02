@@ -1,24 +1,24 @@
 name: "Code scanning - action"
 
 on:
-  push:
-    paths-ignore:
-      - 'doc/**'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
-  pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
+  # push:
+  #   paths-ignore:
+  #     - 'doc/**'
+  #     - '**.md'
+  #     - '**.rdoc'
+  #     - '**/.document'
+  #     - '**.[1-8]'
+  #     - '**.ronn'
+  # pull_request:
+  #   paths-ignore:
+  #     - 'doc/**'
+  #     - '**.md'
+  #     - '**.rdoc'
+  #     - '**/.document'
+  #     - '**.[1-8]'
+  #     - '**.ronn'
   schedule:
-    - cron: '0 12 * * 4'
+    - cron: '0 12 * * *'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
