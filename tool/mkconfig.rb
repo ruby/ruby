@@ -333,8 +333,13 @@ print <<EOS
 	var
       end
     }
-    val.replace(newval) unless newval == val
-    val
+
+    if val.frozen?
+      newval
+    else
+      val.replace(newval) unless newval == val
+      val
+    end
   end
   CONFIG.each_value do |val|
     RbConfig::expand(val)
