@@ -18,7 +18,7 @@ class Output
     @vpath.def_options(opt)
   end
 
-  def write(data)
+  def write(data, overwrite: false)
     unless @path
       $stdout.print data
       return true
@@ -26,13 +26,16 @@ class Output
     color = Colorize.new(@color)
     unchanged = color.pass("unchanged")
     updated = color.fail("updated")
+    outpath = nil
 
-    if @ifchange and (@vpath.read(@path, "rb") == data rescue false)
-      puts "#{@path} #{unchanged}"
+    if @ifchange and (@vpath.open(@path, "rb") {|f| outpath = f.path; f.read == data} rescue false)
+      puts "#{outpath} #{unchanged}"
       written = false
     else
-      File.binwrite(@path, data)
-      puts "#{@path} #{updated}"
+      unless overwrite and outpath and (File.binwrite(outpath, data) rescue nil)
+        File.binwrite(outpath = @path, data)
+      end
+      puts "#{outpath} #{updated}"
       written = true
     end
     if timestamp = @timestamp

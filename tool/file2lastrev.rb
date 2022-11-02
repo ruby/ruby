@@ -90,7 +90,7 @@ formatter =
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    @output.write(formatter[*vcs.get_revisions(arg)]+"\n")
+    @output.write(formatter[*vcs.get_revisions(arg)]+"\n", overwrite: true)
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
