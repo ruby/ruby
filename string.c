@@ -878,29 +878,28 @@ must_not_null(const char *ptr)
 }
 
 static inline VALUE
-str_alloc(VALUE klass, size_t size)
-{
-    assert(size > 0);
-    RVARGC_NEWOBJ_OF(str, struct RString, klass,
-                     T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
-    return (VALUE)str;
-}
-
-static inline VALUE
 str_alloc_embed(VALUE klass, size_t capa)
 {
     size_t size = rb_str_embed_size(capa);
+    assert(size > 0);
     assert(rb_gc_size_allocatable_p(size));
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
 #endif
-    return str_alloc(klass, size);
+
+    RVARGC_NEWOBJ_OF(str, struct RString, klass,
+                     T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
+
+    return (VALUE)str;
 }
 
 static inline VALUE
 str_alloc_heap(VALUE klass)
 {
-    return str_alloc(klass, sizeof(struct RString));
+    RVARGC_NEWOBJ_OF(str, struct RString, klass,
+                     T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString));
+
+    return (VALUE)str;
 }
 
 static inline VALUE
@@ -937,7 +936,6 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
          * mul_add_mul can be reverted to a simple ALLOC_N. */
         RSTRING(str)->as.heap.ptr =
             rb_xmalloc_mul_add_mul(sizeof(char), len, sizeof(char), termlen);
-        STR_SET_NOEMBED(str);
     }
     if (ptr) {
         memcpy(RSTRING_PTR(str), ptr, len);
@@ -1044,7 +1042,6 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
         RSTRING(str)->as.heap.len = len;
         RSTRING(str)->as.heap.ptr = (char *)ptr;
         RSTRING(str)->as.heap.aux.capa = len;
-        STR_SET_NOEMBED(str);
         RBASIC(str)->flags |= STR_NOFREE;
     }
     rb_enc_associate_index(str, encindex);
@@ -1441,7 +1438,6 @@ heap_str_make_shared(VALUE klass, VALUE orig)
     assert(!STR_SHARED_P(orig));
 
     VALUE str = str_alloc_heap(klass);
-    STR_SET_NOEMBED(str);
     RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
     RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
     RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
@@ -1542,7 +1538,6 @@ rb_str_buf_new(long capa)
         capa = STR_BUF_MIN_SIZE;
     }
 #endif
-    FL_SET(str, STR_NOEMBED);
     RSTRING(str)->as.heap.aux.capa = capa;
     RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + 1);
     RSTRING(str)->as.heap.ptr[0] = '\0';
@@ -1722,29 +1717,28 @@ str_replace(VALUE str, VALUE str2)
 }
 
 static inline VALUE
-ec_str_alloc(struct rb_execution_context_struct *ec, VALUE klass, size_t size)
-{
-    assert(size > 0);
-    RB_RVARGC_EC_NEWOBJ_OF(ec, str, struct RString, klass,
-                           T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
-    return (VALUE)str;
-}
-
-static inline VALUE
 ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t capa)
 {
     size_t size = rb_str_embed_size(capa);
+    assert(size > 0);
     assert(rb_gc_size_allocatable_p(size));
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
 #endif
-    return ec_str_alloc(ec, klass, size);
+
+    RB_RVARGC_EC_NEWOBJ_OF(ec, str, struct RString, klass,
+                           T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
+
+    return (VALUE)str;
 }
 
 static inline VALUE
 ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
-    return ec_str_alloc(ec, klass, sizeof(struct RString));
+    RB_RVARGC_EC_NEWOBJ_OF(ec, str, struct RString, klass,
+                           T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString));
+
+    return (VALUE)str;
 }
 
 static inline VALUE
@@ -1762,6 +1756,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
     if (STR_EMBED_P(str)) {
         long len = RSTRING_EMBED_LEN(str);
 
+        assert(STR_EMBED_P(dup));
         assert(str_embed_capa(dup) >= len + 1);
         STR_SET_EMBED_LEN(dup, len);
         MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
@@ -1782,6 +1777,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         else if (STR_EMBED_P(root)) {
             MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(root)->as.embed.ary,
                    char, RSTRING_EMBED_LEN_MAX + 1);
+            FL_UNSET(dup, STR_NOEMBED);
         }
 #endif
         else {
@@ -1805,7 +1801,7 @@ static inline VALUE
 ec_str_duplicate(struct rb_execution_context_struct *ec, VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (!USE_RVARGC || FL_TEST(str, STR_NOEMBED)) {
+    if (FL_TEST(str, STR_NOEMBED)) {
         dup = ec_str_alloc_heap(ec, klass);
     }
     else {
@@ -1819,7 +1815,7 @@ static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (!USE_RVARGC || FL_TEST(str, STR_NOEMBED)) {
+    if (FL_TEST(str, STR_NOEMBED)) {
         dup = str_alloc_heap(klass);
     }
     else {
@@ -2307,7 +2303,6 @@ rb_str_times(VALUE str, VALUE times)
             str2 = str_alloc_heap(rb_cString);
             RSTRING(str2)->as.heap.aux.capa = len;
             RSTRING(str2)->as.heap.ptr = ZALLOC_N(char, (size_t)len + 1);
-            STR_SET_NOEMBED(str2);
         }
         STR_SET_LEN(str2, len);
         rb_enc_copy(str2, str);
