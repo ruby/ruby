@@ -58,10 +58,14 @@ jobs:
         run: |
           echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
           echo "PATH="/usr/local/opt/bison/bin:$PATH"" >> $GITHUB_ENV
+          for lib in openssl@1.1 readline; do
+            CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
+          done
+          echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+        run: ../src/configure -C --disable-install-doc
       - run: make incs
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
