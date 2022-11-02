@@ -552,20 +552,39 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
 
-/// Iterate over all on-stack ISEQ payloads
-#[cfg(not(test))]
-pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
+/// Iterate over all on-stack ISEQs
+pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
-        let callback: &mut &mut dyn FnMut(&IseqPayload) -> bool = std::mem::transmute(&mut *data);
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
+        callback(iseq);
+    }
+    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
+    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+
+/// Iterate over all on-stack ISEQ payloads
+pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
+    for_each_on_stack_iseq(|iseq| {
         if let Some(iseq_payload) = get_iseq_payload(iseq) {
             callback(iseq_payload);
         }
-    }
-    let mut data: &mut dyn FnMut(&IseqPayload) = &mut callback;
-    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    });
 }
-#[cfg(test)]
-pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut _callback: F) {}
+
+/// Iterate over all NOT on-stack ISEQ payloads
+pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback: F) {
+    let mut on_stack_iseqs: Vec<IseqPtr> = vec![];
+    for_each_on_stack_iseq(|iseq| {
+        on_stack_iseqs.push(iseq);
+    });
+    for_each_iseq(|iseq| {
+        if !on_stack_iseqs.contains(&iseq) {
+            if let Some(iseq_payload) = get_iseq_payload(iseq) {
+                callback(iseq_payload);
+            }
+        }
+    })
+}
 
 /// Free the per-iseq payload
 #[no_mangle]
