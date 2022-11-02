@@ -4096,7 +4096,7 @@ fn gen_push_frame(
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
 
     // Arm requires another register to load the immediate value of Qnil before storing it.
-    // So donig this after releasing the register for specval to avoid register spill.
+    // So doing this after releasing the register for specval to avoid register spill.
     let num_locals = frame.local_size;
     if num_locals > 0 {
         asm.comment("initialize locals");
