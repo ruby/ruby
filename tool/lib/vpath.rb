@@ -53,6 +53,7 @@ class VPath
   end
 
   def def_options(opt)
+    opt.separator("  VPath common options:")
     opt.on("-I", "--srcdir=DIR", "add a directory to search path") {|dir|
       @additional << dir
     }
@@ -78,6 +79,10 @@ class VPath
       true
     end
     @list
+  end
+
+  def add(path)
+    @additional << path
   end
 
   def strip(path)

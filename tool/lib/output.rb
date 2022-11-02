@@ -10,6 +10,7 @@ class Output
   end
 
   def def_options(opt)
+    opt.separator("  Output common options:")
     opt.on('-o', '--output=PATH') {|v| @path = v}
     opt.on('-t', '--timestamp[=PATH]') {|v| @timestamp = v || true}
     opt.on('-c', '--[no-]if-change') {|v| @ifchange = v}

@@ -28,11 +28,13 @@ vcs = nil
 OptionParser.new {|opts|
   opts.banner << " paths..."
   vcs_options = VCS.define_options(opts)
+  opts.new {@output.def_options(opts)}
   srcdir = nil
   opts.new
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
     abort "#{File.basename(Program)}: srcdir is already set" if srcdir
     srcdir = path
+    @output.vpath.add(srcdir)
   end
   opts.on("--changed", "changed rev") do
     self.format = :changed
@@ -53,7 +55,6 @@ OptionParser.new {|opts|
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
   end
-  @output.def_options(opts)
   opts.order! rescue abort "#{File.basename(Program)}: #{$!}\n#{opts}"
   begin
     vcs = VCS.detect(srcdir || ".", vcs_options, opts.new)
