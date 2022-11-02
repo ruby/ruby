@@ -1208,7 +1208,7 @@ impl Context {
 
         match opnd {
             SelfOpnd => self.self_type.upgrade(opnd_type),
-            CapturedSelfOpnd => self.self_type.upgrade(opnd_type),
+            CapturedSelfOpnd => self.captured_self_type.upgrade(opnd_type),
             StackOpnd(idx) => {
                 let idx = idx as u16;
                 assert!(idx < self.stack_size);
