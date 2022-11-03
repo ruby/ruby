@@ -48,7 +48,7 @@ class RubyLex
   end
 
   # io functions
-  def set_input(io, p = nil, context: nil, &block)
+  def set_input(io, p = nil, context:, &block)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
@@ -216,7 +216,7 @@ class RubyLex
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
-    lvars_code = self.class.generate_local_variables_assign_code(context&.local_variables || [])
+    lvars_code = self.class.generate_local_variables_assign_code(context.local_variables)
     code = "#{lvars_code}\n#{code}" if lvars_code
     code_block_open = check_code_block(code, tokens)
     [ltype, indent, continue, code_block_open]
