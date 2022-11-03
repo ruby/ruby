@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'irb/ruby-lex'
+require 'irb'
 require 'test/unit'
 require 'ostruct'
 
