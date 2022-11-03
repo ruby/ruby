@@ -236,6 +236,8 @@ EOS
   end
 
   def test_invalid_trim_mode
+    pend if RUBY_ENGINE == 'truffleruby'
+
     assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
       @erb.new("", trim_mode: 'abc-def')
     end
