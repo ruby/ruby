@@ -1101,6 +1101,27 @@ io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length
     }
 }
 
+static VALUE
+rb_io_buffer_slice(struct rb_io_buffer *data, VALUE self, size_t offset, size_t length)
+{
+    io_buffer_validate_range(data, offset, length);
+
+    VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
+    struct rb_io_buffer *slice = NULL;
+    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, slice);
+
+    slice->base = (char*)data->base + offset;
+    slice->size = length;
+
+    // The source should be the root buffer:
+    if (data->source != Qnil)
+        slice->source = data->source;
+    else
+        slice->source = self;
+
+    return instance;
+}
+
 /*
  *  call-seq: slice([offset = 0, [length]]) -> io_buffer
  *
@@ -1157,27 +1178,6 @@ io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length
  *    string
  *    # => tost
  */
-static VALUE
-rb_io_buffer_slice(struct rb_io_buffer *data, VALUE self, size_t offset, size_t length)
-{
-    io_buffer_validate_range(data, offset, length);
-
-    VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
-    struct rb_io_buffer *slice = NULL;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, slice);
-
-    slice->base = (char*)data->base + offset;
-    slice->size = length;
-
-    // The source should be the root buffer:
-    if (data->source != Qnil)
-        slice->source = data->source;
-    else
-        slice->source = self;
-
-    return instance;
-}
-
 static VALUE
 io_buffer_slice(int argc, VALUE *argv, VALUE self)
 {
