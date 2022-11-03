@@ -158,6 +158,8 @@ module IRB # :nodoc:
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
+
+    @CONF[:COMMAND_ALIASES] = {}
   end
 
   def IRB.set_measure_callback(type = nil, arg = nil, &block)

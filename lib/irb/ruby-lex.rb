@@ -65,6 +65,12 @@ class RubyLex
             false
           end
         else
+          # Accept any single-line input starting with a non-identifier alias (ex: @, $)
+          command = code.split(/\s/, 2).first
+          if context.symbol_alias(command)
+            next true
+          end
+
           code.gsub!(/\s*\z/, '').concat("\n")
           ltype, indent, continue, code_block_open = check_state(code, context: context)
           if ltype or indent > 0 or continue or code_block_open

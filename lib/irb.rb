@@ -426,6 +426,9 @@ module IRB
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
+      @context.command_aliases.each do |alias_name, cmd_name|
+        @context.main.install_alias_method(alias_name, cmd_name)
+      end
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
     end

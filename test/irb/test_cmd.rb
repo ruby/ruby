@@ -570,6 +570,24 @@ module TestIRB
       assert_match(%r[/irb\.rb], out)
     end
 
+    def test_show_source_alias
+      input = TestInputMethod.new([
+        "$ 'IRB.conf'\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = { :'$' => :show_source }
+      workspace = IRB::WorkSpace.new(Object.new)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(%r[/irb\.rb], out)
+    end
+
     def test_show_source_end_finder
       pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
@@ -609,6 +627,46 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^From: .+ @ line \d+ :\n/, out)
+    end
+
+    def test_whereami_alias
+      input = TestInputMethod.new([
+        "@\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = { :'@' => :whereami }
+      workspace = IRB::WorkSpace.new(Object.new)
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/^From: .+ @ line \d+ :\n/, out)
+    end
+
+    def test_vars_with_aliases
+      input = TestInputMethod.new([
+        "@foo\n",
+        "$bar\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = {
+        :'@' => :whereami,
+        :'$' => :show_source,
+      }
+      main = Object.new
+      main.instance_variable_set(:@foo, "foo")
+      $bar = "bar"
+      workspace = IRB::WorkSpace.new(main)
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/"foo"/, out)
+      assert_match(/"bar"/, out)
     end
   end
 end
