@@ -3735,19 +3735,16 @@ AC_SUBST(MJIT_SUPPORT)
 
 AC_CHECK_TOOL(RUSTC, [rustc], [no])
 
+dnl build YJIT in release mode if rustc >= 1.58.0 is present
 AC_ARG_ENABLE(yjit,
         AS_HELP_STRING([--enable-yjit],
         [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
         [YJIT_SUPPORT=$enableval],
-
         [
             AS_IF([test x"$RUSTC" != "xno"],
-
                 AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit asm=/dev/stdout ],
-
                     [YJIT_SUPPORT=yes],
                     [YJIT_SUPPORT=no]),
-
                 [YJIT_SUPPORT=no])
         ])
 
