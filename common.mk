@@ -1832,6 +1832,7 @@ array.$(OBJEXT): $(top_srcdir)/internal/variable.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
 array.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 array.$(OBJEXT): {$(VPATH)}array.c
+array.$(OBJEXT): {$(VPATH)}array.rb
 array.$(OBJEXT): {$(VPATH)}array.rbinc
 array.$(OBJEXT): {$(VPATH)}assert.h
 array.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -2032,6 +2033,7 @@ ast.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ast.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 ast.$(OBJEXT): {$(VPATH)}assert.h
 ast.$(OBJEXT): {$(VPATH)}ast.c
+ast.$(OBJEXT): {$(VPATH)}ast.rb
 ast.$(OBJEXT): {$(VPATH)}ast.rbinc
 ast.$(OBJEXT): {$(VPATH)}atomic.h
 ast.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -3980,6 +3982,7 @@ dir.$(OBJEXT): {$(VPATH)}config.h
 dir.$(OBJEXT): {$(VPATH)}constant.h
 dir.$(OBJEXT): {$(VPATH)}defines.h
 dir.$(OBJEXT): {$(VPATH)}dir.c
+dir.$(OBJEXT): {$(VPATH)}dir.rb
 dir.$(OBJEXT): {$(VPATH)}dir.rbinc
 dir.$(OBJEXT): {$(VPATH)}encindex.h
 dir.$(OBJEXT): {$(VPATH)}encoding.h
@@ -6250,6 +6253,7 @@ error.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 error.$(OBJEXT): {$(VPATH)}thread_native.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
+error.$(OBJEXT): {$(VPATH)}warning.rb
 error.$(OBJEXT): {$(VPATH)}warning.rbinc
 eval.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 eval.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
@@ -7504,6 +7508,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/variable.h
 inits.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 inits.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 inits.$(OBJEXT): {$(VPATH)}missing.h
+inits.$(OBJEXT): {$(VPATH)}prelude.rb
 inits.$(OBJEXT): {$(VPATH)}prelude.rbinc
 inits.$(OBJEXT): {$(VPATH)}st.h
 inits.$(OBJEXT): {$(VPATH)}subst.h
@@ -9033,6 +9038,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 marshal.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 marshal.$(OBJEXT): {$(VPATH)}io.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c
+marshal.$(OBJEXT): {$(VPATH)}marshal.rb
 marshal.$(OBJEXT): {$(VPATH)}marshal.rbinc
 marshal.$(OBJEXT): {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}onigmo.h
@@ -10620,6 +10626,7 @@ object.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 object.$(OBJEXT): {$(VPATH)}kernel.rb
 object.$(OBJEXT): {$(VPATH)}kernel.rbinc
 object.$(OBJEXT): {$(VPATH)}missing.h
+object.$(OBJEXT): {$(VPATH)}nilclass.rb
 object.$(OBJEXT): {$(VPATH)}nilclass.rbinc
 object.$(OBJEXT): {$(VPATH)}object.c
 object.$(OBJEXT): {$(VPATH)}onigmo.h
@@ -10810,6 +10817,7 @@ pack.$(OBJEXT): {$(VPATH)}missing.h
 pack.$(OBJEXT): {$(VPATH)}onigmo.h
 pack.$(OBJEXT): {$(VPATH)}oniguruma.h
 pack.$(OBJEXT): {$(VPATH)}pack.c
+pack.$(OBJEXT): {$(VPATH)}pack.rb
 pack.$(OBJEXT): {$(VPATH)}pack.rbinc
 pack.$(OBJEXT): {$(VPATH)}st.h
 pack.$(OBJEXT): {$(VPATH)}subst.h
@@ -16012,6 +16020,7 @@ time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
 time.$(OBJEXT): {$(VPATH)}time.c
 time.$(OBJEXT): {$(VPATH)}timev.h
+time.$(OBJEXT): {$(VPATH)}timev.rb
 time.$(OBJEXT): {$(VPATH)}timev.rbinc
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transcode.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -17992,6 +18001,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}st.h
 vm_trace.$(OBJEXT): {$(VPATH)}subst.h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 vm_trace.$(OBJEXT): {$(VPATH)}thread_native.h
+vm_trace.$(OBJEXT): {$(VPATH)}trace_point.rb
 vm_trace.$(OBJEXT): {$(VPATH)}trace_point.rbinc
 vm_trace.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_trace.$(OBJEXT): {$(VPATH)}vm_opts.h
