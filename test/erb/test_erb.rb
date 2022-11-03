@@ -73,10 +73,23 @@ class TestERB < Test::Unit::TestCase
     assert_equal("", ERB::Util.html_escape(""))
     assert_equal("abc", ERB::Util.html_escape("abc"))
     assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", ERB::Util.html_escape("'&\"><"))
 
     assert_equal("", ERB::Util.html_escape(nil))
     assert_equal("123", ERB::Util.html_escape(123))
   end
+
+  def test_html_escape_to_s
+    object = Object.new
+    def object.to_s
+      "object"
+    end
+    assert_equal("object", ERB::Util.html_escape(object))
+  end
+
+  def test_html_escape_extension
+    assert_nil(ERB::Util.method(:html_escape).source_location)
+  end if RUBY_ENGINE == 'ruby'
 
   def test_concurrent_default_binding
     # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
