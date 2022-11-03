@@ -97,7 +97,6 @@ class Gem::Platform
       when /darwin(\d+)?/ then          [ "darwin",    $1  ]
       when /^macruby$/ then             [ "macruby",   nil ]
       when /freebsd(\d+)?/ then         [ "freebsd",   $1  ]
-      when /hpux(\d+)?/ then            [ "hpux",      $1  ]
       when /^java$/, /^jruby$/ then     [ "java",      nil ]
       when /^java([\d.]*)/ then         [ "java",      $1  ]
       when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]

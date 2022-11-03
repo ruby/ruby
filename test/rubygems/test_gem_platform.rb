@@ -86,7 +86,6 @@ class TestGemPlatform < Gem::TestCase
   def test_initialize
     test_cases = {
       "amd64-freebsd6" => ["amd64",     "freebsd", "6"],
-      "hppa2.0w-hpux11.31" => ["hppa2.0w", "hpux", "11"],
       "java" => [nil,         "java", nil],
       "jruby" => [nil, "java", nil],
       "universal-dotnet" => ["universal", "dotnet", nil],
