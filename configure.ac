@@ -3743,7 +3743,7 @@ AC_ARG_ENABLE(yjit,
         [
             AS_IF([test x"$RUSTC" != "xno"],
 
-                AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit=mir -o /dev/null ],
+                AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit asm=/dev/stdout ],
 
                     [YJIT_SUPPORT=yes],
                     [YJIT_SUPPORT=no]),
