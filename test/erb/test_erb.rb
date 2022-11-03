@@ -79,6 +79,9 @@ class TestERB < Test::Unit::TestCase
   end
 
   def test_concurrent_default_binding
+    # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
+    pend if RUBY_ENGINE == 'jruby'
+
     template1 = 'one <%= ERB.new(template2).result %>'
 
     eval 'template2 = "two"', TOPLEVEL_BINDING
