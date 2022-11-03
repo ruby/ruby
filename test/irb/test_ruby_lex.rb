@@ -702,7 +702,8 @@ module TestIRB
     private
 
     def build_context(local_variables = nil)
-      workspace = IRB::WorkSpace.new
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
 
       if local_variables
         local_variables.each do |n|
