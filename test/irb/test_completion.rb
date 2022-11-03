@@ -1,12 +1,11 @@
 # frozen_string_literal: false
-require "test/unit"
 require "pathname"
 require "irb"
 
 require_relative "helper"
 
 module TestIRB
-  class TestCompletion < Test::Unit::TestCase
+  class TestCompletion < TestCase
     def setup
       # make sure require completion candidates are not cached
       IRB::InputCompletor.class_variable_set(:@@files_from_load_path, nil)
@@ -276,7 +275,7 @@ module TestIRB
         result = nil
 
         out, err = capture_output do
-          IRB::TestHelper.without_rdoc do
+          without_rdoc do
             result = IRB::InputCompletor::PerfectMatchedProc.("String", bind: binding)
           end
         end

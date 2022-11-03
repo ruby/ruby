@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'tempfile'
 require 'irb'
 require 'rubygems' if defined?(Gem)
 
+require_relative "helper"
+
 module TestIRB
-  class TestContext < Test::Unit::TestCase
+  class TestContext < TestCase
     class TestInputMethod < ::IRB::InputMethod
       attr_reader :list, :line_no
 

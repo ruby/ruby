@@ -1,8 +1,9 @@
 # frozen_string_literal: false
-require 'test/unit'
+
+require_relative "helper"
 
 module TestIRB
-  class TestRaiseNoBacktraceException < Test::Unit::TestCase
+  class TestRaiseNoBacktraceException < TestCase
     def test_raise_exception
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
       assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, /Exception: foo/, [])

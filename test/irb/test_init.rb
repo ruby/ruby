@@ -1,10 +1,11 @@
 # frozen_string_literal: false
-require "test/unit"
 require "irb"
 require "fileutils"
 
+require_relative "helper"
+
 module TestIRB
-  class TestInit < Test::Unit::TestCase
+  class TestInit < TestCase
     def setup
       # IRBRC is for RVM...
       @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|

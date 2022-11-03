@@ -1,34 +1,20 @@
 # frozen_string_literal: false
 
-require "test/unit"
 require "irb"
 
 require_relative "helper"
 
 module TestIRB
-  class TestRelineInputMethod < Test::Unit::TestCase
+  class TestRelineInputMethod < TestCase
     def setup
       @conf_backup = IRB.conf.dup
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
-
-      # RelineInputMethod#initialize calls IRB.set_encoding, which mutates standard input/output's encoding
-      # so we need to make sure we set them back
-      @original_io_encodings = {
-        STDIN => [STDIN.external_encoding, STDIN.internal_encoding],
-        STDOUT => [STDOUT.external_encoding, STDOUT.internal_encoding],
-        STDERR => [STDERR.external_encoding, STDERR.internal_encoding],
-      }
-      @original_default_encodings = [Encoding.default_external, Encoding.default_internal]
+      save_encodings
     end
 
     def teardown
       IRB.conf.replace(@conf_backup)
-
-      @original_io_encodings.each do |io, (external_encoding, internal_encoding)|
-        io.set_encoding(external_encoding, internal_encoding)
-      end
-
-      EnvUtil.suppress_warning { Encoding.default_external, Encoding.default_internal = @original_default_encodings }
+      restore_encodings
     end
 
     def test_initialization
@@ -78,7 +64,7 @@ module TestIRB
 
       IRB.conf[:USE_AUTOCOMPLETE] = true
 
-      IRB::TestHelper.without_rdoc do
+      without_rdoc do
         IRB::RelineInputMethod.new
       end
 

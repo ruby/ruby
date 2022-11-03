@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb'
 require 'irb/ext/save-history'
 require 'readline'
 
+require_relative "helper"
+
 module TestIRB
-  class TestHistory < Test::Unit::TestCase
+  class TestHistory < TestCase
     def setup
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end

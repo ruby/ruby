@@ -1,12 +1,11 @@
 # frozen_string_literal: false
-require "test/unit"
 require "irb"
 require "irb/extend-command"
 
 require_relative "helper"
 
 module TestIRB
-  class ExtendCommand < Test::Unit::TestCase
+  class ExtendCommand < TestCase
     class TestInputMethod < ::IRB::InputMethod
       attr_reader :list, :line_no
 
@@ -46,8 +45,7 @@ module TestIRB
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
       @xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
-      @default_encoding = [Encoding.default_external, Encoding.default_internal]
-      @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
+      save_encodings
       IRB.instance_variable_get(:@CONF).clear
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
     end
@@ -57,12 +55,7 @@ module TestIRB
       ENV["HOME"] = @home_backup
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
-      EnvUtil.suppress_warning {
-        Encoding.default_external, Encoding.default_internal = *@default_encoding
-        [STDIN, STDOUT, STDERR].zip(@stdio_encodings) do |io, encs|
-          io.set_encoding(*encs)
-        end
-      }
+      restore_encodings
     end
 
     def test_irb_info_multiline
@@ -450,7 +443,7 @@ module TestIRB
       IRB.conf[:VERBOSE] = false
       irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
       out, _ = capture_output do
-        IRB::TestHelper.without_rdoc do
+        without_rdoc do
           irb.eval_input
         end
       end
