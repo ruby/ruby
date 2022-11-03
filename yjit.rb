@@ -231,6 +231,7 @@ module RubyVM::YJIT
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
 
+      $stderr.puts "side_exit_count:       " + ("%10d" % side_exits)
       $stderr.puts "total_exit_count:      " + ("%10d" % total_exits)
       $stderr.puts "total_insns_count:     " + ("%10d" % total_insns_count)
       $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
