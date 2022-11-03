@@ -87,28 +87,18 @@ Many examples here use these variables:
 
 === Basic \IO
 
-You can perform basic stream \IO with these methods:
+You can perform basic stream \IO with these methods,
+which typically operate on multi-byte strings:
 
-- IO#read: Returns all remaining or the next _n_ bytes read from the stream,
-  for a given _n_:
+- IO#read: Reads and returns some or all of the remaining bytes from the stream.
+- IO#write: Writes zero or more strings to the stream, derived from the given objects:
 
-    f = File.new('t.txt')
-    f.read     # => "First line\nSecond line\n\nFourth line\nFifth line\n"
-    f.rewind
-    f.read(30) # => "First line\r\nSecond line\r\n\r\nFou"
-    f.read(30) # => "rth line\r\nFifth line\r\n"
-    f.read(30) # => nil
-    f.close
+Other stream \IO techniques include:
 
-- IO#write: Writes one or more given strings to the stream:
-
-    $stdout.write('Hello', ', ', 'World!', "\n") # => 14
-    $stdout.write('foo', :bar, 2, "\n")
-
-  Output:
-
-    Hello, World!
-    foobar2
+- {Line \IO}[rdoc-ref:io_streams.rdoc@Line+IO] (line-by-line).
+- {Character \IO}[rdoc-ref:io_streams.rdoc@Character+IO] (character-by-character).
+- {Byte \IO}[rdoc-ref:io_streams.rdoc@Byte+IO] (byte-by-byte).
+- {Codepoint \IO}[rdoc-ref:io_streams.rdoc@Codepoint+IO] (codepoint-by-codepoint).
 
 ==== Position
 
@@ -119,71 +109,12 @@ method +rewind+ resets the position (and line number) to zero.
 
 The relevant methods:
 
-- IO#tell (aliased as +#pos+):
-  Returns the current position (in bytes) in the stream:
-
-    f = File.new('t.txt')
-    f.tell # => 0
-    f.gets # => "First line\n"
-    f.tell # => 12
-    f.close
-
-- IO#pos=: Sets the position of the stream (in bytes):
-
-    f = File.new('t.txt')
-    f.tell     # => 0
-    f.pos = 20 # => 20
-    f.tell     # => 20
-    f.close
-
-- IO#seek: Sets the position of the stream to a given integer +offset+
-  (in bytes), with respect to a given constant +whence+, which is one of:
-
-  - +:CUR+ or <tt>IO::SEEK_CUR</tt>:
-    Repositions the stream to its current position plus the given +offset+:
-
-      f = File.new('t.txt')
-      f.tell            # => 0
-      f.seek(20, :CUR)  # => 0
-      f.tell            # => 20
-      f.seek(-10, :CUR) # => 0
-      f.tell            # => 10
-      f.close
-
-  - +:END+ or <tt>IO::SEEK_END</tt>:
-    Repositions the stream to its end plus the given +offset+:
-
-      f = File.new('t.txt')
-      f.tell            # => 0
-      f.seek(0, :END)   # => 0  # Repositions to stream end.
-      f.tell            # => 52
-      f.seek(-20, :END) # => 0
-      f.tell            # => 32
-      f.seek(-40, :END) # => 0
-      f.tell            # => 12
-      f.close
-
-  - +:SET+ or <tt>IO:SEEK_SET</tt>:
-    Repositions the stream to the given +offset+:
-
-      f = File.new('t.txt')
-      f.tell            # => 0
-      f.seek(20, :SET) # => 0
-      f.tell           # => 20
-      f.seek(40, :SET) # => 0
-      f.tell           # => 40
-      f.close
-
-- IO#rewind: Positions the stream to the beginning (also resetting the line number):
-
-    f = File.new('t.txt')
-    f.tell     # => 0
-    f.gets     # => "First line\n"
-    f.tell     # => 12
-    f.rewind   # => 0
-    f.tell     # => 0
-    f.lineno   # => 0
-    f.close
+- IO#tell (aliased as +#pos+): Returns the current position (in bytes) in the stream.
+- IO#pos=: Sets the position of the stream to a given integer +new_position_ (in bytes):
+- IO#seek: Sets the position of the stream to a given integer +offset+ (in bytes),
+  relative to a given position +whence+
+  (indicating the beginning, end, or current position).
+- IO#rewind: Positions the stream at the beginning (also resetting the line number).
 
 ==== Open and Closed Streams
 
@@ -193,6 +124,8 @@ A stream is automatically closed when claimed by the garbage collector.
 
 Attempted reading or writing on a closed stream raises an exception.
 
+The relevant methods:
+
 - IO#close: Closes the stream for both reading and writing.
 - IO#close_read: Closes the stream for reading; not in ARGF.
 - IO#close_write: Closes the stream for writing; not in ARGF.
@@ -200,88 +133,70 @@ Attempted reading or writing on a closed stream raises an exception.
 
 ==== End-of-Stream
 
-You can query whether a stream is positioned at its end using
-method IO#eof? (also aliased as +#eof+).
+You can query whether a stream is positioned at its end:
 
-You can reposition to end-of-stream by reading all stream content:
+- IO#eof? (also aliased as +#eof+): Returns whether the stream is at end-of-stream.
+
+You can reposition to end-of-stream by reading all stream content
+or by using method IO#seek:
 
   f = File.new('t.txt')
   f.eof? # => false
   f.read # => "First line\nSecond line\n\nFourth line\nFifth line\n"
   f.eof? # => true
 
-Or by using method IO#seek:
-
-  f = File.new('t.txt')
+  f.rewind
   f.eof? # => false
   f.seek(0, :END)
   f.eof? # => true
+  f.close
 
 === Line \IO
 
 You can read an \IO stream line-by-line using these methods:
 
-- IO#each_line: Passes each line to the block:
-
-    f = File.new('t.txt')
-    f.each_line {|line| p line }
-
-  Output:
-
-    "First line\n"
-    "Second line\n"
-    "\n"
-    "Fourth line\n"
-    "Fifth line\n"
-
-  The reading may begin mid-line:
-
-    f = File.new('t.txt')
-    f.pos = 27
-    f.each_line {|line| p line }
-
-  Output:
-
-    "rth line\n"
-    "Fifth line\n"
-
-- IO#gets (also in Kernel): Returns the next line (which may begin mid-line):
-
-    f = File.new('t.txt')
-    f.gets      # => "First line\n"
-    f.gets      # => "Second line\n"
-    f.pos = 27
-    f.gets      # => "rth line\n"
-    f.readlines # => ["Fifth line\n"]
-    f.gets      # => nil
-
+- IO#each_line: Reads each remaining line, passing it to the given block.
+- IO#gets (also in Kernel): Returns the next line.
 - IO#readline (also in Kernel; not in StringIO):
   Like #gets, but raises an exception at end-of-stream.
+- IO#readlines (also in Kernel): Returns all remaining lines in an array.
 
-- IO#readlines (also in Kernel): Returns all remaining lines in an array;
-  may begin mid-line:
-
-    f = File.new('t.txt')
-    f.pos = 19
-    f.readlines # => ["ine\n", "\n", "Fourth line\n", "Fifth line\n"]
-    f.readlines # => []
-
-Each of these reader methods may be called with:
+Each of these reader methods accepts:
 
 - An optional line separator, +sep+.
 - An optional line-size limit, +limit+.
 - Both +sep+ and +limit+.
 
+For each of these reader methods, reading may begin mid-line,
+depending on the stream's position;
+see {Position}[rdoc-ref:io_streams.rdoc@Position]:
+
+  f = File.new('t.txt')
+  f.pos = 27
+  f.each_line {|line| p line }
+  f.close
+
+Output:
+
+  "rth line\n"
+  "Fifth line\n"
+
 You can write to an \IO stream line-by-line using this method:
 
-- IO#puts (also in Kernel; not in \StringIO): Writes objects to the stream:
-
-    f = File.new('t.tmp', 'w')
-    f.puts('foo', :bar, 1, 2.0, Complex(3, 0))
-    f.flush
-    File.read('t.tmp') # => "foo\nbar\n1\n2.0\n3+0i\n"
+- IO#puts (also in Kernel; not in \StringIO): Writes objects to the stream.
 
 ==== Line Separator
+
+Each of these methods uses a <i>line separator</i>,
+which is the string that delimits lines:
+
+- ARGF#to_a.
+- IO.foreach.
+- IO.readlines.
+- IO#each_line.
+- IO#gets.
+- IO#readline.
+- IO#readlines.
 
 The default line separator is the given by the global variable <tt>$/</tt>,
 whose value is by default <tt>"\n"</tt>.
@@ -323,29 +238,38 @@ There are two special line separators:
 
 ==== Line Limit
 
-The line to be read may be further defined by an optional integer argument +limit+,
+Each of these methods uses a <i>line limit</i>,
 which specifies that the number of bytes returned may not be (much) longer
 than the given +limit+;
-a multi-byte character will not be split, and so a line may be slightly longer
+
+- ARGF#to_a.
+- IO.foreach.
+- IO.readlines.
+- IO#each_line.
+- IO#gets.
+- IO#readline.
+- IO#readlines.
+
+A multi-byte character will not be split, and so a line may be slightly longer
 than the given limit.
 
 If +limit+ is not given, the line is determined only by +sep+.
 
   # Text with 1-byte characters.
-  File.new('t.txt') {|f| f.gets(1) }  # => "F"
-  File.new('t.txt') {|f| f.gets(2) }  # => "Fi"
-  File.new('t.txt') {|f| f.gets(3) }  # => "Fir"
-  File.new('t.txt') {|f| f.gets(4) }  # => "Firs"
+  File.open('t.txt') {|f| f.gets(1) }  # => "F"
+  File.open('t.txt') {|f| f.gets(2) }  # => "Fi"
+  File.open('t.txt') {|f| f.gets(3) }  # => "Fir"
+  File.open('t.txt') {|f| f.gets(4) }  # => "Firs"
   # No more than one line.
-  File.new('t.txt') {|f| f.gets(10) } # => "First line"
-  File.new('t.txt') {|f| f.gets(11) } # => "First line\n"
-  File.new('t.txt') {|f| f.gets(12) } # => "First line\n"
+  File.open('t.txt') {|f| f.gets(10) } # => "First line"
+  File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
+  File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
 
   # Text with 2-byte characters, which will not be split.
-  File.new('r.rus') {|f| f.gets(1).size } # => 1
-  File.new('r.rus') {|f| f.gets(2).size } # => 1
-  File.new('r.rus') {|f| f.gets(3).size } # => 2
-  File.new('r.rus') {|f| f.gets(4).size } # => 2
+  File.open('t.rus') {|f| f.gets(1).size } # => 1
+  File.open('t.rus') {|f| f.gets(2).size } # => 1
+  File.open('t.rus') {|f| f.gets(3).size } # => 2
+  File.open('t.rus') {|f| f.gets(4).size } # => 2
 
 ==== Line Separator and Line Limit
 
@@ -357,23 +281,39 @@ combines the two behaviors:
 
 Example:
 
-  File.new('t.txt') {|f| f.gets('li', 20) } # => "First li"
-  File.new('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
+  File.open('t.txt') {|f| f.gets('li', 20) } # => "First li"
+  File.open('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
 
 ==== Line Number
 
-A readable \IO stream has a _line_ _number_,
-which is the non-negative integer line number
-in the stream where the next read will occur.
+A readable \IO stream has a non-negative integer <i>line number</i>.
 
-The line number is the number of lines read by certain line-oriented methods
-(IO.foreach, IO#each_line, IO#gets, IO#readline, and IO#readlines)
-according to the given (or default) line separator +sep+.
+The relevant methods:
+
+- IO#lineno: Returns the line number.
+- IO#lineno=: Resets and returns the line number.
+
+Unless modified by a call to method IO#lineno=,
+the line number is the number of lines read
+by certain line-oriented methods,
+according to the given line separator +sep+:
+
+- IO.foreach: Increments the line number on each call to the block.
+- IO#each_line: Increments the line number on each call to the block.
+- IO#gets: Increments the line number.
+- IO#readline: Increments the line number.
+- IO#readlines: Increments the line number for each line read.
 
 A new stream is initially has line number zero (and position zero);
-method +rewind+ resets the line number (and position) to zero.
+method +rewind+ resets the line number (and position) to zero:
 
-\Method IO#lineno returns the line number.
+  f = File.new('t.txt')
+  f.lineno # => 0
+  f.gets   # => "First line\n"
+  f.lineno # => 1
+  f.rewind
+  f.lineno # => 0
+  f.close
 
 Reading lines from a stream usually changes its line number:
 
@@ -404,9 +344,52 @@ Output:
   "position=36 eof?=false lineno=4"
   "position=47 eof?=true lineno=5"
 
+Unlike the stream's {position}[rdoc-ref:io_streams.rdoc@Position],
+the line number does not affect where the next read or write will occur:
+
+  f = File.new('t.txt')
+  f.lineno = 1000
+  f.lineno # => 1000
+  f.gets   # => "First line\n"
+  f.lineno # => 1001
+  f.close
+
+Associated with the line number is the global variable <tt>$.</tt>:
+
+- When a stream is opened, <tt>$.</tt> is not set;
+  its value is left over from previous activity in the process:
+
+    $. = 41
+    f = File.new('t.txt')
+    $. = 41
+    # => 41
+    f.close
+
+- When a stream is read, <tt>#.</tt> is set to the line number for that stream:
+
+    f0 = File.new('t.txt')
+    f1 = File.new('t.dat')
+    f0.readlines # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+    $.           # => 5
+    f1.readlines # => ["\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"]
+    $.           # => 1
+    f0.close
+    f1.close
+
+- Methods IO#rewind and IO#seek do not affect <tt>$.</tt>:
+
+    f = File.new('t.txt')
+    f.readlines # => ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
+    $.          # => 5
+    f.rewind
+    f.seek(0, :SET)
+    $.          # => 5
+    $.          # => 5
+    f.close
+
 ==== Line Options
 
-A number of \IO methods accept optional keyword arguments
+A number of \IO methods accept an optional keyword argument
 that determine how lines in a stream are to be treated:
 
 - +:chomp+: If +true+, line separators are omitted; default is +false+.
@@ -415,103 +398,29 @@ that determine how lines in a stream are to be treated:
 
 You can process an \IO stream character-by-character using these methods:
 
-- IO#getc: Reads and returns the next character from the stream:
-
-    f = File.new('t.rus')
-    f.getc # => "т"
-    f.getc # => "е"
-    f.getc # => "с"
-    f.getc # => "т"
-    f.getc # => nil
-
+- IO#getc: Reads and returns the next character from the stream.
 - IO#readchar (not in \StringIO):
-  Like #getc, but raises an exception at end-of-stream:
-
-    f.readchar # Raises EOFError.
-
+  Like #getc, but raises an exception at end-of-stream.
 - IO#ungetc (not in \ARGF):
-  Pushes back ("unshifts") a character or integer onto the stream:
-
-    path = 't.tmp'
-    File.write(path, 'foo')
-    File.open(path) do |f|
-      f.ungetc('т')
-      f.read # => "тfoo"
-    end
-
-- IO#putc (also in Kernel): Writes a character to the stream:
-
-    File.open('t.tmp', 'w') do |f|
-      f.putc('т')
-      f.putc('е')
-      f.putc('с')
-      f.putc('т')
-    end
-    File.read('t.tmp') # => "тест"
-
+  Pushes back ("unshifts") a character or integer onto the stream.
+- IO#putc (also in Kernel): Writes a character to the stream.
 - IO#each_char: Reads each remaining character in the stream,
-  passing the character to the given block:
-
-    File.open('t.rus') do |f|
-      f.pos = 4
-      f.each_char {|c| p c }
-    end
-
-  Output:
-
-    "с"
-    "т"
-
+  passing the character to the given block.
 === Byte \IO
 
 You can process an \IO stream byte-by-byte using these methods:
 
-- IO#getbyte: Returns the next 8-bit byte as an integer in range 0..255:
-
-    File.read('t.dat')
-    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
-    File.read('t.dat')
-    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
-    f = File.new('t.dat')
-    f.getbyte # => 254
-    f.getbyte # => 255
-    f.seek(-2, :END)
-    f.getbyte # => 153
-    f.getbyte # => 148
-    f.getbyte # => nil
-
+- IO#getbyte: Returns the next 8-bit byte as an integer in range 0..255.
 - IO#readbyte (not in \StringIO):
-  Like #getbyte, but raises an exception if at end-of-stream:
-
-    f.readbyte # Raises EOFError.
-
+  Like #getbyte, but raises an exception if at end-of-stream.
 - IO#ungetbyte (not in \ARGF):
-  Pushes back ("unshifts") a byte back onto the stream:
-
-    f.ungetbyte(0)
-    f.ungetbyte(01)
-    f.read # => "\u0001\u0000"
-
+  Pushes back ("unshifts") a byte back onto the stream.
 - IO#each_byte: Reads each remaining byte in the stream,
-  passing the byte to the given block:
-
-    f.seek(-4, :END)
-    f.each_byte {|b| p b }
-
-  Output:
-
-    153
-    147
-    153
-    148
+  passing the byte to the given block.
 
 === Codepoint \IO
 
-You can process an \IO stream codepoint-by-codepoint using method
-+#each_codepoint+:
+You can process an \IO stream codepoint-by-codepoint:
 
-  a = []
-  File.open('t.rus') do |f|
-    f.each_codepoint {|c| a << c }
-  end
-  a # => [1090, 1077, 1089, 1090]
+- IO#each_codepoint: Reads each remaining codepoint, passing it to the given block.
+

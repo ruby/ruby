@@ -3640,10 +3640,11 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
 /*
  *  call-seq:
- *    read(maxlen = nil)             -> string or nil
- *    read(maxlen = nil, out_string) -> out_string or nil
+ *    read(maxlen = nil, out_string = nil) -> new_string, out_string, or nil
  *
- *  Reads bytes from the stream (in binary mode):
+ *  Reads bytes from the stream, (in binary mode);
+ *  the stream must be opened for reading
+ *  (see {Access Modes}[rdoc-ref:File@Access+Modes]):
  *
  *  - If +maxlen+ is +nil+, reads all bytes.
  *  - Otherwise reads +maxlen+ bytes, if available.
@@ -4280,8 +4281,8 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
  *  call-seq:
  *    lineno -> integer
  *
- *  Returns the current line number for the stream.
- *  See {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
+ *  Returns the current line number for the stream;
+ *  see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
  *
  */
 
@@ -4299,8 +4300,8 @@ rb_io_lineno(VALUE io)
  *  call-seq:
  *    lineno = integer -> integer
  *
- *  Sets and returns the line number for the stream.
- *  See {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
+ *  Sets and returns the line number for the stream;
+ *  see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number]:
  *
  */
 
@@ -4321,7 +4322,7 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
  *    readline(limit, **line_opts)      -> string
  *    readline(sep, limit, **line_opts) -> string
  *
- *  Reads a line as with IO#gets, but raises EOFError if already at end-of-file.
+ *  Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
  *
  */
 
@@ -4435,8 +4436,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    each_line                                   -> enumerator
  *
  *  Calls the block with each remaining line read from the stream;
- *  does nothing if already at end-of-file;
  *  returns +self+.
+ *  does nothing if already at end-of-stream;
  *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With no arguments given, reads lines
@@ -4869,7 +4870,7 @@ rb_io_each_codepoint(VALUE io)
  *    getc -> character or nil
  *
  *  Reads and returns the next 1-character string from the stream;
- *  returns +nil+ if already at end-of-file.
+ *  returns +nil+ if already at end-of-stream.
  *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *    f = File.open('t.txt')
@@ -4902,7 +4903,7 @@ rb_io_getc(VALUE io)
  *    readchar -> string
  *
  *  Reads and returns the next 1-character string from the stream;
- *  raises EOFError if already at end-of-file.
+ *  raises EOFError if already at end-of-stream.
  *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *    f = File.open('t.txt')
@@ -4932,7 +4933,7 @@ rb_io_readchar(VALUE io)
  *    getbyte -> integer or nil
  *
  *  Reads and returns the next byte (in range 0..255) from the stream;
- *  returns +nil+ if already at end-of-file.
+ *  returns +nil+ if already at end-of-stream.
  *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *    f = File.open('t.txt')
@@ -4942,8 +4943,20 @@ rb_io_readchar(VALUE io)
  *    f.getbyte # => 209
  *    f.close
  *
- *  Related: IO#readbyte (may raise EOFError).
+ *    File.read('t.dat')
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *    File.read('t.dat')
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *    f = File.new('t.dat')
+ *    f.getbyte # => 254
+ *    f.getbyte # => 255
+ *    f.seek(-2, :END)
+ *    f.getbyte # => 153
+ *    f.getbyte # => 148
+ *    f.getbyte # => nil
+ *    f.close
  *
+ *  Related: IO#readbyte (may raise EOFError).
  */
 
 VALUE
@@ -4977,7 +4990,7 @@ rb_io_getbyte(VALUE io)
  *    readbyte -> integer
  *
  *  Reads and returns the next byte (in range 0..255) from the stream;
- *  raises EOFError if already at end-of-file.
+ *  raises EOFError if already at end-of-stream.
  *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *    f = File.open('t.txt')
@@ -5155,8 +5168,10 @@ rb_io_ungetc(VALUE io, VALUE c)
  *  Returns +true+ if the stream is associated with a terminal device (tty),
  *  +false+ otherwise:
  *
- *     File.new('t.txt').isatty    #=> false
- *     File.new('/dev/tty').isatty #=> true
+ *    f = File.new('t.txt').isatty    #=> false
+ *    f.close
+ *    f = File.new('/dev/tty').isatty #=> true
+ *    f.close
  *
  *  IO#tty? is an alias for IO#isatty.
  *
@@ -5639,6 +5654,7 @@ rb_io_close(VALUE io)
  *
  *  Closes the stream for both reading and writing
  *  if open for either or both; returns +nil+.
+ *  See {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  If the stream is open for writing, flushes any buffered writes
  *  to the operating system before closing.
@@ -5710,7 +5726,8 @@ io_close(VALUE io)
  *    closed? -> true or false
  *
  *  Returns +true+ if the stream is closed for both reading and writing,
- *  +false+ otherwise:
+ *  +false+ otherwise.
+ *  See {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *    IO.popen('ruby', 'r+') do |pipe|
  *      puts pipe.closed?
@@ -5725,8 +5742,6 @@ io_close(VALUE io)
  *    false
  *    false
  *    true
- *
- *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  Related: IO#close_read, IO#close_write, IO#close.
  */
@@ -5757,6 +5772,7 @@ rb_io_closed(VALUE io)
  *
  *  Closes the stream for reading if open for reading;
  *  returns +nil+.
+ *  See {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  If the stream was opened by IO.popen and is also closed for writing,
  *  sets global variable <tt>$?</tt> (child exit status).
@@ -5778,8 +5794,6 @@ rb_io_closed(VALUE io)
  *    false
  *    pid 14748 exit 0
  *    true
- *
- *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  Related: IO#close, IO#close_write, IO#closed?.
  */
@@ -5830,7 +5844,8 @@ rb_io_close_read(VALUE io)
  *    close_write -> nil
  *
  *  Closes the stream for writing if open for writing;
- *  returns +nil+:
+ *  returns +nil+.
+ *  See {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  Flushes any buffered writes to the operating system before closing.
  *
@@ -5852,8 +5867,6 @@ rb_io_close_read(VALUE io)
  *    false
  *    pid 15044 exit 0
  *    true
- *
- *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  Related: IO#close, IO#close_read, IO#closed?.
  */
@@ -9424,20 +9437,26 @@ rb_io_set_encoding_by_bom(VALUE io)
  *
  *  Argument +path+ must be a valid file path:
  *
- *    File.new('/etc/fstab')
- *    File.new('t.txt')
+ *    f = File.new('/etc/fstab')
+ *    f.close
+ *    f = File.new('t.txt')
+ *    f.close
  *
  *  Optional argument +mode+ (defaults to 'r') must specify a valid mode;
  *  see {Access Modes}[rdoc-ref:File@Access+Modes]:
  *
- *    File.new('t.tmp', 'w')
- *    File.new('t.tmp', File::RDONLY)
+ *    f = File.new('t.tmp', 'w')
+ *    f.close
+ *    f = File.new('t.tmp', File::RDONLY)
+ *    f.close
  *
  *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
  *  see {File Permissions}[rdoc-ref:File@File+Permissions]:
  *
- *    File.new('t.tmp', File::CREAT, 0644)
- *    File.new('t.tmp', File::CREAT, 0444)
+ *    f = File.new('t.tmp', File::CREAT, 0644)
+ *    f.close
+ *    f = File.new('t.tmp', File::CREAT, 0444)
+ *    f.close
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -9446,8 +9465,10 @@ rb_io_set_encoding_by_bom(VALUE io)
  *
  *  Examples:
  *
- *    File.new('t.tmp', autoclose: true)
- *    File.new('t.tmp', internal_encoding: nil)
+ *    f = File.new('t.tmp', autoclose: true)
+ *    f.close
+ *    f = File.new('t.tmp', internal_encoding: nil)
+ *    f.close
  *
  */
 
@@ -10295,7 +10316,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    readlines(sep, limit, **line_opts) -> array
  *
  *  Returns an array containing the lines returned by calling
- *  Kernel#gets until the end-of-file is reached;
+ *  Kernel#gets until the end-of-stream is reached;
  *  (see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO]).
  *
  *  With only string argument +sep+ given,
@@ -14772,11 +14793,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #read_nonblock: the next _n_ bytes read from +self+ for a given _n_,
  *    in non-block mode.
  *  - #readbyte: Returns the next byte read from +self+;
- *    same as #getbyte, but raises an exception on end-of-file.
+ *    same as #getbyte, but raises an exception on end-of-stream.
  *  - #readchar: Returns the next character read from +self+;
- *    same as #getc, but raises an exception on end-of-file.
+ *    same as #getc, but raises an exception on end-of-stream.
  *  - #readline: Returns the next line read from +self+;
- *    same as #getline, but raises an exception of end-of-file.
+ *    same as #getline, but raises an exception of end-of-stream.
  *  - #readlines: Returns an array of all lines read read from +self+.
  *  - #readpartial: Returns up to the given number of bytes from +self+.
  *
@@ -14836,7 +14857,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - #binmode?: Returns whether +self+ is in binary mode.
  *  - #close_on_exec?: Returns the close-on-exec flag for +self+.
  *  - #closed?: Returns whether +self+ is closed.
- *  - #eof? (aliased as #eof): Returns whether +self+ is at end-of-file.
+ *  - #eof? (aliased as #eof): Returns whether +self+ is at end-of-stream.
  *  - #external_encoding: Returns the external encoding object for +self+.
  *  - #fileno (aliased as #to_i): Returns the integer file descriptor for +self+
  *  - #internal_encoding: Returns the internal encoding object for +self+.
