@@ -11524,23 +11524,6 @@ rb_sym_to_s(VALUE sym)
     return str_new_shared(rb_cString, rb_sym2str(sym));
 }
 
-/*
- *  call-seq:
- *    to_sym -> self
- *
- *  Returns +self+.
- *
- *  Symbol#intern is an alias for Symbol#to_sym.
- *
- *  Related: String#to_sym.
- */
-
-static VALUE
-sym_to_sym(VALUE sym)
-{
-    return sym;
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc)
 {
@@ -12107,8 +12090,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "name", rb_sym2str, 0); /* in symbol.c */
-    rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0); /* in proc.c */
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);

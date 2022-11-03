@@ -1104,6 +1104,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
 		$(srcdir)/nilclass.rb \
@@ -9600,6 +9601,7 @@ miniinit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}shape.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
+miniinit.$(OBJEXT): {$(VPATH)}symbol.rb
 miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_sync.rb
@@ -15425,6 +15427,7 @@ symbol.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 symbol.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+symbol.$(OBJEXT): {$(VPATH)}builtin.h
 symbol.$(OBJEXT): {$(VPATH)}config.h
 symbol.$(OBJEXT): {$(VPATH)}constant.h
 symbol.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -15597,6 +15600,8 @@ symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c
 symbol.$(OBJEXT): {$(VPATH)}symbol.h
+symbol.$(OBJEXT): {$(VPATH)}symbol.rb
+symbol.$(OBJEXT): {$(VPATH)}symbol.rbinc
 symbol.$(OBJEXT): {$(VPATH)}vm_debug.h
 symbol.$(OBJEXT): {$(VPATH)}vm_sync.h
 thread.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
