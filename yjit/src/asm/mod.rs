@@ -418,12 +418,11 @@ impl CodeBlock {
     /// Write a single byte at the current position.
     pub fn write_byte(&mut self, byte: u8) {
         let write_ptr = self.get_write_ptr();
-        if !self.has_capacity(1) || self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_err() {
+        if self.has_capacity(1) && self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_ok() {
+            self.write_pos += 1;
+        } else {
             self.dropped_bytes = true;
         }
-
-        // Always advance write_pos since arm64 PadEntryExit needs this to stop the loop.
-        self.write_pos += 1;
     }
 
     /// Write multiple bytes starting from the current position.
@@ -489,10 +488,11 @@ impl CodeBlock {
         self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
 
         // Move past however many bytes the instruction takes up
-        if !self.has_capacity(num_bytes) {
+        if self.has_capacity(num_bytes) {
+            self.write_pos += num_bytes;
+        } else {
             self.dropped_bytes = true; // retry emitting the Insn after next_page
         }
-        self.write_pos += num_bytes;
     }
 
     // Link internal label references

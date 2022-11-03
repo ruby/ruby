@@ -1028,7 +1028,7 @@ impl Assembler
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
-                    while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES {
+                    while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES && !cb.has_dropped_bytes() {
                         nop(cb);
                     }
                 }
