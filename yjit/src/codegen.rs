@@ -5557,8 +5557,53 @@ fn gen_send_general(
 
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
-                        gen_counter_incr!(asm, send_optimized_method_call);
-                        return CantCompile;
+
+                        if block.is_some() {
+                            gen_counter_incr!(asm, send_call_block);
+                            return CantCompile;
+                        }
+
+                        if flags & VM_CALL_KWARG != 0 {
+                            gen_counter_incr!(asm, send_call_kwarg);
+                            return CantCompile;
+                        }
+
+                        // Optimize for single ractor mode and avoid runtime check for
+                        // "defined with an un-shareable Proc in a different Ractor"
+                        if !assume_single_ractor_mode(jit, ocb) {
+                            gen_counter_incr!(asm, send_call_multi_ractor);
+                            return CantCompile;
+                        }
+
+                        // About to reset the SP, need to load this here
+                        let recv_load = asm.load(recv);
+
+                        let sp = asm.lea(ctx.sp_opnd(0));
+
+                        // Write interpreter SP into CFP.
+                        // Needed in case the callee yields to the block.
+                        jit_save_pc(jit, asm);
+                        // Store incremented PC into current control frame in case callee raises.
+                        gen_save_sp(jit, asm, ctx);
+
+                        let kw_splat = flags & VM_CALL_KW_SPLAT;
+                        let stack_argument_pointer = asm.lea(Opnd::mem(64, sp, -(argc) * SIZEOF_VALUE_I32));
+
+                        let ret = asm.ccall(rb_optimized_call as *const u8, vec![
+                            recv_load,
+                            EC,
+                            argc.into(),
+                            stack_argument_pointer,
+                            kw_splat.into(),
+                            VM_BLOCK_HANDLER_NONE.into(),
+                        ]);
+
+                        ctx.stack_pop(argc as usize + 1);
+
+                        let stack_ret = ctx.stack_push(Type::Unknown);
+                        asm.mov(stack_ret, ret);
+                        return KeepCompiling;
+
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
                         gen_counter_incr!(asm, send_optimized_method_block_call);

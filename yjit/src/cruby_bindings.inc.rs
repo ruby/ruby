@@ -1481,6 +1481,16 @@ extern "C" {
     pub fn rb_get_iseq_body_param_opt_table(iseq: *const rb_iseq_t) -> *const VALUE;
 }
 extern "C" {
+    pub fn rb_optimized_call(
+        recv: *mut VALUE,
+        ec: *mut rb_execution_context_t,
+        argc: ::std::os::raw::c_int,
+        argv: *mut VALUE,
+        kw_splat: ::std::os::raw::c_int,
+        block_handler: VALUE,
+    ) -> VALUE;
+}
+extern "C" {
     pub fn rb_leaf_invokebuiltin_iseq_p(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
