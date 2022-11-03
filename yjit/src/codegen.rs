@@ -6724,6 +6724,9 @@ pub struct CodegenGlobals {
 
     /// Freed page indexes. None if code GC has not been used.
     freed_pages: Option<Vec<usize>>,
+
+    /// How many times code GC has been executed.
+    code_gc_count: usize,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -6816,6 +6819,7 @@ impl CodegenGlobals {
             method_codegen_table: HashMap::new(),
             ocb_pages,
             freed_pages: None,
+            code_gc_count: 0,
         };
 
         // Register the method codegen functions
@@ -6961,7 +6965,12 @@ impl CodegenGlobals {
     }
 
     pub fn set_freed_pages(freed_pages: Vec<usize>) {
-        CodegenGlobals::get_instance().freed_pages = Some(freed_pages)
+        CodegenGlobals::get_instance().freed_pages = Some(freed_pages);
+        CodegenGlobals::get_instance().code_gc_count += 1;
+    }
+
+    pub fn get_code_gc_count() -> usize {
+        CodegenGlobals::get_instance().code_gc_count
     }
 }
 

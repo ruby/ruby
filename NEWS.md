@@ -330,6 +330,9 @@ The following deprecated APIs are removed.
   memory pages until actually utilized by JIT code.
 * Introduce Code GC that frees all code pages when the memory consumption
   by JIT code reaches `--yjit-exec-mem-size`.
+* `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
+  existing `inline_code_size` and `outlined_code_size` keys:
+  `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
 
 ### MJIT
 

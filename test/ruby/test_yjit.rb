@@ -837,7 +837,7 @@ class TestYJIT < Test::Unit::TestCase
       return :not_compiled2 unless compiles { nil } # should be JITable again
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
-      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 2
+      return :"code_gc_#{code_gc_count}" if code_gc_count != 2
 
       :ok
     RUBY
@@ -858,7 +858,7 @@ class TestYJIT < Test::Unit::TestCase
       return :broken_resume2 if fiber.resume != 0 # The code should be still callable
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
-      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 1
+      return :"code_gc_#{code_gc_count}" if code_gc_count != 1
 
       :ok
     RUBY
@@ -890,7 +890,7 @@ class TestYJIT < Test::Unit::TestCase
       return :not_paged4 unless add_pages(100) # check everything still works
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
-      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count != 3
+      return :"code_gc_#{code_gc_count}" if code_gc_count != 3
 
       :ok
     RUBY
@@ -912,7 +912,7 @@ class TestYJIT < Test::Unit::TestCase
       return :broken_resume2 if fiber.resume != 0 # on-stack code should be callable
 
       code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
-      return :"code_gc_#{code_gc_count}" if code_gc_count && code_gc_count == 0
+      return :"code_gc_#{code_gc_count}" if code_gc_count == 0
 
       :ok
     RUBY

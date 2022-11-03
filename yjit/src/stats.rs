@@ -261,7 +261,6 @@ make_counters! {
     compiled_block_count,
     compilation_failure,
     freed_iseq_count,
-    code_gc_count,
 
     exit_from_branch_stub,
 
@@ -391,6 +390,9 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
         // Live pages
         hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
+
+        // Code GC count
+        hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
     }
 
     // If we're not generating stats, the hash is done

@@ -10,7 +10,6 @@ use crate::core::IseqPayload;
 use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
-use crate::stats::incr_counter;
 use crate::virtualmem::WriteError;
 
 #[cfg(feature = "disasm")]
@@ -605,7 +604,6 @@ impl CodeBlock {
         }
 
         CodegenGlobals::set_freed_pages(freed_pages);
-        incr_counter!(code_gc_count);
     }
 
     pub fn inline(&self) -> bool {
