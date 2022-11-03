@@ -111,7 +111,6 @@ class Gem::Platform
         [os, version]
       when /netbsdelf/ then             [ "netbsdelf", nil ]
       when /openbsd(\d+\.\d+)?/ then    [ "openbsd",   $1  ]
-      when /bitrig(\d+\.\d+)?/ then     [ "bitrig",    $1  ]
       when /solaris(\d+\.\d+)?/ then    [ "solaris",   $1  ]
       # test
       when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
