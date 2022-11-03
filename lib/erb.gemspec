@@ -27,7 +27,9 @@ Gem::Specification.new do |spec|
   spec.executables   = ['erb']
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = ">= 2.7.0"
+  if RUBY_ENGINE != 'jruby'
+    spec.required_ruby_version = '>= 2.7.0'
+  end
 
   spec.add_dependency 'cgi', '>= 0.3.3'
 end
