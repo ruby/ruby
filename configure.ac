@@ -2964,6 +2964,23 @@ STATIC=
   ])
 }
 
+EXTSTATIC=
+AC_SUBST(EXTSTATIC)dnl
+AC_ARG_WITH(static-linked-ext,
+	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
+            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
+AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
+  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
+  EXTOBJS='ext/extinit.$(OBJEXT)'
+  AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
+  AC_SUBST(ENCSTATIC, static)
+], [
+  ENCOBJS='dmyenc.$(OBJEXT)'
+  EXTOBJS='dmyext.$(OBJEXT)'
+])
+AC_SUBST(ENCOBJS)
+AC_SUBST(EXTOBJS)
+
 : "rpath" && {
     AS_CASE(["$target_os"],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
@@ -3268,23 +3285,6 @@ AC_ARG_WITH(ext,
 AC_ARG_WITH(out-ext,
             AS_HELP_STRING([--with-out-ext=EXTS],
                            [pass to --without-ext option of extmk.rb]))
-EXTSTATIC=
-AC_SUBST(EXTSTATIC)dnl
-AC_ARG_WITH(static-linked-ext,
-	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
-            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
-AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
-  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
-  AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
-  AC_SUBST(ENCSTATIC, static)
-], [
-  ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
-])
-AC_SUBST(ENCOBJS)
-AC_SUBST(EXTOBJS)
-
 AC_ARG_WITH(setup,
 	    AS_HELP_STRING([--with-setup=SETUP], [use extension libraries setup]),
 	    [setup=$withval])
