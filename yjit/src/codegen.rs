@@ -1326,6 +1326,10 @@ fn guard_object_is_heap(
     asm.jbe(side_exit.into());
 }
 
+// Guard that the object is a heap object
+// Unlike guard_object_is_heap this uses jit_chain_guard so that we can generate other block
+// versions for non-heap objects if that stub is hit. This also upgrades information on the tested
+// object in the ctx for both the heap and non-heap branches.
 fn chain_guard_object_is_heap(
     jit: &JITState,
     ctx: &mut Context,
@@ -4000,24 +4004,6 @@ fn jit_thread_s_current(
     let stack_ret = ctx.stack_push(Type::UnknownHeap);
     asm.mov(stack_ret, thread_self);
     true
-}
-
-/// Returns whether any instance of this class or any of its subclasses can be an immediate special
-/// constant.
-fn class_or_subclass_can_be_immediate(klass: VALUE) -> bool {
-    assert!(unsafe { RB_TYPE_P(klass, RUBY_T_CLASS) });
-
-    return unsafe {
-        klass == rb_cInteger ||    // FIXNUM
-            klass == rb_cFloat ||      // FLONUM
-            klass == rb_cNumeric ||    // FIXNUM/FLONUM
-            klass == rb_cSymbol ||     // static symbol
-            klass == rb_cTrueClass ||  // Qtrue
-            klass == rb_cFalseClass || // Qfalse
-            klass == rb_cNilClass ||   // Qnil
-            klass == rb_cObject ||     // All of the above inherit Object
-            klass == rb_cBasicObject   // Everything inherits BasicObject
-    };
 }
 
 fn gen_branch_direct(

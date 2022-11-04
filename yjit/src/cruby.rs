@@ -616,6 +616,24 @@ where
     ret
 }
 
+/// Returns whether any instance of this class or any of its subclasses can be an immediate special
+/// constant.
+pub fn class_or_subclass_can_be_immediate(klass: VALUE) -> bool {
+    assert!(unsafe { RB_TYPE_P(klass, RUBY_T_CLASS) });
+
+    return unsafe {
+        klass == rb_cInteger ||    // FIXNUM
+            klass == rb_cFloat ||      // FLONUM
+            klass == rb_cNumeric ||    // FIXNUM/FLONUM
+            klass == rb_cSymbol ||     // static symbol
+            klass == rb_cTrueClass ||  // Qtrue
+            klass == rb_cFalseClass || // Qfalse
+            klass == rb_cNilClass ||   // Qnil
+            klass == rb_cObject ||     // All of the above inherit Object
+            klass == rb_cBasicObject   // Everything inherits BasicObject
+    };
+}
+
 // Non-idiomatic capitalization for consistency with CRuby code
 #[allow(non_upper_case_globals)]
 pub const Qfalse: VALUE = VALUE(RUBY_Qfalse as usize);
