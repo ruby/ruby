@@ -3429,16 +3429,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
-            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
-            if (shape) {
-                VALUE klass = RBASIC_CLASS(obj);
-
-                // Increment max_iv_count if applicable, used to determine size pool allocation
-                uint32_t num_of_ivs = shape->next_iv_index;
-                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
-                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
-                }
-            }
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
@@ -7279,6 +7269,17 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             uint32_t i, len = ROBJECT_IV_COUNT(obj);
             for (i  = 0; i < len; i++) {
                 gc_mark(objspace, ptr[i]);
+            }
+
+            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+            if (shape) {
+                VALUE klass = RBASIC_CLASS(obj);
+
+                // Increment max_iv_count if applicable, used to determine size pool allocation
+                uint32_t num_of_ivs = shape->next_iv_index;
+                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
+                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
+                }
             }
 
             if (LIKELY(during_gc) &&
