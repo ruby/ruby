@@ -18005,6 +18005,7 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/array.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/class.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compile.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+yjit.$(OBJEXT): $(top_srcdir)/internal/cont.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
@@ -18202,6 +18203,7 @@ yjit.$(OBJEXT): {$(VPATH)}probes.h
 yjit.$(OBJEXT): {$(VPATH)}probes_helper.h
 yjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 yjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+yjit.$(OBJEXT): {$(VPATH)}shape.h
 yjit.$(OBJEXT): {$(VPATH)}st.h
 yjit.$(OBJEXT): {$(VPATH)}subst.h
 yjit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
