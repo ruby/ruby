@@ -998,20 +998,14 @@ class ERB
     #
     #   is a &gt; 0 &amp; a &lt; 10?
     #
-    def html_escape(s)
-      CGI.escapeHTML(s.to_s)
+    begin
+      # ERB::Util.html_escape
+      require 'erb.so'
+    rescue LoadError
+      def html_escape(s)
+        CGI.escapeHTML(s.to_s)
+      end
     end
-  end
-
-  begin
-    require 'erb.so'
-  rescue LoadError
-  else
-    private_constant :Escape
-    Util.prepend(Escape)
-  end
-
-  module Util
     alias h html_escape
     module_function :h
     module_function :html_escape
