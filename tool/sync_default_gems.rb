@@ -444,7 +444,7 @@ def message_filter(repo, sha, input: ARGF)
     log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
     conv[log]
     log.sub!(/(?:(\A\s*)|\s*\n)(?=(?i:Co-authored-by:.*)*\Z)/) {
-      $~.begin(0) ? "#{url}\n" : "\n\n#{url}"
+      $~.begin(1) ? "#{url}\n" : "\n\n#{url}"
     }
   else
     log = url
