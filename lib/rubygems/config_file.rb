@@ -392,7 +392,7 @@ if you believe they were disclosed to a third party.
 
   # The name of the state file.
   def state_file_name
-    @state_file_name || Gem.state_file
+    Gem.state_file
   end
 
   # Reads time of last update check from state file

@@ -9,6 +9,9 @@ class TestUpdateSuggestion < Gem::TestCase
 
     @cmd = Gem::Command.new "dummy", "dummy"
     @cmd.extend Gem::UpdateSuggestion
+    @start_time = 1_000_000
+    @minute = 60 * 60
+    @week = 7 * 24 * @minute
   end
 
   def with_eglible_environment(**params)
@@ -22,12 +25,13 @@ class TestUpdateSuggestion < Gem::TestCase
     rubygems_version: Gem::Version.new("1.2.3"),
     latest_rubygems_version: Gem::Version.new("2.0.0"),
     ci: false,
+    reset_last_update_check: true,
     cmd:
   )
     original_config, Gem.configuration[:prevent_update_suggestion] = Gem.configuration[:prevent_update_suggestion], nil
     original_env, ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"], nil
     original_disable, Gem.disable_system_update_message = Gem.disable_system_update_message, nil
-    Gem.configuration.last_update_check = 0
+    Gem.configuration.last_update_check = 0 if reset_last_update_check
 
     Gem.ui.stub :tty?, tty do
       Gem.stub :rubygems_version, rubygems_version do
@@ -65,6 +69,73 @@ class TestUpdateSuggestion < Gem::TestCase
 
         # test last check is written to config file
         assert File.read(Gem.configuration.state_file_name).match("123456789")
+      end
+    end
+  end
+
+  def test_eglible_for_update_is_not_annoying_when_new_version_is_released
+    current_version = Gem::Version.new("1.2.0")
+    latest_version = current_version
+
+    # checking for first time, it is not eglible since new version
+    # is not released yet and stored
+    with_eglible_environment(cmd: @cmd, rubygems_version: current_version, latest_rubygems_version: latest_version) do
+      Time.stub :now, @start_time do
+        refute @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time
+      end
+    end
+
+    # checking next week, it is not eglible since new version
+    # is not released yet and timestamp is stored
+    with_eglible_environment(
+      cmd: @cmd,
+      rubygems_version: current_version,
+      latest_rubygems_version: latest_version,
+      reset_last_update_check: false
+    ) do
+      Time.stub :now, @start_time + @week do
+        refute @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time + @week
+      end
+    end
+
+    # pretend new version is released
+    latest_version = Gem::Version.new("1.3.0")
+
+    # checking later same next week, it is not eglible even new version
+    # is released and timestamp is not stored
+    with_eglible_environment(
+      cmd: @cmd,
+      rubygems_version: current_version,
+      latest_rubygems_version: latest_version,
+      reset_last_update_check: false
+    ) do
+      Time.stub :now, @start_time + @week + @minute do
+        refute @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time + @week
+      end
+    end
+  end
+
+  def test_eglible_for_update_is_not_annoying_when_not_upgraded
+    with_eglible_environment(cmd: @cmd) do
+      # checking for first time, it is eglible and stored
+      Time.stub :now, @start_time do
+        assert @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time
+      end
+
+      # checking minute later is not eglible and not stored
+      Time.stub :now, @start_time + @minute do
+        refute @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time
+      end
+
+      # checking week later is eglible again and stored
+      Time.stub :now, @start_time + @week do
+        assert @cmd.eglible_for_update?
+        assert_equal Gem.configuration.last_update_check, @start_time + @week
       end
     end
   end
@@ -121,7 +192,7 @@ class TestUpdateSuggestion < Gem::TestCase
   end
 
   def test_eglible_for_update_unwrittable_config
-    with_eglible_environment(ci: true, cmd: @cmd) do
+    with_eglible_environment(cmd: @cmd) do
       Gem.configuration.stub :state_file_writable?, false do
         refute @cmd.eglible_for_update?
       end
