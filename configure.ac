@@ -3733,10 +3733,40 @@ AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 
 AC_SUBST(MJIT_SUPPORT)
 
+AC_CHECK_TOOL(RUSTC, [rustc], [no])
+
+dnl check if we can build YJIT on this target platform
+AS_CASE(["$target_cpu-$target_os"],
+    [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [YJIT_TARGET_OK=no]
+)
+
+dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
-        AS_HELP_STRING([--enable-yjit],
-        [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
-        [YJIT_SUPPORT=$enableval], [YJIT_SUPPORT=no])
+    AS_HELP_STRING([--enable-yjit],
+    [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
+    [YJIT_SUPPORT=$enableval],
+    [
+        AS_IF([test x"$RUSTC" != "xno"],
+            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit asm=/dev/null ],
+                AS_IF([test x"$YJIT_TARGET_OK" != "xno"],
+                    [YJIT_SUPPORT=yes],
+                    [YJIT_SUPPORT=no]
+                ),
+                [YJIT_SUPPORT=no]
+            ),
+            [YJIT_SUPPORT=no]
+        )
+    ]
+)
 
 CARGO=
 CARGO_BUILD_ARGS=
@@ -3783,7 +3813,6 @@ AS_CASE(["${YJIT_SUPPORT}"],
     YJIT_OBJ='yjit.$(OBJEXT)'
     AC_DEFINE(USE_YJIT, 1)
 ], [AC_DEFINE(USE_YJIT, 0)])
-
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
