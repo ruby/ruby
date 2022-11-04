@@ -441,9 +441,10 @@ def message_filter(repo, sha, input: ARGF)
   end
   url = "#{url}/commit/#{sha[0,10]}\n"
   if log and !log.empty?
+    log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
     conv[log]
-    log.sub!(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-      "\n\n#{url}"
+    log.sub!(/(?:(\A\s*)|\s*\n)(?=(?i:Co-authored-by:.*)*\Z)/) {
+      $~.begin(0) ? "#{url}\n" : "\n\n#{url}"
     }
   else
     log = url
