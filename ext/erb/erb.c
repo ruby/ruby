@@ -55,18 +55,18 @@ optimized_escape_html(VALUE str)
         }
     }
 
-    VALUE escaped;
+    VALUE escaped = str;
     if (RSTRING_LEN(str) < (dest - buf)) {
         escaped = rb_str_new(buf, dest - buf);
         preserve_original_state(str, escaped);
-    }
-    else {
-        escaped = rb_str_dup(str);
     }
     ALLOCV_END(vbuf);
     return escaped;
 }
 
+// ERB::Util.html_escape is different from CGI.escapeHTML in the following two parts:
+//   * ERB::Util.html_escape converts an argument with #to_s first (only if it's not T_STRING)
+//   * ERB::Util.html_escape does not allocate a new string when nothing needs to be escaped
 static VALUE
 erb_escape_html(VALUE self, VALUE str)
 {
