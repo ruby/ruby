@@ -68,9 +68,9 @@ optimized_escape_html(VALUE str)
 }
 
 static VALUE
-cgiesc_escape_html(VALUE self, VALUE str)
+erb_escape_html(VALUE self, VALUE str)
 {
-    StringValue(str);
+    str = rb_convert_type(str, T_STRING, "String", "to_s");
 
     if (rb_enc_str_asciicompat_p(str)) {
         return optimized_escape_html(str);
@@ -78,13 +78,6 @@ cgiesc_escape_html(VALUE self, VALUE str)
     else {
         return rb_call_super(1, &str);
     }
-}
-
-static VALUE
-erb_escape_html(VALUE self, VALUE str)
-{
-    str = rb_funcall(str, rb_intern("to_s"), 0);
-    return cgiesc_escape_html(self, str);
 }
 
 void
