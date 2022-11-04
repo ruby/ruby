@@ -629,6 +629,7 @@ module TestIRB
       IRB.init_config(nil)
       IRB.conf[:COMMAND_ALIASES] = { :'@' => :whereami }
       workspace = IRB::WorkSpace.new(Object.new)
+      IRB.conf[:VERBOSE] = false
       irb = IRB::Irb.new(workspace, input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
       out, err = capture_output do
@@ -652,6 +653,7 @@ module TestIRB
       main.instance_variable_set(:@foo, "foo")
       $bar = "bar"
       workspace = IRB::WorkSpace.new(main)
+      IRB.conf[:VERBOSE] = false
       irb = IRB::Irb.new(workspace, input)
       IRB.conf[:MAIN_CONTEXT] = irb.context
       out, err = capture_output do
