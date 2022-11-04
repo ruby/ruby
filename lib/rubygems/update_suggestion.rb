@@ -53,10 +53,11 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
 
     # compare current and latest version, this is the part where
     # latest rubygems spec is fetched from remote
-    if (Gem.rubygems_version < Gem.latest_rubygems_version)
+    (Gem.rubygems_version < Gem.latest_rubygems_version).tap do |eglible|
       # store the time of last successful check into state file
       Gem.configuration.last_update_check = check_time
-      return true
+
+      return eglible
     end
   rescue # don't block install command on any problem
     false
