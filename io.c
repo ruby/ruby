@@ -13406,6 +13406,17 @@ global_argf_p(VALUE arg)
     return arg == argf;
 }
 
+typedef VALUE (*argf_encoding_func)(VALUE io);
+
+static VALUE
+argf_encoding(VALUE argf, argf_encoding_func func)
+{
+    if (!RTEST(ARGF.current_file)) {
+        return rb_enc_default_external();
+    }
+    return func(rb_io_check_io(ARGF.current_file));
+}
+
 /*
  *  call-seq:
  *     ARGF.external_encoding   -> encoding
@@ -13425,10 +13436,7 @@ global_argf_p(VALUE arg)
 static VALUE
 argf_external_encoding(VALUE argf)
 {
-    if (!RTEST(ARGF.current_file)) {
-        return rb_enc_from_encoding(rb_default_external_encoding());
-    }
-    return rb_io_external_encoding(rb_io_check_io(ARGF.current_file));
+    return argf_encoding(argf, rb_io_external_encoding);
 }
 
 /*
@@ -13447,10 +13455,7 @@ argf_external_encoding(VALUE argf)
 static VALUE
 argf_internal_encoding(VALUE argf)
 {
-    if (!RTEST(ARGF.current_file)) {
-        return rb_enc_from_encoding(rb_default_external_encoding());
-    }
-    return rb_io_internal_encoding(rb_io_check_io(ARGF.current_file));
+    return argf_encoding(argf, rb_io_internal_encoding);
 }
 
 /*
