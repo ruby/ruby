@@ -721,6 +721,7 @@ module TestIRB
         end
       end
 
+      IRB.conf[:VERBOSE] = false
       IRB::Context.new(nil, workspace)
     end
   end
