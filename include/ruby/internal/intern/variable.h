@@ -69,6 +69,16 @@ RBIMPL_ATTR_NONNULL(())
 void rb_set_class_path(VALUE klass, VALUE space, const char *name);
 
 /**
+  * Returns the "debug" name of a class/module. This is a string which gives a
+  * human a good understanding of what exactly the class is, including its name,
+  * what it is a singleton or refinement of, etc.
+  *
+  * @param[in]  klass   Target module/class to get the name for
+  * @return     The debug name of the class
+  */
+VALUE rb_mod_debug_name(VALUE klass);
+
+/**
  * Identical  to rb_set_class_path(),  except  it accepts  the  name as  Ruby's
  * string instead of C's.
  *

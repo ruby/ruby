@@ -3262,6 +3262,51 @@ class TestModule < Test::Unit::TestCase
     assert_match(/::Foo$/, mod.name, '[Bug #14895]')
   end
 
+  module ::DebugNameTests
+    class Simple
+    end
+    module Refinement
+      refine Simple do
+        def refined_method = nil
+      end
+    end
+
+    using Refinement
+
+    def self.get_refinement_klass
+      ::DebugNameTests::Simple.new.method(:refined_method).owner
+    end
+  end
+
+  def test_debug_name_simple
+    assert_equal "DebugNameTests::Simple", ::DebugNameTests::Simple.debug_name
+  end
+
+  def test_debug_name_singleton
+    assert_equal "#<singleton of DebugNameTests::Simple>",
+      ::DebugNameTests::Simple.singleton_class.debug_name
+  end
+
+  def test_debug_name_instance
+    assert_equal "#<singleton of #<instance of DebugNameTests::Simple>>",
+      ::DebugNameTests::Simple.new.singleton_class.debug_name
+  end
+
+  def test_debug_name_anonymous
+    assert_equal "#<anonymous subclass of DebugNameTests::Simple>",
+      Class.new(::DebugNameTests::Simple).debug_name
+  end
+
+  def test_debug_name_nesting
+    assert_equal "#<singleton of #<instance of #<anonymous subclass of DebugNameTests::Simple>>>",
+      Class.new(::DebugNameTests::Simple).new.singleton_class.debug_name
+  end
+
+  def test_debug_name_refinement
+    assert_equal "#<refinement DebugNameTests::Refinement of DebugNameTests::Simple>",
+      ::DebugNameTests.get_refinement_klass.debug_name
+  end
+
   private
 
   def assert_top_method_is_private(method)

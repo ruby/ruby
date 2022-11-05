@@ -4459,6 +4459,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
+    rb_define_method(rb_cModule, "debug_name", rb_mod_debug_name, 0); /* in variable.c */
 
     rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);

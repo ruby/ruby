@@ -224,6 +224,71 @@ build_const_path(VALUE head, ID tail)
     return build_const_pathname(head, rb_id2str(tail));
 }
 
+static VALUE
+build_debug_name(VALUE klass)
+{
+    if (!RB_TEST(klass)) {
+        return rb_str_new_literal("#<unknown class>");
+    } else if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_ICLASS) && !RB_TYPE_P(klass, T_MODULE)) {
+        /* "klass" is not actually a class - can happen as part of a recursive call
+         * when printing an object's singleton klass. */
+        return rb_sprintf("#<instance of %"PRIsVALUE">",
+                          build_debug_name(rb_class_real(rb_class_of(klass))));
+    } else if (FL_TEST(rb_class_of(klass), RMODULE_IS_REFINEMENT)) {
+        /* when in an actual call-stack, it seems that a refinement is an object whose _class_ has
+         * the refinement flag */
+        return build_debug_name(rb_class_of(klass));
+    } else if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+        ID id_refined_class;
+        CONST_ID(id_refined_class, "__refined_class__");
+        VALUE refined_klass = rb_attr_get(klass, id_refined_class);
+
+        ID id_defined_at;
+        CONST_ID(id_defined_at, "__defined_at__");
+        VALUE defined_at = rb_attr_get(klass, id_defined_at);
+
+        return rb_sprintf("#<refinement %"PRIsVALUE" of %"PRIsVALUE">",
+                          build_debug_name(defined_at),
+                          build_debug_name(refined_klass)); 
+    } else if (RB_TYPE_P(klass, T_ICLASS)) {
+        return rb_class_path(RBASIC(klass)->klass);
+    } else if (FL_TEST(klass, FL_SINGLETON)) {
+        VALUE attached_to = rb_ivar_get(klass, id__attached__);
+        return rb_sprintf("#<singleton of %"PRIsVALUE">",
+                          build_debug_name(attached_to));
+    } else if (!RB_TEST(rb_mod_name(klass))) {
+        /* An anonymous module/class
+         * Find an actual class - every _class_ is guaranteed to be a descendant of
+         * BasicObject at least, which has a name, so we'll be able to name this
+         * _something_. */
+        while (!RB_TYPE_P(klass, T_CLASS)) {
+            klass = rb_class_of(klass);
+        }
+        while (!RB_TEST(rb_mod_name(klass))) {
+            klass = rb_class_superclass(klass);
+        }
+        return rb_sprintf("#<anonymous subclass of %"PRIsVALUE">",
+                          build_debug_name(klass));
+    } else {
+        return rb_class_path(klass);
+    }
+}
+
+/*
+ *  call-seq:
+ *     mod.debug_name   -> string
+ *
+ * Returns the "debug" name of a class/module. This is a string which gives a
+ * human a good understanding of what exactly the class is, including its name,
+ * what it is a singleton or refinement of, etc.
+ *
+ */
+VALUE
+rb_mod_debug_name(VALUE klass)
+{
+    return build_debug_name(klass);
+}
+
 void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
