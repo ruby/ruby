@@ -38,11 +38,6 @@ escaped_length(VALUE str)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    // Use strpbrk to optimize the no-escape case when str is long enough for SIMD.
-    if (RSTRING_LEN(str) >= 16 && strpbrk(RSTRING_PTR(str), "'&\"<>") == NULL) {
-        return str;
-    }
-
     VALUE vbuf;
     char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
     const char *cstr = RSTRING_PTR(str);
