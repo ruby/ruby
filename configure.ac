@@ -3756,7 +3756,7 @@ AC_ARG_ENABLE(yjit,
     [YJIT_SUPPORT=$enableval],
     [
         AS_IF([test x"$RUSTC" != "xno"],
-            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | rustc - --emit asm=/dev/null ],
+            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
                 AS_IF([test x"$YJIT_TARGET_OK" != "xno"],
                     [YJIT_SUPPORT=yes],
                     [YJIT_SUPPORT=no]
