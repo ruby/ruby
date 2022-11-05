@@ -38,9 +38,8 @@ escaped_length(VALUE str)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    // Optimize the most common, no-escape case with strpbrk(3). Not using it after
-    // this because calling a C function many times could be slower for some cases.
-    if (strpbrk(RSTRING_PTR(str), "'&\"<>") == NULL) {
+    // Use strpbrk to optimize the no-escape case when str is long enough for SIMD.
+    if (RSTRING_LEN(str) >= 16 && strpbrk(RSTRING_PTR(str), "'&\"<>") == NULL) {
         return str;
     }
 
@@ -62,8 +61,11 @@ optimized_escape_html(VALUE str)
         }
     }
 
-    VALUE escaped = rb_str_new(buf, dest - buf);
-    preserve_original_state(str, escaped);
+    VALUE escaped = str;
+    if (RSTRING_LEN(str) < (dest - buf)) {
+        escaped = rb_str_new(buf, dest - buf);
+        preserve_original_state(str, escaped);
+    }
     ALLOCV_END(vbuf);
     return escaped;
 }
