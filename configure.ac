@@ -3733,7 +3733,7 @@ AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 
 AC_SUBST(MJIT_SUPPORT)
 
-AC_CHECK_TOOL(RUSTC, [rustc], [no])
+AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
 dnl check if we can build YJIT on this target platform
 AS_CASE(["$target_cpu-$target_os"],
@@ -3757,10 +3757,7 @@ AC_ARG_ENABLE(yjit,
     [
         AS_IF([test x"$RUSTC" != "xno"],
             AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
-                AS_IF([test x"$YJIT_TARGET_OK" != "xno"],
-                    [YJIT_SUPPORT=yes],
-                    [YJIT_SUPPORT=no]
-                ),
+                [YJIT_SUPPORT="$YJIT_TARGET_OK"],
                 [YJIT_SUPPORT=no]
             ),
             [YJIT_SUPPORT=no]
@@ -3776,10 +3773,10 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AS_IF([test x"$enable_jit_support" = "xno"],
         AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
     )
-    AC_CHECK_TOOL(RUSTC, [rustc], [no])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
+    AS_IF([test "$cross_compiling" = yes], [RUSTC="$RUSTC --target=$target"])
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
