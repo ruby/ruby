@@ -656,21 +656,36 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
 
     if (DEBUG) fprintf(stderr, "fiber_pool_stack_free: %p+%"PRIuSIZE" [base=%p, size=%"PRIuSIZE"]\n", base, size, stack->base, stack->size);
 
-#if VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
+    // The pages being used by the stack can be returned back to the system.
+    // That doesn't change the page mapping, but it does allow the system to
+    // reclaim the physical memory.
+    // Since we no longer care about the data itself, we don't need to page
+    // out to disk, since that is costly. Not all systems support that, so
+    // we try our best to select the most efficient implementation.
+    // In addition, it's actually slightly desirable to not do anything here,
+    // but that results in higher memory usage.
+
+#ifdef __wasi__
+    // WebAssembly doesn't support madvise, so we just don't do anything.
+#elif VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
     // This immediately discards the pages and the memory is reset to zero.
     madvise(base, size, MADV_DONTNEED);
-#elif defined(POSIX_MADV_DONTNEED)
-    posix_madvise(base, size, POSIX_MADV_DONTNEED);
 #elif defined(MADV_FREE_REUSABLE)
+    // Darwin / macOS / iOS.
     // Acknowledge the kernel down to the task info api we make this
     // page reusable for future use.
     // As for MADV_FREE_REUSE below we ensure in the rare occasions the task was not
     // completed at the time of the call to re-iterate.
     while (madvise(base, size, MADV_FREE_REUSABLE) == -1 && errno == EAGAIN);
 #elif defined(MADV_FREE)
+    // Recent Linux.
     madvise(base, size, MADV_FREE);
 #elif defined(MADV_DONTNEED)
+    // Old Linux.
     madvise(base, size, MADV_DONTNEED);
+#elif defined(POSIX_MADV_DONTNEED)
+    // Solaris?
+    posix_madvise(base, size, POSIX_MADV_DONTNEED);
 #elif defined(_WIN32)
     VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
     // Not available in all versions of Windows.
