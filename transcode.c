@@ -1812,6 +1812,12 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
     return data.ascii_compat_name;
 }
 
+/*
+ * Append `len` bytes pointed by `ss` to `dst` with converting with `ec`.
+ *
+ * If the result of the conversion is not compatible with the encoding of
+ * `dst`, `dst` may not be valid encoding.
+ */
 VALUE
 rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
 {
@@ -1819,11 +1825,19 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int max_output;
+    enum ruby_coderange_type coderange;
+    rb_encoding *dst_enc = ec->destination_encoding;
 
     if (NIL_P(dst)) {
         dst = rb_str_buf_new(len);
-        if (ec->destination_encoding)
-            rb_enc_associate(dst, ec->destination_encoding);
+        if (dst_enc) {
+            rb_enc_associate(dst, dst_enc);
+        }
+        coderange = ENC_CODERANGE_7BIT; // scan from the start
+    }
+    else {
+        dst_enc = rb_enc_get(dst);
+        coderange = rb_enc_str_coderange(dst);
     }
 
     if (ec->last_tc)
@@ -1832,13 +1846,13 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
         max_output = 1;
 
     do {
+        int cr;
         long dlen = RSTRING_LEN(dst);
         if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
             unsigned long new_capa = (unsigned long)dlen + len + max_output;
             if (LONG_MAX < new_capa)
                 rb_raise(rb_eArgError, "too long string");
-            rb_str_resize(dst, new_capa);
-            rb_str_set_len(dst, dlen);
+            rb_str_modify_expand(dst, new_capa - dlen);
         }
         sp = (const unsigned char *)ss;
         se = sp + len;
@@ -1846,6 +1860,18 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
         de = ds + rb_str_capacity(dst);
         dp = ds += dlen;
         res = rb_econv_convert(ec, &sp, se, &dp, de, flags);
+        switch (coderange) {
+          case ENC_CODERANGE_7BIT:
+          case ENC_CODERANGE_VALID:
+            cr = (int)coderange;
+            rb_str_coderange_scan_restartable((char *)ds, (char *)dp, dst_enc, &cr);
+            coderange = cr;
+            ENC_CODERANGE_SET(dst, coderange);
+            break;
+          case ENC_CODERANGE_UNKNOWN:
+          case ENC_CODERANGE_BROKEN:
+            break;
+        }
         len -= (const char *)sp - ss;
         ss  = (const char *)sp;
         rb_str_set_len(dst, dlen + (dp - ds));
