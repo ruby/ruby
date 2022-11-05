@@ -8,9 +8,8 @@ typedef void (*rb_wasm_scan_func)(void*, void*);
 // Used by conservative GC
 void rb_wasm_scan_locals(rb_wasm_scan_func scan);
 
-// Scan userland C-stack memory space in WebAssembly. Used by conservative GC
-#define rb_wasm_scan_stack(scan) _rb_wasm_scan_stack((scan), rb_wasm_get_stack_pointer())
-void _rb_wasm_scan_stack(rb_wasm_scan_func scan, void *current);
+// Get base address of userland C-stack memory space in WebAssembly. Used by conservative GC
+void *rb_wasm_stack_get_base(void);
 
 
 // Get the current stack pointer
