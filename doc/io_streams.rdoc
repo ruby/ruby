@@ -381,13 +381,6 @@ Associated with the line number is the global variable <tt>$.</tt>:
     $.          # => 5
     f.close
 
-==== Line Options
-
-A number of \IO methods accept an optional keyword argument
-that determine how lines in a stream are to be treated:
-
-- +:chomp+: If +true+, line separators are omitted; default is +false+.
-
 === Character \IO
 
 You can process an \IO stream character-by-character using these methods:
