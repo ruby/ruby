@@ -3768,6 +3768,7 @@ AC_ARG_ENABLE(yjit,
 CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
+AS_IF([test "$cross_compiling" = yes], [YJIT_SUPPORT=no])
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$enable_jit_support" = "xno"],
@@ -3776,7 +3777,6 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
-    AS_IF([test "$cross_compiling" = yes], [RUSTC="$RUSTC --target=$target"])
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
