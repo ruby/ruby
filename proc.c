@@ -3378,6 +3378,32 @@ method_super_method(VALUE method)
 
 /*
  * call-seq:
+ *   meth.debug_name  -> string
+ *
+ * Returns a human-readable string describing the method. Like that returned from
+ * Module#debug_name, this string contains no addresses tying the name to this
+ * specific process.
+ */
+VALUE
+rb_method_debug_name(VALUE method)
+{
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+
+    VALUE print_klass = data->me->defined_class;
+    const char *separator = "#";
+    if (FL_TEST(print_klass, FL_SINGLETON)) {
+        print_klass = rb_ivar_get(print_klass, id__attached__);
+        separator = ".";
+    }
+
+    return rb_sprintf("%"PRIsVALUE"%s%"PRIsVALUE,
+                      rb_mod_debug_name(print_klass), separator,
+                      rb_id2str(data->me->def->original_id));
+}
+
+/*
+ * call-seq:
  *   local_jump_error.exit_value  -> obj
  *
  * Returns the exit value associated with this +LocalJumpError+.
@@ -4316,6 +4342,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cMethod, "debug_name", rb_method_debug_name, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -4339,6 +4366,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cUnboundMethod, "debug_name", rb_method_debug_name, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);

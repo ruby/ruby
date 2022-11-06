@@ -1595,4 +1595,32 @@ class TestMethod < Test::Unit::TestCase
   def test_invalidating_CC_ASAN
     assert_ruby_status(['-e', 'using Module.new'])
   end
+
+  class ::MethodTests
+    def a_method = nil
+    def self.a_singleton_method = nil
+    alias aliased_a_method a_method
+  end
+
+  def test_debug_name_instance_method
+    assert_equal "MethodTests#a_method", ::MethodTests.new.method(:a_method).debug_name
+  end
+
+  def test_debug_name_unbound_method
+    assert_equal "MethodTests#a_method", ::MethodTests.instance_method(:a_method).debug_name
+  end
+
+  def test_debug_name_singleton_method
+    assert_equal "MethodTests.a_singleton_method", ::MethodTests.method(:a_singleton_method).debug_name
+  end
+
+  def test_debug_name_instance_singleton_method
+    i = ::MethodTests.new
+    def i.new_method = nil
+    assert_equal "#<instance of MethodTests>.new_method", i.method(:new_method).debug_name
+  end
+
+  def test_debug_name_alias
+    assert_equal "MethodTests#a_method", ::MethodTests.instance_method(:aliased_a_method).debug_name
+  end
 end

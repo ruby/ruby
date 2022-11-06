@@ -348,6 +348,16 @@ RBIMPL_ATTR_NONNULL((1))
  */
 VALUE rb_protect(VALUE (*func)(VALUE args), VALUE args, int *state);
 
+/**
+ * Returns a human-readable string describing the method. Like that returned from
+ * rb_mod_debug_name this string contains no addresses tying the name to this
+ * specific process.
+ *
+ * @param[in]   method  A method object to return the debug name for
+ * @return      The debug name
+ */
+VALUE rb_method_debug_name(VALUE method);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_INTERN_PROC_H */
