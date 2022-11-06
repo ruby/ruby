@@ -91,14 +91,8 @@ You can perform basic stream \IO with these methods,
 which typically operate on multi-byte strings:
 
 - IO#read: Reads and returns some or all of the remaining bytes from the stream.
-- IO#write: Writes zero or more strings to the stream, derived from the given objects:
-
-Other stream \IO techniques include:
-
-- {Line \IO}[rdoc-ref:io_streams.rdoc@Line+IO] (line-by-line).
-- {Character \IO}[rdoc-ref:io_streams.rdoc@Character+IO] (character-by-character).
-- {Byte \IO}[rdoc-ref:io_streams.rdoc@Byte+IO] (byte-by-byte).
-- {Codepoint \IO}[rdoc-ref:io_streams.rdoc@Codepoint+IO] (codepoint-by-codepoint).
+- IO#write: Writes zero or more strings to the stream;
+  each given object that is not already a string is converted via +to_s+.
 
 ==== Position
 
@@ -110,7 +104,7 @@ method +rewind+ resets the position (and line number) to zero.
 The relevant methods:
 
 - IO#tell (aliased as +#pos+): Returns the current position (in bytes) in the stream.
-- IO#pos=: Sets the position of the stream to a given integer +new_position_ (in bytes):
+- IO#pos=: Sets the position of the stream to a given integer +new_position_ (in bytes).
 - IO#seek: Sets the position of the stream to a given integer +offset+ (in bytes),
   relative to a given position +whence+
   (indicating the beginning, end, or current position).
@@ -137,19 +131,20 @@ You can query whether a stream is positioned at its end:
 
 - IO#eof? (also aliased as +#eof+): Returns whether the stream is at end-of-stream.
 
-You can reposition to end-of-stream by reading all stream content
-or by using method IO#seek:
+You can reposition to end-of-stream by using method IO#seek:
 
   f = File.new('t.txt')
-  f.eof? # => false
-  f.read # => "First line\nSecond line\n\nFourth line\nFifth line\n"
-  f.eof? # => true
-
-  f.rewind
   f.eof? # => false
   f.seek(0, :END)
   f.eof? # => true
   f.close
+
+Or by reading all stream content (which is slower than using IO#seek):
+
+  f.rewind
+  f.eof? # => false
+  f.read # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+  f.eof? # => true
 
 === Line \IO
 
@@ -383,7 +378,6 @@ Associated with the line number is the global variable <tt>$.</tt>:
     $.          # => 5
     f.rewind
     f.seek(0, :SET)
-    $.          # => 5
     $.          # => 5
     f.close
 

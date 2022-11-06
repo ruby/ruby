@@ -4193,9 +4193,9 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *    gets(sep = $/, **line_opts)   -> string or nil
- *    gets(limit, **line_opts)      -> string or nil
- *    gets(sep, limit, **line_opts) -> string or nil
+ *    gets(sep = $/, chomp: false)   -> string or nil
+ *    gets(limit, chomp: false)      -> string or nil
+ *    gets(sep, limit, chomp: false) -> string or nil
  *
  *  Reads and returns a line from the stream;
  *  assigns the return value to <tt>$_</tt>.
@@ -4251,8 +4251,8 @@ rb_io_gets_internal(VALUE io)
  *    or +nil+ if none.
  *  - But returns no more bytes than are allowed by the limit.
  *
- *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:io_streams.rdoc@Line+Options]:
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted:
  *
  *    f = File.open('t.txt')
  *    # Chomp the lines.
@@ -4301,7 +4301,7 @@ rb_io_lineno(VALUE io)
  *    lineno = integer -> integer
  *
  *  Sets and returns the line number for the stream;
- *  see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number]:
+ *  see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
  *
  */
 
@@ -4318,9 +4318,9 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
 
 /*
  *  call-seq:
- *    readline(sep = $/, **line_opts)   -> string
- *    readline(limit, **line_opts)      -> string
- *    readline(sep, limit, **line_opts) -> string
+ *    readline(sep = $/, chomp: false)   -> string
+ *    readline(limit, chomp: false)      -> string
+ *    readline(sep, limit, chomp: false) -> string
  *
  *  Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
  *
@@ -4341,9 +4341,9 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
 
 /*
  *  call-seq:
- *    readlines(sep = $/, **line_opts)   -> array
- *    readlines(limit, **line_opts)       -> array
- *    readlines(sep, limit, **line_opts) -> array
+ *    readlines(sep = $/, chomp: false)   -> array
+ *    readlines(limit, chomp: false)       -> array
+ *    readlines(sep, limit, chomp: false) -> array
  *
  *  Reads and returns all remaining line from the stream;
  *  does not modify <tt>$_</tt>.
@@ -4395,8 +4395,8 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *  - Returns lines as determined by line separator +sep+.
  *  - But returns no more bytes in a line than are allowed by the limit.
  *
- *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:io_streams.rdoc@Line+Options]:
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted:
  *
  *    f = File.new('t.txt')
  *    f.readlines(chomp: true)
@@ -4430,14 +4430,14 @@ io_readlines(const struct getline_arg *arg, VALUE io)
 
 /*
  *  call-seq:
- *    each_line(sep = $/, **line_opts) {|line| ... }   -> self
- *    each_line(limit, **line_opts) {|line| ... }      -> self
- *    each_line(sep, limit, **line_opts) {|line| ... } -> self
+ *    each_line(sep = $/, chomp: false) {|line| ... }   -> self
+ *    each_line(limit, chomp: false) {|line| ... }      -> self
+ *    each_line(sep, limit, chomp: false) {|line| ... } -> self
  *    each_line                                   -> enumerator
  *
  *  Calls the block with each remaining line read from the stream;
  *  returns +self+.
- *  does nothing if already at end-of-stream;
+ *  Does nothing if already at end-of-stream;
  *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With no arguments given, reads lines
@@ -4518,8 +4518,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *  - Calls with the next line as determined by line separator +sep+.
  *  - But returns no more bytes than are allowed by the limit.
  *
- *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:io_streams.rdoc@Line+Options]:
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted:
  *
  *    f = File.new('t.txt')
  *    f.each_line(chomp: true) {|line| p line }
@@ -4941,19 +4941,6 @@ rb_io_readchar(VALUE io)
  *    f.close
  *    f = File.open('t.rus')
  *    f.getbyte # => 209
- *    f.close
- *
- *    File.read('t.dat')
- *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
- *    File.read('t.dat')
- *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
- *    f = File.new('t.dat')
- *    f.getbyte # => 254
- *    f.getbyte # => 255
- *    f.seek(-2, :END)
- *    f.getbyte # => 153
- *    f.getbyte # => 148
- *    f.getbyte # => nil
  *    f.close
  *
  *  Related: IO#readbyte (may raise EOFError).
@@ -10252,9 +10239,9 @@ static VALUE argf_readline(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *    readline(sep = $/, **line_opts)   -> string
- *    readline(limit, **line_opts)      -> string
- *    readline(sep, limit, **line_opts) -> string
+ *    readline(sep = $/, chomp: false)   -> string
+ *    readline(limit, chomp: false)      -> string
+ *    readline(sep, limit, chomp: false) -> string
  *
  *  Equivalent to method Kernel#gets, except that it raises an exception
  *  if called at end-of-stream:
@@ -10311,9 +10298,9 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *    readlines(sep = $/, **line_opts)   -> array
- *    readlines(limit, **line_opts)       -> array
- *    readlines(sep, limit, **line_opts) -> array
+ *    readlines(sep = $/, chomp: false, **enc_opts)   -> array
+ *    readlines(limit, chomp: false, **enc_opts)       -> array
+ *    readlines(sep, limit, chomp: false, **enc_opts) -> array
  *
  *  Returns an array containing the lines returned by calling
  *  Kernel#gets until the end-of-stream is reached;
@@ -10356,15 +10343,14 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  With arguments +sep+ and +limit+ given, combines the two behaviors;
  *  see {Line Separator and Line Limit}[rdoc-ref:io_streams.rdoc@Line+Separator+and+Line+Limit].
  *
- *  For all forms above, optional keyword arguments specify:
- *
- *  - {Line Options}[rdoc-ref:io_streams.rdoc@Line+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *
- *  Examples:
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted:
  *
  *    $ cat t.txt | ruby -e "p readlines(chomp: true)"
  *    ["First line", "Second line", "", "Fourth line", "Fifth line"]
+ *
+ *  Optional keyword arguments +enc_opts+ specify encoding options;
+ *  see {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  */
 
