@@ -64,25 +64,27 @@ module IRB
       if File.respond_to?(:absolute_path?)
         File.absolute_path?(p)
       else
-        if File.absolute_path(p) == p
-          true
-        else
-          false
-        end
+        File.absolute_path(p) == p
       end
     end
 
+    GEM_PATHS =
+      if defined?(Gem::Specification)
+        Gem::Specification.latest_specs(true).map { |s|
+          s.require_paths.map { |p|
+            if absolute_path?(p)
+              p
+            else
+              File.join(s.full_gem_path, p)
+            end
+          }
+        }.flatten
+      else
+        []
+      end.freeze
+
     def self.retrieve_gem_and_system_load_path
-      gem_paths = Gem::Specification.latest_specs(true).map { |s|
-        s.require_paths.map { |p|
-          if absolute_path?(p)
-            p
-          else
-            File.join(s.full_gem_path, p)
-          end
-        }
-      }.flatten if defined?(Gem::Specification)
-      candidates = (gem_paths.to_a | $LOAD_PATH)
+      candidates = (GEM_PATHS | $LOAD_PATH)
       candidates.map do |p|
         if p.respond_to?(:to_path)
           p.to_path
