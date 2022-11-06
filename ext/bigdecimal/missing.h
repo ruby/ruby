@@ -35,10 +35,10 @@ extern "C" {
 #endif /* RB_UNUSED_VAR */
 
 #if defined(_MSC_VER) && _MSC_VER >= 1310
-# define HAVE___ASSUME
+# define HAVE___ASSUME 1
 
 #elif defined(__INTEL_COMPILER) && __INTEL_COMPILER >= 1300
-# define HAVE___ASSUME
+# define HAVE___ASSUME 1
 #endif
 
 #ifndef UNREACHABLE

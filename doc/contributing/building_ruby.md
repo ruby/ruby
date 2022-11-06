@@ -18,6 +18,7 @@
     * libffi
     * libyaml
     * libexecinfo (FreeBSD)
+    * rustc - 1.58.1 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
 3. Checkout the CRuby source code:
 
@@ -38,7 +39,7 @@
 5. Optional: If you are frequently building Ruby, disabling documentation will reduce the time it takes to `make`:
 
     ``` shell
-    ../configure --disable-install-doc
+    ../configure --prefix="${HOME}/.rubies/ruby-master" --disable-install-doc
     ```
 
 6. [Run tests](testing_ruby.md) to confirm your build succeeded

@@ -1620,4 +1620,10 @@ assert_equal "ok", %q{
   "ok"
 }
 
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+  Warning[:experimental] = $VERBOSE = true
+  STDERR.reopen(STDOUT)
+  eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
+}
+
 end # if !ENV['GITHUB_WORKFLOW']

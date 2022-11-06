@@ -189,14 +189,13 @@ The relevant methods:
 
 A new \IO stream may be open for reading, open for writing, or both.
 
-You can close a stream using these methods:
+A stream is automatically closed when claimed by the garbage collector.
+
+Attempted reading or writing on a closed stream raises an exception.
 
 - IO#close: Closes the stream for both reading and writing.
-- IO#close_read (not in \ARGF): Closes the stream for reading.
-- IO#close_write (not in \ARGF): Closes the stream for writing.
-
-You can query whether a stream is closed using this method:
-
+- IO#close_read: Closes the stream for reading; not in ARGF.
+- IO#close_write: Closes the stream for writing; not in ARGF.
 - IO#closed?: Returns whether the stream is closed.
 
 ==== End-of-Stream

@@ -44,7 +44,7 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
+    @CONF[:USE_COLORIZE] = (nc = ENV['NO_COLOR']).nil? || nc.empty?
     @CONF[:USE_AUTOCOMPLETE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
@@ -158,6 +158,8 @@ module IRB # :nodoc:
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
+
+    @CONF[:COMMAND_ALIASES] = {}
   end
 
   def IRB.set_measure_callback(type = nil, arg = nil, &block)
@@ -379,11 +381,9 @@ module IRB # :nodoc:
     end
     if xdg_config_home = ENV["XDG_CONFIG_HOME"]
       irb_home = File.join(xdg_config_home, "irb")
-      unless File.exist? irb_home
-        require 'fileutils'
-        FileUtils.mkdir_p irb_home
+      if File.directory?(irb_home)
+        yield proc{|rc| irb_home + "/irb#{rc}"}
       end
-      yield proc{|rc| irb_home + "/irb#{rc}"}
     end
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"}

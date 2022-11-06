@@ -186,6 +186,19 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_node_id_for_location
+    exception = begin
+                  raise
+                rescue => e
+                  e
+                end
+    loc = exception.backtrace_locations.first
+    node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+    node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+
+    assert_equal node.node_id, node_id
+  end
+
   def test_of_proc_and_method
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)

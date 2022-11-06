@@ -33,7 +33,7 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
-    struct st_table *iv_tbl;
+    VALUE *iv_ptr;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
@@ -75,9 +75,9 @@ typedef struct rb_classext_struct rb_classext_t;
 #else
 #  define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #endif
-#define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)

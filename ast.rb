@@ -67,6 +67,21 @@ module RubyVM::AbstractSyntaxTree
     Primitive.ast_s_of body, keep_script_lines, error_tolerant
   end
 
+  #  call-seq:
+  #     RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(backtrace_location)   -> integer
+  #
+  #   Returns the node id for the given backtrace location.
+  #
+  #     begin
+  #       raise
+  #     rescue =>  e
+  #       loc = e.backtrace_locations.first
+  #       RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+  #     end # => 0
+  def self.node_id_for_backtrace_location backtrace_location
+    Primitive.node_id_for_backtrace_location backtrace_location
+  end
+
   # RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
   # RubyVM::AbstractSyntaxTree.
   #

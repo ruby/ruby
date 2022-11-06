@@ -932,15 +932,14 @@ impl Assembler
 
         // Mutate the pool bitmap to indicate that the register at that index
         // has been allocated and is live.
-        fn alloc_reg(pool: &mut u32, regs: &Vec<Reg>) -> Reg {
+        fn alloc_reg(pool: &mut u32, regs: &Vec<Reg>) -> Option<Reg> {
             for (index, reg) in regs.iter().enumerate() {
                 if (*pool & (1 << index)) == 0 {
                     *pool |= 1 << index;
-                    return *reg;
+                    return Some(*reg);
                 }
             }
-
-            unreachable!("Register spill not supported");
+            None
         }
 
         // Allocate a specific register
@@ -963,6 +962,29 @@ impl Assembler
 
             if let Some(reg_index) = reg_index {
                 *pool &= !(1 << reg_index);
+            }
+        }
+
+        // Dump live registers for register spill debugging.
+        fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<usize>, num_regs: usize, spill_index: usize) {
+            // Convert live_ranges to live_regs: the number of live registers at each index
+            let mut live_regs: Vec<usize> = vec![];
+            let mut end_idxs: Vec<usize> = vec![];
+            for (cur_idx, &end_idx) in live_ranges.iter().enumerate() {
+                end_idxs.push(end_idx);
+                while let Some(end_idx) = end_idxs.iter().position(|&end_idx| cur_idx == end_idx) {
+                    end_idxs.remove(end_idx);
+                }
+                live_regs.push(end_idxs.len());
+            }
+
+            // Dump insns along with live registers
+            for (insn_idx, insn) in insns.iter().enumerate() {
+                print!("{:3} ", if spill_index == insn_idx { "==>" } else { "" });
+                for reg in 0..=num_regs {
+                    print!("{:1}", if reg < live_regs[insn_idx] { "|" } else { "" });
+                }
+                println!(" [{:3}] {:?}", insn_idx, insn);
             }
         }
 
@@ -1050,8 +1072,17 @@ impl Assembler
                             let reg = opnd.unwrap_reg();
                             Some(take_reg(&mut pool, &regs, &reg))
                         },
-                        _ => {
-                            Some(alloc_reg(&mut pool, &regs))
+                        _ => match alloc_reg(&mut pool, &regs) {
+                            Some(reg) => Some(reg),
+                            None => {
+                                let mut insns = asm.insns;
+                                insns.push(insn);
+                                for insn in iterator.insns {
+                                    insns.push(insn);
+                                }
+                                dump_live_regs(insns, live_ranges, regs.len(), index);
+                                unreachable!("Register spill not supported");
+                            }
                         }
                     };
                 }

@@ -8,42 +8,46 @@ require 'optparse'
 # this file run with BASERUBY, which may be older than 1.9, so no
 # require_relative
 require File.expand_path('../lib/vcs', __FILE__)
+require File.expand_path('../lib/output', __FILE__)
 
 Program = $0
 
-@output = nil
-def self.output=(output)
-  if @output and @output != output
+@format = nil
+def self.format=(format)
+  if @format and @format != format
     raise "you can specify only one of --changed, --revision.h and --doxygen"
   end
-  @output = output
+  @format = format
 end
 @suppress_not_found = false
 @limit = 20
+@output = Output.new
 
-format = '%Y-%m-%dT%H:%M:%S%z'
+time_format = '%Y-%m-%dT%H:%M:%S%z'
 vcs = nil
 OptionParser.new {|opts|
   opts.banner << " paths..."
   vcs_options = VCS.define_options(opts)
+  opts.new {@output.def_options(opts)}
   srcdir = nil
   opts.new
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
     abort "#{File.basename(Program)}: srcdir is already set" if srcdir
     srcdir = path
+    @output.vpath.add(srcdir)
   end
   opts.on("--changed", "changed rev") do
-    self.output = :changed
+    self.format = :changed
   end
   opts.on("--revision.h", "RUBY_REVISION macro") do
-    self.output = :revision_h
+    self.format = :revision_h
   end
   opts.on("--doxygen", "Doxygen format") do
-    self.output = :doxygen
+    self.format = :doxygen
   end
   opts.on("--modified[=FORMAT]", "modified time") do |fmt|
-    self.output = :modified
-    format = fmt if fmt
+    self.format = :modified
+    time_format = fmt if fmt
   end
   opts.on("--limit=NUM", "limit branch name length (#@limit)", Integer) do |n|
     @limit = n
@@ -61,15 +65,15 @@ OptionParser.new {|opts|
   end
 }
 
-output =
-  case @output
+formatter =
+  case @format
   when :changed, nil
     Proc.new {|last, changed|
-      changed
+      changed || ""
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      vcs.revision_header(last, modified, modified, branch, title, limit: @limit)
+      vcs.revision_header(last, modified, modified, branch, title, limit: @limit).join("\n")
     }
   when :doxygen
     Proc.new {|last, changed|
@@ -77,16 +81,18 @@ output =
     }
   when :modified
     Proc.new {|last, changed, modified|
-      modified.strftime(format)
+      modified.strftime(time_format)
     }
   else
-    raise "unknown output format `#{@output}'"
+    raise "unknown output format `#{@format}'"
   end
 
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    puts output[*vcs.get_revisions(arg)]
+    data = formatter[*vcs.get_revisions(arg)]
+    data.sub!(/(?<!\A|\n)\z/, "\n")
+    @output.write(data, overwrite: true)
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false

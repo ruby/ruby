@@ -162,6 +162,7 @@ pub use rb_iseq_encoded_size as get_iseq_encoded_size;
 pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
+pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
 pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
 pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
 pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
@@ -169,7 +170,8 @@ pub use rb_get_iseq_flags_ruby2_keywords as get_iseq_flags_ruby2_keywords;
 pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
 pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
 pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
-pub use rb_get_iseq_flags_has_accepts_no_kwarg as get_iseq_flags_has_accepts_no_kwarg;
+pub use rb_get_iseq_flags_ambiguous_param0 as get_iseq_flags_ambiguous_param0;
+pub use rb_get_iseq_flags_accepts_no_kwarg as get_iseq_flags_accepts_no_kwarg;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
 pub use rb_get_iseq_body_param_keyword as get_iseq_body_param_keyword;
 pub use rb_get_iseq_body_param_size as get_iseq_body_param_size;
@@ -346,11 +348,25 @@ impl VALUE {
         (cval & mask) == flag
     }
 
-    /// Return true for a static (non-heap) Ruby symbol
+    /// Return true if the value is a Ruby symbol (RB_SYMBOL_P)
+    pub fn symbol_p(self) -> bool {
+        self.static_sym_p() || self.dynamic_sym_p()
+    }
+
+    /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
         let flag = RUBY_SYMBOL_FLAG as usize;
         (cval & 0xff) == flag
+    }
+
+    /// Return true for a dynamic Ruby symbol (RB_DYNAMIC_SYM_P)
+    fn dynamic_sym_p(self) -> bool {
+        return if self.special_const_p() {
+            false
+        } else {
+            self.builtin_type() == RUBY_T_SYMBOL
+        }
     }
 
     /// Returns true or false depending on whether the value is nil

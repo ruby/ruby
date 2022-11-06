@@ -49,10 +49,10 @@ rb_wasm_record_stack_base(void)
     return 0;
 }
 
-void
-_rb_wasm_scan_stack(rb_wasm_scan_func scan, void *current)
+void *
+rb_wasm_stack_get_base(void)
 {
-    scan(current, rb_wasm_stack_base);
+    return rb_wasm_stack_base;
 }
 
 void *

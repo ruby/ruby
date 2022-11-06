@@ -2061,30 +2061,6 @@ rb_rational_canonicalize(VALUE x)
 
 /*
  * call-seq:
- *    int.numerator  ->  self
- *
- * Returns self.
- */
-static VALUE
-integer_numerator(VALUE self)
-{
-    return self;
-}
-
-/*
- * call-seq:
- *    int.denominator  ->  1
- *
- * Returns 1.
- */
-static VALUE
-integer_denominator(VALUE self)
-{
-    return INT2FIX(1);
-}
-
-/*
- * call-seq:
  *    flo.numerator  ->  integer
  *
  * Returns the numerator.  The result is machine dependent.
@@ -2831,9 +2807,6 @@ Init_Rational(void)
     rb_define_method(rb_cNumeric, "numerator", numeric_numerator, 0);
     rb_define_method(rb_cNumeric, "denominator", numeric_denominator, 0);
     rb_define_method(rb_cNumeric, "quo", rb_numeric_quo, 1);
-
-    rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
-    rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
 
     rb_define_method(rb_cFloat, "numerator", rb_float_numerator, 0);
     rb_define_method(rb_cFloat, "denominator", rb_float_denominator, 0);

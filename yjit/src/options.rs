@@ -53,7 +53,7 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 256 * 1024 * 1024,
+    exec_mem_size: 128 * 1024 * 1024,
     code_page_size: 16 * 1024,
     call_threshold: 10,
     greedy_versioning: false,
@@ -91,7 +91,7 @@ macro_rules! get_option_ref {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
     ($option_name:ident) => {
-        unsafe { &(OPTIONS.$option_name) }
+        unsafe { &($crate::options::OPTIONS.$option_name) }
     };
 }
 pub(crate) use get_option_ref;

@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb/color'
 require 'rubygems'
 require 'stringio'
 
+require_relative "helper"
+
 module TestIRB
-  class TestColor < Test::Unit::TestCase
+  class TestColor < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     UNDERLINE = "\e[4m"

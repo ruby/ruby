@@ -231,6 +231,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * cgi 0.3.3
     * date 3.2.3
+    * erb 3.0.0
     * error_highlight 0.4.0
     * etc 1.4.0
     * fiddle 1.1.1
@@ -259,7 +260,7 @@ Note: We're only listing outstanding class updates.
     * net-ftp 0.2.0
     * net-imap 0.3.1
     * net-pop 0.1.2
-    * net-smtp 0.3.2
+    * net-smtp 0.3.3
     * rbs 2.7.0
     * typeprof 0.21.3
     * debug 1.6.3
@@ -323,8 +324,23 @@ The following deprecated APIs are removed.
 
 * Support arm64 / aarch64 on UNIX platforms.
 * Building YJIT requires Rust 1.58.1+. [[Feature #18481]]
+* Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
+  the RSS of a Ruby process is minimized because virtual memory pages
+  allocated by `--yjit-exec-mem-size` will not be mapped to physical
+  memory pages until actually utilized by JIT code.
+* Introduce Code GC that frees all code pages when the memory consumption
+  by JIT code reaches `--yjit-exec-mem-size`.
+* `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
+  existing `inline_code_size` and `outlined_code_size` keys:
+  `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
 
 ### MJIT
+
+* The MJIT compiler is re-implemented in Ruby as a standard library `mjit`.
+* MJIT compiler is executed under a forked Ruby process instead of
+  doing it in a native thread called MJIT worker. [[Feature #18968]]
+  * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
+* MinGW is no longer supported. [[Feature #18824]]
 
 ## Static analysis
 
@@ -349,6 +365,7 @@ The following deprecated APIs are removed.
 [Feature #15231]: https://bugs.ruby-lang.org/issues/15231
 [Feature #15357]: https://bugs.ruby-lang.org/issues/15357
 [Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
+[Feature #16122]: https://bugs.ruby-lang.org/issues/16122
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Bug #16466]:     https://bugs.ruby-lang.org/issues/16466
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
@@ -362,21 +379,24 @@ The following deprecated APIs are removed.
 [Feature #18037]: https://bugs.ruby-lang.org/issues/18037
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
+[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
+[Feature #18630]: https://bugs.ruby-lang.org/issues/18630
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
 [Feature #18685]: https://bugs.ruby-lang.org/issues/18685
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
-[Feature #18481]: https://bugs.ruby-lang.org/issues/18481
+[Feature #18821]: https://bugs.ruby-lang.org/issues/18821
+[Feature #18824]: https://bugs.ruby-lang.org/issues/18824
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
+[Feature #18968]: https://bugs.ruby-lang.org/issues/18968
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
+[Feature #19013]: https://bugs.ruby-lang.org/issues/19013
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
-[Feature #16122]: https://bugs.ruby-lang.org/issues/16122
-[Feature #18630]: https://bugs.ruby-lang.org/issues/18630
-[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060

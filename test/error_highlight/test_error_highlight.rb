@@ -1257,4 +1257,36 @@ undefined method `foo' for nil:NilClass
     assert_equal(22, spot[:last_column])
     assert_equal("      raise_name_error\n", spot[:snippet])
   end
+
+  def test_spot_with_node
+    omit unless RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location)
+
+    begin
+      raise_name_error
+    rescue NameError => exc
+    end
+
+    bl = exc.backtrace_locations.first
+    expected_spot = ErrorHighlight.spot(exc, backtrace_location: bl)
+    ast = RubyVM::AbstractSyntaxTree.parse_file(__FILE__, keep_script_lines: true)
+    node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(bl)
+    node = find_node_by_id(ast, node_id)
+    actual_spot = ErrorHighlight.spot(node)
+
+    assert_equal expected_spot, actual_spot
+  end
+
+  private
+
+  def find_node_by_id(node, node_id)
+    return node if node.node_id == node_id
+
+    node.children.each do |child|
+      next unless child.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      found = find_node_by_id(child, node_id)
+      return found if found
+    end
+
+    return false
+  end
 end

@@ -28,7 +28,7 @@ Specifically, <tt>/st/</tt> requires that the string contains the letter
 _s_ followed by the letter _t_, so it matches _haystack_, also.
 
 Note that any Regexp matching will raise a RuntimeError if timeout is set and
-exceeded. See "Timeout" section in detail.
+exceeded. See {"Timeout"}[#label-Timeout] section in detail.
 
 == \Regexp Interpolation
 
@@ -781,7 +781,7 @@ with <i>a{0,29}</i>:
 
 == Timeout
 
-There are two APIs to set timeout. One is Timeout.timeout=, which is
+There are two APIs to set timeout. One is Regexp.timeout=, which is
 process-global configuration of timeout for Regexp matching.
 
     Regexp.timeout = 3

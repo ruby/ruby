@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 require 'optparse'
 
-begin
-  require 'readline'
-rescue LoadError
-end
-
 require_relative '../../rdoc'
 
 require_relative 'formatter' # For RubyGems backwards compatibility
@@ -1079,6 +1074,10 @@ or the PAGER environment variable.
   def interactive
     puts "\nEnter the method name you want to look up."
 
+    begin
+      require 'readline'
+    rescue LoadError
+    end
     if defined? Readline then
       Readline.completion_proc = method :complete
       puts "You can use tab to autocomplete."

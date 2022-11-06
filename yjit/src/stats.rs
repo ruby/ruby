@@ -217,6 +217,14 @@ make_counters! {
     invokesuper_me_changed,
     invokesuper_block,
 
+    invokeblock_none,
+    invokeblock_iseq_arg0_splat,
+    invokeblock_iseq_block_changed,
+    invokeblock_iseq_tag_changed,
+    invokeblock_ifunc,
+    invokeblock_proc,
+    invokeblock_symbol,
+
     leave_se_interrupt,
     leave_interp_return,
     leave_start_pc_non_zero,
@@ -351,23 +359,40 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         return Qnil;
     }
 
+    macro_rules! hash_aset_usize {
+        ($hash:ident, $counter_name:expr, $value:expr) => {
+            let key = rust_str_to_sym($counter_name);
+            let value = VALUE::fixnum_from_usize($value);
+            rb_hash_aset($hash, key, value);
+        }
+    }
+
     let hash = unsafe { rb_hash_new() };
 
-    // Inline and outlined code size
+    // CodeBlock stats
     unsafe {
         // Get the inline and outlined code blocks
         let cb = CodegenGlobals::get_inline_cb();
         let ocb = CodegenGlobals::get_outlined_cb();
 
         // Inline code size
-        let key = rust_str_to_sym("inline_code_size");
-        let value = VALUE::fixnum_from_usize(cb.get_write_pos());
-        rb_hash_aset(hash, key, value);
+        hash_aset_usize!(hash, "inline_code_size", cb.code_size());
 
         // Outlined code size
-        let key = rust_str_to_sym("outlined_code_size");
-        let value = VALUE::fixnum_from_usize(ocb.unwrap().get_write_pos());
-        rb_hash_aset(hash, key, value);
+        hash_aset_usize!(hash, "outlined_code_size", ocb.unwrap().code_size());
+
+        // GCed pages
+        let freed_page_count = cb.num_freed_pages();
+        hash_aset_usize!(hash, "freed_page_count", freed_page_count);
+
+        // GCed code size
+        hash_aset_usize!(hash, "freed_code_size", freed_page_count * cb.page_size());
+
+        // Live pages
+        hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
+
+        // Code GC count
+        hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
     }
 
     // If we're not generating stats, the hash is done

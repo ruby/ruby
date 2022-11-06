@@ -786,7 +786,8 @@ AS_IF([test "$GCC" = yes], [
 				 [disable -D_FORTIFY_SOURCE=2 option, which causes link error on mingw]),
 		  [fortify_source=$enableval])
     AS_IF([test "x$fortify_source" != xno], [
-        RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2], [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)], [],
+        RUBY_TRY_CFLAGS([$optflags -D_FORTIFY_SOURCE=2],
+                        [RUBY_APPEND_OPTION(XCFLAGS, -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2)], [],
                         [@%:@include <stdio.h>])
     ])
 
@@ -794,7 +795,7 @@ AS_IF([test "$GCC" = yes], [
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|emscripten*|wasi*], [
+    [emscripten*|wasi*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -806,6 +807,8 @@ AS_IF([test "$GCC" = yes], [
 	    AS_IF([test "x$stack_protector" = xyes], [stack_protector=option; break])
 	])
     ])
+    AC_MSG_CHECKING([for -fstack-protector])
+    AC_MSG_RESULT(["$stack_protector"])
     AS_CASE(["$stack_protector"], [-*], [
 	RUBY_APPEND_OPTION(XCFLAGS, $stack_protector)
 	RUBY_APPEND_OPTION(XLDFLAGS, $stack_protector)
@@ -3733,10 +3736,37 @@ AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 
 AC_SUBST(MJIT_SUPPORT)
 
+AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
+
+dnl check if we can build YJIT on this target platform
+AS_CASE(["$target_cpu-$target_os"],
+    [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
+        YJIT_TARGET_OK=yes
+    ],
+    [YJIT_TARGET_OK=no]
+)
+
+dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
-        AS_HELP_STRING([--enable-yjit],
-        [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
-        [YJIT_SUPPORT=$enableval], [YJIT_SUPPORT=no])
+    AS_HELP_STRING([--enable-yjit],
+    [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
+    [YJIT_SUPPORT=$enableval],
+    [
+        AS_IF([test x"$RUSTC" != "xno"],
+            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
+                [YJIT_SUPPORT="$YJIT_TARGET_OK"],
+                [YJIT_SUPPORT=no]
+            ),
+            [YJIT_SUPPORT=no]
+        )
+    ]
+)
 
 CARGO=
 CARGO_BUILD_ARGS=
@@ -3746,10 +3776,10 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AS_IF([test x"$enable_jit_support" = "xno"],
         AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
     )
-    AC_CHECK_TOOL(RUSTC, [rustc], [no])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
+    AS_IF([test "$cross_compiling" = yes], [RUSTC="$RUSTC --target=$target"])
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
@@ -3783,7 +3813,6 @@ AS_CASE(["${YJIT_SUPPORT}"],
     YJIT_OBJ='yjit.$(OBJEXT)'
     AC_DEFINE(USE_YJIT, 1)
 ], [AC_DEFINE(USE_YJIT, 0)])
-
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes

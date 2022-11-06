@@ -93,6 +93,7 @@ impl Assembler
         vec![
             RAX_REG,
             RCX_REG,
+            RDX_REG,
         ]
     }
 
