@@ -1166,10 +1166,8 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       int index = key >> 3;\
       int mask = 1 << (key & 7);\
       if ((match_cache)[index] & mask) {\
-        /*fprintf(stderr, "Use cache (p = %p, cache_index = %d, pos = %d, key = %d)\n", p, cache_index, pos, key);*/\
 	goto fail;\
       }\
-      /*fprintf(stderr, "Add cache (p = %p, cache_index = %d, pos = %d, key = %d)\n", p, cache_index, pos, key);*/\
       (match_cache)[index] |= mask;\
     }\
   }\
@@ -3851,16 +3849,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  goto fail_match_cache_opt;
 	}
 	xmemset(msa->match_cache, 0, match_cache_size * sizeof(uint8_t));
-
-        /*
-	fprintf(stderr, "total_cache = %d\n", msa->num_cache_opcode);
-	fprintf(stderr, "table_size  = %d\n", msa->num_cache_table);
-	fprintf(stderr, "table = {\n");
-	for (int i = 0; i < msa->num_cache_table; i++) {
-	  fprintf(stderr, "  {%p, %d, %d},\n", msa->cache_index_table[i].addr, msa->cache_index_table[i].num, msa->cache_index_table[i].outer_repeat);
-	}
-	fprintf(stderr, "}\n");
-	*/
       }
       fail_match_cache_opt:
 #endif
