@@ -3736,17 +3736,28 @@ AC_SUBST(MJIT_SUPPORT)
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
 dnl check if we can build YJIT on this target platform
-AS_CASE(["$target_cpu-$target_os"],
-    [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
-        YJIT_TARGET_OK=yes
+AS_CASE(["$target_cpu"],
+    [arm64|aarch64], [
+        YJIT_TARGET=aarch64
     ],
-    [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
-        YJIT_TARGET_OK=yes
+    [x86_64], [
+        YJIT_TARGET="$target_cpu"
     ],
-    [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
-        YJIT_TARGET_OK=yes
+    [YJIT_TARGET=]
+)
+AS_CASE(["$YJIT_TARGET:$target_os"],
+    [:*], [ # unsupported CPU
     ],
-    [YJIT_TARGET_OK=no]
+    [darwin*], [
+        YJIT_TARGET=${YJIT_TARGET}-apple-darwin
+    ],
+    [linux-android], [ # no target_vendor
+        YJIT_TARGET=${YJIT_TARGET}-${target_os}
+    ],
+    [*linux*], [
+        YJIT_TARGET=${YJIT_TARGET}-${target_vendor}-${target_os}
+    ],
+    [YJIT_TARGET=]
 )
 
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
@@ -3754,12 +3765,12 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$RUSTC"],
-        [no:*|yes:no:*|yes:yes:no], [
+    [AS_CASE(["$enable_jit_support:$YJIT_TARGET:$RUSTC"],
+        [no:*|yes::*|yes:*:no], [
             YJIT_SUPPORT=no
         ],
         [yes:yes:*], [
-            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
+            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --target=$YJIT_TARGET --emit asm=/dev/null ],
                 [YJIT_SUPPORT=yes],
                 [YJIT_SUPPORT=no]
             )
@@ -3772,7 +3783,6 @@ AC_ARG_ENABLE(yjit,
 CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
-AS_IF([test "$cross_compiling" = yes], [YJIT_SUPPORT=no])
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$enable_jit_support" = "xno"],
