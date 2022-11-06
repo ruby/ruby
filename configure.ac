@@ -3754,15 +3754,19 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
     [YJIT_SUPPORT=$enableval],
-    [
-        AS_IF([test x"$RUSTC" != "xno"],
+    [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$RUSTC"],
+        [no:*|yes:no:*|yes:yes:no], [
+            YJIT_SUPPORT=no
+        ],
+        [yes:yes:*], [
             AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
-                [YJIT_SUPPORT="$YJIT_TARGET_OK"],
+                [YJIT_SUPPORT=yes],
                 [YJIT_SUPPORT=no]
-            ),
+            )
+        ], [
             [YJIT_SUPPORT=no]
-        )
-    ]
+        ]
+    )]
 )
 
 CARGO=

@@ -303,7 +303,7 @@ showflags:
 	"	LC_ALL = $(LC_ALL)" \
 	"	LC_CTYPE = $(LC_CTYPE)" \
 	"	MFLAGS = $(MFLAGS)" \
-	"	RUST = $(RUST)" \
+	"	RUSTC = $(RUSTC)" \
 	"	YJIT_RUSTC_ARGS = $(YJIT_RUSTC_ARGS)" \
 	$(MESSAGE_END)
 	-@$(CC_VERSION)
