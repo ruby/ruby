@@ -133,7 +133,30 @@ module RubyVM::YJIT
   # Return a hash for statistics generated for the --yjit-stats command line option.
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
-    Primitive.rb_yjit_get_stats
+    stats = Primitive.rb_yjit_get_stats
+    return stats if stats.nil? || !Primitive.rb_yjit_stats_enabled_p
+
+    side_exits = total_exit_count(stats)
+    total_exits = side_exits + stats[:leave_interp_return]
+
+    # Number of instructions that finish executing in YJIT.
+    # See :count-placement: about the subtraction.
+    retired_in_yjit = stats[:exec_instruction] - side_exits
+
+    # Average length of instruction sequences executed by YJIT
+    avg_len_in_yjit = retired_in_yjit.to_f / total_exits
+
+    # Proportion of instructions that retire in YJIT
+    total_insns_count = retired_in_yjit + stats[:vm_insns_count]
+    yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+
+    # Make those stats available in RubyVM::YJIT.runtime_stats as well
+    stats[:side_exit_count]  = side_exits
+    stats[:total_exit_count] = total_exits
+    stats[:ratio_in_yjit]    = yjit_ratio_pct
+    stats[:avg_len_in_yjit]  = avg_len_in_yjit
+
+    stats
   end
 
   # Produce disassembly for an iseq
@@ -198,20 +221,6 @@ module RubyVM::YJIT
       print_counters(stats, prefix: 'opt_getinlinecache_', prompt: 'opt_getinlinecache exit reasons: ')
       print_counters(stats, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
 
-      side_exits = total_exit_count(stats)
-      total_exits = side_exits + stats[:leave_interp_return]
-
-      # Number of instructions that finish executing in YJIT.
-      # See :count-placement: about the subtraction.
-      retired_in_yjit = stats[:exec_instruction] - side_exits
-
-      # Average length of instruction sequences executed by YJIT
-      avg_len_in_yjit = retired_in_yjit.to_f / total_exits
-
-      # Proportion of instructions that retire in YJIT
-      total_insns_count = retired_in_yjit + stats[:vm_insns_count]
-      yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
-
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
@@ -231,13 +240,13 @@ module RubyVM::YJIT
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
 
-      $stderr.puts "side_exit_count:       " + ("%10d" % side_exits)
-      $stderr.puts "total_exit_count:      " + ("%10d" % total_exits)
-      $stderr.puts "total_insns_count:     " + ("%10d" % total_insns_count)
+      $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
+      $stderr.puts "total_exit_count:      " + ("%10d" % stats[:side_exit_count])
+      $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_exit_count])
       $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
       $stderr.puts "yjit_insns_count:      " + ("%10d" % stats[:exec_instruction])
-      $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % yjit_ratio_pct) + "%"
-      $stderr.puts "avg_len_in_yjit:       " + ("%10.1f" % avg_len_in_yjit)
+      $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % stats[:ratio_in_yjit]) + "%"
+      $stderr.puts "avg_len_in_yjit:       " + ("%10.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, prefix: "exit_")
     end
