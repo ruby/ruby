@@ -113,12 +113,20 @@ def setup_make
   end
 
   opts = {}
-  if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
+  if /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ make_flags
     begin
-      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+      if fifo = $3
+        fifo.gsub!(/\\(?=.)/, '')
+        r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+        w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
+      else
+        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+      end
     rescue Errno::EBADF
     else
+      r.close_on_exec = true
+      w.close_on_exec = true
       opts[r] = r
       opts[w] = w
     end
