@@ -29,19 +29,11 @@ end
 
 module MSpecScript::JobServer
   def cores(max = 1)
-    if max > 1 and /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ ENV["MAKEFLAGS"]
+    if max > 1 and /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
       cores = 1
       begin
-        if fifo = $3
-          fifo.gsub!(/\\(?=.)/, '')
-          r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
-          w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
-        else
-          r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-          w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-        end
-        r.close_on_exec = true
-        w.close_on_exec = true
+        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
         jobtokens = r.read_nonblock(max - 1)
         cores = jobtokens.size
         if cores > 0
