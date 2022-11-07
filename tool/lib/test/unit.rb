@@ -289,8 +289,8 @@ module Test
           /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:(.*))/ =~ makeflags
           begin
             if fifo = $3
-              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY, autoclose: false)
-              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY, autoclose: false)
+              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
             else
               r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
               w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
