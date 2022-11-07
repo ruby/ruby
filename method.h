@@ -15,6 +15,7 @@
 #include "internal/imemo.h"
 #include "internal/compilers.h"
 #include "internal/static_assert.h"
+#include "ruby/debug_external.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
@@ -53,10 +54,12 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_ext_struct {
     VALUE owner;
+    rb_debug_ext_method_info_t ext_method_info;
 } rb_method_entry_ext_t;
 
 typedef struct rb_callable_method_entry_ext_struct {
     const VALUE owner;
+    const rb_debug_ext_method_info_t ext_method_info;
 } rb_callable_method_entry_ext_t;
 
 typedef struct rb_method_entry_struct {
@@ -271,5 +274,8 @@ VALUE rb_unnamed_parameters(int arity);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_method_cache_all(void);
+
+void rb_method_entry_set_debug_ext_info(rb_method_entry_t *me);
+void rb_method_entry_update_debug_ext_info_refs(rb_method_entry_t *me);
 
 #endif /* RUBY_METHOD_H */

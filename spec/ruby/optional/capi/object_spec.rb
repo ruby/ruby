@@ -994,12 +994,20 @@ describe "CApiObject" do
 
       it "calls the callback function for each cvar and ivar on a class" do
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::CVars', :@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        ary.should == [
+          :__classpath__, 'CApiObjectSpecs::CVars',
+          :__method_qualifier_cache__, 'CApiObjectSpecs::CVars#',
+          :@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz
+        ]
       end
 
       it "calls the callback function for each cvar and ivar on a module" do
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::MVars', :@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        ary.should == [
+          :__classpath__, 'CApiObjectSpecs::MVars',
+          :__method_qualifier_cache__, 'CApiObjectSpecs::MVars#',
+          :@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz
+        ]
       end
 
     end

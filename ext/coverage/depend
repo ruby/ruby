@@ -14,6 +14,7 @@ coverage.o: $(hdrdir)/ruby/backward/2/limits.h
 coverage.o: $(hdrdir)/ruby/backward/2/long_long.h
 coverage.o: $(hdrdir)/ruby/backward/2/stdalign.h
 coverage.o: $(hdrdir)/ruby/backward/2/stdarg.h
+coverage.o: $(hdrdir)/ruby/debug_external.h
 coverage.o: $(hdrdir)/ruby/defines.h
 coverage.o: $(hdrdir)/ruby/intern.h
 coverage.o: $(hdrdir)/ruby/internal/abi.h

@@ -95,6 +95,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal/vm.h"
 #include "method.h"
 #include "node.h"
+#include "ruby/debug_external.h"
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby_atomic.h"
@@ -870,6 +871,7 @@ typedef struct rb_control_frame_struct {
 #endif
     // Return address for YJIT code
     void *jit_return;
+    rb_debug_ext_frame_t ext_frame;
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
@@ -988,6 +990,8 @@ struct rb_execution_context_struct {
         size_t stack_maxsize;
         RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
     } machine;
+
+    rb_debug_ext_ec_t ext_data;
 };
 
 #ifndef rb_execution_context_t

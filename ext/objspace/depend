@@ -369,6 +369,7 @@ objspace_dump.o: $(hdrdir)/ruby/backward/2/long_long.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/stdalign.h
 objspace_dump.o: $(hdrdir)/ruby/backward/2/stdarg.h
 objspace_dump.o: $(hdrdir)/ruby/debug.h
+objspace_dump.o: $(hdrdir)/ruby/debug_external.h
 objspace_dump.o: $(hdrdir)/ruby/defines.h
 objspace_dump.o: $(hdrdir)/ruby/encoding.h
 objspace_dump.o: $(hdrdir)/ruby/intern.h

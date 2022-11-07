@@ -11,7 +11,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "ruby/debug_external.h"
+#include "vm_core.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
@@ -118,5 +119,11 @@ bool ruby_debug_log_filter(const char *func_name, const char *file_name);
 #define RUBY_DEBUG_LOG(...)
 #define RUBY_DEBUG_LOG2(file, line, ...)
 #endif // USE_RUBY_DEBUG_LOG
+
+/* implemented in debug_external.c */
+extern rb_debug_ext_section_t rb_debug_ext_section;
+void rb_debug_ext_ec_insert(rb_debug_ext_ec_t *ec);
+void rb_debug_ext_ec_remove(rb_debug_ext_ec_t *ec);
+void Init_debug_external(void);
 
 #endif /* RUBY_DEBUG_H */

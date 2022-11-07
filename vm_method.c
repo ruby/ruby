@@ -531,13 +531,13 @@ rb_method_definition_set(rb_method_entry_t *me, rb_method_definition_t *def, voi
                 }
 
                 RB_OBJ_WRITE(me, &def->body.iseq.cref, method_cref);
-                return;
+                break;
             }
           case VM_METHOD_TYPE_CFUNC:
             {
                 rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
                 setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), cfunc->func, cfunc->argc);
-                return;
+                break;
             }
           case VM_METHOD_TYPE_ATTRSET:
           case VM_METHOD_TYPE_IVAR:
@@ -557,38 +557,40 @@ rb_method_definition_set(rb_method_entry_t *me, rb_method_definition_t *def, voi
                 else {
                     VM_ASSERT(def->body.attr.location == 0);
                 }
-                return;
+                break;
             }
           case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
             RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
-            return;
+            break;
           case VM_METHOD_TYPE_NOTIMPLEMENTED:
             setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), (VALUE(*)(ANYARGS))rb_f_notimplement_internal, -1);
-            return;
+            break;
           case VM_METHOD_TYPE_OPTIMIZED:
             def->body.optimized = *(rb_method_optimized_t *)opts;
-            return;
+            break;
           case VM_METHOD_TYPE_REFINED:
             {
                 const rb_method_refined_t *refined = (rb_method_refined_t *)opts;
                 RB_OBJ_WRITE(me, &def->body.refined.orig_me, refined->orig_me);
                 RB_OBJ_WRITE(me, &def->body.refined.owner, refined->owner);
-                return;
+                break;
             }
           case VM_METHOD_TYPE_ALIAS:
             RB_OBJ_WRITE(me, &def->body.alias.original_me, (rb_method_entry_t *)opts);
-            return;
+            break;
           case VM_METHOD_TYPE_ZSUPER:
           case VM_METHOD_TYPE_UNDEF:
           case VM_METHOD_TYPE_MISSING:
             return;
         }
     }
+
+    rb_method_entry_set_debug_ext_info(me);
 }
 
 static void
-method_definition_reset(const rb_method_entry_t *me)
+method_definition_reset(rb_method_entry_t *me)
 {
     rb_method_definition_t *def = me->def;
 
@@ -622,6 +624,7 @@ method_definition_reset(const rb_method_entry_t *me)
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
         break;
     }
+    rb_method_entry_set_debug_ext_info(me);
 }
 
 MJIT_FUNC_EXPORTED rb_method_definition_t *
@@ -706,6 +709,7 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
     }
 
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
+    rb_method_entry_set_debug_ext_info(me);
     return me;
 }
 
@@ -754,6 +758,7 @@ rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
     RB_OBJ_WRITE((VALUE)dst, &METHOD_ENTRY_EXT(dst)->owner, METHOD_ENTRY_EXT(src)->owner);
     RB_OBJ_WRITE((VALUE)dst, &dst->defined_class, src->defined_class);
     METHOD_ENTRY_FLAGS_COPY(dst, src);
+    rb_method_entry_set_debug_ext_info(dst);
 }
 
 static void
@@ -2887,6 +2892,63 @@ static VALUE
 obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
 {
     return Qfalse;
+}
+
+static void
+rb_method_entry_set_debug_ext_info_impl(rb_method_entry_t *me, bool allow_alloc)
+{
+    VALUE qualifier_str = Qnil;
+    VALUE name_str = Qnil;
+    if (RB_TEST(me->defined_class)) {
+        if (allow_alloc) {
+            qualifier_str = rb_mod_get_method_qualifier(me->defined_class);
+        } else {
+            qualifier_str = rb_mod_get_cached_method_qualifier(me->defined_class);
+        }
+        // Need to handle the possibility the string is T_MOVED; this method is called
+        // from in gc.c when updating references on the method entry.
+        qualifier_str = rb_gc_location(qualifier_str);
+    }
+    if (me->def) {
+        name_str = rb_id2str(me->def->original_id);
+        name_str = rb_gc_location(name_str);
+    }
+    if (!RB_TEST(qualifier_str) || !RB_TEST(name_str)) {
+        METHOD_ENTRY_EXT(me)->ext_method_info = (rb_debug_ext_method_info_t){ 0 };
+        return;
+    }
+
+    METHOD_ENTRY_EXT(me)->ext_method_info = (rb_debug_ext_method_info_t){
+        .method_qualifier       = RSTRING_PTR(qualifier_str),
+        .method_qualifier_len   = RSTRING_LEN(qualifier_str),
+        .method_name            = RSTRING_PTR(name_str),
+        .method_name_len        = RSTRING_LEN(name_str)
+    };
+}
+
+void
+rb_method_entry_set_debug_ext_info(rb_method_entry_t *me)
+{
+  rb_method_entry_set_debug_ext_info_impl(me, true); 
+}
+
+void
+rb_method_entry_update_debug_ext_info_refs(rb_method_entry_t *me)
+{
+  rb_method_entry_set_debug_ext_info_impl(me, false); 
+}
+
+void
+rb_method_entry_pin_debug_ext_info(rb_callable_method_entry_t *me)
+{
+    if (me->def) {
+        rb_gc_mark(rb_id2str(me->def->original_id));
+    }
+    /* call get_cached_method_qualifier, not get_method_qualifier, so that we don't accidently
+    allocate if it's not already set */
+    if (RB_TEST(me->defined_class)) {
+        rb_gc_mark(rb_mod_get_cached_method_qualifier(me->defined_class));
+    }
 }
 
 void

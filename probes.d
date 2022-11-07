@@ -214,6 +214,24 @@ provider ruby {
      Fired at the end of a sweep phase.
   */
   probe gc__sweep__end();
+
+  /*
+     ruby:::external-debug-ec-added(ec);
+
+     Fired when a new Ruby stack is created (i.e. a new thread or fiber). This
+     probe fires _after_ the execution context is added to the external debug
+     data.
+  */
+  probe external_debug__ec_added(rb_debug_ext_ec_t *ec);
+
+  /*
+     ruby:::external-debug-ec-added(ec);
+
+     Fired when a new Ruby stack is destroyed (i.e. a thread or fiber terminates).
+     This probe fires _before_ the execution context is added to the external debug
+     data.
+  */
+  probe external_debug__ec_removed(rb_debug_ext_ec_t *ec);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

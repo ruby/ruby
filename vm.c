@@ -3155,6 +3155,14 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
                         rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
                     }
                 }
+
+                VALUE me_or_cref = ep[VM_ENV_DATA_INDEX_ME_CREF];
+                if (RB_TEST(me_or_cref) && RB_TYPE_P(me_or_cref, T_IMEMO) && IMEMO_TYPE_P(me_or_cref, imemo_ment)) {
+                    /* method entries on stack need the strings exposed as part of debug_external.h pinned
+                    so that they don't move out from under any external process looking at them */
+                    rb_callable_method_entry_t *me = (rb_callable_method_entry_t *)me_or_cref;
+                    rb_method_entry_pin_debug_ext_info(me);
+                }
             }
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -3326,11 +3334,14 @@ rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
         0 /* dummy cref/me */,
         0 /* dummy pc */, ec->vm_stack, 0, 0
     );
+
+    rb_debug_ext_ec_insert(&ec->ext_data);
 }
 
 void
 rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 {
+    rb_debug_ext_ec_remove(&ec->ext_data);
     rb_ec_set_vm_stack(ec, NULL, 0);
 
     // Avoid dangling pointers:
@@ -3997,6 +4008,8 @@ Init_BareVM(void)
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
+
+    Init_debug_external();
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);

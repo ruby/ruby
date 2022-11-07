@@ -46,7 +46,7 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
-static ID autoload, classpath, tmp_classpath;
+static ID autoload, classpath, tmp_classpath, method_qualifier_cache;
 
 // This hash table maps file paths to loadable features. We use this to track
 // autoload state until it's no longer needed.
@@ -61,6 +61,7 @@ static VALUE autoload_mutex;
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
+static void ivar_set(VALUE obj, ID id, VALUE val);
 static st_table *generic_iv_tbl_;
 
 struct ivar_update {
@@ -79,6 +80,8 @@ Init_var_tables(void)
     classpath = rb_intern_const("__classpath__");
     /* __tmp_classpath__: temporary class path which contains anonymous names */
     tmp_classpath = rb_intern_const("__tmp_classpath__");
+    /* __method_qualifier_cache__: Prefix to print along with method names */
+    method_qualifier_cache = rb_intern_const("__method_qualifier_cache__");
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
@@ -289,6 +292,38 @@ rb_mod_debug_name(VALUE klass)
     return build_debug_name(klass);
 }
 
+static VALUE
+set_cached_method_qualifier(VALUE klass)
+{
+    VALUE qualifier_obj = klass;
+    const char *suffix = "#";
+    if (FL_TEST(klass, FL_SINGLETON)) {
+        qualifier_obj = rb_ivar_get(klass, id__attached__);
+        suffix = ".";
+    }
+    VALUE qualifier = rb_sprintf("%"PRIsVALUE"%s",
+                                 build_debug_name(qualifier_obj), suffix);
+    rb_str_freeze(qualifier);
+    ivar_set(klass, method_qualifier_cache, qualifier);
+    return qualifier;
+}
+
+VALUE
+rb_mod_get_cached_method_qualifier(VALUE klass)
+{
+    return rb_ivar_get(klass, method_qualifier_cache);
+}
+
+VALUE
+rb_mod_get_method_qualifier(VALUE klass)
+{
+    VALUE cached = rb_ivar_get(klass, method_qualifier_cache);
+    if (LIKELY(RB_TEST(cached))) {
+        return cached;
+    }
+    return set_cached_method_qualifier(klass);
+}
+
 void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
@@ -307,6 +342,7 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
         }
     }
     rb_ivar_set(klass, pathid, str);
+    set_cached_method_qualifier(klass);
 }
 
 void
@@ -3221,6 +3257,7 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
     }
     set_namespace_path(value, build_const_path(parental_path, id));
     rb_attr_delete(value, tmp_classpath);
+    set_cached_method_qualifier(value);
 
     return ID_TABLE_CONTINUE;
 }
@@ -3238,6 +3275,7 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
     RB_VM_LOCK_ENTER();
     {
         rb_class_ivar_set(named_namespace, classpath, namespace_path);
+        set_cached_method_qualifier(named_namespace);
         if (const_table) {
             rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
         }
@@ -3315,6 +3353,7 @@ const_set(VALUE klass, ID id, VALUE val)
                 }
                 else if (!parental_path_permanent && NIL_P(val_path)) {
                     ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                    set_cached_method_qualifier(val);
                 }
             }
         }

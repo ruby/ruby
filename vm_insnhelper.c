@@ -23,6 +23,8 @@
 #include "internal/random.h"
 #include "internal/variable.h"
 #include "internal/struct.h"
+#include "ruby/atomic.h"
+#include "ruby/debug_external.h"
 #include "variable.h"
 
 /* finish iseq array */
@@ -402,7 +404,18 @@ vm_push_frame(rb_execution_context_t *ec,
         .jit_return = NULL
     };
 
+    if (RB_TEST(cref_or_me) && IMEMO_TYPE_P(cref_or_me, imemo_ment)) {
+        rb_callable_method_entry_t *me = (rb_callable_method_entry_t *)cref_or_me;
+        cfp->ext_frame.method = CALLABLE_METHOD_ENTRY_EXT(me)->ext_method_info;
+    } else if (iseq) {
+        cfp->ext_frame.method = (rb_debug_ext_method_info_t){ 0 };
+    } else {
+        cfp->ext_frame.method = (rb_debug_ext_method_info_t){ 0 };
+    }
+    cfp->ext_frame.frame_end = ((type & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY);
+
     ec->cfp = cfp;
+    RUBY_ATOMIC_PTR_SET(ec->ext_data.top_frame, &cfp->ext_frame);
 
     if (VMDEBUG == 2) {
         SDR();
@@ -421,6 +434,7 @@ vm_pop_frame(rb_execution_context_t *ec, rb_control_frame_t *cfp, const VALUE *e
 
     RUBY_VM_CHECK_INTS(ec);
     ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    ec->ext_data.top_frame = &ec->cfp->ext_frame;
 
     return flags & VM_FRAME_FLAG_FINISH;
 }

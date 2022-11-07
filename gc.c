@@ -119,6 +119,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "method.h"
 #include "mjit.h"
 #include "probes.h"
 #include "regint.h"
@@ -10137,6 +10138,7 @@ gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
 
     UPDATE_IF_MOVED(objspace, METHOD_ENTRY_EXT(me)->owner);
     UPDATE_IF_MOVED(objspace, me->defined_class);
+    rb_method_entry_update_debug_ext_info_refs(me);
 
     if (def) {
         switch (def->type) {
