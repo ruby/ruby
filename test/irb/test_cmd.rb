@@ -548,6 +548,40 @@ module TestIRB
 
     def test_show_source
       input = TestInputMethod.new([
+        "show_source IRB.conf\n",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(%r[/irb\.rb], out)
+    end
+
+    def test_show_source_method
+      input = TestInputMethod.new([
+        "p show_source('IRB.conf')\n",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(%r[/irb\.rb], out)
+    end
+
+    def test_show_source_string
+      input = TestInputMethod.new([
         "show_source 'IRB.conf'\n",
       ])
       IRB.init_config(nil)

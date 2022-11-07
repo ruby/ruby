@@ -484,9 +484,16 @@ module IRB
       end
 
       # Transform a non-identifier alias (ex: @, $)
-      command = line.split(/\s/, 2).first
+      command, args = line.split(/\s/, 2)
       if original = symbol_alias(command)
         line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
+        command = original
+      end
+
+      # Hook command-specific transformation
+      command_class = ExtendCommandBundle.load_command(command)
+      if command_class&.respond_to?(:transform_args)
+        line = "#{command} #{command_class.transform_args(args)}"
       end
 
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
