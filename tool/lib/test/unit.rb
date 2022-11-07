@@ -286,9 +286,10 @@ module Test
         @jobserver = nil
         makeflags = ENV.delete("MAKEFLAGS")
         if !options[:parallel] and
-          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:(.*))/ =~ makeflags
+          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ makeflags
           begin
             if fifo = $3
+              fifo.gsub!(/\\(?=.)/, '')
               r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
               w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
             else
