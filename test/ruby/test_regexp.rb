@@ -1589,7 +1589,7 @@ class TestRegexp < Test::Unit::TestCase
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
         # A typical ReDoS case
-        /^(a*)*$/ =~ "a" * 1000000 + "x"
+        /^(a*)*\1$/ =~ "a" * 1000000 + "x"
       end
       t = Time.now - t
 
@@ -1631,7 +1631,7 @@ class TestRegexp < Test::Unit::TestCase
 
       Regexp.timeout = global_timeout
 
-      re = Regexp.new("^a*b?a*$", timeout: per_instance_timeout)
+      re = Regexp.new("^(a*)\\1b?a*$", timeout: per_instance_timeout)
       assert_equal(per_instance_timeout, re.timeout)
 
       t = Time.now
@@ -1671,6 +1671,26 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
+    end;
+  end
+
+  def test_cache_optimization_exponential
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      timeout = EnvUtil.apply_timeout_scale(0.2)
+      Regexp.timeout = timeout
+
+      assert_nil(/^(a*)*$/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
+  def test_cache_optimization_square
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      timeout = EnvUtil.apply_timeout_scale(0.2)
+      Regexp.timeout = timeout
+
+      assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
     end;
   end
 end
