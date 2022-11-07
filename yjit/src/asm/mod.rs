@@ -463,6 +463,12 @@ impl CodeBlock {
         self.dropped_bytes
     }
 
+    /// To patch code that straddle pages correctly, we need to start with
+    /// the dropped bytes flag unset so we can detect when to switch to a new page.
+    pub fn set_dropped_bytes(&mut self, dropped_bytes: bool) {
+        self.dropped_bytes = dropped_bytes;
+    }
+
     /// Allocate a new label with a given name
     pub fn new_label(&mut self, name: String) -> usize {
         assert!(!name.contains(' '), "use underscores in label names, not spaces");
