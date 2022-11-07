@@ -323,6 +323,15 @@ describe "C-API Class function" do
         @s.rb_define_class("ClassSpecDefineClass4", nil)
       }.should raise_error(ArgumentError)
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class("_INVALID_CLASS", CApiClassSpecs::Super)
+      cls.name.should == "_INVALID_CLASS"
+
+      -> {
+        Object.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_class_under" do
@@ -367,6 +376,15 @@ describe "C-API Class function" do
     it "raises a TypeError if class is defined and its superclass mismatches the given one" do
       -> { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class_under(CApiClassSpecs, "_INVALID_CLASS", CApiClassSpecs::Super)
+      cls.name.should == "CApiClassSpecs::_INVALID_CLASS"
+
+      -> {
+        CApiClassSpecs.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_class_id_under" do
@@ -393,6 +411,15 @@ describe "C-API Class function" do
 
     it "raises a TypeError if class is defined and its superclass mismatches the given one" do
       -> { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
+    end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      cls = @s.rb_define_class_id_under(CApiClassSpecs, :_INVALID_CLASS2, CApiClassSpecs::Super)
+      cls.name.should == "CApiClassSpecs::_INVALID_CLASS2"
+
+      -> {
+        CApiClassSpecs.const_get(cls.name)
+      }.should raise_error(NameError, /wrong constant name/)
     end
   end
 

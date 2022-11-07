@@ -321,6 +321,21 @@ ruby_version_is "3.0" do
         m({a: 1}).should == [[{a: 1}], {}]
       end
 
+      ruby_version_is "3.1" do
+        describe "omitted values" do
+          it "accepts short notation 'key' for 'key: value' syntax" do
+            def m(a:, b:)
+              [a, b]
+            end
+
+            a = 1
+            b = 2
+
+            eval('m(a:, b:).should == [1, 2]')
+          end
+        end
+      end
+
       ruby_version_is "3.2" do
         it "does not work with call(*ruby2_keyword_args) with missing ruby2_keywords in between" do
           class << self

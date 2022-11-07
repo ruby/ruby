@@ -66,8 +66,8 @@ ruby_version_is "3.2" do
     context "when fiber is non-blocking" do
       it "can become blocking" do
         fiber = Fiber.new(blocking: false) do
-          Fiber.blocking do |fiber|
-            fiber.blocking? ? :blocking : :non_blocking
+          Fiber.blocking do |f|
+            f.blocking? ? :blocking : :non_blocking
           end
         end
 

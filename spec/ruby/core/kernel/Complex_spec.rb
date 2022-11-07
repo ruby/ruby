@@ -1,4 +1,6 @@
 require_relative '../../spec_helper'
+require_relative '../../shared/kernel/complex'
+require_relative 'fixtures/Complex'
 
 describe "Kernel.Complex()" do
   describe "when passed [Complex, Complex]" do
@@ -58,7 +60,92 @@ describe "Kernel.Complex()" do
     end
   end
 
-  describe "when passed a String" do
+  describe "when passed [String]" do
+    it_behaves_like :kernel_complex, :Complex_method, KernelSpecs
+
+    context "invalid argument" do
+      it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
+        -> {
+          Complex("79+4i".encode("UTF-16"))
+        }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+      end
+
+      it "raises ArgumentError for unrecognised Strings" do
+        -> {
+          Complex("ruby")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "ruby"')
+      end
+
+      it "raises ArgumentError for trailing garbage" do
+        -> {
+          Complex("79+4iruby")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "79+4iruby"')
+      end
+
+      it "does not understand Float::INFINITY" do
+        -> {
+          Complex("Infinity")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "Infinity"')
+
+        -> {
+          Complex("-Infinity")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "-Infinity"')
+      end
+
+      it "does not understand Float::NAN" do
+        -> {
+          Complex("NaN")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "NaN"')
+      end
+
+      it "does not understand a sequence of _" do
+        -> {
+          Complex("7__9+4__0i")
+        }.should raise_error(ArgumentError, 'invalid value for convert(): "7__9+4__0i"')
+      end
+
+      it "does not allow null-byte" do
+        -> {
+          Complex("1-2i\0")
+        }.should raise_error(ArgumentError, "string contains null byte")
+      end
+    end
+
+    context "invalid argument and exception: false passed" do
+      it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
+        -> {
+          Complex("79+4i".encode("UTF-16"), exception: false)
+        }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+      end
+
+      it "returns nil for unrecognised Strings" do
+        Complex("ruby", exception: false).should == nil
+      end
+
+      it "returns nil when trailing garbage" do
+        Complex("79+4iruby", exception: false).should == nil
+      end
+
+      it "returns nil for Float::INFINITY" do
+        Complex("Infinity", exception: false).should == nil
+        Complex("-Infinity", exception: false).should == nil
+      end
+
+      it "returns nil for Float::NAN" do
+        Complex("NaN", exception: false).should == nil
+      end
+
+      it "returns nil when there is a sequence of _" do
+        Complex("7__9+4__0i", exception: false).should == nil
+      end
+
+      it "returns nil when String contains null-byte" do
+        Complex("1-2i\0", exception: false).should == nil
+      end
+    end
+  end
+
+  describe "when passes [String, String]" do
     it "needs to be reviewed for spec completeness"
   end
 

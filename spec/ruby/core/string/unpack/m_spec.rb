@@ -97,6 +97,11 @@ describe "String#unpack with format 'M'" do
       ["=FF=\n",                      ["\xff"]]
     ].should be_computed_by(:unpack, "M")
   end
+
+  it "unpacks incomplete escape sequences as literal characters" do
+    "foo=".unpack("M").should == ["foo="]
+    "foo=4".unpack("M").should == ["foo=4"]
+  end
 end
 
 describe "String#unpack with format 'm'" do

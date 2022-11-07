@@ -101,6 +101,20 @@ describe "StringIO#puts when passed 1 or more objects" do
     @io.puts ''
     @io.string.should == "\n"
   end
+
+  it "handles concurrent writes correctly" do
+    n = 8
+    go = false
+    threads = n.times.map { |i|
+      Thread.new {
+        Thread.pass until go
+        @io.puts i
+      }
+    }
+    go = true
+    threads.each(&:join)
+    @io.string.size.should == n.times.map { |i| "#{i}\n" }.join.size
+  end
 end
 
 describe "StringIO#puts when passed no arguments" do

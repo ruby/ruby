@@ -7,6 +7,9 @@ extern "C" {
 
 VALUE registered_tagged_value;
 VALUE registered_reference_value;
+VALUE registered_before_rb_gc_register_address;
+VALUE registered_before_rb_global_variable;
+VALUE rb_gc_register_address_outside_init;
 
 static VALUE registered_tagged_address(VALUE self) {
   return registered_tagged_value;
@@ -14,6 +17,25 @@ static VALUE registered_tagged_address(VALUE self) {
 
 static VALUE registered_reference_address(VALUE self) {
   return registered_reference_value;
+}
+
+static VALUE get_registered_before_rb_gc_register_address(VALUE self) {
+  return registered_before_rb_gc_register_address;
+}
+
+static VALUE get_registered_before_rb_global_variable(VALUE self) {
+  return registered_before_rb_global_variable;
+}
+
+static VALUE gc_spec_rb_gc_register_address(VALUE self) {
+  rb_gc_register_address_outside_init = rb_str_new_cstr("rb_gc_register_address() outside Init_");
+  rb_gc_register_address(&rb_gc_register_address_outside_init);
+  return rb_gc_register_address_outside_init;
+}
+
+static VALUE gc_spec_rb_gc_unregister_address(VALUE self) {
+  rb_gc_unregister_address(&rb_gc_register_address_outside_init);
+  return Qnil;
 }
 
 static VALUE gc_spec_rb_gc_enable(VALUE self) {
@@ -50,9 +72,18 @@ void Init_gc_spec(void) {
 
   rb_gc_register_address(&registered_tagged_value);
   rb_gc_register_address(&registered_reference_value);
+  rb_gc_register_address(&registered_before_rb_gc_register_address);
+  rb_global_variable(&registered_before_rb_global_variable);
+
+  registered_before_rb_gc_register_address = rb_str_new_cstr("registered before rb_gc_register_address()");
+  registered_before_rb_global_variable = rb_str_new_cstr("registered before rb_global_variable()");
 
   rb_define_method(cls, "registered_tagged_address", registered_tagged_address, 0);
   rb_define_method(cls, "registered_reference_address", registered_reference_address, 0);
+  rb_define_method(cls, "registered_before_rb_gc_register_address", get_registered_before_rb_gc_register_address, 0);
+  rb_define_method(cls, "registered_before_rb_global_variable", get_registered_before_rb_global_variable, 0);
+  rb_define_method(cls, "rb_gc_register_address", gc_spec_rb_gc_register_address, 0);
+  rb_define_method(cls, "rb_gc_unregister_address", gc_spec_rb_gc_unregister_address, 0);
   rb_define_method(cls, "rb_gc_enable", gc_spec_rb_gc_enable, 0);
   rb_define_method(cls, "rb_gc_disable", gc_spec_rb_gc_disable, 0);
   rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
