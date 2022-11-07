@@ -27,6 +27,7 @@
 #include "probes_helper.h"
 #include "iseq.h"
 #include "ruby/debug.h"
+#include "internal/cont.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -65,10 +66,7 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 bool
 rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 {
-    if (mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE)) {
-        return false;
-    }
-    return true;
+    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
 }
 
 void
@@ -83,6 +81,20 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+}
+
+// Free the specified memory block.
+bool
+rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
+{
+    // On Linux, you need to use madvise MADV_DONTNEED to free memory.
+    // We might not need to call this on macOS, but it's not really documented.
+    // We generally prefer to do the same thing on both to ease testing too.
+    madvise(mem_block, mem_size, MADV_DONTNEED);
+
+    // On macOS, mprotect PROT_NONE seems to reduce RSS.
+    // We also call this on Linux to avoid executing unused pages.
+    return mprotect(mem_block, mem_size, PROT_NONE) == 0;
 }
 
 // `start` is inclusive and `end` is exclusive.
@@ -295,6 +307,10 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
         perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
         rb_bug("mmap failed");
     }
 
@@ -387,6 +403,9 @@ rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     iseq->body->jit_func = NULL;
+    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
+    // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
+    iseq->body->total_calls = 0;
 }
 
 // Get the PC for a given index in an iseq
@@ -577,6 +596,12 @@ rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
     return iseq->body->local_iseq;
 }
 
+const rb_iseq_t *
+rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
+{
+    return iseq->body->parent_iseq;
+}
+
 unsigned int
 rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
@@ -599,6 +624,12 @@ unsigned
 rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
     return iseq->body->stack_max;
+}
+
+bool
+rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_lead;
 }
 
 bool
@@ -644,7 +675,13 @@ rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 }
 
 bool
-rb_get_iseq_flags_has_accepts_no_kwarg(const rb_iseq_t *iseq)
+rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ambiguous_param0;
+}
+
+bool
+rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.accepts_no_kwarg;
 }
@@ -1032,6 +1069,7 @@ VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
+VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 

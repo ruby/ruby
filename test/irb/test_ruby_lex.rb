@@ -1,10 +1,12 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
-require 'irb/ruby-lex'
-require 'test/unit'
+require 'irb'
+require 'rubygems'
 require 'ostruct'
 
+require_relative "helper"
+
 module TestIRB
-  class TestRubyLex < Test::Unit::TestCase
+  class TestRubyLex < TestCase
     Row = Struct.new(:content, :current_line_spaces, :new_line_spaces, :nesting_level)
 
     class MockIO_AutoIndent
@@ -19,18 +21,27 @@ module TestIRB
       end
     end
 
+    def setup
+      save_encodings
+    end
+
+    def teardown
+      restore_encodings
+    end
+
     def assert_indenting(lines, correct_space_count, add_new_line)
       lines = lines + [""] if add_new_line
       last_line_index = lines.length - 1
       byte_pointer = lines.last.length
 
+      context = build_context
+      context.auto_indent_mode = true
       ruby_lex = RubyLex.new()
       io = MockIO_AutoIndent.new([lines, last_line_index, byte_pointer, add_new_line]) do |auto_indent|
         error_message = "Calculated the wrong number of spaces for:\n #{lines.join("\n")}"
         assert_equal(correct_space_count, auto_indent, error_message)
       end
-      ruby_lex.set_input(io)
-      context = OpenStruct.new(auto_indent_mode: true)
+      ruby_lex.set_input(io, context: context)
       ruby_lex.set_auto_indent(context)
     end
 
@@ -48,11 +59,10 @@ module TestIRB
 
     def ruby_lex_for_lines(lines, local_variables: [])
       ruby_lex = RubyLex.new()
+
+      context = build_context(local_variables)
       io = proc{ lines.join("\n") }
-      ruby_lex.set_input(io, io)
-      unless local_variables.empty?
-        context = OpenStruct.new(local_variables: local_variables)
-      end
+      ruby_lex.set_input(io, io, context: context)
       ruby_lex.lex(context)
       ruby_lex
     end
@@ -620,7 +630,8 @@ module TestIRB
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
       end
-      ruby_lex.set_input(io)
+      context = build_context
+      ruby_lex.set_input(io, context: context)
     end
 
     def test_dyanmic_prompt
@@ -696,6 +707,22 @@ module TestIRB
         string_literal = RubyLex.new.check_string_literal(tokens)
         assert_equal('<<A', string_literal&.tok)
       end
+    end
+
+    private
+
+    def build_context(local_variables = nil)
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(TOPLEVEL_BINDING.dup)
+
+      if local_variables
+        local_variables.each do |n|
+          workspace.binding.local_variable_set(n, nil)
+        end
+      end
+
+      IRB.conf[:VERBOSE] = false
+      IRB::Context.new(nil, workspace)
     end
   end
 end

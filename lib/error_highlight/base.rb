@@ -59,8 +59,7 @@ module ErrorHighlight
       Spotter.new(node, **opts).spot
 
     when RubyVM::AbstractSyntaxTree::Node
-      # Just for compatibility
-      Spotter.new(node, **opts).spot
+      Spotter.new(obj, **opts).spot
 
     else
       raise TypeError, "Exception is expected"

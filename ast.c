@@ -196,6 +196,18 @@ script_lines(VALUE path)
 }
 
 static VALUE
+node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
+{
+    int node_id;
+    node_id = rb_get_node_id_from_frame_info(location);
+    if (node_id == -1) {
+        return Qnil;
+    }
+
+    return INT2NUM(node_id);
+}
+
+static VALUE
 ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines, VALUE error_tolerant)
 {
     VALUE node, lines = Qnil;

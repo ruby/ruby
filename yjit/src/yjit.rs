@@ -79,6 +79,18 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *con
     }
 }
 
+/// Free and recompile all existing JIT code
+#[no_mangle]
+pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if !yjit_enabled_p() {
+        return Qnil;
+    }
+
+    let cb = CodegenGlobals::get_inline_cb();
+    cb.code_gc();
+    Qnil
+}
+
 /// Simulate a situation where we are out of executable memory
 #[no_mangle]
 pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {

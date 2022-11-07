@@ -268,7 +268,7 @@ jobs:
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@v3.0.0
         with:
           payload: |
             {
@@ -276,7 +276,7 @@ jobs:
               "env": "${{ github.workflow }} / ${{ matrix.entry.name }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

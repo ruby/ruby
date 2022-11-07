@@ -986,7 +986,6 @@ end
 class ERB
   # A utility module for conversion routines, often handy in HTML generation.
   module Util
-    public
     #
     # A utility method for escaping HTML tag characters in _s_.
     #
@@ -999,8 +998,13 @@ class ERB
     #
     #   is a &gt; 0 &amp; a &lt; 10?
     #
-    def html_escape(s)
-      CGI.escapeHTML(s.to_s)
+    begin
+      # ERB::Util.html_escape
+      require 'erb.so'
+    rescue LoadError
+      def html_escape(s)
+        CGI.escapeHTML(s.to_s)
+      end
     end
     alias h html_escape
     module_function :h
@@ -1019,9 +1023,7 @@ class ERB
     #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)
-      s.to_s.b.gsub(/[^a-zA-Z0-9_\-.~]/n) { |m|
-        sprintf("%%%02X", m.unpack1("C"))
-      }
+      CGI.escapeURIComponent(s.to_s)
     end
     alias u url_encode
     module_function :u

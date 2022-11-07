@@ -41,13 +41,9 @@ To cite this repository in your publications, please use this bibtex snippet:
 
 ## Current Limitations
 
-YJIT is a work in progress and as such may not yet be mature enough for mission-critical software. Below is a list of known limitations, all of which we plan to eventually address:
-
-- No garbage collection for generated code.
-- Currently supports only macOS and Linux.
-- Supports x86-64 and arm64/aarch64 CPUs only.
-
-Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
+YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state
+information.
+You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options). There is a slight performance tradeoff because allocating less executable memory could result in the generated machine code being collected more often.
 
 ## Installation
 

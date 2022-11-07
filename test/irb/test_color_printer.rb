@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb/color_printer'
 require 'rubygems'
 require 'stringio'
 
+require_relative "helper"
+
 module TestIRB
-  class TestColorPrinter < Test::Unit::TestCase
+  class TestColorPrinter < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     RED       = "\e[31m"

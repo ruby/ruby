@@ -165,8 +165,8 @@ impl Assembler
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
-                    if imm <= 0 {
-                        asm.load(opnd)
+                    if imm == 0 {
+                        Opnd::Reg(XZR_REG)
                     } else if (dest_num_bits == 64 &&
                                 BitmaskImmediate::try_from(imm as u64).is_ok()) ||
                             (dest_num_bits == 32 &&
@@ -708,6 +708,23 @@ impl Assembler
             }
         }
 
+        /// Call emit_jmp_ptr and immediately invalidate the written range.
+        /// This is needed when next_page also moves other_cb that is not invalidated
+        /// by compile_with_regs. Doing it here allows you to avoid invalidating a lot
+        /// more than necessary when other_cb jumps from a position early in the page.
+        /// This invalidates a small range of cb twice, but we accept the small cost.
+        fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+            #[cfg(not(test))]
+            let start = cb.get_write_ptr();
+            emit_jmp_ptr(cb, dst_ptr);
+            #[cfg(not(test))]
+            {
+                let end = cb.get_write_ptr();
+                use crate::cruby::rb_yjit_icache_invalidate;
+                unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
+            }
+        }
+
         // dbg!(&self.insns);
 
         // List of GC offsets
@@ -1011,14 +1028,14 @@ impl Assembler
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
-                    while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES {
+                    while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES && !cb.has_dropped_bytes() {
                         nop(cb);
                     }
                 }
             };
 
             // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr) {
+            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr_with_invalidation) {
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
             } else {
@@ -1335,8 +1352,8 @@ mod tests {
         asm.test(Opnd::Reg(X0_REG), Opnd::Imm(-7));
         asm.compile_with_num_regs(&mut cb, 1);
 
-        // Assert that a load and a test instruction were written.
-        assert_eq!(8, cb.get_write_pos());
+        // Assert that a test instruction is written.
+        assert_eq!(4, cb.get_write_pos());
     }
 
     #[test]

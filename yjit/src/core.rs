@@ -11,6 +11,7 @@ use crate::utils::*;
 use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::rc::{Rc};
@@ -43,6 +44,9 @@ pub enum Type {
 
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
+
+    BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
+                     // the current surrounding cfp
 }
 
 // Default initialization
@@ -77,6 +81,12 @@ impl Type {
             #[cfg(not(test))]
             if val.class_of() == unsafe { rb_cString } {
                 return Type::CString;
+            }
+            // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
+            // we can just treat it as a normal Object.
+            #[cfg(not(test))]
+            if val == unsafe { rb_block_param_proxy } {
+                return Type::BlockParamProxy;
             }
             match val.builtin_type() {
                 RUBY_T_ARRAY => Type::Array,
@@ -141,7 +151,8 @@ impl Type {
             Type::Hash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
-            Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None
+            Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
+            Type::BlockParamProxy => None,
         }
     }
 
@@ -321,7 +332,7 @@ struct Branch {
 
     // Positions where the generated code starts and ends
     start_addr: Option<CodePtr>,
-    end_addr: Option<CodePtr>,
+    end_addr: Option<CodePtr>, // exclusive
 
     // Context right after the branch instruction
     #[allow(unused)] // set but not read at the moment
@@ -475,7 +486,11 @@ impl Eq for BlockRef {}
 /// when calling into YJIT
 #[derive(Default)]
 pub struct IseqPayload {
+    // Basic block versions
     version_map: VersionMap,
+
+    // Indexes of code pages used by this this ISEQ
+    pub pages: HashSet<usize>,
 }
 
 impl IseqPayload {
@@ -498,7 +513,7 @@ pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
 }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
-fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
@@ -535,6 +550,40 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+
+/// Iterate over all on-stack ISEQs
+pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
+    unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
+        callback(iseq);
+    }
+    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
+    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+
+/// Iterate over all on-stack ISEQ payloads
+pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
+    for_each_on_stack_iseq(|iseq| {
+        if let Some(iseq_payload) = get_iseq_payload(iseq) {
+            callback(iseq_payload);
+        }
+    });
+}
+
+/// Iterate over all NOT on-stack ISEQ payloads
+pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback: F) {
+    let mut on_stack_iseqs: Vec<IseqPtr> = vec![];
+    for_each_on_stack_iseq(|iseq| {
+        on_stack_iseqs.push(iseq);
+    });
+    for_each_iseq(|iseq| {
+        if !on_stack_iseqs.contains(&iseq) {
+            if let Some(iseq_payload) = get_iseq_payload(iseq) {
+                callback(iseq_payload);
+            }
+        }
+    })
 }
 
 /// Free the per-iseq payload
@@ -816,7 +865,12 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         generic_ctx.stack_size = ctx.stack_size;
         generic_ctx.sp_offset = ctx.sp_offset;
 
-        // Mutate the incoming context
+        debug_assert_ne!(
+            usize::MAX,
+            ctx.diff(&generic_ctx),
+            "should substitute a compatible context",
+        );
+
         return generic_ctx;
     }
 
@@ -854,6 +908,12 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     }
 
     incr_counter!(compiled_block_count);
+
+    // Mark code pages for code GC
+    let iseq_payload = get_iseq_payload(block.blockid.iseq).unwrap();
+    for page in cb.addrs_to_pages(block.start_addr.unwrap(), block.end_addr.unwrap()) {
+        iseq_payload.pages.insert(page);
+    }
 }
 
 /// Remove a block version from the version map of its parent ISEQ
@@ -969,22 +1029,6 @@ impl Block {
 }
 
 impl Context {
-    pub fn new_with_stack_size(size: i16) -> Self {
-        return Context {
-            stack_size: size as u16,
-            sp_offset: size,
-            chain_depth: 0,
-            local_types: [Type::Unknown; MAX_LOCAL_TYPES],
-            temp_types: [Type::Unknown; MAX_TEMP_TYPES],
-            self_type: Type::Unknown,
-            temp_mapping: [MapToStack; MAX_TEMP_TYPES],
-        };
-    }
-
-    pub fn new() -> Self {
-        return Self::new_with_stack_size(0);
-    }
-
     pub fn get_stack_size(&self) -> u16 {
         self.stack_size
     }
@@ -1526,7 +1570,11 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
     match block {
         // Compilation failed
-        None => return None,
+        None => {
+            // Trigger code GC. This entry point will be recompiled later.
+            cb.code_gc();
+            return None;
+        }
 
         // If the block contains no Ruby instructions
         Some(block) => {
@@ -1776,6 +1824,18 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             block_rc.borrow().start_addr.unwrap()
         }
         None => {
+            // Code GC needs to borrow blocks for invalidation, so their mutable
+            // borrows must be dropped first.
+            drop(block);
+            drop(branch);
+            // Trigger code GC. The whole ISEQ will be recompiled later.
+            // We shouldn't trigger it in the middle of compilation in branch_stub_hit
+            // because incomplete code could be used when cb.dropped_bytes is flipped
+            // by code GC. So this place, after all compilation, is the safest place
+            // to hook code GC on branch_stub_hit.
+            cb.code_gc();
+            branch = branch_rc.borrow_mut();
+
             // Failed to service the stub by generating a new block so now we
             // need to exit to the interpreter at the stubbed location. We are
             // intentionally *not* restoring original_interp_sp. At the time of
@@ -1793,7 +1853,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let new_branch_size = branch.code_size();
     assert!(
         new_branch_size <= branch_size_on_entry,
-        "branch stubs should never enlarge branches"
+        "branch stubs should never enlarge branches: (old_size: {}, new_size: {})",
+        branch_size_on_entry, new_branch_size,
     );
 
     // Return a pointer to the compiled block version
@@ -1904,7 +1965,10 @@ pub fn gen_branch(
     // Get the branch targets or stubs
     let dst_addr0 = get_branch_target(target0, ctx0, &branchref, 0, ocb);
     let dst_addr1 = if let Some(ctx) = ctx1 {
-        get_branch_target(target1.unwrap(), ctx, &branchref, 1, ocb)
+        match get_branch_target(target1.unwrap(), ctx, &branchref, 1, ocb) {
+            Some(dst_addr) => Some(dst_addr),
+            None => return, // avoid unwrap() in gen_fn()
+        }
     } else {
         None
     };

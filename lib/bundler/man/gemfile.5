@@ -73,13 +73,13 @@ Credentials in the source URL will take precedence over credentials set using \f
 If your application requires a specific Ruby version or engine, specify your requirements using the \fBruby\fR method, with the following arguments\. All parameters are \fBOPTIONAL\fR unless otherwise specified\.
 .
 .SS "VERSION (required)"
-The version of Ruby that your application requires\. If your application requires an alternate Ruby engine, such as JRuby, Rubinius or TruffleRuby, this should be the Ruby version that the engine is compatible with\.
+The version of Ruby that your application requires\. If your application requires an alternate Ruby engine, such as JRuby, TruffleRuby, etc\., this should be the Ruby version that the engine is compatible with\.
 .
 .IP "" 4
 .
 .nf
 
-ruby "1\.9\.3"
+ruby "3\.1\.2"
 .
 .fi
 .
@@ -95,7 +95,7 @@ What exactly is an Engine? \- A Ruby engine is an implementation of the Ruby lan
 For background: the reference or original implementation of the Ruby programming language is called Matz\'s Ruby Interpreter \fIhttps://en\.wikipedia\.org/wiki/Ruby_MRI\fR, or MRI for short\. This is named after Ruby creator Yukihiro Matsumoto, also known as Matz\. MRI is also known as CRuby, because it is written in C\. MRI is the most widely used Ruby engine\.
 .
 .IP "\(bu" 4
-Other implementations \fIhttps://www\.ruby\-lang\.org/en/about/\fR of Ruby exist\. Some of the more well\-known implementations include Rubinius \fIhttps://rubinius\.com/\fR, and JRuby \fIhttp://jruby\.org/\fR\. Rubinius is an alternative implementation of Ruby written in Ruby\. JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine\.
+Other implementations \fIhttps://www\.ruby\-lang\.org/en/about/\fR of Ruby exist\. Some of the more well\-known implementations include JRuby \fIhttp://jruby\.org/\fR and TruffleRuby \fIhttps://www\.graalvm\.org/ruby/\fR\. Rubinius is an alternative implementation of Ruby written in Ruby\. JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine\. TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM\.
 .
 .IP "" 0
 .
@@ -106,20 +106,23 @@ Each application \fImay\fR specify a Ruby engine version\. If an engine version 
 .
 .nf
 
-ruby "1\.8\.7", engine: "jruby", engine_version: "1\.6\.7"
+ruby "2\.6\.8", engine: "jruby", engine_version: "9\.3\.8\.0"
 .
 .fi
 .
 .IP "" 0
 .
 .SS "PATCHLEVEL"
-Each application \fImay\fR specify a Ruby patchlevel\.
+Each application \fImay\fR specify a Ruby patchlevel\. Specifying the patchlevel has been meaningless since Ruby 2\.1\.0 was released as the patchlevel is now uniquely determined by a combination of major, minor, and teeny version numbers\.
+.
+.P
+This option was implemented in Bundler 1\.4\.0 for Ruby 2\.0 or earlier\.
 .
 .IP "" 4
 .
 .nf
 
-ruby "2\.0\.0", patchlevel: "247"
+ruby "3\.1\.2", patchlevel: "20"
 .
 .fi
 .
@@ -265,6 +268,14 @@ C Ruby (MRI) only, but not Windows
 Windows C Ruby (MRI), including RubyInstaller 32\-bit and 64\-bit versions
 .
 .TP
+\fBmswin\fR
+Windows C Ruby (MRI), including RubyInstaller 32\-bit versions
+.
+.TP
+\fBmswin64\fR
+Windows C Ruby (MRI), including RubyInstaller 64\-bit versions
+.
+.TP
 \fBrbx\fR
 Rubinius
 .
@@ -277,13 +288,13 @@ JRuby
 TruffleRuby
 .
 .P
-On platforms \fBruby\fR, \fBmri\fR, and \fBwindows\fR, you may additionally specify a version by appending the major and minor version numbers without a delimiter\. For example, to specify that a gem should only be used on platform \fBruby\fR version 2\.3, use:
+On platforms \fBruby\fR, \fBmri\fR, \fBmswin\fR, \fBmswin64\fR, and \fBwindows\fR, you may additionally specify a version by appending the major and minor version numbers without a delimiter\. For example, to specify that a gem should only be used on platform \fBruby\fR version 3\.1, use:
 .
 .IP "" 4
 .
 .nf
 
-ruby_23
+ruby_31
 .
 .fi
 .
@@ -297,8 +308,8 @@ As with groups (above), you may specify one or more platforms:
 .nf
 
 gem "weakling",   platforms: :jruby
-gem "ruby\-debug", platforms: :mri_18
-gem "nokogiri",   platforms: [:windows_26, :jruby]
+gem "ruby\-debug", platforms: :mri_31
+gem "nokogiri",   platforms: [:windows_31, :jruby]
 .
 .fi
 .

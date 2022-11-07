@@ -2161,31 +2161,6 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    num.real  ->  self
- *
- * Returns self.
- */
-static VALUE
-numeric_real(VALUE self)
-{
-    return self;
-}
-
-/*
- * call-seq:
- *    num.imag       ->  0
- *    num.imaginary  ->  0
- *
- * Returns zero.
- */
-static VALUE
-numeric_imag(VALUE self)
-{
-    return INT2FIX(0);
-}
-
-/*
- * call-seq:
  *    num.abs2  ->  real
  *
  * Returns square of self.
@@ -2253,19 +2228,6 @@ numeric_polar(VALUE self)
         arg = f_arg(self);
     }
     return rb_assoc_new(abs, arg);
-}
-
-/*
- * call-seq:
- *    num.conj       ->  self
- *    num.conjugate  ->  self
- *
- * Returns self.
- */
-static VALUE
-numeric_conj(VALUE self)
-{
-    return self;
 }
 
 /*
@@ -2433,9 +2395,6 @@ Init_Complex(void)
 
     rb_define_private_method(CLASS_OF(rb_cComplex), "convert", nucomp_s_convert, -1);
 
-    rb_define_method(rb_cNumeric, "real", numeric_real, 0);
-    rb_define_method(rb_cNumeric, "imaginary", numeric_imag, 0);
-    rb_define_method(rb_cNumeric, "imag", numeric_imag, 0);
     rb_define_method(rb_cNumeric, "abs2", numeric_abs2, 0);
     rb_define_method(rb_cNumeric, "arg", numeric_arg, 0);
     rb_define_method(rb_cNumeric, "angle", numeric_arg, 0);
@@ -2443,8 +2402,6 @@ Init_Complex(void)
     rb_define_method(rb_cNumeric, "rectangular", numeric_rect, 0);
     rb_define_method(rb_cNumeric, "rect", numeric_rect, 0);
     rb_define_method(rb_cNumeric, "polar", numeric_polar, 0);
-    rb_define_method(rb_cNumeric, "conjugate", numeric_conj, 0);
-    rb_define_method(rb_cNumeric, "conj", numeric_conj, 0);
 
     rb_define_method(rb_cFloat, "arg", float_arg, 0);
     rb_define_method(rb_cFloat, "angle", float_arg, 0);

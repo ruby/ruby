@@ -16,7 +16,7 @@
 # include <stddef.h>                       /* size_t */
 #endif
 
-#if HAVE_SYS_TYPES_H
+#ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>                    /* ssize_t */
 #endif
 

@@ -2571,8 +2571,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         VALUE refined_class = rb_refinement_module_get_refined_class(methclass);
         if (!NIL_P(refined_class)) methclass = refined_class;
     }
-    if (!RB_TYPE_P(methclass, T_MODULE) &&
-        methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
+    if (!RB_TYPE_P(methclass, T_MODULE) && !RTEST(rb_obj_is_kind_of(recv, methclass))) {
         if (FL_TEST(methclass, FL_SINGLETON)) {
             rb_raise(rb_eTypeError,
                      "singleton method called for a different object");

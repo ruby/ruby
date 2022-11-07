@@ -770,7 +770,7 @@ static inline struct ccan_list_node *ccan_list_node_from_off_(void *ptr, size_t 
 	(ccan_container_off_var(var, member) +		\
 	 ccan_check_type(var->member, struct ccan_list_node))
 
-#if HAVE_TYPEOF
+#if defined(HAVE_TYPEOF) && HAVE_TYPEOF
 #define ccan_list_typeof(var) typeof(var)
 #else
 #define ccan_list_typeof(var) void *

@@ -655,12 +655,20 @@ EOS
   end
 
   hdr = "netinet6/in6.h"
-  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+  /darwin/ =~ RUBY_PLATFORM and
+  checking_for("if apple's #{hdr} needs s6_addr patch") {!try_compile(<<"SRC", nil, :werror=>true)} and
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
-    in6 = File.read("/usr/include/#{hdr}")
+  checking_for("fixing apple's #{hdr}", "%s") do
+    file = xpopen(%w"clang -include netinet/in.h -E -xc -", in: IO::NULL) do |f|
+      re = %r[^# *\d+ *"(.*/netinet/in\.h)"]
+      Logging.message "  grep(#{re})\n"
+      f.read[re, 1]
+    end
+    Logging.message "Substitute from #{file}\n"
+
+    in6 = File.read(file)
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)
         if r.zero?
@@ -673,9 +681,9 @@ SRC
       open(hdr, "w") {|f| f.write(in6)}
       $distcleanfiles << hdr
       $distcleandirs << File.dirname(hdr)
-      puts "done"
+      "done"
     else
-      puts "not needed"
+      "not needed"
     end
   end
   create_makefile("socket")

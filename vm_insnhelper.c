@@ -1169,7 +1169,23 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            goto general_path;
+            if (UNLIKELY(!rb_ractor_main_p())) {
+                // For two reasons we can only use the fast path on the main
+                // ractor.
+                // First, only the main ractor is allowed to set ivars on classes
+                // and modules. So we can skip locking.
+                // Second, other ractors need to check the shareability of the
+                // values returned from the class ivars.
+                goto general_path;
+            }
+
+            ivar_list = RCLASS_IVPTR(obj);
+
+#if !SHAPE_IN_BASIC_FLAGS
+            shape_id = RCLASS_SHAPE_ID(obj);
+#endif
+
+            break;
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
@@ -1507,15 +1523,13 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
 {
     const rb_cref_t *cref;
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
-        VALUE v = Qundef;
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
-        if (st_lookup(RCLASS_IV_TBL(ic->entry->class_value), (st_data_t)id, &v) &&
-            LIKELY(rb_ractor_main_p())) {
+        VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
+        RUBY_ASSERT(v != Qundef);
 
-            return v;
-        }
+        return v;
     }
 
     cref = vm_get_cref(GET_EP());

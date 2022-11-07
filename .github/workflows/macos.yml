@@ -85,7 +85,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: "no"
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@v3.0.0
         with:
           payload: |
             {
@@ -93,7 +93,7 @@ jobs:
               "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

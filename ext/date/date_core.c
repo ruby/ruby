@@ -761,6 +761,8 @@ c_valid_civil_p(int y, int m, int d, double sg,
 
     if (m < 0)
 	m += 13;
+    if (m < 1 || m > 12)
+	return 0;
     if (d < 0) {
 	if (!c_find_ldom(y, m, sg, rjd, ns))
 	    return 0;

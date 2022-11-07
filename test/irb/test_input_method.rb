@@ -1,29 +1,20 @@
 # frozen_string_literal: false
 
-require "test/unit"
 require "irb"
 
+require_relative "helper"
+
 module TestIRB
-  class TestRelineInputMethod < Test::Unit::TestCase
+  class TestRelineInputMethod < TestCase
     def setup
       @conf_backup = IRB.conf.dup
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
-
-      # RelineInputMethod#initialize calls IRB.set_encoding, which mutates standard input/output's encoding
-      # so we need to make sure we set them back
-      @original_encodings = {
-        STDIN => [STDIN.external_encoding, STDIN.internal_encoding],
-        STDOUT => [STDOUT.external_encoding, STDOUT.internal_encoding],
-        STDERR => [STDERR.external_encoding, STDERR.internal_encoding],
-      }
+      save_encodings
     end
 
     def teardown
       IRB.conf.replace(@conf_backup)
-
-      @original_encodings.each do |io, (external_encoding, internal_encoding)|
-        io.set_encoding(external_encoding, internal_encoding)
-      end
+      restore_encodings
     end
 
     def test_initialization
@@ -82,19 +73,6 @@ module TestIRB
       assert_equal empty_proc, Reline.dialog_proc(:show_doc).dialog_proc
     ensure
       Reline.add_dialog_proc(:show_doc, original_show_doc_proc, Reline::DEFAULT_DIALOG_CONTEXT)
-    end
-
-    def without_rdoc(&block)
-      ::Kernel.send(:alias_method, :old_require, :require)
-
-      ::Kernel.define_method(:require) do |name|
-        raise LoadError, "cannot load such file -- rdoc (test)" if name == "rdoc"
-        original_require(name)
-      end
-
-      yield
-    ensure
-      ::Kernel.send(:alias_method, :require, :old_require)
     end
   end
 end

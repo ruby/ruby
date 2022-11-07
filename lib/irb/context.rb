@@ -149,6 +149,8 @@ module IRB
       if @newline_before_multiline_output.nil?
         @newline_before_multiline_output = true
       end
+
+      @command_aliases = IRB.conf[:COMMAND_ALIASES]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -326,6 +328,9 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
+    # User-defined IRB command aliases
+    attr_accessor :command_aliases
+
     # Alias for #use_multiline
     alias use_multiline? use_multiline
     # Alias for #use_singleline
@@ -477,6 +482,13 @@ module IRB
         line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
         @workspace.local_variable_set(:_, exception)
       end
+
+      # Transform a non-identifier alias (ex: @, $)
+      command = line.split(/\s/, 2).first
+      if original = symbol_alias(command)
+        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
+      end
+
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
     end
 
@@ -521,6 +533,12 @@ module IRB
 
     def local_variables # :nodoc:
       workspace.binding.local_variables
+    end
+
+    # Return a command name if it's aliased from the argument and it's not an identifier.
+    def symbol_alias(command)
+      return nil if command.match?(/\A\w+\z/)
+      command_aliases[command.to_sym]
     end
   end
 end

@@ -1,10 +1,11 @@
 # frozen_string_literal: false
-require "test/unit"
 require "irb"
 require "irb/extend-command"
 
+require_relative "helper"
+
 module TestIRB
-  class ExtendCommand < Test::Unit::TestCase
+  class ExtendCommand < TestCase
     class TestInputMethod < ::IRB::InputMethod
       attr_reader :list, :line_no
 
@@ -44,8 +45,7 @@ module TestIRB
       @home_backup = ENV["HOME"]
       ENV["HOME"] = @tmpdir
       @xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
-      @default_encoding = [Encoding.default_external, Encoding.default_internal]
-      @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
+      save_encodings
       IRB.instance_variable_get(:@CONF).clear
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
     end
@@ -55,12 +55,7 @@ module TestIRB
       ENV["HOME"] = @home_backup
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
-      EnvUtil.suppress_warning {
-        Encoding.default_external, Encoding.default_internal = *@default_encoding
-        [STDIN, STDOUT, STDERR].zip(@stdio_encodings) do |io, encs|
-          io.set_encoding(*encs)
-        end
-      }
+      restore_encodings
     end
 
     def test_irb_info_multiline
@@ -111,7 +106,17 @@ module TestIRB
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
-      assert_match expected, irb.context.main.irb_info.to_s
+      info = irb.context.main.irb_info
+      capture_output do
+        # Reline::Core#ambiguous_width may access STDOUT, not $stdout
+        stdout = STDOUT.dup
+        STDOUT.reopen(IO::NULL, "w")
+        info = info.to_s
+      ensure
+        STDOUT.reopen(stdout)
+        stdout.close
+      end
+      assert_match expected, info
     ensure
       ENV["LANG"] = lang_backup
       ENV["LC_ALL"] = lc_all_backup
@@ -406,6 +411,50 @@ module TestIRB
         ], out)
     end
 
+    def test_help
+      IRB.init_config(nil)
+      input = TestInputMethod.new([
+          "help 'String#gsub'\n",
+          "\n",
+        ])
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
+      out, _ = capture_output do
+        irb.eval_input
+      end
+
+      # the former is what we'd get without document content installed, like on CI
+      # the latter is what we may get locally
+      possible_rdoc_output = [/Nothing known about String#gsub/, /Returns a copy of self with all occurrences of the given pattern/]
+      assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the help command to match one of the possible outputs")
+    ensure
+      # this is the only way to reset the redefined method without coupling the test with its implementation
+      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+    end
+
+    def test_help_without_rdoc
+      IRB.init_config(nil)
+      input = TestInputMethod.new([
+          "help 'String#gsub'\n",
+          "\n",
+        ])
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
+      out, _ = capture_output do
+        without_rdoc do
+          irb.eval_input
+        end
+      end
+
+      # if it fails to require rdoc, it only returns the command object
+      assert_match(/=> IRB::ExtendCommand::Help\n/, out)
+    ensure
+      # this is the only way to reset the redefined method without coupling the test with its implementation
+      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+    end
+
     def test_irb_load
       IRB.init_config(nil)
       File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
@@ -514,6 +563,24 @@ module TestIRB
       assert_match(%r[/irb\.rb], out)
     end
 
+    def test_show_source_alias
+      input = TestInputMethod.new([
+        "$ 'IRB.conf'\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = { :'$' => :show_source }
+      workspace = IRB::WorkSpace.new(Object.new)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(%r[/irb\.rb], out)
+    end
+
     def test_show_source_end_finder
       pend if RUBY_ENGINE == 'truffleruby'
       eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
@@ -553,6 +620,48 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^From: .+ @ line \d+ :\n/, out)
+    end
+
+    def test_whereami_alias
+      input = TestInputMethod.new([
+        "@\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = { :'@' => :whereami }
+      workspace = IRB::WorkSpace.new(Object.new)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/^From: .+ @ line \d+ :\n/, out)
+    end
+
+    def test_vars_with_aliases
+      input = TestInputMethod.new([
+        "@foo\n",
+        "$bar\n",
+      ])
+      IRB.init_config(nil)
+      IRB.conf[:COMMAND_ALIASES] = {
+        :'@' => :whereami,
+        :'$' => :show_source,
+      }
+      main = Object.new
+      main.instance_variable_set(:@foo, "foo")
+      $bar = "bar"
+      workspace = IRB::WorkSpace.new(main)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/"foo"/, out)
+      assert_match(/"bar"/, out)
     end
   end
 end

@@ -3684,16 +3684,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
-            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
-            if (shape) {
-                VALUE klass = RBASIC_CLASS(obj);
-
-                // Increment max_iv_count if applicable, used to determine size pool allocation
-                uint32_t num_of_ivs = shape->next_iv_index;
-                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
-                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
-                }
-            }
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
@@ -3702,8 +3692,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
         cc_table_free(objspace, obj, FALSE);
-        if (RCLASS_IV_TBL(obj)) {
-            st_free_table(RCLASS_IV_TBL(obj));
+        if (RCLASS_IVPTR(obj)) {
+            xfree(RCLASS_IVPTR(obj));
         }
         if (RCLASS_CONST_TBL(obj)) {
             rb_free_const_table(RCLASS_CONST_TBL(obj));
@@ -5231,14 +5221,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
             if (RCLASS_M_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_M_TBL(obj));
             }
-            if (RCLASS_IV_TBL(obj)) {
-                size += st_memsize(RCLASS_IV_TBL(obj));
-            }
+            // class IV sizes are allocated as powers of two
+            size += SIZEOF_VALUE << bit_length(RCLASS_IV_COUNT(obj));
             if (RCLASS_CVC_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
-            }
-            if (RCLASS_EXT(obj)->iv_tbl) {
-                size += st_memsize(RCLASS_EXT(obj)->iv_tbl);
             }
             if (RCLASS_EXT(obj)->const_tbl) {
                 size += rb_id_table_memsize(RCLASS_EXT(obj)->const_tbl);
@@ -5594,7 +5580,9 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     if (gc_is_moveable_obj(objspace, src)) {
         GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
 
+        asan_unlock_freelist(free_page);
         VALUE dest = (VALUE)free_page->freelist;
+        asan_lock_freelist(free_page);
         asan_unpoison_object(dest, false);
         if (!dest) {
             /* if we can't get something from the freelist then the page must be
@@ -7145,8 +7133,10 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
-    rb_wasm_scan_stack(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+    VALUE *stack_start, *stack_end;
+    SET_STACK_END;
+    GET_STACK_BOUNDS(stack_start, stack_end, 1);
+    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
 
     rb_wasm_scan_locals(rb_mark_locations);
     each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
@@ -7616,7 +7606,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         cc_table_mark(objspace, obj);
-        mark_tbl_no_pin(objspace, RCLASS_IV_TBL(obj));
+        for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
+            gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
+        }
         mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
         break;
 
@@ -7685,6 +7677,17 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             uint32_t i, len = ROBJECT_IV_COUNT(obj);
             for (i  = 0; i < len; i++) {
                 gc_mark(objspace, ptr[i]);
+            }
+
+            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+            if (shape) {
+                VALUE klass = RBASIC_CLASS(obj);
+
+                // Increment max_iv_count if applicable, used to determine size pool allocation
+                uint32_t num_of_ivs = shape->next_iv_index;
+                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
+                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
+                }
             }
 
             if (LIKELY(during_gc) &&
@@ -10899,7 +10902,9 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         update_cvc_tbl(objspace, obj);
         update_superclasses(objspace, obj);
 
-        gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
+        for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
+            UPDATE_IF_MOVED(objspace, RCLASS_IVPTR(obj)[i]);
+        }
 
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
@@ -10914,9 +10919,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);
         }
         if (!RCLASS_EXT(obj)) break;
-        if (RCLASS_IV_TBL(obj)) {
-            gc_update_tbl_refs(objspace, RCLASS_IV_TBL(obj));
-        }
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         update_cc_tbl(objspace, obj);

@@ -124,6 +124,14 @@ File.foreach "config.status" do |line|
       if universal
         platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
       end
+    when /^target_cpu$/
+      if universal
+        val = 'arch'
+      end
+    when /^target$/
+      val = '"$(target_cpu)-$(target_vendor)-$(target_os)"'
+    when /^host(?:_(?:os|vendor|cpu|alias))?$/
+      val = %["$(#{name.sub(/^host/, 'target')})"]
     when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end

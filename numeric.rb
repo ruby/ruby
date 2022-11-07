@@ -6,7 +6,17 @@ class Numeric
   #  Returns +true+ if +num+ is a real number (i.e. not Complex).
   #
   def real?
-    return true
+    true
+  end
+
+  #
+  # call-seq:
+  #    num.real  ->  self
+  #
+  # Returns self.
+  #
+  def real
+    self
   end
 
   #
@@ -19,7 +29,7 @@ class Numeric
   #      1.integer?     #=> true
   #
   def integer?
-    return false
+    false
   end
 
   #
@@ -29,7 +39,7 @@ class Numeric
   #  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
   #
   def finite?
-    return true
+    true
   end
 
   #
@@ -40,8 +50,34 @@ class Numeric
   #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
   #
   def infinite?
-    return nil
+    nil
   end
+
+  #
+  # call-seq:
+  #    num.imag       ->  0
+  #    num.imaginary  ->  0
+  #
+  # Returns zero.
+  #
+  def imaginary
+    0
+  end
+
+  alias imag imaginary
+
+  #
+  # call-seq:
+  #    num.conj       ->  self
+  #    num.conjugate  ->  self
+  #
+  # Returns self.
+  #
+  def conjugate
+    self
+  end
+
+  alias conj conjugate
 end
 
 class Integer
@@ -146,7 +182,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, this always returns +true+.
   def integer?
-    return true
+    true
   end
 
   alias magnitude abs
@@ -178,7 +214,7 @@ class Integer
   #
   #  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
   def ord
-    return self
+    self
   end
 
   #
@@ -208,7 +244,7 @@ class Integer
   #
   #  #to_int is an alias for #to_i.
   def to_i
-    return self
+    self
   end
 
   #  call-seq:
@@ -216,7 +252,7 @@ class Integer
   #
   #  Since +int+ is already an Integer, returns +self+.
   def to_int
-    return self
+    self
   end
 
   # call-seq:
@@ -243,6 +279,26 @@ class Integer
   #    3.ceildiv(1.2) # => 3
   def ceildiv(other)
     -div(-other)
+  end
+
+  #
+  # call-seq:
+  #    int.numerator  ->  self
+  #
+  # Returns self.
+  #
+  def numerator
+    self
+  end
+
+  #
+  # call-seq:
+  #    int.denominator  ->  1
+  #
+  # Returns 1.
+  #
+  def denominator
+    1
   end
 end
 
@@ -276,7 +332,7 @@ class Float
   # Since +float+ is already a Float, returns +self+.
   #
   def to_f
-    return self
+    self
   end
 
   #

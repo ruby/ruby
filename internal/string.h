@@ -106,7 +106,7 @@ STR_EMBED_P(VALUE str)
 static inline bool
 STR_SHARED_P(VALUE str)
 {
-    return FL_ALL_RAW(str, STR_NOEMBED | ELTS_SHARED);
+    return FL_ALL_RAW(str, STR_NOEMBED | STR_SHARED);
 }
 
 static inline bool
