@@ -10,7 +10,7 @@
     * gperf - 3.0.3 or later
     * ruby - 2.7 or later
 
-1. Install optional, recommended dependencies:
+2. Install optional, recommended dependencies:
 
     * OpenSSL/LibreSSL
     * readline/editline (libedit)
@@ -20,19 +20,19 @@
     * libexecinfo (FreeBSD)
     * rustc - 1.58.1 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
-1. Checkout the CRuby source code:
+3. Checkout the CRuby source code:
 
     ```
     git clone https://github.com/ruby/ruby.git
     ```
 
-1. Generate the configure file:
+4. Generate the configure file:
 
     ```
     ./autogen.sh
     ```
 
-1. Create a `build` directory outside of the source directory:
+5. Create a `build` directory outside of the source directory:
 
     ```
     mkdir build && cd build
@@ -40,13 +40,13 @@
 
     While it's not necessary to build in a separate directory, it's good practice to do so.
 
-1. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
+6. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
 
     ```
     mkdir ~/.rubies
     ```
 
-1. Run configure:
+7. Run configure:
 
     ```
     ../configure --prefix="${HOME}/.rubies/ruby-master"
@@ -54,7 +54,7 @@
 
     - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
 
-1. Build Ruby:
+8. Build Ruby:
 
     ```
     make install
@@ -77,7 +77,7 @@
 
         Remember to delete your `build` directory and start again from the configure step.
 
-6. [Run tests](testing_ruby.md) to confirm your build succeeded.
+9. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
 ### Unexplainable Build Errors
 
