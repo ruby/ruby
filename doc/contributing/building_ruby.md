@@ -69,11 +69,7 @@
             Check ext/openssl/mkmf.log for more details.
         ```
 
-        Running the following command may solve the issue:
-
-        ```
-        brew link openssl --force
-        ```
+        Adding `--with-openssl-dir=$(brew --prefix openssl)` to the list of options passed to configure may solve the issue.
 
         Remember to delete your `build` directory and start again from the configure step.
 
