@@ -1066,12 +1066,13 @@ update_char_offset(VALUE match)
     }
 }
 
-static void
+static VALUE
 match_check(VALUE match)
 {
     if (!RMATCH(match)->regexp) {
         rb_raise(rb_eTypeError, "uninitialized MatchData");
     }
+    return match;
 }
 
 /* :nodoc: */
@@ -2268,16 +2269,16 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 static VALUE
 match_to_s(VALUE match)
 {
-    VALUE str = rb_reg_last_match(match);
+    VALUE str = rb_reg_last_match(match_check(match));
 
-    match_check(match);
     if (NIL_P(str)) str = rb_str_new(0,0);
     return str;
 }
 
 static int
 match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
-        int back_num, int *back_refs, OnigRegex regex, void *arg) {
+        int back_num, int *back_refs, OnigRegex regex, void *arg)
+{
     struct MEMO *memo = MEMO_CAST(arg);
     VALUE hash = memo->v1;
     VALUE match = memo->v2;
