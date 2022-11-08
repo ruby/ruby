@@ -3842,7 +3842,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	size_t len = (end - str) + 1;
 	size_t match_cache_size8 = (size_t)msa->num_cache_opcode * len;
 	/* overflow check */
-	if (match_cache_size8 / len != (size_t)msa->num_cache_opcode) {
+	if (match_cache_size8 >= INT_MAX_LIMIT) {
 	  return ONIGERR_MEMORY;
 	}
 	size_t match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);
