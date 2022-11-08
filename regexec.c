@@ -3833,20 +3833,22 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (msa->cache_index_table == NULL) {
 	  OnigCacheIndex *table = (OnigCacheIndex *)xmalloc(table_size * sizeof(OnigCacheIndex));
 	  if (table == NULL) {
-	    msa->enable_cache_match_opt = 0;
-	    goto fail_match_cache_opt;
+	    return ONIGERR_MEMORY;
 	  }
 	  init_cache_index_table(reg, table);
 	  msa->cache_index_table = table;
 	  msa->num_cache_table = table_size;
 	}
-	// TODO: check arithemetic overflow.
-	int match_cache_size8 = msa->num_cache_opcode * ((int)(end - str) + 1);
-	int match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);
+	size_t len = (end - str) + 1;
+	size_t match_cache_size8 = (size_t)msa->num_cache_opcode * len;
+	/* overflow check */
+	if (match_cache_size8 / len != (size_t)msa->num_cache_opcode) {
+	  return ONIGERR_MEMORY;
+	}
+	size_t match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);
 	msa->match_cache = (uint8_t*)xmalloc(match_cache_size * sizeof(uint8_t));
 	if (msa->match_cache == NULL) {
-	  msa->enable_cache_match_opt = 0;
-	  goto fail_match_cache_opt;
+	  return ONIGERR_MEMORY;
 	}
 	xmemset(msa->match_cache, 0, match_cache_size * sizeof(uint8_t));
       }
