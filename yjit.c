@@ -716,6 +716,15 @@ rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
     return iseq->body->param.opt_table;
 }
 
+VALUE
+rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+{
+    rb_proc_t *proc;
+    GetProcPtr(recv, proc);
+    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
+}
+
+
 // If true, the iseq is leaf and it can be replaced by a single C call.
 bool
 rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
