@@ -219,145 +219,139 @@ module TestIRB
     end
 
     def test_measure
-      IRB.init_config(nil)
-      IRB.conf[:PROMPT] = {
-        DEFAULT: {
-          PROMPT_I: '> ',
-          PROMPT_S: '> ',
-          PROMPT_C: '> ',
-          PROMPT_N: '> '
-        }
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false
       }
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :DEFAULT
-      IRB.conf[:MEASURE] = false
-      input = TestInputMethod.new([
+
+      c = Class.new(Object)
+      out, err = execute_lines(
         "3\n",
         "measure\n",
         "3\n",
         "measure :off\n",
         "3\n",
-      ])
-      c = Class.new(Object)
-      irb = IRB::Irb.new(IRB::WorkSpace.new(c.new), input)
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: conf,
+        main: c
+      )
+
       assert_empty err
       assert_match(/\A=> 3\nTIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
 
     def test_measure_enabled_by_rc
-      IRB.init_config(nil)
-      IRB.conf[:PROMPT] = {
-        DEFAULT: {
-          PROMPT_I: '> ',
-          PROMPT_S: '> ',
-          PROMPT_C: '> ',
-          PROMPT_N: '> '
-        }
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: true
       }
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :DEFAULT
-      IRB.conf[:MEASURE] = true
-      input = TestInputMethod.new([
+
+      out, err = execute_lines(
         "3\n",
         "measure :off\n",
         "3\n",
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: conf,
+      )
+
       assert_empty err
       assert_match(/\Aprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
 
     def test_measure_enabled_by_rc_with_custom
-      IRB.init_config(nil)
-      IRB.conf[:PROMPT] = {
-        DEFAULT: {
-          PROMPT_I: '> ',
-          PROMPT_S: '> ',
-          PROMPT_C: '> ',
-          PROMPT_N: '> '
-        }
-      }
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :DEFAULT
-      IRB.conf[:MEASURE] = true
-      IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
+      measuring_proc = proc { |line, line_no, &block|
         time = Time.now
         result = block.()
         puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
         result
       }
-      input = TestInputMethod.new([
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: true,
+        MEASURE_PROC: { CUSTOM: measuring_proc }
+      }
+
+      out, err = execute_lines(
         "3\n",
         "measure :off\n",
         "3\n",
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: conf,
+      )
       assert_empty err
       assert_match(/\Acustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
 
     def test_measure_with_custom
-      IRB.init_config(nil)
-      IRB.conf[:PROMPT] = {
-        DEFAULT: {
-          PROMPT_I: '> ',
-          PROMPT_S: '> ',
-          PROMPT_C: '> ',
-          PROMPT_N: '> '
-        }
-      }
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :DEFAULT
-      IRB.conf[:MEASURE] = false
-      IRB.conf[:MEASURE_PROC][:CUSTOM] = proc { |line, line_no, &block|
+      measuring_proc = proc { |line, line_no, &block|
         time = Time.now
         result = block.()
         puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
         result
       }
-      input = TestInputMethod.new([
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false,
+        MEASURE_PROC: { CUSTOM: measuring_proc }
+      }
+      out, err = execute_lines(
         "3\n",
         "measure\n",
         "3\n",
         "measure :off\n",
         "3\n",
-      ])
-      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: conf
+      )
+
       assert_empty err
       assert_match(/\A=> 3\nCUSTOM is added\.\n=> nil\ncustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
 
     def test_measure_with_proc
-      IRB.init_config(nil)
-      IRB.conf[:PROMPT] = {
-        DEFAULT: {
-          PROMPT_I: '> ',
-          PROMPT_S: '> ',
-          PROMPT_C: '> ',
-          PROMPT_N: '> '
-        }
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> ',
+            PROMPT_N: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false,
       }
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :DEFAULT
-      IRB.conf[:MEASURE] = false
-      input = TestInputMethod.new([
+      c = Class.new(Object)
+      out, err = execute_lines(
         "3\n",
         "measure { |context, code, line_no, &block|\n",
         "  result = block.()\n",
@@ -373,56 +367,38 @@ module TestIRB
         "3\n",
         "measure :off\n",
         "3\n",
-      ])
-      c = Class.new(Object)
-      irb = IRB::Irb.new(IRB::WorkSpace.new(c.new), input)
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: conf,
+        main: c
+      )
+
       assert_empty err
       assert_match(/\A=> 3\nBLOCK is added\.\n=> nil\naaa\n=> 3\nBLOCK is added.\naaa\n=> nil\nbbb\n=> 3\n=> nil\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
 
     def test_irb_source
-      IRB.init_config(nil)
       File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
-      input = TestInputMethod.new([
-          "a = 'bug17564'\n",
-          "a\n",
-          "irb_source '#{@tmpdir}/a.rb'\n",
-          "a\n",
-        ])
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      out, err = capture_output do
-        irb.eval_input
-      end
+      out, err = execute_lines(
+        "a = 'bug17564'\n",
+        "a\n",
+        "irb_source '#{@tmpdir}/a.rb'\n",
+        "a\n",
+      )
       assert_empty err
       assert_pattern_list([
-          /=> "bug17564"\n/,
-          /=> "bug17564"\n/,
-          /   => "hi"\n/,
-          /   => nil\n/,
-          /=> "hi"\n/,
-        ], out)
+        /=> "bug17564"\n/,
+        /=> "bug17564"\n/,
+        /   => "hi"\n/,
+        /   => nil\n/,
+        /=> "hi"\n/,
+      ], out)
     end
 
     def test_help
-      IRB.init_config(nil)
-      input = TestInputMethod.new([
-          "help 'String#gsub'\n",
-          "\n",
-        ])
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      out, _ = capture_output do
-        irb.eval_input
-      end
+      out, _ = execute_lines(
+        "help 'String#gsub'\n",
+        "\n",
+      )
 
       # the former is what we'd get without document content installed, like on CI
       # the latter is what we may get locally
@@ -434,18 +410,11 @@ module TestIRB
     end
 
     def test_help_without_rdoc
-      IRB.init_config(nil)
-      input = TestInputMethod.new([
+      out, _ = without_rdoc do
+        execute_lines(
           "help 'String#gsub'\n",
           "\n",
-        ])
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      out, _ = capture_output do
-        without_rdoc do
-          irb.eval_input
-        end
+        )
       end
 
       # if it fails to require rdoc, it only returns the command object
@@ -456,21 +425,13 @@ module TestIRB
     end
 
     def test_irb_load
-      IRB.init_config(nil)
       File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
-      input = TestInputMethod.new([
-          "a = 'bug17564'\n",
-          "a\n",
-          "irb_load '#{@tmpdir}/a.rb'\n",
-          "a\n",
-        ])
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      out, err = capture_output do
-        irb.eval_input
-      end
+      out, err = execute_lines(
+        "a = 'bug17564'\n",
+        "a\n",
+        "irb_load '#{@tmpdir}/a.rb'\n",
+        "a\n",
+      )
       assert_empty err
       assert_pattern_list([
           /=> "bug17564"\n/,
@@ -482,7 +443,7 @@ module TestIRB
     end
 
     def test_ls
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "class P\n",
         "  def m() end\n",
         "  def m2() end\n",
@@ -508,16 +469,8 @@ module TestIRB
         "obj.extend M2\n",
         "def obj.m5() end\n",
         "ls obj\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
+
       assert_empty err
       assert_match(/^instance variables:\s+@a\n/m, out)
       assert_match(/P#methods:\s+m\n/m, out)
@@ -528,18 +481,9 @@ module TestIRB
     end
 
     def test_ls_with_no_singleton_class
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "ls 42",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
       assert_empty err
       assert_match(/Comparable#methods:\s+/, out)
       assert_match(/Numeric#methods:\s+/, out)
@@ -547,70 +491,34 @@ module TestIRB
     end
 
     def test_show_source
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "show_source IRB.conf\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
       assert_empty err
       assert_match(%r[/irb\.rb], out)
     end
 
     def test_show_source_method
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "p show_source('IRB.conf')\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
       assert_empty err
       assert_match(%r[/irb\.rb], out)
     end
 
     def test_show_source_string
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "show_source 'IRB.conf'\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
       assert_empty err
       assert_match(%r[/irb\.rb], out)
     end
 
     def test_show_source_alias
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "$ 'IRB.conf'\n",
-      ])
-      IRB.init_config(nil)
-      IRB.conf[:COMMAND_ALIASES] = { :'$' => :show_source }
-      workspace = IRB::WorkSpace.new(Object.new)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: { COMMAND_ALIASES: { :'$' => :show_source } }
+      )
       assert_empty err
       assert_match(%r[/irb\.rb], out)
     end
@@ -623,79 +531,62 @@ module TestIRB
           end
         end
       EOS
-      input = TestInputMethod.new([
+
+      out, err = execute_lines(
         "show_source 'TestIRB::ExtendCommand#show_source_test_method'\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
+
       assert_empty err
       assert_include(out, code)
     end
 
     def test_whereami
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "whereami\n",
-      ])
-      IRB.init_config(nil)
-      workspace = IRB::WorkSpace.new(self)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      irb.context.return_format = "=> %s\n"
-      out, err = capture_output do
-        irb.eval_input
-      end
+      )
       assert_empty err
       assert_match(/^From: .+ @ line \d+ :\n/, out)
     end
 
     def test_whereami_alias
-      input = TestInputMethod.new([
+      out, err = execute_lines(
         "@\n",
-      ])
-      IRB.init_config(nil)
-      IRB.conf[:COMMAND_ALIASES] = { :'@' => :whereami }
-      workspace = IRB::WorkSpace.new(Object.new)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: { COMMAND_ALIASES: { :'@' => :whereami } }
+      )
       assert_empty err
       assert_match(/^From: .+ @ line \d+ :\n/, out)
     end
 
     def test_vars_with_aliases
-      input = TestInputMethod.new([
+      @foo = "foo"
+      $bar = "bar"
+      out, err = execute_lines(
         "@foo\n",
         "$bar\n",
-      ])
-      IRB.init_config(nil)
-      IRB.conf[:COMMAND_ALIASES] = {
-        :'@' => :whereami,
-        :'$' => :show_source,
-      }
-      main = Object.new
-      main.instance_variable_set(:@foo, "foo")
-      $bar = "bar"
-      workspace = IRB::WorkSpace.new(main)
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(workspace, input)
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      out, err = capture_output do
-        irb.eval_input
-      end
+        conf: { COMMAND_ALIASES: { :'$' => :show_source, :'@' => :whereami } }
+      )
       assert_empty err
       assert_match(/"foo"/, out)
       assert_match(/"bar"/, out)
+    ensure
+      remove_instance_variable(:@foo)
+      $bar = nil
+    end
+
+    private
+
+    def execute_lines(*lines, conf: {}, main: self)
+      IRB.init_config(nil)
+      IRB.conf[:VERBOSE] = false
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf.merge!(conf)
+      input = TestInputMethod.new(lines)
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+      irb.context.return_format = "=> %s\n"
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      capture_output do
+        irb.eval_input
+      end
     end
   end
 end
