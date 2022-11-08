@@ -1687,7 +1687,7 @@ class TestRegexp < Test::Unit::TestCase
   def test_cache_optimization_square
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
-      timeout = EnvUtil.apply_timeout_scale(0.2)
+      timeout = EnvUtil.apply_timeout_scale(2)
       Regexp.timeout = timeout
 
       assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
