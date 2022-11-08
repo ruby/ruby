@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
 
-ruby_version_is "3.1" do
+if ruby_version_is "3.1" and Thread.method_defined?(:native_thread_id)
+  # This method is very platform specific
+
   describe "Thread#native_thread_id" do
     it "returns an integer when the thread is alive" do
       Thread.current.native_thread_id.should be_kind_of(Integer)
