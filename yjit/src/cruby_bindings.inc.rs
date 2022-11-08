@@ -248,10 +248,9 @@ extern "C" {
 }
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
 pub type ruby_robject_flags = u32;
-pub const ROBJECT_OFFSET_NUMIV: i32 = 16;
-pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: i32 = 24;
-pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: i32 = 32;
-pub const ROBJECT_OFFSET_AS_ARY: i32 = 24;
+pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: i32 = 16;
+pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: i32 = 24;
+pub const ROBJECT_OFFSET_AS_ARY: i32 = 16;
 extern "C" {
     pub static mut rb_mKernel: VALUE;
 }
@@ -420,7 +419,9 @@ pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
     pub next_iv_index: attr_index_t,
+    pub capacity: u32,
     pub type_: u8,
+    pub size_pool_index: u8,
     pub parent_id: shape_id_t,
 }
 pub type rb_shape_t = rb_shape;

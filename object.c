@@ -33,6 +33,7 @@
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "variable.h"
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
@@ -268,21 +269,64 @@ rb_obj_singleton_class(VALUE obj)
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    uint32_t dest_len = ROBJECT_NUMIV(dest);
-    uint32_t src_len = ROBJECT_NUMIV(obj);
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
 
-    if (dest_len < src_len) {
-        rb_ensure_iv_list_size(dest, dest_len, src_len);
-        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
+    RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
+    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
+    rb_shape_t * src_shape = rb_shape_get_shape(obj);
+    rb_shape_t * shape_to_set_on_dest = src_shape;
+    VALUE * src_buf;
+    VALUE * dest_buf;
+
+    if (!src_num_ivs) {
+        return;
     }
-    else {
-        RUBY_ASSERT((RBASIC(dest)->flags & ROBJECT_EMBED));
+
+    // The copy should be mutable, so we don't want the frozen shape
+    if (rb_shape_frozen_shape_p(src_shape)) {
+        shape_to_set_on_dest = rb_shape_get_shape_by_id(src_shape->parent_id);
     }
 
-    VALUE * dest_buf = ROBJECT_IVPTR(dest);
-    VALUE * src_buf = ROBJECT_IVPTR(obj);
+    src_buf = ROBJECT_IVPTR(obj);
+    dest_buf = ROBJECT_IVPTR(dest);
 
-    MEMCPY(dest_buf, src_buf, VALUE, ROBJECT_IV_COUNT(obj));
+    rb_shape_t * initial_shape = rb_shape_get_shape(dest);
+
+    if (initial_shape->size_pool_index != src_shape->size_pool_index) {
+        RUBY_ASSERT(initial_shape->parent_id == ROOT_SHAPE_ID || initial_shape->type == SHAPE_ROOT);
+
+        shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
+    }
+
+    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
+    if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
+        rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
+        dest_buf = ROBJECT_IVPTR(dest);
+
+        rb_shape_t * initial_shape = rb_shape_get_shape(dest);
+
+        if (initial_shape->size_pool_index != src_shape->size_pool_index) {
+            RUBY_ASSERT(initial_shape->parent_id == ROOT_SHAPE_ID || initial_shape->type == SHAPE_ROOT);
+
+            shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
+        }
+
+        RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
+        if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
+            rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
+            dest_buf = ROBJECT_IVPTR(dest);
+        }
+    }
+
+    MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
+
+    // Fire write barriers
+    for (uint32_t i = 0; i < src_num_ivs; i++) {
+        RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
+    }
+
+    rb_shape_set_shape(dest, shape_to_set_on_dest);
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_OBJECT) || ROBJECT_IV_CAPACITY(dest) == ROBJECT_NUMIV(dest));
 }
 
 static void
@@ -300,19 +344,6 @@ init_copy(VALUE dest, VALUE obj)
 
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
-    }
-
-    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
-        rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
-
-        // If the object is frozen, the "dup"'d object will *not* be frozen,
-        // so we need to copy the frozen shape's parent to the new object.
-        if (rb_shape_frozen_shape_p(shape_to_set)) {
-            shape_to_set = rb_shape_get_shape_by_id(shape_to_set->parent_id);
-        }
-
-        // shape ids are different
-        rb_shape_set_shape(dest, shape_to_set);
     }
 }
 

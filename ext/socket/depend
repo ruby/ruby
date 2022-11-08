@@ -197,6 +197,7 @@ ancdata.o: $(top_srcdir)/internal/string.h
 ancdata.o: $(top_srcdir)/internal/thread.h
 ancdata.o: $(top_srcdir)/internal/vm.h
 ancdata.o: $(top_srcdir)/internal/warnings.h
+ancdata.o: $(top_srcdir)/shape.h
 ancdata.o: ancdata.c
 ancdata.o: constdefs.h
 ancdata.o: rubysocket.h
@@ -388,6 +389,7 @@ basicsocket.o: $(top_srcdir)/internal/string.h
 basicsocket.o: $(top_srcdir)/internal/thread.h
 basicsocket.o: $(top_srcdir)/internal/vm.h
 basicsocket.o: $(top_srcdir)/internal/warnings.h
+basicsocket.o: $(top_srcdir)/shape.h
 basicsocket.o: basicsocket.c
 basicsocket.o: constdefs.h
 basicsocket.o: rubysocket.h
@@ -579,6 +581,7 @@ constants.o: $(top_srcdir)/internal/string.h
 constants.o: $(top_srcdir)/internal/thread.h
 constants.o: $(top_srcdir)/internal/vm.h
 constants.o: $(top_srcdir)/internal/warnings.h
+constants.o: $(top_srcdir)/shape.h
 constants.o: constants.c
 constants.o: constdefs.c
 constants.o: constdefs.h
@@ -771,6 +774,7 @@ ifaddr.o: $(top_srcdir)/internal/string.h
 ifaddr.o: $(top_srcdir)/internal/thread.h
 ifaddr.o: $(top_srcdir)/internal/vm.h
 ifaddr.o: $(top_srcdir)/internal/warnings.h
+ifaddr.o: $(top_srcdir)/shape.h
 ifaddr.o: constdefs.h
 ifaddr.o: ifaddr.c
 ifaddr.o: rubysocket.h
@@ -962,6 +966,7 @@ init.o: $(top_srcdir)/internal/string.h
 init.o: $(top_srcdir)/internal/thread.h
 init.o: $(top_srcdir)/internal/vm.h
 init.o: $(top_srcdir)/internal/warnings.h
+init.o: $(top_srcdir)/shape.h
 init.o: constdefs.h
 init.o: init.c
 init.o: rubysocket.h
@@ -1153,6 +1158,7 @@ ipsocket.o: $(top_srcdir)/internal/string.h
 ipsocket.o: $(top_srcdir)/internal/thread.h
 ipsocket.o: $(top_srcdir)/internal/vm.h
 ipsocket.o: $(top_srcdir)/internal/warnings.h
+ipsocket.o: $(top_srcdir)/shape.h
 ipsocket.o: constdefs.h
 ipsocket.o: ipsocket.c
 ipsocket.o: rubysocket.h
@@ -1344,6 +1350,7 @@ option.o: $(top_srcdir)/internal/string.h
 option.o: $(top_srcdir)/internal/thread.h
 option.o: $(top_srcdir)/internal/vm.h
 option.o: $(top_srcdir)/internal/warnings.h
+option.o: $(top_srcdir)/shape.h
 option.o: constdefs.h
 option.o: option.c
 option.o: rubysocket.h
@@ -1535,6 +1542,7 @@ raddrinfo.o: $(top_srcdir)/internal/string.h
 raddrinfo.o: $(top_srcdir)/internal/thread.h
 raddrinfo.o: $(top_srcdir)/internal/vm.h
 raddrinfo.o: $(top_srcdir)/internal/warnings.h
+raddrinfo.o: $(top_srcdir)/shape.h
 raddrinfo.o: constdefs.h
 raddrinfo.o: raddrinfo.c
 raddrinfo.o: rubysocket.h
@@ -1726,6 +1734,7 @@ socket.o: $(top_srcdir)/internal/string.h
 socket.o: $(top_srcdir)/internal/thread.h
 socket.o: $(top_srcdir)/internal/vm.h
 socket.o: $(top_srcdir)/internal/warnings.h
+socket.o: $(top_srcdir)/shape.h
 socket.o: constdefs.h
 socket.o: rubysocket.h
 socket.o: socket.c
@@ -1917,6 +1926,7 @@ sockssocket.o: $(top_srcdir)/internal/string.h
 sockssocket.o: $(top_srcdir)/internal/thread.h
 sockssocket.o: $(top_srcdir)/internal/vm.h
 sockssocket.o: $(top_srcdir)/internal/warnings.h
+sockssocket.o: $(top_srcdir)/shape.h
 sockssocket.o: constdefs.h
 sockssocket.o: rubysocket.h
 sockssocket.o: sockport.h
@@ -2108,6 +2118,7 @@ tcpserver.o: $(top_srcdir)/internal/string.h
 tcpserver.o: $(top_srcdir)/internal/thread.h
 tcpserver.o: $(top_srcdir)/internal/vm.h
 tcpserver.o: $(top_srcdir)/internal/warnings.h
+tcpserver.o: $(top_srcdir)/shape.h
 tcpserver.o: constdefs.h
 tcpserver.o: rubysocket.h
 tcpserver.o: sockport.h
@@ -2299,6 +2310,7 @@ tcpsocket.o: $(top_srcdir)/internal/string.h
 tcpsocket.o: $(top_srcdir)/internal/thread.h
 tcpsocket.o: $(top_srcdir)/internal/vm.h
 tcpsocket.o: $(top_srcdir)/internal/warnings.h
+tcpsocket.o: $(top_srcdir)/shape.h
 tcpsocket.o: constdefs.h
 tcpsocket.o: rubysocket.h
 tcpsocket.o: sockport.h
@@ -2490,6 +2502,7 @@ udpsocket.o: $(top_srcdir)/internal/string.h
 udpsocket.o: $(top_srcdir)/internal/thread.h
 udpsocket.o: $(top_srcdir)/internal/vm.h
 udpsocket.o: $(top_srcdir)/internal/warnings.h
+udpsocket.o: $(top_srcdir)/shape.h
 udpsocket.o: constdefs.h
 udpsocket.o: rubysocket.h
 udpsocket.o: sockport.h
@@ -2681,6 +2694,7 @@ unixserver.o: $(top_srcdir)/internal/string.h
 unixserver.o: $(top_srcdir)/internal/thread.h
 unixserver.o: $(top_srcdir)/internal/vm.h
 unixserver.o: $(top_srcdir)/internal/warnings.h
+unixserver.o: $(top_srcdir)/shape.h
 unixserver.o: constdefs.h
 unixserver.o: rubysocket.h
 unixserver.o: sockport.h
@@ -2872,6 +2886,7 @@ unixsocket.o: $(top_srcdir)/internal/string.h
 unixsocket.o: $(top_srcdir)/internal/thread.h
 unixsocket.o: $(top_srcdir)/internal/vm.h
 unixsocket.o: $(top_srcdir)/internal/warnings.h
+unixsocket.o: $(top_srcdir)/shape.h
 unixsocket.o: constdefs.h
 unixsocket.o: rubysocket.h
 unixsocket.o: sockport.h

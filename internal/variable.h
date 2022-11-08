@@ -13,6 +13,7 @@
 #include "constant.h"           /* for rb_const_entry_t */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "shape.h"              /* for rb_shape_t */
 
 /* global variable */
 
@@ -53,7 +54,7 @@ VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
-void rb_init_iv_list(VALUE obj);
+rb_shape_t * rb_grow_iv_list(VALUE obj);
 void rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize);
 struct gen_ivtbl * rb_ensure_generic_iv_list_size(VALUE obj, uint32_t newsize);
 MJIT_SYMBOL_EXPORT_END

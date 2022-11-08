@@ -120,6 +120,8 @@ VALUE rb_gc_disable_no_rest(void);
 
 struct rb_thread_struct;
 
+size_t rb_size_pool_slot_size(unsigned char pool_id);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* exports for objspace module */

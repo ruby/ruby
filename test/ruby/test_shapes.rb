@@ -86,15 +86,10 @@ class TestShapes < Test::Unit::TestCase
     assert_equal(2, bar_shape.next_iv_index)
   end
 
-  def test_new_obj_has_root_shape
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(Object.new))
-  end
+  class TestObject; end
 
-  def test_frozen_new_obj_has_frozen_root_shape
-    assert_shape_equal(
-      RubyVM::Shape.frozen_root_shape,
-      RubyVM::Shape.of(Object.new.freeze)
-    )
+  def test_new_obj_has_root_shape
+    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(TestObject.new))
   end
 
   def test_str_has_root_shape
@@ -109,12 +104,12 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of({}))
   end
 
-  def test_true_has_frozen_root_shape
-    assert_shape_equal(RubyVM::Shape.frozen_root_shape, RubyVM::Shape.of(true))
+  def test_true_has_special_const_shape_id
+    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
   end
 
-  def test_nil_has_frozen_root_shape
-    assert_shape_equal(RubyVM::Shape.frozen_root_shape, RubyVM::Shape.of(nil))
+  def test_nil_has_special_const_shape_id
+    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
   end
 
   def test_basic_shape_transition

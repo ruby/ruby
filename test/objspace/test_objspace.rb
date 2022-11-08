@@ -277,7 +277,7 @@ class TestObjSpace < Test::Unit::TestCase
     info = nil
     ObjectSpace.trace_object_allocations do
       line = __LINE__ + 1
-      str = "hello world"
+      str = "hello w"
       info = ObjectSpace.dump(str)
     end
     assert_dump_object(info, line)
@@ -289,7 +289,7 @@ class TestObjSpace < Test::Unit::TestCase
       th = Thread.start {r.read}
       ObjectSpace.trace_object_allocations do
         line = __LINE__ + 1
-        str = "hello world"
+        str = "hello w"
         ObjectSpace.dump(str, output: w)
       end
       w.close
@@ -301,7 +301,7 @@ class TestObjSpace < Test::Unit::TestCase
   def assert_dump_object(info, line)
     loc = caller_locations(1, 1)[0]
     assert_match(/"type":"STRING"/, info)
-    assert_match(/"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info)
+    assert_match(/"embedded":true, "bytesize":7, "value":"hello w", "encoding":"UTF-8"/, info)
     assert_match(/"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info)
     assert_match(/"method":"#{loc.base_label}"/, info)
     JSON.parse(info) if defined?(JSON)
@@ -549,17 +549,17 @@ class TestObjSpace < Test::Unit::TestCase
     #
     # This test makes assertions on the assignment to `str`, so we look for
     # the second appearance of /TEST STRING/ in the output
-    test_string_in_dump_all = output.grep(/TEST STRING/)
-    assert_equal(test_string_in_dump_all.size, 2)
+    test_string_in_dump_all = output.grep(/TEST2/)
+    assert_equal(2, test_string_in_dump_all.size, "number of strings")
 
     entry_hash = JSON.parse(test_string_in_dump_all[1])
 
-    assert_equal(entry_hash["bytesize"], 11)
-    assert_equal(entry_hash["value"], "TEST STRING")
-    assert_equal(entry_hash["encoding"], "UTF-8")
-    assert_equal(entry_hash["file"], "-")
-    assert_equal(entry_hash["line"], 4)
-    assert_equal(entry_hash["method"], "dump_my_heap_please")
+    assert_equal(5, entry_hash["bytesize"], "bytesize is wrong")
+    assert_equal("TEST2", entry_hash["value"], "value is wrong")
+    assert_equal("UTF-8", entry_hash["encoding"], "encoding is wrong")
+    assert_equal("-", entry_hash["file"], "file is wrong")
+    assert_equal(4, entry_hash["line"], "line is wrong")
+    assert_equal("dump_my_heap_please", entry_hash["method"], "method is wrong")
     assert_not_nil(entry_hash["generation"])
   end
 
@@ -571,7 +571,7 @@ class TestObjSpace < Test::Unit::TestCase
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
-          str = "TEST STRING".force_encoding("UTF-8")
+          str = "TEST2".force_encoding("UTF-8")
           ObjectSpace.dump_all(output: :stdout)
         end
 
@@ -586,7 +586,7 @@ class TestObjSpace < Test::Unit::TestCase
         def dump_my_heap_please
           ObjectSpace.trace_object_allocations_start
           GC.start
-          (str = "TEST STRING").force_encoding("UTF-8")
+          (str = "TEST2").force_encoding("UTF-8")
           ObjectSpace.dump_all().path
         end
 
