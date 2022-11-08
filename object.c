@@ -326,7 +326,6 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_set_shape(dest, shape_to_set_on_dest);
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_OBJECT) || ROBJECT_IV_CAPACITY(dest) == ROBJECT_NUMIV(dest));
 }
 
 static void

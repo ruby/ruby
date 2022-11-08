@@ -2100,14 +2100,6 @@ fn gen_get_ivar(
             } else {
                 // Compile time value is *not* embedded.
 
-                if USE_RVARGC == 0 {
-                    // Check that the extended table is big enough
-                    // Check that the slot is inside the extended table (num_slots > index)
-                    let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
-                    asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
-                    asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
-                }
-
                 // Get a pointer to the extended table
                 let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
 

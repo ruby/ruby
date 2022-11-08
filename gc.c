@@ -2943,14 +2943,9 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 
     VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
 
-#if USE_RVARGC
-    uint32_t capa = (uint32_t)((rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-    ROBJECT_SET_NUMIV(obj, capa);
-#endif
-
 #if RUBY_DEBUG
     VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_NUMIV(obj); i++) {
+    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
     }
 #endif
@@ -4859,7 +4854,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            size += ROBJECT_NUMIV(obj) * sizeof(VALUE);
+            size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
         }
         break;
       case T_MODULE:
@@ -8409,7 +8404,7 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
             break;
 
         case T_OBJECT:
-            obj_size = rb_obj_embedded_size(ROBJECT_NUMIV(src));
+            obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
             break;
 
         case T_STRING:
@@ -10019,7 +10014,7 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
     VALUE *ptr = ROBJECT_IVPTR(v);
 
 #if USE_RVARGC
-    uint32_t numiv = ROBJECT_NUMIV(v);
+    uint32_t numiv = ROBJECT_IV_CAPACITY(v);
 
     size_t slot_size = rb_gc_obj_slot_size(v);
     size_t embed_size = rb_obj_embedded_size(numiv);
@@ -10038,13 +10033,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id);
         rb_shape_t * new_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape(v));
         rb_shape_set_shape(v, new_shape);
-        ROBJECT_SET_NUMIV(v, new_shape->capacity);
-#if RUBY_DEBUG
-        if(RB_TYPE_P(v, T_OBJECT) && ROBJECT_IV_CAPACITY(v) != ROBJECT_NUMIV(v)) {
-            fprintf(stderr, "shape capa: %d, v capa: %d\n", ROBJECT_IV_CAPACITY(v), ROBJECT_NUMIV(v));
-        }
-#endif
-        RUBY_ASSERT(!RB_TYPE_P(v, T_OBJECT) || ROBJECT_IV_CAPACITY(v) == ROBJECT_NUMIV(v));
     }
 #endif
 
@@ -13975,7 +13963,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                uint32_t len = ROBJECT_NUMIV(obj);
+                uint32_t len = ROBJECT_IV_CAPACITY(obj);
 
                 if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
                     APPEND_F("(embed) len:%d", len);

@@ -1346,7 +1346,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
     if (ROBJ_TRANSIENT_P(obj)) {
         assert(!RB_FL_TEST_RAW(obj, ROBJECT_EMBED));
 
-        uint32_t len = ROBJECT_NUMIV(obj);
+        uint32_t len = ROBJECT_IV_CAPACITY(obj);
         const VALUE *old_ptr = ROBJECT_IVPTR(obj);
         VALUE *new_ptr;
 
@@ -1378,7 +1378,6 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
     else {
         newptr = obj_ivar_heap_realloc(obj, current_capacity, new_capacity);
     }
-    ROBJECT_SET_NUMIV(obj, new_capacity);
 }
 
 struct gen_ivtbl *
@@ -1405,21 +1404,14 @@ rb_ensure_generic_iv_list_size(VALUE obj, uint32_t newsize)
 rb_shape_t *
 rb_grow_iv_list(VALUE obj)
 {
-    uint32_t len = ROBJECT_NUMIV(obj);
+    rb_shape_t * initial_shape = rb_shape_get_shape(obj);
+    uint32_t len = initial_shape->capacity;
     RUBY_ASSERT(len > 0);
     uint32_t newsize = (uint32_t)(len * 2);
     rb_ensure_iv_list_size(obj, len, newsize);
-    rb_shape_t * res;
 
-#if USE_RVARGC
-    ROBJECT_SET_NUMIV(obj, newsize);
-#else
-    ROBJECT(obj)->as.heap.numiv = newsize;
-#endif
-
-    res = rb_shape_transition_shape_capa(rb_shape_get_shape(obj), newsize);
+    rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape, newsize);
     rb_shape_set_shape(obj, res);
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_OBJECT) || ROBJECT_IV_CAPACITY(obj) == ROBJECT_NUMIV(obj));
     return res;
 }
 
@@ -1437,12 +1429,10 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
         found = false;
     }
 
-    uint32_t len = ROBJECT_NUMIV(obj);
-
     // Reallocating can kick off GC.  We can't set the new shape
     // on this object until the buffer has been allocated, otherwise
     // GC could read off the end of the buffer.
-    if (len <= index) {
+    if (shape->capacity <= index) {
         shape = rb_grow_iv_list(obj);
     }
 

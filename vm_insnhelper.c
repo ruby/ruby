@@ -1301,8 +1301,8 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
             attr_index_t index;
 
-            uint32_t num_iv = ROBJECT_NUMIV(obj);
             rb_shape_t* shape = rb_shape_get_shape(obj);
+            uint32_t num_iv = shape->capacity;
             shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
             if (!rb_shape_get_iv_index(shape, id, &index)) {
@@ -1446,13 +1446,11 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-                    RUBY_ASSERT(ROBJECT_IV_CAPACITY(obj) == ROBJECT_NUMIV(obj));
 
                     ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
 
                     RUBY_ASSERT(rb_shape_get_next_iv_shape(rb_shape_get_shape_by_id(source_shape_id), id) == dest_shape);
-                    RUBY_ASSERT(ROBJECT_IV_CAPACITY(obj) == ROBJECT_NUMIV(obj));
-                    RUBY_ASSERT(index < ROBJECT_NUMIV(obj));
+                    RUBY_ASSERT(index < dest_shape->capacity);
                 }
                 else {
                     break;

@@ -515,7 +515,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_OBJECT:
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_NUMIV(obj));
+        dump_append_lu(dc, ROBJECT_IV_CAPACITY(obj));
         break;
 
       case T_FILE:
