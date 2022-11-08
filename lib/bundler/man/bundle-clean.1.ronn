@@ -15,4 +15,4 @@ useful when you have made many changes to your gem dependencies.
 * `--dry-run`:
   Print the changes, but do not clean the unused gems.
 * `--force`:
-  Force a clean even if `--path` is not set.
+  Force a clean even if system location is used.
