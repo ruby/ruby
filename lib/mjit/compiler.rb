@@ -386,7 +386,7 @@ module RubyVM::MJIT
           src << "        dest_shape_id != ROBJECT_SHAPE_ID(obj)) {\n"
           # Conditionally generate a capacity change if there is one
           # between the destination and the parent IV set
-          src << "        rb_ensure_iv_list_size(obj, RBOJECT_NUMIV(obj), #{capa});\n" if capa
+          src << "        rb_ensure_iv_list_size(obj, ROBJECT_IV_CAPACITY(obj), #{capa});\n" if capa
           src << "        ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);\n"
           src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
           src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"

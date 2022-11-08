@@ -253,7 +253,7 @@ struct iseq_inline_constant_cache_entry {
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
               (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-               sizeof(const rb_cref_t *)) <= sizeof(struct RObject));
+               sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
