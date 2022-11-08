@@ -16,6 +16,26 @@
 
 #include "ruby/ruby.h"
 
+/*
+ * version
+ * 0: before versioning; deprecated
+ * 1: added version and flags
+ */
+#define RUBY_RANDOM_INTERFACE_VERSION_MAJOR 1
+#define RUBY_RANDOM_INTERFACE_VERSION_MINOR 0
+
+#define RUBY_RANDOM_PASTE_VERSION_SUFFIX(x, y, z) x##_##y##_##z
+#define RUBY_RANDOM_WITH_VERSION_SUFFIX(name, major, minor) \
+    RUBY_RANDOM_PASTE_VERSION_SUFFIX(name, major, minor)
+#define rb_random_data_type \
+    RUBY_RANDOM_WITH_VERSION_SUFFIX(rb_random_data_type, \
+                                    RUBY_RANDOM_INTERFACE_VERSION_MAJOR, \
+                                    RUBY_RANDOM_INTERFACE_VERSION_MINOR)
+#define RUBY_RANDOM_INTERFACE_VERSION_INITIALIZER \
+    {RUBY_RANDOM_INTERFACE_VERSION_MAJOR, RUBY_RANDOM_INTERFACE_VERSION_MINOR}
+#define RUBY_RANDOM_INTERFACE_VERSION_MAJOR_MAX 0xff
+#define RUBY_RANDOM_INTERFACE_VERSION_MINOR_MAX 0xff
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /**
@@ -83,6 +103,18 @@ typedef double rb_random_get_real_func(rb_random_t *rng, int excl);
 typedef struct {
     /** Number of bits of seed numbers. */
     size_t default_seed_bits;
+
+    /**
+     * Major/minor versions of this interface
+     */
+    struct {
+        uint8_t major, minor;
+    } version;
+
+    /**
+     * Reserved flags
+     */
+    uint16_t flags;
 
     /** Initialiser function. */
     rb_random_init_func *init;
@@ -161,6 +193,7 @@ typedef struct {
  * ```
  */
 #define RB_RANDOM_INTERFACE_DEFINE(prefix) \
+    RUBY_RANDOM_INTERFACE_VERSION_INITIALIZER, 0, \
     prefix##_init, \
     prefix##_get_int32, \
     prefix##_get_bytes

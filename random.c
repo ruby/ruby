@@ -400,6 +400,15 @@ random_init(int argc, VALUE *argv, VALUE obj)
         rb_raise(rb_eTypeError, "undefined random interface: %s",
                  RTYPEDDATA_TYPE(obj)->wrap_struct_name);
     }
+
+    unsigned int major = rng->version.major;
+    unsigned int minor = rng->version.minor;
+    if (major != RUBY_RANDOM_INTERFACE_VERSION_MAJOR) {
+        rb_raise(rb_eTypeError, "Random interface version "
+                 STRINGIZE(RUBY_RANDOM_INTERFACE_VERSION_MAJOR) "."
+                 STRINGIZE(RUBY_RANDOM_INTERFACE_VERSION_MINOR) " "
+                 "expected: %d.%d", major, minor);
+    }
     argc = rb_check_arity(argc, 0, 1);
     rb_check_frozen(obj);
     if (argc == 0) {
