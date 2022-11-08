@@ -45,8 +45,8 @@
 #define USE_CACHE_MATCH_OPT
 
 #ifdef USE_CACHE_MATCH_OPT
-#  define NUM_CACHE_INDEX_FAIL -1
-#  define NUM_CACHE_INDEX_UNINIT -2
+#  define NUM_CACHE_OPCODE_FAIL -1
+#  define NUM_CACHE_OPCODE_UNINIT -2
 #endif
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
@@ -874,11 +874,10 @@ typedef struct _OnigStackType {
 
 #ifdef USE_CACHE_MATCH_OPT
 typedef struct {
-  UChar* addr;         /* pointer to corresponding opcode. */
-  int    point;        /* cache point number (in outer repeat if `outer_repeat != -1`) */
-  int    outer_repeat; /* outer repeat index number */
+  UChar *addr;
+  int num;
+  int outer_repeat;
 } OnigCacheIndex;
-#define NO_OUTER_REPEAT -1
 #endif
 
 typedef struct {
@@ -904,12 +903,12 @@ typedef struct {
   uint64_t end_time;
 #endif
 #ifdef USE_CACHE_MATCH_OPT
-  int             num_fail;         /* counter of failure (backtrack) number for switching cache optimization. */
-  int             num_cache_point;  /* number of cache point in program */
-  int             num_cache_index;  /* size of cache index array */
-  int             enable_cache_opt; /* whether cache optimization is enabled */
-  OnigCacheIndex* cache_index;      /* cache index array for computing cache point number */
-  uint8_t*        cache;            /* bit array for cache optimization */
+  int              num_fail;
+  int              enable_cache_match_opt;
+  int              num_cache_opcode;
+  int              num_cache_table;
+  OnigCacheIndex *cache_index_table;
+  uint8_t        *match_cache;
 #endif
 } OnigMatchArg;
 
