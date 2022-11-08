@@ -1175,7 +1175,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 static int find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, int num_cache_table, UChar* p)
 {
-  int l = 0, r = num_cache_table - 1, m;
+  int l = 0, r = num_cache_table - 1, m = 0;
   OnigCacheIndex* item;
   OnigRepeatRange* range;
   OnigStackType *stkp;
@@ -1215,7 +1215,7 @@ static int find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackInd
 }
 
 static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, int pos, uint8_t* match_cache, OnigCacheIndex *table, int num_cache_size, int num_cache_table) {
-  int l = 0, r = num_cache_table - 1, m1, m2;
+  int l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
   OnigCacheIndex *item1, *item2;
   int k1, k2;
@@ -1256,7 +1256,7 @@ static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, int pos,
   k2 += base;
 
   if ((k1 >> 3) == (k2 >> 3)) {
-    match_cache[k1 >> 3] &= ((1 << (8 - (k2 & 7) - 1)) - 1 << ((k2 & 7) + 1)) | ((1 << (k1 & 7)) - 1);
+    match_cache[k1 >> 3] &= (((1 << (8 - (k2 & 7) - 1)) - 1) << ((k2 & 7) + 1)) | ((1 << (k1 & 7)) - 1);
   } else {
     int i = k1 >> 3;
     if (k1 & 7) {
@@ -1266,7 +1266,7 @@ static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, int pos,
     if (i < (k2 >> 3)) {
       xmemset(&match_cache[i], 0, (k2 >> 3) - i);
       if (k2 & 7) {
-        match_cache[k2 >> 3] &= ((1 << (8 - (k2 & 7) - 1)) - 1 << ((k2 & 7) + 1));
+        match_cache[k2 >> 3] &= (((1 << (8 - (k2 & 7) - 1)) - 1) << ((k2 & 7) + 1));
       }
     }
   }
