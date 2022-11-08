@@ -146,14 +146,17 @@ module RubyVM::YJIT
     # Average length of instruction sequences executed by YJIT
     avg_len_in_yjit = retired_in_yjit.to_f / total_exits
 
-    # Proportion of instructions that retire in YJIT
-    total_insns_count = retired_in_yjit + stats[:vm_insns_count]
-    yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+    # This only available on yjit stats builds
+    if stats.has_key?(:vm_insns_count)
+      # Proportion of instructions that retire in YJIT
+      total_insns_count = retired_in_yjit + stats[:vm_insns_count]
+      yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+      stats[:ratio_in_yjit] = yjit_ratio_pct
+    end
 
     # Make those stats available in RubyVM::YJIT.runtime_stats as well
     stats[:side_exit_count]  = side_exits
     stats[:total_exit_count] = total_exits
-    stats[:ratio_in_yjit]    = yjit_ratio_pct
     stats[:avg_len_in_yjit]  = avg_len_in_yjit
 
     stats
@@ -239,13 +242,16 @@ module RubyVM::YJIT
       $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
-
       $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
       $stderr.puts "total_exit_count:      " + ("%10d" % stats[:side_exit_count])
       $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_exit_count])
-      $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
+      if stats.has_key?(:vm_insns_count)
+        $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
+      end
       $stderr.puts "yjit_insns_count:      " + ("%10d" % stats[:exec_instruction])
-      $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % stats[:ratio_in_yjit]) + "%"
+      if stats.has_key?(:ratio_in_yjit)
+        $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % stats[:ratio_in_yjit]) + "%"
+      end
       $stderr.puts "avg_len_in_yjit:       " + ("%10.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, prefix: "exit_")
