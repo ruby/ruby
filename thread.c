@@ -1922,7 +1922,7 @@ rb_threadptr_pending_interrupt_include_p(rb_thread_t *th, VALUE err)
     int i;
     for (i=0; i<RARRAY_LEN(th->pending_interrupt_queue); i++) {
         VALUE e = RARRAY_AREF(th->pending_interrupt_queue, i);
-        if (rb_class_inherited_p(e, err)) {
+        if (rb_obj_is_kind_of(e, err)) {
             return TRUE;
         }
     }
