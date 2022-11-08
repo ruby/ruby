@@ -3735,29 +3735,32 @@ AC_SUBST(MJIT_SUPPORT)
 
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
-dnl check if we can build YJIT on this target platform
-AS_CASE(["$target_cpu"],
-    [arm64|aarch64], [
-        YJIT_TARGET=aarch64
-    ],
-    [x86_64], [
-        YJIT_TARGET="$target_cpu"
-    ],
-    [YJIT_TARGET=]
+dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
+YJIT_RUSTC_OK=no
+AS_IF([test "$RUSTC" != "no"],
+    AS_IF([echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null],
+        [YJIT_RUSTC_OK=yes]
+    )
 )
-AS_CASE(["$YJIT_TARGET:$target_os"],
-    [:*], [ # unsupported CPU
-    ],
-    [darwin*], [
-        YJIT_TARGET=${YJIT_TARGET}-apple-darwin
-    ],
-    [linux-android], [ # no target_vendor
-        YJIT_TARGET=${YJIT_TARGET}-${target_os}
-    ],
-    [*linux*], [
-        YJIT_TARGET=${YJIT_TARGET}-${target_vendor}-${target_os}
-    ],
-    [YJIT_TARGET=]
+
+dnl check if we can build YJIT on this target platform
+dnl we can't easily cross-compile with rustc so we don't support that
+YJIT_TARGET_OK=no
+AS_IF([test "$cross_compiling" = no],
+    AS_CASE(["$target_cpu-$target_os"],
+        [*android*], [
+            YJIT_TARGET_OK=no
+        ],
+        [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
+            YJIT_TARGET_OK=yes
+        ],
+        [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
+            YJIT_TARGET_OK=yes
+        ],
+        [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
+            YJIT_TARGET_OK=yes
+        ]
+    )
 )
 
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
@@ -3765,18 +3768,11 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$enable_jit_support:$YJIT_TARGET:$RUSTC"],
-        [no:*|yes::*|yes:*:no], [
-            YJIT_SUPPORT=no
+    [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
+        [yes:yes:yes|:yes:yes], [
+            YJIT_SUPPORT=yes
         ],
-        [yes:yes:*], [
-            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --target=$YJIT_TARGET --emit asm=/dev/null ],
-                [YJIT_SUPPORT=yes],
-                [YJIT_SUPPORT=no]
-            )
-        ], [
-            [YJIT_SUPPORT=no]
-        ]
+        [YJIT_SUPPORT=no]
     )]
 )
 
