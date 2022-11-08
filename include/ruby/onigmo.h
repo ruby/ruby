@@ -744,8 +744,9 @@ typedef struct {
 typedef struct {
   int lower;
   int upper;
-  int base_num;
-  int inner_num;
+  /* These fields are for cache optimization. */
+  int base_point;
+  int inner_point;
 } OnigRepeatRange;
 
 typedef void (*OnigWarnFunc)(const char* s);
