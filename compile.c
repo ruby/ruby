@@ -7449,7 +7449,30 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
                            ISEQ_TYPE_BLOCK, line);
         CHECK(COMPILE(ret, "iter caller", node->nd_iter));
     }
-    ADD_LABEL(ret, retry_end_l);
+
+    {
+        // We need to put the label "retry_end_l" immediately after the last "send" instruction.
+        // This because vm_throw checks if the break cont is equal to the index of next insn of the "send".
+        // (Otherwise, it is considered "break from proc-closure". See "TAG_BREAK" handling in "vm_throw_start".)
+        //
+        // Normally, "send" instruction is at the last.
+        // However, qcall under branch coverage measurement adds some instructions after the "send".
+        //
+        // Note that "invokesuper" appears instead of "send".
+        INSN *iobj;
+        LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
+        iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
+        while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+            iobj = (INSN*) get_prev_insn(iobj);
+        }
+        ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
+
+        // LINK_ANCHOR has a pointer to the last element, but ELEM_INSERT_NEXT does not update it
+        // even if we add an insn to the last of LINK_ANCHOR. So this updates it manually.
+        if (&iobj->link == LAST_ELEMENT(ret)) {
+            ret->last = (LINK_ELEMENT*) retry_end_l;
+        }
+    }
 
     if (popped) {
         ADD_INSN(ret, line_node, pop);
