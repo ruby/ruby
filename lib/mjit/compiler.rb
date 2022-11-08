@@ -353,10 +353,20 @@ module RubyVM::MJIT
       ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(operands[1]) - body.is_entries)).iv_cache
       dest_shape_id = ic_copy.value >> C.SHAPE_FLAG_SHIFT
       attr_index = ic_copy.value & ((1 << C.SHAPE_FLAG_SHIFT) - 1)
+
+      capa = nil
       source_shape_id = if dest_shape_id == C.INVALID_SHAPE_ID
                           dest_shape_id
                         else
-                          C.rb_shape_get_shape_by_id(dest_shape_id).parent_id
+                          parent_id = C.rb_shape_get_shape_by_id(dest_shape_id).parent_id
+                          parent = C.rb_shape_get_shape_by_id(parent_id)
+
+                          if parent.type == C.SHAPE_CAPACITY_CHANGE
+                            capa = parent.capacity
+                            parent.parent_id
+                          else
+                            parent_id
+                          end
                         end
 
       src = +''
@@ -374,9 +384,9 @@ module RubyVM::MJIT
           src << "    const shape_id_t dest_shape_id = (shape_id_t)#{dest_shape_id};\n"
           src << "    if (source_shape_id == ROBJECT_SHAPE_ID(obj) && \n"
           src << "        dest_shape_id != ROBJECT_SHAPE_ID(obj)) {\n"
-          src << "        if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {\n"
-          src << "           rb_init_iv_list(obj);\n"
-          src << "        }\n"
+          # Conditionally generate a capacity change if there is one
+          # between the destination and the parent IV set
+          src << "        rb_ensure_iv_list_size(obj, RBOJECT_NUMIV(obj), #{capa});\n" if capa
           src << "        ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);\n"
           src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
           src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"

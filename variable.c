@@ -1092,7 +1092,7 @@ rb_generic_shape_id(VALUE obj)
             shape_id = ivtbl->shape_id;
         }
         else if (OBJ_FROZEN(obj)) {
-            shape_id = FROZEN_ROOT_SHAPE_ID;
+            shape_id = SPECIAL_CONST_SHAPE_ID;
         }
     }
     RB_VM_LOCK_LEAVE();
@@ -1364,26 +1364,21 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 #endif
 
 void
-rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize)
+rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capacity)
 {
     VALUE *ptr = ROBJECT_IVPTR(obj);
     VALUE *newptr;
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-        newptr = obj_ivar_heap_alloc(obj, newsize);
-        MEMCPY(newptr, ptr, VALUE, len);
+        newptr = obj_ivar_heap_alloc(obj, new_capacity);
+        MEMCPY(newptr, ptr, VALUE, current_capacity);
         RB_FL_UNSET_RAW(obj, ROBJECT_EMBED);
         ROBJECT(obj)->as.heap.ivptr = newptr;
     }
     else {
-        newptr = obj_ivar_heap_realloc(obj, len, newsize);
+        newptr = obj_ivar_heap_realloc(obj, current_capacity, new_capacity);
     }
-
-#if USE_RVARGC
-    ROBJECT(obj)->numiv = newsize;
-#else
-    ROBJECT(obj)->as.heap.numiv = newsize;
-#endif
+    ROBJECT_SET_NUMIV(obj, new_capacity);
 }
 
 struct gen_ivtbl *
@@ -1407,12 +1402,25 @@ rb_ensure_generic_iv_list_size(VALUE obj, uint32_t newsize)
 }
 
 // @note May raise when there are too many instance variables.
-void
-rb_init_iv_list(VALUE obj)
+rb_shape_t *
+rb_grow_iv_list(VALUE obj)
 {
-    uint32_t newsize = (uint32_t)(rb_shape_get_shape(obj)->next_iv_index * 2.0);
     uint32_t len = ROBJECT_NUMIV(obj);
-    rb_ensure_iv_list_size(obj, len, newsize < len ? len : newsize);
+    RUBY_ASSERT(len > 0);
+    uint32_t newsize = (uint32_t)(len * 2);
+    rb_ensure_iv_list_size(obj, len, newsize);
+    rb_shape_t * res;
+
+#if USE_RVARGC
+    ROBJECT_SET_NUMIV(obj, newsize);
+#else
+    ROBJECT(obj)->as.heap.numiv = newsize;
+#endif
+
+    res = rb_shape_transition_shape_capa(rb_shape_get_shape(obj), newsize);
+    rb_shape_set_shape(obj, res);
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_OBJECT) || ROBJECT_IV_CAPACITY(obj) == ROBJECT_NUMIV(obj));
+    return res;
 }
 
 static VALUE
@@ -1423,9 +1431,10 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     // Get the current shape
     rb_shape_t * shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
 
+    bool found = true;
     if (!rb_shape_get_iv_index(shape, id, &index)) {
-        shape = rb_shape_get_next(shape, obj, id);
-        index = shape->next_iv_index - 1;
+        index = shape->next_iv_index;
+        found = false;
     }
 
     uint32_t len = ROBJECT_NUMIV(obj);
@@ -1434,12 +1443,16 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     // on this object until the buffer has been allocated, otherwise
     // GC could read off the end of the buffer.
     if (len <= index) {
-        uint32_t newsize = (uint32_t)((len + 1) * 1.25);
-        rb_ensure_iv_list_size(obj, len, newsize);
+        shape = rb_grow_iv_list(obj);
+    }
+
+    if (!found) {
+        shape = rb_shape_get_next(shape, obj, id);
+        RUBY_ASSERT(index == (shape->next_iv_index - 1));
+        rb_shape_set_shape(obj, shape);
     }
 
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
-    rb_shape_set_shape(obj, shape);
 
     return val;
 }
@@ -1475,7 +1488,7 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
         RCLASS_EXT(obj)->shape_id = shape_id;
         break;
       default:
-        if (shape_id != FROZEN_ROOT_SHAPE_ID) {
+        if (shape_id != SPECIAL_CONST_SHAPE_ID) {
             struct gen_ivtbl *ivtbl = 0;
             RB_VM_LOCK_ENTER();
             {
@@ -1599,8 +1612,10 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             callback(shape->edge_name, val, itr_data->arg);
         }
         return;
-      case SHAPE_IVAR_UNDEF:
+      case SHAPE_INITIAL_CAPACITY:
+      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
+      case SHAPE_IVAR_UNDEF:
         iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), callback, itr_data);
         return;
     }
@@ -3922,7 +3937,7 @@ rb_iv_tbl_copy(VALUE dst, VALUE src)
     RUBY_ASSERT(rb_type(dst) == rb_type(src));
     RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
 
-    RUBY_ASSERT(RCLASS_SHAPE_ID(dst) == ROOT_SHAPE_ID);
+    RUBY_ASSERT(RCLASS_SHAPE_ID(dst) == ROOT_SHAPE_ID || rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(dst))->type == SHAPE_INITIAL_CAPACITY);
     RUBY_ASSERT(!RCLASS_IVPTR(dst));
 
     rb_ivar_foreach(src, tbl_copy_i, dst);

@@ -253,16 +253,6 @@ module GC
   end
 
   # call-seq:
-  #     GC.using_rvargc? -> true or false
-  #
-  # Returns true if using experimental feature Variable Width Allocation, false
-  # otherwise.
-  def self.using_rvargc? # :nodoc:
-    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] > 1
-  end
-
-
-  # call-seq:
   #    GC.measure_total_time = true/false
   #
   # Enable to measure GC time.

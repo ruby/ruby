@@ -210,7 +210,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_down_size_pools
-    omit if !GC.using_rvargc?
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       ARY_COUNT = 500
@@ -229,7 +229,8 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_arrays_up_size_pools
-    omit if !GC.using_rvargc?
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       ARY_COUNT = 500
@@ -250,6 +251,8 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_objects_between_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       class Foo
@@ -274,7 +277,8 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_up_size_pools
-    omit if !GC.using_rvargc?
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       STR_COUNT = 500
@@ -292,7 +296,8 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_down_size_pools
-    omit if !GC.using_rvargc?
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       STR_COUNT = 500
