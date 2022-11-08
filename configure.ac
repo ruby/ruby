@@ -3738,9 +3738,11 @@ AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 YJIT_RUSTC_OK=no
 AS_IF([test "$RUSTC" != "no"],
-    AS_IF([echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null],
+    AC_MSG_CHECKING([whether ${RUSTC} is new enough for YJIT])
+    AS_IF([echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null 2>/dev/null],
         [YJIT_RUSTC_OK=yes]
     )
+    AC_MSG_RESULT($YJIT_RUSTC_OK)
 )
 
 dnl check if we can build YJIT on this target platform
