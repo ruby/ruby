@@ -235,15 +235,15 @@ onig_get_capture_tree(OnigRegion* region)
 
 /* count number of jump-like opcodes for allocation of cache memory. */
 /* return -1 if we cannot optimize the regex matching by using cache. */
-static int count_num_cache_opcode(regex_t* reg, int* table_size)
+static long count_num_cache_opcode(regex_t* reg, long* table_size)
 {
-  int num = 0;
+  long num = 0;
   UChar* p = reg->p;
   UChar* pend = p + reg->used;
   LengthType len;
   MemNumType  mem;
   MemNumType current_mem = -1;
-  int current_mem_num = 0;
+  long current_mem_num = 0;
   OnigEncoding enc = reg->enc;
 
   while (p < pend) {
@@ -456,8 +456,8 @@ static void init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
   LengthType len;
   MemNumType mem;
   MemNumType current_mem = -1;
-  int num = 0;
-  int current_mem_num = 0;
+  long num = 0;
+  long current_mem_num = 0;
   OnigEncoding enc = reg->enc;
 
   while (p < pend) {
@@ -1162,9 +1162,9 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   if (enable) {\
     int cache_index = find_cache_index_table((reg), (stk), (repeat_stk), (table), (num_cache_table), (p));\
     if (cache_index >= 0) {\
-      int key = (num_cache_size) * (int)(pos) + cache_index;\
-      int index = key >> 3;\
-      int mask = 1 << (key & 7);\
+      long key = (num_cache_size) * (long)(pos) + cache_index;\
+      long index = key >> 3;\
+      long mask = 1 << (key & 7);\
       if ((match_cache)[index] & mask) {\
 	goto fail;\
       }\
@@ -1214,11 +1214,11 @@ static int find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackInd
   return range->base_num + range->inner_num * range->lower + (range->inner_num + 1) * (count - range->lower) + item->num;
 }
 
-static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, int pos, uint8_t* match_cache, OnigCacheIndex *table, int num_cache_size, int num_cache_table) {
-  int l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
+static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* match_cache, OnigCacheIndex *table, long num_cache_size, long num_cache_table) {
+  long l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
   OnigCacheIndex *item1, *item2;
-  int k1, k2;
+  long k1, k2;
 
   while (l <= r) {
     m1 = (l + r) / 2;
@@ -3428,7 +3428,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  default:
 	    goto unexpected_bytecode_error;
 	  }
-	  reset_match_cache(reg, addr, pbegin, (int)(s - str), msa->match_cache, msa->cache_index_table, msa->num_cache_table ,msa->num_cache_opcode);
+	  reset_match_cache(reg, addr, pbegin, (long)(s - str), msa->match_cache, msa->cache_index_table, msa->num_cache_table ,msa->num_cache_opcode);
 	}
 # endif
       }
@@ -3820,8 +3820,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       pkeep = stk->u.state.pkeep;
 
 #ifdef USE_CACHE_MATCH_OPT
-      if (++msa->num_fail >= (int)(end - str) + 1 && msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
-	int table_size = 0;
+      if (++msa->num_fail >= (long)(end - str) + 1 && msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+	long table_size = 0;
 	msa->enable_cache_match_opt = 1;
 	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
 	  msa->num_cache_opcode = count_num_cache_opcode(reg, &table_size);
@@ -3846,7 +3846,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  return ONIGERR_MEMORY;
 	}
 	/* Currently, int is used for the key of match_cache */
-	if (match_cache_size8 >= INT_MAX_LIMIT) {
+	if (match_cache_size8 >= LONG_MAX_LIMIT) {
 	  return ONIGERR_MEMORY;
 	}
 	size_t match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);

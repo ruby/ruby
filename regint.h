@@ -387,6 +387,7 @@ typedef unsigned int  BitStatusType;
 
 
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
+#define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
 #define DIGITVAL(code)    ((code) - '0')
 #define ODIGITVAL(code)   DIGITVAL(code)
@@ -875,7 +876,7 @@ typedef struct _OnigStackType {
 #ifdef USE_CACHE_MATCH_OPT
 typedef struct {
   UChar *addr;
-  int num;
+  long num;
   int outer_repeat;
 } OnigCacheIndex;
 #endif
@@ -903,12 +904,12 @@ typedef struct {
   uint64_t end_time;
 #endif
 #ifdef USE_CACHE_MATCH_OPT
-  int              num_fail;
-  int              enable_cache_match_opt;
-  int              num_cache_opcode;
-  int              num_cache_table;
-  OnigCacheIndex *cache_index_table;
-  uint8_t        *match_cache;
+  long            num_fail;
+  int             enable_cache_match_opt;
+  long            num_cache_opcode;
+  long            num_cache_table;
+  OnigCacheIndex* cache_index_table;
+  uint8_t*        match_cache;
 #endif
 } OnigMatchArg;
 
