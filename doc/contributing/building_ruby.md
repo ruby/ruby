@@ -6,7 +6,7 @@
 
     * C compiler
     * autoconf - 2.67 or later
-    * bison - 2.0 or later
+    * bison - 3.0 or later
     * gperf - 3.0.3 or later
     * ruby - 2.7 or later
 
