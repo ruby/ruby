@@ -149,6 +149,14 @@ typedef unsigned int rb_atomic_t;
 #define RUBY_ATOMIC_SET(var, val) rbimpl_atomic_set(&(var), (val))
 
 /**
+  * Atomic load; returns the value of `var`, loaded atomically.
+  *
+  * @param  var  A variable of ::rb_atomic_t.
+  * @return What was stored in var
+  */
+#define RUBY_ATOMIC_LOAD(var) rbimpl_atomic_load(&(var))
+
+/**
  * Identical to #RUBY_ATOMIC_FETCH_ADD, except for the return type.
  *
  * @param   var  A variable of ::rb_atomic_t.
@@ -261,6 +269,30 @@ typedef unsigned int rb_atomic_t;
 #define RUBY_ATOMIC_SIZE_SUB(var, val) rbimpl_atomic_size_sub(&(var), (val))
 
 /**
+ * Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
+ * `size_t`.  There  are cases where  ::rb_atomic_t is 32bit while  `size_t` is
+ * 64bit.  This  should be  used for  size related  operations to  support such
+ * platforms.
+ *
+ * @param   var  A variable of `size_t`.
+ * @param   val   Value to set.
+ * @return  void
+ * @post    `var` holds `val`.
+ */
+#define RUBY_ATOMIC_SIZE_SET(var, val) \
+    RBIMPL_CAST((void)rbimpl_atomic_size_exchange(&(var), (val)))
+
+/**
+ * Identical to #RUBY_ATOMIC_LOAD, except it expects its arguments are
+ * `size_t`. There are cases where ::rb_atomic_t is 32bit while `size_t` is
+ * 64bit. This should be used for size related operations to support such
+ * platforms.
+ * @param  var  A variable of `size_t`
+ * @return What was stored in var
+ */
+#define RUBY_ATOMIC_SIZE_LOAD(var) rbimpl_atomic_size_load(&(var))
+
+/**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
  * `void*`.   There are  cases where  ::rb_atomic_t is  32bit while  `void*` is
  * 64bit.  This should  be used for pointer related operations  to support such
@@ -294,6 +326,31 @@ typedef unsigned int rb_atomic_t;
     RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (oldval), (newval)))
 
 /**
+ * Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
+ * `void*`.   There are  cases where  ::rb_atomic_t is  32bit while  `void*` is
+ * 64bit.  This should  be used for pointer related operations  to support such
+ * platforms.
+ *
+ * @param   var  A variable of `void *`.
+ * @param   val   Value to set.
+ * @return  void
+ * @post    `var` holds `val`.
+ */
+#define RUBY_ATOMIC_PTR_SET(var, val) \
+    RBIMPL_CAST((void)rbimpl_atomic_ptr_exchange((void **)&(var), (void *)(val)))
+
+/**
+ * Identical  to #RUBY_ATOMIC_LOAD,  except  it expects  its arguments  are
+ * `void*`.   There are  cases where  ::rb_atomic_t is  32bit while  `void*` is
+ * 64bit.  This should  be used for pointer related operations  to support such
+ * platforms.
+ *
+ * @param   var  A variable of `void *`.
+ * @return  The value of `var`
+ */
+#define RUBY_ATOMIC_PTR_LOAD(var) rbimpl_atomic_ptr_load((void **)&(var))
+
+/**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
  * ::VALUE.   There are  cases where  ::rb_atomic_t is  32bit while  ::VALUE is
  * 64bit.  This should  be used for pointer related operations  to support such
@@ -320,6 +377,11 @@ typedef unsigned int rb_atomic_t;
  */
 #define RUBY_ATOMIC_VALUE_CAS(var, oldval, newval) \
     rbimpl_atomic_value_cas(&(var), (oldval), (newval))
+
+/**
+ * Issues a memory fance
+ */
+#define RUBY_ATOMIC_BARRIER() rbimpl_atomic_barrier()
 
 /** @cond INTERNAL_MACRO */
 RBIMPL_ATTR_ARTIFICIAL()
@@ -768,6 +830,88 @@ RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
 static inline rb_atomic_t
+rbimpl_atomic_load(volatile rb_atomic_t *ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+
+#elif defined(HAVE_GCC_SYNC_BUILTINS)
+    /* or'ing with 0 has the effect of just doing the fetch */
+    return __sync_fetch_and_or(ptr, 0);
+
+#elif defined(_WIN32)
+    return InterlockedOr(ptr, 0);
+
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+    return atomic_load(ptr);
+
+#else
+# error Unsupported platform.
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline size_t
+rbimpl_atomic_size_load(volatile size_t *ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+
+#elif defined(HAVE_GCC_SYNC_BUILTINS)
+    /* or'ing with 0 has the effect of just doing the fetch */
+    return __sync_fetch_and_or(ptr, 0);
+
+#elif defined(_WIN32) && defined(_M_AMD64)
+    return InterlockedOr64(ptr, 0);
+
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+    return atomic_load(ptr);
+
+#else
+    RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
+    volatile rb_atomic_t *tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
+    return rbimpl_atomic_load(tmp, oldval, newval);
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline void *
+rbimpl_atomic_ptr_load(void * volatile *ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+
+#elif defined(HAVE_GCC_SYNC_BUILTINS)
+    /* or'ing with 0 has the effect of just doing the fetch */
+    return __sync_fetch_and_or(ptr, 0);
+
+#elif defined(_WIN32) && defined(_M_AMD64)
+    return InterlockedOr64(ptr, 0);
+
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+    return atomic_load(ptr);
+
+#else
+    RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
+    volatile rb_atomic_t *tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
+    return rbimpl_atomic_load(tmp, oldval, newval);
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline rb_atomic_t
 rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t newval)
 {
 #if 0
@@ -886,5 +1030,30 @@ rbimpl_atomic_value_cas(volatile VALUE *ptr, VALUE oldval, VALUE newval)
     const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew);
     return RBIMPL_CAST((VALUE)sret);
 }
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+static inline void
+rbimpl_atomic_barrier(void)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
+
+#elif defined(HAVE_GCC_SYNC_BUILTINS)
+    __sync_synchronized();
+
+#elif defined(_WIN32)
+    MemoryBarrier();
+
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+    atomic_thread_fence(memory_order_seq_cst);
+
+#else
+# error Unsupported platform.
+#endif
+}
+
 /** @endcond */
 #endif /* RUBY_ATOMIC_H */
