@@ -6,7 +6,13 @@ class TestFiberIO < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read
+    omit unless defined?(UNIXSocket)
+
     i, o = UNIXSocket.pair
+    if RUBY_PLATFORM=~/mswin|mingw/
+      i.nonblock = true
+      o.nonblock = true
+    end
 
     message = nil
 
@@ -38,6 +44,10 @@ class TestFiberIO < Test::Unit::TestCase
     16.times.map do
       Thread.new do
         i, o = UNIXSocket.pair
+        if RUBY_PLATFORM=~/mswin|mingw/
+          i.nonblock = true
+          o.nonblock = true
+        end
 
         scheduler = Scheduler.new
         Fiber.set_scheduler scheduler
@@ -56,6 +66,9 @@ class TestFiberIO < Test::Unit::TestCase
   end
 
   def test_epipe_on_read
+    omit unless defined?(UNIXSocket)
+    omit "nonblock=true isn't properly supproted on Wondows" if RUBY_PLATFORM=~/mswin|mingw/
+
     i, o = UNIXSocket.pair
 
     error = nil
