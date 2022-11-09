@@ -291,6 +291,11 @@ The following deprecated methods are removed.
 * `Kernel#trust`, `Kernel#untrust`, `Kernel#untrusted?`
   [[Feature #16131]]
 
+### Source code incompatiblity of extension libraries [[Bug #19100]]
+
+* Extension libraries provide PRNG, subclasses of `Random`, need updates.
+  See [PRNG update] below for more information.
+
 ## Stdlib compatibility issues
 
 * `Psych` no longer bundles libyaml sources.
@@ -299,6 +304,16 @@ The following deprecated methods are removed.
   system. [[Feature #18571]]
 
 ## C API updates
+
+### Updated C APIs
+
+The following APIs are updated.
+
+* PRNG update
+
+    `rb_random_interface_t` updated and versioned.
+    Extension libraries which use this interface and built for older versions.
+    Also `init_int32` function needs to be defined.
 
 ### Removed C APIs
 
@@ -400,3 +415,4 @@ The following deprecated APIs are removed.
 [Feature #19013]: https://bugs.ruby-lang.org/issues/19013
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
+[Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
