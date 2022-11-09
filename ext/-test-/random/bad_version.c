@@ -20,6 +20,9 @@ bad_version_init(rb_random_t *rnd, const uint32_t *buf, size_t len)
     must_not_reach();
 }
 
+NORETURN(static void bad_version_init_int32(rb_random_t *, uint32_t));
+RB_RANDOM_DEFINE_INIT_INT32_FUNC(bad_version)
+
 NORETURN(static void bad_version_get_bytes(rb_random_t *, void *, size_t));
 static void
 bad_version_get_bytes(rb_random_t *rnd, void *p, size_t n)
