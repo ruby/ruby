@@ -381,18 +381,16 @@ static long count_num_cache_opcode(regex_t* reg, long* table_size)
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
         GET_MEMNUM_INC(mem, p);
-	//fprintf(stderr, "OP_REPEAT %d\n", mem);
 	if (mem != current_mem) {
 	  // A lone or invalid OP_REPEAT_INC is found.
 	  return NUM_CACHE_OPCODE_FAIL;
 	}
 	{
-	  int inner_num = num - current_mem_num;
+	  long inner_num = num - current_mem_num;
 	  OnigRepeatRange *repeat_range = &reg->repeat_range[mem];
 	  repeat_range->inner_num = inner_num;
 	  num -= inner_num;
 	  num += inner_num * repeat_range->lower + (inner_num + 1) * (repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower);
-	  //fprintf(stderr, "lower %d < upper %d\n", repeat_range->lower, repeat_range->upper);
 	  if (repeat_range->lower < repeat_range->upper) {
 	    *table_size += 1;
 	  }
@@ -614,7 +612,7 @@ static void init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
       case OP_REPEAT_INC_NG:
         GET_MEMNUM_INC(mem, p);
 	{
-	  int inner_num = num - current_mem_num;
+	  long inner_num = num - current_mem_num;
 	  OnigRepeatRange *repeat_range = &reg->repeat_range[mem];
 	  if (repeat_range->lower < repeat_range->upper) {
 	    table->addr = pbegin;
@@ -1160,7 +1158,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 #define DO_CACHE_MATCH_OPT(reg,stk,repeat_stk,enable,p,num_cache_table,num_cache_size,table,pos,match_cache) do {\
   if (enable) {\
-    int cache_index = find_cache_index_table((reg), (stk), (repeat_stk), (table), (num_cache_table), (p));\
+    long cache_index = find_cache_index_table((reg), (stk), (repeat_stk), (table), (num_cache_table), (p));\
     if (cache_index >= 0) {\
       long key = (num_cache_size) * (long)(pos) + cache_index;\
       long index = key >> 3;\
@@ -1173,9 +1171,9 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }\
 } while (0)
 
-static int find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, int num_cache_table, UChar* p)
+static long find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
 {
-  int l = 0, r = num_cache_table - 1, m = 0;
+  long l = 0, r = num_cache_table - 1, m = 0;
   OnigCacheIndex* item;
   OnigRepeatRange* range;
   OnigStackType *stkp;
@@ -1218,7 +1216,7 @@ static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos
   long l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
   OnigCacheIndex *item1, *item2;
-  long k1, k2;
+  long k1, k2, base;
 
   while (l <= r) {
     m1 = (l + r) / 2;
@@ -1251,14 +1249,14 @@ static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos
     else k2 = range->base_num + range->inner_num * range->lower + (range->inner_num + 1) * (range->upper - range->lower - (is_inc ? 1 : 0)) + item2->num;
   }
 
-  int base = pos * num_cache_size;
+  base = pos * num_cache_size;
   k1 += base;
   k2 += base;
 
   if ((k1 >> 3) == (k2 >> 3)) {
     match_cache[k1 >> 3] &= (((1 << (8 - (k2 & 7) - 1)) - 1) << ((k2 & 7) + 1)) | ((1 << (k1 & 7)) - 1);
   } else {
-    int i = k1 >> 3;
+    long i = k1 >> 3;
     if (k1 & 7) {
       match_cache[k1 >> 3] &= (1 << ((k1 & 7) - 1)) - 1;
       i++;
