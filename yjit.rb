@@ -112,13 +112,25 @@ module RubyVM::YJIT
   #
   # Usage:
   #
+  # If `--yjit-exit-locations` is passed, a file named
+  # "yjit_exit_locations.dump" will automatically be generated.
+  #
+  # If you want to collect traces manually, call `dump_exit_locations`
+  # directly.
+  #
+  # Note that calling this in a script will generate stats after the
+  # dump is created, so the stats data may include exits from the
+  # dump itself.
+  #
   # In a script call:
   #
-  #   RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #   at_exit do
+  #     RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #   end
   #
   # Then run the file with the following options:
   #
-  #   ruby --yjit --yjit-stats --yjit-trace-exits test.rb
+  #   ruby --yjit --yjit-trace-exits test.rb
   #
   # Once the code is done running, use Stackprof to read the dump file.
   # See Stackprof documentation for options.
@@ -196,11 +208,23 @@ module RubyVM::YJIT
 
   # Avoid calling a method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
-    at_exit { _print_stats }
+    at_exit do
+      _print_stats
+      _dump_locations
+    end
   end
 
   class << self
     private
+
+    def _dump_locations
+      return unless trace_exit_locations_enabled?
+
+      filename = "yjit_exit_locations.dump"
+      dump_exit_locations(filename)
+
+      $stderr.puts("YJIT exit locations dumped to `#{filename}`.")
+    end
 
     # Format and print out counters
     def _print_stats
