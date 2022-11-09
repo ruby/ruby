@@ -4324,6 +4324,8 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
  *
  *  Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
  *
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted.
  */
 
 static VALUE
@@ -9450,13 +9452,6 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
- *  Examples:
- *
- *    f = File.new('t.tmp', autoclose: true)
- *    f.close
- *    f = File.new('t.tmp', internal_encoding: nil)
- *    f.close
- *
  */
 
 static VALUE
@@ -10250,6 +10245,8 @@ static VALUE argf_readline(int, VALUE *, VALUE);
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *    in `readline': end of file reached (EOFError)
  *
+ *  Optional keyword argument +chomp+ specifies whether line separators
+ *  are to be omitted.
  */
 
 static VALUE
