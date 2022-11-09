@@ -189,7 +189,7 @@ typedef const rb_data_type_t rb_random_data_type_t;
  *     0, RB_RANDOM_INTERFACE_DEFINE(your),
  * };
  *
- * static inline constexpr your_prng = {
+ * static inline constexpr rb_random_data_type_t your_prng_type = {
  *     "your PRNG",
  *     { rb_random_mark, },
  *     RB_RANDOM_PARENT,                 // <<-- HERE
