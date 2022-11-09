@@ -7147,7 +7147,7 @@ const char ruby_null_device[] =
  *  strings read are converted from external to internal encoding,
  *  and strings written are converted from internal to external encoding.
  *  For further details about transcoding input and output,
- *  see {Encodings}[rdoc-ref:io_streams.rdoc@Encodings].
+ *  see {Encodings}[rdoc-ref:encodings.rdoc@Encodings].
  *
  *  If the external encoding is <tt>'BOM|UTF-8'</tt>, <tt>'BOM|UTF-16LE'</tt>
  *  or <tt>'BOM|UTF16-BE'</tt>,
