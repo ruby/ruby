@@ -217,6 +217,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     else {
         if (!RB_TYPE_P(buffer, T_STRING))
             rb_raise(rb_eTypeError, "buffer must be String, not %s", rb_obj_classname(buffer));
+        rb_str_modify(buffer);
         res = buffer;
     }
 
