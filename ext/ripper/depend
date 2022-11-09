@@ -20,8 +20,6 @@ static: check
 ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y $(top_srcdir)/defs/id.def
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
 	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb $(top_srcdir)/parse.y > ripper.tmp.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/pure_parser.rb ripper.tmp.y $(BISON)
-	$(Q) $(RM) ripper.tmp.y.bak
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 

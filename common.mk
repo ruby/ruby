@@ -956,8 +956,6 @@ PHONY:
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
 	$(Q)$(BASERUBY) $(tooldir)/id2token.rb $(SRC_FILE) > parse.tmp.y
-	$(Q)$(BASERUBY) $(tooldir)/pure_parser.rb parse.tmp.y $(YACC)
-	$(Q)$(RM) parse.tmp.y.bak
 	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c parse.tmp.y
 	$(Q)$(RM) parse.tmp.y
 	$(Q)sed -f $(tooldir)/ytab.sed -e "/^#/s|parse\.tmp\.[iy]|$(SRC_FILE)|" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
