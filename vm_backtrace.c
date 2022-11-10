@@ -16,6 +16,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "ruby/encoding.h"
+#include "variable.h"
 #include "vm_core.h"
 
 static VALUE rb_cBacktrace;
@@ -123,7 +124,7 @@ typedef struct rb_backtrace_location_struct {
 
     const rb_iseq_t *iseq;
     const VALUE *pc;
-    ID mid;
+    const rb_callable_method_entry_t *cme;
 } rb_backtrace_location_t;
 
 struct valued_frame_info {
@@ -220,7 +221,7 @@ location_label(rb_backtrace_location_t *loc)
       case LOCATION_TYPE_ISEQ:
         return ISEQ_BODY(loc->iseq)->location.label;
       case LOCATION_TYPE_CFUNC:
-        return rb_id2str(loc->mid);
+        return rb_id2str(loc->cme->def->original_id);
       default:
         rb_bug("location_label: unreachable");
         UNREACHABLE;
@@ -267,7 +268,7 @@ location_base_label(rb_backtrace_location_t *loc)
       case LOCATION_TYPE_ISEQ:
         return ISEQ_BODY(loc->iseq)->location.base_label;
       case LOCATION_TYPE_CFUNC:
-        return rb_id2str(loc->mid);
+        return rb_id2str(loc->cme->def->original_id);
       default:
         rb_bug("location_base_label: unreachable");
         UNREACHABLE;
@@ -284,6 +285,103 @@ location_base_label_m(VALUE self)
 {
     return location_base_label(location_ptr(self));
 }
+
+static VALUE
+location_debug_label(rb_backtrace_location_t *loc)
+{
+    if (!loc->cme) {
+        return location_label(loc);
+    }
+    VALUE qualifier = rb_mod_get_method_qualifier(loc->cme->defined_class);
+    VALUE method_name = rb_id2str(loc->cme->def->original_id);
+    VALUE qualified_method_name = rb_sprintf("%"PRIsVALUE"%"PRIsVALUE, qualifier, method_name);
+    if (!loc->iseq || loc->type == LOCATION_TYPE_CFUNC) {
+        return qualified_method_name;
+    }
+    // If an iseq is block or eval, calculate how deeply it's nested.
+    const char *type_label = "";
+    bool check_nesting = false;
+    bool has_prefix = false;
+    int level = 1;
+    switch (ISEQ_BODY(loc->iseq)->type) {
+      case ISEQ_TYPE_BLOCK:
+        type_label = "block";
+        check_nesting = true;
+        has_prefix = true;
+        break;
+      case ISEQ_TYPE_EVAL:
+        type_label = "eval";
+        check_nesting = true;
+        has_prefix = true;
+        break;
+      case ISEQ_TYPE_RESCUE:
+        type_label = "rescue";
+        has_prefix = true;
+        break;
+      case ISEQ_TYPE_ENSURE:
+        type_label = "ensure";
+        has_prefix = true;
+        break;
+      default:
+        break;
+    }
+    if (check_nesting) {
+        const rb_iseq_t *next_iseq = loc->iseq;
+        level = 0;
+        do {
+            level++;
+            next_iseq = ISEQ_BODY(next_iseq)->parent_iseq;
+        } while (next_iseq && ISEQ_BODY(next_iseq)->type == ISEQ_BODY(loc->iseq)->type);
+    }
+    if (!has_prefix) {
+        return qualified_method_name;
+    } else if (level == 1) {
+        return rb_sprintf("%s in %"PRIsVALUE, type_label, qualified_method_name);
+    } else {
+        return rb_sprintf("%s (%d levels) in %"PRIsVALUE, type_label, level, qualified_method_name);
+    }
+}
+
+/*
+ * Returns the full label for this frame.
+ *
+ * This augments the normal label output with information about classes
+ * on which methods are defined; this is helpful to understand backtraces
+ * without needing to refer back to the source code.
+ *
+ * Consider the following example program:
+ * module AModule
+ *   class AClass
+ *     def self.a_singleton_method
+ *       AClass.new.an_instance_method
+ *     end
+ *
+ *     def an_instance_method
+ *       NestedClass.new.another_method
+ *     end
+ *
+ *     class NestedClass
+ *       def another_method
+ *         puts caller_locations(0).map(&:debug_label).join("\n")
+ *       end
+ *     end
+ *   end
+ * end
+ * AModule::AClass.a_singleton_method
+ *
+ * The output of this program is:
+ *
+ *   AModule::AClass::NestedClass#another_method
+ *   AModule::AClass#an_instance_method
+ *   AModule::AClass.a_singleton_method
+ *   <main>
+ */
+static VALUE
+location_debug_label_m(VALUE self)
+{
+    return location_debug_label(location_ptr(self));
+}
+
 
 static const rb_iseq_t *
 location_iseq(rb_backtrace_location_t *loc)
@@ -422,7 +520,7 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_id2str(loc->mid);
+        name = rb_id2str(loc->cme->def->original_id);
         break;
       default:
         rb_bug("location_to_str: unreachable");
@@ -641,6 +739,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     loc = &bt->backtrace[bt->backtrace_size++];
                     loc->type = LOCATION_TYPE_ISEQ;
                     loc->iseq = iseq;
+                    loc->cme = rb_vm_frame_method_entry(cfp);
                     loc->pc = pc;
                     bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
                     if (do_yield) {
@@ -660,7 +759,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 loc->type = LOCATION_TYPE_CFUNC;
                 loc->iseq = NULL;
                 loc->pc = NULL;
-                loc->mid = rb_vm_frame_method_entry(cfp)->def->original_id;
+                loc->cme = rb_vm_frame_method_entry(cfp);
                 cfunc_counter++;
             }
         }
@@ -1344,6 +1443,7 @@ Init_vm_backtrace(void)
     rb_define_method(rb_cBacktraceLocation, "lineno", location_lineno_m, 0);
     rb_define_method(rb_cBacktraceLocation, "label", location_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "base_label", location_base_label_m, 0);
+    rb_define_method(rb_cBacktraceLocation, "debug_label", location_debug_label_m, 0);
     rb_define_method(rb_cBacktraceLocation, "path", location_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "absolute_path", location_absolute_path_m, 0);
     rb_define_method(rb_cBacktraceLocation, "to_s", location_to_str_m, 0);
