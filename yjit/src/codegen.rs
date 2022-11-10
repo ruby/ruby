@@ -7,7 +7,6 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
-#[cfg(feature = "stats")]
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
@@ -181,12 +180,6 @@ fn jit_peek_at_block_handler(jit: &JITState, level: u32) -> VALUE {
     }
 }
 
-/// Increment a profiling counter with counter_name
-#[cfg(not(feature = "stats"))]
-macro_rules! gen_counter_incr {
-    ($asm:tt, $counter_name:ident) => {};
-}
-#[cfg(feature = "stats")]
 macro_rules! gen_counter_incr {
     ($asm:tt, $counter_name:ident) => {
         if (get_option!(gen_stats)) {
@@ -204,15 +197,6 @@ macro_rules! gen_counter_incr {
     };
 }
 
-/// Increment a counter then take an existing side exit
-#[cfg(not(feature = "stats"))]
-macro_rules! counted_exit {
-    ($ocb:tt, $existing_side_exit:tt, $counter_name:ident) => {{
-        let _ = $ocb;
-        $existing_side_exit
-    }};
-}
-#[cfg(feature = "stats")]
 macro_rules! counted_exit {
     ($ocb:tt, $existing_side_exit:tt, $counter_name:ident) => {
         // The counter is only incremented when stats are enabled
@@ -422,7 +406,6 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
     );
 
     // Accumulate stats about interpreter exits
-    #[cfg(feature = "stats")]
     if get_option!(gen_stats) {
         asm.ccall(
             rb_yjit_count_side_exit_op as *const u8,
