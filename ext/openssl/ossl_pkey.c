@@ -951,7 +951,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
                        RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
@@ -1056,7 +1056,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
                            RSTRING_LEN(sig), (unsigned char *)RSTRING_PTR(data),
                            RSTRING_LEN(data));
