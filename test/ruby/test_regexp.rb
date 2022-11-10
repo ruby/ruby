@@ -1580,9 +1580,8 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_s_timeout
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(0.2).inspect }
     begin;
-      timeout = EnvUtil.apply_timeout_scale(0.2)
-
       Regexp.timeout = timeout
       assert_equal(timeout, Regexp.timeout)
 
@@ -1622,13 +1621,10 @@ class TestRegexp < Test::Unit::TestCase
 
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-      global_timeout = #{ global_timeout.inspect }
-      per_instance_timeout = #{ per_instance_timeout.inspect }
-      expected_timeout = #{ expected_timeout.inspect }
+      global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
+      per_instance_timeout = #{ (per_instance_timeout ? EnvUtil.apply_timeout_scale(per_instance_timeout) : nil).inspect }
+      expected_timeout = #{ EnvUtil.apply_timeout_scale(expected_timeout).inspect }
     begin;
-      global_timeout = EnvUtil.apply_timeout_scale(global_timeout)
-      per_instance_timeout = EnvUtil.apply_timeout_scale(per_instance_timeout)
-
       Regexp.timeout = global_timeout
 
       re = Regexp.new("^(a*)\\1b?a*$", timeout: per_instance_timeout)
@@ -1676,8 +1672,8 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_cache_optimization_exponential
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(2).inspect }
     begin;
-      timeout = EnvUtil.apply_timeout_scale(2)
       Regexp.timeout = timeout
 
       assert_nil(/^(a*)*$/ =~ "a" * 1000000 + "x")
@@ -1686,8 +1682,8 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_cache_optimization_square
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(2).inspect }
     begin;
-      timeout = EnvUtil.apply_timeout_scale(2)
       Regexp.timeout = timeout
 
       assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
