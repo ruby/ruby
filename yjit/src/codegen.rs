@@ -5555,11 +5555,8 @@ fn gen_send_general(
 
                         let sp = asm.lea(ctx.sp_opnd(0));
 
-                        // Write interpreter SP into CFP.
-                        // Needed in case the callee yields to the block.
-                        jit_save_pc(jit, asm);
-                        // Store incremented PC into current control frame in case callee raises.
-                        gen_save_sp(jit, asm, ctx);
+                        // Save the PC and SP because the callee can make Ruby calls
+                        jit_prepare_routine_call(jit, ctx, asm);
 
                         let kw_splat = flags & VM_CALL_KW_SPLAT;
                         let stack_argument_pointer = asm.lea(Opnd::mem(64, sp, -(argc) * SIZEOF_VALUE_I32));
