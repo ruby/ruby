@@ -159,7 +159,10 @@ module IRB # :nodoc:
 
     @CONF[:AT_EXIT] = []
 
-    @CONF[:COMMAND_ALIASES] = {}
+    @CONF[:COMMAND_ALIASES] = {
+      :'$' => :show_source,
+      :'@' => :whereami,
+    }
   end
 
   def IRB.set_measure_callback(type = nil, arg = nil, &block)

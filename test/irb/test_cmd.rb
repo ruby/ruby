@@ -551,7 +551,6 @@ module TestIRB
     def test_whereami_alias
       out, err = execute_lines(
         "@\n",
-        conf: { COMMAND_ALIASES: { :'@' => :whereami } }
       )
       assert_empty err
       assert_match(/^From: .+ @ line \d+ :\n/, out)
@@ -563,7 +562,6 @@ module TestIRB
       out, err = execute_lines(
         "@foo\n",
         "$bar\n",
-        conf: { COMMAND_ALIASES: { :'$' => :show_source, :'@' => :whereami } }
       )
       assert_empty err
       assert_match(/"foo"/, out)
