@@ -269,11 +269,11 @@ module RubyVM::YJIT
       $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
       $stderr.puts "total_exit_count:      " + ("%10d" % stats[:side_exit_count])
       $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_exit_count])
-      if stats.has_key?(:vm_insns_count)
+      if stats.key?(:vm_insns_count)
         $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
       end
       $stderr.puts "yjit_insns_count:      " + ("%10d" % stats[:exec_instruction])
-      if stats.has_key?(:ratio_in_yjit)
+      if stats.key?(:ratio_in_yjit)
         $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % stats[:ratio_in_yjit]) + "%"
       end
       $stderr.puts "avg_len_in_yjit:       " + ("%10.1f" % stats[:avg_len_in_yjit])
