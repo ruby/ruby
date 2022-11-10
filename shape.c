@@ -51,6 +51,12 @@ rb_shape_get_shape_by_id_without_assertion(shape_id_t shape_id)
     return shape;
 }
 
+rb_shape_t *
+rb_shape_get_parent(rb_shape_t * shape)
+{
+    return rb_shape_get_shape_by_id(shape->parent_id);
+}
+
 #if !SHAPE_IN_BASIC_FLAGS
 shape_id_t
 rb_rclass_shape_id(VALUE obj)
@@ -105,7 +111,7 @@ rb_shape_lookup_id(rb_shape_t* shape, ID id, enum shape_type shape_type)
                 return NULL;
             }
         }
-        shape = rb_shape_get_shape_by_id(shape->parent_id);
+        shape = rb_shape_get_parent(shape);
     }
     return NULL;
 }
@@ -273,7 +279,7 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
                 rb_bug("Ivar should not exist on transition\n");
             }
         }
-        shape = rb_shape_get_shape_by_id(shape->parent_id);
+        shape = rb_shape_get_parent(shape);
     }
     return false;
 }
@@ -338,7 +344,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
     rb_shape_t * midway_shape;
 
     if (dest_shape->type != SHAPE_ROOT) {
-        midway_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape_by_id(dest_shape->parent_id));
+        midway_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_parent(dest_shape));
     }
     else {
         midway_shape = initial_shape;
@@ -504,7 +510,7 @@ rb_shape_export_depth(VALUE self)
     unsigned int depth = 0;
     while (shape->parent_id != INVALID_SHAPE_ID) {
         depth++;
-        shape = rb_shape_get_shape_by_id(shape->parent_id);
+        shape = rb_shape_get_parent(shape);
     }
     return INT2NUM(depth);
 }
@@ -515,7 +521,7 @@ rb_shape_parent(VALUE self)
     rb_shape_t * shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
     if (shape->parent_id != INVALID_SHAPE_ID) {
-        return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape->parent_id));
+        return rb_shape_t_to_rb_cShape(rb_shape_get_parent(shape));
     }
     else {
         return Qnil;

@@ -1583,7 +1583,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_ROOT:
         return;
       case SHAPE_IVAR:
-        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), callback, itr_data);
+        iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         VALUE * iv_list;
         switch (BUILTIN_TYPE(itr_data->obj)) {
           case T_OBJECT:
@@ -1606,7 +1606,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_IVAR_UNDEF:
-        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), callback, itr_data);
+        iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         return;
     }
 }
