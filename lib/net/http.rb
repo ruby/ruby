@@ -348,7 +348,7 @@ module Net   #:nodoc:
   #     - Net::HTTPAlreadyReported (208)
   #     - Net::HTTPIMUsed (226)
   #
-  #   - HTTPRedirection:
+  #   - Net::HTTPRedirection:
   #
   #     - Net::HTTPMultipleChoices (300)
   #     - Net::HTTPMovedPermanently (301)
