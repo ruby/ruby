@@ -50,7 +50,9 @@ struct rb_classext_struct {
     struct rb_subclass_entry *module_subclass_entry;
     const VALUE origin_;
     const VALUE refined_class;
+#if !USE_RVARGC
     rb_alloc_func_t allocator;
+#endif
     const VALUE includer;
     uint32_t max_iv_count;
 #if !SHAPE_IN_BASIC_FLAGS
@@ -62,7 +64,9 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if !USE_RVARGC
+#if USE_RVARGC
+    rb_alloc_func_t allocator;
+#else
     struct rb_classext_struct *ptr;
 #endif
 };
@@ -86,7 +90,11 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 #define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)
 #define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->module_subclass_entry)
-#define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
+#if USE_RVARGC
+  #define RCLASS_ALLOCATOR(c) (RCLASS(c)->allocator)
+#else
+  #define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
+#endif
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
