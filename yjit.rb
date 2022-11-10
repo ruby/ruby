@@ -147,7 +147,7 @@ module RubyVM::YJIT
     avg_len_in_yjit = retired_in_yjit.to_f / total_exits
 
     # This only available on yjit stats builds
-    if stats.has_key?(:vm_insns_count)
+    if stats.key?(:vm_insns_count)
       # Proportion of instructions that retire in YJIT
       total_insns_count = retired_in_yjit + stats[:vm_insns_count]
       yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
