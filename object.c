@@ -284,7 +284,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     // The copy should be mutable, so we don't want the frozen shape
     if (rb_shape_frozen_shape_p(src_shape)) {
-        shape_to_set_on_dest = rb_shape_get_shape_by_id(src_shape->parent_id);
+        shape_to_set_on_dest = rb_shape_get_parent(src_shape);
     }
 
     src_buf = ROBJECT_IVPTR(obj);
