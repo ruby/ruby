@@ -3,6 +3,8 @@
 
 require_relative 'test_helper'
 
+require_relative './lib/helper'
+
 class JSONInRactorTest < Test::Unit::TestCase
   def test_generate
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
