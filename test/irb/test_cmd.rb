@@ -480,6 +480,44 @@ module TestIRB
       assert_match(/C.methods:\s+m5\n/m, out)
     end
 
+    def test_ls_grep
+      pend if RUBY_ENGINE == 'truffleruby'
+      out, err = execute_lines("ls 42\n")
+      assert_empty err
+      assert_match(/times/, out)
+      assert_match(/polar/, out)
+
+      [
+        "ls 42, grep: /times/\n",
+        "ls 42 -g times\n",
+        "ls 42 -G times\n",
+      ].each do |line|
+        out, err = execute_lines(line)
+        assert_empty err
+        assert_match(/times/, out)
+        assert_not_match(/polar/, out)
+      end
+    end
+
+    def test_ls_grep_empty
+      pend if RUBY_ENGINE == 'truffleruby'
+      out, err = execute_lines("ls\n")
+      assert_empty err
+      assert_match(/whereami/, out)
+      assert_match(/show_source/, out)
+
+      [
+        "ls grep: /whereami/\n",
+        "ls -g whereami\n",
+        "ls -G whereami\n",
+      ].each do |line|
+        out, err = execute_lines(line)
+        assert_empty err
+        assert_match(/whereami/, out)
+        assert_not_match(/show_source/, out)
+      end
+    end
+
     def test_ls_with_no_singleton_class
       out, err = execute_lines(
         "ls 42",

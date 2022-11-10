@@ -9,6 +9,15 @@ module IRB
 
   module ExtendCommand
     class Ls < Nop
+      def self.transform_args(args)
+        if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)
+          args = match[:args]
+          "#{args}#{',' unless args.chomp.empty?} grep: /#{match[:grep]}/"
+        else
+          args
+        end
+      end
+
       def execute(*arg, grep: nil)
         o = Output.new(grep: grep)
 
