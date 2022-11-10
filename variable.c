@@ -1183,7 +1183,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             shape_id = ivtbl->shape_id;
 #endif
             ivar_list = ivtbl->ivptr;
-        } else {
+        }
+        else {
             return undef;
         }
         break;
@@ -2051,7 +2052,8 @@ autoload_data(VALUE mod, ID id)
     if (RB_TYPE_P(mod, T_ICLASS)) {
         if (FL_TEST_RAW(mod, RICLASS_IS_ORIGIN)) {
             return 0;
-        } else {
+        }
+        else {
             mod = RBASIC(mod)->klass;
         }
     }
@@ -2262,7 +2264,8 @@ autoload_table_lookup_or_create(VALUE module)
     VALUE autoload_table_value = rb_ivar_lookup(module, autoload, 0);
     if (autoload_table_value) {
         return check_autoload_table(autoload_table_value);
-    } else {
+    }
+    else {
         autoload_table_value = TypedData_Wrap_Struct(0, &autoload_table_type, 0);
         rb_class_ivar_set(module, autoload, autoload_table_value);
         return (DATA_PTR(autoload_table_value) = st_init_numtable());
@@ -3492,7 +3495,8 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
     if (RB_TYPE_P(klass, T_ICLASS)) {
         if (FL_TEST_RAW(klass, RICLASS_IS_ORIGIN)) {
             return 0;
-        } else {
+        }
+        else {
             // check the original module
             klass = RBASIC(klass)->klass;
         }
@@ -3879,7 +3883,8 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 
             RCLASS_IVPTR(obj)[idx] = value;
             RB_OBJ_WRITTEN(obj, Qundef, value);
-        } else {
+        }
+        else {
             // Creating and setting a new instance variable
 
             // Move to a shape which fits the new ivar
