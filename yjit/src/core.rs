@@ -334,10 +334,6 @@ struct Branch {
     start_addr: Option<CodePtr>,
     end_addr: Option<CodePtr>, // exclusive
 
-    // Context right after the branch instruction
-    #[allow(unused)] // set but not read at the moment
-    src_ctx: Context,
-
     // Branch target blocks and their contexts
     targets: [Option<BlockId>; 2],
     target_ctxs: [Context; 2],
@@ -1646,7 +1642,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
 }
 
 /// Create a new outgoing branch entry for a block
-fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -> BranchRef {
+fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     let branch = Branch {
         // Block this is attached to
         block: block.clone(),
@@ -1654,9 +1650,6 @@ fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -
         // Positions where the generated code starts and ends
         start_addr: None,
         end_addr: None,
-
-        // Context right after the branch instruction
-        src_ctx: *src_ctx,
 
         // Branch target blocks and their contexts
         targets: [None, None],
@@ -1952,7 +1945,6 @@ impl Assembler
 
 pub fn gen_branch(
     jit: &JITState,
-    src_ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     target0: BlockId,
@@ -1961,7 +1953,7 @@ pub fn gen_branch(
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
 ) {
-    let branchref = make_branch_entry(&jit.get_block(), src_ctx, gen_fn);
+    let branchref = make_branch_entry(&jit.get_block(), gen_fn);
 
     // Get the branch targets or stubs
     let dst_addr0 = get_branch_target(target0, ctx0, &branchref, 0, ocb);
@@ -2013,7 +2005,7 @@ fn gen_jump_branch(
 }
 
 pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
-    let branchref = make_branch_entry(&jit.get_block(), ctx, gen_jump_branch);
+    let branchref = make_branch_entry(&jit.get_block(), gen_jump_branch);
     let mut branch = branchref.borrow_mut();
 
     branch.targets[0] = Some(target0);
@@ -2068,7 +2060,7 @@ pub fn defer_compilation(
     next_ctx.chain_depth += 1;
 
     let block_rc = jit.get_block();
-    let branch_rc = make_branch_entry(&jit.get_block(), cur_ctx, gen_jump_branch);
+    let branch_rc = make_branch_entry(&jit.get_block(), gen_jump_branch);
     let mut branch = branch_rc.borrow_mut();
     let block = block_rc.borrow();
 
