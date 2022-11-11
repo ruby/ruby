@@ -5,7 +5,7 @@ require "irb/extend-command"
 require_relative "helper"
 
 module TestIRB
-  class ExtendCommand < TestCase
+  class ExtendCommandTest < TestCase
     class TestInputMethod < ::IRB::InputMethod
       attr_reader :list, :line_no
 
@@ -58,164 +58,146 @@ module TestIRB
       restore_encodings
     end
 
-    def test_irb_info_multiline
-      FileUtils.touch("#{@tmpdir}/.inputrc")
-      FileUtils.touch("#{@tmpdir}/.irbrc")
-      IRB.setup(__FILE__, argv: [])
-      IRB.conf[:USE_MULTILINE] = true
-      IRB.conf[:USE_SINGLELINE] = false
-      IRB.conf[:VERBOSE] = false
-      lang_backup = ENV.delete("LANG")
-      lc_all_backup = ENV.delete("LC_ALL")
-      workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      expected = %r{
-        Ruby\sversion:\s.+\n
-        IRB\sversion:\sirb\s.+\n
-        InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath:\s.+\n
-        RUBY_PLATFORM:\s.+\n
-        East\sAsian\sAmbiguous\sWidth:\s\d\n
-        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
-      }x
-      assert_match expected, irb.context.main.irb_info.to_s
-    ensure
-      ENV["LANG"] = lang_backup
-      ENV["LC_ALL"] = lc_all_backup
-    end
-
-    def test_irb_info_singleline
-      FileUtils.touch("#{@tmpdir}/.inputrc")
-      FileUtils.touch("#{@tmpdir}/.irbrc")
-      IRB.setup(__FILE__, argv: [])
-      IRB.conf[:USE_MULTILINE] = false
-      IRB.conf[:USE_SINGLELINE] = true
-      IRB.conf[:VERBOSE] = false
-      lang_backup = ENV.delete("LANG")
-      lc_all_backup = ENV.delete("LC_ALL")
-      workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      expected = %r{
-        Ruby\sversion:\s.+\n
-        IRB\sversion:\sirb\s.+\n
-        InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath:\s.+\n
-        RUBY_PLATFORM:\s.+\n
-        East\sAsian\sAmbiguous\sWidth:\s\d\n
-        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
-      }x
-      info = irb.context.main.irb_info
-      capture_output do
-        # Reline::Core#ambiguous_width may access STDOUT, not $stdout
-        stdout = STDOUT.dup
-        STDOUT.reopen(IO::NULL, "w")
-        info = info.to_s
-      ensure
-        STDOUT.reopen(stdout)
-        stdout.close
+    class InfoCommandTest < ExtendCommandTest
+      def setup
+        super
+        @locals_backup = ENV.delete("LANG"), ENV.delete("LC_ALL")
       end
-      assert_match expected, info
-    ensure
-      ENV["LANG"] = lang_backup
-      ENV["LC_ALL"] = lc_all_backup
-    end
 
-    def test_irb_info_multiline_without_rc_files
-      inputrc_backup = ENV["INPUTRC"]
-      ENV["INPUTRC"] = "unknown_inpurc"
-      ext_backup = IRB::IRBRC_EXT
-      IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, "unknown_ext")
-      IRB.setup(__FILE__, argv: [])
-      IRB.conf[:USE_MULTILINE] = true
-      IRB.conf[:USE_SINGLELINE] = false
-      IRB.conf[:VERBOSE] = false
-      lang_backup = ENV.delete("LANG")
-      lc_all_backup = ENV.delete("LC_ALL")
-      workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      expected = %r{
-        Ruby\sversion:\s.+\n
-        IRB\sversion:\sirb\s.+\n
-        InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM:\s.+\n
-        East\sAsian\sAmbiguous\sWidth:\s\d\n
-        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
-        \z
-      }x
-      assert_match expected, irb.context.main.irb_info.to_s
-    ensure
-      ENV["INPUTRC"] = inputrc_backup
-      IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, ext_backup)
-      ENV["LANG"] = lang_backup
-      ENV["LC_ALL"] = lc_all_backup
-    end
+      def teardown
+        super
+        ENV["LANG"], ENV["LC_ALL"] = @locals_backup
+      end
 
-    def test_irb_info_singleline_without_rc_files
-      inputrc_backup = ENV["INPUTRC"]
-      ENV["INPUTRC"] = "unknown_inpurc"
-      ext_backup = IRB::IRBRC_EXT
-      IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, "unknown_ext")
-      IRB.setup(__FILE__, argv: [])
-      IRB.conf[:USE_MULTILINE] = false
-      IRB.conf[:USE_SINGLELINE] = true
-      IRB.conf[:VERBOSE] = false
-      lang_backup = ENV.delete("LANG")
-      lc_all_backup = ENV.delete("LC_ALL")
-      workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      expected = %r{
-        Ruby\sversion:\s.+\n
-        IRB\sversion:\sirb\s.+\n
-        InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM:\s.+\n
-        East\sAsian\sAmbiguous\sWidth:\s\d\n
-        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
-        \z
-      }x
-      assert_match expected, irb.context.main.irb_info.to_s
-    ensure
-      ENV["INPUTRC"] = inputrc_backup
-      IRB.__send__(:remove_const, :IRBRC_EXT)
-      IRB.const_set(:IRBRC_EXT, ext_backup)
-      ENV["LANG"] = lang_backup
-      ENV["LC_ALL"] = lc_all_backup
-    end
+      def test_irb_info_multiline
+        FileUtils.touch("#{@tmpdir}/.inputrc")
+        FileUtils.touch("#{@tmpdir}/.irbrc")
 
-    def test_irb_info_lang
-      FileUtils.touch("#{@tmpdir}/.inputrc")
-      FileUtils.touch("#{@tmpdir}/.irbrc")
-      IRB.setup(__FILE__, argv: [])
-      IRB.conf[:USE_MULTILINE] = true
-      IRB.conf[:USE_SINGLELINE] = false
-      IRB.conf[:VERBOSE] = false
-      lang_backup = ENV.delete("LANG")
-      lc_all_backup = ENV.delete("LC_ALL")
-      ENV["LANG"] = "ja_JP.UTF-8"
-      ENV["LC_ALL"] = "en_US.UTF-8"
-      workspace = IRB::WorkSpace.new(self)
-      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
-        InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath: .+\n
-        RUBY_PLATFORM: .+\n
-        LANG\senv:\sja_JP\.UTF-8\n
-        LC_ALL\senv:\sen_US\.UTF-8\n
-        East\sAsian\sAmbiguous\sWidth:\s\d\n
-      }x
-      assert_match expected, irb.context.main.irb_info.to_s
-    ensure
-      ENV["LANG"] = lang_backup
-      ENV["LC_ALL"] = lc_all_backup
+        out, err = execute_lines(
+          "irb_info",
+          conf: { USE_MULTILINE: true, USE_SINGLELINE: false }
+        )
+
+        expected = %r{
+          Ruby\sversion:\s.+\n
+          IRB\sversion:\sirb\s.+\n
+          InputMethod:\sAbstract\sInputMethod\n
+          \.irbrc\spath:\s.+\n
+          RUBY_PLATFORM:\s.+\n
+          East\sAsian\sAmbiguous\sWidth:\s\d\n
+          #{@is_win ? 'Code\spage:\s\d+\n' : ''}
+        }x
+
+        assert_empty err
+        assert_match expected, out
+      end
+
+      def test_irb_info_singleline
+        FileUtils.touch("#{@tmpdir}/.inputrc")
+        FileUtils.touch("#{@tmpdir}/.irbrc")
+
+        out, err = execute_lines(
+          "irb_info",
+          conf: { USE_MULTILINE: false, USE_SINGLELINE: true }
+        )
+
+        expected = %r{
+          Ruby\sversion:\s.+\n
+          IRB\sversion:\sirb\s.+\n
+          InputMethod:\sAbstract\sInputMethod\n
+          \.irbrc\spath:\s.+\n
+          RUBY_PLATFORM:\s.+\n
+          East\sAsian\sAmbiguous\sWidth:\s\d\n
+          #{@is_win ? 'Code\spage:\s\d+\n' : ''}
+        }x
+
+        assert_empty err
+        assert_match expected, out
+      end
+
+      def test_irb_info_multiline_without_rc_files
+        inputrc_backup = ENV["INPUTRC"]
+        ENV["INPUTRC"] = "unknown_inpurc"
+        ext_backup = IRB::IRBRC_EXT
+        IRB.__send__(:remove_const, :IRBRC_EXT)
+        IRB.const_set(:IRBRC_EXT, "unknown_ext")
+
+        out, err = execute_lines(
+          "irb_info",
+          conf: { USE_MULTILINE: true, USE_SINGLELINE: false }
+        )
+
+        expected = %r{
+          Ruby\sversion:\s.+\n
+          IRB\sversion:\sirb\s.+\n
+          InputMethod:\sAbstract\sInputMethod\n
+          RUBY_PLATFORM:\s.+\n
+          East\sAsian\sAmbiguous\sWidth:\s\d\n
+          #{@is_win ? 'Code\spage:\s\d+\n' : ''}
+        }x
+
+        assert_empty err
+        assert_match expected, out
+      ensure
+        ENV["INPUTRC"] = inputrc_backup
+        IRB.__send__(:remove_const, :IRBRC_EXT)
+        IRB.const_set(:IRBRC_EXT, ext_backup)
+      end
+
+      def test_irb_info_singleline_without_rc_files
+        inputrc_backup = ENV["INPUTRC"]
+        ENV["INPUTRC"] = "unknown_inpurc"
+        ext_backup = IRB::IRBRC_EXT
+        IRB.__send__(:remove_const, :IRBRC_EXT)
+        IRB.const_set(:IRBRC_EXT, "unknown_ext")
+
+        out, err = execute_lines(
+          "irb_info",
+          conf: { USE_MULTILINE: false, USE_SINGLELINE: true }
+        )
+
+        expected = %r{
+          Ruby\sversion:\s.+\n
+          IRB\sversion:\sirb\s.+\n
+          InputMethod:\sAbstract\sInputMethod\n
+          RUBY_PLATFORM:\s.+\n
+          East\sAsian\sAmbiguous\sWidth:\s\d\n
+          #{@is_win ? 'Code\spage:\s\d+\n' : ''}
+        }x
+
+        assert_empty err
+        assert_match expected, out
+      ensure
+        ENV["INPUTRC"] = inputrc_backup
+        IRB.__send__(:remove_const, :IRBRC_EXT)
+        IRB.const_set(:IRBRC_EXT, ext_backup)
+      end
+
+      def test_irb_info_lang
+        FileUtils.touch("#{@tmpdir}/.inputrc")
+        FileUtils.touch("#{@tmpdir}/.irbrc")
+        ENV["LANG"] = "ja_JP.UTF-8"
+        ENV["LC_ALL"] = "en_US.UTF-8"
+
+        out, err = execute_lines(
+          "irb_info",
+          conf: { USE_MULTILINE: true, USE_SINGLELINE: false }
+        )
+
+        expected = %r{
+          Ruby\sversion: .+\n
+          IRB\sversion:\sirb .+\n
+          InputMethod:\sAbstract\sInputMethod\n
+          \.irbrc\spath: .+\n
+          RUBY_PLATFORM: .+\n
+          LANG\senv:\sja_JP\.UTF-8\n
+          LC_ALL\senv:\sen_US\.UTF-8\n
+          East\sAsian\sAmbiguous\sWidth:\s\d\n
+        }x
+
+        assert_empty err
+        assert_match expected, out
+      end
     end
 
     def test_measure
@@ -571,7 +553,7 @@ module TestIRB
       EOS
 
       out, err = execute_lines(
-        "show_source 'TestIRB::ExtendCommand#show_source_test_method'\n",
+        "show_source 'TestIRB::ExtendCommandTest#show_source_test_method'\n",
       )
 
       assert_empty err
