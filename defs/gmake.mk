@@ -383,6 +383,19 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 endif
 
+ifeq ($(HAVE_GIT),yes)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
+else
+REVISION_LATEST := update
+endif
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
+ifeq ($(REVISION_IN_HEADER),)
+REVISION_IN_HEADER := none
+endif
+ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
+$(REVISION_H): PHONY
+endif
+
 include $(top_srcdir)/yjit/yjit.mk
 
 # Query on the generated rdoc
