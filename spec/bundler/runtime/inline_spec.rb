@@ -96,12 +96,14 @@ RSpec.describe "bundler/inline#gemfile" do
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
       require '#{entrypoint}'
-      class MyBundlerUI < Bundler::UI::Silent
+      class MyBundlerUI < Bundler::UI::Shell
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
         end
       end
-      gemfile(true, :ui => MyBundlerUI.new) do
+      my_ui = MyBundlerUI.new
+      my_ui.level = "confirm"
+      gemfile(true, :ui => my_ui) do
         source "https://notaserver.com"
         gem "activesupport", :require => true
       end

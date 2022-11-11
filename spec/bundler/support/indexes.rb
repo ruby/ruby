@@ -18,15 +18,22 @@ module Spec
       @platforms ||= ["ruby"]
       default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems")
       source_requirements = { :default => default_source }
-      @deps.each do |d|
-        source_requirements[d.name] = d.source = default_source
-      end
       args[0] ||= Bundler::SpecSet.new([]) # base
       args[0].each {|ls| ls.source = default_source }
       args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
       args[2] ||= [] # additional_base_requirements
-      args[3] ||= @platforms # platforms
-      Bundler::Resolver.new(source_requirements, *args).start(@deps)
+      originally_locked = args[3] || Bundler::SpecSet.new([])
+      unlock = args[4] || []
+      packages = Hash.new do |h, k|
+        h[k] = Bundler::Resolver::Package.new(k, @platforms, originally_locked, unlock)
+      end
+      @deps.each do |d|
+        name = d.name
+        platforms = d.gem_platforms(@platforms)
+        source_requirements[name] = d.source = default_source
+        packages[name] = Bundler::Resolver::Package.new(name, platforms, originally_locked, unlock, :dependency => d)
+      end
+      Bundler::Resolver.new(source_requirements, *args[0..2]).start(@deps, packages)
     end
 
     def should_not_resolve
@@ -47,13 +54,6 @@ module Spec
       end
     end
 
-    def should_conflict_on(names)
-      got = resolve
-      raise "The resolve succeeded with: #{got.map(&:full_name).sort.inspect}"
-    rescue Bundler::VersionConflict => e
-      expect(Array(names).sort).to eq(e.conflicts.sort)
-    end
-
     def gem(*args, &blk)
       build_spec(*args, &blk).first
     end
@@ -67,12 +67,11 @@ module Spec
     def should_conservative_resolve_and_include(opts, unlock, specs)
       # empty unlock means unlock all
       opts = Array(opts)
-      search = Bundler::GemVersionPromoter.new(@locked, unlock).tap do |s|
+      search = Bundler::GemVersionPromoter.new.tap do |s|
         s.level = opts.first
         s.strict = opts.include?(:strict)
-        s.prerelease_specified = Hash[@deps.map {|d| [d.name, d.requirement.prerelease?] }]
       end
-      should_resolve_and_include specs, [@base, search]
+      should_resolve_and_include specs, [@base, search, [], @locked, unlock]
     end
 
     def an_awesome_index

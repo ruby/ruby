@@ -34,7 +34,8 @@ def gemfile(install = false, options = {}, &gemfile)
 
   opts = options.dup
   ui = opts.delete(:ui) { Bundler::UI::Shell.new }
-  ui.level = "silent" if opts.delete(:quiet)
+  ui.level = "silent" if opts.delete(:quiet) || !install
+  Bundler.ui = ui
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
   begin
@@ -52,7 +53,6 @@ def gemfile(install = false, options = {}, &gemfile)
       def definition.lock(*); end
       definition.validate_runtime!
 
-      Bundler.ui = install ? ui : Bundler::UI::Silent.new
       if install || definition.missing_specs?
         Bundler.settings.temporary(:inline => true, :no_install => false) do
           installer = Bundler::Installer.install(Bundler.root, definition, :system => true)

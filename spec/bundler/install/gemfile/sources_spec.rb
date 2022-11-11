@@ -371,7 +371,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       it "fails" do
         bundle :install, :artifice => "compact_index", :raise_on_error => false
-        expect(err).to include("Could not find gem 'missing', which is required by gem 'depends_on_missing', in any of the sources.")
+        expect(err).to end_with <<~E.strip
+          Could not find compatible versions
+
+          Because every version of depends_on_missing depends on missing >= 0
+            and missing >= 0 could not be found in any of the sources,
+            every version of depends_on_missing is forbidden.
+          So, because Gemfile depends on depends_on_missing >= 0,
+            version solving has failed.
+        E
       end
     end
 
@@ -425,9 +433,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         it "does not find the dependency" do
           bundle :install, :artifice => "compact_index", :raise_on_error => false
-          expect(err).to include(
-            "Could not find gem 'rack', which is required by gem 'depends_on_rack', in rubygems repository https://gem.repo2/ or installed locally."
-          )
+          expect(err).to end_with <<~E.strip
+            Could not find compatible versions
+
+            Because every version of depends_on_rack depends on rack >= 0
+              and rack >= 0 could not be found in rubygems repository https://gem.repo2/ or installed locally,
+              every version of depends_on_rack is forbidden.
+            So, because Gemfile depends on depends_on_rack >= 0,
+              version solving has failed.
+          E
         end
       end
 

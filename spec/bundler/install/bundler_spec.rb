@@ -37,12 +37,11 @@ RSpec.describe "bundle install" do
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "bundler":
-          In Gemfile:
-            bundler (= 0.9.1)
+        Could not find compatible versions
 
-          Current Bundler version:
-            bundler (#{Bundler::VERSION})
+        Because the current Bundler version (#{Bundler::VERSION}) does not satisfy bundler = 0.9.1
+          and Gemfile depends on bundler = 0.9.1,
+          version solving has failed.
 
         Your bundle requires a different version of Bundler than the one you're running.
         Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
@@ -58,12 +57,14 @@ RSpec.describe "bundle install" do
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "bundler":
-          In Gemfile:
-            bundler (~> 0.8)
+        Could not find compatible versions
 
-          Current Bundler version:
-            bundler (#{Bundler::VERSION})
+        Because rails >= 3.0 depends on bundler >= 0.9.0.pre
+          and the current Bundler version (#{Bundler::VERSION}) does not satisfy bundler >= 0.9.0.pre, < 1.A,
+          rails >= 3.0 requires bundler >= 1.A.
+        So, because Gemfile depends on rails = 3.0
+          and Gemfile depends on bundler ~> 0.8,
+          version solving has failed.
 
         Your bundle requires a different version of Bundler than the one you're running.
         Install the necessary version with `gem install bundler:0.9.1` and rerun bundler using `bundle _0.9.1_ install`
@@ -79,12 +80,11 @@ RSpec.describe "bundle install" do
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "bundler":
-          In Gemfile:
-            bundler (= 0.9.2)
+        Could not find compatible versions
 
-          Current Bundler version:
-            bundler (#{Bundler::VERSION})
+        Because the current Bundler version (#{Bundler::VERSION}) does not satisfy bundler = 0.9.2
+          and Gemfile depends on bundler = 0.9.2,
+          version solving has failed.
 
         Your bundle requires a different version of Bundler than the one you're running, and that version could not be found.
         E
@@ -150,13 +150,14 @@ RSpec.describe "bundle install" do
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "activesupport":
-          In Gemfile:
-            activemerchant was resolved to 1.0, which depends on
-              activesupport (>= 2.0.0)
+        Could not find compatible versions
 
-            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
-              activesupport (= 1.2.3)
+        Because every version of rails_pinned_to_old_activesupport depends on activesupport = 1.2.3
+          and every version of activemerchant depends on activesupport >= 2.0.0,
+          every version of rails_pinned_to_old_activesupport is incompatible with activemerchant >= 0.
+        So, because Gemfile depends on activemerchant >= 0
+          and Gemfile depends on rails_pinned_to_old_activesupport >= 0,
+          version solving has failed.
       E
       expect(err).to include(nice_error)
     end
@@ -177,12 +178,13 @@ RSpec.describe "bundle install" do
       G
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "activesupport":
-          In Gemfile:
-            activesupport (= 2.3.5)
+        Could not find compatible versions
 
-            rails_pinned_to_old_activesupport was resolved to 1.0, which depends on
-              activesupport (= 1.2.3)
+        Because every version of rails_pinned_to_old_activesupport depends on activesupport = 1.2.3
+          and Gemfile depends on rails_pinned_to_old_activesupport >= 0,
+          activesupport = 1.2.3 is required.
+        So, because Gemfile depends on activesupport = 2.3.5,
+          version solving has failed.
       E
       expect(err).to include(nice_error)
     end

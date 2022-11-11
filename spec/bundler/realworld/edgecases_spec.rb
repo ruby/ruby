@@ -11,7 +11,8 @@ RSpec.describe "real world edgecases", :realworld => true do
         source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
         fetcher = Bundler::Fetcher.new(source)
         index = fetcher.specs([#{name.dump}], nil)
-        index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+        requirement = Gem::Requirement.create(#{requirement.dump})
+        index.search(#{name.dump}).select {|spec| requirement.satisfied_by?(spec.version) }.last
       end
       if rubygem.nil?
         raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \

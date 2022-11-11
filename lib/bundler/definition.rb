@@ -150,7 +150,7 @@ module Bundler
     end
 
     def gem_version_promoter
-      @gem_version_promoter ||= GemVersionPromoter.new(@originally_locked_specs, @unlock[:gems])
+      @gem_version_promoter ||= GemVersionPromoter.new
     end
 
     def resolve_only_locally!
@@ -276,7 +276,7 @@ module Bundler
         end
       else
         Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-        resolver.start(expanded_dependencies)
+        start_resolution
       end
     end
 
@@ -299,7 +299,7 @@ module Bundler
 
       if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
-        current_major = Gem::Version.create(Bundler::VERSION).segments.first
+        current_major = Bundler.gem_version.segments.first
 
         updating_major = locked_major < current_major
       end
@@ -474,12 +474,29 @@ module Bundler
       @resolver ||= begin
         last_resolve = converge_locked_specs
         remove_ruby_from_platforms_if_necessary!(current_dependencies)
-        Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve(last_resolve), platforms)
+        Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve(last_resolve))
       end
     end
 
     def expanded_dependencies
       @expanded_dependencies ||= dependencies + metadata_dependencies
+    end
+
+    def resolution_packages
+      @resolution_packages ||= begin
+        packages = Hash.new do |h, k|
+          h[k] = Resolver::Package.new(k, @platforms, @originally_locked_specs, @unlock[:gems])
+        end
+
+        expanded_dependencies.each do |dep|
+          name = dep.name
+          platforms = dep.gem_platforms(@platforms)
+
+          packages[name] = Resolver::Package.new(name, platforms, @originally_locked_specs, @unlock[:gems], :dependency => dep)
+        end
+
+        packages
+      end
     end
 
     def filter_specs(specs, deps)
@@ -512,14 +529,20 @@ module Bundler
         break if incomplete_specs.empty?
 
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
-        @resolve = resolver.start(expanded_dependencies, :exclude_specs => incomplete_specs)
+        @resolve = start_resolution(:exclude_specs => incomplete_specs)
         specs = resolve.materialize(dependencies)
       end
 
-      bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
+      bundler = sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last
       specs["bundler"] = bundler
 
       specs
+    end
+
+    def start_resolution(exclude_specs: [])
+      result = resolver.start(expanded_dependencies, resolution_packages, :exclude_specs => exclude_specs)
+
+      SpecSet.new(SpecSet.new(result).for(dependencies, false, @platforms))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
