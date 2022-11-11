@@ -1459,19 +1459,20 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_syntax_error_detailed_message
-    Tempfile.create(%w[detail .rb]) do |lib|
-      lib.print "#{<<~"begin;"}\n#{<<~'end;'}"
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "detail.rb"), "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
         class SyntaxError
           def detailed_message(**)
-            Thread.start {}.join
-            "#{super}\n""<#{File.basename(__FILE__)}>"
+            Thread.new {}.join
+            "<#{super}>\n""<#{File.basename(__FILE__)}>"
+          rescue ThreadError => e
+            e.message
           end
         end
       end;
-      lib.close
-      pattern = /^<#{Regexp.quote(File.basename(lib.path))}>/
-      assert_in_out_err(%W[-r#{lib.path} -], "1+", [], pattern)
+      pattern = /^<detail\.rb>/
+      assert_in_out_err(%W[-r#{dir}/detail -], "1+", [], pattern)
     end
   end
 end
