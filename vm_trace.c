@@ -80,8 +80,6 @@ rb_hook_list_free(rb_hook_list_t *hooks)
 
 /* ruby_vm_event_flags management */
 
-void rb_clear_attr_ccs(void);
-
 static void
 update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events)
 {
@@ -99,13 +97,6 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
 
         /* write all ISeqs if and only if new events are added */
         rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
-    }
-    else {
-        // if c_call or c_return is activated:
-        if (((prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL)) ||
-            ((prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN))) {
-            rb_clear_attr_ccs();
-        }
     }
 
     ruby_vm_event_flags = new_events;

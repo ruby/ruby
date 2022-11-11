@@ -3588,29 +3588,6 @@ bool rb_vm_call_ivar_attrset_p(const vm_call_handler ch);
 void rb_vm_cc_general(const struct rb_callcache *cc);
 
 static int
-clear_attr_ccs_i(void *vstart, void *vend, size_t stride, void *data)
-{
-    VALUE v = (VALUE)vstart;
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
-
-        if (imemo_type_p(v, imemo_callcache) && rb_vm_call_ivar_attrset_p(((const struct rb_callcache *)v)->call_)) {
-            rb_vm_cc_general((struct rb_callcache *)v);
-        }
-
-        asan_poison_object_if(ptr, v);
-    }
-    return 0;
-}
-
-void
-rb_clear_attr_ccs(void)
-{
-    rb_objspace_each_objects(clear_attr_ccs_i, NULL);
-}
-
-static int
 trace_set_i(void *vstart, void *vend, size_t stride, void *data)
 {
     rb_event_flag_t turnon_events = *(rb_event_flag_t *)data;
