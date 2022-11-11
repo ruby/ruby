@@ -212,16 +212,6 @@ rb_shape_transition_shape_frozen(VALUE obj)
     rb_shape_set_shape(obj, next_shape);
 }
 
-void
-rb_shape_transition_shape(VALUE obj, ID id, rb_shape_t *shape)
-{
-    rb_shape_t* next_shape = rb_shape_get_next(shape, obj, id);
-    if (shape == next_shape) {
-        return;
-    }
-    rb_shape_set_shape(obj, next_shape);
-}
-
 /*
  * This function is used for assertions where we don't want to increment
  * max_iv_count
