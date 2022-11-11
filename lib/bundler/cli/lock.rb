@@ -15,8 +15,8 @@ module Bundler
       end
 
       print = options[:print]
-      ui = Bundler.ui
-      Bundler.ui = UI::Silent.new if print
+      previous_ui_level = Bundler.ui.level
+      Bundler.ui.level = "silent" if print
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
@@ -61,7 +61,7 @@ module Bundler
         definition.lock(file)
       end
 
-      Bundler.ui = ui
+      Bundler.ui.level = previous_ui_level
     end
   end
 end

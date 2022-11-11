@@ -194,11 +194,13 @@ RSpec.describe "bundle flex_install" do
       bundle "config set force_ruby_platform true"
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Could not find gem 'rack (= 1.2)', which is required by gem 'rack-obama (= 2.0)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
+        Could not find compatible versions
 
-        The source contains the following gems matching 'rack':
-          * rack-0.9.1
-          * rack-1.0.0
+        Because rack-obama >= 2.0 depends on rack = 1.2
+          and rack = 1.2 could not be found in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally,
+          rack-obama >= 2.0 is forbidden.
+        So, because Gemfile depends on rack-obama = 2.0,
+          version solving has failed.
       E
 
       bundle :install, :retry => 0, :raise_on_error => false

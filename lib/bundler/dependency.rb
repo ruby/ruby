@@ -50,6 +50,7 @@ module Bundler
     # Returns the platforms this dependency is valid for, in the same order as
     # passed in the `valid_platforms` parameter
     def gem_platforms(valid_platforms)
+      return [Gem::Platform::RUBY] if @force_ruby_platform
       return valid_platforms if @platforms.empty?
 
       valid_platforms.select {|p| expanded_platforms.include?(GemHelpers.generic(p)) }

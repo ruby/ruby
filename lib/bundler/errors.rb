@@ -21,16 +21,7 @@ module Bundler
   class InstallError < BundlerError; status_code(5); end
 
   # Internal error, should be rescued
-  class VersionConflict < BundlerError
-    attr_reader :conflicts
-
-    def initialize(conflicts, msg = nil)
-      super(msg)
-      @conflicts = conflicts
-    end
-
-    status_code(6)
-  end
+  class SolveFailure < BundlerError; status_code(6); end
 
   class GemNotFound < BundlerError; status_code(7); end
   class InstallHookError < BundlerError; status_code(8); end

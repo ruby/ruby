@@ -122,8 +122,8 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
-    def delete_by_name_and_version(name, version)
-      @specs.reject! {|spec| spec.name == name && spec.version == version }
+    def delete_by_name(name)
+      @specs.reject! {|spec| spec.name == name }
       @lookup = nil
       @sorted = nil
     end
@@ -165,7 +165,7 @@ module Bundler
         cgems = extract_circular_gems(error)
         raise CyclicDependencyError, "Your bundle requires gems that depend" \
           " on each other, creating an infinite loop. Please remove either" \
-          " gem '#{cgems[1]}' or gem '#{cgems[0]}' and try again."
+          " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
       end
     end
 

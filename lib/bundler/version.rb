@@ -6,4 +6,8 @@ module Bundler
   def self.bundler_major_version
     @bundler_major_version ||= VERSION.split(".").first.to_i
   end
+
+  def self.gem_version
+    @gem_version ||= Gem::Version.create(VERSION)
+  end
 end
