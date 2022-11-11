@@ -203,7 +203,7 @@ static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
     FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
-    RHASH(h)->as.ar = NULL;
+    RHASH(h)->as.st= NULL;
 }
 
 static inline unsigned
