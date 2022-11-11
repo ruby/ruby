@@ -50,11 +50,6 @@ MJIT_STATIC VALUE
 ruby_vm_special_exception_copy(VALUE exc)
 {
     VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
-    rb_shape_t * shape = rb_shape_get_shape(exc);
-    if (rb_shape_frozen_shape_p(shape)) {
-        shape = rb_shape_get_shape_by_id(shape->parent_id);
-    }
-    rb_shape_set_shape(e, shape);
     rb_obj_copy_ivar(e, exc);
     return e;
 }
@@ -1306,41 +1301,37 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
             attr_index_t index;
 
-            uint32_t num_iv = ROBJECT_NUMIV(obj);
             rb_shape_t* shape = rb_shape_get_shape(obj);
+            uint32_t num_iv = shape->capacity;
             shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-            rb_shape_t* next_shape = rb_shape_get_next(shape, obj, id);
+            if (!rb_shape_get_iv_index(shape, id, &index)) {
+                if (UNLIKELY(shape->next_iv_index >= num_iv)) {
+                    RUBY_ASSERT(shape->next_iv_index == num_iv);
 
-            if (shape != next_shape) {
-                RUBY_ASSERT(next_shape->parent_id == rb_shape_id(shape));
-                next_shape_id = rb_shape_id(next_shape);
-            }
+                    shape = rb_grow_iv_list(obj);
+                    RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
+                }
 
-            if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
+                index = shape->next_iv_index;
+
                 if (index >= MAX_IVARS) {
                     rb_raise(rb_eArgError, "too many instance variables");
                 }
 
-                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-            }
-            else {
-                rb_bug("Didn't find instance variable %s\n", rb_id2name(id));
-            }
+                rb_shape_t * next_shape = rb_shape_get_next(shape, obj, id);
+                RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
+                RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
+                next_shape_id = rb_shape_id(next_shape);
 
-            // Ensure the IV buffer is wide enough to store the IV
-            if (UNLIKELY(index >= num_iv)) {
-                RUBY_ASSERT(index == num_iv);
-                rb_init_iv_list(obj);
-            }
-
-            if (shape != next_shape) {
                 rb_shape_set_shape(obj, next_shape);
             }
+
+            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+
             VALUE *ptr = ROBJECT_IVPTR(obj);
             RB_OBJ_WRITE(obj, &ptr[index], val);
             RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
-
             return val;
         }
       case T_CLASS:
@@ -1450,17 +1441,16 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             else if (dest_shape_id != INVALID_SHAPE_ID) {
                 rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
-                if (shape_id == source_shape_id && dest_shape->edge_name == id && dest_shape->type == SHAPE_IVAR) {
+
+                RUBY_ASSERT(dest_shape->type == SHAPE_IVAR || dest_shape->type == SHAPE_IVAR_UNDEF);
+
+                if (shape_id == source_shape_id && dest_shape->edge_name == id) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-                    if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {
-                        rb_init_iv_list(obj);
-                    }
 
                     ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
 
-                    RUBY_ASSERT(rb_shape_get_next(rb_shape_get_shape_by_id(source_shape_id), obj, id) == dest_shape);
-                    RUBY_ASSERT(index < ROBJECT_NUMIV(obj));
-
+                    RUBY_ASSERT(rb_shape_get_next_iv_shape(rb_shape_get_shape_by_id(source_shape_id), id) == dest_shape);
+                    RUBY_ASSERT(index < dest_shape->capacity);
                 }
                 else {
                     break;

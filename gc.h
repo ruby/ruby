@@ -120,6 +120,8 @@ VALUE rb_gc_disable_no_rest(void);
 
 struct rb_thread_struct;
 
+size_t rb_size_pool_slot_size(unsigned char pool_id);
+
 #if USE_MMTK
 #define MMTK_DEFAULT_PLAN "MarkSweep"
 void rb_gc_init_collection(void);

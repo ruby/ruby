@@ -6,7 +6,7 @@
 
     * C compiler
     * autoconf - 2.67 or later
-    * bison - 2.0 or later
+    * bison - 3.0 or later
     * gperf - 3.0.3 or later
     * ruby - 2.7 or later
 
@@ -26,23 +26,54 @@
     git clone https://github.com/ruby/ruby.git
     ```
 
-4. Generate the configuration files and build. It's generally advisable to use a build directory:
+4. Generate the configure file:
 
     ```
     ./autogen.sh
-    mkdir build && cd build # it's good practice to build outside of source dir
-    mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
+    ```
+
+5. Create a `build` directory outside of the source directory:
+
+    ```
+    mkdir build && cd build
+    ```
+
+    While it's not necessary to build in a separate directory, it's good practice to do so.
+
+6. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
+
+    ```
+    mkdir ~/.rubies
+    ```
+
+7. Run configure:
+
+    ```
     ../configure --prefix="${HOME}/.rubies/ruby-master"
+    ```
+
+    - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
+
+8. Build Ruby:
+
+    ```
     make install
     ```
 
-5. Optional: If you are frequently building Ruby, disabling documentation will reduce the time it takes to `make`:
+    - If you're on macOS and installed \OpenSSL through Homebrew, you may encounter failure to build \OpenSSL that look like this:
 
-    ``` shell
-    ../configure --prefix="${HOME}/.rubies/ruby-master" --disable-install-doc
-    ```
+        ```
+        openssl:
+            Could not be configured. It will not be installed.
+            ruby/ext/openssl/extconf.rb: OpenSSL library could not be found. You might want to use --with-openssl-dir=<dir> option to specify the prefix where OpenSSL is installed.
+            Check ext/openssl/mkmf.log for more details.
+        ```
 
-6. [Run tests](testing_ruby.md) to confirm your build succeeded
+        Adding `--with-openssl-dir=$(brew --prefix openssl)` to the list of options passed to configure may solve the issue.
+
+        Remember to delete your `build` directory and start again from the configure step.
+
+9. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
 ### Unexplainable Build Errors
 

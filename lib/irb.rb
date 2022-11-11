@@ -427,6 +427,7 @@ module IRB
       @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
       @context.command_aliases.each do |alias_name, cmd_name|
+        next if @context.symbol_alias(alias_name)
         @context.main.install_alias_method(alias_name, cmd_name)
       end
       @signal_status = :IN_IRB

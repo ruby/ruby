@@ -14,6 +14,7 @@
 
 #include "internal/compilers.h" /* for __has_attribute */
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
+#include "shape.h"
 
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
@@ -67,11 +68,13 @@ struct rb_objspace; /* in vm_core.h */
     rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
                  (VALUE)(b), __FILE__, __LINE__)
 
-#if USE_RVARGC
+#if USE_RVARGC && SHAPE_IN_BASIC_FLAGS
 # define SIZE_POOL_COUNT 5
 #else
 # define SIZE_POOL_COUNT 1
 #endif
+
+#define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
 
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;

@@ -618,8 +618,7 @@ rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
         family = rb_str_dup(rb_id2str(id));
     }
     else {
-        sprintf(pbuf, "unknown:%d", sockaddr->sa_family);
-        family = rb_str_new2(pbuf);
+        family = rb_sprintf("unknown:%d", sockaddr->sa_family);
     }
 
     addr1 = Qnil;

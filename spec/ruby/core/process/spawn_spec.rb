@@ -567,6 +567,24 @@ describe "Process.spawn" do
     end
   end
 
+  platform_is_not :windows do
+    it "redirects non-default file descriptor to itself" do
+      File.open(@name, 'w') do |file|
+        -> do
+          Process.wait Process.spawn(
+            ruby_cmd("f = IO.new(#{file.fileno}, 'w'); f.print(:bang); f.flush"), file.fileno => file.fileno)
+        end.should output_to_fd("bang", file)
+      end
+    end
+  end
+
+  it "redirects default file descriptor to itself" do
+    -> do
+      Process.wait Process.spawn(
+        ruby_cmd("f = IO.new(#{STDOUT.fileno}, 'w'); f.print(:bang); f.flush"), STDOUT.fileno => STDOUT.fileno)
+    end.should output_to_fd("bang", STDOUT)
+  end
+
   # :close_others
 
   platform_is_not :windows do

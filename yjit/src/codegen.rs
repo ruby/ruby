@@ -7,7 +7,6 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
-#[cfg(feature = "stats")]
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
@@ -181,12 +180,6 @@ fn jit_peek_at_block_handler(jit: &JITState, level: u32) -> VALUE {
     }
 }
 
-/// Increment a profiling counter with counter_name
-#[cfg(not(feature = "stats"))]
-macro_rules! gen_counter_incr {
-    ($asm:tt, $counter_name:ident) => {};
-}
-#[cfg(feature = "stats")]
 macro_rules! gen_counter_incr {
     ($asm:tt, $counter_name:ident) => {
         if (get_option!(gen_stats)) {
@@ -204,15 +197,6 @@ macro_rules! gen_counter_incr {
     };
 }
 
-/// Increment a counter then take an existing side exit
-#[cfg(not(feature = "stats"))]
-macro_rules! counted_exit {
-    ($ocb:tt, $existing_side_exit:tt, $counter_name:ident) => {{
-        let _ = $ocb;
-        $existing_side_exit
-    }};
-}
-#[cfg(feature = "stats")]
 macro_rules! counted_exit {
     ($ocb:tt, $existing_side_exit:tt, $counter_name:ident) => {
         // The counter is only incremented when stats are enabled
@@ -422,7 +406,6 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
     );
 
     // Accumulate stats about interpreter exits
-    #[cfg(feature = "stats")]
     if get_option!(gen_stats) {
         asm.ccall(
             rb_yjit_count_side_exit_op as *const u8,
@@ -2099,14 +2082,6 @@ fn gen_get_ivar(
                 asm.mov(out_opnd, ivar_opnd);
             } else {
                 // Compile time value is *not* embedded.
-
-                if USE_RVARGC == 0 {
-                    // Check that the extended table is big enough
-                    // Check that the slot is inside the extended table (num_slots > index)
-                    let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
-                    asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
-                    asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
-                }
 
                 // Get a pointer to the extended table
                 let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
@@ -5557,8 +5532,50 @@ fn gen_send_general(
 
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
-                        gen_counter_incr!(asm, send_optimized_method_call);
-                        return CantCompile;
+
+                        if block.is_some() {
+                            gen_counter_incr!(asm, send_call_block);
+                            return CantCompile;
+                        }
+
+                        if flags & VM_CALL_KWARG != 0 {
+                            gen_counter_incr!(asm, send_call_kwarg);
+                            return CantCompile;
+                        }
+
+                        // Optimize for single ractor mode and avoid runtime check for
+                        // "defined with an un-shareable Proc in a different Ractor"
+                        if !assume_single_ractor_mode(jit, ocb) {
+                            gen_counter_incr!(asm, send_call_multi_ractor);
+                            return CantCompile;
+                        }
+
+                        // About to reset the SP, need to load this here
+                        let recv_load = asm.load(recv);
+
+                        let sp = asm.lea(ctx.sp_opnd(0));
+
+                        // Save the PC and SP because the callee can make Ruby calls
+                        jit_prepare_routine_call(jit, ctx, asm);
+
+                        let kw_splat = flags & VM_CALL_KW_SPLAT;
+                        let stack_argument_pointer = asm.lea(Opnd::mem(64, sp, -(argc) * SIZEOF_VALUE_I32));
+
+                        let ret = asm.ccall(rb_optimized_call as *const u8, vec![
+                            recv_load,
+                            EC,
+                            argc.into(),
+                            stack_argument_pointer,
+                            kw_splat.into(),
+                            VM_BLOCK_HANDLER_NONE.into(),
+                        ]);
+
+                        ctx.stack_pop(argc as usize + 1);
+
+                        let stack_ret = ctx.stack_push(Type::Unknown);
+                        asm.mov(stack_ret, ret);
+                        return KeepCompiling;
+
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
                         gen_counter_incr!(asm, send_optimized_method_block_call);

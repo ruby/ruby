@@ -425,7 +425,7 @@ class Bundler::Thor
       end
 
       def unix?
-        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris|irix|hpux)/i
+        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris)/i
       end
 
       def truncate(string, width)

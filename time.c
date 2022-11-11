@@ -2331,6 +2331,19 @@ find_timezone(VALUE time, VALUE zone)
     return rb_check_funcall_default(klass, id_find_timezone, 1, &zone, Qnil);
 }
 
+/* Turn the special case 24:00:00 of already validated vtm into
+ * 00:00:00 the next day */
+static void
+vtm_day_wraparound(struct vtm *vtm)
+{
+    if (vtm->hour < 24) return;
+
+    /* Assuming UTC and no care of DST, just reset hour and advance
+     * date, not to discard the validated vtm. */
+    vtm->hour = 0;
+    vtm_add_day(vtm, 1);
+}
+
 static VALUE
 time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
 {
@@ -2386,6 +2399,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     if (!NIL_P(zone)) {
         tobj->timew = timegmw(&vtm);
+        vtm_day_wraparound(&vtm);
         tobj->vtm = vtm;
         tobj->tm_got = 1;
         TZMODE_SET_LOCALTIME(tobj);
@@ -2400,13 +2414,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     if (utc == UTC_ZONE) {
         tobj->timew = timegmw(&vtm);
-        if (vtm.hour == 24) { /* special case: 24:00:00 only */
-            /* Since no need to take care of DST in UTC, just reset
-             * hour and advance date, not to discard the validated
-             * vtm. */
-            vtm.hour = 0;
-            vtm_add_day(&vtm, 1);
-        }
+        vtm_day_wraparound(&vtm);
         tobj->vtm = vtm;
         tobj->tm_got = 1;
         TZMODE_SET_UTC(tobj);
@@ -4105,7 +4113,7 @@ time_inspect(VALUE time)
     GetTimeval(time, tobj);
     str = strftimev("%Y-%m-%d %H:%M:%S", time, rb_usascii_encoding());
     subsec = w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE)));
-    if (FIXNUM_P(subsec) && FIX2LONG(subsec) == 0) {
+    if (subsec == INT2FIX(0)) {
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
         long len;

@@ -26,6 +26,21 @@ describe "MatchData#[]" do
 
   it "supports ranges [start..end]" do
     /(.)(.)(\d+)(\d)/.match("THX1138.")[1..3].should == %w|H X 113|
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3..10].should == %w|113 8|
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[-30..2].should == nil
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3..1].should == []
+  end
+
+  it "supports endless ranges [start..]" do
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3..].should == %w|113 8|
+  end
+
+  it "supports beginningless ranges [..end]" do
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[..1].should == %w|HX1138 H|
+  end
+
+  it "supports beginningless endless ranges [nil..nil]" do
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[nil..nil].should == %w|HX1138 H X 113 8|
   end
 
   ruby_version_is "3.0" do

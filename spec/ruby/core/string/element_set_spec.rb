@@ -357,11 +357,11 @@ describe "String#[]= with a Range index" do
   end
 
   it "raises a RangeError if negative Range begin is out of range" do
-    -> { "abc"[-4..-2] = "x" }.should raise_error(RangeError)
+    -> { "abc"[-4..-2] = "x" }.should raise_error(RangeError, "-4..-2 out of range")
   end
 
   it "raises a RangeError if positive Range begin is greater than String size" do
-    -> { "abc"[4..2] = "x" }.should raise_error(RangeError)
+    -> { "abc"[4..2] = "x" }.should raise_error(RangeError, "4..2 out of range")
   end
 
   it "uses the Range end as an index rather than a count" do

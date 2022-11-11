@@ -246,6 +246,13 @@ RSpec.describe Bundler::SharedHelpers do
       end
     end
 
+    shared_examples_for "ENV['BUNDLER_SETUP'] gets set correctly" do
+      it "ensures bundler/setup is set in ENV['BUNDLER_SETUP']" do
+        subject.set_bundle_environment
+        expect(ENV["BUNDLER_SETUP"]).to eq("#{source_lib_dir}/bundler/setup")
+      end
+    end
+
     shared_examples_for "ENV['RUBYLIB'] gets set correctly" do
       let(:ruby_lib_path) { "stubbed_ruby_lib_dir" }
 

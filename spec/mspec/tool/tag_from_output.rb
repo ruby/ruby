@@ -11,6 +11,11 @@ abort 'Could not find tags directory' unless tags_dir
 
 output = ARGF.readlines
 
+# Automatically strip datetime of GitHub Actions
+if output.first =~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z /
+  output = output.map { |line| line.split(' ', 2).last }
+end
+
 NUMBER = /^\d+\)$/
 ERROR_OR_FAILED = / (ERROR|FAILED)$/
 SPEC_FILE = /^(\/.+_spec\.rb)\:\d+/
@@ -22,11 +27,24 @@ output.slice_before(NUMBER).select { |number, *rest|
   description = error_line.match(ERROR_OR_FAILED).pre_match
 
   spec_file = rest.find { |line| line =~ SPEC_FILE }
-  unless spec_file
-    warn "Could not find file for:\n#{error_line}"
-    next
+  if spec_file
+    spec_file = spec_file[SPEC_FILE, 1] or raise
+  else
+    if error_line =~ /^(\w+)#(\w+) /
+      module_method = error_line.split(' ', 2).first
+      file = "#{$1.downcase}/#{$2}_spec.rb"
+      spec_file = ['spec/ruby/core', 'spec/ruby/library', *Dir.glob('spec/ruby/library/*')].find { |dir|
+        path = "#{dir}/#{file}"
+        break path if File.exist?(path)
+      }
+    end
+
+    unless spec_file
+      warn "Could not find file for:\n#{error_line}"
+      next
+    end
   end
-  spec_file = spec_file[SPEC_FILE, 1]
+
   prefix = spec_file.index('spec/ruby/') || spec_file.index('spec/truffle/')
   spec_file = spec_file[prefix..-1]
 

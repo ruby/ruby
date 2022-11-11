@@ -1,8 +1,21 @@
 require_relative '../../spec_helper'
 
 describe :io_set_encoding_write, shared: true do
-  it "sets the encodings to nil" do
+  it "sets the encodings to nil when they were set previously" do
     @io = new_io @name, "#{@object}:ibm437:ibm866"
+    @io.set_encoding nil, nil
+
+    @io.external_encoding.should be_nil
+    @io.internal_encoding.should be_nil
+  end
+
+  it "sets the encodings to nil when the IO is built with no explicit encoding" do
+    @io = new_io @name, @object
+
+    # Checking our assumptions first
+    @io.external_encoding.should be_nil
+    @io.internal_encoding.should be_nil
+
     @io.set_encoding nil, nil
 
     @io.external_encoding.should be_nil
@@ -38,6 +51,7 @@ describe "IO#set_encoding when passed nil, nil" do
     @external = Encoding.default_external
     @internal = Encoding.default_internal
 
+    # The defaults
     Encoding.default_external = Encoding::UTF_8
     Encoding.default_internal = nil
 
@@ -112,6 +126,22 @@ describe "IO#set_encoding when passed nil, nil" do
 
   describe "with 'a+' mode" do
     it_behaves_like :io_set_encoding_write, nil, "a+"
+  end
+
+  describe "with standard IOs" do
+    it "correctly resets them" do
+      STDOUT.external_encoding.should == nil
+      STDOUT.internal_encoding.should == nil
+
+      begin
+        STDOUT.set_encoding(Encoding::US_ASCII, Encoding::ISO_8859_1)
+      ensure
+        STDOUT.set_encoding(nil, nil)
+      end
+
+      STDOUT.external_encoding.should == nil
+      STDOUT.internal_encoding.should == nil
+    end
   end
 end
 

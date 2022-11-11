@@ -9,6 +9,8 @@
 
 **********************************************************************/
 
+%require "3.0"
+
 %{
 
 #if !YYPURE
@@ -1139,6 +1141,14 @@ static int looking_at_eol_p(struct parser_params *p);
 %expect 0
 %define api.pure
 %define parse.error verbose
+%printer {
+#ifndef RIPPER
+    if ($$) {
+	rb_parser_printf(p, "%s", ruby_node_name(nd_type($$)));
+    }
+#else
+#endif
+} <node>
 %printer {
 #ifndef RIPPER
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str($$));

@@ -332,4 +332,55 @@ describe "Time.new with a timezone argument" do
       end
     end
   end
+
+  ruby_version_is '3.1' do # https://bugs.ruby-lang.org/issues/17485
+    describe ":in keyword argument" do
+      it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: "+05:00")
+
+        time.utc_offset.should == 5*60*60
+        time.zone.should == nil
+
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00")
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == nil
+      end
+
+      it "could be UTC offset as a number of seconds" do
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: 5*60*60)
+
+        time.utc_offset.should == 5*60*60
+        time.zone.should == nil
+
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: -9*60*60)
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == nil
+      end
+
+      it "could be a timezone object" do
+        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
+
+        time.utc_offset.should == 5*3600+30*60
+        time.zone.should == zone
+
+        zone = TimeSpecs::TimezoneWithName.new(name: "PST")
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
+
+        time.utc_offset.should == -9*60*60
+        time.zone.should == zone
+      end
+
+      it "raises ArgumentError if format is invalid" do
+        -> { Time.new(2000, 1, 1, 12, 0, 0, in: "+09:99") }.should raise_error(ArgumentError)
+        -> { Time.new(2000, 1, 1, 12, 0, 0, in: "ABC") }.should raise_error(ArgumentError)
+      end
+
+      it "raises ArgumentError if two offset arguments are given" do
+        -> { Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00") }.should raise_error(ArgumentError)
+      end
+    end
+  end
 end

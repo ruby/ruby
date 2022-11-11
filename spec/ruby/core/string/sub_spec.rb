@@ -214,6 +214,17 @@ describe "String#sub with pattern, replacement" do
     "ababa".sub(/(b)/, '\\\\\1').should == "a\\baba"
   end
 
+  it "handles a pattern in a superset encoding" do
+    result = 'abc'.force_encoding(Encoding::US_ASCII).sub('é', 'è')
+    result.should == 'abc'
+    result.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    result = 'été'.sub('t'.force_encoding(Encoding::US_ASCII), 'u')
+    result.should == 'éué'
+    result.encoding.should == Encoding::UTF_8
+  end
 end
 
 describe "String#sub with pattern and block" do
@@ -298,6 +309,27 @@ describe "String#sub! with pattern, replacement" do
     -> { s.sub!(/ROAR/, "x")    }.should raise_error(FrozenError)
     -> { s.sub!(/e/, "e")       }.should raise_error(FrozenError)
     -> { s.sub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
+  end
+
+  it "handles a pattern in a superset encoding" do
+    string = 'abc'.force_encoding(Encoding::US_ASCII)
+
+    result = string.sub!('é', 'è')
+
+    result.should == nil
+    string.should == 'abc'
+    string.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    string = 'été'
+    pattern = 't'.force_encoding(Encoding::US_ASCII)
+
+    result = string.sub!(pattern, 'u')
+
+    result.should == string
+    string.should == 'éué'
+    string.encoding.should == Encoding::UTF_8
   end
 end
 

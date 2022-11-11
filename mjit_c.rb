@@ -13,6 +13,30 @@ module RubyVM::MJIT
       Primitive.cexpr! 'UINT2NUM(SHAPE_FLAG_SHIFT)'
     end
 
+    def SHAPE_ROOT
+      Primitive.cexpr! 'UINT2NUM(SHAPE_ROOT)'
+    end
+
+    def SHAPE_IVAR
+      Primitive.cexpr! 'UINT2NUM(SHAPE_IVAR)'
+    end
+
+    def SHAPE_FROZEN
+      Primitive.cexpr! 'UINT2NUM(SHAPE_FROZEN)'
+    end
+
+    def SHAPE_CAPACITY_CHANGE
+      Primitive.cexpr! 'UINT2NUM(SHAPE_CAPACITY_CHANGE)'
+    end
+
+    def SHAPE_IVAR_UNDEF
+      Primitive.cexpr! 'UINT2NUM(SHAPE_IVAR_UNDEF)'
+    end
+
+    def SHAPE_INITIAL_CAPACITY
+      Primitive.cexpr! 'UINT2NUM(SHAPE_INITIAL_CAPACITY)'
+    end
+
     def ROBJECT_EMBED_LEN_MAX
       Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
     end
@@ -598,7 +622,9 @@ module RubyVM::MJIT
       edges: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edges)")],
       edge_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edge_name)")],
       next_iv_index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), next_iv_index)")],
+      capacity: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), capacity)")],
       type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
+      size_pool_index: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), size_pool_index)")],
       parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
     )
   end

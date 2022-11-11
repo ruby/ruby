@@ -298,98 +298,110 @@ module Net   #:nodoc:
   #
   # Compression can be disabled through the Accept-Encoding: identity header.
   #
-  # == HTTP Request Classes
+  # == \HTTP Request Classes
   #
-  # Here is the HTTP request class hierarchy.
+  # Here is the hierarchy of \HTTP request classes
   #
-  # * Net::HTTPRequest
-  #   * Net::HTTP::Get
-  #   * Net::HTTP::Head
-  #   * Net::HTTP::Post
-  #   * Net::HTTP::Patch
-  #   * Net::HTTP::Put
-  #   * Net::HTTP::Proppatch
-  #   * Net::HTTP::Lock
-  #   * Net::HTTP::Unlock
-  #   * Net::HTTP::Options
-  #   * Net::HTTP::Propfind
-  #   * Net::HTTP::Delete
-  #   * Net::HTTP::Move
-  #   * Net::HTTP::Copy
-  #   * Net::HTTP::Mkcol
-  #   * Net::HTTP::Trace
+  # - Net::HTTPRequest
   #
-  # == HTTP Response Classes
+  #   - Net::HTTP::Get
+  #   - Net::HTTP::Head
+  #   - Net::HTTP::Post
+  #   - Net::HTTP::Patch
+  #   - Net::HTTP::Put
+  #   - Net::HTTP::Proppatch
+  #   - Net::HTTP::Lock
+  #   - Net::HTTP::Unlock
+  #   - Net::HTTP::Options
+  #   - Net::HTTP::Propfind
+  #   - Net::HTTP::Delete
+  #   - Net::HTTP::Move
+  #   - Net::HTTP::Copy
+  #   - Net::HTTP::Mkcol
+  #   - Net::HTTP::Trace
   #
-  # Here is HTTP response class hierarchy.  All classes are defined in Net
-  # module and are subclasses of Net::HTTPResponse.
+  # == \HTTP Response Classes
   #
-  # HTTPUnknownResponse:: For unhandled HTTP extensions
-  # HTTPInformation::                    1xx
-  #   HTTPContinue::                        100
-  #   HTTPSwitchProtocol::                  101
-  #   HTTPProcessing::                      102
-  #   HTTPEarlyHints::                      103
-  # HTTPSuccess::                        2xx
-  #   HTTPOK::                              200
-  #   HTTPCreated::                         201
-  #   HTTPAccepted::                        202
-  #   HTTPNonAuthoritativeInformation::     203
-  #   HTTPNoContent::                       204
-  #   HTTPResetContent::                    205
-  #   HTTPPartialContent::                  206
-  #   HTTPMultiStatus::                     207
-  #   HTTPAlreadyReported::                 208
-  #   HTTPIMUsed::                          226
-  # HTTPRedirection::                    3xx
-  #   HTTPMultipleChoices::                 300
-  #   HTTPMovedPermanently::                301
-  #   HTTPFound::                           302
-  #   HTTPSeeOther::                        303
-  #   HTTPNotModified::                     304
-  #   HTTPUseProxy::                        305
-  #   HTTPTemporaryRedirect::               307
-  #   HTTPPermanentRedirect::               308
-  # HTTPClientError::                    4xx
-  #   HTTPBadRequest::                      400
-  #   HTTPUnauthorized::                    401
-  #   HTTPPaymentRequired::                 402
-  #   HTTPForbidden::                       403
-  #   HTTPNotFound::                        404
-  #   HTTPMethodNotAllowed::                405
-  #   HTTPNotAcceptable::                   406
-  #   HTTPProxyAuthenticationRequired::     407
-  #   HTTPRequestTimeOut::                  408
-  #   HTTPConflict::                        409
-  #   HTTPGone::                            410
-  #   HTTPLengthRequired::                  411
-  #   HTTPPreconditionFailed::              412
-  #   HTTPRequestEntityTooLarge::           413
-  #   HTTPRequestURITooLong::               414
-  #   HTTPUnsupportedMediaType::            415
-  #   HTTPRequestedRangeNotSatisfiable::    416
-  #   HTTPExpectationFailed::               417
-  #   HTTPMisdirectedRequest::              421
-  #   HTTPUnprocessableEntity::             422
-  #   HTTPLocked::                          423
-  #   HTTPFailedDependency::                424
-  #   HTTPUpgradeRequired::                 426
-  #   HTTPPreconditionRequired::            428
-  #   HTTPTooManyRequests::                 429
-  #   HTTPRequestHeaderFieldsTooLarge::     431
-  #   HTTPUnavailableForLegalReasons::      451
-  # HTTPServerError::                    5xx
-  #   HTTPInternalServerError::             500
-  #   HTTPNotImplemented::                  501
-  #   HTTPBadGateway::                      502
-  #   HTTPServiceUnavailable::              503
-  #   HTTPGatewayTimeOut::                  504
-  #   HTTPVersionNotSupported::             505
-  #   HTTPVariantAlsoNegotiates::           506
-  #   HTTPInsufficientStorage::             507
-  #   HTTPLoopDetected::                    508
-  #   HTTPNotExtended::                     510
-  #   HTTPNetworkAuthenticationRequired::   511
+  # Here is the \HTTP response class hierarchy (with status codes):
+  #
+  # - Net::HTTPResponse:
+  #
+  #   - Net::HTTPUnknownResponse (for unhandled \HTTP extensions).
+  #
+  #   - Net::HTTPInformation:
+  #
+  #     - Net::HTTPContinue (100)
+  #     - Net::HTTPSwitchProtocol (101)
+  #     - Net::HTTPProcessing (102)
+  #     - Net::HTTPEarlyHints (103)
+  #
+  #   - Net::HTTPSuccess:
+  #
+  #     - Net::HTTPOK (200)
+  #     - Net::HTTPCreated (201)
+  #     - Net::HTTPAccepted (202)
+  #     - Net::HTTPNonAuthoritativeInformation (203)
+  #     - Net::HTTPNoContent (204)
+  #     - Net::HTTPResetContent (205)
+  #     - Net::HTTPPartialContent (206)
+  #     - Net::HTTPMultiStatus (207)
+  #     - Net::HTTPAlreadyReported (208)
+  #     - Net::HTTPIMUsed (226)
+  #
+  #   - Net::HTTPRedirection:
+  #
+  #     - Net::HTTPMultipleChoices (300)
+  #     - Net::HTTPMovedPermanently (301)
+  #     - Net::HTTPFound (302)
+  #     - Net::HTTPSeeOther (303)
+  #     - Net::HTTPNotModified (304)
+  #     - Net::HTTPUseProxy (305)
+  #     - Net::HTTPTemporaryRedirect (307)
+  #     - Net::HTTPPermanentRedirect (308)
+  #
+  #   - Net::HTTPClientError:
+  #
+  #     - Net::HTTPBadRequest (400)
+  #     - Net::HTTPUnauthorized (401)
+  #     - Net::HTTPPaymentRequired (402)
+  #     - Net::HTTPForbidden (403)
+  #     - Net::HTTPNotFound (404)
+  #     - Net::HTTPMethodNotAllowed (405)
+  #     - Net::HTTPNotAcceptable (406)
+  #     - Net::HTTPProxyAuthenticationRequired (407)
+  #     - Net::HTTPRequestTimeOut (408)
+  #     - Net::HTTPConflict (409)
+  #     - Net::HTTPGone (410)
+  #     - Net::HTTPLengthRequired (411)
+  #     - Net::HTTPPreconditionFailed (412)
+  #     - Net::HTTPRequestEntityTooLarge (413)
+  #     - Net::HTTPRequestURITooLong (414)
+  #     - Net::HTTPUnsupportedMediaType (415)
+  #     - Net::HTTPRequestedRangeNotSatisfiable (416)
+  #     - Net::HTTPExpectationFailed (417)
+  #     - Net::HTTPMisdirectedRequest (421)
+  #     - Net::HTTPUnprocessableEntity (422)
+  #     - Net::HTTPLocked (423)
+  #     - Net::HTTPFailedDependency (424)
+  #     - Net::HTTPUpgradeRequired (426)
+  #     - Net::HTTPPreconditionRequired (428)
+  #     - Net::HTTPTooManyRequests (429)
+  #     - Net::HTTPRequestHeaderFieldsTooLarge (431)
+  #     - Net::HTTPUnavailableForLegalReasons (451)
+  #
+  #   - Net::HTTPServerError:
+  #
+  #     - Net::HTTPInternalServerError (500)
+  #     - Net::HTTPNotImplemented (501)
+  #     - Net::HTTPBadGateway (502)
+  #     - Net::HTTPServiceUnavailable (503)
+  #     - Net::HTTPGatewayTimeOut (504)
+  #     - Net::HTTPVersionNotSupported (505)
+  #     - Net::HTTPVariantAlsoNegotiates (506)
+  #     - Net::HTTPInsufficientStorage (507)
+  #     - Net::HTTPLoopDetected (508)
+  #     - Net::HTTPNotExtended (510)
+  #     - Net::HTTPNetworkAuthenticationRequired (511)
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
   # there is a protocol error.

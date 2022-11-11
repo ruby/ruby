@@ -1515,4 +1515,12 @@ q.pop
       end
     };
   end
+
+  def test_pending_interrupt?
+    t = Thread.handle_interrupt(Exception => :never) { Thread.new { Thread.stop } }
+    t.raise(StandardError)
+    assert_equal(true, t.pending_interrupt?)
+    assert_equal(true, t.pending_interrupt?(Exception))
+    assert_equal(false, t.pending_interrupt?(ArgumentError))
+  end
 end

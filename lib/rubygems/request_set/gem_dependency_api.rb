@@ -214,7 +214,7 @@ class Gem::RequestSet::GemDependencyAPI
     git_source :github do |repo_name|
       repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include? "/"
 
-      "git://github.com/#{repo_name}.git"
+      "https://github.com/#{repo_name}.git"
     end
 
     git_source :bitbucket do |repo_name|

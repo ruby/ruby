@@ -196,6 +196,14 @@ describe "String#rindex with String" do
   it "raises a TypeError when given offset is nil" do
     -> { "str".rindex("st", nil) }.should raise_error(TypeError)
   end
+
+  it "handles a substring in a superset encoding" do
+    'abc'.force_encoding(Encoding::US_ASCII).rindex('é').should == nil
+  end
+
+  it "handles a substring in a subset encoding" do
+    'été'.rindex('t'.force_encoding(Encoding::US_ASCII)).should == 1
+  end
 end
 
 describe "String#rindex with Regexp" do
