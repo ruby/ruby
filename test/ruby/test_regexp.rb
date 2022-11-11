@@ -1583,7 +1583,7 @@ class TestRegexp < Test::Unit::TestCase
       timeout = #{ EnvUtil.apply_timeout_scale(0.2).inspect }
     begin;
       Regexp.timeout = timeout
-      assert_equal(timeout, Regexp.timeout)
+      assert_in_delta(timeout, Regexp.timeout, timeout * 2 * Float::EPSILON)
 
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
@@ -1628,7 +1628,11 @@ class TestRegexp < Test::Unit::TestCase
       Regexp.timeout = global_timeout
 
       re = Regexp.new("^(a*)\\1b?a*$", timeout: per_instance_timeout)
-      assert_equal(per_instance_timeout, re.timeout)
+      if per_instance_timeout
+        assert_in_delta(per_instance_timeout, re.timeout, per_instance_timeout * 2 * Float::EPSILON)
+      else
+        assert_nil(re.timeout)
+      end
 
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
