@@ -13,9 +13,6 @@ use crate::yjit::yjit_enabled_p;
 #[global_allocator]
 static GLOBAL_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> = &stats_alloc::INSTRUMENTED_SYSTEM;
 
-#[cfg(feature="stats")]
-static mut GLOBAL_REGION: Option<stats_alloc::Region<std::alloc::System>> = None;
-
 // YJIT exit counts for each instruction type
 const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
@@ -407,9 +404,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
         // Rust global allocations in bytes
         #[cfg(feature="stats")]
-        if let Some(size) = global_allocation_size() {
-            hash_aset_usize!(hash, "yjit_alloc_size", size);
-        }
+        hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
     }
 
     // If we're not generating stats, the hash is done
@@ -621,20 +616,9 @@ pub extern "C" fn rb_yjit_count_side_exit_op(exit_pc: *const VALUE) -> *const VA
     return exit_pc;
 }
 
-// Enable instrumenting global allocations in Rust.
-pub fn init_global_allocator() {
-    #[cfg(feature="stats")]
-    unsafe { GLOBAL_REGION = Some(stats_alloc::Region::new(GLOBAL_ALLOCATOR)) };
-}
-
 // Get the size of global allocations in Rust.
-fn global_allocation_size() -> Option<usize> {
-    #[cfg(feature="stats")]
-    unsafe {
-        if let Some(region) = GLOBAL_REGION.as_mut() {
-            let stats = region.change();
-            return Some(stats.bytes_allocated.saturating_sub(stats.bytes_deallocated));
-        }
-    }
-    None
+#[cfg(feature="stats")]
+fn global_allocation_size() -> usize {
+    let stats = GLOBAL_ALLOCATOR.stats();
+    stats.bytes_allocated.saturating_sub(stats.bytes_deallocated)
 }

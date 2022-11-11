@@ -4,7 +4,6 @@ use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
 use crate::stats::YjitExitLocations;
-use crate::stats::init_global_allocator;
 
 use std::os::raw;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -48,8 +47,6 @@ pub extern "C" fn rb_yjit_call_threshold() -> raw::c_uint {
 pub extern "C" fn rb_yjit_init_rust() {
     // TODO: need to make sure that command-line options have been
     // initialized by CRuby
-
-    init_global_allocator();
 
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
