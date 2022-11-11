@@ -1473,6 +1473,18 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end;
       pattern = /^<detail\.rb>/
       assert_in_out_err(%W[-r#{dir}/detail -], "1+", [], pattern)
+
+      File.write(File.join(dir, "main.rb"), "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        1 +
+      end;
+      assert_in_out_err(%W[-r#{dir}/detail #{dir}/main.rb]) do |stdout, stderr,|
+        assert_empty(stdout)
+        assert_not_empty(stderr.grep(pattern))
+        error, = stderr.grep(/unexpected end-of-input/)
+        assert_not_nil(error)
+        assert_match(/<.*unexpected end-of-input.*>/, error)
+      end
     end
   end
 end
