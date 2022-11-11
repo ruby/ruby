@@ -5722,10 +5722,8 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path, unsigned mode)
         /* format is already set */
     }
     else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-        if (rb_w32_reparse_symlink_p(path))
-            mode |= S_IFLNK | S_IEXEC;
-        else
-            mode |= S_IFDIR | S_IEXEC;
+        /* Only used by stat_by_find in the case the file can not be opened.
+         * In this case we can't get more details. */
     }
     else if (attr & FILE_ATTRIBUTE_DIRECTORY) {
         mode |= S_IFDIR | S_IEXEC;
@@ -5846,6 +5844,11 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, flags);
+    if (f == INVALID_HANDLE_VALUE && !lstat) {
+        /* UNIXSocket are represented as reparse point as well
+         * Return socket=true at File.stat (not only lstat) */
+        f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
+    }
     if (f != INVALID_HANDLE_VALUE) {
         DWORD attr = stati128_handle(f, st);
         const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
@@ -5857,15 +5860,26 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
           case FILE_TYPE_PIPE:
             mode = S_IFIFO;
             break;
+          default:
+            if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+                FILE_ATTRIBUTE_TAG_INFO attr_info;
+                DWORD e;
+
+                e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
+                        &attr_info, sizeof(attr_info));
+                if (e && attr_info.ReparseTag == IO_REPARSE_TAG_AF_UNIX) {
+                    st->st_size = 0;
+                    mode |= S_IFSOCK;
+                } else if (rb_w32_reparse_symlink_p(path)) {
+                    /* TODO: size in which encoding? */
+                    st->st_size = 0;
+                    mode |= S_IFLNK | S_IEXEC;
+                } else {
+                    mode |= S_IFDIR | S_IEXEC;
+                }
+            }
         }
         CloseHandle(f);
-        if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-            /* TODO: size in which encoding? */
-            if (rb_w32_reparse_symlink_p(path))
-                st->st_size = 0;
-            else
-                attr &= ~FILE_ATTRIBUTE_REPARSE_POINT;
-        }
         if (attr & FILE_ATTRIBUTE_DIRECTORY) {
             if (check_valid_dir(path)) return -1;
         }
