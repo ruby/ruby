@@ -517,6 +517,45 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
   end
 
+  if /mingw|mswin/ =~ RUBY_PLATFORM
+
+    def test_unix_socket_with_encoding
+      Dir.mktmpdir do |tmpdir|
+        path = "#{tmpdir}/sockäöü".encode("cp850")
+        UNIXServer.open(path) do |serv|
+          assert File.socket?(path)
+          assert File.stat(path).socket?
+          assert File.lstat(path).socket?
+          assert_equal path.encode("utf-8"), serv.path
+          UNIXSocket.open(path) do |s1|
+            s2 = serv.accept
+            s2.close
+          end
+        end
+      end
+    end
+
+    def test_windows_unix_socket_pair_with_umlaut
+      otmp = ENV['TMP']
+      ENV['TMP'] = File.join(Dir.tmpdir, "äöü€")
+      FileUtils.mkdir_p ENV['TMP']
+
+      s1, s2 = UNIXSocket.pair
+      assert !s1.path.empty?
+      assert !File.exist?(s1.path)
+    ensure
+      FileUtils.rm_rf ENV['TMP']
+      ENV['TMP'] = otmp
+    end
+
+    def test_windows_unix_socket_pair_paths
+      s1, s2 = UNIXSocket.pair
+      assert !s1.path.empty?
+      assert s2.path.empty?
+      assert !File.exist?(s1.path)
+    end
+  end
+
   def test_initialize
     Dir.mktmpdir {|d|
       Socket.open(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) {|s|
