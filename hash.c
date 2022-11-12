@@ -203,7 +203,7 @@ obj_any_hash(VALUE obj)
     }
 
     while (!FIXNUM_P(hval)) {
-        if (RB_TYPE_P(hval, T_BIGNUM)) {
+        if (RB_BIGNUM_TYPE_P(hval)) {
             int sign;
             unsigned long ul;
             sign = rb_integer_pack(hval, &ul, 1, sizeof(ul), 0,
