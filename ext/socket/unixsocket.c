@@ -43,6 +43,10 @@ unixsock_path_value(VALUE path)
         }
     }
 #endif
+#ifdef _WIN32
+    /* UNIXSocket requires UTF-8 per spec. */
+    path = rb_str_export_to_enc(path, rb_utf8_encoding());
+#endif
     return rb_get_path(path);
 }
 

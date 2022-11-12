@@ -4030,6 +4030,8 @@ static size_t
 socketpair_unix_path(struct sockaddr_un *sock_un)
 {
     SOCKET listener;
+    WCHAR wpath[sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path)] = L"";
+
     /* AF_UNIX/SOCK_STREAM became available in Windows 10
      * See https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows
      */
@@ -4051,23 +4053,24 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
     for (int try = 0; ; try++) {
         LARGE_INTEGER ticks;
         size_t path_len = 0;
-        size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
+        const size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
 
         switch (try) {
         case 0:
-            /* "The returned string ends with a backslash" */
-            path_len = GetTempPathA(maxpath, sock_un->sun_path);
+            /* user temp dir from TMP or TEMP env var, it ends with a backslash */
+            path_len = GetTempPathW(maxpath, wpath);
             break;
         case 1:
             /* temp dir in the users home directory */
-            path_len = GetWindowsDirectoryA(sock_un->sun_path, maxpath);
-            path_len += snprintf(sock_un->sun_path + path_len, maxpath - path_len, "\\Temp\\");
+            path_len = GetWindowsDirectoryW(wpath, maxpath);
+            path_len += snwprintf(wpath + path_len, maxpath - path_len, L"/Temp/");
             break;
         case 2:
-            path_len = snprintf(sock_un->sun_path, maxpath, "C:\\Temp\\");
+            path_len = snwprintf(wpath, maxpath, L"C:/Temp/");
             break;
         case 3:
-            path_len = 0; /* Current directory */
+            /* Current directory */
+            path_len = 0;
             break;
         case 4:
             closesocket(listener);
@@ -4075,17 +4078,20 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
         }
 
         QueryPerformanceCounter(&ticks);
-        snprintf(sock_un->sun_path + path_len,
+        path_len += snwprintf(wpath + path_len,
                  maxpath - path_len,
-                 "%lld-%ld.($)",
+                 L"%lld-%ld.($)",
                  ticks.QuadPart,
                  GetCurrentProcessId());
+
+        /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
+        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
 
         if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
             break;
     }
     closesocket(listener);
-    DeleteFileA(sock_un->sun_path);
+    DeleteFileW(wpath);
     return sizeof(*sock_un);
 }
 #endif
@@ -4103,6 +4109,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 
 #ifdef HAVE_AFUNIX_H
     struct sockaddr_un sock_un = {0, {0}};
+    WCHAR wpath[sizeof(sock_un.sun_path)/sizeof(*sock_un.sun_path)] = L"";
 #endif
 
     struct sockaddr *addr;
@@ -4133,6 +4140,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
       case AF_UNIX:
         addr = (struct sockaddr *)&sock_un;
         len = socketpair_unix_path(&sock_un);
+        MultiByteToWideChar(CP_UTF8, 0, sock_un.sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
         if (len)
             break;
         /* fall through */
@@ -4189,7 +4197,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
             closesocket(svr);
 #ifdef HAVE_AFUNIX_H
         if (sock_un.sun_family == AF_UNIX)
-            DeleteFileA(sock_un.sun_path);
+            DeleteFileW(wpath);
 #endif
     }
 
