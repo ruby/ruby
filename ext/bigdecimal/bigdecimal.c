@@ -249,7 +249,7 @@ SomeOneMayDoIt:
     return NULL; /* NULL means to coerce */
 }
 
-static Real*
+static inline Real*
 GetVpValue(VALUE v, int must)
 {
     return GetVpValueWithPrec(v, -1, must);
