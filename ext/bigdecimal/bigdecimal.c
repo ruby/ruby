@@ -928,11 +928,17 @@ GetAddSubPrec(Real *a, Real *b)
     return mx;
 }
 
-static SIGNED_VALUE
-GetPrecisionInt(VALUE v)
+static inline SIGNED_VALUE
+check_int_precision(VALUE v)
 {
     SIGNED_VALUE n;
-    n = NUM2INT(v);
+#if SIZEOF_VALUE <= SIZEOF_LONG
+    n = (SIGNED_VALUE)NUM2LONG(v);
+#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
+    n = (SIGNED_VALUE)NUM2LL(v);
+#else
+#   error SIZEOF_VALUE is too large
+#endif
     if (n < 0) {
 	rb_raise(rb_eArgError, "negative precision");
     }
@@ -1716,7 +1722,7 @@ BigDecimal_quo(int argc, VALUE *argv, VALUE self)
 
     argc = rb_scan_args(argc, argv, "11", &value, &digits);
     if (argc > 1) {
-        n = GetPrecisionInt(digits);
+        n = check_int_precision(digits);
     }
 
     if (n > 0) {
@@ -1981,7 +1987,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
     }
 
     /* div in BigDecimal sense */
-    ix = GetPrecisionInt(n);
+    ix = check_int_precision(n);
     if (ix == 0) {
         return BigDecimal_div(self, b);
     }
@@ -2086,7 +2092,7 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPrecisionInt(n);
+    SIGNED_VALUE mx = check_int_precision(n);
     if (mx == 0) return BigDecimal_add(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -2116,7 +2122,7 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPrecisionInt(n);
+    SIGNED_VALUE mx = check_int_precision(n);
     if (mx == 0) return BigDecimal_sub(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -2159,7 +2165,7 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
 {
     ENTER(2);
     Real *cv;
-    SIGNED_VALUE mx = GetPrecisionInt(n);
+    SIGNED_VALUE mx = check_int_precision(n);
     if (mx == 0) return BigDecimal_mult(self, b);
     else {
 	size_t pl = VpSetPrecLimit(0);
@@ -2214,7 +2220,8 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
 
-    n = GetPrecisionInt(nFig) + VpDblFig() + BASE_FIG;
+    n = check_int_precision(nFig);
+    n += VpDblFig() + VpBaseFig();
     if (mx <= n) mx = n;
     GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
     VpSqrt(c, a);
