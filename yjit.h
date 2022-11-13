@@ -25,7 +25,11 @@
 #endif
 
 // Expose these as declarations since we are building YJIT.
+#ifdef MJIT_HEADER // MJIT and YJIT can't be enabled simultaneously
+static inline bool rb_yjit_enabled_p(void) { return false; }
+#else
 bool rb_yjit_enabled_p(void);
+#endif
 unsigned rb_yjit_call_threshold(void);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_method_lookup_change(VALUE klass, ID mid);
