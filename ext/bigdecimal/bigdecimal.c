@@ -61,6 +61,13 @@ static ID id_to_r;
 static ID id_eq;
 static ID id_half;
 
+#define RBD_NUM_ROUNDING_MODES 11
+
+static struct {
+    ID id;
+    uint8_t mode;
+} rbd_rounding_modes[RBD_NUM_ROUNDING_MODES];
+
 /* MACRO's to guard objects from GC by keeping them in stack */
 #ifdef RBIMPL_ATTR_MAYBE_UNUSED
 #define ENTER(n) RBIMPL_ATTR_MAYBE_UNUSED() volatile VALUE vStack[n];int iStack=0
@@ -667,34 +674,23 @@ check_rounding_mode(VALUE const v)
 {
     unsigned short sw;
     ID id;
-    switch (TYPE(v)) {
-      case T_SYMBOL:
-	id = SYM2ID(v);
-	if (id == id_up)
-	    return VP_ROUND_UP;
-	if (id == id_down || id == id_truncate)
-	    return VP_ROUND_DOWN;
-	if (id == id_half_up || id == id_default)
-	    return VP_ROUND_HALF_UP;
-	if (id == id_half_down)
-	    return VP_ROUND_HALF_DOWN;
-	if (id == id_half_even || id == id_banker)
-	    return VP_ROUND_HALF_EVEN;
-	if (id == id_ceiling || id == id_ceil)
-	    return VP_ROUND_CEIL;
-	if (id == id_floor)
-	    return VP_ROUND_FLOOR;
-	rb_raise(rb_eArgError, "invalid rounding mode");
-
-      default:
-	break;
+    if (RB_TYPE_P(v, T_SYMBOL)) {
+        int i;
+        id = SYM2ID(v);
+        for (i = 0; i < RBD_NUM_ROUNDING_MODES; ++i) {
+            if (rbd_rounding_modes[i].id == id) {
+                return rbd_rounding_modes[i].mode;
+            }
+        }
+        rb_raise(rb_eArgError, "invalid rounding mode (%"PRIsVALUE")", v);
     }
-
-    sw = NUM2USHORT(v);
-    if (!VpIsRoundMode(sw)) {
-	rb_raise(rb_eArgError, "invalid rounding mode");
+    else {
+        sw = NUM2USHORT(v);
+        if (!VpIsRoundMode(sw)) {
+            rb_raise(rb_eArgError, "invalid rounding mode (%"PRIsVALUE")", v);
+        }
+        return sw;
     }
-    return sw;
 }
 
 /*  call-seq:
@@ -4419,17 +4415,26 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_mBigMath, "exp", BigMath_s_exp, 2);
     rb_define_singleton_method(rb_mBigMath, "log", BigMath_s_log, 2);
 
-    id_up = rb_intern_const("up");
-    id_down = rb_intern_const("down");
-    id_truncate = rb_intern_const("truncate");
-    id_half_up = rb_intern_const("half_up");
-    id_default = rb_intern_const("default");
-    id_half_down = rb_intern_const("half_down");
-    id_half_even = rb_intern_const("half_even");
-    id_banker = rb_intern_const("banker");
-    id_ceiling = rb_intern_const("ceiling");
-    id_ceil = rb_intern_const("ceil");
-    id_floor = rb_intern_const("floor");
+#define ROUNDING_MODE(i, name, value) \
+    id_##name = rb_intern_const(#name); \
+    rbd_rounding_modes[i].id   = id_##name; \
+    rbd_rounding_modes[i].mode = value;
+
+    ROUNDING_MODE(0, up,        RBD_ROUND_UP);
+    ROUNDING_MODE(1, down,      RBD_ROUND_DOWN);
+    ROUNDING_MODE(2, half_up,   RBD_ROUND_HALF_UP);
+    ROUNDING_MODE(3, half_down, RBD_ROUND_HALF_DOWN);
+    ROUNDING_MODE(4, ceil,      RBD_ROUND_CEIL);
+    ROUNDING_MODE(5, floor,     RBD_ROUND_FLOOR);
+    ROUNDING_MODE(6, half_even, RBD_ROUND_HALF_EVEN);
+
+    ROUNDING_MODE(7,  default,   RBD_ROUND_DEFAULT);
+    ROUNDING_MODE(8,  truncate,  RBD_ROUND_TRUNCATE);
+    ROUNDING_MODE(9,  banker,    RBD_ROUND_BANKER);
+    ROUNDING_MODE(10, ceiling,   RBD_ROUND_CEILING);
+
+#undef ROUNDING_MODE
+
     id_to_r = rb_intern_const("to_r");
     id_eq = rb_intern_const("==");
     id_half = rb_intern_const("half");

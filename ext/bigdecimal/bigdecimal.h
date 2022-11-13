@@ -102,7 +102,7 @@ extern VALUE rb_cBigDecimal;
  */
 #define VP_EXPORT static
 
-/* Exception codes */
+/* Exception mode */
 #define VP_EXCEPTION_ALL        ((unsigned short)0x00FF)
 #define VP_EXCEPTION_INFINITY   ((unsigned short)0x0001)
 #define VP_EXCEPTION_NaN        ((unsigned short)0x0002)
@@ -115,18 +115,36 @@ extern VALUE rb_cBigDecimal;
 
 #define BIGDECIMAL_EXCEPTION_MODE_DEFAULT 0U
 
-/* Computation mode */
+/* This is used in BigDecimal#mode */
 #define VP_ROUND_MODE            ((unsigned short)0x0100)
-#define VP_ROUND_UP         1
-#define VP_ROUND_DOWN       2
-#define VP_ROUND_HALF_UP    3
-#define VP_ROUND_HALF_DOWN  4
-#define VP_ROUND_CEIL       5
-#define VP_ROUND_FLOOR      6
-#define VP_ROUND_HALF_EVEN  7
+
+/* Rounding mode */
+#define VP_ROUND_UP         RBD_ROUND_UP
+#define VP_ROUND_DOWN       RBD_ROUND_DOWN
+#define VP_ROUND_HALF_UP    RBD_ROUND_HALF_UP
+#define VP_ROUND_HALF_DOWN  RBD_ROUND_HALF_DOWN
+#define VP_ROUND_CEIL       RBD_ROUND_CEIL
+#define VP_ROUND_FLOOR      RBD_ROUND_FLOOR
+#define VP_ROUND_HALF_EVEN  RBD_ROUND_HALF_EVEN
+
+enum rbd_rounding_mode {
+    RBD_ROUND_UP          = 1,
+    RBD_ROUND_DOWN        = 2,
+    RBD_ROUND_HALF_UP     = 3,
+    RBD_ROUND_HALF_DOWN   = 4,
+    RBD_ROUND_CEIL        = 5,
+    RBD_ROUND_FLOOR       = 6,
+    RBD_ROUND_HALF_EVEN   = 7,
+
+    RBD_ROUND_DEFAULT  = RBD_ROUND_HALF_UP,
+    RBD_ROUND_TRUNCATE = RBD_ROUND_DOWN,
+    RBD_ROUND_BANKER   = RBD_ROUND_HALF_EVEN,
+    RBD_ROUND_CEILING  = RBD_ROUND_CEIL
+};
 
 #define BIGDECIMAL_ROUNDING_MODE_DEFAULT  VP_ROUND_HALF_UP
 
+/* Sign flag */
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
 #define VP_SIGN_NEGATIVE_ZERO     -1 /* Negative zero            */
@@ -135,6 +153,7 @@ extern VALUE rb_cBigDecimal;
 #define VP_SIGN_POSITIVE_INFINITE  3 /* Positive infinite number */
 #define VP_SIGN_NEGATIVE_INFINITE -3 /* Negative infinite number */
 
+/* The size of fraction part array */
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 #define	FLEXIBLE_ARRAY_SIZE /* */
 #elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
