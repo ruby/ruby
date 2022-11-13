@@ -158,9 +158,33 @@ rbd_allocate_struct(size_t const internal_digits)
     return real;
 }
 
-static VALUE BigDecimal_wrap_struct(VALUE obj, Real *vp);
+static size_t
+rbd_calculate_internal_digits(size_t const digits, bool limit_precision)
+{
+    size_t const len = roomof(digits, BASE_FIG);
+    if (limit_precision) {
+        size_t const prec_limit = VpGetPrecLimit();
+        if (prec_limit > 0) {
+            /* NOTE: 2 more digits for rounding and division */
+            size_t const max_len = roomof(prec_limit, BASE_FIG) + 2;
+            if (len > max_len)
+                return max_len;
+        }
+    }
+
+    return len;
+}
 
 static inline Real *
+rbd_allocate_struct_decimal_digits(size_t const decimal_digits, bool limit_precision)
+{
+    size_t const internal_digits = rbd_calculate_internal_digits(decimal_digits, limit_precision);
+    return rbd_allocate_struct(internal_digits);
+}
+
+static VALUE BigDecimal_wrap_struct(VALUE obj, Real *vp);
+
+static Real *
 rbd_reallocate_struct(Real *real, size_t const internal_digits)
 {
     size_t const size = rbd_struct_size(internal_digits);
@@ -184,21 +208,52 @@ rbd_free_struct(Real *real)
     }
 }
 
+#define NewZero rbd_allocate_struct_zero
 static Real *
-rbd_allocate_struct_zero(size_t const digits, int sign)
+rbd_allocate_struct_zero(int sign, size_t const digits, bool limit_precision)
 {
-    size_t const len = roomof(digits, BASE_FIG);
-    Real *real = rbd_allocate_struct(len);
+    Real *real = rbd_allocate_struct_decimal_digits(digits, limit_precision);
     VpSetZero(real, sign);
     return real;
 }
 
-static Real *
-rbd_allocate_struct_one(size_t const digits, int sign)
+#define NewZeroLimited rbd_allocate_struct_zero_limited
+static inline Real *
+rbd_allocate_struct_zero_limited(int sign, size_t const digits)
 {
-    Real *real = rbd_allocate_struct_zero(digits, sign);
+    return rbd_allocate_struct_zero(sign, digits, true);
+}
+
+#define NewZeroNolimit rbd_allocate_struct_zero_nolimit
+static inline Real *
+rbd_allocate_struct_zero_nolimit(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_zero(sign, digits, false);
+}
+
+#define NewOne rbd_allocate_struct_one
+static Real *
+rbd_allocate_struct_one(int sign, size_t const digits, bool limit_precision)
+{
+    Real *real = rbd_allocate_struct_decimal_digits(digits, limit_precision);
     VpSetOne(real);
+    if (sign < 0)
+        VpSetSign(real, VP_SIGN_NEGATIVE_FINITE);
     return real;
+}
+
+#define NewOneLimited rbd_allocate_struct_one_limited
+static inline Real *
+rbd_allocate_struct_one_limited(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_one(sign, digits, true);
+}
+
+#define NewOneNolimit rbd_allocate_struct_one_nolimit
+static inline Real *
+rbd_allocate_struct_one_nolimit(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_one(sign, digits, false);
 }
 
 /*
@@ -253,6 +308,56 @@ static const rb_data_type_t BigDecimal_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE
 #endif
 };
+
+static Real *
+rbd_allocate_struct_zero_wrap_klass(VALUE klass, int sign, size_t const digits, bool limit_precision)
+{
+    Real *real = rbd_allocate_struct_zero(sign, digits, limit_precision);
+    if (real != NULL) {
+        VALUE obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, 0);
+        BigDecimal_wrap_struct(obj, real);
+    }
+    return real;
+}
+
+#define NewZeroWrapLimited rbd_allocate_struct_zero_limited_wrap
+static inline Real *
+rbd_allocate_struct_zero_limited_wrap(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_zero_wrap_klass(rb_cBigDecimal, sign, digits, true);
+}
+
+#define NewZeroWrapNolimit rbd_allocate_struct_zero_nolimit_wrap
+static inline Real *
+rbd_allocate_struct_zero_nolimit_wrap(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_zero_wrap_klass(rb_cBigDecimal, sign, digits, false);
+}
+
+static Real *
+rbd_allocate_struct_one_wrap_klass(VALUE klass, int sign, size_t const digits, bool limit_precision)
+{
+    Real *real = rbd_allocate_struct_one(sign, digits, limit_precision);
+    if (real != NULL) {
+        VALUE obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, 0);
+        BigDecimal_wrap_struct(obj, real);
+    }
+    return real;
+}
+
+#define NewOneWrapLimited rbd_allocate_struct_one_limited_wrap
+static inline Real *
+rbd_allocate_struct_one_limited_wrap(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_one_wrap_klass(rb_cBigDecimal, sign, digits, true);
+}
+
+#define NewOneWrapNolimit rbd_allocate_struct_one_nolimit_wrap
+static inline Real *
+rbd_allocate_struct_one_nolimit_wrap(int sign, size_t const digits)
+{
+    return rbd_allocate_struct_one_wrap_klass(rb_cBigDecimal, sign, digits, false);
+}
 
 static inline int
 is_kind_of_BigDecimal(VALUE const v)
@@ -1349,17 +1454,17 @@ BigDecimal_add(VALUE self, VALUE r)
 
     mx = GetAddSubPrec(a, b);
     if (mx == (size_t)-1L) {
-        GUARD_OBJ(c, VpCreateRbObject(VpBaseFig() + 1, "0", true));
-	VpAddSub(c, a, b, 1);
+        GUARD_OBJ(c, NewZeroWrapLimited(1, VpBaseFig() + 1));
+        VpAddSub(c, a, b, 1);
     }
     else {
-        GUARD_OBJ(c, VpCreateRbObject(mx * (VpBaseFig() + 1), "0", true));
-	if(!mx) {
-	    VpSetInf(c, VpGetSign(a));
-	}
-	else {
-	    VpAddSub(c, a, b, 1);
-	}
+        GUARD_OBJ(c, NewZeroWrapLimited(1, mx * (VpBaseFig() + 1)));
+        if (!mx) {
+            VpSetInf(c, VpGetSign(a));
+        }
+        else {
+            VpAddSub(c, a, b, 1);
+        }
     }
     return VpCheckGetValue(c);
 }
@@ -1404,17 +1509,17 @@ BigDecimal_sub(VALUE self, VALUE r)
 
     mx = GetAddSubPrec(a,b);
     if (mx == (size_t)-1L) {
-        GUARD_OBJ(c, VpCreateRbObject(VpBaseFig() + 1, "0", true));
-	VpAddSub(c, a, b, -1);
+        GUARD_OBJ(c, NewZeroWrapLimited(1, VpBaseFig() + 1));
+        VpAddSub(c, a, b, -1);
     }
     else {
-        GUARD_OBJ(c,VpCreateRbObject(mx *(VpBaseFig() + 1), "0", true));
-	if (!mx) {
-	    VpSetInf(c,VpGetSign(a));
-	}
-	else {
-	    VpAddSub(c, a, b, -1);
-	}
+        GUARD_OBJ(c, NewZeroWrapLimited(1, mx *(VpBaseFig() + 1)));
+        if (!mx) {
+            VpSetInf(c,VpGetSign(a));
+        }
+        else {
+            VpAddSub(c, a, b, -1);
+        }
     }
     return VpCheckGetValue(c);
 }
@@ -1654,7 +1759,7 @@ BigDecimal_neg(VALUE self)
     ENTER(5);
     Real *c, *a;
     GUARD_OBJ(a, GetVpValue(self, 1));
-    GUARD_OBJ(c, VpCreateRbObject(a->Prec *(VpBaseFig() + 1), "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, a->Prec *(VpBaseFig() + 1)));
     VpAsgn(c, a, -1);
     return VpCheckGetValue(c);
 }
@@ -1681,7 +1786,7 @@ BigDecimal_mult(VALUE self, VALUE r)
     SAVE(b);
 
     mx = a->Prec + b->Prec;
-    GUARD_OBJ(c, VpCreateRbObject(mx *(VpBaseFig() + 1), "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx * (VpBaseFig() + 1)));
     VpMult(c, a, b);
     return VpCheckGetValue(c);
 }
@@ -1728,8 +1833,8 @@ BigDecimal_divide(VALUE self, VALUE r, Real **c, Real **res, Real **div)
     if (2*BIGDECIMAL_DOUBLE_FIGURES > mx)
         mx = 2*BIGDECIMAL_DOUBLE_FIGURES;
 
-    GUARD_OBJ((*c), VpCreateRbObject(mx + 2*BASE_FIG, "#0", true));
-    GUARD_OBJ((*res), VpCreateRbObject((mx + 1)*2 + 2*BASE_FIG, "#0", true));
+    GUARD_OBJ((*c), NewZeroWrapNolimit(1, mx + 2*BASE_FIG));
+    GUARD_OBJ((*res), NewZeroWrapNolimit(1, (mx + 1)*2 + 2*BASE_FIG));
     VpDivd(*c, *res, a, b);
 
     return Qnil;
@@ -1884,12 +1989,12 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     if (2*BIGDECIMAL_DOUBLE_FIGURES > mx)
         mx = 2*BIGDECIMAL_DOUBLE_FIGURES;
 
-    GUARD_OBJ(c, VpCreateRbObject(mx + 2*BASE_FIG, "0", true));
-    GUARD_OBJ(res, VpCreateRbObject(mx*2 + 2*BASE_FIG, "#0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx + 2*BASE_FIG));
+    GUARD_OBJ(res, NewZeroWrapNolimit(1, mx*2 + 2*BASE_FIG));
     VpDivd(c, res, a, b);
 
     mx = c->Prec * BASE_FIG;
-    GUARD_OBJ(d, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(d, NewZeroWrapLimited(1, mx));
     VpActiveRound(d, c, VP_ROUND_DOWN, 0);
 
     VpMult(res, d, b);
@@ -1900,7 +2005,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
         res = rbd_reallocate_struct(res, d->MaxPrec);
         res->MaxPrec = d->MaxPrec;
         VpAddSub(res, d, VpOne(), -1);
-        GUARD_OBJ(d, VpCreateRbObject(GetAddSubPrec(c, b) * 2*BASE_FIG, "0", true));
+        GUARD_OBJ(d, NewZeroWrapLimited(1, GetAddSubPrec(c, b) * 2*BASE_FIG));
         VpAddSub(d, c, b, 1);
         *div = res;
         *mod = d;
@@ -1964,17 +2069,17 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
     SAVE(b);
 
     mx = (a->MaxPrec + b->MaxPrec) *VpBaseFig();
-    GUARD_OBJ(c,   VpCreateRbObject(mx, "0", true));
-    GUARD_OBJ(res, VpCreateRbObject((mx+1) * 2 + (VpBaseFig() + 1), "#0", true));
-    GUARD_OBJ(rr,  VpCreateRbObject((mx+1) * 2 + (VpBaseFig() + 1), "#0", true));
-    GUARD_OBJ(ff,  VpCreateRbObject((mx+1) * 2 + (VpBaseFig() + 1), "#0", true));
+    GUARD_OBJ(c,   NewZeroWrapLimited(1, mx));
+    GUARD_OBJ(res, NewZeroWrapNolimit(1, (mx+1) * 2 + (VpBaseFig() + 1)));
+    GUARD_OBJ(rr,  NewZeroWrapNolimit(1, (mx+1) * 2 + (VpBaseFig() + 1)));
+    GUARD_OBJ(ff,  NewZeroWrapNolimit(1, (mx+1) * 2 + (VpBaseFig() + 1)));
 
     VpDivd(c, res, a, b);
 
     mx = c->Prec *(VpBaseFig() + 1);
 
-    GUARD_OBJ(d, VpCreateRbObject(mx, "0", true));
-    GUARD_OBJ(f, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(d, NewZeroWrapLimited(1, mx));
+    GUARD_OBJ(f, NewZeroWrapLimited(1, mx));
 
     VpActiveRound(d, c, VP_ROUND_DOWN, 0); /* 0: round off */
 
@@ -2070,7 +2175,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
         size_t b_prec = ix;
         size_t pl = VpSetPrecLimit(0);
 
-        GUARD_OBJ(cv, VpCreateRbObject(mx + VpBaseFig(), "0", true));
+        GUARD_OBJ(cv, NewZeroWrapLimited(1, mx + VpBaseFig()));
         GUARD_OBJ(av, GetVpValue(self, 1));
         /* TODO: I want to refactor this precision control for a float value later
          *       by introducing an implicit conversion function instead of
@@ -2081,7 +2186,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
         GUARD_OBJ(bv, GetVpValueWithPrec(b, b_prec, 1));
         mx = av->Prec + bv->Prec + 2;
         if (mx <= cv->MaxPrec) mx = cv->MaxPrec + 1;
-        GUARD_OBJ(res, VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0", true));
+        GUARD_OBJ(res, NewZeroWrapNolimit(1, (mx * 2  + 2)*VpBaseFig()));
         VpDivd(cv, res, av, bv);
         VpSetPrecLimit(pl);
         VpLeftRound(cv, VpGetRoundMode(), ix);
@@ -2269,7 +2374,7 @@ BigDecimal_abs(VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec *(VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpAsgn(c, a, 1);
     VpChangeSign(c, 1);
     return VpCheckGetValue(c);
@@ -2295,7 +2400,7 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
     n = check_int_precision(nFig);
     n += VpDblFig() + VpBaseFig();
     if (mx <= n) mx = n;
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpSqrt(c, a);
     return VpCheckGetValue(c);
 }
@@ -2311,7 +2416,7 @@ BigDecimal_fix(VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec *(VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpActiveRound(c, a, VP_ROUND_DOWN, 0); /* 0: round off */
     return VpCheckGetValue(c);
 }
@@ -2384,7 +2489,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
     pl = VpSetPrecLimit(0);
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpSetPrecLimit(pl);
     VpActiveRound(c, a, sw, iLoc);
     if (round_to_int) {
@@ -2430,7 +2535,7 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpSetPrecLimit(pl);
     VpActiveRound(c, a, VP_ROUND_DOWN, iLoc); /* 0: truncate */
     if (argc == 0) {
@@ -2450,7 +2555,7 @@ BigDecimal_frac(VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpFrac(c, a);
     return VpCheckGetValue(c);
 }
@@ -2490,7 +2595,7 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpSetPrecLimit(pl);
     VpActiveRound(c, a, VP_ROUND_FLOOR, iLoc);
 #ifdef BIGDECIMAL_DEBUG
@@ -2536,7 +2641,7 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
 
     GUARD_OBJ(a, GetVpValue(self, 1));
     mx = a->Prec * (VpBaseFig() + 1);
-    GUARD_OBJ(c, VpCreateRbObject(mx, "0", true));
+    GUARD_OBJ(c, NewZeroWrapLimited(1, mx));
     VpSetPrecLimit(pl);
     VpActiveRound(c, a, VP_ROUND_CEIL, iLoc);
     if (argc == 0) {
@@ -2844,7 +2949,7 @@ bigdecimal_power_by_bigdecimal(Real const* x, Real const* exp, ssize_t const n)
     volatile VALUE obj = exp->obj;
 
     if (VpIsZero(exp)) {
-        return VpCheckGetValue(VpCreateRbObject(n, "1", true));
+        return VpCheckGetValue(NewOneWrapLimited(1, n));
     }
 
     log_x = BigMath_log(x->obj, SSIZET2NUM(n+1));
@@ -2882,9 +2987,9 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     n = NIL_P(prec) ? (ssize_t)(x->Prec*VpBaseFig()) : NUM2SSIZET(prec);
 
     if (VpIsNaN(x)) {
-        y = VpCreateRbObject(n, "0", true);
-	RB_GC_GUARD(y->obj);
-	VpSetNaN(y);
+        y = NewZeroWrapLimited(1, n);
+        VpSetNaN(y);
+        RB_GC_GUARD(y->obj);
         return VpCheckGetValue(y);
     }
 
@@ -2953,136 +3058,126 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     }
 
     if (VpIsZero(x)) {
-	if (is_negative(vexp)) {
-            y = VpCreateRbObject(n, "#0", true);
-	    RB_GC_GUARD(y->obj);
-	    if (BIGDECIMAL_NEGATIVE_P(x)) {
-		if (is_integer(vexp)) {
-		    if (is_even(vexp)) {
-			/* (-0) ** (-even_integer)  -> Infinity */
-			VpSetPosInf(y);
-		    }
-		    else {
-			/* (-0) ** (-odd_integer)  -> -Infinity */
-			VpSetNegInf(y);
-		    }
-		}
-		else {
-		    /* (-0) ** (-non_integer)  -> Infinity */
-		    VpSetPosInf(y);
-		}
-	    }
-	    else {
-		/* (+0) ** (-num)  -> Infinity */
-		VpSetPosInf(y);
-	    }
+        if (is_negative(vexp)) {
+            y = NewZeroWrapNolimit(1, n);
+            if (BIGDECIMAL_NEGATIVE_P(x)) {
+                if (is_integer(vexp)) {
+                    if (is_even(vexp)) {
+                        /* (-0) ** (-even_integer)  -> Infinity */
+                        VpSetPosInf(y);
+                    }
+                    else {
+                        /* (-0) ** (-odd_integer)  -> -Infinity */
+                        VpSetNegInf(y);
+                    }
+                }
+                else {
+                    /* (-0) ** (-non_integer)  -> Infinity */
+                    VpSetPosInf(y);
+                }
+            }
+            else {
+                /* (+0) ** (-num)  -> Infinity */
+                VpSetPosInf(y);
+            }
+            RB_GC_GUARD(y->obj);
             return VpCheckGetValue(y);
-	}
-	else if (is_zero(vexp)) {
-            return VpCheckGetValue(VpCreateRbObject(n, "1", true));
-	}
-	else {
-            return VpCheckGetValue(VpCreateRbObject(n, "0", true));
-	}
+        }
+        else if (is_zero(vexp)) {
+            return VpCheckGetValue(NewOneWrapLimited(1, n));
+        }
+        else {
+            return VpCheckGetValue(NewZeroWrapLimited(1, n));
+        }
     }
 
     if (is_zero(vexp)) {
-        return VpCheckGetValue(VpCreateRbObject(n, "1", true));
+        return VpCheckGetValue(NewOneWrapLimited(1, n));
     }
     else if (is_one(vexp)) {
-	return self;
+        return self;
     }
 
     if (VpIsInf(x)) {
-	if (is_negative(vexp)) {
-	    if (BIGDECIMAL_NEGATIVE_P(x)) {
-		if (is_integer(vexp)) {
-		    if (is_even(vexp)) {
-			/* (-Infinity) ** (-even_integer) -> +0 */
-                        return VpCheckGetValue(VpCreateRbObject(n, "0", true));
-		    }
-		    else {
-			/* (-Infinity) ** (-odd_integer) -> -0 */
-                        return VpCheckGetValue(VpCreateRbObject(n, "-0", true));
-		    }
-		}
-		else {
-		    /* (-Infinity) ** (-non_integer) -> -0 */
-                    return VpCheckGetValue(VpCreateRbObject(n, "-0", true));
-		}
-	    }
-	    else {
-                return VpCheckGetValue(VpCreateRbObject(n, "0", true));
-	    }
-	}
-	else {
-            y = VpCreateRbObject(n, "0", true);
-	    if (BIGDECIMAL_NEGATIVE_P(x)) {
-		if (is_integer(vexp)) {
-		    if (is_even(vexp)) {
-			VpSetPosInf(y);
-		    }
-		    else {
-			VpSetNegInf(y);
-		    }
-		}
-		else {
-		    /* TODO: support complex */
-		    rb_raise(rb_eMathDomainError,
-			     "a non-integral exponent for a negative base");
-		}
-	    }
-	    else {
-		VpSetPosInf(y);
-	    }
+        if (is_negative(vexp)) {
+            if (BIGDECIMAL_NEGATIVE_P(x)) {
+                if (is_integer(vexp)) {
+                    if (is_even(vexp)) {
+                        /* (-Infinity) ** (-even_integer) -> +0 */
+                        return VpCheckGetValue(NewZeroWrapLimited(1, n));
+                    }
+                    else {
+                        /* (-Infinity) ** (-odd_integer) -> -0 */
+                        return VpCheckGetValue(NewZeroWrapLimited(-1, n));
+                    }
+                }
+                else {
+                    /* (-Infinity) ** (-non_integer) -> -0 */
+                    return VpCheckGetValue(NewZeroWrapLimited(-1, n));
+                }
+            }
+            else {
+                return VpCheckGetValue(NewZeroWrapLimited(1, n));
+            }
+        }
+        else {
+            y = NewZeroWrapLimited(1, n);
+            if (BIGDECIMAL_NEGATIVE_P(x)) {
+                if (is_integer(vexp)) {
+                    if (is_even(vexp)) {
+                        VpSetPosInf(y);
+                    }
+                    else {
+                        VpSetNegInf(y);
+                    }
+                }
+                else {
+                    /* TODO: support complex */
+                    rb_raise(rb_eMathDomainError,
+                            "a non-integral exponent for a negative base");
+                }
+            }
+            else {
+                VpSetPosInf(y);
+            }
             return VpCheckGetValue(y);
-	}
+        }
     }
 
     if (exp != NULL) {
-	return bigdecimal_power_by_bigdecimal(x, exp, n);
+        return bigdecimal_power_by_bigdecimal(x, exp, n);
     }
     else if (RB_TYPE_P(vexp, T_BIGNUM)) {
-	VALUE abs_value = BigDecimal_abs(self);
-	if (is_one(abs_value)) {
-            return VpCheckGetValue(VpCreateRbObject(n, "1", true));
-	}
-	else if (RTEST(rb_funcall(abs_value, '<', 1, INT2FIX(1)))) {
-	    if (is_negative(vexp)) {
-                y = VpCreateRbObject(n, "0", true);
-		if (is_even(vexp)) {
-		    VpSetInf(y, VpGetSign(x));
-		}
-		else {
-		    VpSetInf(y, -VpGetSign(x));
-		}
+        VALUE abs_value = BigDecimal_abs(self);
+        if (is_one(abs_value)) {
+            return VpCheckGetValue(NewOneWrapLimited(1, n));
+        }
+        else if (RTEST(rb_funcall(abs_value, '<', 1, INT2FIX(1)))) {
+            if (is_negative(vexp)) {
+                y = NewZeroWrapLimited(1, n);
+                VpSetInf(y, (is_even(vexp) ? 1 : -1) * VpGetSign(x));
                 return VpCheckGetValue(y);
-	    }
-	    else if (BIGDECIMAL_NEGATIVE_P(x) && is_even(vexp)) {
-                return VpCheckGetValue(VpCreateRbObject(n, "-0", true));
-	    }
-	    else {
-                return VpCheckGetValue(VpCreateRbObject(n, "0", true));
-	    }
-	}
-	else {
-	    if (is_positive(vexp)) {
-                y = VpCreateRbObject(n, "0", true);
-		if (is_even(vexp)) {
-		    VpSetInf(y, VpGetSign(x));
-		}
-		else {
-		    VpSetInf(y, -VpGetSign(x));
-		}
+            }
+            else if (BIGDECIMAL_NEGATIVE_P(x) && is_even(vexp)) {
+                return VpCheckGetValue(NewZeroWrapLimited(-1, n));
+            }
+            else {
+                return VpCheckGetValue(NewZeroWrapLimited(1, n));
+            }
+        }
+        else {
+            if (is_positive(vexp)) {
+                y = NewZeroWrapLimited(1, n);
+                VpSetInf(y, (is_even(vexp) ? 1 : -1) * VpGetSign(x));
                 return VpCheckGetValue(y);
-	    }
-	    else if (BIGDECIMAL_NEGATIVE_P(x) && is_even(vexp)) {
-                return VpCheckGetValue(VpCreateRbObject(n, "-0", true));
-	    }
-	    else {
-                return VpCheckGetValue(VpCreateRbObject(n, "0", true));
-	    }
-	}
+            }
+            else if (BIGDECIMAL_NEGATIVE_P(x) && is_even(vexp)) {
+                return VpCheckGetValue(NewZeroWrapLimited(-1, n));
+            }
+            else {
+                return VpCheckGetValue(NewZeroWrapLimited(1, n));
+            }
+        }
     }
 
     int_exp = FIX2LONG(vexp);
@@ -3091,15 +3186,15 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     if (ma == 0) ma = 1;
 
     if (VpIsDef(x)) {
-	mp = x->Prec * (VpBaseFig() + 1);
-        GUARD_OBJ(y, VpCreateRbObject(mp * (ma + 1), "0", true));
+        mp = x->Prec * (VpBaseFig() + 1);
+        GUARD_OBJ(y, NewZeroWrapLimited(1, mp * (ma + 1)));
     }
     else {
-        GUARD_OBJ(y, VpCreateRbObject(1, "0", true));
+        GUARD_OBJ(y, NewZeroWrapLimited(1, 1));
     }
     VpPowerByInt(y, x, int_exp);
     if (!NIL_P(prec) && VpIsDef(y)) {
-	VpMidRound(y, VpGetRoundMode(), n);
+        VpMidRound(y, VpGetRoundMode(), n);
     }
     return VpCheckGetValue(y);
 }
@@ -3850,18 +3945,16 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
             return VpCheckGetValue(GetVpValueWithPrec(INT2FIX(0), prec, 1));
 	}
 	else {
-	    Real* vy;
-            vy = VpCreateRbObject(prec, "#0", true);
+	    Real* vy = NewZeroWrapNolimit(1, prec);
 	    VpSetInf(vy, VP_SIGN_POSITIVE_INFINITE);
 	    RB_GC_GUARD(vy->obj);
             return VpCheckGetValue(vy);
 	}
     }
     else if (nan) {
-	Real* vy;
-        vy = VpCreateRbObject(prec, "#0", true);
-	VpSetNaN(vy);
-	RB_GC_GUARD(vy->obj);
+        Real* vy = NewZeroWrapNolimit(1, prec);
+        VpSetNaN(vy);
+        RB_GC_GUARD(vy->obj);
         return VpCheckGetValue(vy);
     }
     else if (vx == NULL) {
@@ -3879,7 +3972,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	VpSetSign(vx, 1);
     }
 
-    one = VpCheckGetValue(VpCreateRbObject(1, "1", true));
+    one = VpCheckGetValue(NewOneWrapLimited(1, 1));
     y   = one;
     d   = y;
     i   = 1;
@@ -4006,15 +4099,13 @@ get_vp_value:
 	break;
     }
     if (infinite && !negative) {
-	Real* vy;
-        vy = VpCreateRbObject(prec, "#0", true);
+        Real *vy = NewZeroWrapNolimit(1, prec);
 	RB_GC_GUARD(vy->obj);
 	VpSetInf(vy, VP_SIGN_POSITIVE_INFINITE);
         return VpCheckGetValue(vy);
     }
     else if (nan) {
-	Real* vy;
-        vy = VpCreateRbObject(prec, "#0", true);
+	Real* vy = NewZeroWrapNolimit(1, prec);
 	RB_GC_GUARD(vy->obj);
 	VpSetNaN(vy);
         return VpCheckGetValue(vy);
@@ -4028,7 +4119,7 @@ get_vp_value:
     }
     x = VpCheckGetValue(vx);
 
-    RB_GC_GUARD(one) = VpCheckGetValue(VpCreateRbObject(1, "1", true));
+    RB_GC_GUARD(one) = VpCheckGetValue(NewOneWrapLimited(1, 1));
     RB_GC_GUARD(two) = VpCheckGetValue(VpCreateRbObject(1, "2", true));
 
     n = prec + BIGDECIMAL_DOUBLE_FIGURES;
@@ -4957,10 +5048,10 @@ VpInit(DECDIG BaseVal)
     VpGetDoubleNegZero();
 
     /* Const 1.0 */
-    VpConstOne = rbd_allocate_struct_one(1, 1);
+    VpConstOne = NewOneNolimit(1, 1);
 
     /* Const 0.5 */
-    VpConstPt5 = rbd_allocate_struct_one(1, 1);
+    VpConstPt5 = NewOneNolimit(1, 1);
     VpConstPt5->exponent = 0;
     VpConstPt5->frac[0] = 5*BASE1;
 
@@ -5094,11 +5185,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     char v, *psz;
     int  sign=1;
     Real *vp = NULL;
-    size_t prec_limit = VpGetPrecLimit();
     VALUE buf;
-
-    len = (mx + BASE_FIG - 1) / BASE_FIG;    /* Determine allocation unit. */
-    if (len == 0) ++len;
 
     if (szVal == NULL) {
       return_zero:
@@ -5106,7 +5193,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = rbd_allocate_struct(mx);
-        vp->MaxPrec = len;   /* set max precision */
+        vp->MaxPrec = rbd_calculate_internal_digits(mx, false);  /* Must false */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
     }
@@ -5121,14 +5208,10 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
 
     /* Processing the leading one `#` */
     if (*szVal != '#') {
-        if (prec_limit) {
-            size_t const max_len = (prec_limit + BASE_FIG - 1) / BASE_FIG + 2; /* Needs 1 more for div */
-            if (len > max_len) {
-                len = max_len;
-            }
-        }
+        len = rbd_calculate_internal_digits(mx, true);
     }
     else {
+        len = rbd_calculate_internal_digits(mx, false);
         ++szVal;
     }
 
@@ -5862,7 +5945,7 @@ VpMult(Real *c, Real *a, Real *b)
 
     if (MxIndC < MxIndAB) {    /* The Max. prec. of c < Prec(a)+Prec(b) */
 	w = c;
-        c = rbd_allocate_struct_zero((size_t)((MxIndAB + 1) * BASE_FIG), 1);
+        c = NewZeroNolimit(1, (size_t)((MxIndAB + 1) * BASE_FIG));
 	MxIndC = MxIndAB;
     }
 
@@ -7028,8 +7111,8 @@ VpSqrt(Real *y, Real *x)
 
     /* allocate temporally variables  */
     /* TODO: reconsider MaxPrec of f and r */
-    f = rbd_allocate_struct_one(y->MaxPrec * (BASE_FIG + 2), 1);
-    r = rbd_allocate_struct_one((n + n) * (BASE_FIG + 2), 1);
+    f = NewOneNolimit(1, y->MaxPrec * (BASE_FIG + 2));
+    r = NewOneNolimit(1, (n + n) * (BASE_FIG + 2));
 
     nr = 0;
     y_prec = y->MaxPrec;
@@ -7486,8 +7569,8 @@ VpPowerByInt(Real *y, Real *x, SIGNED_VALUE n)
 
     /* Allocate working variables  */
     /* TODO: reconsider MaxPrec of w1 and w2 */
-    w1 = rbd_allocate_struct_zero((y->MaxPrec + 2) * BASE_FIG, 1);
-    w2 = rbd_allocate_struct_zero((w1->MaxPrec * 2 + 1) * BASE_FIG, 1);
+    w1 = NewZeroNolimit(1, (y->MaxPrec + 2) * BASE_FIG);
+    w2 = NewZeroNolimit(1, (w1->MaxPrec * 2 + 1) * BASE_FIG);
 
     /* calculation start */
 
