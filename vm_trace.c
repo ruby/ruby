@@ -91,28 +91,27 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     bool enable_c_call   = (prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL);
     bool enable_c_return = (prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN);
 
+    // Modify ISEQs or CCs to enable tracing
     if (first_time_iseq_events_p) {
-        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
-        // Thus we don't need to cancel JIT-ed code for :class events.
-        if (new_iseq_events != RUBY_EVENT_CLASS) {
-            // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
-            mjit_cancel_all("TracePoint is enabled");
-        }
-
         // write all ISeqs only when new events are added for the first time
         rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
-    else {
-        // if c_call or c_return is activated:
-        if (enable_c_call || enable_c_return) {
-            rb_clear_attr_ccs();
-        }
+    // if c_call or c_return is activated
+    else if (enable_c_call || enable_c_return) {
+        rb_clear_attr_ccs();
     }
 
     ruby_vm_event_flags = new_events;
     ruby_vm_event_enabled_global_flags |= new_events;
     rb_objspace_set_event_hook(new_events);
 
+    // Invalidate JIT code as needed
+    if (first_time_iseq_events_p && new_iseq_events != RUBY_EVENT_CLASS) {
+        // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
+        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
+        // Thus we don't need to cancel JIT-ed code for :class events.
+        mjit_cancel_all("TracePoint is enabled");
+    }
     if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
         // Invalidate all code when ISEQs are modified to use trace_* insns above.
         // Also invalidate when enabling c_call or c_return because generated code
