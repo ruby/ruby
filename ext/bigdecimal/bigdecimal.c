@@ -630,18 +630,19 @@ check_rounding_mode_option(VALUE const opts)
     assert(RB_TYPE_P(opts, T_HASH));
 
     if (NIL_P(opts))
-        goto noopt;
+        goto no_opt;
 
     mode = rb_hash_lookup2(opts, ID2SYM(id_half), Qundef);
     if (mode == Qundef || NIL_P(mode))
-        goto noopt;
+        goto no_opt;
 
     if (SYMBOL_P(mode))
         mode = rb_sym2str(mode);
     else if (!RB_TYPE_P(mode, T_STRING)) {
-	VALUE str_mode = rb_check_string_type(mode);
-	if (NIL_P(str_mode)) goto invalid;
-	mode = str_mode;
+        VALUE str_mode = rb_check_string_type(mode);
+        if (NIL_P(str_mode))
+            goto invalid;
+        mode = str_mode;
     }
     s = RSTRING_PTR(mode);
     l = RSTRING_LEN(mode);
@@ -659,13 +660,11 @@ check_rounding_mode_option(VALUE const opts)
       default:
         break;
     }
-  invalid:
-    if (NIL_P(mode))
-	rb_raise(rb_eArgError, "invalid rounding mode: nil");
-    else
-	rb_raise(rb_eArgError, "invalid rounding mode: %"PRIsVALUE, mode);
 
-  noopt:
+  invalid:
+    rb_raise(rb_eArgError, "invalid rounding mode (%"PRIsVALUE")", mode);
+
+  no_opt:
     return VpGetRoundMode();
 }
 
