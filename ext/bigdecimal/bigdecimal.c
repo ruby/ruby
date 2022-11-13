@@ -264,7 +264,7 @@ GetVpValue(VALUE v, int must)
  *    BigDecimal.double_fig # => 16
  *
  */
-static VALUE
+static inline VALUE
 BigDecimal_double_fig(VALUE self)
 {
     return INT2FIX(VpDblFig());
