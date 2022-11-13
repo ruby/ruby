@@ -438,7 +438,7 @@ jit_exec(rb_execution_context_t *ec)
     if (!(mjit_call_p || yjit_enabled))
         return Qundef;
 
-    mjit_func_t func = body->jit_func;
+    jit_func_t func = body->jit_func;
 
     // YJIT tried compiling this function once before and couldn't do
     // it, so return Qundef so the interpreter handles it.
