@@ -7,9 +7,7 @@
  */
 
 /* #define BIGDECIMAL_DEBUG 1 */
-#ifdef BIGDECIMAL_DEBUG
-# define BIGDECIMAL_ENABLE_VPRINT 1
-#endif
+
 #include "bigdecimal.h"
 #include "ruby/util.h"
 
@@ -198,10 +196,7 @@ static VALUE VpCheckGetValue(Real *p);
 static void  VpInternalRound(Real *c, size_t ixDigit, DECDIG vPrev, DECDIG v);
 static int   VpLimitRound(Real *c, size_t ixDigit);
 static Real *VpCopy(Real *pv, Real const* const x);
-
-#ifdef BIGDECIMAL_ENABLE_VPRINT
 static int VPrint(FILE *fp,const char *cntl_chr,Real *a);
-#endif
 
 /*
  *  **** BigDecimal part ****
@@ -4501,6 +4496,8 @@ Init_bigdecimal(void)
     id_to_r = rb_intern_const("to_r");
     id_eq = rb_intern_const("==");
     id_half = rb_intern_const("half");
+
+    (void)VPrint;  /* suppress unused warning */
 }
 
 /*
@@ -6272,7 +6269,6 @@ Exit:
  *     Note: % must not appear more than once
  *    a  ... VP variable to be printed
  */
-#ifdef BIGDECIMAL_ENABLE_VPRINT
 static int
 VPrint(FILE *fp, const char *cntl_chr, Real *a)
 {
@@ -6285,95 +6281,94 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     /*  nc : number of characters printed  */
     ZeroSup = 1;        /* Flag not to print the leading zeros as 0.00xxxxEnn */
     while (*(cntl_chr + j)) {
-	if (*(cntl_chr + j) == '%' && *(cntl_chr + j + 1) != '%') {
-	    nc = 0;
-	    if (VpIsNaN(a)) {
-		fprintf(fp, SZ_NaN);
-		nc += 8;
-	    }
-	    else if (VpIsPosInf(a)) {
-		fprintf(fp, SZ_INF);
-		nc += 8;
-	    }
-	    else if (VpIsNegInf(a)) {
-		fprintf(fp, SZ_NINF);
-		nc += 9;
-	    }
-	    else if (!VpIsZero(a)) {
-		if (BIGDECIMAL_NEGATIVE_P(a)) {
-		    fprintf(fp, "-");
-		    ++nc;
-		}
-		nc += fprintf(fp, "0.");
-		switch (*(cntl_chr + j + 1)) {
-		default:
-		    break;
+        if (*(cntl_chr + j) == '%' && *(cntl_chr + j + 1) != '%') {
+            nc = 0;
+            if (VpIsNaN(a)) {
+                fprintf(fp, SZ_NaN);
+                nc += 8;
+            }
+            else if (VpIsPosInf(a)) {
+                fprintf(fp, SZ_INF);
+                nc += 8;
+            }
+            else if (VpIsNegInf(a)) {
+                fprintf(fp, SZ_NINF);
+                nc += 9;
+            }
+            else if (!VpIsZero(a)) {
+                if (BIGDECIMAL_NEGATIVE_P(a)) {
+                    fprintf(fp, "-");
+                    ++nc;
+                }
+                nc += fprintf(fp, "0.");
+                switch (*(cntl_chr + j + 1)) {
+                  default:
+                    break;
 
-		case '0': case 'z':
-		    ZeroSup = 0;
-		    ++j;
-		    sep = cntl_chr[j] == 'z' ? BIGDECIMAL_COMPONENT_FIGURES : 10;
-		    break;
-		}
-		for (i = 0; i < a->Prec; ++i) {
-		    m = BASE1;
-		    e = a->frac[i];
-		    while (m) {
-			nn = e / m;
-			if (!ZeroSup || nn) {
-			    nc += fprintf(fp, "%lu", (unsigned long)nn);    /* The leading zero(s) */
-			    /* as 0.00xx will not */
-			    /* be printed. */
-			    ++nd;
-			    ZeroSup = 0;    /* Set to print succeeding zeros */
-			}
-			if (nd >= sep) {    /* print ' ' after every 10 digits */
-			    nd = 0;
-			    nc += fprintf(fp, " ");
-			}
-			e = e - nn * m;
-			m /= 10;
-		    }
-		}
-		nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
-		nc += fprintf(fp, " (%"PRIdVALUE", %lu, %lu)", a->exponent, a->Prec, a->MaxPrec);
-	    }
-	    else {
-		nc += fprintf(fp, "0.0");
-	    }
-	}
-	else {
-	    ++nc;
-	    if (*(cntl_chr + j) == '\\') {
-		switch (*(cntl_chr + j + 1)) {
-		  case 'n':
-		    fprintf(fp, "\n");
-		    ++j;
-		    break;
-		  case 't':
-		    fprintf(fp, "\t");
-		    ++j;
-		    break;
-		  case 'b':
-		    fprintf(fp, "\n");
-		    ++j;
-		    break;
-		  default:
-		    fprintf(fp, "%c", *(cntl_chr + j));
-		    break;
-		}
-	    }
-	    else {
-		fprintf(fp, "%c", *(cntl_chr + j));
-		if (*(cntl_chr + j) == '%') ++j;
-	    }
-	}
-	j++;
+                  case '0': case 'z':
+                    ZeroSup = 0;
+                    ++j;
+                    sep = cntl_chr[j] == 'z' ? BIGDECIMAL_COMPONENT_FIGURES : 10;
+                    break;
+                }
+                for (i = 0; i < a->Prec; ++i) {
+                    m = BASE1;
+                    e = a->frac[i];
+                    while (m) {
+                        nn = e / m;
+                        if (!ZeroSup || nn) {
+                            nc += fprintf(fp, "%lu", (unsigned long)nn);    /* The leading zero(s) */
+                            /* as 0.00xx will not */
+                            /* be printed. */
+                            ++nd;
+                            ZeroSup = 0;    /* Set to print succeeding zeros */
+                        }
+                        if (nd >= sep) {    /* print ' ' after every 10 digits */
+                            nd = 0;
+                            nc += fprintf(fp, " ");
+                        }
+                        e = e - nn * m;
+                        m /= 10;
+                    }
+                }
+                nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
+                nc += fprintf(fp, " (%"PRIdVALUE", %lu, %lu)", a->exponent, a->Prec, a->MaxPrec);
+            }
+            else {
+                nc += fprintf(fp, "0.0");
+            }
+        }
+        else {
+            ++nc;
+            if (*(cntl_chr + j) == '\\') {
+                switch (*(cntl_chr + j + 1)) {
+                  case 'n':
+                    fprintf(fp, "\n");
+                    ++j;
+                    break;
+                  case 't':
+                    fprintf(fp, "\t");
+                    ++j;
+                    break;
+                  case 'b':
+                    fprintf(fp, "\n");
+                    ++j;
+                    break;
+                  default:
+                    fprintf(fp, "%c", *(cntl_chr + j));
+                    break;
+                }
+            }
+            else {
+                fprintf(fp, "%c", *(cntl_chr + j));
+                if (*(cntl_chr + j) == '%') ++j;
+            }
+        }
+        j++;
     }
 
     return (int)nc;
 }
-#endif
 
 static void
 VpFormatSt(char *psz, size_t fFmt)
