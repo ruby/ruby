@@ -144,7 +144,8 @@ PUREFUNC(static inline size_t rbd_struct_size(size_t const));
 static inline size_t
 rbd_struct_size(size_t const internal_digits)
 {
-    return offsetof(Real, frac) + sizeof(DECDIG) * internal_digits;
+    size_t const frac_len = (internal_digits == 0) ? 1 : internal_digits;
+    return offsetof(Real, frac) + frac_len * sizeof(DECDIG);
 }
 
 static inline Real *
@@ -153,6 +154,7 @@ rbd_allocate_struct(size_t const internal_digits)
     size_t const size = rbd_struct_size(internal_digits);
     Real *real = ruby_xcalloc(1, size);
     atomic_allocation_count_inc();
+    real->MaxPrec = internal_digits;
     return real;
 }
 
@@ -164,6 +166,7 @@ rbd_reallocate_struct(Real *real, size_t const internal_digits)
     size_t const size = rbd_struct_size(internal_digits);
     VALUE obj = real ? real->obj : 0;
     Real *new_real = (Real *)ruby_xrealloc(real, size);
+    new_real->MaxPrec = internal_digits;
     if (obj) {
         new_real->obj = 0;
         BigDecimal_wrap_struct(obj, new_real);
@@ -179,6 +182,23 @@ rbd_free_struct(Real *real)
         ruby_xfree(real);
         atomic_allocation_count_dec_nounderflow();
     }
+}
+
+static Real *
+rbd_allocate_struct_zero(size_t const digits, int sign)
+{
+    size_t const len = roomof(digits, BASE_FIG);
+    Real *real = rbd_allocate_struct(len);
+    VpSetZero(real, sign);
+    return real;
+}
+
+static Real *
+rbd_allocate_struct_one(size_t const digits, int sign)
+{
+    Real *real = rbd_allocate_struct_zero(digits, sign);
+    VpSetOne(real);
+    return real;
 }
 
 /*
@@ -4517,7 +4537,7 @@ static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif /* BIGDECIMAL_DEBUG */
 
 static Real *VpConstOne;    /* constant 1.0 */
-static Real *VpPt5;        /* constant 0.5 */
+static Real *VpConstPt5;    /* constant 0.5 */
 #define maxnr 100UL    /* Maximum iterations for calculating sqrt. */
                 /* used in VpSqrt() */
 
@@ -4936,9 +4956,13 @@ VpInit(DECDIG BaseVal)
     /* Setup +/- Inf  NaN -0 */
     VpGetDoubleNegZero();
 
-    /* Allocates Vp constants. */
-    VpConstOne = VpAlloc(1UL, "1", 1, 1);
-    VpPt5 = VpAlloc(1UL, ".5", 1, 1);
+    /* Const 1.0 */
+    VpConstOne = rbd_allocate_struct_one(1, 1);
+
+    /* Const 0.5 */
+    VpConstPt5 = rbd_allocate_struct_one(1, 1);
+    VpConstPt5->exponent = 0;
+    VpConstPt5->frac[0] = 5*BASE1;
 
 #ifdef BIGDECIMAL_DEBUG
     gnAlloc = 0;
@@ -5838,7 +5862,7 @@ VpMult(Real *c, Real *a, Real *b)
 
     if (MxIndC < MxIndAB) {    /* The Max. prec. of c < Prec(a)+Prec(b) */
 	w = c;
-	c = VpAlloc((size_t)((MxIndAB + 1) * BASE_FIG), "#0", 1, 1);
+        c = rbd_allocate_struct_zero((size_t)((MxIndAB + 1) * BASE_FIG), 1);
 	MxIndC = MxIndAB;
     }
 
@@ -7003,8 +7027,9 @@ VpSqrt(Real *y, Real *x)
     if (x->MaxPrec > (size_t)n) n = (ssize_t)x->MaxPrec;
 
     /* allocate temporally variables  */
-    f = VpAlloc(y->MaxPrec * (BASE_FIG + 2), "#1", 1, 1);
-    r = VpAlloc((n + n) * (BASE_FIG + 2), "#1", 1, 1);
+    /* TODO: reconsider MaxPrec of f and r */
+    f = rbd_allocate_struct_one(y->MaxPrec * (BASE_FIG + 2), 1);
+    r = rbd_allocate_struct_one((n + n) * (BASE_FIG + 2), 1);
 
     nr = 0;
     y_prec = y->MaxPrec;
@@ -7029,16 +7054,21 @@ VpSqrt(Real *y, Real *x)
     f->MaxPrec = y->MaxPrec + 1;
     n = (SIGNED_VALUE)(y_prec * BASE_FIG);
     if (n < (SIGNED_VALUE)maxnr) n = (SIGNED_VALUE)maxnr;
+
+    /*
+     * Perform: y_{n+1} = (y_n - x/y_n) / 2
+     */
     do {
-	y->MaxPrec *= 2;
-	if (y->MaxPrec > y_prec) y->MaxPrec = y_prec;
-	f->MaxPrec = y->MaxPrec;
-	VpDivd(f, r, x, y);      /* f = x/y    */
-	VpAddSub(r, f, y, -1);   /* r = f - y  */
-	VpMult(f, VpPt5, r);     /* f = 0.5*r  */
-	if (VpIsZero(f))         goto converge;
-	VpAddSub(r, f, y, 1);    /* r = y + f  */
-	VpAsgn(y, r, 1);         /* y = r      */
+        y->MaxPrec *= 2;
+        if (y->MaxPrec > y_prec) y->MaxPrec = y_prec;
+        f->MaxPrec = y->MaxPrec;
+        VpDivd(f, r, x, y);        /* f = x/y    */
+        VpAddSub(r, f, y, -1);     /* r = f - y  */
+        VpMult(f, VpConstPt5, r);  /* f = 0.5*r  */
+        if (VpIsZero(f))
+            goto converge;
+        VpAddSub(r, f, y, 1);      /* r = y + f  */
+        VpAsgn(y, r, 1);           /* y = r      */
     } while (++nr < n);
 
 #ifdef BIGDECIMAL_DEBUG
@@ -7455,9 +7485,10 @@ VpPowerByInt(Real *y, Real *x, SIGNED_VALUE n)
     }
 
     /* Allocate working variables  */
+    /* TODO: reconsider MaxPrec of w1 and w2 */
+    w1 = rbd_allocate_struct_zero((y->MaxPrec + 2) * BASE_FIG, 1);
+    w2 = rbd_allocate_struct_zero((w1->MaxPrec * 2 + 1) * BASE_FIG, 1);
 
-    w1 = VpAlloc((y->MaxPrec + 2) * BASE_FIG, "#0", 1, 1);
-    w2 = VpAlloc((w1->MaxPrec * 2 + 1) * BASE_FIG, "#0", 1, 1);
     /* calculation start */
 
     VpAsgn(y, x, 1);
