@@ -15,38 +15,10 @@ module TestIRB
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end
 
-    class TestInputMethod < ::IRB::InputMethod
+    class TestInputMethodWithHistory < TestInputMethod
       HISTORY = Array.new
 
       include IRB::HistorySavingAbility
-
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
-
-      def winsize
-        [10, 20]
-      end
     end
 
     def test_history_save_1
@@ -167,7 +139,7 @@ module TestIRB
       IRB.conf[:SAVE_HISTORY] = 1
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
-        io = TestInputMethod.new
+        io = TestInputMethodWithHistory.new
         io.class::HISTORY.clear
         io.load_history
         io.class::HISTORY.concat(%w"line1 line2")
@@ -198,7 +170,7 @@ module TestIRB
           f.write(initial_irb_history)
         end
 
-        io = TestInputMethod.new
+        io = TestInputMethodWithHistory.new
         io.class::HISTORY.clear
         io.load_history
         if block_given?

@@ -2,6 +2,32 @@ require "test/unit"
 
 module TestIRB
   class TestCase < Test::Unit::TestCase
+    class TestInputMethod < ::IRB::InputMethod
+      attr_reader :list, :line_no
+
+      def initialize(list = [])
+        super("test")
+        @line_no = 0
+        @list = list
+      end
+
+      def gets
+        @list[@line_no]&.tap {@line_no += 1}
+      end
+
+      def eof?
+        @line_no >= @list.size
+      end
+
+      def encoding
+        Encoding.default_external
+      end
+
+      def reset
+        @line_no = 0
+      end
+    end
+
     def save_encodings
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }

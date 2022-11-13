@@ -6,32 +6,6 @@ require_relative "helper"
 
 module TestIRB
   class ExtendCommandTest < TestCase
-    class TestInputMethod < ::IRB::InputMethod
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
-    end
-
     def setup
       @pwd = Dir.pwd
       @tmpdir = File.join(Dir.tmpdir, "test_reline_config_#{$$}")
