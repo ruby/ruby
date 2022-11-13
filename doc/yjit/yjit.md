@@ -8,8 +8,6 @@
 YJIT - Yet Another Ruby JIT
 ===========================
 
-**DISCLAIMER: Please note that this project is experimental. It is very much a work in progress, it may cause your software to crash, and current performance results will vary widely, especially on larger applications.**
-
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
 Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
