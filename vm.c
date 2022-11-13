@@ -391,7 +391,6 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
     ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
     switch ((enum rb_mjit_iseq_func)func_i) {
       case NOT_ADDED_JIT_ISEQ_FUNC:
-        RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
         if (body->total_calls == mjit_opts.min_calls) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
@@ -400,11 +399,7 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
         }
         break;
       case NOT_READY_JIT_ISEQ_FUNC:
-        RB_DEBUG_COUNTER_INC(mjit_exec_not_ready);
-        break;
       case NOT_COMPILED_JIT_ISEQ_FUNC:
-        RB_DEBUG_COUNTER_INC(mjit_exec_not_compiled);
-        break;
       default: // to avoid warning with LAST_JIT_ISEQ_FUNC
         break;
     }
@@ -443,8 +438,6 @@ jit_exec(rb_execution_context_t *ec)
     if (!(mjit_call_p || yjit_enabled))
         return Qundef;
 
-    RB_DEBUG_COUNTER_INC(jit_exec);
-
     mjit_func_t func = body->jit_func;
 
     // YJIT tried compiling this function once before and couldn't do
@@ -454,23 +447,10 @@ jit_exec(rb_execution_context_t *ec)
     }
 
     if (UNLIKELY((uintptr_t)func <= LAST_JIT_ISEQ_FUNC)) {
-# ifdef MJIT_HEADER
-        RB_DEBUG_COUNTER_INC(mjit_frame_JT2VM);
-# else
-        RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
-# endif
         return mjit_check_iseq(ec, iseq, body);
     }
 
-# ifdef MJIT_HEADER
-    RB_DEBUG_COUNTER_INC(mjit_frame_JT2JT);
-# else
-    RB_DEBUG_COUNTER_INC(mjit_frame_VM2JT);
-# endif
-    RB_DEBUG_COUNTER_INC(mjit_exec_call_func);
-    // Under SystemV x64 calling convention
-    // ec -> RDI
-    // cfp -> RSI
+    // Under SystemV x64 calling convention: ec -> RDI, cfp -> RSI
     return func(ec, ec->cfp);
 }
 #endif

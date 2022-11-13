@@ -346,13 +346,6 @@ RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
 RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
 RB_DEBUG_COUNTER(vm_sync_barrier)
 
-/* jit_exec() counts */
-RB_DEBUG_COUNTER(jit_exec)
-RB_DEBUG_COUNTER(mjit_exec_not_added)
-RB_DEBUG_COUNTER(mjit_exec_not_ready)
-RB_DEBUG_COUNTER(mjit_exec_not_compiled)
-RB_DEBUG_COUNTER(mjit_exec_call_func)
-
 /* MJIT enqueue / unload */
 RB_DEBUG_COUNTER(mjit_add_iseq_to_process)
 RB_DEBUG_COUNTER(mjit_unload_units)
