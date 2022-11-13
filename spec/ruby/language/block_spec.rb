@@ -263,11 +263,54 @@ describe "A block yielded a single" do
       m(obj) { |a, b, c| [a, b, c] }.should == [obj, nil, nil]
     end
 
+    it "receives the object if it does not respond to #to_ary" do
+      obj = Object.new
+
+      m(obj) { |a, b, c| [a, b, c] }.should == [obj, nil, nil]
+    end
+
+    it "calls #respond_to? to check if object has method #to_ary" do
+      obj = mock("destructure block arguments")
+      obj.should_receive(:respond_to?).with(:to_ary, true).and_return(true)
+      obj.should_receive(:to_ary).and_return([1, 2])
+
+      m(obj) { |a, b, c| [a, b, c] }.should == [1, 2, nil]
+    end
+
+    it "receives the object if it does not respond to #respond_to?" do
+      obj = BasicObject.new
+
+      m(obj) { |a, b, c| [a, b, c] }.should == [obj, nil, nil]
+    end
+
+    it "calls #to_ary on the object when it is defined dynamically" do
+      obj = Object.new
+      def obj.method_missing(name, *args, &block)
+        if name == :to_ary
+          [1, 2]
+        else
+          super
+        end
+      end
+      def obj.respond_to_missing?(name, include_private)
+        name == :to_ary
+      end
+
+      m(obj) { |a, b, c| [a, b, c] }.should == [1, 2, nil]
+    end
+
     it "raises a TypeError if #to_ary does not return an Array" do
       obj = mock("destructure block arguments")
       obj.should_receive(:to_ary).and_return(1)
 
       -> { m(obj) { |a, b| } }.should raise_error(TypeError)
+    end
+
+    it "raises error transparently if #to_ary raises error on its own" do
+      obj = Object.new
+      def obj.to_ary; raise "Exception raised in #to_ary" end
+
+      -> { m(obj) { |a, b| } }.should raise_error(RuntimeError, "Exception raised in #to_ary")
     end
   end
 end

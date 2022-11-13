@@ -49,4 +49,13 @@ describe "Time#strftime" do
     time = @new_time_with_offset[2012, 1, 1, 0, 0, 0, Rational(36645, 10)]
     time.strftime("%::z").should == "+01:01:05"
   end
+
+  ruby_version_is "3.1" do
+    it "supports RFC 3339 UTC for unknown offset local time, -0000, as %-z" do
+      @time.strftime("%z").should == "+0000"
+      @time.strftime("%-z").should == "-0000"
+      @time.strftime("%-:z").should == "-00:00"
+      @time.strftime("%-::z").should == "-00:00:00"
+    end
+  end
 end

@@ -173,6 +173,9 @@ make_counters! {
     send_optimized_method,
     send_optimized_method_call,
     send_optimized_method_block_call,
+    send_call_block,
+    send_call_kwarg,
+    send_call_multi_ractor,
     send_missing_method,
     send_refined_method,
     send_cfunc_ruby_array_varg,
@@ -286,12 +289,12 @@ make_counters! {
 /// Check if stats generation is enabled
 #[no_mangle]
 pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    #[cfg(feature = "stats")]
+
     if get_option!(gen_stats) {
         return Qtrue;
+    } else {
+        return Qfalse;
     }
-
-    return Qfalse;
 }
 
 /// Primitive called in yjit.rb.
@@ -401,7 +404,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
     }
 
     // If the stats feature is enabled
-    #[cfg(feature = "stats")]
+
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
@@ -411,6 +414,13 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
+
+            #[cfg(not(feature = "stats"))]
+            if counter_name == &"vm_insns_count" {
+                // If the stats feature is disabled, we don't have vm_insns_count
+                // so we are going to exlcude the key
+                continue;
+            }
 
             // Put counter into hash
             let key = rust_str_to_sym(counter_name);

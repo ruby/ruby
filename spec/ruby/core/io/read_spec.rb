@@ -402,13 +402,6 @@ describe "IO#read in binary mode" do
     xE2 = [226].pack('C*')
     result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
   end
-
-  it "does not transcode file contents when an internal encoding is specified" do
-    result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
-    result.encoding.should == Encoding::BINARY
-    xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
-  end
 end
 
 describe "IO#read in text mode" do

@@ -147,6 +147,20 @@ module IRB # :nodoc:
 
     ]
 
+    # Convert a command name to its implementation class if such command exists
+    def self.load_command(command)
+      command = command.to_sym
+      @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
+        next if cmd_name != command && aliases.all? { |alias_name, _| alias_name != command }
+
+        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+          require_relative load_file
+        end
+        return ExtendCommand.const_get(cmd_class, false)
+      end
+      nil
+    end
+
     # Installs the default irb commands:
     #
     # +irb_current_working_workspace+::   Context#main

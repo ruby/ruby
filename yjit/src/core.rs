@@ -1599,18 +1599,13 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     }
     */
 
-    let old_write_pos = cb.get_write_pos();
-
     let mut block = branch.block.borrow_mut();
     let branch_terminates_block = branch.end_addr == block.end_addr;
-
-    // Rewrite the branch
     assert!(branch.dst_addrs[0].is_some());
-    cb.set_write_ptr(branch.start_addr.unwrap());
 
+    // Generate the branch
     let mut asm = Assembler::new();
     asm.comment("regenerate_branch");
-
     (branch.gen_fn)(
         &mut asm,
         branch.dst_addrs[0].unwrap(),
@@ -1618,6 +1613,11 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
         branch.shape,
     );
 
+    // Rewrite the branch
+    let old_write_pos = cb.get_write_pos();
+    let old_dropped_bytes = cb.has_dropped_bytes();
+    cb.set_write_ptr(branch.start_addr.unwrap());
+    cb.set_dropped_bytes(false);
     asm.compile(cb);
 
     branch.end_addr = Some(cb.get_write_ptr());
@@ -1638,6 +1638,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     if old_write_pos > cb.get_write_pos() {
         // We rewound cb->write_pos to generate the branch, now restore it.
         cb.set_pos(old_write_pos);
+        cb.set_dropped_bytes(old_dropped_bytes);
     } else {
         // The branch sits at the end of cb and consumed some memory.
         // Keep cb.write_pos.
@@ -2193,10 +2194,12 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // Patch in a jump to block.entry_exit.
 
             let cur_pos = cb.get_write_ptr();
+            let cur_dropped_bytes = cb.has_dropped_bytes();
             cb.set_write_ptr(block_start);
 
             let mut asm = Assembler::new();
             asm.jmp(block_entry_exit.into());
+            cb.set_dropped_bytes(false);
             asm.compile(&mut cb);
 
             assert!(
@@ -2206,6 +2209,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
                 cb.get_write_ptr().into_i64() - block_start.into_i64(),
             );
             cb.set_write_ptr(cur_pos);
+            cb.set_dropped_bytes(cur_dropped_bytes);
         }
     }
 

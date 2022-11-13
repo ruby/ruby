@@ -197,7 +197,7 @@ class_alloc(VALUE flags, VALUE klass)
 {
     size_t alloc_size = sizeof(struct RClass);
 
-#if USE_RVARGC
+#if RCLASS_EXT_EMBEDDED
     alloc_size += sizeof(rb_classext_t);
 #endif
 
@@ -206,7 +206,7 @@ class_alloc(VALUE flags, VALUE klass)
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     RVARGC_NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
 
-#if USE_RVARGC
+#if RCLASS_EXT_EMBEDDED
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
 #else
     obj->ptr = ZALLOC(rb_classext_t);

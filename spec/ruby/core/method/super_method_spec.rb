@@ -55,10 +55,12 @@ describe "Method#super_method" do
     end
   end
 
-  context "after aliasing an inherited method" do
-    it "returns the expected super_method" do
-      method = MethodSpecs::InheritedMethods::C.new.method(:meow)
-      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+  ruby_version_is "2.7.3" do
+    context "after aliasing an inherited method" do
+      it "returns the expected super_method" do
+        method = MethodSpecs::InheritedMethods::C.new.method(:meow)
+        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+      end
     end
   end
 end

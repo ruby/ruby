@@ -54,6 +54,16 @@ $ wasmtime ruby-wasm32-wasi/usr/local/bin/ruby --mapdir /::./ruby-wasm32-wasi/ -
 wasm32-wasi
 ```
 
+Note: you cannot run the built ruby without a WebAssembly runtime, because of the difference of the binary file type.
+
+```
+$ ruby-wasm32-wasi/usr/local/bin/ruby -e 'puts "a"'
+bash: ruby-wasm32-wasi/usr/local/bin/ruby: cannot execute binary file: Exec format error
+
+$ file ruby-wasm32-wasi/usr/local/bin/ruby
+ruby-wasm32-wasi/usr/local/bin/ruby: WebAssembly (wasm) binary module version 0x1 (MVP)
+```
+
 ## Current Limitation
 
 - No `Thread` support for now.

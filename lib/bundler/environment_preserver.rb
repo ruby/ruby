@@ -7,6 +7,7 @@ module Bundler
       BUNDLE_BIN_PATH
       BUNDLE_GEMFILE
       BUNDLER_VERSION
+      BUNDLER_SETUP
       GEM_HOME
       GEM_PATH
       MANPATH

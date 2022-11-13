@@ -115,6 +115,10 @@ Lint/EmptyWhen:
     - language/case_spec.rb
     - optional/capi/spec_helper.rb
 
+Lint/ErbNewArguments:
+  Exclude:
+    - 'library/erb/new_spec.rb'
+
 Lint/FormatParameterMismatch:
   Exclude:
     - 'core/kernel/shared/sprintf.rb'

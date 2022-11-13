@@ -56,6 +56,12 @@ describe "Enumerable#each_cons" do
     multi.each_cons(2).to_a.should == [[[1, 2], [3, 4, 5]], [[3, 4, 5], [6, 7, 8, 9]]]
   end
 
+  ruby_version_is "3.1" do
+    it "returns self when a block is given" do
+      @enum.each_cons(3){}.should == @enum
+    end
+  end
+
   describe "when no block is given" do
     it "returns an enumerator" do
       e = @enum.each_cons(3)

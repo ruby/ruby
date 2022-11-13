@@ -9,6 +9,24 @@ module IRB
 
   module ExtendCommand
     class ShowSource < Nop
+      class << self
+        def transform_args(args)
+          # Return a string literal as is for backward compatibility
+          if args.empty? || string_literal?(args)
+            args
+          else # Otherwise, consider the input as a String for convenience
+            args.strip.dump
+          end
+        end
+
+        private
+
+        def string_literal?(args)
+          sexp = Ripper.sexp(args)
+          sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
+        end
+      end
+
       def execute(str = nil)
         unless str.is_a?(String)
           puts "Error: Expected a string but got #{str.inspect}"

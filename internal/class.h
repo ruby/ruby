@@ -62,7 +62,7 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if !USE_RVARGC
+#if SIZE_POOL_COUNT == 1
     struct rb_classext_struct *ptr;
 #endif
 };
@@ -70,7 +70,7 @@ struct RClass {
 typedef struct rb_subclass_entry rb_subclass_entry_t;
 typedef struct rb_classext_struct rb_classext_t;
 
-#if USE_RVARGC
+#if RCLASS_EXT_EMBEDDED
 #  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #else
 #  define RCLASS_EXT(c) (RCLASS(c)->ptr)

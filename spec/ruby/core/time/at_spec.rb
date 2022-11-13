@@ -266,5 +266,10 @@ describe "Time.at" do
       time.zone.should == zone
       time.to_i.should == @epoch_time
     end
+
+    it "raises ArgumentError if format is invalid" do
+      -> { Time.at(@epoch_time, in: "+09:99") }.should raise_error(ArgumentError)
+      -> { Time.at(@epoch_time, in: "ABC") }.should raise_error(ArgumentError)
+    end
   end
 end

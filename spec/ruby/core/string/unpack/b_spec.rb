@@ -93,6 +93,11 @@ describe "String#unpack with format 'B'" do
   it "ignores spaces between directives" do
     "\x80\x00".unpack("B B").should == ["1", "0"]
   end
+
+  it "decodes into US-ASCII string values" do
+    str = "s".force_encoding('UTF-8').unpack("B*")[0]
+    str.encoding.name.should == 'US-ASCII'
+  end
 end
 
 describe "String#unpack with format 'b'" do
@@ -189,5 +194,4 @@ describe "String#unpack with format 'b'" do
     str = "s".force_encoding('UTF-8').unpack("b*")[0]
     str.encoding.name.should == 'US-ASCII'
   end
-
 end

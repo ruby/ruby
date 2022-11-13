@@ -1679,6 +1679,15 @@ ruby_version_is "3.0" do
 
         m.should == 42
       end
+
+      context "without parenthesis" do
+        evaluate <<-ruby do
+          def m = 42
+        ruby
+
+          m.should == 42
+        end
+      end
     end
 
     context "with arguments" do
@@ -1714,6 +1723,16 @@ ruby_version_is "3.0" do
         ruby
 
         m("meow", num: 2).should == "meow" * 4
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      context "inside 'endless' method definitions" do
+        it "does not allow method calls without parenthesis" do
+          -> {
+            eval("def greet(person) = 'Hi, '.concat person")
+          }.should raise_error(SyntaxError)
+        end
       end
     end
   end
@@ -1822,6 +1841,16 @@ ruby_version_is "3.1" do
 
         foo(1).should == [[], {bar: "baz", val: 1}]
       end
+    end
+  end
+
+  describe "Inside 'endless' method definitions" do
+    it "allows method calls without parenthesis" do
+      eval <<-ruby
+        def greet(person) = "Hi, ".concat person
+      ruby
+
+      greet("Homer").should == "Hi, Homer"
     end
   end
 end

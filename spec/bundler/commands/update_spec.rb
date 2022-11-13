@@ -613,6 +613,12 @@ RSpec.describe "bundle update" do
       expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m).
         and match(/freeze \nby running `bundle config unset deployment`./m)
     end
+
+    it "should not suggest any command to unfreeze bundler if frozen is set through ENV" do
+      bundle "update", :all => true, :raise_on_error => false, :env => { "BUNDLE_FROZEN" => "true" }
+      expect(err).to match(/You are trying to install in deployment mode after changing.your Gemfile/m)
+      expect(err).not_to match(/by running/)
+    end
   end
 
   describe "with --source option" do

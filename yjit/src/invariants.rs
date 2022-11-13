@@ -558,6 +558,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
         // Apply patches
         let old_pos = cb.get_write_pos();
+        let old_dropped_bytes = cb.has_dropped_bytes();
         let mut patches = CodegenGlobals::take_global_inval_patches();
         patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr());
         let mut last_patch_end = std::ptr::null();
@@ -568,10 +569,12 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             asm.jmp(patch.outlined_target_pos.into());
 
             cb.set_write_ptr(patch.inline_patch_pos);
+            cb.set_dropped_bytes(false);
             asm.compile(cb);
             last_patch_end = cb.get_write_ptr().raw_ptr();
         }
         cb.set_pos(old_pos);
+        cb.set_dropped_bytes(old_dropped_bytes);
 
         // Freeze invalidated part of the codepage. We only want to wait for
         // running instances of the code to exit from now on, so we shouldn't

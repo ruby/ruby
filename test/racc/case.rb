@@ -17,6 +17,8 @@ module Racc
     TEST_DIR = test_dir
     racc = File.join(PROJECT_DIR, 'bin', 'racc')
     racc = File.join(PROJECT_DIR, '..', 'libexec', 'racc') unless File.exist?(racc)
+    racc = 'racc' unless File.exist?(racc)
+
     RACC = racc
     ASSET_DIR = File.join(TEST_DIR, 'assets') # test grammars
     REGRESS_DIR  = File.join(TEST_DIR, 'regress') # known-good generated outputs

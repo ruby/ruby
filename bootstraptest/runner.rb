@@ -108,10 +108,16 @@ BT = Class.new(bt) do
 
   def wn=(wn)
     unless wn == 1
-      if /(?:\A|\s)--jobserver-(?:auth|fds)=\K(\d+),(\d+)/ =~ ENV.delete("MAKEFLAGS")
+      if /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ ENV.delete("MAKEFLAGS")
         begin
-          r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-          w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+          if fifo = $3
+            fifo.gsub!(/\\(?=.)/, '')
+            r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+            w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
+          else
+            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+          end
         rescue => e
           r.close if r
         else

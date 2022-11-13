@@ -97,7 +97,6 @@ class Gem::Platform
       when /darwin(\d+)?/ then          [ "darwin",    $1  ]
       when /^macruby$/ then             [ "macruby",   nil ]
       when /freebsd(\d+)?/ then         [ "freebsd",   $1  ]
-      when /hpux(\d+)?/ then            [ "hpux",      $1  ]
       when /^java$/, /^jruby$/ then     [ "java",      nil ]
       when /^java([\d.]*)/ then         [ "java",      $1  ]
       when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]
@@ -112,7 +111,6 @@ class Gem::Platform
         [os, version]
       when /netbsdelf/ then             [ "netbsdelf", nil ]
       when /openbsd(\d+\.\d+)?/ then    [ "openbsd",   $1  ]
-      when /bitrig(\d+\.\d+)?/ then     [ "bitrig",    $1  ]
       when /solaris(\d+\.\d+)?/ then    [ "solaris",   $1  ]
       # test
       when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]

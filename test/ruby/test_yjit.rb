@@ -918,6 +918,54 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_trace_script_compiled # not ISEQ_TRACE_EVENTS
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok)
+      @eval_counter = 0
+      def eval_script
+        eval('@eval_counter += 1')
+      end
+
+      @trace_counter = 0
+      trace = TracePoint.new(:script_compiled) do |t|
+        @trace_counter += 1
+      end
+
+      eval_script # JIT without TracePoint
+      trace.enable
+      eval_script # call with TracePoint
+      trace.disable
+
+      return :"eval_#{@eval_counter}" if @eval_counter != 2
+      return :"trace_#{@trace_counter}" if @trace_counter != 1
+
+      :ok
+    RUBY
+  end
+
+  def test_trace_b_call # ISEQ_TRACE_EVENTS
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok)
+      @call_counter = 0
+      def block_call
+        1.times { @call_counter += 1 }
+      end
+
+      @trace_counter = 0
+      trace = TracePoint.new(:b_call) do |t|
+        @trace_counter += 1
+      end
+
+      block_call # JIT without TracePoint
+      trace.enable
+      block_call # call with TracePoint
+      trace.disable
+
+      return :"call_#{@call_counter}" if @call_counter != 2
+      return :"trace_#{@trace_counter}" if @trace_counter != 1
+
+      :ok
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

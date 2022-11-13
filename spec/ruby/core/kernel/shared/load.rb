@@ -154,6 +154,22 @@ describe :kernel_load, shared: true do
     end
   end
 
+  describe "when passed a module for 'wrap'" do
+    ruby_version_is "3.1" do
+      it "sets the enclosing scope to the supplied module" do
+        path = File.expand_path "wrap_fixture.rb", CODE_LOADING_DIR
+        mod = Module.new
+        @object.load(path, mod)
+
+        Object.const_defined?(:LoadSpecWrap).should be_false
+        mod.const_defined?(:LoadSpecWrap).should be_true
+
+        wrap_module = ScratchPad.recorded[1]
+        wrap_module.should == mod
+      end
+    end
+  end
+
   describe "(shell expansion)" do
     before :each do
       @env_home = ENV["HOME"]

@@ -71,11 +71,9 @@ static VALUE encoding_spec_rb_default_external_encoding(VALUE self) {
   return rb_str_new2(enc->name);
 }
 
-#ifdef RUBY_VERSION_IS_2_6
 static VALUE encoding_spec_rb_enc_alias(VALUE self, VALUE alias, VALUE orig) {
   return INT2NUM(rb_enc_alias(RSTRING_PTR(alias), RSTRING_PTR(orig)));
 }
-#endif
 
 static VALUE encoding_spec_rb_enc_associate(VALUE self, VALUE obj, VALUE enc) {
   return rb_enc_associate(obj, NIL_P(enc) ? NULL : rb_enc_find(RSTRING_PTR(enc)));
@@ -327,16 +325,9 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_locale_encindex", encoding_spec_rb_locale_encindex, 0);
   rb_define_method(cls, "rb_filesystem_encoding", encoding_spec_rb_filesystem_encoding, 0);
   rb_define_method(cls, "rb_filesystem_encindex", encoding_spec_rb_filesystem_encindex, 0);
-  rb_define_method(cls, "rb_default_internal_encoding",
-                   encoding_spec_rb_default_internal_encoding, 0);
-
-  rb_define_method(cls, "rb_default_external_encoding",
-                   encoding_spec_rb_default_external_encoding, 0);
-
-#ifdef RUBY_VERSION_IS_2_6
+  rb_define_method(cls, "rb_default_internal_encoding", encoding_spec_rb_default_internal_encoding, 0);
+  rb_define_method(cls, "rb_default_external_encoding", encoding_spec_rb_default_external_encoding, 0);
   rb_define_method(cls, "rb_enc_alias", encoding_spec_rb_enc_alias, 2);
-#endif
-
   rb_define_method(cls, "MBCLEN_CHARFOUND_P", encoding_spec_MBCLEN_CHARFOUND_P, 1);
   rb_define_method(cls, "rb_enc_associate", encoding_spec_rb_enc_associate, 2);
   rb_define_method(cls, "rb_enc_associate_index", encoding_spec_rb_enc_associate_index, 2);

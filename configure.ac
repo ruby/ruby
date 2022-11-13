@@ -2965,6 +2965,23 @@ STATIC=
   ])
 }
 
+EXTSTATIC=
+AC_SUBST(EXTSTATIC)dnl
+AC_ARG_WITH(static-linked-ext,
+	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
+            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
+AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
+  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
+  EXTOBJS='ext/extinit.$(OBJEXT)'
+  AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
+  AC_SUBST(ENCSTATIC, static)
+], [
+  ENCOBJS='dmyenc.$(OBJEXT)'
+  EXTOBJS='dmyext.$(OBJEXT)'
+])
+AC_SUBST(ENCOBJS)
+AC_SUBST(EXTOBJS)
+
 : "rpath" && {
     AS_CASE(["$target_os"],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
@@ -3269,23 +3286,6 @@ AC_ARG_WITH(ext,
 AC_ARG_WITH(out-ext,
             AS_HELP_STRING([--with-out-ext=EXTS],
                            [pass to --without-ext option of extmk.rb]))
-EXTSTATIC=
-AC_SUBST(EXTSTATIC)dnl
-AC_ARG_WITH(static-linked-ext,
-	    AS_HELP_STRING([--with-static-linked-ext], [link external modules statically]),
-            [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
-AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
-  ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
-  AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
-  AC_SUBST(ENCSTATIC, static)
-], [
-  ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
-])
-AC_SUBST(ENCOBJS)
-AC_SUBST(EXTOBJS)
-
 AC_ARG_WITH(setup,
 	    AS_HELP_STRING([--with-setup=SETUP], [use extension libraries setup]),
 	    [setup=$withval])
@@ -3738,18 +3738,34 @@ AC_SUBST(MJIT_SUPPORT)
 
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
+dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
+YJIT_RUSTC_OK=no
+AS_IF([test "$RUSTC" != "no"],
+    AC_MSG_CHECKING([whether ${RUSTC} is new enough for YJIT])
+    AS_IF([echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null 2>/dev/null],
+        [YJIT_RUSTC_OK=yes]
+    )
+    AC_MSG_RESULT($YJIT_RUSTC_OK)
+)
+
 dnl check if we can build YJIT on this target platform
-AS_CASE(["$target_cpu-$target_os"],
-    [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
-        YJIT_TARGET_OK=yes
-    ],
-    [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
-        YJIT_TARGET_OK=yes
-    ],
-    [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
-        YJIT_TARGET_OK=yes
-    ],
-    [YJIT_TARGET_OK=no]
+dnl we can't easily cross-compile with rustc so we don't support that
+YJIT_TARGET_OK=no
+AS_IF([test "$cross_compiling" = no],
+    AS_CASE(["$target_cpu-$target_os"],
+        [*android*], [
+            YJIT_TARGET_OK=no
+        ],
+        [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
+            YJIT_TARGET_OK=yes
+        ],
+        [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
+            YJIT_TARGET_OK=yes
+        ],
+        [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
+            YJIT_TARGET_OK=yes
+        ]
+    )
 )
 
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
@@ -3757,15 +3773,12 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
     [YJIT_SUPPORT=$enableval],
-    [
-        AS_IF([test x"$RUSTC" != "xno"],
-            AS_IF([ echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null ],
-                [YJIT_SUPPORT="$YJIT_TARGET_OK"],
-                [YJIT_SUPPORT=no]
-            ),
-            [YJIT_SUPPORT=no]
-        )
-    ]
+    [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
+        [yes:yes:yes|:yes:yes], [
+            YJIT_SUPPORT=yes
+        ],
+        [YJIT_SUPPORT=no]
+    )]
 )
 
 CARGO=
@@ -3779,7 +3792,6 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
-    AS_IF([test "$cross_compiling" = yes], [RUSTC="$RUSTC --target=$target"])
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
@@ -3797,6 +3809,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
     [stats], [
 	rb_rust_target_subdir=stats
 	CARGO_BUILD_ARGS='--profile stats --features stats'
+	AC_DEFINE(YJIT_STATS, 1)
     ])
 
     AS_IF([test -n "${CARGO_BUILD_ARGS}"], [

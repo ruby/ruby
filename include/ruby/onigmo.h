@@ -744,6 +744,8 @@ typedef struct {
 typedef struct {
   int lower;
   int upper;
+  long base_num;
+  long inner_num;
 } OnigRepeatRange;
 
 typedef void (*OnigWarnFunc)(const char* s);

@@ -87,8 +87,9 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
 {
     rb_event_flag_t new_iseq_events = new_events & ISEQ_TRACE_EVENTS;
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
+    bool trace_iseq_p = new_iseq_events & ~enabled_iseq_events;
 
-    if (new_iseq_events & ~enabled_iseq_events) {
+    if (trace_iseq_p) {
         // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
         // Thus we don't need to cancel JIT-ed code for :class events.
         if (new_iseq_events != RUBY_EVENT_CLASS) {
@@ -111,10 +112,11 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     ruby_vm_event_enabled_global_flags |= new_events;
     rb_objspace_set_event_hook(new_events);
 
-    if (new_events & RUBY_EVENT_TRACEPOINT_ALL) {
-        // Invalidate all code if listening for any TracePoint event.
+    if (trace_iseq_p) {
+        // Invalidate all code when ISEQs are modified to use trace_* insns above.
         // Internal events fire inside C routines so don't need special handling.
-        // Do this last so other ractors see updated vm events when they wake up.
+        // Do this after event flags updates so other ractors see updated vm events
+        // when they wake up.
         rb_yjit_tracing_invalidate_all();
     }
 }
