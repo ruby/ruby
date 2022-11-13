@@ -229,6 +229,6 @@ describe "BigDecimal#round" do
   end
 
   it "raise for a non-existent round mode" do
-    -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode")
+    -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode (nonsense)")
   end
 end
