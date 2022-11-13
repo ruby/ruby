@@ -2249,6 +2249,26 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   events
 }
 
+# test c_call invalidation
+assert_equal '[[:c_call, :itself]]', %q{
+  # enable the event once to make sure invalidation
+  # happens the second time we enable it
+  TracePoint.new(:c_call) {}.enable{}
+
+  def compiled
+    itself
+  end
+
+  # assume first call compiles
+  compiled
+
+  events = []
+  tp = TracePoint.new(:c_call) { |tp| events << [tp.event, tp.method_id] }
+  tp.enable { compiled }
+
+  events
+}
+
 # test enabling tracing for a suspended fiber
 assert_equal '[[:return, 42]]', %q{
   def traced_method
