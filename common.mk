@@ -776,7 +776,7 @@ clean-spec: PHONY
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
 	-$(Q) $(RMALL) rubyspec_temp
 
-check: main test test-tool test-all test-spec
+check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all $(DOT_WAIT) test-spec
 	$(ECHO) check succeeded
 	-$(Q) : : "run only on sh"; \
 	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
@@ -854,7 +854,7 @@ yes-test-tool: prog PHONY
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
-test-short: btest-ruby test-knownbug test-basic
+test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
 # $ make test-all TESTOPTS="--help" displays more detail

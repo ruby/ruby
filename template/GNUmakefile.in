@@ -12,6 +12,10 @@ ifeq ($(HAVE_BASERUBY),yes)
 override REVISION_FORCE := PHONY
 endif
 
+ifneq ($(filter notintermediate,$(.FEATURES)),)
+DOT_WAIT = .WAIT
+endif
+
 include $(srcdir)/defs/universal.mk
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk
