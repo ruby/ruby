@@ -1880,7 +1880,7 @@ fn jit_chain_guard(
             idx: jit.insn_idx,
         };
 
-        gen_branch(jit, ctx, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
+        gen_branch(jit, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
         target0_gen_fn(asm, side_exit, None, BranchShape::Default);
     }
@@ -3210,7 +3210,6 @@ fn gen_branchif(
         // Generate the branch instructions
         gen_branch(
             jit,
-            ctx,
             asm,
             ocb,
             jump_block,
@@ -3281,7 +3280,6 @@ fn gen_branchunless(
         // Generate the branch instructions
         gen_branch(
             jit,
-            ctx,
             asm,
             ocb,
             jump_block,
@@ -3349,7 +3347,6 @@ fn gen_branchnil(
         // Generate the branch instructions
         gen_branch(
             jit,
-            ctx,
             asm,
             ocb,
             jump_block,
@@ -5069,7 +5066,6 @@ fn gen_send_iseq(
     // Write the JIT return address on the callee frame
     gen_branch(
         jit,
-        ctx,
         asm,
         ocb,
         return_block,
