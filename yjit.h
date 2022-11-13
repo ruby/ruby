@@ -27,8 +27,10 @@
 // Expose these as declarations since we are building YJIT.
 #ifdef MJIT_HEADER // MJIT and YJIT can't be enabled simultaneously
 static inline bool rb_yjit_enabled_p(void) { return false; }
+static inline bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec) { return false; }
 #else
 bool rb_yjit_enabled_p(void);
+bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec);
 #endif
 unsigned rb_yjit_call_threshold(void);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
@@ -37,7 +39,6 @@ void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
 void rb_yjit_collect_vm_usage_insn(int insn);
 void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
-bool rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec);
 void rb_yjit_init(void);
 void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_yjit_constant_state_changed(ID id);
