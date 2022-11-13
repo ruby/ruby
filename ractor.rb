@@ -262,6 +262,10 @@ class Ractor
   def self.new(*args, name: nil, &block)
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
+    if __builtin_cexpr!("RBOOL(ruby_single_main_ractor)")
+      warn("Ractor is experimental, and the behavior may change in future versions of Ruby! " \
+           "Also there are many implementation issues.", uplevel: 0, category: :experimental)
+    end
     loc = caller_locations(1, 1).first
     loc = "#{loc.path}:#{loc.lineno}"
     __builtin_ractor_create(loc, name, args, b)
