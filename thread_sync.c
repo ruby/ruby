@@ -311,6 +311,10 @@ do_mutex_lock(VALUE self, int interruptible_p)
                 }
             }
             else {
+                if (!th->vm->thread_ignore_deadlock && rb_fiber_threadptr(mutex->fiber) == th) {
+                    rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
+                }
+
                 enum rb_thread_status prev_status = th->status;
                 rb_hrtime_t *timeout = 0;
                 rb_hrtime_t rel = rb_msec2hrtime(100);
