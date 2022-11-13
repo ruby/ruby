@@ -5054,11 +5054,11 @@ bigdecimal_parse_special_string(const char *str)
 /*
  * Allocates variable.
  * [Input]
- *   mx ... allocation unit, if zero then mx is determined by szVal.
- *    The mx is the number of effective digits can to be stored.
- *   szVal ... value assigned(char). If szVal==NULL,then zero is assumed.
- *            If szVal[0]=='#' then Max. Prec. will not be considered(1.1.7),
- *            full precision specified by szVal is allocated.
+ *   mx ... The number of decimal digits to be allocated, if zero then mx is determined by szVal.
+ *          The mx will be the number of significant digits can to be stored.
+ *   szVal ... The value assigned(char). If szVal==NULL, then zero is assumed.
+ *             If szVal[0]=='#' then MaxPrec is not affected by the precision limit
+ *             so that the full precision specified by szVal is allocated.
  *
  * [Returns]
  *   Pointer to the newly allocated variable, or
@@ -5069,46 +5069,46 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
 {
     const char *orig_szVal = szVal;
     size_t i, j, ni, ipf, nf, ipe, ne, dot_seen, exp_seen, nalloc;
+    size_t len;
     char v, *psz;
     int  sign=1;
     Real *vp = NULL;
-    size_t mf = VpGetPrecLimit();
+    size_t prec_limit = VpGetPrecLimit();
     VALUE buf;
 
-    mx = (mx + BASE_FIG - 1) / BASE_FIG;    /* Determine allocation unit. */
-    if (mx == 0) ++mx;
+    len = (mx + BASE_FIG - 1) / BASE_FIG;    /* Determine allocation unit. */
+    if (len == 0) ++len;
 
-    if (szVal) {
-        /* Skipping leading spaces */
-        while (ISSPACE(*szVal)) szVal++;
-
-        /* Processing the leading one `#` */
-        if (*szVal != '#') {
-            if (mf) {
-                mf = (mf + BASE_FIG - 1) / BASE_FIG + 2; /* Needs 1 more for div */
-                if (mx > mf) {
-                    mx = mf;
-                }
-            }
-        }
-        else {
-            ++szVal;
-        }
-    }
-    else {
+    if (szVal == NULL) {
       return_zero:
         /* necessary to be able to store */
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
         vp = rbd_allocate_struct(mx);
-        vp->MaxPrec = mx;    /* set max precision */
+        vp->MaxPrec = len;   /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
     }
 
+    /* Skipping leading spaces */
+    while (ISSPACE(*szVal)) szVal++;
+
     /* Check on Inf & NaN */
     if ((vp = bigdecimal_parse_special_string(szVal)) != NULL) {
         return vp;
+    }
+
+    /* Processing the leading one `#` */
+    if (*szVal != '#') {
+        if (prec_limit) {
+            size_t const max_len = (prec_limit + BASE_FIG - 1) / BASE_FIG + 2; /* Needs 1 more for div */
+            if (len > max_len) {
+                len = max_len;
+            }
+        }
+    }
+    else {
+        ++szVal;
     }
 
     /* Scanning digits */
@@ -5272,11 +5272,11 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
 
     nalloc = (ni + nf + BASE_FIG - 1) / BASE_FIG + 1;    /* set effective allocation  */
     /* units for szVal[]  */
-    if (mx == 0) mx = 1;
-    nalloc = Max(nalloc, mx);
-    mx = nalloc;
-    vp = rbd_allocate_struct(mx);
-    vp->MaxPrec = mx;        /* set max precision */
+    if (len == 0) len = 1;
+    nalloc = Max(nalloc, len);
+    len = nalloc;
+    vp = rbd_allocate_struct(len);
+    vp->MaxPrec = len;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);
     rb_str_resize(buf, 0);
