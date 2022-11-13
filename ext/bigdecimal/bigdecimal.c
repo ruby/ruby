@@ -113,6 +113,77 @@ static struct {
 #define BIGDECIMAL_NEGATIVE_P(bd) ((bd)->sign < 0)
 
 /*
+ * ================== Memory allocation ============================
+ */
+
+#ifdef BIGDECIMAL_DEBUG
+static size_t rbd_allocation_count = 0;   /* Memory allocation counter */
+static inline void
+atomic_allocation_count_inc(void)
+{
+    RUBY_ATOMIC_SIZE_INC(rbd_allocation_count);
+}
+static inline void
+atomic_allocation_count_dec_nounderflow(void)
+{
+    if (rbd_allocation_count == 0) return;
+    RUBY_ATOMIC_SIZE_DEC(rbd_allocation_count);
+}
+static void
+check_allocation_count_nonzero(void)
+{
+    if (rbd_allocation_count != 0) return;
+    rb_bug("[bigdecimal][rbd_free_struct] Too many memory free calls");
+}
+#else
+#   define atomic_allocation_count_inc() /* nothing */
+#   define atomic_allocation_count_dec_nounderflow() /* nothing */
+#   define check_allocation_count_nonzero() /* nothing */
+#endif /* BIGDECIMAL_DEBUG */
+
+PUREFUNC(static inline size_t rbd_struct_size(size_t const));
+
+static inline size_t
+rbd_struct_size(size_t const internal_digits)
+{
+    return offsetof(Real, frac) + sizeof(DECDIG) * internal_digits;
+}
+
+static inline Real *
+rbd_allocate_struct(size_t const internal_digits)
+{
+    size_t const size = rbd_struct_size(internal_digits);
+    Real *real = ruby_xcalloc(1, size);
+    atomic_allocation_count_inc();
+    return real;
+}
+
+static VALUE BigDecimal_wrap_struct(VALUE obj, Real *vp);
+
+static inline Real *
+rbd_reallocate_struct(Real *real, size_t const internal_digits)
+{
+    size_t const size = rbd_struct_size(internal_digits);
+    VALUE obj = real ? real->obj : 0;
+    Real *new_real = (Real *)ruby_xrealloc(real, size);
+    if (obj) {
+        new_real->obj = 0;
+        BigDecimal_wrap_struct(obj, new_real);
+    }
+    return new_real;
+}
+
+static void
+rbd_free_struct(Real *real)
+{
+    if (real != NULL) {
+        check_allocation_count_nonzero();
+        ruby_xfree(real);
+        atomic_allocation_count_dec_nounderflow();
+    }
+}
+
+/*
  * ================== Ruby Interface part ==========================
  */
 #define DoSomeOne(x,y,f) rb_num_coerce_bin(x,y,f)
@@ -145,7 +216,7 @@ static VALUE BigDecimal_negative_zero(void);
 static void
 BigDecimal_delete(void *pv)
 {
-    VpFree(pv);
+    rbd_free_struct(pv);
 }
 
 static size_t
@@ -980,26 +1051,12 @@ VpCreateRbObject(size_t mx, const char *str, bool raise_exception)
     return VpNewRbClass(mx, str, rb_cBigDecimal, true, raise_exception);
 }
 
-#define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(DECDIG))
-
-static Real *
-VpReallocReal(Real *pv, size_t prec)
-{
-    VALUE obj = pv ? pv->obj : 0;
-    Real *new_pv = (Real *)VpMemRealloc(pv, offsetof(Real, frac) + prec * sizeof(DECDIG));
-    if (obj) {
-        new_pv->obj = 0;
-        BigDecimal_wrap_struct(obj, new_pv);
-    }
-    return new_pv;
-}
-
 static Real *
 VpCopy(Real *pv, Real const* const x)
 {
     assert(x != NULL);
 
-    pv = VpReallocReal(pv, x->MaxPrec);
+    pv = rbd_reallocate_struct(pv, x->MaxPrec);
     pv->MaxPrec = x->MaxPrec;
     pv->Prec = x->Prec;
     pv->exponent = x->exponent;
@@ -1825,7 +1882,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     if (!VpIsZero(c) && (VpGetSign(a) * VpGetSign(b) < 0)) {
         /* result adjustment for negative case */
-        res = VpReallocReal(res, d->MaxPrec);
+        res = rbd_reallocate_struct(res, d->MaxPrec);
         res->MaxPrec = d->MaxPrec;
         VpAddSub(res, d, VpOne(), -1);
         GUARD_OBJ(d, VpCreateRbObject(GetAddSubPrec(c, b) * 2*BASE_FIG, "0", true));
@@ -3116,7 +3173,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
 
     Real *vp;
     if (uval == 0) {
-        vp = VpAllocReal(1);
+        vp = rbd_allocate_struct(1);
         vp->MaxPrec = 1;
         vp->Prec = 1;
         vp->exponent = 1;
@@ -3124,7 +3181,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         vp->frac[0] = 0;
     }
     else if (uval < BASE) {
-        vp = VpAllocReal(1);
+        vp = rbd_allocate_struct(1);
         vp->MaxPrec = 1;
         vp->Prec = 1;
         vp->exponent = 1;
@@ -3150,7 +3207,7 @@ rb_uint64_convert_to_BigDecimal(uint64_t uval, RB_UNUSED_VAR(size_t digs), int r
         }
 
         const size_t exp = len + ntz;
-        vp = VpAllocReal(len);
+        vp = rbd_allocate_struct(len);
         vp->MaxPrec = len;
         vp->Prec = len;
         vp->exponent = exp;
@@ -4494,42 +4551,6 @@ static int VpRdup(Real *m, size_t ind_m);
 static int gnAlloc = 0; /* Memory allocation counter */
 #endif /* BIGDECIMAL_DEBUG */
 
-VP_EXPORT void *
-VpMemAlloc(size_t mb)
-{
-    void *p = xmalloc(mb);
-    memset(p, 0, mb);
-#ifdef BIGDECIMAL_DEBUG
-    gnAlloc++; /* Count allocation call */
-#endif /* BIGDECIMAL_DEBUG */
-    return p;
-}
-
-VP_EXPORT void *
-VpMemRealloc(void *ptr, size_t mb)
-{
-    return xrealloc(ptr, mb);
-}
-
-VP_EXPORT void
-VpFree(Real *pv)
-{
-    if (pv != NULL) {
-	xfree(pv);
-#ifdef BIGDECIMAL_DEBUG
-	gnAlloc--; /* Decrement allocation count */
-	if (gnAlloc == 0) {
-	    printf(" *************** All memories allocated freed ****************\n");
-	    /*getchar();*/
-	}
-	if (gnAlloc <  0) {
-	    printf(" ??????????? Too many memory free calls(%d) ?????????????\n", gnAlloc);
-	    /*getchar();*/
-	}
-#endif /* BIGDECIMAL_DEBUG */
-    }
-}
-
 /*
  * EXCEPTION Handling.
  */
@@ -5009,7 +5030,7 @@ bigdecimal_parse_special_string(const char *str)
         p = str + table[i].len;
         while (*p && ISSPACE(*p)) ++p;
         if (*p == '\0') {
-            Real *vp = VpAllocReal(1);
+            Real *vp = rbd_allocate_struct(1);
             vp->MaxPrec = 1;
             switch (table[i].sign) {
               default:
@@ -5079,7 +5100,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
         /* necessary to be able to store */
         /* at least mx digits. */
         /* szVal==NULL ==> allocate zero value. */
-        vp = VpAllocReal(mx);
+        vp = rbd_allocate_struct(mx);
         vp->MaxPrec = mx;    /* set max precision */
         VpSetZero(vp, 1);    /* initialize vp to zero. */
         return vp;
@@ -5254,7 +5275,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
     if (mx == 0) mx = 1;
     nalloc = Max(nalloc, mx);
     mx = nalloc;
-    vp = VpAllocReal(mx);
+    vp = rbd_allocate_struct(mx);
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp, sign);
     VpCtoV(vp, psz, ni, psz + ipf, nf, psz + ipe, ne);
@@ -5828,8 +5849,8 @@ VpMult(Real *c, Real *a, Real *b)
 
     c->exponent = a->exponent;    /* set exponent */
     if (!AddExponent(c, b->exponent)) {
-	if (w) VpFree(c);
-	return 0;
+        if (w) rbd_free_struct(c);
+        return 0;
     }
     VpSetSign(c, VpGetSign(a) * VpGetSign(b));    /* set sign  */
     carry = 0;
@@ -5879,10 +5900,10 @@ VpMult(Real *c, Real *a, Real *b)
 	}
     }
     if (w != NULL) {        /* free work variable */
-	VpNmlz(c);
-	VpAsgn(w, c, 1);
-	VpFree(c);
-	c = w;
+        VpNmlz(c);
+        VpAsgn(w, c, 1);
+        rbd_free_struct(c);
+        c = w;
     }
     else {
 	VpLimitRound(c,0);
@@ -7047,8 +7068,8 @@ converge:
     y->MaxPrec = y_prec;
 
 Exit:
-    VpFree(f);
-    VpFree(r);
+    rbd_free_struct(f);
+    rbd_free_struct(r);
     return 1;
 }
 
@@ -7470,8 +7491,8 @@ Exit:
 	printf("  n=%"PRIdVALUE"\n", n);
     }
 #endif /* BIGDECIMAL_DEBUG */
-    VpFree(w2);
-    VpFree(w1);
+    rbd_free_struct(w2);
+    rbd_free_struct(w1);
     return 1;
 }
 
