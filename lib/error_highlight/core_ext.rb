@@ -37,6 +37,11 @@ module ErrorHighlight
   end
 
   NameError.prepend(CoreExt)
-  TypeError.prepend(CoreExt)
-  ArgumentError.prepend(CoreExt)
+
+  if Exception.method_defined?(:detailed_message)
+    # ErrorHighlight is enabled for TypeError and ArgumentError only when Exception#detailed_message is available.
+    # This is because changing ArgumentError#message is highly incompatible.
+    TypeError.prepend(CoreExt)
+    ArgumentError.prepend(CoreExt)
+  end
 end
