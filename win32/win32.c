@@ -4023,9 +4023,7 @@ rb_w32_getservbyport(int port, const char *proto)
 
 #ifdef HAVE_AFUNIX_H
 
-/* This function is derived from
- * https://gitlab.com/openconnect/openconnect/-/blob/76dc6794a4150dcf62ad42d4e286d5df5f0da091/compat.c#L398
- */
+/* License: Ruby's */
 static size_t
 socketpair_unix_path(struct sockaddr_un *sock_un)
 {
@@ -4061,31 +4059,29 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
             path_len = GetTempPathW(maxpath, wpath);
             break;
         case 1:
-            /* temp dir in the users home directory */
-            path_len = GetWindowsDirectoryW(wpath, maxpath);
-            path_len += snwprintf(wpath + path_len, maxpath - path_len, L"/Temp/");
+            wcsncpy(wpath, L"C:/Temp/", maxpath);
+            path_len = lstrlenW(wpath);
             break;
         case 2:
-            path_len = snwprintf(wpath, maxpath, L"C:/Temp/");
-            break;
-        case 3:
             /* Current directory */
             path_len = 0;
             break;
-        case 4:
+        case 3:
             closesocket(listener);
             return 0;
         }
 
+        /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
+        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
         QueryPerformanceCounter(&ticks);
-        path_len += snwprintf(wpath + path_len,
+        path_len += snprintf(sock_un->sun_path + path_len,
                  maxpath - path_len,
-                 L"%lld-%ld.($)",
+                 "%lld-%ld.($)",
                  ticks.QuadPart,
                  GetCurrentProcessId());
 
-        /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
-        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
+        /* Convert to UTF16 for DeleteFileW */
+        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
 
         if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
             break;
