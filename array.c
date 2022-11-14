@@ -3521,6 +3521,83 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
+#if __linux__ && __SIZEOF_POINTER__ == 8
+
+static int rsort(void *const _p, const long l) {
+
+    for (const VALUE *p = _p, *const P = p + 64; p < P;)
+        if (!FIXNUM_P(*p++)) return 1;
+
+    uint64_t F[8][256] = {}, *a = _p, *b = malloc(8 * l);
+    if (b == NULL) return 1;
+
+    for (uint64_t *p = a + 64, *p2 = b + 64, *const P = p + (l - 64); p < P; p2++) {
+        *p2 = *p ^ (1UL << 63);
+        for (int i = 0; i < 8; i++)
+            F[i][(*p2 >> i * 8) & 255]++;
+        if (!FIXNUM_P(*p++)) {
+            free(b);
+            return 1;
+        }
+    }
+
+    for (uint64_t *p = a, *p2 = b, *const P = p + 64; p < P; p2++) {
+        *p2 = *p++ ^ (1UL << 63);
+        for (int i = 0; i < 8; i++)
+            F[i][(*p2 >> i * 8) & 255]++;
+    }
+
+    { uint64_t *t = a; a = b, b = t; }
+
+    uint64_t skip[8] = {}; int last = 10;
+
+    for (int i = 0; i < 8; i++) {
+        uint64_t x = 0, t, *o = F[i];
+        for (int j = 0; j < 256; j++) {
+            if ((t = o[j]) == (uint64_t)l) {
+                skip[i] = 1;
+                break;
+            }
+            x = (o[j] = x) + t;
+        }
+    }
+
+    for (int i = 7; i >= 0; --i)
+        if (skip[i] == 0) {
+            last = i;
+            break;
+        }
+
+    if (last == 10) {
+        free(a);
+        return 0;
+    }
+
+    for (int i = 0; i < 8; i++) {
+        if (skip[i]) continue;
+        uint64_t *o = F[i];
+        if (i < last)
+            for (uint64_t *p = a, *const P = p + l; p < P; p++) {
+                b[o[(*p >> i * 8) & 255]++] = *p;
+            }
+        else
+            for (uint64_t *p = a, *const P = p + l; p < P; p++) {
+                b[o[(*p >> i * 8) & 255]++] = *p ^ (1UL << 63);
+            }
+        o = a, a = b, b = o;
+    }
+
+    if (a != _p) {
+        memcpy(_p, a, 8 * l);
+        b = a;
+    }
+
+    free(b);
+    return 0;
+}
+
+#endif
+
 /*
  *  call-seq:
  *    array.sort! -> self
@@ -3577,8 +3654,20 @@ rb_ary_sort_bang(VALUE ary)
         data.cmp_opt.opt_methods = 0;
         data.cmp_opt.opt_inited = 0;
         RARRAY_PTR_USE(tmp, ptr, {
+
+#if __linux__ && __SIZEOF_POINTER__ == 8
+
+            if ((len < 10000 || rb_block_given_p()) || rsort(ptr, len))
+                ruby_qsort(ptr, len, sizeof(VALUE),
+                           rb_block_given_p() ? sort_1 : sort_2, &data);
+
+#else
+
             ruby_qsort(ptr, len, sizeof(VALUE),
-                       rb_block_given_p()?sort_1:sort_2, &data);
+                       rb_block_given_p() ? sort_1 : sort_2, &data);
+
+#endif
+
         }); /* WB: no new reference */
         rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
