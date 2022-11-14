@@ -15,4 +15,4 @@ useful when you have made many changes to your gem dependencies.
 * `--dry-run`:
   Print the changes, but do not clean the unused gems.
 * `--force`:
-  Force a clean even if system location is used.
+  Forces cleaning up unused gems even if Bundler is configured to use globally installed gems. As a consequence, removes all system gems except for the ones in the current application.

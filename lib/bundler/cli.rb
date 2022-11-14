@@ -620,7 +620,7 @@ module Bundler
     method_option "dry-run", :type => :boolean, :default => false, :banner =>
       "Only print out changes, do not clean gems"
     method_option "force", :type => :boolean, :default => false, :banner =>
-      "Forces clean even if system location is used"
+      "Forces cleaning up unused gems even if Bundler is configured to use globally installed gems. As a consequence, removes all system gems except for the ones in the current application."
     def clean
       require_relative "cli/clean"
       Clean.new(options.dup).run
