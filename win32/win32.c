@@ -5802,14 +5802,6 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
-    /* GetFileAttributesEx failed; check why. */
-    int e = GetLastError();
-
-    if ((e == ERROR_FILE_NOT_FOUND) || (e == ERROR_INVALID_NAME)
-        || (e == ERROR_PATH_NOT_FOUND || (e == ERROR_BAD_NETPATH))) {
-        errno = map_errno(e);
-        return -1;
-    }
 
     /* Fall back to FindFirstFile for ERROR_SHARING_VIOLATION */
     h = FindFirstFileW(path, &wfd);
@@ -5845,13 +5837,23 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
     WCHAR finalname[PATH_MAX];
+    int open_error;
 
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, flags);
+    open_error = GetLastError();
     if (f == INVALID_HANDLE_VALUE && !lstat) {
-        /* UNIXSocket are represented as reparse point as well
-         * Return socket=true at File.stat (not only lstat) */
+        /* Support stat (not only lstat) of UNIXSocket */
+        FILE_ATTRIBUTE_TAG_INFO attr_info;
+        DWORD e;
+
         f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
+        e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
+                &attr_info, sizeof(attr_info));
+        if (!e || attr_info.ReparseTag != IO_REPARSE_TAG_AF_UNIX) {
+            CloseHandle(f);
+            f = INVALID_HANDLE_VALUE;
+        }
     }
     if (f != INVALID_HANDLE_VALUE) {
         DWORD attr = stati128_handle(f, st);
@@ -5896,6 +5898,12 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
         }
     }
     else {
+        if ((open_error == ERROR_FILE_NOT_FOUND) || (open_error == ERROR_INVALID_NAME)
+            || (open_error == ERROR_PATH_NOT_FOUND || (open_error == ERROR_BAD_NETPATH))) {
+            errno = map_errno(open_error);
+            return -1;
+        }
+
         if (stat_by_find(path, st)) return -1;
     }
 
