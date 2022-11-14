@@ -3738,7 +3738,7 @@ rb_ary_sort_bang(VALUE ary)
 
 #if RSORT_COND
 
-            if ((len < 10000 || is_bg) || rsort(ptr, len))
+            if ((len < 1000 || is_bg) || rsort(ptr, len))
             
 #endif
                 ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
