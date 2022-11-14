@@ -3521,10 +3521,90 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
-#if __linux__ && __SIZEOF_POINTER__ == 8
+#define RSORT_COND (__linux__ && __SIZEOF_POINTER__ == 8)
+
+#if RSORT_COND
+
+typedef _Bool (* ___cmp_t) (const void *, const void *);
+
+#define ___I *x++ = *i++
+#define ___J *x++ = *j++
+
+#define MSORT(func_name, TYPE) /* TYPE: size_t for pointers */ \
+void* func_name(void *const A, const size_t L, void *const E, ___cmp_t cmp) { \
+    if (L < 2) { return A; } size_t z = 2, y = 1, l = L / 2, t = 0; \
+    TYPE tmp, *i = A, *j = i  + 1, *I, *J, *a = A, *e = E, *x = a + L, *p; \
+    for (; l--; i += 2, j += 2) { if (cmp(i, j)) { tmp = *j; *j = *i; *i = tmp; } } goto t; \
+y2: for (; l--; I += 4, J += 4, i += 2, j += 2) { \
+        if (cmp(i, j)) ___J; else ___I; \
+        if (cmp(i, j)) { ___J; if (j == J) { ___I; ___I; continue; } } \
+        else { ___I; if (i == I) { ___J; ___J; continue; } } \
+        if (cmp(i, j)) { ___J; ___I; } else { ___I; ___J; } } goto t; \
+y4: for (; l--; I += 8, J += 8, i += 4, j += 4) { \
+        for (size_t k = 4; --k;) { if (cmp(i, j)) ___J; else ___I; } \
+        for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
+                   else { ___I; if (i == I) { for (; j < J;) ___J; break; } } } } goto t; \
+y_:  for (; l--; I += z, J += z, i += y, j += y) { \
+        for (size_t a, b, k = y;;) { for (; --k;) { if (cmp(i, j)) ___J; else ___I; } \
+                                     a = I - i, b = J - j, k = a > b ? b : a; if (k < 4) break; } \
+        for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
+                   else { ___I; if (i == I) { for (; j < J;) ___J; break; } } } } \
+t:  if (t == 0) { if (L % z == 0) goto n; else { \
+        if (z == 2) { i = (I = j = (J = a + L) - 1) - 2; x = e + (L - 3); t = 3; } \
+        else        { i = (I = x) - z; x = (j = (J = a + L) - y) - z; t = z + y; } } } \
+    else { J = (j = p) + t; if (L % z < t) { t += y; } \
+                            else { i = (I = x) - z; x = a + (i - e); t += z; } } p = x; \
+    for (size_t a, b, k = y;;) { for (; --k;) { if (cmp(i, j)) ___J; else ___I; } \
+                                 a = I - i, b = J - j, k = a > b ? b : a; if (k < 4) break; } \
+    for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
+               else { ___I; \
+                   if (i == I) { if (x != j) { for (; j < J;) ___J; } else x = J; break; } } } \
+n:  if (L / z == 1) return (x == a + L) ? a : e; if (z > 2) a = e, e = (e == E) ? A : E; \
+    z = 2 * (y *= 2), l = L / z, J = (j = (I = (i = a) + y)) + y, x = e; if (L % z < t) l--; \
+    if (y > 4) goto y_; else if (y == 2) goto y2; else goto y4; }
+
+typedef struct msort_double_t { double d; VALUE v; } msort_double_t;
+
+static MSORT(msort_double, msort_double_t)
+
+#undef ___I
+#undef ___J
+#undef MSORT
+
+static inline _Bool msort_double_cmp(const void *a, const void *b) {
+    return ((msort_double_t *)a)->d > ((msort_double_t *)b)->d;
+}
+
+static int rsort_double(void *const _p, const long l) {
+    
+    VALUE *p = _p;
+    msort_double_t *_m = malloc(l * 2 * sizeof(msort_double_t)), *m = _m;
+    if (m == NULL) return 1;
+    
+    for (long i = 0; i < l; i++) {
+        if (!RB_FLOAT_TYPE_P(p[i])) {
+            free(_m);
+            return 1;
+        }
+        m[i] = (msort_double_t){ rb_float_value(p[i]), p[i] };
+    }
+    
+    m = msort_double(m, l, m + l, msort_double_cmp);
+    
+    for (long i = 0; i < l; i++)
+        p[i] = m[i].v;
+    
+    free(_m);
+    return 0;
+}
 
 static int rsort(void *const _p, const long l) {
-
+    
+    if (!FIXNUM_P(*(VALUE *)_p)) {
+        if (!RB_FLOAT_TYPE_P(*(VALUE *)_p)) return 1;
+        return rsort_double(_p, l);
+    }
+    
     for (const VALUE *p = _p, *const P = p + 64; p < P;)
         if (!FIXNUM_P(*p++)) return 1;
 
@@ -3653,20 +3733,15 @@ rb_ary_sort_bang(VALUE ary)
         data.receiver = ary;
         data.cmp_opt.opt_methods = 0;
         data.cmp_opt.opt_inited = 0;
+        int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
 
-#if __linux__ && __SIZEOF_POINTER__ == 8
+#if RSORT_COND
 
-            if ((len < 10000 || rb_block_given_p()) || rsort(ptr, len))
-                ruby_qsort(ptr, len, sizeof(VALUE),
-                           rb_block_given_p() ? sort_1 : sort_2, &data);
-
-#else
-
-            ruby_qsort(ptr, len, sizeof(VALUE),
-                       rb_block_given_p() ? sort_1 : sort_2, &data);
-
+            if ((len < 10000 || is_bg) || rsort(ptr, len))
+            
 #endif
+                ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
 
         }); /* WB: no new reference */
         rb_ary_modify(ary);
