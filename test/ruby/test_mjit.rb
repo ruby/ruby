@@ -24,9 +24,6 @@ class TestMJIT < Test::Unit::TestCase
     # not supported yet
     :defineclass,
 
-    # to be tested
-    :invokebuiltin,
-
     # never used
     :opt_invokebuiltin_delegate,
   ].each do |insn|
@@ -598,6 +595,15 @@ class TestMJIT < Test::Unit::TestCase
   def test_compile_insn_opt_regexpmatch2
     assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
     assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
+  end
+
+  def test_compile_insn_invokebuiltin
+    iseq = eval(EnvUtil.invoke_ruby(['-e', <<~'EOS'], '', true).first)
+      p RubyVM::InstructionSequence.of([].method(:sample)).to_a
+    EOS
+    insns = collect_insns(iseq)
+    mark_tested_insn(:invokebuiltin, used_insns: insns)
+    assert_eval_with_jit('print [].sample(1)', stdout: '[]', success_count: 1)
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
