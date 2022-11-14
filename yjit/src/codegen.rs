@@ -5779,6 +5779,7 @@ fn gen_invokesuper(
 
     let me = unsafe { rb_vm_frame_method_entry(get_ec_cfp(jit.ec.unwrap())) };
     if me.is_null() {
+        gen_counter_incr!(asm, invokesuper_me_is_null);
         return CantCompile;
     }
 
@@ -5798,6 +5799,7 @@ fn gen_invokesuper(
     if current_defined_class.builtin_type() == RUBY_T_ICLASS
         && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) && FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT.as_usize())) != VALUE(0) }
     {
+        gen_counter_incr!(asm, invokesuper_refinement);
         return CantCompile;
     }
     let comptime_superclass =
@@ -5812,15 +5814,15 @@ fn gen_invokesuper(
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
 
     if ci_flags & VM_CALL_KWARG != 0 {
-        gen_counter_incr!(asm, send_keywords);
+        gen_counter_incr!(asm, invokesuper_keywords);
         return CantCompile;
     }
     if ci_flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr!(asm, send_kw_splat);
+        gen_counter_incr!(asm, invokesuper_kw_splat);
         return CantCompile;
     }
     if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr!(asm, send_block_arg);
+        gen_counter_incr!(asm, invokesuper_block_arg);
         return CantCompile;
     }
 
@@ -5831,20 +5833,33 @@ fn gen_invokesuper(
     // check and side exit.
     let comptime_recv = jit_peek_at_stack(jit, ctx, argc as isize);
     if unsafe { rb_obj_is_kind_of(comptime_recv, current_defined_class) } == VALUE(0) {
+        gen_counter_incr!(asm, invokesuper_incompatible_class);
         return CantCompile;
     }
 
     // Do method lookup
-    let cme = unsafe { rb_callable_method_entry(comptime_superclass, mid) };
+    let mut cme = unsafe { rb_callable_method_entry(comptime_superclass, mid) };
 
     if cme.is_null() {
         return CantCompile;
     }
 
     // Check that we'll be able to write this method dispatch before generating checks
-    let cme_def_type = unsafe { get_cme_def_type(cme) };
-    if cme_def_type != VM_METHOD_TYPE_ISEQ && cme_def_type != VM_METHOD_TYPE_CFUNC {
+    let mut cme_def_type = unsafe { get_cme_def_type(cme) };
+
+    while cme_def_type == VM_METHOD_TYPE_ALIAS {
+        cme = unsafe { rb_aliased_callable_method_entry(cme) };
+        cme_def_type = unsafe { get_cme_def_type(cme) };
+    }
+
+    if cme_def_type != VM_METHOD_TYPE_ISEQ
+        && cme_def_type != VM_METHOD_TYPE_CFUNC
+        && cme_def_type != VM_METHOD_TYPE_IVAR
+        && cme_def_type != VM_METHOD_TYPE_BMETHOD
+        && cme_def_type != VM_METHOD_TYPE_ATTRSET
+    {
         // others unimplemented
+        gen_counter_incr!(asm, invokesuper_type_not_supported);
         return CantCompile;
     }
 
@@ -5857,6 +5872,7 @@ fn gen_invokesuper(
     let me_as_value = VALUE(me as usize);
     if cref_me != me_as_value {
         // This will be the case for super within a block
+        gen_counter_incr!(asm, invokesuper_different_class);
         return CantCompile;
     }
 
@@ -5905,6 +5921,100 @@ fn gen_invokesuper(
         }
         VM_METHOD_TYPE_CFUNC => {
             gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, ptr::null(), ci_flags, argc)
+        }
+        VM_METHOD_TYPE_IVAR => {
+            let recv_idx = argc;
+
+            let comptime_recv = jit_peek_at_stack(jit, ctx, recv_idx as isize);
+            let comptime_recv_klass = comptime_recv.class_of();
+
+            // Guard that the receiver has the same class as the one from compile time
+            let side_exit = get_side_exit(jit, ocb, ctx);
+
+            // Points to the receiver operand on the stack
+            let recv = ctx.stack_opnd(recv_idx);
+            let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
+
+            jit_guard_known_klass(
+                jit,
+                ctx,
+                asm,
+                ocb,
+                comptime_recv_klass,
+                recv,
+                recv_opnd,
+                comptime_recv,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
+            if argc != 0 {
+                // Argument count mismatch. Getters take no arguments.
+                gen_counter_incr!(asm, send_getter_arity);
+                return CantCompile;
+            }
+
+            // This is a .send call not supported right now for getters
+            if ci_flags & VM_CALL_OPT_SEND != 0 {
+                gen_counter_incr!(asm, send_send_getter);
+                return CantCompile;
+            }
+
+            if c_method_tracing_currently_enabled(jit) {
+                // Can't generate code for firing c_call and c_return events
+                // :attr-tracing:
+                // Handling the C method tracing events for attr_accessor
+                // methods is easier than regular C methods as we know the
+                // "method" we are calling into never enables those tracing
+                // events. Once global invalidation runs, the code for the
+                // attr_accessor is invalidated and we exit at the closest
+                // instruction boundary which is always outside of the body of
+                // the attr_accessor code.
+                gen_counter_incr!(asm, send_cfunc_tracing);
+                return CantCompile;
+            }
+
+            let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
+
+            if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                gen_counter_incr!(asm, send_block_arg);
+                return CantCompile;
+            }
+
+            return gen_get_ivar(
+                jit,
+                ctx,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                comptime_recv,
+                ivar_name,
+                recv,
+                recv_opnd,
+                side_exit,
+            );
+        }
+        VM_METHOD_TYPE_BMETHOD => {
+            return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, ci_flags, argc);
+        }
+        VM_METHOD_TYPE_ATTRSET => {
+            if ci_flags & VM_CALL_KWARG != 0 {
+                gen_counter_incr!(asm, send_attrset_kwargs);
+                return CantCompile;
+            } else if argc != 1 || unsafe { !RB_TYPE_P(comptime_recv, RUBY_T_OBJECT) } {
+                gen_counter_incr!(asm, send_ivar_set_method);
+                return CantCompile;
+            } else if c_method_tracing_currently_enabled(jit) {
+                // Can't generate code for firing c_call and c_return events
+                // See :attr-tracing:
+                gen_counter_incr!(asm, send_cfunc_tracing);
+                return CantCompile;
+            } else if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                gen_counter_incr!(asm, send_block_arg);
+                return CantCompile;
+            } else {
+                let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
+                return gen_set_ivar(jit, ctx, asm, comptime_recv, ivar_name, ci_flags, argc);
+            }
         }
         _ => unreachable!(),
     }

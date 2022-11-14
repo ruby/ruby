@@ -224,6 +224,14 @@ make_counters! {
 
     invokesuper_me_changed,
     invokesuper_block,
+    invokesuper_keywords,
+    invokesuper_kw_splat,
+    invokesuper_block_arg,
+    invokesuper_incompatible_class,
+    invokesuper_type_not_supported,
+    invokesuper_different_class,
+    invokesuper_refinement,
+    invokesuper_me_is_null,
 
     invokeblock_none,
     invokeblock_iseq_arg0_splat,
