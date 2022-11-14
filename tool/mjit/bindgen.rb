@@ -341,6 +341,16 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_CFUNC
       VM_METHOD_TYPE_ISEQ
     ],
+    UINT: %w[
+      SHAPE_BITS
+      SHAPE_CAPACITY_CHANGE
+      SHAPE_FLAG_SHIFT
+      SHAPE_FROZEN
+      SHAPE_INITIAL_CAPACITY
+      SHAPE_IVAR
+      SHAPE_IVAR_UNDEF
+      SHAPE_ROOT
+    ],
     ULONG: %w[
       INVALID_SHAPE_ID
       SHAPE_MASK

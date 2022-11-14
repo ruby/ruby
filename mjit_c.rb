@@ -4,41 +4,9 @@
 module RubyVM::MJIT
   C = Object.new
 
-  # This `class << C` section is for calling C functions.
-  # For variables/macros, please consider using tool/mjit/bindgen.rb instead.
+  # This `class << C` section is for calling C functions. For importing variables
+  # or macros as is, please consider using tool/mjit/bindgen.rb instead.
   class << C
-    def SHAPE_BITS
-      Primitive.cexpr! 'UINT2NUM(SHAPE_BITS)'
-    end
-
-    def SHAPE_FLAG_SHIFT
-      Primitive.cexpr! 'UINT2NUM(SHAPE_FLAG_SHIFT)'
-    end
-
-    def SHAPE_ROOT
-      Primitive.cexpr! 'UINT2NUM(SHAPE_ROOT)'
-    end
-
-    def SHAPE_IVAR
-      Primitive.cexpr! 'UINT2NUM(SHAPE_IVAR)'
-    end
-
-    def SHAPE_FROZEN
-      Primitive.cexpr! 'UINT2NUM(SHAPE_FROZEN)'
-    end
-
-    def SHAPE_CAPACITY_CHANGE
-      Primitive.cexpr! 'UINT2NUM(SHAPE_CAPACITY_CHANGE)'
-    end
-
-    def SHAPE_IVAR_UNDEF
-      Primitive.cexpr! 'UINT2NUM(SHAPE_IVAR_UNDEF)'
-    end
-
-    def SHAPE_INITIAL_CAPACITY
-      Primitive.cexpr! 'UINT2NUM(SHAPE_INITIAL_CAPACITY)'
-    end
-
     def ROBJECT_EMBED_LEN_MAX
       Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
     end
@@ -196,6 +164,38 @@ module RubyVM::MJIT
 
   def C.VM_METHOD_TYPE_ISEQ
     Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
+  end
+
+  def C.SHAPE_BITS
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_BITS) }
+  end
+
+  def C.SHAPE_CAPACITY_CHANGE
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_CAPACITY_CHANGE) }
+  end
+
+  def C.SHAPE_FLAG_SHIFT
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_FLAG_SHIFT) }
+  end
+
+  def C.SHAPE_FROZEN
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_FROZEN) }
+  end
+
+  def C.SHAPE_INITIAL_CAPACITY
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_INITIAL_CAPACITY) }
+  end
+
+  def C.SHAPE_IVAR
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR) }
+  end
+
+  def C.SHAPE_IVAR_UNDEF
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR_UNDEF) }
+  end
+
+  def C.SHAPE_ROOT
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
   end
 
   def C.INVALID_SHAPE_ID
