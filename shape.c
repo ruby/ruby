@@ -342,7 +342,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 
     switch (dest_shape->type) {
         case SHAPE_IVAR:
-            if (midway_shape->capacity < midway_shape->next_iv_index) {
+            if (midway_shape->capacity <= midway_shape->next_iv_index) {
                 // There isn't enough room to write this IV, so we need to increase the capacity
                 midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
             }
