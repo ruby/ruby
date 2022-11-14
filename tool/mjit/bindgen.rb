@@ -329,7 +329,6 @@ generator = BindingGenerator.new(
   src_path: src_path,
   uses: %w[
     USE_LAZY_LOAD
-    USE_RVARGC
   ],
   values: {
     INT: %w[

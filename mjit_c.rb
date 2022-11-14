@@ -134,10 +134,6 @@ module RubyVM::MJIT
     Primitive.cexpr! %q{ RBOOL(USE_LAZY_LOAD != 0) }
   end
 
-  def C.USE_RVARGC
-    Primitive.cexpr! %q{ RBOOL(USE_RVARGC != 0) }
-  end
-
   def C.NOT_COMPILED_STACK_SIZE
     Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
   end
