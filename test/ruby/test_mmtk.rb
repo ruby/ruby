@@ -25,13 +25,13 @@ class TestMMTk < Test::Unit::TestCase
     ['--disable-mmtk', '--enable-mmtk'],
     ['--disable-mmtk', '--enable=mmtk'],
     ['--disable-mmtk', "--mmtk-plan=#{GC::MMTk.plan_name}"],
-    ['--disable-mmtk', '--mmtk-max-heap=1024000'],
+    ['--disable-mmtk', '--mmtk-max-heap=10240000'],
 
     ['--disable=mmtk', '--mmtk'],
     ['--disable=mmtk', '--enable-mmtk'],
     ['--disable=mmtk', '--enable=mmtk'],
     ['--disable=mmtk', "--mmtk-plan=#{GC::MMTk.plan_name}"],
-    ['--disable=mmtk', '--mmtk-max-heap=1024000']
+    ['--disable=mmtk', '--mmtk-max-heap=10240000']
   ]
 
   def test_enable
@@ -80,7 +80,7 @@ class TestMMTk < Test::Unit::TestCase
   end
 
   def test_third_party_max_heap_env_var
-    assert_in_out_err([{'THIRD_PARTY_HEAP_LIMIT' => '1024000'}, '-e p GC.stat(:mmtk_total_bytes)'], '', ['1024000'])
+    assert_in_out_err([{'THIRD_PARTY_HEAP_LIMIT' => '10240000'}, '-e p GC.stat(:mmtk_total_bytes)'], '', ['10240000'])
   end
 
   def test_enabled
@@ -94,9 +94,9 @@ class TestMMTk < Test::Unit::TestCase
   end
 
   def test_max_heap
-    assert_in_out_err(['--mmtk-max-heap=1024000', '-e p GC.stat(:mmtk_total_bytes)'], '', ['1024000'])
-    assert_in_out_err(['--mmtk-max-heap=1000KiB', '-e p GC.stat(:mmtk_total_bytes)'], '', ['1024000'])
-    assert_in_out_err(['--mmtk-max-heap=1MiB', '-e p GC.stat(:mmtk_total_bytes)'], '', ['1048576'])
+    assert_in_out_err(['--mmtk-max-heap=10240000', '-e p GC.stat(:mmtk_total_bytes)'], '', ['10240000'])
+    assert_in_out_err(['--mmtk-max-heap=10000KiB', '-e p GC.stat(:mmtk_total_bytes)'], '', ['10240000'])
+    assert_in_out_err(['--mmtk-max-heap=10MiB', '-e p GC.stat(:mmtk_total_bytes)'], '', ['10485760'])
   end
 
   def test_gc_stat
