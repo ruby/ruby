@@ -345,6 +345,14 @@ generator = BindingGenerator.new(
       INVALID_SHAPE_ID
       SHAPE_MASK
     ],
+    PTR: %w[
+      rb_cFalseClass
+      rb_cFloat
+      rb_cInteger
+      rb_cNilClass
+      rb_cSymbol
+      rb_cTrueClass
+    ],
   },
   types: %w[
     CALL_DATA

@@ -4,6 +4,8 @@
 module RubyVM::MJIT
   C = Object.new
 
+  # This `class << C` section is for calling C functions.
+  # For variables/macros, please consider using tool/mjit/bindgen.rb instead.
   class << C
     def SHAPE_BITS
       Primitive.cexpr! 'UINT2NUM(SHAPE_BITS)'
@@ -156,13 +158,6 @@ module RubyVM::MJIT
         return Qnil;
       }
     end
-
-    def rb_cFalseClass; Primitive.cexpr! 'PTR2NUM(rb_cFalseClass)' end
-    def rb_cNilClass;   Primitive.cexpr! 'PTR2NUM(rb_cNilClass)'   end
-    def rb_cTrueClass;  Primitive.cexpr! 'PTR2NUM(rb_cTrueClass)'  end
-    def rb_cInteger;    Primitive.cexpr! 'PTR2NUM(rb_cInteger)'    end
-    def rb_cSymbol;     Primitive.cexpr! 'PTR2NUM(rb_cSymbol)'     end
-    def rb_cFloat;      Primitive.cexpr! 'PTR2NUM(rb_cFloat)'      end
   end
 
   ### MJIT bindgen begin ###
@@ -209,6 +204,30 @@ module RubyVM::MJIT
 
   def C.SHAPE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(SHAPE_MASK) }
+  end
+
+  def C.rb_cFalseClass
+    Primitive.cexpr! %q{ PTR2NUM(rb_cFalseClass) }
+  end
+
+  def C.rb_cFloat
+    Primitive.cexpr! %q{ PTR2NUM(rb_cFloat) }
+  end
+
+  def C.rb_cInteger
+    Primitive.cexpr! %q{ PTR2NUM(rb_cInteger) }
+  end
+
+  def C.rb_cNilClass
+    Primitive.cexpr! %q{ PTR2NUM(rb_cNilClass) }
+  end
+
+  def C.rb_cSymbol
+    Primitive.cexpr! %q{ PTR2NUM(rb_cSymbol) }
+  end
+
+  def C.rb_cTrueClass
+    Primitive.cexpr! %q{ PTR2NUM(rb_cTrueClass) }
   end
 
   def C.CALL_DATA
