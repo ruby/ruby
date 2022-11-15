@@ -2932,7 +2932,7 @@ dir_globs(VALUE args, VALUE base, int flags)
 static VALUE
 dir_glob_option_base(VALUE base)
 {
-    if (base == Qundef || NIL_P(base)) {
+    if (UNDEF_P(base) || NIL_P(base)) {
         return Qnil;
     }
 #if USE_OPENDIR_AT
@@ -3343,7 +3343,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 
     result = (VALUE)rb_thread_call_without_gvl(nogvl_dir_empty_p, (void *)path,
                                             RUBY_UBF_IO, 0);
-    if (result == Qundef) {
+    if (UNDEF_P(result)) {
         rb_sys_fail_path(orig);
     }
     return result;

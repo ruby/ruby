@@ -111,7 +111,7 @@ rb_any_cmp(VALUE a, VALUE b)
         RB_TYPE_P(b, T_STRING) && RBASIC(b)->klass == rb_cString) {
         return rb_str_hash_cmp(a, b);
     }
-    if (a == Qundef || b == Qundef) return -1;
+    if (UNDEF_P(a) || UNDEF_P(b)) return -1;
     if (SYMBOL_P(a) && SYMBOL_P(b)) {
         return a != b;
     }
@@ -195,7 +195,7 @@ obj_any_hash(VALUE obj)
 {
     VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
 
-    if (hval == Qundef) {
+    if (UNDEF_P(hval)) {
         hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
     }
 
@@ -437,7 +437,7 @@ ar_cleared_entry(VALUE hash, unsigned int index)
          * so you need to check key == Qundef
          */
         ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, index);
-        return pair->key == Qundef;
+        return UNDEF_P(pair->key);
     }
     else {
         return FALSE;
@@ -517,8 +517,8 @@ hash_verify_(VALUE hash, const char *file, int line)
                 ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
                 k = pair->key;
                 v = pair->val;
-                HASH_ASSERT(k != Qundef);
-                HASH_ASSERT(v != Qundef);
+                HASH_ASSERT(!UNDEF_P(k));
+                HASH_ASSERT(!UNDEF_P(v));
                 n++;
             }
         }
@@ -2076,7 +2076,7 @@ rb_hash_default_value(VALUE hash, VALUE key)
     if (LIKELY(rb_method_basic_definition_p(CLASS_OF(hash), id_default))) {
         VALUE ifnone = RHASH_IFNONE(hash);
         if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
-        if (key == Qundef) return Qnil;
+        if (UNDEF_P(key)) return Qnil;
         return call_default_proc(ifnone, hash, key);
     }
     else {
@@ -2402,7 +2402,7 @@ rb_hash_delete(VALUE hash, VALUE key)
 {
     VALUE deleted_value = rb_hash_delete_entry(hash, key);
 
-    if (deleted_value != Qundef) { /* likely pass */
+    if (!UNDEF_P(deleted_value)) { /* likely pass */
         return deleted_value;
     }
     else {
@@ -2445,7 +2445,7 @@ rb_hash_delete_m(VALUE hash, VALUE key)
     rb_hash_modify_check(hash);
     val = rb_hash_delete_entry(hash, key);
 
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
@@ -2502,7 +2502,7 @@ rb_hash_shift(VALUE hash)
         }
         else {
             rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
-            if (var.key != Qundef) {
+            if (!UNDEF_P(var.key)) {
                 rb_hash_delete_entry(hash, var.key);
                 return rb_assoc_new(var.key, var.val);
             }
@@ -2517,7 +2517,7 @@ rb_hash_shift(VALUE hash)
         }
         else {
             rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
-            if (var.key != Qundef) {
+            if (!UNDEF_P(var.key)) {
                 rb_hash_delete_entry(hash, var.key);
                 return rb_assoc_new(var.key, var.val);
             }
@@ -2658,7 +2658,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
     for (i = 0; i < argc; i++) {
         key = argv[i];
         value = rb_hash_lookup2(hash, key, Qundef);
-        if (value != Qundef)
+        if (!UNDEF_P(value))
             rb_hash_aset(result, key, value);
     }
 
@@ -3181,7 +3181,7 @@ transform_keys_hash_i(VALUE key, VALUE value, VALUE transarg)
     struct transform_keys_args *p = (void *)transarg;
     VALUE trans = p->trans, result = p->result;
     VALUE new_key = rb_hash_lookup2(trans, key, Qundef);
-    if (new_key == Qundef) {
+    if (UNDEF_P(new_key)) {
         if (p->block_given)
             new_key = rb_yield(key);
         else
@@ -3302,7 +3302,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
             if (!trans) {
                 new_key = rb_yield(key);
             }
-            else if ((new_key = rb_hash_lookup2(trans, key, Qundef)) != Qundef) {
+            else if (!UNDEF_P(new_key = rb_hash_lookup2(trans, key, Qundef))) {
                 /* use the transformed key */
             }
             else if (block_given) {
@@ -4195,7 +4195,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
         ensure_arg.hash = hash;
         ensure_arg.orighash = orighash;
         value = rb_ensure(lookup2_call, (VALUE)&args, reset_hash_type, (VALUE)&ensure_arg);
-        if (value != Qundef) return rb_assoc_new(key, value);
+        if (!UNDEF_P(value)) return rb_assoc_new(key, value);
     }
 
     args[0] = key;
@@ -4608,7 +4608,7 @@ hash_le_i(VALUE key, VALUE value, VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
     VALUE v = rb_hash_lookup2(args[0], key, Qundef);
-    if (v != Qundef && rb_equal(value, v)) return ST_CONTINUE;
+    if (!UNDEF_P(v) && rb_equal(value, v)) return ST_CONTINUE;
     args[1] = Qfalse;
     return ST_STOP;
 }

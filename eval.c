@@ -514,7 +514,7 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
         nocause = 0;
         nocircular = 1;
     }
-    if (*cause == Qundef) {
+    if (UNDEF_P(*cause)) {
         if (nocause) {
             *cause = Qnil;
             nocircular = 1;
@@ -530,7 +530,7 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
         rb_raise(rb_eTypeError, "exception object expected");
     }
 
-    if (!nocircular && !NIL_P(*cause) && *cause != Qundef && *cause != mesg) {
+    if (!nocircular && !NIL_P(*cause) && !UNDEF_P(*cause) && *cause != mesg) {
         VALUE c = *cause;
         while (!NIL_P(c = rb_attr_get(c, id_cause))) {
             if (c == mesg) {
@@ -549,18 +549,18 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
     const char *file = rb_source_location_cstr(&line);
     const char *const volatile file0 = file;
 
-    if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
+    if ((file && !NIL_P(mesg)) || !UNDEF_P(cause))  {
         volatile int state = 0;
 
         EC_PUSH_TAG(ec);
         if (EC_EXEC_TAG() == TAG_NONE && !(state = rb_ec_set_raised(ec))) {
             VALUE bt = rb_get_backtrace(mesg);
-            if (!NIL_P(bt) || cause == Qundef) {
+            if (!NIL_P(bt) || UNDEF_P(cause)) {
                 if (OBJ_FROZEN(mesg)) {
                     mesg = rb_obj_dup(mesg);
                 }
             }
-            if (cause != Qundef && !THROW_DATA_P(cause)) {
+            if (!UNDEF_P(cause) && !THROW_DATA_P(cause)) {
                 exc_setup_cause(mesg, cause);
             }
             if (NIL_P(bt)) {
@@ -633,7 +633,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 void
 rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause)
 {
-    if (cause == Qundef) {
+    if (UNDEF_P(cause)) {
         cause = get_ec_errinfo(ec);
     }
     if (cause != mesg) {
@@ -728,7 +728,7 @@ rb_f_raise(int argc, VALUE *argv)
 
     argc = extract_raise_opts(argc, argv, opts);
     if (argc == 0) {
-        if (*cause != Qundef) {
+        if (!UNDEF_P(*cause)) {
             rb_raise(rb_eArgError, "only cause is given with no arguments");
         }
         err = get_errinfo();
@@ -804,7 +804,7 @@ make_exception(int argc, const VALUE *argv, int isstr)
     if (NIL_P(mesg)) {
         mesg = rb_check_funcall(argv[0], idException, argc != 1, &argv[1]);
     }
-    if (mesg == Qundef) {
+    if (UNDEF_P(mesg)) {
         rb_raise(rb_eTypeError, "exception class/object expected");
     }
     if (!rb_obj_is_kind_of(mesg, rb_eException)) {

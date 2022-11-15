@@ -2552,7 +2552,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     VALUE a1 = numv, a2 = denv;
     int state;
 
-    assert(a1 != Qundef);
+    assert(!UNDEF_P(a1));
 
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;
@@ -2603,7 +2603,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
         a2 = string_to_r_strict(a2, raise);
         if (!raise && NIL_P(a2)) return Qnil;
     }
-    else if (a2 != Qundef && !rb_respond_to(a2, idTo_r)) {
+    else if (!UNDEF_P(a2) && !rb_respond_to(a2, idTo_r)) {
         VALUE tmp = rb_protect(rb_check_to_int, a2, NULL);
         rb_set_errinfo(Qnil);
         if (!NIL_P(tmp)) {
@@ -2612,11 +2612,11 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     }
 
     if (RB_TYPE_P(a1, T_RATIONAL)) {
-        if (a2 == Qundef || (k_exact_one_p(a2)))
+        if (UNDEF_P(a2) || (k_exact_one_p(a2)))
             return a1;
     }
 
-    if (a2 == Qundef) {
+    if (UNDEF_P(a2)) {
         if (!RB_INTEGER_TYPE_P(a1)) {
             if (!raise) {
                 VALUE result = rb_protect(to_rational, a1, NULL);
@@ -2666,7 +2666,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
 
     a1 = nurat_int_value(a1);
 
-    if (a2 == Qundef) {
+    if (UNDEF_P(a2)) {
         a2 = ONE;
     }
     else if (!k_integer_p(a2) && !raise) {

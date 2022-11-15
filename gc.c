@@ -4307,7 +4307,7 @@ run_single_final(VALUE cmd, VALUE objid)
 static void
 warn_exception_in_finalizer(rb_execution_context_t *ec, VALUE final)
 {
-    if (final != Qundef && !NIL_P(ruby_verbose)) {
+    if (!UNDEF_P(final) && !NIL_P(ruby_verbose)) {
         VALUE errinfo = ec->errinfo;
         rb_warn("Exception in finalizer %+"PRIsVALUE, final);
         rb_ec_error_print(ec, errinfo);
@@ -4673,7 +4673,7 @@ id2ref(VALUE objid)
         }
     }
 
-    if ((orig = id2ref_obj_tbl(objspace, objid)) != Qundef &&
+    if (!UNDEF_P(orig = id2ref_obj_tbl(objspace, objid)) &&
         is_live_object(objspace, orig)) {
 
         if (!rb_multi_ractor_p() || rb_ractor_shareable_p(orig)) {
@@ -7379,7 +7379,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 #endif
 
     while (pop_mark_stack(mstack, &obj)) {
-        if (obj == Qundef) continue; /* skip */
+        if (UNDEF_P(obj)) continue; /* skip */
 
         if (RGENGC_CHECK_MODE && !RVALUE_MARKED(obj)) {
             rb_bug("gc_mark_stacked_objects: %s is not marked.", obj_info(obj));
@@ -12790,7 +12790,7 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    if ((obj = id2ref_obj_tbl(&rb_objspace, objid)) == Qundef) {
+    if (UNDEF_P(obj = id2ref_obj_tbl(&rb_objspace, objid))) {
         rb_bug("wmap_finalize: objid is not found.");
     }
 
@@ -13081,14 +13081,14 @@ static VALUE
 wmap_aref(VALUE self, VALUE key)
 {
     VALUE obj = wmap_lookup(self, key);
-    return obj != Qundef ? obj : Qnil;
+    return !UNDEF_P(obj) ? obj : Qnil;
 }
 
 /* Returns +true+ if +key+ is registered */
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return RBOOL(wmap_lookup(self, key) != Qundef);
+    return RBOOL(!UNDEF_P(wmap_lookup(self, key)));
 }
 
 /* Returns the number of referenced objects */

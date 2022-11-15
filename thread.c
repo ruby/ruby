@@ -681,7 +681,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
 
     // Ensure that we are not joinable.
-    VM_ASSERT(th->value == Qundef);
+    VM_ASSERT(UNDEF_P(th->value));
 
     EC_PUSH_TAG(th->ec);
 
@@ -727,7 +727,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     // The thread is effectively finished and can be joined.
-    VM_ASSERT(th->value != Qundef);
+    VM_ASSERT(!UNDEF_P(th->value));
 
     rb_threadptr_join_list_wakeup(th);
     rb_threadptr_unlock_all_locking_mutexes(th);
@@ -1027,7 +1027,7 @@ remove_from_join_list(VALUE arg)
 static int
 thread_finished(rb_thread_t *th)
 {
-    return th->status == THREAD_KILLED || th->value != Qundef;
+    return th->status == THREAD_KILLED || !UNDEF_P(th->value);
 }
 
 static VALUE
@@ -1219,7 +1219,7 @@ thread_value(VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
     thread_join(th, Qnil, 0);
-    if (th->value == Qundef) {
+    if (UNDEF_P(th->value)) {
         // If the thread is dead because we forked th->value is still Qundef.
         return Qnil;
     }
@@ -2349,7 +2349,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);
             ret = TRUE;
 
-            if (err == Qundef) {
+            if (UNDEF_P(err)) {
                 /* no error */
             }
             else if (err == eKillSignal        /* Thread#kill received */   ||
@@ -5035,7 +5035,7 @@ recursive_check(VALUE list, VALUE obj, VALUE paired_obj_id)
 #endif
 
     VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
-    if (pair_list == Qundef)
+    if (UNDEF_P(pair_list))
         return Qfalse;
     if (paired_obj_id) {
         if (!RB_TYPE_P(pair_list, T_HASH)) {
@@ -5067,7 +5067,7 @@ recursive_push(VALUE list, VALUE obj, VALUE paired_obj)
     if (!paired_obj) {
         rb_hash_aset(list, obj, Qtrue);
     }
-    else if ((pair_list = rb_hash_lookup2(list, obj, Qundef)) == Qundef) {
+    else if (UNDEF_P(pair_list = rb_hash_lookup2(list, obj, Qundef))) {
         rb_hash_aset(list, obj, paired_obj);
     }
     else {
@@ -5094,7 +5094,7 @@ recursive_pop(VALUE list, VALUE obj, VALUE paired_obj)
 {
     if (paired_obj) {
         VALUE pair_list = rb_hash_lookup2(list, obj, Qundef);
-        if (pair_list == Qundef) {
+        if (UNDEF_P(pair_list)) {
             return 0;
         }
         if (RB_TYPE_P(pair_list, T_HASH)) {

@@ -449,7 +449,7 @@ static int
 do_coerce(VALUE *x, VALUE *y, int err)
 {
     VALUE ary = rb_check_funcall(*y, id_coerce, 1, x);
-    if (ary == Qundef) {
+    if (UNDEF_P(ary)) {
         if (err) {
             coerce_failed(*x, *y);
         }
@@ -1713,7 +1713,7 @@ flo_cmp(VALUE x, VALUE y)
         b = RFLOAT_VALUE(y);
     }
     else {
-        if (isinf(a) && (i = rb_check_funcall(y, rb_intern("infinite?"), 0, 0)) != Qundef) {
+        if (isinf(a) && !UNDEF_P(i = rb_check_funcall(y, rb_intern("infinite?"), 0, 0))) {
             if (RTEST(i)) {
                 int j = rb_cmpint(i, x, y);
                 j = (a > 0.0) ? (j > 0 ? 0 : +1) : (j < 0 ? 0 : -1);
@@ -2858,7 +2858,7 @@ num_step_negative_p(VALUE num)
     }
 
     r = rb_check_funcall(num, '>', 1, &zero);
-    if (r == Qundef) {
+    if (UNDEF_P(r)) {
         coerce_failed(num, INT2FIX(0));
     }
     return !RTEST(r);
@@ -2876,11 +2876,11 @@ num_step_extract_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE
         keys[0] = id_to;
         keys[1] = id_by;
         rb_get_kwargs(hash, keys, 0, 2, values);
-        if (values[0] != Qundef) {
+        if (!UNDEF_P(values[0])) {
             if (argc > 0) rb_raise(rb_eArgError, "to is given twice");
             *to = values[0];
         }
-        if (values[1] != Qundef) {
+        if (!UNDEF_P(values[1])) {
             if (argc > 1) rb_raise(rb_eArgError, "step is given twice");
             *by = values[1];
         }
@@ -2893,7 +2893,7 @@ static int
 num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil, int allow_zero_step)
 {
     int desc;
-    if (by != Qundef) {
+    if (!UNDEF_P(by)) {
         *step = by;
     }
     else {
@@ -3041,7 +3041,7 @@ num_step(int argc, VALUE *argv, VALUE from)
         VALUE by = Qundef;
 
         num_step_extract_args(argc, argv, &to, &step, &by);
-        if (by != Qundef) {
+        if (!UNDEF_P(by)) {
             step = by;
         }
         if (NIL_P(step)) {
@@ -4930,7 +4930,7 @@ rb_num_coerce_bit(VALUE x, VALUE y, ID func)
     do_coerce(&args[1], &args[2], TRUE);
     ret = rb_exec_recursive_paired(num_funcall_bit_1,
                                    args[2], args[1], (VALUE)args);
-    if (ret == Qundef) {
+    if (UNDEF_P(ret)) {
         /* show the original object, not coerced object */
         coerce_failed(x, y);
     }
