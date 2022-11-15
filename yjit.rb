@@ -262,6 +262,7 @@ module RubyVM::YJIT
       $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
       $stderr.puts "freed_code_size:       " + ("%10d" % stats[:freed_code_size])
+      $stderr.puts "code_region_size:      " + ("%10d" % stats[:code_region_size])
       $stderr.puts "yjit_alloc_size:       " + ("%10d" % stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
       $stderr.puts "live_page_count:       " + ("%10d" % stats[:live_page_count])
       $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
