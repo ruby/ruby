@@ -3521,8 +3521,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
-#if (defined(__linux__) && __linux__) && \
-    (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
+#if SIZEOF_VALUE == 8
 
 typedef _Bool (* ___cmp_t) (const void *, const void *);
 
@@ -3604,26 +3603,17 @@ static int rsort(void *const _p, const long l) {
         return rsort_double(_p, l);
     }
 
-    for (const VALUE *p = _p, *const P = p + 64; p < P;)
-        if (!FIXNUM_P(*p++)) return 1;
-
     uint64_t F[8][256] = {{0}}, *a = _p, *b = malloc(8 * l);
     if (b == NULL) return 1;
 
-    for (uint64_t *p = a + 64, *p2 = b + 64, *const P = p + (l - 64); p < P; p2++) {
-        *p2 = *p ^ (1UL << 63);
+    for (uint64_t *p = a, *p2 = b, *const P = p + l; p < P; p2++) {
+        *p2 = *p ^ (1ULL << 63);
         for (int i = 0; i < 8; i++)
-            F[i][(*p2 >> i * 8) & 255]++;
+            F[i][(uint8_t)(*p2 >> i * 8)]++;
         if (!FIXNUM_P(*p++)) {
             free(b);
             return 1;
         }
-    }
-
-    for (uint64_t *p = a, *p2 = b, *const P = p + 64; p < P; p2++) {
-        *p2 = *p++ ^ (1UL << 63);
-        for (int i = 0; i < 8; i++)
-            F[i][(*p2 >> i * 8) & 255]++;
     }
 
     { uint64_t *t = a; a = b, b = t; }
@@ -3656,13 +3646,11 @@ static int rsort(void *const _p, const long l) {
         if (skip[i]) continue;
         uint64_t *o = F[i];
         if (i < last)
-            for (uint64_t *p = a, *const P = p + l; p < P; p++) {
-                b[o[(*p >> i * 8) & 255]++] = *p;
-            }
+            for (uint64_t *p = a, *const P = p + l; p < P; p++)
+                b[o[(uint8_t)(*p >> i * 8)]++] = *p;
         else
-            for (uint64_t *p = a, *const P = p + l; p < P; p++) {
-                b[o[(*p >> i * 8) & 255]++] = *p ^ (1UL << 63);
-            }
+            for (uint64_t *p = a, *const P = p + l; p < P; p++)
+                b[o[(uint8_t)(*p >> i * 8)]++] = *p ^ (1ULL << 63);
         o = a, a = b, b = o;
     }
 
@@ -3735,8 +3723,7 @@ rb_ary_sort_bang(VALUE ary)
         int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
 
-#if (defined(__linux__) && __linux__) && \
-    (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
+#if SIZEOF_VALUE == 8
 
             if ((len < 1000 || is_bg) || rsort(ptr, len))
 
