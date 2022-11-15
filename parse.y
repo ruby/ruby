@@ -34,6 +34,7 @@ struct lex_context;
 #include "internal/compile.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
+#include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
@@ -6992,7 +6993,7 @@ parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encodin
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
 	if (is_ascii_string(str)) {
 	}
-	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
+	else if (rb_is_usascii_enc(enc0) && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());
 	}
     }
@@ -8353,7 +8354,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		    int cr = ENC_CODERANGE_UNKNOWN;
 		    rb_str_coderange_scan_restartable(p->lex.ptok, p->lex.pcur, enc, &cr);
 		    if (cr != ENC_CODERANGE_7BIT &&
-			p->enc == rb_usascii_encoding() &&
+			rb_is_usascii_enc(p->enc) &&
 			enc != rb_utf8_encoding()) {
 			enc = rb_ascii8bit_encoding();
 		    }
@@ -13478,7 +13479,7 @@ rb_reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
         }
 	rb_enc_associate(str, rb_ascii8bit_encoding());
     }
-    else if (p->enc == rb_usascii_encoding()) {
+    else if (rb_is_usascii_enc(p->enc)) {
 	if (!is_ascii_string(str)) {
 	    /* raise in re.c */
 	    rb_enc_associate(str, rb_usascii_encoding());

@@ -231,6 +231,7 @@ ripper.o: $(top_srcdir)/internal/bits.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
+ripper.o: $(top_srcdir)/internal/encoding.h
 ripper.o: $(top_srcdir)/internal/error.h
 ripper.o: $(top_srcdir)/internal/fixnum.h
 ripper.o: $(top_srcdir)/internal/gc.h

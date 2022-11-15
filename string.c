@@ -1096,7 +1096,7 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
     if (!from) from = rb_enc_get(str);
     if (from == to) return str;
     if ((rb_enc_asciicompat(to) && is_enc_ascii_string(str, from)) ||
-        to == rb_ascii8bit_encoding()) {
+        rb_is_ascii8bit_enc(to)) {
         if (STR_ENC_GET(str) != to) {
             str = rb_str_dup(str);
             rb_enc_associate(str, to);
