@@ -325,10 +325,10 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
 
-VALUE
-rb_shape_flags_mask(void)
+uint8_t
+rb_shape_id_num_bits(void)
 {
-    return SHAPE_FLAG_MASK;
+    return SHAPE_ID_NUM_BITS;
 }
 
 rb_shape_t *
