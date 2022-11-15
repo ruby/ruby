@@ -109,8 +109,8 @@ impl Opnd
                 })
             },
 
-            Opnd::InsnOut{idx, num_bits } => {
-                assert!(num_bits == 64);
+            Opnd::InsnOut{idx, num_bits: out_num_bits } => {
+                assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
                     base: MemBase::InsnOut(idx),
                     disp: disp,
@@ -143,7 +143,7 @@ impl Opnd
     }
 
     /// Get the size in bits for this operand if there is one.
-    fn num_bits(&self) -> Option<u8> {
+    pub fn num_bits(&self) -> Option<u8> {
         match *self {
             Opnd::Reg(Reg { num_bits, .. }) => Some(num_bits),
             Opnd::Mem(Mem { num_bits, .. }) => Some(num_bits),
