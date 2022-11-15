@@ -3821,6 +3821,9 @@ AS_CASE(["${YJIT_SUPPORT}"],
         LDFLAGS="$LDFLAGS -lpthread -lc++abi"
     ])
     YJIT_OBJ='yjit.$(OBJEXT)'
+    AS_IF([test x"$YJIT_SUPPORT" != "xyes" ], [
+        AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
+    ])
     AC_DEFINE(USE_YJIT, 1)
 ], [AC_DEFINE(USE_YJIT, 0)])
 
