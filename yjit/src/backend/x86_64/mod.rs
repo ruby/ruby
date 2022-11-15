@@ -465,15 +465,16 @@ impl Assembler
                 // This assumes only load instructions can contain references to GC'd Value operands
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
-                    mov(cb, out.into(), opnd.into());
-
-                    // If the value being loaded is a heap object
-                    if let Opnd::Value(val) = opnd {
-                        if !val.special_const_p() {
+                    match opnd {
+                        // If the value being loaded is a heap object
+                        Opnd::Value(val) if !val.special_const_p() => {
+                            // Using movabs because mov might write value in 32 bits
+                            movabs(cb, out.into(), val.0 as _);
                             // The pointer immediate is encoded as the last part of the mov written out
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
                             insn_gc_offsets.push(ptr_offset);
                         }
+                        _ => mov(cb, out.into(), opnd.into())
                     }
                 },
 
