@@ -11,7 +11,7 @@ puts
     t = Time.now
     a.sort!
     puts "\tRun ##{_1 + 1}: %.3f s" % [Time.now - t]
-    
+
 end
 
 puts; exit unless $*[0]

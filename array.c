@@ -3521,9 +3521,8 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
-#define RSORT_COND (__linux__ && __SIZEOF_POINTER__ == 8)
-
-#if RSORT_COND
+#if (defined(__linux__) && __linux__) && \
+    (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
 
 typedef _Bool (* ___cmp_t) (const void *, const void *);
 
@@ -3576,11 +3575,11 @@ static inline _Bool msort_double_cmp(const void *a, const void *b) {
 }
 
 static int rsort_double(void *const _p, const long l) {
-    
+
     VALUE *p = _p;
     msort_double_t *_m = malloc(l * 2 * sizeof(msort_double_t)), *m = _m;
     if (m == NULL) return 1;
-    
+
     for (long i = 0; i < l; i++) {
         if (!RB_FLOAT_TYPE_P(p[i]) || isnan(m[i].d = rb_float_value(p[i]))) {
             free(_m);
@@ -3588,27 +3587,27 @@ static int rsort_double(void *const _p, const long l) {
         }
         m[i].v = p[i];
     }
-    
+
     m = msort_double(m, l, m + l, msort_double_cmp);
-    
+
     for (long i = 0; i < l; i++)
         p[i] = m[i].v;
-    
+
     free(_m);
     return 0;
 }
 
 static int rsort(void *const _p, const long l) {
-    
+
     if (!FIXNUM_P(*(VALUE *)_p)) {
         if (!RB_FLOAT_TYPE_P(*(VALUE *)_p)) return 1;
         return rsort_double(_p, l);
     }
-    
+
     for (const VALUE *p = _p, *const P = p + 64; p < P;)
         if (!FIXNUM_P(*p++)) return 1;
 
-    uint64_t F[8][256] = {}, *a = _p, *b = malloc(8 * l);
+    uint64_t F[8][256] = {{0}}, *a = _p, *b = malloc(8 * l);
     if (b == NULL) return 1;
 
     for (uint64_t *p = a + 64, *p2 = b + 64, *const P = p + (l - 64); p < P; p2++) {
@@ -3629,7 +3628,7 @@ static int rsort(void *const _p, const long l) {
 
     { uint64_t *t = a; a = b, b = t; }
 
-    uint64_t skip[8] = {}; int last = 10;
+    uint64_t skip[8] = {0}; int last = 10;
 
     for (int i = 0; i < 8; i++) {
         uint64_t x = 0, t, *o = F[i];
@@ -3736,10 +3735,11 @@ rb_ary_sort_bang(VALUE ary)
         int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
 
-#if RSORT_COND
+#if (defined(__linux__) && __linux__) && \
+    (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
 
             if ((len < 1000 || is_bg) || rsort(ptr, len))
-            
+
 #endif
                 ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
 

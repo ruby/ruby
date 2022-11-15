@@ -1,4 +1,4 @@
-$ ../build/miniruby test.rb 
+$ ../build/miniruby test.rb
 
 	Run #1: 0.308 s
 	Run #2: 0.334 s
@@ -6,7 +6,7 @@ $ ../build/miniruby test.rb
 	Run #4: 0.302 s
 	Run #5: 0.322 s
 
-$ ./test.rb 
+$ ./test.rb
 
 	Run #1: 2.176 s
 	Run #2: 2.210 s
@@ -14,7 +14,7 @@ $ ./test.rb
 	Run #4: 2.217 s
 	Run #5: 2.176 s
 
-$ ../build/miniruby double.rb 
+$ ../build/miniruby double.rb
 
 	Run #1: 1.337 s
 	Run #2: 1.340 s
@@ -22,7 +22,7 @@ $ ../build/miniruby double.rb
 	Run #4: 1.340 s
 	Run #5: 1.341 s
 
-$ ./double.rb 
+$ ./double.rb
 
 	Run #1: 3.836 s
 	Run #2: 3.843 s
