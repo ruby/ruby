@@ -3895,7 +3895,7 @@ fn jit_obj_respond_to(
     // Invalidate this block if method lookup changes for the method being queried. This works
     // both for the case where a method does or does not exist, as for the latter we asked for a
     // "negative CME" earlier.
-    assume_method_lookup_stable(jit, ocb, recv_class, target_cme);
+    assume_method_lookup_stable(jit, ocb, target_cme);
 
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -5291,7 +5291,7 @@ fn gen_send_general(
 
     // Register block for invalidation
     //assert!(cme->called_id == mid);
-    assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
+    assume_method_lookup_stable(jit, ocb, cme);
 
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     loop {
@@ -5470,7 +5470,7 @@ fn gen_send_general(
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
-                        assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
+                        assume_method_lookup_stable(jit, ocb, cme);
 
                         let (known_class, type_mismatch_exit) = {
                             if compile_time_name.string_p() {
@@ -5891,8 +5891,8 @@ fn gen_invokesuper(
 
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
-    assume_method_lookup_stable(jit, ocb, current_defined_class, me);
-    assume_method_lookup_stable(jit, ocb, comptime_superclass, cme);
+    assume_method_lookup_stable(jit, ocb, me);
+    assume_method_lookup_stable(jit, ocb, cme);
 
     // Method calls may corrupt types
     ctx.clear_local_types();

@@ -373,7 +373,6 @@ impl Branch {
 // help to remove all pointers to this block in the system.
 #[derive(Debug)]
 pub struct CmeDependency {
-    pub receiver_klass: VALUE,
     pub callee_cme: *const rb_callable_method_entry_t,
 }
 
@@ -636,7 +635,6 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 
             // Mark method entry dependencies
             for cme_dep in &block.cme_dependencies {
-                unsafe { rb_gc_mark_movable(cme_dep.receiver_klass) };
                 unsafe { rb_gc_mark_movable(cme_dep.callee_cme.into()) };
             }
 
@@ -692,7 +690,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
 
             // Update method entry dependencies
             for cme_dep in &mut block.cme_dependencies {
-                cme_dep.receiver_klass = unsafe { rb_gc_location(cme_dep.receiver_klass) };
                 cme_dep.callee_cme = unsafe { rb_gc_location(cme_dep.callee_cme.into()) }.as_cme();
             }
 
@@ -889,7 +886,6 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     // contains new references to Ruby objects. Run write barriers.
     let iseq: VALUE = block.blockid.iseq.into();
     for dep in block.iter_cme_deps() {
-        obj_written!(iseq, dep.receiver_klass);
         obj_written!(iseq, dep.callee_cme.into());
     }
 
@@ -1009,11 +1005,9 @@ impl Block {
     /// dependencies for this block.
     pub fn add_cme_dependency(
         &mut self,
-        receiver_klass: VALUE,
         callee_cme: *const rb_callable_method_entry_t,
     ) {
         self.cme_dependencies.push(CmeDependency {
-            receiver_klass,
             callee_cme,
         });
     }
