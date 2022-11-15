@@ -972,7 +972,16 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
                 write_opcode(cb, 0xB8, reg);
                 cb.write_int(uimm.value, 32);
             } else {
-                movabs(cb, dst, uimm.value);
+                if reg.num_bits == 16 {
+                    cb.write_byte(0x66);
+                }
+
+                if dst.rex_needed() || reg.num_bits == 64 {
+                    write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
+                }
+
+                write_opcode(cb, if reg.num_bits == 8 { 0xb0 } else { 0xb8 }, reg);
+                cb.write_int(uimm.value, reg.num_bits.into());
             }
         },
         // M + Imm
