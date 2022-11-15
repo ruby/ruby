@@ -1,5 +1,9 @@
 require "test/unit"
 
+module IRB
+  class InputMethod; end
+end
+
 module TestIRB
   class TestCase < Test::Unit::TestCase
     class TestInputMethod < ::IRB::InputMethod
