@@ -217,6 +217,7 @@ rbd_allocate_struct_zero(int sign, size_t const digits, bool limit_precision)
     return real;
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_zero_limited(int sign, size_t const digits));
 #define NewZeroLimited rbd_allocate_struct_zero_limited
 static inline Real *
 rbd_allocate_struct_zero_limited(int sign, size_t const digits)
@@ -224,6 +225,7 @@ rbd_allocate_struct_zero_limited(int sign, size_t const digits)
     return rbd_allocate_struct_zero(sign, digits, true);
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_zero_nolimit(int sign, size_t const digits));
 #define NewZeroNolimit rbd_allocate_struct_zero_nolimit
 static inline Real *
 rbd_allocate_struct_zero_nolimit(int sign, size_t const digits)
@@ -242,6 +244,7 @@ rbd_allocate_struct_one(int sign, size_t const digits, bool limit_precision)
     return real;
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_one_limited(int sign, size_t const digits));
 #define NewOneLimited rbd_allocate_struct_one_limited
 static inline Real *
 rbd_allocate_struct_one_limited(int sign, size_t const digits)
@@ -249,6 +252,7 @@ rbd_allocate_struct_one_limited(int sign, size_t const digits)
     return rbd_allocate_struct_one(sign, digits, true);
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_one_nolimit(int sign, size_t const digits));
 #define NewOneNolimit rbd_allocate_struct_one_nolimit
 static inline Real *
 rbd_allocate_struct_one_nolimit(int sign, size_t const digits)
@@ -320,6 +324,7 @@ rbd_allocate_struct_zero_wrap_klass(VALUE klass, int sign, size_t const digits, 
     return real;
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_zero_limited_wrap(int sign, size_t const digits));
 #define NewZeroWrapLimited rbd_allocate_struct_zero_limited_wrap
 static inline Real *
 rbd_allocate_struct_zero_limited_wrap(int sign, size_t const digits)
@@ -327,6 +332,7 @@ rbd_allocate_struct_zero_limited_wrap(int sign, size_t const digits)
     return rbd_allocate_struct_zero_wrap_klass(rb_cBigDecimal, sign, digits, true);
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_zero_nolimit_wrap(int sign, size_t const digits));
 #define NewZeroWrapNolimit rbd_allocate_struct_zero_nolimit_wrap
 static inline Real *
 rbd_allocate_struct_zero_nolimit_wrap(int sign, size_t const digits)
@@ -345,6 +351,7 @@ rbd_allocate_struct_one_wrap_klass(VALUE klass, int sign, size_t const digits, b
     return real;
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_one_limited_wrap(int sign, size_t const digits));
 #define NewOneWrapLimited rbd_allocate_struct_one_limited_wrap
 static inline Real *
 rbd_allocate_struct_one_limited_wrap(int sign, size_t const digits)
@@ -352,6 +359,7 @@ rbd_allocate_struct_one_limited_wrap(int sign, size_t const digits)
     return rbd_allocate_struct_one_wrap_klass(rb_cBigDecimal, sign, digits, true);
 }
 
+MAYBE_UNUSED(static inline Real * rbd_allocate_struct_one_nolimit_wrap(int sign, size_t const digits));
 #define NewOneWrapNolimit rbd_allocate_struct_one_nolimit_wrap
 static inline Real *
 rbd_allocate_struct_one_nolimit_wrap(int sign, size_t const digits)
