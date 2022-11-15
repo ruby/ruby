@@ -2051,6 +2051,7 @@ fn gen_get_ivar(
     asm.comment("guard shape, embedded, and T_OBJECT");
     let flags_opnd = asm.and(flags_opnd, Opnd::UImm(expected_flags_mask as u64));
     asm.cmp(flags_opnd, Opnd::UImm(expected_flags as u64));
+    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
     jit_chain_guard(
         JCC_JNE,
         jit,
@@ -2058,7 +2059,7 @@ fn gen_get_ivar(
         asm,
         ocb,
         max_chain_depth,
-        side_exit,
+        megamorphic_side_exit,
     );
 
     match ivar_index {
