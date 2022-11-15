@@ -3582,11 +3582,11 @@ static int rsort_double(void *const _p, const long l) {
     if (m == NULL) return 1;
     
     for (long i = 0; i < l; i++) {
-        if (!RB_FLOAT_TYPE_P(p[i])) {
+        if (!RB_FLOAT_TYPE_P(p[i]) || isnan(m[i].d = rb_float_value(p[i]))) {
             free(_m);
             return 1;
         }
-        m[i] = (msort_double_t){ rb_float_value(p[i]), p[i] };
+        m[i].v = p[i];
     }
     
     m = msort_double(m, l, m + l, msort_double_cmp);
