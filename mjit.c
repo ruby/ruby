@@ -1628,7 +1628,7 @@ system_tmpdir(void)
 // Default permitted number of units with a JIT code kept in memory.
 #define DEFAULT_MAX_CACHE_SIZE 10000
 // A default threshold used to add iseq to JIT.
-#define DEFAULT_MIN_CALLS_TO_ADD 10000
+#define DEFAULT_CALL_THRESHOLD 10000
 
 // Start MJIT worker. Return TRUE if worker is successfully started.
 static bool
@@ -1709,8 +1709,8 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     else if (opt_match_arg(s, l, "max-cache")) {
         mjit_opt->max_cache_size = atoi(s + 1);
     }
-    else if (opt_match_arg(s, l, "min-calls")) {
-        mjit_opt->min_calls = atoi(s + 1);
+    else if (opt_match_arg(s, l, "call-threshold")) {
+        mjit_opt->call_threshold = atoi(s + 1);
     }
     // --mjit=pause is an undocumented feature for experiments
     else if (opt_match_noarg(s, l, "pause")) {
@@ -1724,15 +1724,15 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message mjit_option_messages[] = {
-    M("--mjit-warnings",      "", "Enable printing JIT warnings"),
-    M("--mjit-debug",         "", "Enable JIT debugging (very slow), or add cflags if specified"),
-    M("--mjit-wait",          "", "Wait until JIT compilation finishes every time (for testing)"),
-    M("--mjit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
-    M("--mjit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
-    M("--mjit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: "
+    M("--mjit-warnings",           "", "Enable printing JIT warnings"),
+    M("--mjit-debug",              "", "Enable JIT debugging (very slow), or add cflags if specified"),
+    M("--mjit-wait",               "", "Wait until JIT compilation finishes every time (for testing)"),
+    M("--mjit-save-temps",         "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
+    M("--mjit-verbose=num",        "", "Print JIT logs of level num or less to stderr (default: 0)"),
+    M("--mjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: "
       STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
-    M("--mjit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: "
-      STRINGIZE(DEFAULT_MIN_CALLS_TO_ADD) ")"),
+    M("--mjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: "
+      STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
     {0}
 };
 #undef M
@@ -1760,8 +1760,8 @@ mjit_init(const struct mjit_options *opts)
     mjit_pid = getpid();
 
     // Normalize options
-    if (mjit_opts.min_calls == 0)
-        mjit_opts.min_calls = DEFAULT_MIN_CALLS_TO_ADD;
+    if (mjit_opts.call_threshold == 0)
+        mjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
     if (mjit_opts.max_cache_size <= 0)
         mjit_opts.max_cache_size = DEFAULT_MAX_CACHE_SIZE;
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)

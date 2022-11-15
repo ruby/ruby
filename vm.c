@@ -391,7 +391,7 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
     ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
     switch ((enum rb_mjit_iseq_func)func_i) {
       case NOT_ADDED_JIT_ISEQ_FUNC:
-        if (body->total_calls == mjit_opts.min_calls) {
+        if (body->total_calls == mjit_opts.call_threshold) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
                 return body->jit_func(ec, ec->cfp);
