@@ -1332,7 +1332,7 @@ rb_process_status_wait(rb_pid_t pid, int flags)
     if (!(flags & WNOHANG)) {
         VALUE scheduler = rb_fiber_scheduler_current();
         VALUE result = rb_fiber_scheduler_process_wait(scheduler, pid, flags);
-        if (result != Qundef) return result;
+        if (!UNDEF_P(result)) return result;
     }
 
     struct waitpid_state waitpid_state;

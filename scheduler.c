@@ -231,10 +231,10 @@ rb_fiber_scheduler_close(VALUE scheduler)
     // would create an infinite loop.
 
     result = rb_check_funcall(scheduler, id_scheduler_close, 0, NULL);
-    if (result != Qundef) return result;
+    if (!UNDEF_P(result)) return result;
 
     result = rb_check_funcall(scheduler, id_close, 0, NULL);
-    if (result != Qundef) return result;
+    if (!UNDEF_P(result)) return result;
 
     return Qnil;
 }

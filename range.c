@@ -607,7 +607,7 @@ is_integer_p(VALUE v)
     VALUE is_int;
     CONST_ID(id_integer_p, "integer?");
     is_int = rb_check_funcall(v, id_integer_p, 0, 0);
-    return RTEST(is_int) && is_int != Qundef;
+    return RTEST(is_int) && !UNDEF_P(is_int);
 }
 
 static VALUE
@@ -1505,11 +1505,11 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
     else {
         VALUE x;
         b = rb_check_funcall(range, id_beg, 0, 0);
-        if (b == Qundef) return (int)Qfalse;
+        if (UNDEF_P(b)) return (int)Qfalse;
         e = rb_check_funcall(range, id_end, 0, 0);
-        if (e == Qundef) return (int)Qfalse;
+        if (UNDEF_P(e)) return (int)Qfalse;
         x = rb_check_funcall(range, rb_intern("exclude_end?"), 0, 0);
-        if (x == Qundef) return (int)Qfalse;
+        if (UNDEF_P(x)) return (int)Qfalse;
         excl = RTEST(x);
     }
     *begp = b;
@@ -1646,7 +1646,7 @@ inspect_range(VALUE range, VALUE dummy, int recur)
     if (NIL_P(RANGE_BEG(range)) || !NIL_P(RANGE_END(range))) {
         str2 = rb_inspect(RANGE_END(range));
     }
-    if (str2 != Qundef) rb_str_append(str, str2);
+    if (!UNDEF_P(str2)) rb_str_append(str, str2);
 
     return str;
 }
@@ -1724,7 +1724,7 @@ static VALUE
 range_eqq(VALUE range, VALUE val)
 {
     VALUE ret = range_include_internal(range, val, 1);
-    if (ret != Qundef) return ret;
+    if (!UNDEF_P(ret)) return ret;
     return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
 
@@ -1764,7 +1764,7 @@ static VALUE
 range_include(VALUE range, VALUE val)
 {
     VALUE ret = range_include_internal(range, val, 0);
-    if (ret != Qundef) return ret;
+    if (!UNDEF_P(ret)) return ret;
     return rb_call_super(1, &val);
 }
 

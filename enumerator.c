@@ -260,7 +260,7 @@ enumerator_ptr(VALUE obj)
     struct enumerator *ptr;
 
     TypedData_Get_Struct(obj, struct enumerator, &enumerator_data_type, ptr);
-    if (!ptr || ptr->obj == Qundef) {
+    if (!ptr || UNDEF_P(ptr->obj)) {
         rb_raise(rb_eArgError, "uninitialized enumerator");
     }
     return ptr;
@@ -735,7 +735,7 @@ next_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, obj))
     VALUE feedvalue = Qnil;
     VALUE args = rb_ary_new4(argc, argv);
     rb_fiber_yield(1, &args);
-    if (e->feedvalue != Qundef) {
+    if (!UNDEF_P(e->feedvalue)) {
         feedvalue = e->feedvalue;
         e->feedvalue = Qundef;
     }
@@ -840,7 +840,7 @@ enumerator_next_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE vs;
 
-    if (e->lookahead != Qundef) {
+    if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
         e->lookahead = Qundef;
         return vs;
@@ -901,7 +901,7 @@ enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
-    if (e->lookahead == Qundef) {
+    if (UNDEF_P(e->lookahead)) {
         e->lookahead = get_next_values(obj, e);
     }
     return e->lookahead;
@@ -1025,7 +1025,7 @@ enumerator_feed(VALUE obj, VALUE v)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
-    if (e->feedvalue != Qundef) {
+    if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
     }
     e->feedvalue = v;
@@ -1070,7 +1070,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
 
     cname = rb_obj_class(obj);
 
-    if (!e || e->obj == Qundef) {
+    if (!e || UNDEF_P(e->obj)) {
         return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(cname));
     }
 
@@ -1239,7 +1239,7 @@ enumerator_size(VALUE obj)
         argv = RARRAY_CONST_PTR(e->args);
     }
     size = rb_check_funcall_kw(e->size, id_call, argc, argv, e->kw_splat);
-    if (size != Qundef) return size;
+    if (!UNDEF_P(size)) return size;
     return e->size;
 }
 
@@ -1285,7 +1285,7 @@ yielder_ptr(VALUE obj)
     struct yielder *ptr;
 
     TypedData_Get_Struct(obj, struct yielder, &yielder_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
+    if (!ptr || UNDEF_P(ptr->proc)) {
         rb_raise(rb_eArgError, "uninitialized yielder");
     }
     return ptr;
@@ -1425,7 +1425,7 @@ generator_ptr(VALUE obj)
     struct generator *ptr;
 
     TypedData_Get_Struct(obj, struct generator, &generator_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
+    if (!ptr || UNDEF_P(ptr->proc)) {
         rb_raise(rb_eArgError, "uninitialized generator");
     }
     return ptr;
@@ -1529,7 +1529,7 @@ static VALUE
 enum_size(VALUE self)
 {
     VALUE r = rb_check_funcall(self, id_size, 0, 0);
-    return (r == Qundef) ? Qnil : r;
+    return UNDEF_P(r) ? Qnil : r;
 }
 
 static VALUE
@@ -1562,7 +1562,7 @@ lazy_init_iterator(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
         result = rb_yield_values2(len, nargv);
         ALLOCV_END(args);
     }
-    if (result == Qundef) rb_iter_break();
+    if (UNDEF_P(result)) rb_iter_break();
     return Qnil;
 }
 
@@ -2923,7 +2923,7 @@ producer_ptr(VALUE obj)
     struct producer *ptr;
 
     TypedData_Get_Struct(obj, struct producer, &producer_data_type, ptr);
-    if (!ptr || ptr->proc == Qundef) {
+    if (!ptr || UNDEF_P(ptr->proc)) {
         rb_raise(rb_eArgError, "uninitialized producer");
     }
     return ptr;
@@ -2978,7 +2978,7 @@ producer_each_i(VALUE obj)
     init = ptr->init;
     proc = ptr->proc;
 
-    if (init == Qundef) {
+    if (UNDEF_P(init)) {
         curr = Qnil;
     }
     else {
@@ -3109,7 +3109,7 @@ enum_chain_ptr(VALUE obj)
     struct enum_chain *ptr;
 
     TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         rb_raise(rb_eArgError, "uninitialized chain");
     }
     return ptr;
@@ -3302,7 +3302,7 @@ inspect_enum_chain(VALUE obj, VALUE dummy, int recur)
 
     TypedData_Get_Struct(obj, struct enum_chain, &enum_chain_data_type, ptr);
 
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(klass));
     }
 
@@ -3431,7 +3431,7 @@ enum_product_ptr(VALUE obj)
     struct enum_product *ptr;
 
     TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         rb_raise(rb_eArgError, "uninitialized product");
     }
     return ptr;
@@ -3642,7 +3642,7 @@ inspect_enum_product(VALUE obj, VALUE dummy, int recur)
 
     TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
 
-    if (!ptr || ptr->enums == Qundef) {
+    if (!ptr || UNDEF_P(ptr->enums)) {
         return rb_sprintf("#<%"PRIsVALUE": uninitialized>", rb_class_path(klass));
     }
 

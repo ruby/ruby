@@ -2738,7 +2738,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
       case 0:
         ret = basic_obj_respond_to_missing(ec, klass, obj, ID2SYM(id),
                                            RBOOL(!pub));
-        return RTEST(ret) && ret != Qundef;
+        return RTEST(ret) && !UNDEF_P(ret);
       default:
         return TRUE;
     }
@@ -2850,7 +2850,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     if (!(id = rb_check_id(&mid))) {
         VALUE ret = basic_obj_respond_to_missing(ec, CLASS_OF(obj), obj,
                                                  rb_to_symbol(mid), priv);
-        if (ret == Qundef) ret = Qfalse;
+        if (UNDEF_P(ret)) ret = Qfalse;
         return ret;
     }
     return  RBOOL(basic_obj_respond_to(ec, obj, id, !RTEST(priv)));

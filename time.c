@@ -523,7 +523,7 @@ num_exact(VALUE v)
         return rb_rational_canonicalize(v);
 
       default:
-        if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
+        if (!UNDEF_P(tmp = rb_check_funcall(v, idTo_r, 0, NULL))) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
             if (!rb_respond_to(v, idTo_int)) {
@@ -2277,7 +2277,7 @@ zone_set_dst(VALUE zone, struct time_object *tobj, VALUE tm)
     VALUE dst;
     CONST_ID(id_dst_p, "dst?");
     dst = rb_check_funcall(zone, id_dst_p, 1, &tm);
-    tobj->vtm.isdst = (dst != Qundef && RTEST(dst));
+    tobj->vtm.isdst = (!UNDEF_P(dst) && RTEST(dst));
 }
 
 static int
@@ -2290,7 +2290,7 @@ zone_timelocal(VALUE zone, VALUE time)
     t = rb_time_unmagnify(tobj->timew);
     tm = tm_from_time(rb_cTimeTM, time);
     utc = rb_check_funcall(zone, id_local_to_utc, 1, &tm);
-    if (utc == Qundef) return 0;
+    if (UNDEF_P(utc)) return 0;
 
     s = extract_time(utc);
     zone_set_offset(zone, tobj, t, s);
@@ -2314,7 +2314,7 @@ zone_localtime(VALUE zone, VALUE time)
     tm = tm_from_time(rb_cTimeTM, time);
 
     local = rb_check_funcall(zone, id_utc_to_local, 1, &tm);
-    if (local == Qundef) return 0;
+    if (UNDEF_P(local)) return 0;
 
     s = extract_vtm(local, &tobj->vtm, subsecx);
     tobj->tm_got = 1;
@@ -2616,7 +2616,7 @@ time_timespec(VALUE num, int interval)
     else {
         i = INT2FIX(1);
         ary = rb_check_funcall(num, id_divmod, 1, &i);
-        if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
+        if (!UNDEF_P(ary) && !NIL_P(ary = rb_check_array_type(ary))) {
             i = rb_ary_entry(ary, 0);
             f = rb_ary_entry(ary, 1);
             t.tv_sec = NUM2TIMET(i);
@@ -5481,12 +5481,12 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
 
     tm = tm_from_time(rb_cTimeTM, time);
     abbr = rb_check_funcall(zone, rb_intern("abbr"), 1, &tm);
-    if (abbr != Qundef) {
+    if (!UNDEF_P(abbr)) {
         goto found;
     }
 #ifdef SUPPORT_TZINFO_ZONE_ABBREVIATION
     abbr = rb_check_funcall(zone, rb_intern("period_for_utc"), 1, &tm);
-    if (abbr != Qundef) {
+    if (!UNDEF_P(abbr)) {
         abbr = rb_funcallv(abbr, rb_intern("abbreviation"), 0, 0);
         goto found;
     }
@@ -5494,7 +5494,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
     strftime_args[0] = rb_fstring_lit("%Z");
     strftime_args[1] = tm;
     abbr = rb_check_funcall(zone, rb_intern("strftime"), 2, strftime_args);
-    if (abbr != Qundef) {
+    if (!UNDEF_P(abbr)) {
         goto found;
     }
     abbr = rb_check_funcall_default(zone, idName, 0, 0, Qnil);

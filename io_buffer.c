@@ -2384,7 +2384,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return result;
         }
     }
@@ -2501,7 +2501,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return result;
         }
     }
@@ -2574,7 +2574,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return result;
         }
     }
@@ -2668,7 +2668,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, OFFT2NUM(from), self, SIZET2NUM(length), SIZET2NUM(offset));
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return result;
         }
     }

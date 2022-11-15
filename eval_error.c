@@ -306,7 +306,7 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VA
     if (NIL_P(errinfo))
         return;
 
-    if (errat == Qundef) {
+    if (UNDEF_P(errat)) {
         errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
@@ -358,7 +358,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     if (EC_EXEC_TAG() == TAG_NONE) {
         errat = rb_get_backtrace(errinfo);
     }
-    if (emesg == Qundef) {
+    if (UNDEF_P(emesg)) {
         emesg = Qnil;
         emesg = rb_get_detailed_message(errinfo, opt);
     }

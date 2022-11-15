@@ -4820,7 +4820,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
         const NODE *val = vals->nd_head;
         VALUE lit = rb_node_case_when_optimizable_literal(val);
 
-        if (lit == Qundef) {
+        if (UNDEF_P(lit)) {
             only_special_literals = 0;
         }
         else if (NIL_P(rb_hash_lookup(literals, lit))) {
@@ -7394,7 +7394,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_LABEL(ret, end_label);
     ADD_ADJUST_RESTORE(ret, adjust_label);
 
-    if (node->nd_state == Qundef) {
+    if (UNDEF_P(node->nd_state)) {
         /* ADD_INSN(ret, line_node, putundef); */
         COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
         return COMPILE_NG;

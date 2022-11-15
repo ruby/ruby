@@ -561,7 +561,7 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
     if (!NIL_P(opts)) {
         raise = rb_opts_exception_p(opts, raise);
     }
-    if (argc > 0 && CLASS_OF(a1) == rb_cComplex && a2 == Qundef) {
+    if (argc > 0 && CLASS_OF(a1) == rb_cComplex && UNDEF_P(a2)) {
         return a1;
     }
     return nucomp_convert(rb_cComplex, a1, a2, raise);
@@ -2107,11 +2107,11 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
     }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
-        if (a2 == Qundef || (k_exact_zero_p(a2)))
+        if (UNDEF_P(a2) || (k_exact_zero_p(a2)))
             return a1;
     }
 
-    if (a2 == Qundef) {
+    if (UNDEF_P(a2)) {
         if (k_numeric_p(a1) && !f_real_p(a1))
             return a1;
         /* should raise exception for consistency */
@@ -2133,7 +2133,7 @@ nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
         int argc;
         VALUE argv2[2];
         argv2[0] = a1;
-        if (a2 == Qundef) {
+        if (UNDEF_P(a2)) {
             argv2[1] = Qnil;
             argc = 1;
         }
