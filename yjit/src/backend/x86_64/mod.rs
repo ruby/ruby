@@ -466,8 +466,7 @@ impl Assembler
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { dest: out, opnd } => {
                     match opnd {
-                        // If the value being loaded is a heap object
-                        Opnd::Value(val) if !val.special_const_p() => {
+                        Opnd::Value(val) if val.heap_object_p() => {
                             // Using movabs because mov might write value in 32 bits
                             movabs(cb, out.into(), val.0 as _);
                             // The pointer immediate is encoded as the last part of the mov written out
