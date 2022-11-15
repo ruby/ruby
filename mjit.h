@@ -52,7 +52,7 @@ struct mjit_options {
     // If true, all ISeqs are synchronously compiled. For testing.
     bool wait;
     // Number of calls to trigger JIT compilation. For testing.
-    unsigned int min_calls;
+    unsigned int call_threshold;
     // Force printing info about MJIT work of level VERBOSE or
     // less. 0=silence, 1=medium, 2=verbose.
     int verbose;

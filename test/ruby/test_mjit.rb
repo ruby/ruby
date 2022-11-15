@@ -142,7 +142,7 @@ class TestMJIT < Test::Unit::TestCase
     end;
 
     # optimized getinstancevariable call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 1, call_threshold: 2)
     begin;
       class A
         def initialize
@@ -533,7 +533,7 @@ class TestMJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_aref
     # optimized call (optimized JIT) -> send call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '21', success_count: 2, min_calls: 1, insns: %i[opt_aref])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '21', success_count: 2, call_threshold: 1, insns: %i[opt_aref])
     begin;
       obj = Object.new
       def obj.[](h)
@@ -546,7 +546,7 @@ class TestMJIT < Test::Unit::TestCase
     end;
 
     # send call -> optimized call (send JIT) -> optimized call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, call_threshold: 2)
     begin;
       obj = Object.new
       def obj.[](h)
@@ -637,7 +637,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_mjit_output
-    out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
+    out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, call_threshold: 5)
     assert_equal("MJIT\n" * 5, out)
     assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1 -> .+_ruby_mjit_p\d+u\d+\.c$/, err)
     assert_match(/^Successful MJIT finish$/, err)
@@ -686,7 +686,7 @@ class TestMJIT < Test::Unit::TestCase
   def test_unload_units_and_compaction
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
-      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
+      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, call_threshold: 1, max_cache: 10)
       begin;
         i = 0
         while i < 11
@@ -805,7 +805,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_builtin_methods
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 1, call_threshold: 2)
     begin;
       def test
         float = 0.0
@@ -819,7 +819,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_c_method
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, call_threshold: 2)
     begin;
       def test(obj, recursive: nil)
         if recursive
@@ -837,7 +837,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_exivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 4, recompile_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 4, recompile_count: 2, call_threshold: 2)
     begin;
       class Foo < Hash
         def initialize
@@ -856,7 +856,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 2, call_threshold: 2)
     begin;
       class Foo
         def initialize
@@ -877,7 +877,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_setivar_frozen
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, min_calls: 3)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, call_threshold: 3)
     begin;
       class A
         def a
@@ -899,7 +899,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_getconstant
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, call_threshold: 2)
     begin;
       FOO = 1
       def const
@@ -911,7 +911,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_attr_reader
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, call_threshold: 2)
     begin;
       class A
         attr_reader :a, :b
@@ -942,7 +942,7 @@ class TestMJIT < Test::Unit::TestCase
       print(2 * a.test)
     end;
 
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true", success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true", success_count: 1, call_threshold: 2)
     begin;
       class Hoge
         attr_reader :foo
@@ -977,7 +977,7 @@ class TestMJIT < Test::Unit::TestCase
   def test_heap_promotion_of_ivar_in_the_middle_of_jit
     omit if GC.using_rvargc?
 
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, call_threshold: 2)
     begin;
       class A
         def initialize
@@ -1004,7 +1004,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_jump_to_precompiled_branch
-    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, min_calls: 1)
+    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, call_threshold: 1)
     begin;
       def test(foo)
         ".#{foo unless foo == 1}" if true
@@ -1038,7 +1038,7 @@ class TestMJIT < Test::Unit::TestCase
       omit '.bundle.dSYM directory is left but removing it is not supported for now'
     end
     Dir.mktmpdir("jit_test_clean_objects_on_exec_") do |dir|
-      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
+      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1)
       begin;
         def a; end; a
         exec "true"
@@ -1070,7 +1070,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_frame_omitted_inlining
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, call_threshold: 2)
     begin;
       class Integer
         remove_method :zero?
@@ -1086,7 +1086,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_block_handler_with_possible_frame_omitted_inlining
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 2, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 2, call_threshold: 2)
     begin;
       def multiply(a, b)
         a *= b
@@ -1099,7 +1099,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_builtin_frame_omitted_inlining
-    assert_eval_with_jit('0.zero?; 0.zero?; 3.times { p 0.zero? }', stdout: "true\ntrue\ntrue\n", success_count: 1, min_calls: 2)
+    assert_eval_with_jit('0.zero?; 0.zero?; 3.times { p 0.zero? }', stdout: "true\ntrue\ntrue\n", success_count: 1, call_threshold: 2)
   end
 
   def test_program_counter_with_regexpmatch
@@ -1131,7 +1131,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_mjit_pause_wait
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, min_calls: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, call_threshold: 1)
     begin;
       RubyVM::MJIT.pause
       proc {}.call
@@ -1139,7 +1139,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_not_cancel_by_tracepoint_class
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, call_threshold: 2)
     begin;
       TracePoint.new(:class) {}.enable
       2.times {}
@@ -1147,7 +1147,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_cancel_by_tracepoint
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, min_calls: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, call_threshold: 2)
     begin;
       TracePoint.new(:line) {}.enable
       2.times {}
@@ -1155,7 +1155,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_caller_locations_without_catch_table
-    out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
+    out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1)
     begin;
       def b                             # 2
         caller_locations.first          # 3
@@ -1175,8 +1175,8 @@ class TestMJIT < Test::Unit::TestCase
 
   def test_fork_with_mjit_worker_thread
     Dir.mktmpdir("jit_test_fork_with_mjit_worker_thread_") do |dir|
-      # min_calls: 2 to skip fork block
-      out, err = eval_with_jit({ "TMPDIR" => dir }, "#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 2, verbose: 1)
+      # call_threshold: 2 to skip fork block
+      out, err = eval_with_jit({ "TMPDIR" => dir }, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
       begin;
         def before_fork; end
         def after_fork; end
@@ -1206,7 +1206,7 @@ class TestMJIT < Test::Unit::TestCase
   end if defined?(fork)
 
   def test_jit_failure
-    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1, verbose: 1)
+    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1, verbose: 1)
     begin;
       1.times do
         class A
@@ -1230,14 +1230,14 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
-    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, call_threshold: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
+    out, err = eval_with_jit(script, verbose: 1, call_threshold: call_threshold, max_cache: max_cache)
     success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
     # Add --mjit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --mjit-verbose=1. See `start_process` in mjit.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != success_actual
-      out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
+      out2, err2 = eval_with_jit(script, verbose: 2, call_threshold: call_threshold, max_cache: max_cache)
     end
 
     # Make sure that the script has insns expected to be tested

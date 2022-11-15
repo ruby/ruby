@@ -356,6 +356,7 @@ The following deprecated APIs are removed.
   doing it in a native thread called MJIT worker. [[Feature #18968]]
   * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
 * MinGW is no longer supported. [[Feature #18824]]
+* Rename `--mjit-min-calls` to `--mjit-call-threshold`.
 
 ## Static analysis
 
