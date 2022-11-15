@@ -107,6 +107,10 @@ static struct {
 # define RB_OBJ_STRING(obj) StringValueCStr(obj)
 #endif
 
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
+#endif
+
 #define BIGDECIMAL_POSITIVE_P(bd) ((bd)->sign > 0)
 #define BIGDECIMAL_NEGATIVE_P(bd) ((bd)->sign < 0)
 
