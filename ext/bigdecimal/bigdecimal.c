@@ -420,7 +420,7 @@ GetVpValueWithPrec(VALUE v, long prec, int must)
 
       case T_FIXNUM: {
         char szD[128];
-        sprintf(szD, "%ld", FIX2LONG(v));
+        snprintf(szD, 128, "%ld", FIX2LONG(v));
         v = rb_cstr_convert_to_BigDecimal(szD, VpBaseFig() * 2 + 1, must);
         break;
       }
@@ -779,13 +779,15 @@ BigDecimal_dump(int argc, VALUE *argv, VALUE self)
     char *psz;
     VALUE dummy;
     volatile VALUE dump;
+    size_t len;
 
     rb_scan_args(argc, argv, "01", &dummy);
     GUARD_OBJ(vp,GetVpValue(self, 1));
     dump = rb_str_new(0, VpNumOfChars(vp, "E")+50);
     psz = RSTRING_PTR(dump);
-    sprintf(psz, "%"PRIuSIZE":", VpMaxPrec(vp)*VpBaseFig());
-    VpToString(vp, psz+strlen(psz), 0, 0);
+    snprintf(psz, RSTRING_LEN(dump), "%"PRIuSIZE":", VpMaxPrec(vp)*VpBaseFig());
+    len = strlen(psz);
+    VpToString(vp, psz+len, RSTRING_LEN(dump)-len, 0, 0);
     rb_str_resize(dump, strlen(psz));
     return dump;
 }
@@ -1305,7 +1307,7 @@ BigDecimal_to_f(VALUE self)
 
     str = rb_str_new(0, VpNumOfChars(p, "E"));
     buf = RSTRING_PTR(str);
-    VpToString(p, buf, 0, 0);
+    VpToString(p, buf, RSTRING_LEN(str), 0, 0);
     errno = 0;
     d = strtod(buf, 0);
     if (errno == ERANGE) {
@@ -2753,10 +2755,10 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     psz = RSTRING_PTR(str);
 
     if (fmt) {
-	VpToFString(vp, psz, mc, fPlus);
+	VpToFString(vp, psz, RSTRING_LEN(str), mc, fPlus);
     }
     else {
-	VpToString (vp, psz, mc, fPlus);
+	VpToString (vp, psz, RSTRING_LEN(str), mc, fPlus);
     }
     rb_str_resize(str, strlen(psz));
     return str;
@@ -2798,7 +2800,7 @@ BigDecimal_split(VALUE self)
     GUARD_OBJ(vp, GetVpValue(self, 1));
     str = rb_str_new(0, VpNumOfChars(vp, "E"));
     psz1 = RSTRING_PTR(str);
-    VpSzMantissa(vp, psz1);
+    VpSzMantissa(vp, psz1, RSTRING_LEN(str));
     s = 1;
     if(psz1[0] == '-') {
 	size_t len = strlen(psz1 + 1);
@@ -2847,7 +2849,7 @@ BigDecimal_inspect(VALUE self)
     nc = VpNumOfChars(vp, "E");
 
     str = rb_str_new(0, nc);
-    VpToString(vp, RSTRING_PTR(str), 0, 0);
+    VpToString(vp, RSTRING_PTR(str), RSTRING_LEN(str), 0, 0);
     rb_str_resize(str, strlen(RSTRING_PTR(str)));
     return str;
 }
@@ -6528,188 +6530,254 @@ VpExponent10(Real *a)
 }
 
 VP_EXPORT void
-VpSzMantissa(Real *a,char *psz)
+VpSzMantissa(Real *a, char *buf, size_t buflen)
 {
     size_t i, n, ZeroSup;
     DECDIG_DBL m, e, nn;
 
     if (VpIsNaN(a)) {
-	sprintf(psz, SZ_NaN);
-	return;
+        snprintf(buf, buflen, SZ_NaN);
+        return;
     }
     if (VpIsPosInf(a)) {
-	sprintf(psz, SZ_INF);
+	snprintf(buf, buflen, SZ_INF);
 	return;
     }
     if (VpIsNegInf(a)) {
-	sprintf(psz, SZ_NINF);
+	snprintf(buf, buflen, SZ_NINF);
 	return;
     }
 
     ZeroSup = 1;        /* Flag not to print the leading zeros as 0.00xxxxEnn */
     if (!VpIsZero(a)) {
-	if (BIGDECIMAL_NEGATIVE_P(a)) *psz++ = '-';
-	n = a->Prec;
-	for (i = 0; i < n; ++i) {
-	    m = BASE1;
-	    e = a->frac[i];
-	    while (m) {
-		nn = e / m;
-		if (!ZeroSup || nn) {
-		    sprintf(psz, "%lu", (unsigned long)nn); /* The leading zero(s) */
-		    psz += strlen(psz);
-		    /* as 0.00xx will be ignored. */
-		    ZeroSup = 0; /* Set to print succeeding zeros */
-		}
-		e = e - nn * m;
-		m /= 10;
-	    }
-	}
-	*psz = 0;
-	while (psz[-1] == '0') *(--psz) = 0;
+        if (BIGDECIMAL_NEGATIVE_P(a)) *buf++ = '-';
+        n = a->Prec;
+        for (i = 0; i < n; ++i) {
+            m = BASE1;
+            e = a->frac[i];
+            while (m) {
+                nn = e / m;
+                if (!ZeroSup || nn) {
+                    snprintf(buf, buflen, "%lu", (unsigned long)nn); /* The leading zero(s) */
+                    buf += strlen(buf);
+                    /* as 0.00xx will be ignored. */
+                    ZeroSup = 0; /* Set to print succeeding zeros */
+                }
+                e = e - nn * m;
+                m /= 10;
+            }
+        }
+        *buf = 0;
+        while (buf[-1] == '0') *(--buf) = 0;
     }
     else {
-	if (VpIsPosZero(a)) sprintf(psz, "0");
-	else                sprintf(psz, "-0");
+	if (VpIsPosZero(a)) snprintf(buf, buflen, "0");
+	else                snprintf(buf, buflen, "-0");
     }
 }
 
 VP_EXPORT int
-VpToSpecialString(Real *a,char *psz,int fPlus)
+VpToSpecialString(Real *a, char *buf, size_t buflen, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     if (VpIsNaN(a)) {
-	sprintf(psz,SZ_NaN);
-	return 1;
+        snprintf(buf, buflen, SZ_NaN);
+        return 1;
     }
 
     if (VpIsPosInf(a)) {
-	if (fPlus == 1) {
-	    *psz++ = ' ';
-	}
-	else if (fPlus == 2) {
-	    *psz++ = '+';
-	}
-	sprintf(psz, SZ_INF);
-	return 1;
+        if (fPlus == 1) {
+            *buf++ = ' ';
+        }
+        else if (fPlus == 2) {
+            *buf++ = '+';
+        }
+        snprintf(buf, buflen, SZ_INF);
+        return 1;
     }
     if (VpIsNegInf(a)) {
-	sprintf(psz, SZ_NINF);
-	return 1;
+        snprintf(buf, buflen, SZ_NINF);
+        return 1;
     }
     if (VpIsZero(a)) {
-	if (VpIsPosZero(a)) {
-	    if (fPlus == 1)      sprintf(psz, " 0.0");
-	    else if (fPlus == 2) sprintf(psz, "+0.0");
-	    else                 sprintf(psz,  "0.0");
-	}
-	else                     sprintf(psz, "-0.0");
-	return 1;
+        if (VpIsPosZero(a)) {
+            if (fPlus == 1)      snprintf(buf, buflen, " 0.0");
+            else if (fPlus == 2) snprintf(buf, buflen, "+0.0");
+            else                 snprintf(buf, buflen,  "0.0");
+        }
+        else                     snprintf(buf, buflen, "-0.0");
+        return 1;
     }
     return 0;
 }
 
 VP_EXPORT void
-VpToString(Real *a, char *psz, size_t fFmt, int fPlus)
+VpToString(Real *a, char *buf, size_t buflen, size_t fFmt, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n, ZeroSup;
     DECDIG shift, m, e, nn;
-    char *pszSav = psz;
+    char *p = buf;
+    size_t plen = buflen;
     ssize_t ex;
 
-    if (VpToSpecialString(a, psz, fPlus)) return;
+    if (VpToSpecialString(a, buf, buflen, fPlus)) return;
 
     ZeroSup = 1;    /* Flag not to print the leading zeros as 0.00xxxxEnn */
 
-    if (BIGDECIMAL_NEGATIVE_P(a)) *psz++ = '-';
-    else if (fPlus == 1)  *psz++ = ' ';
-    else if (fPlus == 2)  *psz++ = '+';
+#define ADVANCE(n) do { \
+    if (plen < n) goto overflow; \
+    p += n; \
+    plen -= n; \
+} while (0)
 
-    *psz++ = '0';
-    *psz++ = '.';
+    if (BIGDECIMAL_NEGATIVE_P(a)) {
+        *p = '-';
+        ADVANCE(1);
+    }
+    else if (fPlus == 1) {
+        *p = ' ';
+        ADVANCE(1);
+    }
+    else if (fPlus == 2) {
+        *p = '+';
+        ADVANCE(1);
+    }
+
+    *p = '0'; ADVANCE(1);
+    *p = '.'; ADVANCE(1);
+
     n = a->Prec;
     for (i = 0; i < n; ++i) {
-	m = BASE1;
-	e = a->frac[i];
-	while (m) {
-	    nn = e / m;
-	    if (!ZeroSup || nn) {
-		sprintf(psz, "%lu", (unsigned long)nn);    /* The reading zero(s) */
-		psz += strlen(psz);
-		/* as 0.00xx will be ignored. */
-		ZeroSup = 0;    /* Set to print succeeding zeros */
-	    }
-	    e = e - nn * m;
-	    m /= 10;
-	}
+        m = BASE1;
+        e = a->frac[i];
+        while (m) {
+            nn = e / m;
+            if (!ZeroSup || nn) {
+                /* The reading zero(s) */
+                size_t n = (size_t)snprintf(p, plen, "%lu", (unsigned long)nn);
+                if (n > plen) goto overflow;
+                ADVANCE(n);
+                /* as 0.00xx will be ignored. */
+                ZeroSup = 0;    /* Set to print succeeding zeros */
+            }
+            e = e - nn * m;
+            m /= 10;
+        }
     }
+
     ex = a->exponent * (ssize_t)BASE_FIG;
     shift = BASE1;
     while (a->frac[0] / shift == 0) {
-	--ex;
-	shift /= 10;
+        --ex;
+        shift /= 10;
     }
-    while (psz[-1] == '0') {
-	*(--psz) = 0;
+    while (p - 1 > buf && p[-1] == '0') {
+        *(--p) = '\0';
+        ++plen;
     }
-    sprintf(psz, "e%"PRIdSIZE, ex);
-    if (fFmt) VpFormatSt(pszSav, fFmt);
+    snprintf(p, plen, "e%"PRIdSIZE, ex);
+    if (fFmt) VpFormatSt(buf, fFmt);
+
+  overflow:
+    return;
+#undef ADVANCE
 }
 
 VP_EXPORT void
-VpToFString(Real *a, char *psz, size_t fFmt, int fPlus)
+VpToFString(Real *a, char *buf, size_t buflen, size_t fFmt, int fPlus)
 /* fPlus = 0: default, 1: set ' ' before digits, 2: set '+' before digits. */
 {
     size_t i, n;
     DECDIG m, e, nn;
-    char *pszSav = psz;
+    char *p = buf;
+    size_t plen = buflen;
     ssize_t ex;
 
-    if (VpToSpecialString(a, psz, fPlus)) return;
+    if (VpToSpecialString(a, buf, buflen, fPlus)) return;
 
-    if (BIGDECIMAL_NEGATIVE_P(a)) *psz++ = '-';
-    else if (fPlus == 1)  *psz++ = ' ';
-    else if (fPlus == 2)  *psz++ = '+';
+#define ADVANCE(n) do { \
+    if (plen < n) goto overflow; \
+    p += n; \
+    plen -= n; \
+} while (0)
+
+
+    if (BIGDECIMAL_NEGATIVE_P(a)) {
+        *p = '-';
+        ADVANCE(1);
+    }
+    else if (fPlus == 1) {
+        *p = ' ';
+        ADVANCE(1);
+    }
+    else if (fPlus == 2) {
+        *p = '+';
+        ADVANCE(1);
+    }
 
     n  = a->Prec;
     ex = a->exponent;
     if (ex <= 0) {
-	*psz++ = '0';*psz++ = '.';
-	while (ex < 0) {
-	    for (i=0; i < BASE_FIG; ++i) *psz++ = '0';
-	    ++ex;
-	}
-	ex = -1;
+        *p = '0'; ADVANCE(1);
+        *p = '.'; ADVANCE(1);
+        while (ex < 0) {
+            for (i=0; i < BASE_FIG; ++i) {
+                *p = '0'; ADVANCE(1);
+            }
+            ++ex;
+        }
+        ex = -1;
     }
 
     for (i = 0; i < n; ++i) {
-	--ex;
-	if (i == 0 && ex >= 0) {
-	    sprintf(psz, "%lu", (unsigned long)a->frac[i]);
-	    psz += strlen(psz);
-	}
-	else {
-	    m = BASE1;
-	    e = a->frac[i];
-	    while (m) {
-		nn = e / m;
-		*psz++ = (char)(nn + '0');
-		e = e - nn * m;
-		m /= 10;
-	    }
-	}
-	if (ex == 0) *psz++ = '.';
+        --ex;
+        if (i == 0 && ex >= 0) {
+            size_t n = snprintf(p, plen, "%lu", (unsigned long)a->frac[i]);
+            if (n > plen) goto overflow;
+            ADVANCE(n);
+        }
+        else {
+            m = BASE1;
+            e = a->frac[i];
+            while (m) {
+                nn = e / m;
+                *p = (char)(nn + '0');
+                ADVANCE(1);
+                e = e - nn * m;
+                m /= 10;
+            }
+        }
+        if (ex == 0) {
+            *p = '.';
+            ADVANCE(1);
+        }
     }
     while (--ex>=0) {
-	m = BASE;
-	while (m /= 10) *psz++ = '0';
-	if (ex == 0)    *psz++ = '.';
+        m = BASE;
+        while (m /= 10) {
+            *p = '0';
+            ADVANCE(1);
+        }
+        if (ex == 0) {
+            *p = '.';
+            ADVANCE(1);
+        }
     }
-    *psz = 0;
-    while (psz[-1] == '0') *(--psz) = 0;
-    if (psz[-1] == '.') sprintf(psz, "0");
-    if (fFmt) VpFormatSt(pszSav, fFmt);
+
+    *p = '\0';
+    while (p - 1 > buf && p[-1] == '0') {
+        *(--p) = '\0';
+        ++plen;
+    }
+    if (p - 1 > buf && p[-1] == '.') {
+        snprintf(p, plen, "0");
+    }
+    if (fFmt) VpFormatSt(buf, fFmt);
+
+  overflow:
+    return;
+#undef ADVANCE
 }
 
 /*
