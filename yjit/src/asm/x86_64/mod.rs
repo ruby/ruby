@@ -1038,18 +1038,13 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
 pub fn movabs(cb: &mut CodeBlock, dst: X86Opnd, value: u64) {
     match dst {
         X86Opnd::Reg(reg) => {
-            if reg.num_bits == 16 {
-                cb.write_byte(0x66);
-            }
+            assert_eq!(reg.num_bits, 64);
+            write_rex(cb, true, 0, 0, reg.reg_no);
 
-            if dst.rex_needed() || reg.num_bits == 64 {
-                write_rex(cb, reg.num_bits == 64, 0, 0, reg.reg_no);
-            }
-
-            write_opcode(cb, if reg.num_bits == 8 { 0xb0 } else { 0xb8 }, reg);
-            cb.write_int(value, reg.num_bits.into());
+            write_opcode(cb, 0xb8, reg);
+            cb.write_int(value, 64);
         },
-        _ => unreachable!(),
+        _ => unreachable!()
     }
 }
 
