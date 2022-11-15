@@ -10817,6 +10817,7 @@ parse.$(OBJEXT): $(top_srcdir)/internal/bits.h
 parse.$(OBJEXT): $(top_srcdir)/internal/compile.h
 parse.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 parse.$(OBJEXT): $(top_srcdir)/internal/complex.h
+parse.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 parse.$(OBJEXT): $(top_srcdir)/internal/error.h
 parse.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 parse.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -12231,6 +12232,7 @@ re.$(OBJEXT): $(top_srcdir)/internal/array.h
 re.$(OBJEXT): $(top_srcdir)/internal/bits.h
 re.$(OBJEXT): $(top_srcdir)/internal/class.h
 re.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+re.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 re.$(OBJEXT): $(top_srcdir)/internal/gc.h
 re.$(OBJEXT): $(top_srcdir)/internal/hash.h
 re.$(OBJEXT): $(top_srcdir)/internal/imemo.h
@@ -14765,6 +14767,7 @@ st.$(OBJEXT): {$(VPATH)}st.h
 st.$(OBJEXT): {$(VPATH)}subst.h
 strftime.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+strftime.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/serial.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 strftime.$(OBJEXT): $(top_srcdir)/internal/string.h

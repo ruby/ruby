@@ -1646,7 +1646,7 @@ make_writeconv(rb_io_t *fptr)
         ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_READ_MASK;
         ecopts = fptr->encs.ecopts;
 
-        if (!fptr->encs.enc || (fptr->encs.enc == rb_ascii8bit_encoding() && !fptr->encs.enc2)) {
+        if (!fptr->encs.enc || (rb_is_ascii8bit_enc(fptr->encs.enc) && !fptr->encs.enc2)) {
             /* no encoding conversion */
             fptr->writeconv_pre_ecflags = 0;
             fptr->writeconv_pre_ecopts = Qnil;
@@ -6514,7 +6514,7 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
         ext = rb_default_external_encoding();
         default_ext = 1;
     }
-    if (ext == rb_ascii8bit_encoding()) {
+    if (rb_is_ascii8bit_enc(ext)) {
         /* If external is ASCII-8BIT, no transcoding */
         intern = NULL;
     }

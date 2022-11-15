@@ -16,6 +16,7 @@
 #include "encindex.h"
 #include "hrtime.h"
 #include "internal.h"
+#include "internal/encoding.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/re.h"
@@ -2866,7 +2867,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case 'C': /* \C-X, \C-\M-X */
               case 'M': /* \M-X, \M-\C-X, \M-\cX */
                 p = p-2;
-                if (enc == rb_usascii_encoding()) {
+                if (rb_is_usascii_enc(enc)) {
                     const char *pbeg = p;
                     int byte = read_escaped_byte(&p, end, err);
                     if (byte == -1) return -1;
