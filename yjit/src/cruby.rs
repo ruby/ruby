@@ -333,6 +333,11 @@ impl VALUE {
         self.immediate_p() || !self.test()
     }
 
+    /// Return true if the value is a heap object
+    pub fn heap_object_p(self) -> bool {
+        !self.special_const_p()
+    }
+
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
