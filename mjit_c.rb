@@ -565,7 +565,7 @@ module RubyVM::MJIT
   def C.rb_method_definition_struct
     @rb_method_definition_struct ||= CType::Struct.new(
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
-      type: [self.rb_method_type_t, 0],
+      type: [CType::BitField.new(4, 0), 0],
       iseq_overload: [CType::BitField.new(1, 4), 4],
       alias_count: [CType::BitField.new(27, 5), 5],
       complemented_count: [CType::BitField.new(28, 0), 32],

@@ -224,7 +224,7 @@ class BindingGenerator
 
         case child
         # BitField is struct-specific. So it must be handled here.
-        in Node[kind: :field_decl, spelling:, bitwidth:, children: [_grandchild]] if bitwidth > 0
+        in Node[kind: :field_decl, spelling:, bitwidth:, children: [_grandchild, *]] if bitwidth > 0
           buf << field_builder.call(spelling, "CType::BitField.new(#{bitwidth}, #{node.offsetof.fetch(spelling) % 8})")
         # "(unnamed ...)" struct and union are handled here, which are also struct-specific.
         in Node[kind: :field_decl, spelling:, type:, children: [grandchild]] if type.match?(/\((unnamed|anonymous) [^)]+\)\z/)
