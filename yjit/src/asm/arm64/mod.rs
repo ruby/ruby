@@ -536,6 +536,22 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDURH - load a byte from memory, zero-extend it, and write it to a register
+pub fn ldurh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rt.num_bits == 32, "Rt should be a 32 bit register");
+            assert!(rn.num_bits == 64, "Rn should be a 64 bit register");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldurh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operands for LDURH")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDURB - load a byte from memory, zero-extend it, and write it to a register
 pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
@@ -1307,6 +1323,12 @@ mod tests {
     #[test]
     fn test_ldrh_post() {
         check_bytes("6ac54078", |cb| ldrh_post(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
+    fn test_ldurh_memory() {
+        check_bytes("2a004078", |cb| ldurh(cb, W10, A64Opnd::new_mem(64, X1, 0)));
+        check_bytes("2ab04778", |cb| ldurh(cb, W10, A64Opnd::new_mem(64, X1, 123)));
     }
 
     #[test]
