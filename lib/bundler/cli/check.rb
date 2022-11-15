@@ -17,7 +17,7 @@ module Bundler
       begin
         definition.resolve_only_locally!
         not_installed = definition.missing_specs
-      rescue GemNotFound, VersionConflict
+      rescue GemNotFound, SolveFailure
         Bundler.ui.error "Bundler can't satisfy your Gemfile's dependencies."
         Bundler.ui.warn "Install missing gems with `bundle install`."
         exit 1

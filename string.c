@@ -262,7 +262,7 @@ rb_str_size_as_embedded(VALUE str)
     /* if the string is not currently embedded, but it can be embedded, how
      * much space would it require */
     else if (rb_str_reembeddable_p(str)) {
-        real_size = rb_str_embed_size(RSTRING(str)->as.heap.len) + TERM_LEN(str);
+        real_size = rb_str_embed_size(RSTRING(str)->as.heap.aux.capa) + TERM_LEN(str);
     }
     else {
 #endif

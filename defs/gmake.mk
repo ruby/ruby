@@ -19,6 +19,7 @@ INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
 
+ifeq ($(DOT_WAIT),)
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
@@ -41,6 +42,7 @@ TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE
 TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+endif
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
 
@@ -71,6 +73,7 @@ $(foreach arch,$(arch_flags),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 
+ifeq ($(DOT_WAIT),)
 .PHONY: $(addprefix yes-,$(TEST_TARGETS))
 
 ifneq ($(filter-out btest%,$(TEST_TARGETS)),)
@@ -88,6 +91,7 @@ prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck
 $(foreach test,$(ORDERED_TEST_TARGETS), \
 	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
 	$(eval prev_test := $(value test)))
+endif
 
 ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
 install-targets := $(filter install uninstall,$(MAKECMDGOALS))
@@ -381,6 +385,19 @@ ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))
 UNICODE_TABLES_TIMESTAMP =
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+endif
+
+ifeq ($(HAVE_GIT),yes)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
+else
+REVISION_LATEST := update
+endif
+REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
+ifeq ($(REVISION_IN_HEADER),)
+REVISION_IN_HEADER := none
+endif
+ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
+$(REVISION_H): PHONY
 endif
 
 include $(top_srcdir)/yjit/yjit.mk

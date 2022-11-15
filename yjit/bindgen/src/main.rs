@@ -63,9 +63,6 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
-        // From include/ruby/internal/config.h
-        .allowlist_var("USE_RVARGC")
-
         // From include/ruby/internal/special_consts.h
         .allowlist_type("ruby_special_consts")
 

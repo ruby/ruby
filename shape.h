@@ -144,7 +144,6 @@ int rb_shape_frozen_shape_p(rb_shape_t* shape);
 void rb_shape_transition_shape_frozen(VALUE obj);
 void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape);
 rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape, uint32_t new_capacity);
-void rb_shape_transition_shape(VALUE obj, ID id, rb_shape_t *shape);
 rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
 bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);

@@ -349,7 +349,7 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) { // ISeq is not GCed
-        ISEQ_BODY(unit->iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        ISEQ_BODY(unit->iseq)->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
         ISEQ_BODY(unit->iseq)->jit_unit = NULL;
     }
     if (unit->cc_entries) {
@@ -786,7 +786,7 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
 
         if (cur->iseq) { // Check whether GCed or not
             // Usage of jit_code might be not in a critical section.
-            MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (mjit_func_t)func);
+            MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (jit_func_t)func);
         }
     }
     verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units.length, c_file, so_file);
@@ -1175,7 +1175,7 @@ check_unit_queue(void)
         current_cc_pid = start_mjit_compile(unit);
         if (current_cc_pid == -1) { // JIT failure
             current_cc_pid = 0;
-            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+            current_cc_unit->iseq->body->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
             current_cc_unit = NULL;
             return;
         }
@@ -1250,7 +1250,7 @@ mjit_notify_waitpid(int exit_code)
     if (exit_code != 0) {
         verbose(2, "Failed to generate so");
         if (!current_cc_unit->compact_p) {
-            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+            current_cc_unit->iseq->body->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
         }
         free_unit(current_cc_unit);
         current_cc_unit = NULL;
@@ -1329,7 +1329,7 @@ mjit_hook_custom_compile(const rb_iseq_t *iseq)
     VALUE iseq_class = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
     VALUE iseq_ptr = rb_funcall(iseq_class, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
     VALUE jit_func = rb_funcall(rb_mMJIT, rb_intern("compile"), 1, iseq_ptr);
-    ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NUM2ULONG(jit_func);
+    ISEQ_BODY(iseq)->jit_func = (jit_func_t)NUM2ULONG(jit_func);
 
     mjit_call_p = original_call_p;
 }
@@ -1346,12 +1346,12 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     }
     if (!mjit_target_iseq_p(iseq)) {
-        ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+        ISEQ_BODY(iseq)->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
     }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
-    ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+    ISEQ_BODY(iseq)->jit_func = (jit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
     if (ISEQ_BODY(iseq)->jit_unit == NULL)
         // Failure in creating the unit.
@@ -1384,11 +1384,11 @@ mjit_wait(struct rb_iseq_constant_body *body)
     int tries = 0;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
-    while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) { // TODO: refactor this
+    while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (jit_func_t)NOT_READY_JIT_ISEQ_FUNC) { // TODO: refactor this
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             if (body != NULL) {
-                body->jit_func = (mjit_func_t) NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
+                body->jit_func = (jit_func_t) NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
             }
             mjit_warning("timed out to wait for JIT finish");
             break;

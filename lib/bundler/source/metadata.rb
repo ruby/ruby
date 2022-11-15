@@ -15,7 +15,6 @@ module Bundler
             s.version  = VERSION
             s.license  = "MIT"
             s.platform = Gem::Platform::RUBY
-            s.source   = self
             s.authors  = ["bundler team"]
             s.bindir   = "exe"
             s.homepage = "https://bundler.io"

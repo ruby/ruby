@@ -1,5 +1,4 @@
 module RubyVM::MJIT
-  USE_RVARGC = C.USE_RVARGC
   ROBJECT_EMBED_LEN_MAX = C.ROBJECT_EMBED_LEN_MAX
 
   UNSUPPORTED_INSNS = [
@@ -446,9 +445,10 @@ module RubyVM::MJIT
     def compile_invokebuiltin(f, insn, stack_size, sp_inc, body, operands)
       bf = C.RB_BUILTIN.new(operands[0])
       if bf.compiler > 0
+        index = (insn.name == :invokebuiltin ? -1 : operands[1])
         C.fprintf(f, "{\n")
         C.fprintf(f, "    VALUE val;\n")
-        C.builtin_compiler(f, bf, operands[1], stack_size, body.builtin_inline_p)
+        C.builtin_compiler(f, bf, index, stack_size, body.builtin_inline_p)
         C.fprintf(f, "    stack[#{stack_size + sp_inc - 1}] = val;\n")
         C.fprintf(f, "}\n")
         return true

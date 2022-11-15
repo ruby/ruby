@@ -2118,6 +2118,7 @@ utc_offset_arg(VALUE arg)
             if (s[0] >= 'A' && s[0] <= 'I') {
                 n = (int)s[0] - 'A' + 1;
             }
+            /* No 'J' zone */
             else if (s[0] >= 'K' && s[0] <= 'M') {
                 n = (int)s[0] - 'A';
             }
@@ -2134,30 +2135,29 @@ utc_offset_arg(VALUE arg)
                 return UTC_ZONE;
             }
             break; /* +HH */
+          case 7: /* +HHMMSS */
+            sec = s+5;
+            /* fallthrough */
           case 5: /* +HHMM */
             min = s+3;
             break;
-          case 6: /* +HH:MM */
-            min = s+4;
-            break;
-          case 7: /* +HHMMSS */
-            sec = s+5;
-            min = s+3;
-            break;
           case 9: /* +HH:MM:SS */
+            if (s[6] != ':') goto invalid_utc_offset;
             sec = s+7;
+            /* fallthrough */
+          case 6: /* +HH:MM */
+            if (s[3] != ':') goto invalid_utc_offset;
             min = s+4;
             break;
           default:
             goto invalid_utc_offset;
         }
         if (sec) {
-            if (sec == s+7 && *(sec-1) != ':') goto invalid_utc_offset;
             if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
             n += (sec[0] * 10 + sec[1] - '0' * 11);
+            ASSUME(min);
         }
         if (min) {
-            if (min == s+4 && *(min-1) != ':') goto invalid_utc_offset;
             if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
             if (min[0] > '5') goto invalid_utc_offset;
             n += (min[0] * 10 + min[1] - '0' * 11) * 60;

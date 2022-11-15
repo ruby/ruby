@@ -104,7 +104,7 @@ RSpec.describe "Resolving" do
     dep "chef_app_error"
     expect do
       resolve
-    end.to raise_error(Bundler::VersionConflict)
+    end.to raise_error(Bundler::SolveFailure)
   end
 
   it "raises an exception with the minimal set of conflicting dependencies" do
@@ -118,14 +118,15 @@ RSpec.describe "Resolving" do
     dep "c"
     expect do
       resolve
-    end.to raise_error(Bundler::VersionConflict, <<-E.strip)
-Bundler could not find compatible versions for gem "a":
-  In Gemfile:
-    b was resolved to 1.0, which depends on
-      a (>= 2)
+    end.to raise_error(Bundler::SolveFailure, <<~E.strip)
+      Could not find compatible versions
 
-    c was resolved to 1.0, which depends on
-      a (< 1)
+      Because every version of c depends on a < 1
+        and every version of b depends on a >= 2,
+        every version of c is incompatible with b >= 0.
+      So, because Gemfile depends on b >= 0
+        and Gemfile depends on c >= 0,
+        version solving has failed.
     E
   end
 
@@ -134,7 +135,7 @@ Bundler could not find compatible versions for gem "a":
     dep "circular_app"
 
     expect do
-      resolve
+      Bundler::SpecSet.new(resolve).sort
     end.to raise_error(Bundler::CyclicDependencyError, /please remove either gem 'bar' or gem 'foo'/i)
   end
 

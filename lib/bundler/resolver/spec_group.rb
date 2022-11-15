@@ -3,20 +3,27 @@
 module Bundler
   class Resolver
     class SpecGroup
-      attr_accessor :name, :version, :source
-      attr_accessor :activated_platforms, :force_ruby_platform
-
-      def initialize(specs, relevant_platforms)
-        @exemplary_spec = specs.first
-        @name = @exemplary_spec.name
-        @version = @exemplary_spec.version
-        @source = @exemplary_spec.source
-
-        @activated_platforms = relevant_platforms
+      def initialize(specs)
         @specs = specs
       end
 
-      def to_specs
+      def empty?
+        @specs.empty?
+      end
+
+      def name
+        @name ||= exemplary_spec.name
+      end
+
+      def version
+        @version ||= exemplary_spec.version
+      end
+
+      def source
+        @source ||= exemplary_spec.source
+      end
+
+      def to_specs(force_ruby_platform)
         @specs.map do |s|
           lazy_spec = LazySpecification.new(name, version, s.platform, source)
           lazy_spec.force_ruby_platform = force_ruby_platform
@@ -26,43 +33,26 @@ module Bundler
       end
 
       def to_s
-        activated_platforms_string = sorted_activated_platforms.join(", ")
-        "#{name} (#{version}) (#{activated_platforms_string})"
+        sorted_spec_names.join(", ")
       end
 
-      def dependencies_for_activated_platforms
-        @dependencies_for_activated_platforms ||= @specs.map do |spec|
+      def dependencies
+        @dependencies ||= @specs.map do |spec|
           __dependencies(spec) + metadata_dependencies(spec)
         end.flatten.uniq
       end
 
-      def ==(other)
-        return unless other.is_a?(SpecGroup)
-        name == other.name &&
-          version == other.version &&
-          sorted_activated_platforms == other.sorted_activated_platforms &&
-          source == other.source
-      end
-
-      def eql?(other)
-        return unless other.is_a?(SpecGroup)
-        name.eql?(other.name) &&
-          version.eql?(other.version) &&
-          sorted_activated_platforms.eql?(other.sorted_activated_platforms) &&
-          source.eql?(other.source)
-      end
-
-      def hash
-        name.hash ^ version.hash ^ sorted_activated_platforms.hash ^ source.hash
-      end
-
       protected
 
-      def sorted_activated_platforms
-        activated_platforms.sort_by(&:to_s)
+      def sorted_spec_names
+        @sorted_spec_names ||= @specs.map(&:full_name).sort
       end
 
       private
+
+      def exemplary_spec
+        @specs.first
+      end
 
       def __dependencies(spec)
         dependencies = []

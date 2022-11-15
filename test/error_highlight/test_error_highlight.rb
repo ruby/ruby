@@ -25,11 +25,13 @@ class ErrorHighlightTest < Test::Unit::TestCase
 
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
+      omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
       assert_equal(expected_msg.chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
+      omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
       assert_equal(expected_msg.chomp, err.message)
     end
@@ -987,11 +989,9 @@ undefined method `あいうえお' for nil:NilClass
     end
   end
 
-  if false
-
   def test_args_CALL_1
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       1.+(nil)
           ^^^
@@ -1004,7 +1004,7 @@ nil can't be coerced into Integer
   def test_args_CALL_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v[nil]
         ^^^
@@ -1017,7 +1017,7 @@ no implicit conversion from nil to integer
   def test_args_ATTRASGN_1
     v = []
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 1, expected 2..3)
+wrong number of arguments (given 1, expected 2..3) (ArgumentError)
 
       v [ ] = 1
          ^^^^^^
@@ -1030,7 +1030,7 @@ wrong number of arguments (given 1, expected 2..3)
   def test_args_ATTRASGN_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v [nil] = 1
          ^^^^^^^^
@@ -1042,7 +1042,7 @@ no implicit conversion from nil to integer
 
   def test_args_ATTRASGN_3
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of String into Integer
+no implicit conversion of String into Integer (TypeError)
 
       $stdin.lineno = "str"
                       ^^^^^
@@ -1054,7 +1054,7 @@ no implicit conversion of String into Integer
 
   def test_args_OPCALL
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       1 + nil
           ^^^
@@ -1066,7 +1066,7 @@ nil can't be coerced into Integer
 
   def test_args_FCALL_1
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of Symbol into String
+no implicit conversion of Symbol into String (TypeError)
 
       "str".instance_eval { gsub("foo", :sym) }
                                  ^^^^^^^^^^^
@@ -1078,7 +1078,7 @@ no implicit conversion of Symbol into String
 
   def test_args_FCALL_2
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of Symbol into String
+no implicit conversion of Symbol into String (TypeError)
 
       "str".instance_eval { gsub "foo", :sym }
                                  ^^^^^^^^^^^
@@ -1092,7 +1092,7 @@ no implicit conversion of Symbol into String
     v = []
 
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v [nil] += 42
          ^^^^^^^^^^
@@ -1106,7 +1106,7 @@ no implicit conversion from nil to integer
     v = []
 
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 0, expected 1..2)
+wrong number of arguments (given 0, expected 1..2) (ArgumentError)
 
       v [ ] += 42
          ^^^^^^^^
@@ -1120,7 +1120,7 @@ wrong number of arguments (given 0, expected 1..2)
     v = [1]
 
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       v [0] += nil
          ^^^^^^^^^
@@ -1135,7 +1135,7 @@ nil can't be coerced into Integer
     def v.foo; 1; end
 
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       v.foo += nil
                ^^^
@@ -1143,8 +1143,6 @@ nil can't be coerced into Integer
 
       v.foo += nil
     end
-  end
-
   end
 
   def test_custom_formatter

@@ -15,7 +15,7 @@
 # define YJIT_STATS RUBY_DEBUG
 #endif
 
-#if USE_YJIT
+#if USE_YJIT && !defined(MJIT_HEADER) // MJIT and YJIT can't be enabled simultaneously
 
 // We generate x86 or arm64 assembly
 #if defined(_WIN32) ? defined(_M_AMD64) : (defined(__x86_64__) || defined(__aarch64__))

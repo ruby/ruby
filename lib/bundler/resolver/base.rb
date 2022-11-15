@@ -20,15 +20,11 @@ module Bundler
         @base_requirements ||= build_base_requirements
       end
 
-      def unlock_deps(deps)
-        exact, lower_bound = deps.partition(&:specific?)
+      def unlock_names(names)
+        names.each do |name|
+          @base.delete_by_name(name)
 
-        exact.each do |exact_dep|
-          @base.delete_by_name_and_version(exact_dep.name, exact_dep.requirement.requirements.first.last)
-        end
-
-        lower_bound.each do |lower_bound_dep|
-          @additional_base_requirements.delete(lower_bound_dep)
+          @additional_base_requirements.reject! {|dep| dep.name == name }
         end
 
         @base_requirements = nil
@@ -39,10 +35,10 @@ module Bundler
       def build_base_requirements
         base_requirements = {}
         @base.each do |ls|
-          dep = Dependency.new(ls.name, ls.version)
-          base_requirements[ls.name] = dep
+          req = Gem::Requirement.new(ls.version)
+          base_requirements[ls.name] = req
         end
-        @additional_base_requirements.each {|d| base_requirements[d.name] = d }
+        @additional_base_requirements.each {|d| base_requirements[d.name] = d.requirement }
         base_requirements
       end
     end

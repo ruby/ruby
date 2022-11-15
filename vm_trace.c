@@ -87,33 +87,35 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
 {
     rb_event_flag_t new_iseq_events = new_events & ISEQ_TRACE_EVENTS;
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS;
-    bool trace_iseq_p = new_iseq_events & ~enabled_iseq_events;
+    bool first_time_iseq_events_p = new_iseq_events & ~enabled_iseq_events;
+    bool enable_c_call   = (prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL);
+    bool enable_c_return = (prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN);
 
-    if (trace_iseq_p) {
-        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
-        // Thus we don't need to cancel JIT-ed code for :class events.
-        if (new_iseq_events != RUBY_EVENT_CLASS) {
-            // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
-            mjit_cancel_all("TracePoint is enabled");
-        }
-
-        /* write all ISeqs if and only if new events are added */
+    // Modify ISEQs or CCs to enable tracing
+    if (first_time_iseq_events_p) {
+        // write all ISeqs only when new events are added for the first time
         rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
-    else {
-        // if c_call or c_return is activated:
-        if (((prev_events & RUBY_EVENT_C_CALL)   == 0 && (new_events & RUBY_EVENT_C_CALL)) ||
-            ((prev_events & RUBY_EVENT_C_RETURN) == 0 && (new_events & RUBY_EVENT_C_RETURN))) {
-            rb_clear_attr_ccs();
-        }
+    // if c_call or c_return is activated
+    else if (enable_c_call || enable_c_return) {
+        rb_clear_attr_ccs();
     }
 
     ruby_vm_event_flags = new_events;
     ruby_vm_event_enabled_global_flags |= new_events;
     rb_objspace_set_event_hook(new_events);
 
-    if (trace_iseq_p) {
+    // Invalidate JIT code as needed
+    if (first_time_iseq_events_p && new_iseq_events != RUBY_EVENT_CLASS) {
+        // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
+        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
+        // Thus we don't need to cancel JIT-ed code for :class events.
+        mjit_cancel_all("TracePoint is enabled");
+    }
+    if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
         // Invalidate all code when ISEQs are modified to use trace_* insns above.
+        // Also invalidate when enabling c_call or c_return because generated code
+        // never fires these events.
         // Internal events fire inside C routines so don't need special handling.
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
