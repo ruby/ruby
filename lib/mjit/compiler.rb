@@ -43,9 +43,9 @@ module RubyVM::MJIT
       C.fprintf(f, "\n} // end of #{funcname}\n")
 
       return success
-    rescue => e # Should rb_rescue be called in C?
+    rescue Exception => e # should we use rb_rescue in C instead?
       if C.mjit_opts.warnings || C.mjit_opts.verbose > 0
-        $stderr.puts e.full_message
+        $stderr.puts "MJIT error: #{e.full_message}"
       end
       return false
     end
