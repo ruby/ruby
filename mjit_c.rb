@@ -7,10 +7,6 @@ module RubyVM::MJIT
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/mjit/bindgen.rb instead.
   class << C
-    def ROBJECT_EMBED_LEN_MAX
-      Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
-    end
-
     def cdhash_to_hash(cdhash_addr)
       Primitive.cdhash_to_hash(cdhash_addr)
     end

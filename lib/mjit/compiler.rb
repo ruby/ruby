@@ -1,6 +1,4 @@
 module RubyVM::MJIT
-  ROBJECT_EMBED_LEN_MAX = C.ROBJECT_EMBED_LEN_MAX
-
   UNSUPPORTED_INSNS = [
     :defineclass, # low priority
   ]
