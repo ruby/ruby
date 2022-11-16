@@ -14,7 +14,7 @@ class TestRubyOptions < Test::Unit::TestCase
     if mjit_enabled?
       RUBY_DESCRIPTION.sub(/\+MJIT /, '')
     elsif yjit_enabled?
-      RUBY_DESCRIPTION.sub(/\+YJIT /, '')
+      RUBY_DESCRIPTION.sub(/\+YJIT( (dev|dev_nodebug|stats))? /, '')
     else
       RUBY_DESCRIPTION
     end
