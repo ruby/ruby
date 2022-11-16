@@ -1,7 +1,7 @@
 #!/bin/ruby
 
 srand 0
-r = Array.new 1e7.to_i do rand end
+r = Array.new 1e7.to_i do rand -1e1...1e1 end
 
 puts
 
