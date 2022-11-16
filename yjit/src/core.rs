@@ -996,20 +996,31 @@ impl Block {
         self.end_idx = end_idx;
     }
 
-    pub fn add_gc_obj_offset(self: &mut Block, ptr_offset: u32) {
-        self.gc_obj_offsets.push(ptr_offset);
-        incr_counter!(num_gc_obj_refs);
+    pub fn add_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
+        for offset in gc_offsets {
+            self.gc_obj_offsets.push(offset);
+            incr_counter!(num_gc_obj_refs);
+        }
+        self.gc_obj_offsets.shrink_to_fit();
     }
 
     /// Instantiate a new CmeDependency struct and add it to the list of
     /// dependencies for this block.
-    pub fn add_cme_dependency(
-        &mut self,
-        callee_cme: *const rb_callable_method_entry_t,
-    ) {
-        self.cme_dependencies.push(CmeDependency {
-            callee_cme,
-        });
+    pub fn add_cme_dependency(&mut self, callee_cme: *const rb_callable_method_entry_t) {
+        self.cme_dependencies.push(CmeDependency { callee_cme });
+        self.cme_dependencies.shrink_to_fit();
+    }
+
+    // Push an incoming branch ref and shrink the vector
+    fn push_incoming(&mut self, branch: BranchRef) {
+        self.incoming.push(branch);
+        self.incoming.shrink_to_fit();
+    }
+
+    // Push an outgoing branch ref and shrink the vector
+    fn push_outgoing(&mut self, branch: BranchRef) {
+        self.outgoing.push(branch);
+        self.outgoing.shrink_to_fit();
     }
 
     // Compute the size of the block code
@@ -1502,8 +1513,7 @@ fn gen_block_series_body(
         last_branch.dst_addrs[0] = new_blockref.borrow().start_addr;
         new_blockref
             .borrow_mut()
-            .incoming
-            .push(last_branchref.clone());
+            .push_incoming(last_branchref.clone());
 
         // Track the block
         batch.push(new_blockref.clone());
@@ -1662,7 +1672,7 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
 
     // Add to the list of outgoing branches for the block
     let branchref = Rc::new(RefCell::new(branch));
-    block.borrow_mut().outgoing.push(branchref.clone());
+    block.borrow_mut().push_outgoing(branchref.clone());
 
     return branchref;
 }
@@ -1793,7 +1803,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             assert!(!(branch.shape == target_branch_shape && block.start_addr != branch.end_addr));
 
             // Add this branch to the list of incoming branches for the target
-            block.incoming.push(branch_rc.clone());
+            block.push_incoming(branch_rc.clone());
 
             // Update the branch target address
             let dst_addr = block.start_addr;
@@ -1864,7 +1874,7 @@ fn get_branch_target(
         let mut block = blockref.borrow_mut();
 
         // Add an incoming branch into this block
-        block.incoming.push(branchref.clone());
+        block.push_incoming(branchref.clone());
         let mut branch = branchref.borrow_mut();
         branch.blocks[target_idx.as_usize()] = Some(blockref.clone());
 
@@ -2011,7 +2021,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     if let Some(blockref) = maybe_block {
         let mut block = blockref.borrow_mut();
 
-        block.incoming.push(branchref.clone());
+        block.push_incoming(branchref.clone());
 
         branch.dst_addrs[0] = block.start_addr;
         branch.blocks[0] = Some(blockref.clone());
