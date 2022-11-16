@@ -306,6 +306,18 @@ rb_shape_id_num_bits(void)
     return SHAPE_ID_NUM_BITS;
 }
 
+uint8_t
+rb_shape_flag_shift(void)
+{
+    return SHAPE_FLAG_SHIFT;
+}
+
+uint64_t
+rb_shape_flag_mask(void)
+{
+    return SHAPE_FLAG_MASK;
+}
+
 rb_shape_t *
 rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 {
