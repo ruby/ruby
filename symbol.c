@@ -22,6 +22,7 @@
 #include "ruby/st.h"
 #include "symbol.h"
 #include "vm_sync.h"
+#include "builtin.h"
 
 #ifndef USE_SYMBOL_GC
 # define USE_SYMBOL_GC 1
@@ -1262,3 +1263,4 @@ rb_is_local_name(VALUE name)
 }
 
 #include "id_table.c"
+#include "symbol.rbinc"
