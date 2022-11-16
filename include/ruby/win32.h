@@ -43,11 +43,6 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1920
-#include <afunix.h>
-#define HAVE_AFUNIX_H
-#endif
-
 /*
  * We're not using Microsoft's "extensions" to C for
  * Structured Exception Handling (SEH) so we can nuke these
