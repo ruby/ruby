@@ -496,6 +496,7 @@ static void init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
       case OP_CCLASS:
       case OP_CCLASS_NOT:
         p += SIZE_BITSET; break;
+      case OP_CCLASS_MB:
       case OP_CCLASS_MB_NOT:
 	GET_LENGTH_INC(len, p); p += len; break;
       case OP_CCLASS_MIX:
