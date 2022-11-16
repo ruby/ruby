@@ -1,8 +1,18 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-ENV['BUNDLE_GEMFILE'] ||= File.expand_path('./Gemfile', __dir__)
-require 'bundler/setup'
+ENV['GEM_HOME'] = File.expand_path('./.bundle', __dir__)
+require 'rubygems/source'
+require 'bundler/inline'
+gemfile do
+  source 'https://rubygems.org'
+  gem 'ffi-clang', '0.7.0', require: false
+end
+
+# Help ffi-clang find libclang
+# Hint: apt install libclang1
+ENV['LIBCLANG'] ||= Dir.glob("/usr/lib/llvm-*/lib/libclang.so.1").grep_v(/-cpp/).sort.last
+require 'ffi/clang'
 
 require 'etc'
 require 'fiddle/import'
@@ -11,11 +21,6 @@ require 'set'
 unless build_dir = ARGV.first
   abort "Usage: #{$0} BUILD_DIR"
 end
-
-# Help ffi-clang find libclang
-# Hint: apt install libclang1
-ENV['LIBCLANG'] ||= Dir.glob("/lib/#{RUBY_PLATFORM}-gnu/libclang-*.so*").grep_v(/-cpp/).sort.last
-require 'ffi/clang'
 
 class Node < Struct.new(
   :kind,
