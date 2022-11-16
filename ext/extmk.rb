@@ -721,6 +721,7 @@ begin
     mf.puts "ECHO1 = $(V:1=@:)"
     mf.puts "ECHO = $(ECHO1:0=@echo)"
     mf.puts "MFLAGS = -$(MAKEFLAGS)" if $nmake
+    mf.puts "override MFLAGS := $(filter-out -j%,$(MFLAGS))" if $gnumake
     mf.puts
 
     def mf.macro(name, values, max = 70)
