@@ -3521,8 +3521,6 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
-#if SIZEOF_VALUE == 8
-
 typedef _Bool (* ___cmp_t) (const void *, const void *);
 
 #define ___I *x++ = *i++
@@ -3598,6 +3596,8 @@ static int rsort_double(void *const _p, const long l) {
 
 static int rsort(void *const _p, const long l) {
 
+    if (SIZEOF_VALUE != 8) return 1;
+
     if (!FIXNUM_P(*(VALUE *)_p)) {
         if (!RB_FLOAT_TYPE_P(*(VALUE *)_p)) return 1;
         return rsort_double(_p, l);
@@ -3607,7 +3607,7 @@ static int rsort(void *const _p, const long l) {
     if (b == NULL) return 1;
 
     for (uint64_t *p = a, *p2 = b, *const P = p + l; p < P; p2++) {
-        *p2 = *p ^ (1ULL << 63);
+        *p2 = *p ^ ((uint64_t)1 << 63);
         for (int i = 0; i < 8; i++)
             F[i][(uint8_t)(*p2 >> i * 8)]++;
         if (!FIXNUM_P(*p++)) {
@@ -3650,7 +3650,7 @@ static int rsort(void *const _p, const long l) {
                 b[o[(uint8_t)(*p >> i * 8)]++] = *p;
         else
             for (uint64_t *p = a, *const P = p + l; p < P; p++)
-                b[o[(uint8_t)(*p >> i * 8)]++] = *p ^ (1ULL << 63);
+                b[o[(uint8_t)(*p >> i * 8)]++] = *p ^ ((uint64_t)1 << 63);
         o = a, a = b, b = o;
     }
 
@@ -3662,8 +3662,6 @@ static int rsort(void *const _p, const long l) {
     free(b);
     return 0;
 }
-
-#endif
 
 /*
  *  call-seq:
@@ -3722,14 +3720,8 @@ rb_ary_sort_bang(VALUE ary)
         data.cmp_opt.opt_inited = 0;
         int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
-
-#if SIZEOF_VALUE == 8
-
             if ((len < 1000 || is_bg) || rsort(ptr, len))
-
-#endif
                 ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
-
         }); /* WB: no new reference */
         rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {

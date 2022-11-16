@@ -1,3 +1,6 @@
+# In these tests every Array#sort includes two calls of rb_ary_modify() that take about 0.1 seconds.
+# You should subtract 0.1 from each result to determine difference.
+
 $ ../build/miniruby test.rb
 
 	Run #1: 0.308 s
