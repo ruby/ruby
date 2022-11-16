@@ -5612,7 +5612,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_KEYWORD_REST_ID);
 		    /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_KEYWORD_REST_ID;
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }

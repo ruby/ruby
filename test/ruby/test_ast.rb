@@ -469,7 +469,7 @@ class TestAst < Test::Unit::TestCase
     end
 
     assert_equal(nil, kwrest.call(''))
-    assert_equal([nil], kwrest.call('**'))
+    assert_equal([:**], kwrest.call('**'))
     assert_equal(false, kwrest.call('**nil'))
     assert_equal([:a], kwrest.call('**a'))
   end
