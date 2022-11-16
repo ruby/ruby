@@ -369,8 +369,7 @@ impl Branch {
     }
 }
 
-// In case this block is invalidated, these two pieces of info
-// help to remove all pointers to this block in the system.
+// In case a block is invalidated, this helps to remove all pointers to the block.
 pub type CmePtr = *const rb_callable_method_entry_t;
 
 /// Basic block version
