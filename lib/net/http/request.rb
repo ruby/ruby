@@ -54,12 +54,10 @@
 #
 # A POST request may be sent using request class \Net::HTTP::Post:
 #
-#   json = {title: 'foo', body: 'bar', userId: 1}
-#   # => "{\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}"
 #   _uri = uri.dup
 #   _uri.path = '/posts'
 #   req = Net::HTTP::Post.new(_uri) # => #<Net::HTTP::Post POST>
-#   req.body = json
+#   req.body = '{"title": "foo", "body": "bar", "userId": 1}'
 #   req['Content-type'] = 'application/json; charset=UTF-8'
 #   Net::HTTP.start(hostname) do |http|
 #     http.request(req)
