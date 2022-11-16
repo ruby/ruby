@@ -254,8 +254,9 @@ module RubyVM::YJIT
       $stderr.puts "bindings_allocations:  " + ("%10d" % stats[:binding_allocations])
       $stderr.puts "bindings_set:          " + ("%10d" % stats[:binding_set])
       $stderr.puts "compilation_failure:   " + ("%10d" % compilation_failure) if compilation_failure != 0
-      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
+      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
+      $stderr.puts "compiled_branch_count: " + ("%10d" % stats[:compiled_branch_count])
       $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])
       $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])

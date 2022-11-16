@@ -1673,6 +1673,7 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     // Add to the list of outgoing branches for the block
     let branchref = Rc::new(RefCell::new(branch));
     block.borrow_mut().push_outgoing(branchref.clone());
+    incr_counter!(compiled_branch_count);
 
     return branchref;
 }
