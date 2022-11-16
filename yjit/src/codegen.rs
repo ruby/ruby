@@ -721,7 +721,8 @@ pub fn gen_single_block(
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
-        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid.idx));
+        let blockid_idx = blockid.idx;
+        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid_idx));
     }
 
     // For each instruction to compile

@@ -304,6 +304,7 @@ pub struct Context {
 /// Tuple of (iseq, idx) used to identify basic blocks
 /// There are a lot of blockid objects so we try to keep the size small.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(packed)]
 pub struct BlockId {
     /// Instruction sequence
     pub iseq: IseqPtr,
@@ -1530,7 +1531,8 @@ fn gen_block_series_body(
             let iseq_location = iseq_get_location(blockid.iseq);
             if iseq_location.contains(substr) {
                 let last_block = last_blockref.borrow();
-                println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid.idx, last_block.end_idx);
+                let blockid_idx = blockid.idx;
+                println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid_idx, last_block.end_idx);
                 print!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
             }
         }
@@ -2151,7 +2153,8 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
             let iseq_location = iseq_get_location(block.blockid.iseq);
             if iseq_location.contains(substr) {
-                println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, block.blockid.idx, block.end_idx);
+                let blockid_idx = block.blockid.idx;
+                println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, blockid_idx, block.end_idx);
             }
         }
     }
