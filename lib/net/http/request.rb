@@ -16,7 +16,7 @@
 # Many code examples here use these example websites:
 #
 # - https://jsonplaceholder.typicode.com.
-# - http:example.com.
+# - http://example.com.
 #
 # Some examples also assume these variables:
 #
@@ -54,8 +54,7 @@
 #
 # A POST request may be sent using request class \Net::HTTP::Post:
 #
-#   require 'json'
-#   json = JSON.generate({title: 'foo', body: 'bar', userId: 1})
+#   json = {title: 'foo', body: 'bar', userId: 1}
 #   # => "{\"title\":\"foo\",\"body\":\"bar\",\"userId\":1}"
 #   _uri = uri.dup
 #   _uri.path = '/posts'

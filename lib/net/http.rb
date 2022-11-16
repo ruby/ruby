@@ -106,7 +106,7 @@ module Net   #:nodoc:
   # Many code examples here use these example websites:
   #
   # - https://jsonplaceholder.typicode.com.
-  # - http:example.com.
+  # - http://example.com.
   #
   # Some examples also assume these variables:
   #
@@ -137,7 +137,7 @@ module Net   #:nodoc:
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
   # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {URI::Generic}[]https://docs.ruby-lang.org/en/master/URI/Generic.html] object
+  # A Ruby {URI::Generic}[rdoc-ref:URI::Generic] object
   # represents an internet URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
@@ -203,30 +203,6 @@ module Net   #:nodoc:
   # See lists of both standard request fields and common request fields at
   # {Request Fields}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields].
   # A host may also accept other custom fields.
-  #
-  # The following example performs a conditional GET using the
-  # <tt>If-Modified-Since</tt> header:
-  #
-  # - If the file +cached_response+ has been modified since the time
-  #   put into the header,
-  #   the return is a \Net::HTTPSuccess object,
-  #   and the file is overwritten with the response body.
-  # - Otherwise, the return is a \Net::HTTPNotModified object,
-  #   and the file remains unchanged.
-  #
-  # The code:
-  #
-  #   path = 'cached_response'
-  #   File.write(path, '') unless File.exist?(path)
-  #   file = File.stat(path)
-  #   req = Net::HTTP::Get.new(uri)
-  #   req['If-Modified-Since'] = file.mtime.rfc2822
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.request(req)
-  #   end
-  #   if res.is_a?(Net::HTTPSuccess)
-  #     File.write(path, res.body)
-  #   end
   #
   # == Sessions
   #
@@ -465,7 +441,7 @@ module Net   #:nodoc:
 
     # :call-seq:
     #   Net::HTTP.get_print(hostname, path, port = 80) -> nil
-    #   Net::HTTP:get_print(uri, headers = {}, port = 80) -> nil
+    #   Net::HTTP:get_print(uri, headers = {}, port = uri.port) -> nil
     #
     # Like Net::HTTP.get, but writes the returned body to $stdout;
     # returns +nil+.
@@ -480,7 +456,7 @@ module Net   #:nodoc:
 
     # :call-seq:
     #   Net::HTTP.get(hostname, path, port = 80) -> body
-    #   Net::HTTP:get(uri, headers = {}, port = 80) -> body
+    #   Net::HTTP:get(uri, headers = {}, port = uri.port) -> body
     #
     # Sends a GET request and returns the \HTTP response body as a string.
     #
@@ -496,33 +472,22 @@ module Net   #:nodoc:
     #     "userId": 1,
     #     "id": 1,
     #     "title": "delectus aut autem",
-    #     "completed":
+    #     "completed": false
     #   }
     #
     # With URI object +uri+ and optional hash argument +headers+:
     #
     #   uri = URI('https://jsonplaceholder.typicode.com/todos/1')
-    #   headers = {Accept: 'text/html'}
-    #   puts Net::HTTP.get(uri, headers)
+    #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
+    #   Net::HTTP.get(uri, headers)
     #
-    # Output:
-    #
-    #   {
-    #    "userId": 1,
-    #     "id": 1,
-    #     "title": "delectus aut autem",
-    #     "completed": false
-    #   }
-    #
-    # In either case, the third argument is an integer port number,
-    # which defaults to 80.
     def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port).body
     end
 
     # :call-seq:
     #   Net::HTTP.get_response(hostname, path, port = 80) -> http_response
-    #   Net::HTTP:get_response(uri, headers = {}, port = 80) -> http_response
+    #   Net::HTTP:get_response(uri, headers = {}, port = uri.port) -> http_response
     #
     # Like Net::HTTP.get, but returns an Net::HTTPResponse object
     # instead of the body string.
@@ -611,6 +576,9 @@ module Net   #:nodoc:
       BufferedIO
     end
 
+    # :call-seq:
+    #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass) {|http| ... }
+    #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt) {|http| ... }
     # Creates a new \Net::HTTP object,
     # opens a TCP connection and \HTTP session.
     #

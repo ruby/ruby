@@ -12,7 +12,7 @@
 # Many code examples here use these example websites:
 #
 # - https://jsonplaceholder.typicode.com.
-# - http:example.com.
+# - http://example.com.
 #
 # Some examples also assume these variables:
 #
@@ -94,7 +94,7 @@
 #   - Net::HTTPAlreadyReported (208)
 #   - Net::HTTPIMUsed (226)
 #
-# - HTTPRedirection:
+# - Net::HTTPRedirection:
 #
 #   - Net::HTTPMultipleChoices (300)
 #   - Net::HTTPMovedPermanently (301)
