@@ -73,6 +73,22 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     top_level = @store.add_file 'file.rb'
     top_level.add_class @klass.class, @klass.name
     @klass.add_class RDoc::NormalClass, 'Inner'
+    @klass.add_comment <<~RDOC, top_level
+    = Heading 1
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+    == Heading 1.1
+    tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+    === Heading 1.1.1
+    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+    ==== Heading 1.1.1.1
+    consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+    == Heading 1.2
+    cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat
+    == Heading 1.3
+    non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    === Heading 1.3.1
+    etc etc...
+    RDOC
 
     @g.generate
 
@@ -97,6 +113,15 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     refute_match(/Ignored/, File.read('index.html'))
     summary = File.read('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
+    klassnav = File.read('Klass.html')[%r[<div class="nav-section">.*<div id="class-metadata">]m]
+    assert_match(
+      %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
+      klassnav
+    )
+    assert_match(
+      %r[<li>\s*<a href=\S+>Heading 1.1.1.1</a>\s*</ul>\s*</details>\s*</li>]m,
+      klassnav
+    )
   end
 
   def test_generate_page
