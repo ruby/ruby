@@ -90,11 +90,12 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             let code_size = block.code_size();
 
             // Write some info about the current block
+            let blockid_idx = blockid.idx;
             let block_ident = format!(
                 "BLOCK {}/{}, ISEQ RANGE [{},{}), {} bytes ",
                 block_idx + 1,
                 block_list.len(),
-                blockid.idx,
+                blockid_idx,
                 end_idx,
                 code_size
             );
