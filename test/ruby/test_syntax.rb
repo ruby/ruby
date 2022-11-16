@@ -163,9 +163,11 @@ class TestSyntax < Test::Unit::TestCase
         def c(**kw); kw end
         def d(**); b(k: 1, **) end
         def e(**); b(**, k: 1) end
+        def f(a: nil, **); b(**) end
         assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
         assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
         assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
+        assert_equal({k: 3}, f(a: 1, k: 3))
     end;
   end
 
