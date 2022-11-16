@@ -282,12 +282,11 @@ module RubyVM::MJIT
 
       # Dereference
       def *
+        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
         if @width == 1
-          byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
           bit = (1 & (byte >> @offset))
           bit == 1
         elsif @width <= 8 && @offset == 0
-          byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
           bitmask = @width.times.map { |i| 1 << i }.sum
           byte & bitmask
         else
