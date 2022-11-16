@@ -371,10 +371,7 @@ impl Branch {
 
 // In case this block is invalidated, these two pieces of info
 // help to remove all pointers to this block in the system.
-#[derive(Debug)]
-pub struct CmeDependency {
-    pub callee_cme: *const rb_callable_method_entry_t,
-}
+pub type CmePtr = *const rb_callable_method_entry_t;
 
 /// Basic block version
 /// Represents a portion of an iseq compiled with a given context
@@ -411,7 +408,7 @@ pub struct Block {
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
-    cme_dependencies: Vec<CmeDependency>,
+    cme_dependencies: Vec<CmePtr>,
 
     // Code address of an exit for `ctx` and `blockid`.
     // Used for block invalidation.
@@ -634,8 +631,8 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             unsafe { rb_gc_mark_movable(block.blockid.iseq.into()) };
 
             // Mark method entry dependencies
-            for cme_dep in &block.cme_dependencies {
-                unsafe { rb_gc_mark_movable(cme_dep.callee_cme.into()) };
+            for &cme_dep in &block.cme_dependencies {
+                unsafe { rb_gc_mark_movable(cme_dep.into()) };
             }
 
             // Mark outgoing branch entries
@@ -690,7 +687,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
 
             // Update method entry dependencies
             for cme_dep in &mut block.cme_dependencies {
-                cme_dep.callee_cme = unsafe { rb_gc_location(cme_dep.callee_cme.into()) }.as_cme();
+                *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
             // Update outgoing branch entries
@@ -885,8 +882,8 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     // By writing the new block to the iseq, the iseq now
     // contains new references to Ruby objects. Run write barriers.
     let iseq: VALUE = block.blockid.iseq.into();
-    for dep in block.iter_cme_deps() {
-        obj_written!(iseq, dep.callee_cme.into());
+    for &dep in block.iter_cme_deps() {
+        obj_written!(iseq, dep.into());
     }
 
     // Run write barriers for all objects in generated code.
@@ -968,7 +965,7 @@ impl Block {
     }
 
     /// Get an immutable iterator over cme dependencies
-    pub fn iter_cme_deps(&self) -> std::slice::Iter<'_, CmeDependency> {
+    pub fn iter_cme_deps(&self) -> std::slice::Iter<'_, CmePtr> {
         self.cme_dependencies.iter()
     }
 
@@ -1006,8 +1003,8 @@ impl Block {
 
     /// Instantiate a new CmeDependency struct and add it to the list of
     /// dependencies for this block.
-    pub fn add_cme_dependency(&mut self, callee_cme: *const rb_callable_method_entry_t) {
-        self.cme_dependencies.push(CmeDependency { callee_cme });
+    pub fn add_cme_dependency(&mut self, callee_cme: CmePtr) {
+        self.cme_dependencies.push(callee_cme);
         self.cme_dependencies.shrink_to_fit();
     }
 

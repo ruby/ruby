@@ -355,7 +355,7 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         // For each method lookup dependency
         for dep in block.iter_cme_deps() {
             // Remove tracking for cme validity
-            if let Some(blockset) = invariants.cme_validity.get_mut(&dep.callee_cme) {
+            if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
                 blockset.remove(blockref);
             }
         }
