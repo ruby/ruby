@@ -441,13 +441,31 @@ extern "C" {
     pub fn rb_shape_id_num_bits() -> u8;
 }
 extern "C" {
+    pub fn rb_shape_flag_mask() -> u64;
+}
+extern "C" {
+    pub fn rb_shape_flag_shift() -> u8;
+}
+extern "C" {
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
 }
 extern "C" {
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
 }
 extern "C" {
+    pub fn rb_shape_transition_shape_capa(
+        shape: *mut rb_shape_t,
+        new_capacity: u32,
+    ) -> *mut rb_shape_t;
+}
+extern "C" {
+    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
+}
+extern "C" {
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+}
+extern "C" {
+    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
 }
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
@@ -1061,6 +1079,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
 }
 extern "C" {
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;

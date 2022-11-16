@@ -124,6 +124,8 @@ static inline shape_id_t RCLASS_SHAPE_ID(VALUE obj)
 bool rb_shape_root_shape_p(rb_shape_t* shape);
 rb_shape_t * rb_shape_get_root_shape(void);
 uint8_t rb_shape_id_num_bits(void);
+uint64_t rb_shape_flag_mask(void);
+uint8_t rb_shape_flag_shift(void);
 
 rb_shape_t* rb_shape_get_shape_by_id_without_assertion(shape_id_t shape_id);
 rb_shape_t * rb_shape_get_parent(rb_shape_t * shape);

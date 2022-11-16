@@ -87,6 +87,11 @@ fn main() {
         .allowlist_function("rb_shape_get_shape_by_id")
         .allowlist_function("rb_shape_id_num_bits")
         .allowlist_function("rb_shape_get_iv_index")
+        .allowlist_function("rb_shape_get_next")
+        .allowlist_function("rb_shape_id")
+        .allowlist_function("rb_shape_flag_mask")
+        .allowlist_function("rb_shape_flag_shift")
+        .allowlist_function("rb_shape_transition_shape_capa")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -131,6 +136,7 @@ fn main() {
         .allowlist_function("rb_gc_mark")
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")
+        .allowlist_function("rb_gc_writebarrier")
 
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
@@ -314,6 +320,7 @@ fn main() {
 
         // From internal/variable.h
         .allowlist_function("rb_gvar_(get|set)")
+        .allowlist_function("rb_ensure_iv_list_size")
 
         // From include/ruby/internal/intern/variable.h
         .allowlist_function("rb_attr_get")
