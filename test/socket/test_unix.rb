@@ -579,7 +579,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s0 = nil
       Socket.unix_server_socket(path) {|s|
         assert_equal(path, s.local_address.unix_path)
-        assert(File.exist?(path))
+        assert(File.socket?(path))
         s0 = s
       }
       assert(s0.closed?)
