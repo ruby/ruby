@@ -2141,11 +2141,11 @@ fn gen_getinstancevariable(
 // This function doesn't deal with writing the shape, or expanding an object
 // to use an IV buffer if necessary.  That is the callers responsibility
 fn gen_write_iv(
-    ctx: &mut Context,
     asm: &mut Assembler,
     comptime_receiver: VALUE,
     recv: Opnd,
     ivar_index: usize,
+    set_value: Opnd,
     extension_needed: bool)
 {
     // Compile time self is embedded and the ivar index lands within the object
@@ -2158,7 +2158,7 @@ fn gen_write_iv(
 
         // Write the IV
         asm.comment("write IV");
-        asm.mov(ivar_opnd, ctx.stack_pop(0));
+        asm.mov(ivar_opnd, set_value);
     } else {
         // Compile time value is *not* embedded.
 
@@ -2169,7 +2169,7 @@ fn gen_write_iv(
         let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
 
         asm.comment("write IV");
-        asm.mov(ivar_opnd, ctx.stack_pop(0));
+        asm.mov(ivar_opnd, set_value);
     }
 }
 
@@ -2196,6 +2196,8 @@ fn gen_setinstancevariable(
     if comptime_receiver.is_frozen() {
         return CantCompile;
     }
+
+    let (_, stack_type) = ctx.get_opnd_mapping(StackOpnd(0));
 
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
@@ -2284,6 +2286,8 @@ fn gen_setinstancevariable(
             megamorphic_side_exit,
         );
 
+        let write_val = ctx.stack_pop(1);
+
         match ivar_index {
             // If we don't have an instance variable index, then we need to
             // transition out of the current shape.
@@ -2326,7 +2330,7 @@ fn gen_setinstancevariable(
                     rb_shape_id(rb_shape_get_next(shape, comptime_receiver, ivar_name))
                 };
 
-                gen_write_iv(ctx, asm, comptime_receiver, recv, ivar_index, needs_extension);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension);
 
                 asm.comment("write shape");
                 let cleared_flags = asm.and(
@@ -2344,31 +2348,33 @@ fn gen_setinstancevariable(
                 // the iv index by searching up the shape tree.  If we've
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
-                gen_write_iv(ctx, asm, comptime_receiver, recv, ivar_index, false);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
             },
         }
 
-        let write_val = ctx.stack_pop(1);
+        // If we know the stack value is an immediate, there's no need to
+        // generate WB code.
+        if !stack_type.is_imm() {
+            let skip_wb = asm.new_label("skip_wb");
+            // If the value we're writing is an immediate, we don't need to WB
+            asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
+            asm.jnz(skip_wb);
 
-        let skip_wb = asm.new_label("skip_wb");
-        // If the value we're writing is an immediate, we don't need to WB
-        asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
-        asm.jnz(skip_wb);
+            // If the value we're writing is nil or false, we don't need to WB
+            asm.cmp(write_val, Qnil.into());
+            asm.jbe(skip_wb);
 
-        // If the value we're writing is nil or false, we don't need to WB
-        asm.cmp(write_val, Qnil.into());
-        asm.jbe(skip_wb);
+            asm.comment("write barrier");
+            asm.ccall(
+                rb_gc_writebarrier as *const u8,
+                vec![
+                    recv,
+                    write_val,
+                ]
+            );
 
-        asm.comment("write barrier");
-        asm.ccall(
-            rb_gc_writebarrier as *const u8,
-            vec![
-                recv,
-                write_val,
-            ]
-        );
-
-        asm.write_label(skip_wb);
+            asm.write_label(skip_wb);
+        }
     }
 
     KeepCompiling
