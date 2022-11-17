@@ -621,7 +621,7 @@ impl Assembler
                     let dst_addr = dst_ptr.into_i64();
                     let src_addr = cb.get_write_ptr().into_i64();
 
-                    let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
+                    if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                         // If the jump offset fits into the conditional jump as
                         // an immediate value and it's properly aligned, then we
                         // can use the b.cond instruction directly. We're safe
@@ -629,10 +629,6 @@ impl Assembler
                         // fits.
                         let bytes = (dst_addr - src_addr) as i32;
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
-
-                        // Here we're going to return 1 because we've only
-                        // written out 1 instruction.
-                        1
                     } else {
                         // Otherwise, we need to load the address into a
                         // register and use the branch register instruction.
@@ -645,17 +641,7 @@ impl Assembler
                         bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
                         emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
                         br(cb, Assembler::SCRATCH0);
-
-                        // Here we'll return the number of instructions that it
-                        // took to write out the destination address + 1 for the
-                        // b.cond and 1 for the br.
-                        load_insns + 2
                     };
-
-                    // We need to make sure we have at least 6 instructions for
-                    // every kind of jump for invalidation purposes, so we're
-                    // going to write out padding nop instructions here.
-                    for _ in num_insns..6 { nop(cb); }
                 },
                 Target::Label(label_idx) => {
                     // Here we're going to save enough space for ourselves and
@@ -699,13 +685,6 @@ impl Assembler
                 br(cb, Assembler::SCRATCH0);
                 num_insns + 1
             };
-
-            // Make sure it's always a consistent number of
-            // instructions in case it gets patched and has to
-            // use the other branch.
-            for _ in num_insns..(JMP_PTR_BYTES / 4) {
-                nop(cb);
-            }
         }
 
         /// Call emit_jmp_ptr and immediately invalidate the written range.
