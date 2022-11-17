@@ -480,7 +480,7 @@ class TestFileUtils < Test::Unit::TestCase
     rescue Errno::EINVAL => error
       # On some platforms (windows) sockets cannot be copied by FileUtils.
       omit error.message
-    end
+    end if defined?(UNIXServer)
   end
 
   def test_cp_r_pathname
