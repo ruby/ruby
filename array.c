@@ -3539,7 +3539,7 @@ static int rsort_double(VALUE *const p, const long l) {
             free(_r);
             return 1;
         }
-        u.z ^= -(u.z >> 63) | ((uint64_t)1 << 63);
+        u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
         for (int i = 0; i < 8; i++)
             F[i][(uint8_t)(u.z >> i * 8)]++;
         a[i] = (rsort_double_t){ u.z, p[i] };
@@ -3611,16 +3611,8 @@ static int rsort(void *const _p, const long l) {
         }
     }
 
-    for (int i = 7; i >= 0; --i)
-        if (skip[i] == 0) {
-            last = i;
-            break;
-        }
-
-    if (last == 10) {
-        free(a);
-        return 0;
-    }
+    for (int i = 7; i >= -1; --i)
+        if (i == -1) { free(a); return 0; } else if (skip[i] == 0) { last = i; break; }
 
     for (int i = 0; i < 8; i++) {
         if (skip[i]) continue;

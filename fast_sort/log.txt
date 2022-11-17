@@ -1,4 +1,5 @@
-# In these tests every Array#sort includes two calls of rb_ary_modify() that take about 0.1 seconds.
+# In these tests every call of Array#sort
+# includes two calls of rb_ary_modify() that take about 0.1 seconds.
 # You should subtract 0.1 from each result to determine difference.
 
 $ ../build/miniruby fixnums.rb
@@ -19,11 +20,11 @@ $ ./fixnums.rb
 
 $ ../build/miniruby doubles.rb
 
-	Run #1: 1.337 s
-	Run #2: 1.340 s
-	Run #3: 1.340 s
-	Run #4: 1.340 s
-	Run #5: 1.341 s
+	Run #1: 0.517 s
+	Run #2: 0.536 s
+	Run #3: 0.533 s
+	Run #4: 0.512 s
+	Run #5: 0.527 s
 
 $ ./doubles.rb
 
