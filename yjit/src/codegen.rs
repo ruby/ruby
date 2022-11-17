@@ -2191,6 +2191,12 @@ fn gen_setinstancevariable(
     let comptime_receiver = jit_peek_at_self(jit);
     let comptime_val_klass = comptime_receiver.class_of();
 
+    // If the comptime receiver is frozen, writing an IV will raise an exception
+    // and we don't want to JIT code to deal with that situation.
+    if comptime_receiver.is_frozen() {
+        return CantCompile;
+    }
+
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
     let uses_custom_allocator = match custom_allocator {
