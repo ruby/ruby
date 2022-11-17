@@ -19,11 +19,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
  */
 
 /*
- * Definitions for NT port of Perl
- */
-
-
-/*
  * Ok now we can include the normal include files.
  */
 
@@ -392,6 +387,7 @@ scalb(double a, long b)
 #endif
 
 #define S_IFLNK 0xa000
+#define S_IFSOCK 0xc000
 
 /*
  * define this so we can do inplace editing

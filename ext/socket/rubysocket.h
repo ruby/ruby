@@ -33,6 +33,9 @@
 #endif
 
 #ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  include <iphlpapi.h>
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
@@ -67,6 +70,11 @@
 
 #ifdef HAVE_SYS_UN_H
 #  include <sys/un.h>
+#endif
+
+#ifdef HAVE_AFUNIX_H
+// Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
+#  include <afunix.h>
 #endif
 
 #if defined(HAVE_FCNTL)
@@ -268,7 +276,7 @@ extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
 extern VALUE rb_cTCPServer;
 extern VALUE rb_cUDPSocket;
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
@@ -336,7 +344,7 @@ VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 socklen_t rsock_unix_sockaddr_len(VALUE path);

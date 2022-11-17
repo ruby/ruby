@@ -103,7 +103,8 @@ Note that each entry is kept to a minimum, see links for details.
 Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
-    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`. [[Feature #19060]]
+    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`.
+    [[Feature #19060]]
 
 * IO
     * Introduce `IO#timeout=` and `IO#timeout` which can cause
@@ -114,6 +115,11 @@ Note: We're only listing outstanding class updates.
     STDIN.timeout = 1
     STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
     ```
+
+* UNIXSocket
+    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
+    support for `File.socket?` and `File::Stat#socket?` where possible.
+    [[Feature #19135]]
 
 * Class
     * `Class#attached_object`, which returns the object for which
@@ -417,3 +423,4 @@ The following deprecated APIs are removed.
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
+[Feature #19135]: https://bugs.ruby-lang.org/issues/19135

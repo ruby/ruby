@@ -197,7 +197,7 @@ class Addrinfo
     sock = Socket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
-      sock.setsockopt(:SOCKET, :REUSEADDR, 1)
+      sock.setsockopt(:SOCKET, :REUSEADDR, 1) unless self.pfamily == Socket::PF_UNIX
       sock.bind(self)
       sock.listen(backlog)
     rescue Exception

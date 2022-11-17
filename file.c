@@ -1765,8 +1765,8 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     if (S_ISSOCK(st.st_mode)) return Qtrue;
-
 #endif
+
     return Qfalse;
 }
 
@@ -5600,6 +5600,7 @@ rb_stat_init(VALUE obj, VALUE fname)
     if (STAT(StringValueCStr(fname), &st) == -1) {
         rb_sys_fail_path(fname);
     }
+
     if (DATA_PTR(obj)) {
         xfree(DATA_PTR(obj));
         DATA_PTR(obj) = NULL;

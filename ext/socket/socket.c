@@ -1383,7 +1383,7 @@ sock_s_unpack_sockaddr_in(VALUE self, VALUE addr)
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 
 /*
  * call-seq:
@@ -1471,7 +1471,7 @@ sockaddr_len(struct sockaddr *addr)
         return (socklen_t)sizeof(struct sockaddr_in6);
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case AF_UNIX:
         return (socklen_t)sizeof(struct sockaddr_un);
 #endif
@@ -2020,7 +2020,7 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "sockaddr_in", sock_s_pack_sockaddr_in, 2);
     rb_define_singleton_method(rb_cSocket, "pack_sockaddr_in", sock_s_pack_sockaddr_in, 2);
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_in", sock_s_unpack_sockaddr_in, 1);
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     rb_define_singleton_method(rb_cSocket, "sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "pack_sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_un", sock_s_unpack_sockaddr_un, 1);

@@ -472,10 +472,14 @@ class TestFileUtils < Test::Unit::TestCase
   else
     def test_cp_r_socket
       pend "Skipping socket test on JRuby" if RUBY_ENGINE == 'jruby'
+
       Dir.mkdir('tmp/cpr_src')
       UNIXServer.new('tmp/cpr_src/socket').close
       cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
       assert_equal(true, File.socket?('tmp/cpr_dest/socket'))
+    rescue Errno::EINVAL => error
+      # On some platforms (windows) sockets cannot be copied by FileUtils.
+      omit error.message
     end if defined?(UNIXServer)
   end
 
