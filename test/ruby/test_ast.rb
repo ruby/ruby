@@ -461,6 +461,30 @@ class TestAst < Test::Unit::TestCase
     assert_not_equal(type1, type2)
   end
 
+  def test_rest_arg
+    rest_arg = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-4]
+    end
+
+    assert_equal(nil, rest_arg.call(''))
+    assert_equal(:r, rest_arg.call('*r'))
+    assert_equal(:r, rest_arg.call('a, *r'))
+    assert_equal(:*, rest_arg.call('*'))
+    assert_equal(:*, rest_arg.call('a, *'))
+  end
+
+  def test_block_arg
+    block_arg = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-1]
+    end
+
+    assert_equal(nil, block_arg.call(''))
+    assert_equal(:block, block_arg.call('&block'))
+    assert_equal(:&, block_arg.call('&'))
+  end
+
   def test_keyword_rest
     kwrest = lambda do |arg_str|
       node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")

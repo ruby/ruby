@@ -5322,6 +5322,9 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			add_forwarding_args(p);
 			$$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
+		    /*%%%*/
+			($$->nd_ainfo)->forwarding = 1;
+		    /*% %*/
 		    }
 		;
 
@@ -5688,7 +5691,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_REST_ID);
 		    /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_REST_ID;
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5710,7 +5713,7 @@ f_block_arg	: blkarg_mark tIDENTIFIER
                     {
 			arg_var(p, ANON_BLOCK_ID);
                     /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_BLOCK_ID;
                     /*% %*/
 		    /*% ripper: blockarg!(Qnil) %*/
                     }
@@ -12204,7 +12207,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args = tail->nd_ainfo;
 
-    if (args->block_arg == idFWD_BLOCK) {
+    if (args->forwarding) {
 	if (rest_arg) {
 	    yyerror1(&tail->nd_loc, "... after rest argument");
 	    return tail;
@@ -12223,7 +12226,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = rest_arg == idFWD_REST;
+    args->ruby2_keywords = args->forwarding;
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
