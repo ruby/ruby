@@ -1276,28 +1276,33 @@ static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
+
+    attr_index_t index;
     // The returned shape will have `id` in its iv_table
-    rb_shape_t * shape = rb_shape_get_next(rb_shape_get_shape(obj), obj, id);
+    rb_shape_t *shape = rb_shape_get_shape(obj);
+    bool found = rb_shape_get_iv_index(shape, id, &index);
+    if (!found) {
+        index = shape->next_iv_index;
+        shape = rb_shape_get_next(shape, obj, id);
+        RUBY_ASSERT(index == (shape->next_iv_index - 1));
+    }
+
     ivup.shape = shape;
 
     RB_VM_LOCK_ENTER();
     {
-        attr_index_t ent_data;
-        if (rb_shape_get_iv_index(shape, id, &ent_data)) {
-            ivup.iv_index = (uint32_t) ent_data;
-        }
-        else {
-            rb_bug("unreachable.  Shape was not found for id: %s", rb_id2name(id));
-        }
+        ivup.iv_index = (uint32_t)index;
 
         st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update, (st_data_t)&ivup);
     }
     RB_VM_LOCK_LEAVE();
 
     ivup.ivtbl->ivptr[ivup.iv_index] = val;
-
-    rb_shape_set_shape(obj, shape);
     RB_OBJ_WRITTEN(obj, Qundef, val);
+
+    if (!found) {
+        rb_shape_set_shape(obj, shape);
+    }
 }
 
 static VALUE *
