@@ -5869,6 +5869,95 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+static VALUE
+ary_max_generic(VALUE ary, long i, VALUE vmax)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    for (; i < RARRAY_LEN(ary); ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+            vmax = v;
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_fixnum(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(FIXNUM_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (FIXNUM_P(v)) {
+            if ((long)vmax < (long)v) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_float(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (RB_FLOAT_TYPE_P(v)) {
+            if (rb_float_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
+static VALUE
+ary_max_opt_string(VALUE ary, long i, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(STRING_P(vmax));
+
+    VALUE v;
+    for (; i < n; ++i) {
+        v = RARRAY_AREF(ary, i);
+
+        if (STRING_P(v)) {
+            if (rb_str_cmp(vmax, v) < 0) {
+                vmax = v;
+            }
+        }
+        else {
+            return ary_max_generic(ary, i, vmax);
+        }
+    }
+
+    return vmax;
+}
+
 /*
  *  call-seq:
  *     ary.intersect?(other_ary)   -> true or false
@@ -6263,6 +6352,132 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+#define SWAP_VALUE(a, b) do { \
+    VALUE t = a; \
+    a = b; \
+    b = t; \
+} while (0)
+
+static VALUE
+ary_minmax_generic(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    RUBY_ASSERT(i > 0 && i < RARRAY_LEN(ary));
+
+    VALUE v;
+    while (i < RARRAY_LEN(ary)) {
+        v = RARRAY_AREF(ary, i++);
+        if (rb_cmpint(rb_funcallv(vmin, id_cmp, 1, &v), vmin, v) > 0) {
+            vmin = v;
+        }
+        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+            vmax = v;
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_fixnum(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(FIXNUM_P(vmin));
+    RUBY_ASSERT(FIXNUM_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (FIXNUM_P(a) && FIXNUM_P(b)) {
+            if ((long)a > (long)b) {
+                SWAP_VALUE(a, b);
+            }
+            if ((long)vmin > (long)a) {
+                vmin = a;
+            }
+            if ((long)vmax < (long)b) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_float(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    // rb_float_cmp does not call rb_funcall if both two arguments are Float,
+    // so we can assume the size of array is not changed in this function.
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmin));
+    RUBY_ASSERT(RB_FLOAT_TYPE_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b)) {
+            if (rb_float_cmp(a, b) > 0) {
+                SWAP_VALUE(a, b);
+            }
+            if (rb_float_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+            if (rb_float_cmp(vmax, b) < 0) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
+static VALUE
+ary_minmax_opt_string(VALUE ary, long i, VALUE vmin, VALUE vmax)
+{
+    const long n = RARRAY_LEN(ary);
+    RUBY_ASSERT(i > 0 && i < n);
+    RUBY_ASSERT(i % 2 == 0);
+    RUBY_ASSERT(STRING_P(vmin));
+    RUBY_ASSERT(STRING_P(vmax));
+
+    VALUE a, b;
+    while (i + 1 < n) {
+        a = RARRAY_AREF(ary, i++);
+        b = RARRAY_AREF(ary, i++);
+
+        if (STRING_P(a) && STRING_P(b)) {
+            if (rb_str_cmp(a, b) > 0) {
+                SWAP_VALUE(a, b);
+            }
+            if (rb_str_cmp(vmin, a) > 0) {
+                vmin = a;
+            }
+            if (rb_str_cmp(vmax, b) < 0) {
+                vmax = b;
+            }
+        }
+        else {
+            return ary_minmax_generic(ary, i - 2, vmin, vmax);
+        }
+    }
+
+    return rb_assoc_new(vmin, vmax);
+}
+
 /*
  *  call-seq:
  *    array.minmax -> [min_val, max_val]
@@ -6292,7 +6507,49 @@ rb_ary_minmax(VALUE ary)
     if (rb_block_given_p()) {
         return rb_call_super(0, NULL);
     }
-    return rb_assoc_new(rb_ary_min(0, 0, ary), rb_ary_max(0, 0, ary));
+
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE vmin = Qundef, vmax = Qundef;
+    long n = RARRAY_LEN(ary);
+    long i = 0;
+    if (n == 0) {
+        vmin = vmax = Qnil;
+    }
+    else if (n % 2) {
+        vmin = vmax = RARRAY_AREF(ary, 0);
+        i = 1;
+    }
+    else {
+        vmin = RARRAY_AREF(ary, 0);
+        vmax = RARRAY_AREF(ary, 1);
+        switch (OPTIMIZED_CMP(vmin, vmax, cmp_opt)) {
+          case 0:
+            vmax = vmin;
+            break;
+          case 1:
+            SWAP_VALUE(vmin, vmax);
+            // fall through
+          default:
+            break;
+        }
+        i = 2;
+        n = RARRAY_LEN(ary);
+    }
+    if (i < n) {
+        if (FIXNUM_P(vmin) && FIXNUM_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, Integer)) {
+            return ary_minmax_opt_fixnum(ary, i, vmin, vmax);
+        }
+        else if (STRING_P(vmin) && STRING_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+            return ary_minmax_opt_string(ary, i, vmin, vmax);
+        }
+        else if (RB_FLOAT_TYPE_P(vmin) && RB_FLOAT_TYPE_P(vmax) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
+            return ary_minmax_opt_float(ary, i, vmin, vmax);
+        }
+        else {
+            return ary_minmax_generic(ary, i, vmin, vmax);
+        }
+    }
+    return rb_assoc_new(vmin, vmax);
 }
 
 static int

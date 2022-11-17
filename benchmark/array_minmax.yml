@@ -1,0 +1,46 @@
+prelude: |
+  def min_max(ary)
+    [ary.min, ary.max]
+  end
+
+  ary2 = 2.times.to_a.shuffle
+  ary10 = 10.times.to_a.shuffle
+  ary100 = 100.times.to_a.shuffle
+  ary500 = 500.times.to_a.shuffle
+  ary1000 = 1000.times.to_a.shuffle
+  ary2000 = 2500.times.to_a.shuffle
+  ary3000 = 2500.times.to_a.shuffle
+  ary5000 = 5000.times.to_a.shuffle
+  ary10000 = 10000.times.to_a.shuffle
+  ary20000 = 20000.times.to_a.shuffle
+  ary50000 = 50000.times.to_a.shuffle
+  ary100000 = 100000.times.to_a.shuffle
+  ary1000000 = 1000000.times.to_a.shuffle
+
+benchmark:
+  ary2.minmax: ary2.minmax
+  ary10.minmax: ary10.minmax
+  ary100.minmax: ary100.minmax
+  ary500.minmax: ary500.minmax
+  ary1000.minmax: ary1000.minmax
+  ary2000.minmax: ary2000.minmax
+  ary3000.minmax: ary3000.minmax
+  ary5000.minmax: ary5000.minmax
+  ary10000.minmax: ary10000.minmax
+  ary20000.minmax: ary20000.minmax
+  ary50000.minmax: ary50000.minmax
+  ary100000.minmax: ary100000.minmax
+  ary1000000.minmax: ary1000000.minmax
+
+  min_max(ary2): min_max(ary2)
+  min_max(ary10): min_max(ary10)
+  min_max(ary100): min_max(ary100)
+  min_max(ary1000): min_max(ary1000)
+  min_max(ary2000): min_max(ary2000)
+  min_max(ary3000): min_max(ary3000)
+  min_max(ary5000): min_max(ary5000)
+  min_max(ary10000): min_max(ary10000)
+  min_max(ary100000): min_max(ary100000)
+  min_max(ary1000000): min_max(ary1000000)
+
+loop_count: 10000
