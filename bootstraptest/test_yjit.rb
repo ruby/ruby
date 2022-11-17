@@ -45,6 +45,29 @@ assert_normal_exit %q{
   Object.send(:remove_const, :Foo)
 }
 
+assert_normal_exit %q{
+  # Test to ensure send on overriden c functions
+  # doesn't corrupt the stack
+  class Bar
+    def bar(x)
+      x
+    end
+  end
+
+  class Foo
+    def bar
+      Bar.new
+    end
+  end
+
+  foo = Foo.new
+  # before this change, this line would error
+  # because "s" would still be on the stack
+  # String.to_s is the overridden method here
+  p foo.bar.bar("s".__send__(:to_s))
+}
+
+
 assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
   [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
     klass.class_eval("def foo = @foo")
