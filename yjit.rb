@@ -146,7 +146,10 @@ module RubyVM::YJIT
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
     stats = Primitive.rb_yjit_get_stats
-    return stats if stats.nil? || !Primitive.rb_yjit_stats_enabled_p
+    return stats if stats.nil?
+
+    stats[:object_shape_count] = Primitive.object_shape_count
+    return stats unless Primitive.rb_yjit_stats_enabled_p
 
     side_exits = total_exit_count(stats)
     total_exits = side_exits + stats[:leave_interp_return]
@@ -270,6 +273,7 @@ module RubyVM::YJIT
       $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
+      $stderr.puts "object_shape_count:    " + ("%10d" % stats[:object_shape_count])
       $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
       $stderr.puts "total_exit_count:      " + ("%10d" % stats[:total_exit_count])
       $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_insns_count]) if stats.key?(:total_insns_count)
