@@ -2342,14 +2342,27 @@ fn gen_setinstancevariable(
             },
         }
 
+        let write_val = ctx.stack_pop(1);
+
+        let skip_wb = asm.new_label("skip_wb");
+        // If the value we're writing is an immediate, we don't need to WB
+        asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(skip_wb);
+
+        // If the value we're writing is nil or false, we don't need to WB
+        asm.cmp(write_val, Qnil.into());
+        asm.jbe(skip_wb);
+
         asm.comment("write barrier");
         asm.ccall(
             rb_gc_writebarrier as *const u8,
             vec![
                 recv,
-                ctx.stack_pop(1),
+                write_val,
             ]
         );
+
+        asm.write_label(skip_wb);
     }
 
     KeepCompiling
