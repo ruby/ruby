@@ -74,12 +74,11 @@ module Bundler
 
       specs.select do |spec|
         gsv = spec.version
-        lsv = locked_version
 
         must_match = minor? ? [0] : [0, 1]
 
-        matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-        matches.uniq == [true] ? (gsv >= lsv) : false
+        all_match = must_match.all? {|idx| gsv.segments[idx] == locked_version.segments[idx] }
+        all_match && gsv >= locked_version
       end
     end
 
