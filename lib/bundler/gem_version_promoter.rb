@@ -13,7 +13,7 @@ module Bundler
     # By default, strict is false, meaning every available version of a gem
     # is returned from sort_versions. The order gives preference to the
     # requested level (:patch, :minor, :major) but in complicated requirement
-    # cases some gems will by necessity by promoted past the requested level,
+    # cases some gems will by necessity be promoted past the requested level,
     # or even reverted to older versions.
     #
     # If strict is set to true, the results from sort_versions will be
