@@ -67,7 +67,7 @@ class TestFiberIO < Test::Unit::TestCase
 
   def test_epipe_on_read
     omit unless defined?(UNIXSocket)
-    omit "nonblock=true isn't properly supproted on Wondows" if RUBY_PLATFORM=~/mswin|mingw/
+    omit "nonblock=true isn't properly supported on Windows" if RUBY_PLATFORM=~/mswin|mingw/
 
     i, o = UNIXSocket.pair
 
