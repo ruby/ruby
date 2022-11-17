@@ -98,74 +98,49 @@ rb_shape_get_shape(VALUE obj)
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj));
 }
 
-static rb_shape_t *
-rb_shape_lookup_id(rb_shape_t* shape, ID id, enum shape_type shape_type)
-{
-    while (shape->parent_id != INVALID_SHAPE_ID) {
-        if (shape->edge_name == id) {
-            // If the shape type is different, we don't
-            // want this to count as a "found" ID
-            if (shape_type == (enum shape_type)shape->type) {
-                return shape;
-            }
-            else {
-                return NULL;
-            }
-        }
-        shape = rb_shape_get_parent(shape);
-    }
-    return NULL;
-}
-
 static rb_shape_t*
 get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type)
 {
     rb_shape_t *res = NULL;
     RB_VM_LOCK_ENTER();
     {
-        if (rb_shape_lookup_id(shape, id, shape_type)) {
-            // If shape already contains the ivar that is being set, we'll return shape
-            res = shape;
+        if (!shape->edges) {
+            shape->edges = rb_id_table_create(0);
         }
-        else {
-            if (!shape->edges) {
-                shape->edges = rb_id_table_create(0);
+
+        // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
+        // we can return that. Otherwise, we'll need to get a new shape
+        if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res)) {
+            // In this case, the shape exists, but the shape is garbage, so we need to recreate it
+            if (res) {
+                rb_id_table_delete(shape->edges, id);
+                res->parent_id = INVALID_SHAPE_ID;
             }
 
-            // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
-            // we can return that. Otherwise, we'll need to get a new shape
-            if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res)) {
-                // In this case, the shape exists, but the shape is garbage, so we need to recreate it
-                if (res) {
-                    rb_id_table_delete(shape->edges, id);
-                    res->parent_id = INVALID_SHAPE_ID;
-                }
+            rb_shape_t * new_shape = rb_shape_alloc(id, shape);
 
-                rb_shape_t * new_shape = rb_shape_alloc(id, shape);
+            new_shape->type = (uint8_t)shape_type;
+            new_shape->capacity = shape->capacity;
 
-                new_shape->type = (uint8_t)shape_type;
-                new_shape->capacity = shape->capacity;
-
-                switch (shape_type) {
-                  case SHAPE_IVAR:
-                    new_shape->next_iv_index = shape->next_iv_index + 1;
-                    break;
-                  case SHAPE_CAPACITY_CHANGE:
-                  case SHAPE_IVAR_UNDEF:
-                  case SHAPE_FROZEN:
-                  case SHAPE_T_OBJECT:
-                    new_shape->next_iv_index = shape->next_iv_index;
-                    break;
-                  case SHAPE_INITIAL_CAPACITY:
-                  case SHAPE_ROOT:
-                    rb_bug("Unreachable");
-                    break;
-                }
-
-                rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
-
-                res = new_shape;
+            switch (shape_type) {
+              case SHAPE_IVAR:
+                new_shape->next_iv_index = shape->next_iv_index + 1;
+                break;
+              case SHAPE_CAPACITY_CHANGE:
+              case SHAPE_IVAR_UNDEF:
+              case SHAPE_FROZEN:
+              case SHAPE_T_OBJECT:
+                new_shape->next_iv_index = shape->next_iv_index;
+                break;
+              case SHAPE_INITIAL_CAPACITY:
+              case SHAPE_ROOT:
+                rb_bug("Unreachable");
+                break;
             }
+
+            rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
+
+            res = new_shape;
         }
     }
     RB_VM_LOCK_LEAVE();
@@ -182,10 +157,6 @@ void
 rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape)
 {
     rb_shape_t * next_shape = get_next_shape_internal(shape, id, SHAPE_IVAR_UNDEF);
-
-    if (shape == next_shape) {
-        return;
-    }
 
     rb_shape_set_shape(obj, next_shape);
 }
