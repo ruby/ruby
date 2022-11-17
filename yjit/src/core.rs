@@ -878,6 +878,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let version_list = get_or_create_version_list(block.blockid);
 
     version_list.push(blockref.clone());
+    version_list.shrink_to_fit();
 
     // By writing the new block to the iseq, the iseq now
     // contains new references to Ruby objects. Run write barriers.
