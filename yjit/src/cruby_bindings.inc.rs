@@ -358,6 +358,9 @@ extern "C" {
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
 }
 extern "C" {
+    pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
+}
+extern "C" {
     pub fn rb_backref_get() -> VALUE;
 }
 extern "C" {

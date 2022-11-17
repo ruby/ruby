@@ -394,6 +394,10 @@ impl VALUE {
         unsafe { CLASS_OF(self) }
     }
 
+    pub fn is_frozen(self) -> bool {
+        unsafe { rb_obj_frozen_p(self) != VALUE(0) }
+    }
+
     pub fn shape_id_of(self) -> u32 {
         unsafe { rb_shape_get_shape_id(self) }
     }
