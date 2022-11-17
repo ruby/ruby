@@ -3503,9 +3503,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
     int n;
 
     if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, Integer)) {
-        if ((long)a > (long)b) return 1;
-        if ((long)a < (long)b) return -1;
-        return 0;
+        return ((long)a > (long)b) - ((long)a < (long)b);
     }
     if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
         return rb_str_cmp(a, b);
