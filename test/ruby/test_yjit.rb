@@ -905,7 +905,7 @@ class TestYJIT < Test::Unit::TestCase
         end
       }
 
-      return :not_paged1 unless add_pages(500) # use some pages
+      return :not_paged1 unless add_pages(250) # use some pages
       return :broken_resume1 if fiber.resume != 0 # leave an on-stack code as well
 
       add_pages(2000) # use a whole lot of pages to run out of 1MiB
