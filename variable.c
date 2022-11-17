@@ -1606,6 +1606,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_IVAR_UNDEF:
+      case SHAPE_T_OBJECT:
         iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         return;
     }

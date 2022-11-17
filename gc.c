@@ -2942,6 +2942,12 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 #endif
 
     VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
+    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT ||
+            rb_shape_get_shape(obj)->type == SHAPE_INITIAL_CAPACITY);
+
+    // Set the shape to the specific T_OBJECT shape which is always
+    // SIZE_POOL_COUNT away from the root shape.
+    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
 
 #if RUBY_DEBUG
     VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -10030,7 +10036,7 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         }
         ptr = ROBJECT(v)->as.ary;
         size_t size_pool_shape_id = size_pool_idx_for_size(embed_size);
-        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id);
+        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id + SIZE_POOL_COUNT);
         rb_shape_t * new_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape(v));
         rb_shape_set_shape(v, new_shape);
     }
