@@ -117,7 +117,7 @@ Note: We're only listing outstanding class updates.
     ```
 
 * UNIXSocket
-    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
+    * Add support for `UNIXSocket` on Windows. Emulate anonymous sockets. Add
     support for `File.socket?` and `File::Stat#socket?` where possible.
     [[Feature #19135]]
 
