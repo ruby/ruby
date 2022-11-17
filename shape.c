@@ -341,21 +341,21 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
     }
 
     switch (dest_shape->type) {
-        case SHAPE_IVAR:
-            if (midway_shape->capacity <= midway_shape->next_iv_index) {
-                // There isn't enough room to write this IV, so we need to increase the capacity
-                midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
-            }
+      case SHAPE_IVAR:
+        if (midway_shape->capacity <= midway_shape->next_iv_index) {
+            // There isn't enough room to write this IV, so we need to increase the capacity
+            midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
+        }
 
-            midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
-            break;
-        case SHAPE_IVAR_UNDEF:
-            midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR_UNDEF);
-            break;
-        case SHAPE_ROOT:
-        case SHAPE_FROZEN:
-        case SHAPE_CAPACITY_CHANGE:
-            break;
+        midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        break;
+      case SHAPE_IVAR_UNDEF:
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR_UNDEF);
+        break;
+      case SHAPE_ROOT:
+      case SHAPE_FROZEN:
+      case SHAPE_CAPACITY_CHANGE:
+        break;
     }
 
     return midway_shape;
