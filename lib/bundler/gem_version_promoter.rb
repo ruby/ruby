@@ -100,11 +100,11 @@ module Bundler
 
         if major?
           a <=> b
-        elsif either_version_older_than_locked(a, b, locked_version)
+        elsif either_version_older_than_locked?(a, b, locked_version)
           a <=> b
-        elsif segments_do_not_match(a, b, :major)
+        elsif segments_do_not_match?(a, b, :major)
           b <=> a
-        elsif !minor? && segments_do_not_match(a, b, :minor)
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
           b <=> a
         else
           a <=> b
@@ -113,11 +113,11 @@ module Bundler
       post_sort(result, package.unlock?, locked_version)
     end
 
-    def either_version_older_than_locked(a, b, locked_version)
+    def either_version_older_than_locked?(a, b, locked_version)
       locked_version && (a.version < locked_version || b.version < locked_version)
     end
 
-    def segments_do_not_match(a, b, level)
+    def segments_do_not_match?(a, b, level)
       index = [:major, :minor].index(level)
       a.segments[index] != b.segments[index]
     end
