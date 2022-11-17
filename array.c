@@ -3521,76 +3521,58 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
-typedef _Bool (* ___cmp_t) (const void *, const void *);
+/* Radix_Sort */
 
-#define ___I *x++ = *i++
-#define ___J *x++ = *j++
+typedef struct rsort_double_t { uint64_t z; VALUE v; } rsort_double_t;
 
-#define MSORT(func_name, TYPE) /* TYPE: size_t for pointers */ \
-void* func_name(void *const A, const size_t L, void *const E, ___cmp_t cmp) { \
-    if (L < 2) { return A; } size_t z = 2, y = 1, l = L / 2, t = 0; \
-    TYPE tmp, *i = A, *j = i  + 1, *I, *J, *a = A, *e = E, *x = a + L, *p; \
-    for (; l--; i += 2, j += 2) { if (cmp(i, j)) { tmp = *j; *j = *i; *i = tmp; } } goto t; \
-y2: for (; l--; I += 4, J += 4, i += 2, j += 2) { \
-        if (cmp(i, j)) ___J; else ___I; \
-        if (cmp(i, j)) { ___J; if (j == J) { ___I; ___I; continue; } } \
-        else { ___I; if (i == I) { ___J; ___J; continue; } } \
-        if (cmp(i, j)) { ___J; ___I; } else { ___I; ___J; } } goto t; \
-y4: for (; l--; I += 8, J += 8, i += 4, j += 4) { \
-        for (size_t k = 4; --k;) { if (cmp(i, j)) ___J; else ___I; } \
-        for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
-                   else { ___I; if (i == I) { for (; j < J;) ___J; break; } } } } goto t; \
-y_:  for (; l--; I += z, J += z, i += y, j += y) { \
-        for (size_t a, b, k = y;;) { for (; --k;) { if (cmp(i, j)) ___J; else ___I; } \
-                                     a = I - i, b = J - j, k = a > b ? b : a; if (k < 4) break; } \
-        for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
-                   else { ___I; if (i == I) { for (; j < J;) ___J; break; } } } } \
-t:  if (t == 0) { if (L % z == 0) goto n; else { \
-        if (z == 2) { i = (I = j = (J = a + L) - 1) - 2; x = e + (L - 3); t = 3; } \
-        else        { i = (I = x) - z; x = (j = (J = a + L) - y) - z; t = z + y; } } } \
-    else { J = (j = p) + t; if (L % z < t) { t += y; } \
-                            else { i = (I = x) - z; x = a + (i - e); t += z; } } p = x; \
-    for (size_t a, b, k = y;;) { for (; --k;) { if (cmp(i, j)) ___J; else ___I; } \
-                                 a = I - i, b = J - j, k = a > b ? b : a; if (k < 4) break; } \
-    for (;;) { if (cmp(i, j)) { ___J; if (j == J) { for (; i < I;) ___I; break; } } \
-               else { ___I; \
-                   if (i == I) { if (x != j) { for (; j < J;) ___J; } else x = J; break; } } } \
-n:  if (L / z == 1) return (x == a + L) ? a : e; if (z > 2) a = e, e = (e == E) ? A : E; \
-    z = 2 * (y *= 2), l = L / z, J = (j = (I = (i = a) + y)) + y, x = e; if (L % z < t) l--; \
-    if (y > 4) goto y_; else if (y == 2) goto y2; else goto y4; }
+static int rsort_double(VALUE *const p, const long l) {
 
-typedef struct msort_double_t { double d; VALUE v; } msort_double_t;
+    rsort_double_t *const _r = malloc(l * 2 * sizeof(rsort_double_t)),
+                          *a = _r, *b = a + l, *t;
+    if (_r == NULL) return 1;
 
-static MSORT(msort_double, msort_double_t)
-
-#undef ___I
-#undef ___J
-#undef MSORT
-
-static inline _Bool msort_double_cmp(const void *a, const void *b) {
-    return ((msort_double_t *)a)->d > ((msort_double_t *)b)->d;
-}
-
-static int rsort_double(void *const _p, const long l) {
-
-    VALUE *p = _p;
-    msort_double_t *_m = malloc(l * 2 * sizeof(msort_double_t)), *m = _m;
-    if (m == NULL) return 1;
+    uint64_t F[8][256] = {{0}};
 
     for (long i = 0; i < l; i++) {
-        if (!RB_FLOAT_TYPE_P(p[i]) || isnan(m[i].d = rb_float_value(p[i]))) {
-            free(_m);
+        union { double d; uint64_t z; } u;
+        if (!RB_FLOAT_TYPE_P(p[i]) || isnan(u.d = rb_float_value(p[i]))) {
+            free(_r);
             return 1;
         }
-        m[i].v = p[i];
+        u.z ^= -(u.z >> 63) | ((uint64_t)1 << 63);
+        for (int i = 0; i < 8; i++)
+            F[i][(uint8_t)(u.z >> i * 8)]++;
+        a[i] = (rsort_double_t){ u.z, p[i] };
     }
 
-    m = msort_double(m, l, m + l, msort_double_cmp);
+    uint64_t skip[8] = {0};
+
+    for (int i = 0; i < 8; i++) {
+        uint64_t x = 0, t, *o = F[i];
+        for (int j = 0; j < 256; j++) {
+            if ((t = o[j]) == (uint64_t)l) {
+                skip[i] = 1;
+                break;
+            }
+            x = (o[j] = x) + t;
+        }
+    }
+
+    for (int i = 7; i >= -1; --i)
+        if (i == -1) { free(_r); return 0; } else if (skip[i] == 0) break;
+
+    for (int i = 0; i < 8; i++) {
+        if (skip[i]) continue;
+        uint64_t *o = F[i];
+        for (rsort_double_t *p = a, *const P = p + l; p < P; p++)
+            b[o[(uint8_t)(p->z >> i * 8)]++] = *p;
+        t = a, a = b, b = t;
+    }
 
     for (long i = 0; i < l; i++)
-        p[i] = m[i].v;
+        p[i] = a[i].v;
 
-    free(_m);
+    free(_r);
     return 0;
 }
 
@@ -3603,20 +3585,18 @@ static int rsort(void *const _p, const long l) {
         return rsort_double(_p, l);
     }
 
-    uint64_t F[8][256] = {{0}}, *a = _p, *b = malloc(8 * l);
-    if (b == NULL) return 1;
+    uint64_t F[8][256] = {{0}}, *a = malloc(8 * l), *b = _p;
+    if (a == NULL) return 1;
 
-    for (uint64_t *p = a, *p2 = b, *const P = p + l; p < P; p2++) {
+    for (uint64_t *p = b, *p2 = a, *const P = p + l; p < P; p2++) {
         *p2 = *p ^ ((uint64_t)1 << 63);
         for (int i = 0; i < 8; i++)
             F[i][(uint8_t)(*p2 >> i * 8)]++;
         if (!FIXNUM_P(*p++)) {
-            free(b);
+            free(a);
             return 1;
         }
     }
-
-    { uint64_t *t = a; a = b, b = t; }
 
     uint64_t skip[8] = {0}; int last = 10;
 
@@ -3712,13 +3692,13 @@ rb_ary_sort_bang(VALUE ary)
     if (RARRAY_LEN(ary) > 1) {
         VALUE tmp = ary_make_substitution(ary); /* only ary refers tmp */
         struct ary_sort_data data;
-        long len = RARRAY_LEN(ary);
+        const long len = RARRAY_LEN(ary);
         RBASIC_CLEAR_CLASS(tmp);
         data.ary = tmp;
         data.receiver = ary;
         data.cmp_opt.opt_methods = 0;
         data.cmp_opt.opt_inited = 0;
-        int is_bg = rb_block_given_p();
+        const int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
             if ((len < 1000 || is_bg) || rsort(ptr, len))
                 ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
