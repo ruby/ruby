@@ -650,12 +650,12 @@ impl Assembler
                         // took to write out the destination address + 1 for the
                         // b.cond and 1 for the br.
                         load_insns + 2
-                    };
+                    } as usize;
 
-                    // We need to make sure we have at least 6 instructions for
-                    // every kind of jump for invalidation purposes, so we're
-                    // going to write out padding nop instructions here.
-                    for _ in num_insns..6 { nop(cb); }
+                    // Pad nops to allow invalidation. While emit_conditional_jump may
+                    // write 6 instructions, invalidation is done with emit_jmp_ptr,
+                    // which writes 5 instructions. So we don't need 6 instructinos here.
+                    for _ in num_insns..(JMP_PTR_BYTES / 4) { nop(cb); }
                 },
                 Target::Label(label_idx) => {
                     // Here we're going to save enough space for ourselves and
