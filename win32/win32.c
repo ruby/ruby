@@ -5144,31 +5144,34 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 static ssize_t
 w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 {
-    VALUE wtmp;
+    VALUE rp_buf, rp_buf_bigger = 0;
     DWORD len = MultiByteToWideChar(cp, 0, path, -1, NULL, 0);
-    size_t size = rb_w32_reparse_buffer_size(len);
-    WCHAR *wname, *wpath = ALLOCV(wtmp, size + sizeof(WCHAR) * len);
+    size_t size = rb_w32_reparse_buffer_size(bufsize);
+    WCHAR *wname;
+    WCHAR *wpath = ALLOCV(rp_buf, sizeof(WCHAR) * len + size);
     rb_w32_reparse_buffer_t *rp = (void *)(wpath + len);
     ssize_t ret;
     int e;
 
     MultiByteToWideChar(cp, 0, path, -1, wpath, len);
     e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
-    if (e && e != ERROR_MORE_DATA) {
-        ALLOCV_END(wtmp);
-        errno = map_errno(e);
+    if (e == ERROR_MORE_DATA) {
+        size = rb_w32_reparse_buffer_size(len + 1);
+        rp = ALLOCV(rp_buf_bigger, size);
+        e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
+    }
+    if (e) {
+        ALLOCV_END(rp_buf);
+        ALLOCV_END(rp_buf_bigger);
+        errno = e == -1 ? EINVAL : map_errno(e);
         return -1;
     }
-    len = lstrlenW(wname) + 1;
+    len = lstrlenW(wname);
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
-    ALLOCV_END(wtmp);
-    if (e) {
+    ALLOCV_END(rp_buf);
+    ALLOCV_END(rp_buf_bigger);
+    if (!ret) {
         ret = bufsize;
-    }
-    else if (!ret) {
-        e = GetLastError();
-        errno = map_errno(e);
-        ret = -1;
     }
     return ret;
 }
