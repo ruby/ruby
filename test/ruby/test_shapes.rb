@@ -88,8 +88,8 @@ class TestShapes < Test::Unit::TestCase
 
   class TestObject; end
 
-  def test_new_obj_has_root_shape
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(TestObject.new))
+  def test_new_obj_has_t_object_shape
+    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(TestObject.new).parent)
   end
 
   def test_str_has_root_shape
@@ -114,14 +114,23 @@ class TestShapes < Test::Unit::TestCase
 
   def test_basic_shape_transition
     obj = Example.new
-    refute_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(obj))
-    assert_shape_equal(RubyVM::Shape.root_shape.edges[:@a], RubyVM::Shape.of(obj))
+    shape = RubyVM::Shape.of(obj)
+    refute_equal(RubyVM::Shape.root_shape, shape)
+    assert_equal :@a, shape.edge_name
+    assert_equal RubyVM::Shape::SHAPE_IVAR, shape.type
+
+    shape = shape.parent
+    assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
+
+    shape = shape.parent
+    assert_equal(RubyVM::Shape.root_shape.id, shape.id)
     assert_equal(obj.instance_variable_get(:@a), 1)
   end
 
   def test_different_objects_make_same_transition
-    obj = Example.new
+    obj = []
     obj2 = ""
+    obj.instance_variable_set(:@a, 1)
     obj2.instance_variable_set(:@a, 1)
     assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
   end
