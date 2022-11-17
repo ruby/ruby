@@ -70,19 +70,16 @@ module Bundler
 
     def filter_dep_specs(specs, package)
       locked_version = package.locked_version
+      return specs if locked_version.nil? || major?
 
       specs.select do |spec|
-        if locked_version && !major?
-          gsv = spec.version
-          lsv = locked_version
+        gsv = spec.version
+        lsv = locked_version
 
-          must_match = minor? ? [0] : [0, 1]
+        must_match = minor? ? [0] : [0, 1]
 
-          matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          matches.uniq == [true] ? (gsv >= lsv) : false
-        else
-          true
-        end
+        matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
+        matches.uniq == [true] ? (gsv >= lsv) : false
       end
     end
 
