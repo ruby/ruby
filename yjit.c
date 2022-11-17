@@ -1071,6 +1071,14 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
     // method caches, so we do nothing here for now.
 }
 
+// Number of object shapes, which might be useful for investigating YJIT exit reasons.
+static VALUE
+object_shape_count(rb_execution_context_t *ec, VALUE self)
+{
+    // next_shape_id starts from 0, so it's the same as the count
+    return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
