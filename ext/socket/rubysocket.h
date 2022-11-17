@@ -73,7 +73,6 @@
 #endif
 
 #ifdef HAVE_AFUNIX_H
-// The afunix.h header is borked and requires this header to work:
 // Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
 #  include <afunix.h>
 #endif
