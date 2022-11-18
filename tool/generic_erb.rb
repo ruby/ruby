@@ -23,6 +23,9 @@ end
 output = out.path
 vpath = out.vpath
 
+# A hack to prevent "unused variable" warnings
+output, vpath = output, vpath
+
 result = templates.map do |template|
   if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
     erb = ERB.new(File.read(template), trim_mode: '%-')
