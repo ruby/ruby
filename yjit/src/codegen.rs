@@ -2333,13 +2333,14 @@ fn gen_setinstancevariable(
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension);
 
                 asm.comment("write shape");
-                let cleared_flags = asm.and(
-                    Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS),
-                    Opnd::UImm(unsafe { rb_shape_flag_mask() }.into()));
 
-                let new_flags = asm.or(cleared_flags, Opnd::UImm((new_shape_id as u64) << unsafe { rb_shape_flag_shift() }));
+                let shape_bit_size = unsafe { rb_shape_id_num_bits() }; // either 16 or 32 depending on RUBY_DEBUG
+                let shape_byte_size = shape_bit_size / 8;
+                let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
 
-                asm.store(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS), new_flags);
+                // Store the new shape
+                asm.store(shape_opnd, Opnd::UImm(0 as u64));
+                asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));
             },
 
             Some(ivar_index) => {
