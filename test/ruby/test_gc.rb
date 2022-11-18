@@ -152,7 +152,7 @@ class TestGc < Test::Unit::TestCase
       GC.stat_heap(i, stat_heap)
       GC.stat(stat)
 
-      assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
