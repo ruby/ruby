@@ -67,8 +67,12 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t, Time.new("2020-12-25 00:56:17 +0900"))
     assert_equal(t, Time.new("2020-12-25 00:57:47 +090130"))
     assert_equal(t, Time.new("2020-12-25T00:56:17+09:00"))
-    assert_equal(Time.utc(2020, 12, 24, 15, 56, 0), Time.new("2020-12-25 00:56 +09:00"))
-    assert_equal(Time.utc(2020, 12, 24, 15, 0, 0), Time.new("2020-12-25 00 +09:00"))
+    assert_raise_with_message(ArgumentError, /missing sec part/) {
+      Time.new("2020-12-25 00:56 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /missing min part/) {
+      Time.new("2020-12-25 00 +09:00")
+    }
 
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
 
@@ -79,7 +83,7 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
       Time.new("2020-12-25 00:56:17. +0900")
     }
-    assert_raise_with_message(ArgumentError, /year must be 2 or 4\+/) {
+    assert_raise_with_message(ArgumentError, /year must be 4 or more/) {
       Time.new("021-12-25 00:00:00.123456 +09:00")
     }
     assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {

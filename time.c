@@ -2519,8 +2519,8 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     if (NIL_P(year)) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
     }
-    else if (ndigits != 2 && ndigits < 4) {
-        rb_raise(rb_eArgError, "year must be 2 or 4+ digits: %.*s", (int)ndigits, ptr - ndigits);
+    else if (ndigits < 4) {
+        rb_raise(rb_eArgError, "year must be 4 or more digits: %.*s", (int)ndigits, ptr - ndigits);
     }
     do {
 #define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
@@ -2538,15 +2538,20 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
         if (!ISDIGIT(peekc_n(1))) break;
 #define nofraction(x) \
         if (peek('.')) { \
-            rb_raise(rb_eArgError, "fraction %s is not supported: %.*s", #x, \
+            rb_raise(rb_eArgError, "fraction " #x " is not supported: %.*s", \
+                     (int)(ptr + 1 - time_part), time_part); \
+        }
+#define need_colon(x) \
+        if (!peek(':')) { \
+            rb_raise(rb_eArgError, "missing " #x " part: %.*s", \
                      (int)(ptr + 1 - time_part), time_part); \
         }
         expect_two_digits(hour);
         nofraction(hour);
-        if (!peek(':')) break;
+        need_colon(min);
         expect_two_digits(min);
         nofraction(min);
-        if (!peek(':')) break;
+        need_colon(sec);
         expect_two_digits(sec);
         if (peek('.')) {
             ptr++;
