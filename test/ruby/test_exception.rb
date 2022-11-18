@@ -1457,4 +1457,21 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_match("BOO!", e.full_message.lines.first)
     assert_equal({ highlight: Exception.to_tty? }, opt_)
   end
+
+  def test_syntax_error_detailed_message
+    Tempfile.create(%w[detail .rb]) do |lib|
+      lib.print "#{<<~"begin;"}\n#{<<~'end;'}"
+      begin;
+        class SyntaxError
+          def detailed_message(**)
+            Thread.start {}.join
+            "#{super}\n""<#{File.basename(__FILE__)}>"
+          end
+        end
+      end;
+      lib.close
+      pattern = /^<#{Regexp.quote(File.basename(lib.path))}>/
+      assert_in_out_err(%W[-r#{lib.path} -], "1+", [], pattern)
+    end
+  end
 end

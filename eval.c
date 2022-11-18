@@ -121,6 +121,7 @@ ruby_options(int argc, char **argv)
     else {
         rb_ec_clear_current_thread_trace_func(ec);
         state = error_handle(ec, state);
+        ec->errinfo = Qnil; /* just been handled */
         iseq = (void *)INT2FIX(state);
     }
     EC_POP_TAG();
@@ -317,7 +318,7 @@ ruby_run_node(void *n)
     rb_execution_context_t *ec = GET_EC();
     int status;
     if (!ruby_executable_node(n, &status)) {
-        rb_ec_cleanup(ec, 0);
+        rb_ec_cleanup(ec, (NIL_P(ec->errinfo) ? TAG_NONE : TAG_RAISE));
         return status;
     }
     ruby_init_stack((void *)&status);
