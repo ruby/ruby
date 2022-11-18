@@ -393,8 +393,6 @@ module IRB
   end
 
   class Irb
-    DIR_NAME = __dir__
-
     ASSIGNMENT_NODE_TYPES = [
       # Local, instance, global, class, constant, instance, and index assignment:
       #   "foo = bar",
@@ -436,13 +434,14 @@ module IRB
       @scanner = RubyLex.new
     end
 
+    # A hook point for `debug` command's TracePoint after :IRB_EXIT as well as its clean-up
     def debug_break
       # it means the debug command is executed
-      if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:original_capture_frames)
+      if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:capture_frames_without_irb)
         # after leaving this initial breakpoint, revert the capture_frames patch
-        DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :original_capture_frames)
+        DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :capture_frames_without_irb)
         # and remove the redundant method
-        DEBUGGER__.singleton_class.send(:undef_method, :original_capture_frames)
+        DEBUGGER__.singleton_class.send(:undef_method, :capture_frames_without_irb)
       end
     end
 
