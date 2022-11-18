@@ -290,7 +290,7 @@ rb_ractor_id(const rb_ractor_t *r)
 #if RACTOR_CHECK_MODE > 0
 uint32_t rb_ractor_current_id(void);
 // If ractor check mode is enabled, shape bits needs to be smaller
-STATIC_ASSERT(shape_bits, SHAPE_BITS == 16);
+STATIC_ASSERT(shape_bits, SHAPE_ID_NUM_BITS == 16);
 
 static inline void
 rb_ractor_setup_belonging_to(VALUE obj, uint32_t rid)
