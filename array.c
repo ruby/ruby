@@ -3523,7 +3523,26 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
 /* Radix_Sort */
 
+#define YORINOBU   8  /* radix bit-length */
+#define ARASAKA    8  /* number of passes on uint64_t, 64 / YORINOBU + (64 % YORINOBU > 0) */
+#define TOWER    256  /* radix, number of values in the range 0...(1 << YORINOBU) */
+
 typedef struct rsort_double_t { uint64_t z; VALUE v; } rsort_double_t;
+
+static void rsort_calc_offsets(uint64_t (*F)[TOWER], int *skip, int *last, long l) {
+
+    for (int i = 0; i < ARASAKA; i++) {
+        uint64_t x = 0, t, *o = F[i];
+        for (int j = 0; j < TOWER; j++) {
+            if ((t = o[j]) == (uint64_t)l) {
+                skip[i] = 1;
+                break;
+            }
+            x = (o[j] = x) + t;
+        }
+        if (skip[i] == 0) *last = i;
+    }
+}
 
 static int rsort_double(VALUE *const p, const long l) {
 
@@ -3531,7 +3550,7 @@ static int rsort_double(VALUE *const p, const long l) {
                           *a = _r, *b = a + l, *t;
     if (_r == NULL) { return 1; } _Bool is_unordered = 0;
 
-    uint64_t F[8][256] = {{0}}, prev = 0;
+    uint64_t F[ARASAKA][TOWER] = {{0}}, prev = 0;
 
     for (long i = 0; i < l; i++) {
         union { double d; uint64_t z; } u;
@@ -3539,59 +3558,50 @@ static int rsort_double(VALUE *const p, const long l) {
             free(_r);
             return 1;
         }
+        /* u.z = (u.d < +0.0) ? ~(u.z) : u.z ^ ((uint64_t)1 << 63); */
         u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
         is_unordered |= prev > u.z, prev = u.z;
-        for (int i = 0; i < 8; i++)
-            F[i][(uint8_t)(u.z >> i * 8)]++;
+        for (int i = 0; i < ARASAKA; i++)
+            F[i][(uint8_t)(u.z >> i * YORINOBU)]++;
         a[i] = (rsort_double_t){ u.z, p[i] };
     }
 
-    if (!is_unordered) { free(a); return 0; }
+    if (!is_unordered) { free(_r); return 0; }
 
-    uint64_t skip[8] = {0};
+    int skip[ARASAKA] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
 
-    for (int i = 0; i < 8; i++) {
-        uint64_t x = 0, t, *o = F[i];
-        for (int j = 0; j < 256; j++) {
-            if ((t = o[j]) == (uint64_t)l) {
-                skip[i] = 1;
-                break;
-            }
-            x = (o[j] = x) + t;
-        }
-    }
-
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i <= last; i++) {
         if (skip[i]) continue;
         uint64_t *o = F[i];
-        for (rsort_double_t *p = a, *const P = p + l; p < P; p++)
-            b[o[(uint8_t)(p->z >> i * 8)]++] = *p;
+        if (i < last)
+            for (rsort_double_t *p = a, *const P = p + l; p < P; p++)
+                b[o[(uint8_t)(p->z >> i * YORINOBU)]++] = *p;
+        else
+            for (long j = 0; j < l; j++)
+                p[o[(uint8_t)(a[j].z >> i * YORINOBU)]++] = a[j].v;
         t = a, a = b, b = t;
     }
 
-    for (long i = 0; i < l; i++)
-        p[i] = a[i].v;
-
-    free(_r);
-    return 0;
+    free(_r); return 0;
 }
 
 static int rsort(void *const _p, const long l) {
 
-    if (SIZEOF_VALUE != 8) return 1;
+    if (SIZEOF_VALUE != 8) return 1; /* No idea how it works on 32-bit platforms. */
 
     if (!FIXNUM_P(*(VALUE *)_p)) {
         if (!RB_FLOAT_TYPE_P(*(VALUE *)_p)) return 1;
         return rsort_double(_p, l);
     }
 
-    uint64_t F[8][256] = {{0}}, *a = malloc(8 * l), *b = _p, prev = 0;
+    uint64_t F[ARASAKA][TOWER] = {{0}},
+             *a = malloc(SIZEOF_VALUE * l), *b = _p, prev = 0;
     if (a == NULL) { return 1; } _Bool is_unordered = 0;
 
     for (uint64_t *p = b, *p2 = a, *const P = p + l; p < P; p2++) {
         is_unordered |= prev > (*p2 = *p ^ ((uint64_t)1 << 63)), prev = *p2;
-        for (int i = 0; i < 8; i++)
-            F[i][(uint8_t)(*p2 >> i * 8)]++;
+        for (int i = 0; i < ARASAKA; i++)
+            F[i][(uint8_t)(*p2 >> i * YORINOBU)]++;
         if (!FIXNUM_P(*p++)) {
             free(a);
             return 1;
@@ -3600,40 +3610,28 @@ static int rsort(void *const _p, const long l) {
 
     if (!is_unordered) { free(a); return 0; }
 
-    uint64_t skip[8] = {0}; int last = 0;
+    int skip[ARASAKA] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
 
-    for (int i = 0; i < 8; i++) {
-        uint64_t x = 0, t, *o = F[i];
-        for (int j = 0; j < 256; j++) {
-            if ((t = o[j]) == (uint64_t)l) {
-                skip[i] = 1;
-                break;
-            }
-            x = (o[j] = x) + t;
-        }
-        if (skip[i] == 0) last = i;
-    }
-
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i <= last; i++) {
         if (skip[i]) continue;
         uint64_t *o = F[i];
         if (i < last)
             for (uint64_t *p = a, *const P = p + l; p < P; p++)
-                b[o[(uint8_t)(*p >> i * 8)]++] = *p;
+                b[o[(uint8_t)(*p >> i * YORINOBU)]++] = *p;
         else
             for (uint64_t *p = a, *const P = p + l; p < P; p++)
-                b[o[(uint8_t)(*p >> i * 8)]++] = *p ^ ((uint64_t)1 << 63);
+                b[o[(uint8_t)(*p >> i * YORINOBU)]++] = *p ^ ((uint64_t)1 << 63);
         o = a, a = b, b = o;
     }
 
-    if (a != _p) {
-        memcpy(_p, a, 8 * l);
-        b = a;
-    }
+    if (a != _p) { memcpy(_p, a, SIZEOF_VALUE * l); b = a; }
 
-    free(b);
-    return 0;
+    free(b); return 0;
 }
+
+#undef YORINOBU
+#undef ARASAKA
+#undef TOWER
 
 /*
  *  call-seq:
