@@ -924,10 +924,10 @@ class Binding
   #
   #
   # See IRB@IRB+Usage for more information.
-  def irb
+  def irb(show_code: true)
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
-    STDOUT.print(workspace.code_around_binding)
+    STDOUT.print(workspace.code_around_binding) if show_code
     binding_irb = IRB::Irb.new(workspace)
     binding_irb.context.irb_path = File.expand_path(source_location[0])
     binding_irb.run(IRB.conf)
