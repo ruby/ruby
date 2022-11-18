@@ -15,25 +15,25 @@ typedef uint16_t attr_index_t;
 #if RUBY_DEBUG || (defined(VM_CHECK_MODE) && VM_CHECK_MODE > 0)
 #  if SIZEOF_SHAPE_T == 4
 typedef uint32_t shape_id_t;
-# define SHAPE_BITS 16
+# define SHAPE_ID_NUM_BITS 16
 #  else
 typedef uint16_t shape_id_t;
-# define SHAPE_BITS 16
+# define SHAPE_ID_NUM_BITS 16
 #  endif
 #else
 #  if SIZEOF_SHAPE_T == 4
 typedef uint32_t shape_id_t;
-# define SHAPE_BITS 32
+# define SHAPE_ID_NUM_BITS 32
 #  else
 typedef uint16_t shape_id_t;
-# define SHAPE_BITS 16
+# define SHAPE_ID_NUM_BITS 16
 #  endif
 #endif
 
-# define SHAPE_MASK (((uintptr_t)1 << SHAPE_BITS) - 1)
-# define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_BITS)
+# define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
+# define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
 
-# define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_BITS)
+# define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_BITMAP_SIZE 16384
 

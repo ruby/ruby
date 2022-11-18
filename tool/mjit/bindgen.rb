@@ -346,7 +346,7 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_ISEQ
     ],
     UINT: %w[
-      SHAPE_BITS
+      SHAPE_ID_NUM_BITS
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
