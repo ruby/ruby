@@ -35,11 +35,6 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command << " stdlib_test validate"
     first_timeout *= 3
 
-  when "minitest"
-    # Tentatively exclude some tests that conflict with error_highlight
-    # https://github.com/seattlerb/minitest/pull/880
-    test_command << " 'TESTOPTS=-e /test_stub_value_block_args_5__break_if_not_passed|test_no_method_error_on_unexpected_methods/'"
-
   when "debug"
     # Since debug gem requires debug.so in child processes without
     # acitvating the gem, we preset necessary paths in RUBYLIB
