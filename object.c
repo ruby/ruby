@@ -306,7 +306,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         rb_shape_t * initial_shape = rb_shape_get_shape(dest);
 
         if (initial_shape->size_pool_index != src_shape->size_pool_index) {
-            RUBY_ASSERT(initial_shape->parent_id == ROOT_SHAPE_ID || initial_shape->type == SHAPE_ROOT);
+            RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
             shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
         }
