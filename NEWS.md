@@ -307,7 +307,22 @@ The following deprecated methods are removed.
 * `Psych` no longer bundles libyaml sources.
   And also `Fiddle` no longer bundles libffi sources.
   Users need to install the libyaml/libffi library themselves via the package
-  system. [[Feature #18571]]
+  manager like apt, yum, brew, etc.
+
+  Psych and fiddle supported the static build with specific version of libyaml
+  and libffi sources. You can build psych with libyaml-0.2.5 like this.
+
+  ```bash
+  $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
+  ```
+
+  And you can build fiddle with libffi-3.4.4 like this.
+
+  ```bash
+  $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
+  ```
+
+  [[Feature #18571]]
 
 ## C API updates
 
