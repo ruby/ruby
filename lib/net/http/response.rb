@@ -4,27 +4,7 @@
 #
 # == About the Examples
 #
-# Examples here assume that <tt>net/http</tt> has been required
-# (which also requires +uri+):
-#
-#   require 'net/http'
-#
-# Many code examples here use these example websites:
-#
-# - https://jsonplaceholder.typicode.com.
-# - http://example.com.
-#
-# Some examples also assume these variables:
-#
-#   uri = URI('https://jsonplaceholder.typicode.com')
-#   uri.freeze # Examples may not modify.
-#   hostname = uri.hostname # => "jsonplaceholder.typicode.com"
-#   port = uri.port         # => 443
-#
-# An example that needs a modified URI first duplicates +uri+, then modifies:
-#
-#   _uri = uri.dup
-#   _uri.path = '/todos/1'
+# :include: doc/net-http/examples.rdoc
 #
 # == Returned Responses
 #
