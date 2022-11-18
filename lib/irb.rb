@@ -393,6 +393,8 @@ module IRB
   end
 
   class Irb
+    DIR_NAME = __dir__
+
     ASSIGNMENT_NODE_TYPES = [
       # Local, instance, global, class, constant, instance, and index assignment:
       #   "foo = bar",
@@ -432,6 +434,16 @@ module IRB
       end
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
+    end
+
+    def debug_break
+      # it means the debug command is executed
+      if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:original_capture_frames)
+        # after leaving this initial breakpoint, revert the capture_frames patch
+        DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :original_capture_frames)
+        # and remove the redundant method
+        DEBUGGER__.singleton_class.send(:undef_method, :original_capture_frames)
+      end
     end
 
     def run(conf = IRB.conf)
@@ -931,5 +943,6 @@ class Binding
     binding_irb = IRB::Irb.new(workspace)
     binding_irb.context.irb_path = File.expand_path(source_location[0])
     binding_irb.run(IRB.conf)
+    binding_irb.debug_break
   end
 end
