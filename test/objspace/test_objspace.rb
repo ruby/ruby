@@ -480,8 +480,8 @@ class TestObjSpace < Test::Unit::TestCase
         obj = JSON.parse(l)
         next if obj["type"] == "ROOT"
 
-        assert(obj["slot_size"] != nil)
-        assert(obj["slot_size"] % GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] == 0)
+        assert_not_nil obj["slot_size"]
+        assert_equal 0, obj["slot_size"] % GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
       }
     end
   end
