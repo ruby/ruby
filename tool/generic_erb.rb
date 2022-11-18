@@ -30,7 +30,7 @@ result = templates.map do |template|
     erb = ERB.new(File.read(template), nil, '%-')
   end
   erb.filename = template
-  source ? erb.src : proc{erb.result(binding)}.call
+  source ? erb.src : proc{erb.result_with_hash({ erb: erb, output: output, vpath: vpath })}.call
 end
 result = result.size == 1 ? result[0] : result.join("")
 out.write(result)
