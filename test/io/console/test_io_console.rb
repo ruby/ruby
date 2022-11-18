@@ -440,7 +440,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def run_pty(src, n = 1)
     pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
 
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
+    args = ["-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src]
+    args.shift if args.first == "-I" # statically linked
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
     omit $!
   else
