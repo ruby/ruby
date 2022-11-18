@@ -4,77 +4,23 @@
 # it wraps together the request path and the request headers.
 #
 # The class should not be used directly;
-# instead you should use its subclasses, which are covered in the sections below.
+# instead you should use its subclasses:
 #
-# == About the Examples
-#
-# Examples here assume that <tt>net/http</tt> has been required
-# (which also requires +uri+):
-#
-#   require 'net/http'
-#
-# Many code examples here use these example websites:
-#
-# - https://jsonplaceholder.typicode.com.
-# - http://example.com.
-#
-# Some examples also assume these variables:
-#
-#   uri = URI('https://jsonplaceholder.typicode.com')
-#   uri.freeze # Examples may not modify.
-#   hostname = uri.hostname # => "jsonplaceholder.typicode.com"
-#   port = uri.port         # => 443
-#
-# An example that needs a modified URI first duplicates +uri+, then modifies:
-#
-#   _uri = uri.dup
-#   _uri.path = '/todos/1'
-#
-# == Requests
-#
-# === \Net::HTTP::Get
-#
-# A GET request may be sent using request class \Net::HTTP::Get:
-#
-#   req = Net::HTTP::Get.new(uri) # => #<Net::HTTP::Get GET>
-#   Net::HTTP.start(hostname) do |http|
-#     http.request(req)
-#   end # => #<Net::HTTPOK 200 OK readbody=true>
-#
-# === \Net::HTTP::Head
-#
-# A HEAD request may be sent using request class \Net::HTTP::Head:
-#
-#   req = Net::HTTP::Head.new(uri) # => #<Net::HTTP::Head HEAD>
-#   Net::HTTP.start(hostname) do |http|
-#     http.request(req)
-#   end # => #<Net::HTTPOK 200 OK readbody=true>
-#
-# === \Net::HTTP::Post
-#
-# A POST request may be sent using request class \Net::HTTP::Post:
-#
-#   _uri = uri.dup
-#   _uri.path = '/posts'
-#   req = Net::HTTP::Post.new(_uri) # => #<Net::HTTP::Post POST>
-#   req.body = '{"title": "foo", "body": "bar", "userId": 1}'
-#   req['Content-type'] = 'application/json; charset=UTF-8'
-#   Net::HTTP.start(hostname) do |http|
-#     http.request(req)
-#   end # => # => #<Net::HTTPCreated 201 Created readbody=true>
-#
-# === \Net::HTTP::Patch
-# === \Net::HTTP::Put
-# === \Net::HTTP::Proppatch
-# === \Net::HTTP::Lock
-# === \Net::HTTP::Unlock
-# === \Net::HTTP::Options
-# === \Net::HTTP::Propfind
-# === \Net::HTTP::Delete
-# === \Net::HTTP::Move
-# === \Net::HTTP::Copy
-# === \Net::HTTP::Mkcol
-# === \Net::HTTP::Trace
+# - \Net::HTTP::Get
+# - \Net::HTTP::Head
+# - \Net::HTTP::Post
+# - \Net::HTTP::Delete
+# - \Net::HTTP::Options
+# - \Net::HTTP::Trace
+# - \Net::HTTP::Patch
+# - \Net::HTTP::Put
+# - \Net::HTTP::Copy
+# - \Net::HTTP::Lock
+# - \Net::HTTP::Mkcol
+# - \Net::HTTP::Move
+# - \Net::HTTP::Propfind
+# - \Net::HTTP::Proppatch
+# - \Net::HTTP::Unlock
 #
 class Net::HTTPRequest < Net::HTTPGenericRequest
   # Creates an HTTP request object for +path+.
