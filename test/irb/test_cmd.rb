@@ -523,7 +523,7 @@ module TestIRB
         def show_source_test_method
           unless true
           end
-        end
+        end unless defined?(show_source_test_method)
       EOS
 
       out, err = execute_lines(
