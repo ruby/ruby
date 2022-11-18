@@ -433,7 +433,7 @@ sysexit_status(VALUE err)
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(rb_execution_context_t *ec, int ex)
+error_handle(rb_execution_context_t *ec, enum ruby_tag_type ex)
 {
     int status = EXIT_FAILURE;
 

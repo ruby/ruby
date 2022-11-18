@@ -43,7 +43,7 @@ NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
-static int rb_ec_cleanup(rb_execution_context_t *ec, int ex);
+static int rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex);
 static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
 
 VALUE rb_eLocalJumpError;
@@ -176,11 +176,11 @@ ruby_finalize(void)
 int
 ruby_cleanup(int ex)
 {
-    return rb_ec_cleanup(GET_EC(), ex);
+    return rb_ec_cleanup(GET_EC(), (enum ruby_tag_type)ex);
 }
 
 static int
-rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
+rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex0)
 {
     int state;
     volatile VALUE errs[2] = { Qundef, Qundef };
@@ -189,7 +189,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     rb_thread_t *const volatile th0 = th;
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
-    volatile int ex = ex0;
+    volatile enum ruby_tag_type ex = ex0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
