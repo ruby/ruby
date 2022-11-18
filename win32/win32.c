@@ -681,7 +681,10 @@ invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file,
 
 int ruby_w32_rtc_error;
 
+# ifndef __MINGW32__
 /* License: Ruby's */
+RBIMPL_ATTR_NONNULL((5))
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 5, 6)
 static int __cdecl
 rtc_error_handler(int e, const char *src, int line, const char *exe, const char *fmt, ...)
 {
@@ -697,6 +700,7 @@ rtc_error_handler(int e, const char *src, int line, const char *exe, const char 
     rb_write_error2(RSTRING_PTR(str), RSTRING_LEN(str));
     return 0;
 }
+# endif
 #endif
 
 static CRITICAL_SECTION select_mutex;
