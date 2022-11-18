@@ -291,8 +291,6 @@ rb_ractor_id(const rb_ractor_t *r)
 # define RACTOR_BELONGING_ID(obj) (*(uint32_t *)(((uintptr_t)(obj)) + rb_gc_obj_slot_size(obj)))
 
 uint32_t rb_ractor_current_id(void);
-// If ractor check mode is enabled, shape bits needs to be smaller
-STATIC_ASSERT(shape_bits, SHAPE_ID_NUM_BITS == 16);
 
 static inline void
 rb_ractor_setup_belonging_to(VALUE obj, uint32_t rid)
