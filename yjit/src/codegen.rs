@@ -4179,7 +4179,7 @@ fn gen_send_cfunc(
     }
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() {
+    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, ctx, asm, ocb, ci, cme, block, argc, recv_known_klass) {
