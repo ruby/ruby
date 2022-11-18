@@ -2104,6 +2104,9 @@ rb_fiber_storage_set(VALUE self, VALUE value)
  *
  *  Returns the value of the fiber-local variable identified by +key+.
  *
+ *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
+ *  Fiber#store.
+ *
  *  See also Fiber[]=.
  */
 static VALUE
@@ -2112,6 +2115,10 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
     VALUE storage = fiber_storage_get(fiber_current());
 
     if (storage == Qnil) return Qnil;
+
+    if (!RB_TYPE_P(key, T_SYMBOL)) {
+        rb_raise(rb_eTypeError, "The given key must be a Symbol!");
+    }
 
     if (RB_TYPE_P(storage, T_HASH)) {
         return rb_hash_aref(storage, key);
@@ -2126,12 +2133,18 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
  *  Assign +value+ to the fiber-local variable identified by +key+.
  *  The variable is created if it doesn't exist.
  *
+ *  +key+ must be a Symbol, otherwise a TypeError is raised.
+ *
  *  See also Fiber[].
  */
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
     VALUE storage = fiber_storage_get(fiber_current());
+
+    if (!RB_TYPE_P(key, T_SYMBOL)) {
+        rb_raise(rb_eTypeError, "The given key must be a Symbol!");
+    }
 
     if (RB_TYPE_P(storage, T_HASH)) {
         return rb_hash_aset(storage, key, value);
