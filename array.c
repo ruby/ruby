@@ -3529,9 +3529,9 @@ static int rsort_double(VALUE *const p, const long l) {
 
     rsort_double_t *const _r = malloc(l * 2 * sizeof(rsort_double_t)),
                           *a = _r, *b = a + l, *t;
-    if (_r == NULL) return 1;
+    if (_r == NULL) { return 1; } _Bool is_unordered = 0;
 
-    uint64_t F[8][256] = {{0}};
+    uint64_t F[8][256] = {{0}}, prev = 0;
 
     for (long i = 0; i < l; i++) {
         union { double d; uint64_t z; } u;
@@ -3540,10 +3540,13 @@ static int rsort_double(VALUE *const p, const long l) {
             return 1;
         }
         u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+        is_unordered |= prev > u.z, prev = u.z;
         for (int i = 0; i < 8; i++)
             F[i][(uint8_t)(u.z >> i * 8)]++;
         a[i] = (rsort_double_t){ u.z, p[i] };
     }
+
+    if (!is_unordered) { free(a); return 0; }
 
     uint64_t skip[8] = {0};
 
@@ -3557,9 +3560,6 @@ static int rsort_double(VALUE *const p, const long l) {
             x = (o[j] = x) + t;
         }
     }
-
-    for (int i = 7; i >= -1; --i)
-        if (i == -1) { free(_r); return 0; } else if (skip[i] == 0) break;
 
     for (int i = 0; i < 8; i++) {
         if (skip[i]) continue;
@@ -3585,11 +3585,11 @@ static int rsort(void *const _p, const long l) {
         return rsort_double(_p, l);
     }
 
-    uint64_t F[8][256] = {{0}}, *a = malloc(8 * l), *b = _p;
-    if (a == NULL) return 1;
+    uint64_t F[8][256] = {{0}}, *a = malloc(8 * l), *b = _p, prev = 0;
+    if (a == NULL) { return 1; } _Bool is_unordered = 0;
 
     for (uint64_t *p = b, *p2 = a, *const P = p + l; p < P; p2++) {
-        *p2 = *p ^ ((uint64_t)1 << 63);
+        is_unordered |= prev > (*p2 = *p ^ ((uint64_t)1 << 63)), prev = *p2;
         for (int i = 0; i < 8; i++)
             F[i][(uint8_t)(*p2 >> i * 8)]++;
         if (!FIXNUM_P(*p++)) {
@@ -3598,7 +3598,9 @@ static int rsort(void *const _p, const long l) {
         }
     }
 
-    uint64_t skip[8] = {0}; int last = 10;
+    if (!is_unordered) { free(a); return 0; }
+
+    uint64_t skip[8] = {0}; int last = 0;
 
     for (int i = 0; i < 8; i++) {
         uint64_t x = 0, t, *o = F[i];
@@ -3609,10 +3611,8 @@ static int rsort(void *const _p, const long l) {
             }
             x = (o[j] = x) + t;
         }
+        if (skip[i] == 0) last = i;
     }
-
-    for (int i = 7; i >= -1; --i)
-        if (i == -1) { free(a); return 0; } else if (skip[i] == 0) { last = i; break; }
 
     for (int i = 0; i < 8; i++) {
         if (skip[i]) continue;

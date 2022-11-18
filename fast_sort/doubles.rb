@@ -1,7 +1,8 @@
 #!/bin/ruby
 
 srand 0
-r = Array.new 1e7.to_i do rand -1e1...1e1 end
+r = $*[0] == 'sorted' ? (-10_000.0...10_000.0).step(0.002).to_a :
+                        (Array.new 1e7.to_i do rand -1e1...1e1 end)
 
 puts
 
