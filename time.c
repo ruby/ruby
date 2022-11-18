@@ -2523,9 +2523,10 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
         rb_raise(rb_eArgError, "year must be 2 or 4+ digits: %.*s", (int)ndigits, ptr - ndigits);
     }
     do {
-#define peek_n(c, n) ((ptr + n < end) && ((unsigned char)ptr[n] == (c)))
+#define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
+#define peek_n(c, n) (peekable_p(n) && ((unsigned char)ptr[n] == (c)))
 #define peek(c) peek_n(c, 0)
-#define peekc_n(n) ((ptr + n < end) ? (int)(unsigned char)ptr[n] : -1)
+#define peekc_n(n) (peekable_p(n) ? (int)(unsigned char)ptr[n] : -1)
 #define peekc() peekc_n(0)
 #define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
         if (!peek('-')) break;
