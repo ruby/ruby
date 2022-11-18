@@ -540,7 +540,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       ENV['TMP'] = File.join(Dir.tmpdir, "äöü€")
       FileUtils.mkdir_p ENV['TMP']
 
-      s1, s2 = UNIXSocket.pair
+      s1, = UNIXSocket.pair
       assert !s1.path.empty?
       assert !File.exist?(s1.path)
     ensure
