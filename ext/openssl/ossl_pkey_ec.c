@@ -668,10 +668,11 @@ static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
     GetECGroup(a, group1);
     GetECGroup(b, group2);
 
-    if (EC_GROUP_cmp(group1, group2, ossl_bn_ctx) == 1)
-       return Qfalse;
-
-    return Qtrue;
+    switch (EC_GROUP_cmp(group1, group2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_GROUP, "EC_GROUP_cmp");
+    }
 }
 
 /*
@@ -1232,10 +1233,13 @@ static VALUE ossl_ec_point_eql(VALUE a, VALUE b)
     GetECPoint(b, point2);
     GetECGroup(group_v1, group);
 
-    if (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx) == 1)
-        return Qfalse;
+    switch (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_POINT, "EC_POINT_cmp");
+    }
 
-    return Qtrue;
+    UNREACHABLE;
 }
 
 /*
