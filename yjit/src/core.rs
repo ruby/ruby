@@ -1851,8 +1851,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let new_branch_size = branch.code_size();
     assert!(
         new_branch_size <= branch_size_on_entry,
-        "branch stubs should never enlarge branches: (old_size: {}, new_size: {})",
-        branch_size_on_entry, new_branch_size,
+        "branch stubs should never enlarge branches (start_addr: {:?}, old_size: {}, new_size: {})",
+        branch.start_addr.unwrap().raw_ptr(), branch_size_on_entry, new_branch_size,
     );
 
     // Return a pointer to the compiled block version
@@ -2258,14 +2258,17 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Rewrite the branch with the new jump target address
-        let branch_end_addr = branch.end_addr;
+        let old_branch_size = branch.code_size();
         regenerate_branch(cb, &mut branch);
 
         if target_next && branch.end_addr > block.end_addr {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
         }
-        if !target_next && branch.end_addr > branch_end_addr {
-            panic!("invalidated branch grew in size: {:?}", branch);
+        if !target_next && branch.code_size() > old_branch_size {
+            panic!(
+                "invalidated branch grew in size (start_addr: {:?}, old_size: {}, new_size: {})",
+                branch.start_addr.unwrap().raw_ptr(), old_branch_size, branch.code_size()
+            );
         }
     }
 
