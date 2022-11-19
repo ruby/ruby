@@ -5322,6 +5322,9 @@ args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    {
 			add_forwarding_args(p);
 			$$ = new_args_tail(p, Qnone, $1, ID2VAL(idFWD_BLOCK), &@1);
+		    /*%%%*/
+			($$->nd_ainfo)->forwarding = 1;
+		    /*% %*/
 		    }
 		;
 
@@ -5612,7 +5615,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_KEYWORD_REST_ID);
 		    /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_KEYWORD_REST_ID;
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5688,7 +5691,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_REST_ID);
 		    /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_REST_ID;
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5710,7 +5713,7 @@ f_block_arg	: blkarg_mark tIDENTIFIER
                     {
 			arg_var(p, ANON_BLOCK_ID);
                     /*%%%*/
-			$$ = internal_id(p);
+			$$ = ANON_BLOCK_ID;
                     /*% %*/
 		    /*% ripper: blockarg!(Qnil) %*/
                     }
@@ -10848,7 +10851,7 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
     if (!arg || !p->case_labels) return;
 
     lit = rb_node_case_when_optimizable_literal(arg);
-    if (lit == Qundef) return;
+    if (UNDEF_P(lit)) return;
     if (nd_type_p(arg, NODE_STR)) {
 	RB_OBJ_WRITTEN(p->ast, Qnil, arg->nd_lit = lit);
     }
@@ -11501,7 +11504,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 	    }
 	    if (RTEST(lit)) {
 		VALUE e = shareable_literal_value(elt);
-		if (e != Qundef) {
+		if (!UNDEF_P(e)) {
 		    rb_ary_push(lit, e);
 		}
 		else {
@@ -11541,7 +11544,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
 	    if (RTEST(lit)) {
 		VALUE k = shareable_literal_value(key);
 		VALUE v = shareable_literal_value(val);
-		if (k != Qundef && v != Qundef) {
+		if (!UNDEF_P(k) && !UNDEF_P(v)) {
 		    rb_hash_aset(lit, k, v);
 		}
 		else {
@@ -12204,7 +12207,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args = tail->nd_ainfo;
 
-    if (args->block_arg == idFWD_BLOCK) {
+    if (args->forwarding) {
 	if (rest_arg) {
 	    yyerror1(&tail->nd_loc, "... after rest argument");
 	    return tail;
@@ -12223,7 +12226,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = rest_arg == idFWD_REST;
+    args->ruby2_keywords = args->forwarding;
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
@@ -13787,7 +13790,7 @@ ripper_validate_object(VALUE self, VALUE x)
     if (x == Qfalse) return x;
     if (x == Qtrue) return x;
     if (NIL_P(x)) return x;
-    if (x == Qundef)
+    if (UNDEF_P(x))
 	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
@@ -13898,7 +13901,7 @@ static VALUE
 ripper_get_value(VALUE v)
 {
     NODE *nd;
-    if (v == Qundef) return Qnil;
+    if (UNDEF_P(v)) return Qnil;
     if (!RB_TYPE_P(v, T_NODE)) return v;
     nd = (NODE *)v;
     if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
@@ -14159,7 +14162,7 @@ static VALUE
 ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
-    if (obj == Qundef) {
+    if (UNDEF_P(obj)) {
         rb_raise(rb_eArgError, "%"PRIsVALUE, msg);
     }
     return Qnil;

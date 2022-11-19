@@ -7,10 +7,6 @@ module RubyVM::MJIT
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/mjit/bindgen.rb instead.
   class << C
-    def ROBJECT_EMBED_LEN_MAX
-      Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
-    end
-
     def cdhash_to_hash(cdhash_addr)
       Primitive.cdhash_to_hash(cdhash_addr)
     end
@@ -162,10 +158,6 @@ module RubyVM::MJIT
     Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
   end
 
-  def C.SHAPE_BITS
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_BITS) }
-  end
-
   def C.SHAPE_CAPACITY_CHANGE
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_CAPACITY_CHANGE) }
   end
@@ -176,6 +168,10 @@ module RubyVM::MJIT
 
   def C.SHAPE_FROZEN
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_FROZEN) }
+  end
+
+  def C.SHAPE_ID_NUM_BITS
+    Primitive.cexpr! %q{ UINT2NUM(SHAPE_ID_NUM_BITS) }
   end
 
   def C.SHAPE_INITIAL_CAPACITY
@@ -330,7 +326,7 @@ module RubyVM::MJIT
       debug: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), debug)")],
       debug_flags: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), debug_flags)")],
       wait: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), wait)")],
-      min_calls: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), min_calls)")],
+      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), call_threshold)")],
       verbose: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), verbose)")],
       max_cache_size: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), max_cache_size)")],
       pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), pause)")],
@@ -569,7 +565,7 @@ module RubyVM::MJIT
   def C.rb_method_definition_struct
     @rb_method_definition_struct ||= CType::Struct.new(
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
-      type: [self.rb_method_type_t, 0],
+      type: [CType::BitField.new(4, 0), 0],
       iseq_overload: [CType::BitField.new(1, 4), 4],
       alias_count: [CType::BitField.new(27, 5), 5],
       complemented_count: [CType::BitField.new(28, 0), 32],

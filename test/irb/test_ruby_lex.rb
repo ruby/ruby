@@ -181,9 +181,6 @@ module TestIRB
     end
 
     def test_endless_range_at_end_of_line
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.6.0')
-        pend 'Endless range is available in 2.6.0 or later'
-      end
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(a = 3..)),
         PromptRow.new('002:0: :* ', %q()),

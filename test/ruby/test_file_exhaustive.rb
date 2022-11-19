@@ -649,7 +649,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
-      skip("statx(2) is prohibited by seccomp")
+      omit("statx(2) is prohibited by seccomp")
     end
     assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
   end if File.respond_to?(:birthtime)

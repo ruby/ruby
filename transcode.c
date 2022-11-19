@@ -2352,7 +2352,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 ec->last_error.error_bytes_len,
                 rb_enc_find(ec->last_error.source_encoding));
         rep = (*fallback_func)(fallback, rep);
-        if (rep != Qundef && !NIL_P(rep)) {
+        if (!UNDEF_P(rep) && !NIL_P(rep)) {
             StringValue(rep);
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));

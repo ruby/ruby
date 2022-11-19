@@ -187,6 +187,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         // invalidate CCs
         if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
             struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
+            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
             if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
             rb_vm_ccs_free(ccs);
             rb_id_table_delete(cc_tbl, mid);
@@ -196,6 +197,10 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         // remove from callable_m_tbl, if exists
         struct rb_id_table *cm_tbl;
         if ((cm_tbl = RCLASS_CALLABLE_M_TBL(klass)) != NULL) {
+            VALUE cme;
+            if (rb_yjit_enabled_p() && rb_id_table_lookup(cm_tbl, mid, &cme)) {
+                rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+            }
             rb_id_table_delete(cm_tbl, mid);
             RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
         }
@@ -255,8 +260,6 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
         }
     }
     RB_VM_LOCK_LEAVE();
-
-    rb_yjit_method_lookup_change(klass, mid);
 }
 
 static void
@@ -2735,7 +2738,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
       case 0:
         ret = basic_obj_respond_to_missing(ec, klass, obj, ID2SYM(id),
                                            RBOOL(!pub));
-        return RTEST(ret) && ret != Qundef;
+        return RTEST(ret) && !UNDEF_P(ret);
       default:
         return TRUE;
     }
@@ -2847,7 +2850,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
     if (!(id = rb_check_id(&mid))) {
         VALUE ret = basic_obj_respond_to_missing(ec, CLASS_OF(obj), obj,
                                                  rb_to_symbol(mid), priv);
-        if (ret == Qundef) ret = Qfalse;
+        if (UNDEF_P(ret)) ret = Qfalse;
         return ret;
     }
     return  RBOOL(basic_obj_respond_to(ec, obj, id, !RTEST(priv)));

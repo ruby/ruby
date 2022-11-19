@@ -169,7 +169,7 @@ ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void transient_heap_ptr_check(struct
 static void
 transient_heap_ptr_check(struct transient_heap *theap, VALUE obj)
 {
-    if (obj != Qundef) {
+    if (!UNDEF_P(obj)) {
         const void *ptr = transient_heap_ptr(obj, FALSE);
         TH_ASSERT(ptr == NULL || transient_header_managed_ptr_p(theap, ptr));
     }

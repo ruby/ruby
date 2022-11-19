@@ -19,11 +19,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
  */
 
 /*
- * Definitions for NT port of Perl
- */
-
-
-/*
  * Ok now we can include the normal include files.
  */
 
@@ -302,7 +297,6 @@ extern DWORD  rb_w32_osver(void);
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);
 extern ssize_t rb_w32_ureadlink(const char *, char *, size_t);
-extern ssize_t rb_w32_wreadlink(const WCHAR *, WCHAR *, size_t);
 extern int rb_w32_usymlink(const char *src, const char *link);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern int clock_gettime(clockid_t, struct timespec *);
@@ -393,6 +387,7 @@ scalb(double a, long b)
 #endif
 
 #define S_IFLNK 0xa000
+#define S_IFSOCK 0xc000
 
 /*
  * define this so we can do inplace editing

@@ -189,6 +189,12 @@ fn test_mov() {
 }
 
 #[test]
+fn test_movabs() {
+    check_bytes("49b83400000000000000", |cb| movabs(cb, R8, 0x34));
+    check_bytes("49b80000008000000000", |cb| movabs(cb, R8, 0x80000000));
+}
+
+#[test]
 fn test_mov_unsigned() {
     // MOV AL, imm8
     check_bytes("b001", |cb| mov(cb, AL, uimm_opnd(1)));

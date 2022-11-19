@@ -53,6 +53,50 @@ require_relative "irb/easter-egg"
 #
 #   :include: ./irb/lc/help-message
 #
+# == Commands
+#
+# The following commands are available on IRB.
+#
+# * cwws
+#   * Show the current workspace.
+# * cb, cws, chws
+#   * Change the current workspace to an object.
+# * bindings, workspaces
+#   * Show workspaces.
+# * pushb, pushws
+#   * Push an object to the workspace stack.
+# * popb, popws
+#   * Pop a workspace from the workspace stack.
+# * load
+#   * Load a Ruby file.
+# * require
+#   * Require a Ruby file.
+# * source
+#   * Loads a given file in the current session.
+# * irb
+#   * Start a child IRB.
+# * jobs
+#   * List of current sessions.
+# * fg
+#   * Switches to the session of the given number.
+# * kill
+#   * Kills the session with the given number.
+# * help
+#   * Enter the mode to look up RI documents.
+# * irb_info
+#   * Show information about IRB.
+# * ls
+#   * Show methods, constants, and variables.
+#     -g [query] or -G [query] allows you to filter out the output.
+# * measure
+#   * measure enables the mode to measure processing time. measure :off disables it.
+# * $, show_source
+#   * Show the source code of a given method or constant.
+# * @, whereami
+#   * Show the source code around binding.irb again.
+# * debug
+#   * Start the debugger of debug.gem.
+#
 # == Configuration
 #
 # IRB reads a personal initialization file when it's invoked.
@@ -93,9 +137,9 @@ require_relative "irb/easter-egg"
 #
 # === Autocompletion
 #
-# To enable autocompletion for irb, add the following to your +.irbrc+:
+# To disable autocompletion for irb, add the following to your +.irbrc+:
 #
-#     require 'irb/completion'
+#     IRB.conf[:USE_AUTOCOMPLETE] = false
 #
 # === History
 #
@@ -434,6 +478,17 @@ module IRB
       @scanner = RubyLex.new
     end
 
+    # A hook point for `debug` command's TracePoint after :IRB_EXIT as well as its clean-up
+    def debug_break
+      # it means the debug command is executed
+      if defined?(DEBUGGER__) && DEBUGGER__.respond_to?(:capture_frames_without_irb)
+        # after leaving this initial breakpoint, revert the capture_frames patch
+        DEBUGGER__.singleton_class.send(:alias_method, :capture_frames, :capture_frames_without_irb)
+        # and remove the redundant method
+        DEBUGGER__.singleton_class.send(:undef_method, :capture_frames_without_irb)
+      end
+    end
+
     def run(conf = IRB.conf)
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
@@ -598,11 +653,7 @@ module IRB
 
       if exc.backtrace
         order = nil
-        if '2.5.0' == RUBY_VERSION
-          # Exception#full_message doesn't have keyword arguments.
-          message = exc.full_message # the same of (highlight: true, order: bottom)
-          order = :bottom
-        elsif '2.5.1' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        if RUBY_VERSION < '3.0.0'
           if STDOUT.tty?
             message = exc.full_message(order: :bottom)
             order = :bottom
@@ -928,12 +979,13 @@ class Binding
   #
   #
   # See IRB@IRB+Usage for more information.
-  def irb
+  def irb(show_code: true)
     IRB.setup(source_location[0], argv: [])
     workspace = IRB::WorkSpace.new(self)
-    STDOUT.print(workspace.code_around_binding)
+    STDOUT.print(workspace.code_around_binding) if show_code
     binding_irb = IRB::Irb.new(workspace)
     binding_irb.context.irb_path = File.expand_path(source_location[0])
     binding_irb.run(IRB.conf)
+    binding_irb.debug_break
   end
 end

@@ -1018,7 +1018,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                 if ((ce = rb_const_lookup(klass, id))) {
                     rb_const_warn_if_deprecated(ce, klass, id);
                     val = ce->value;
-                    if (val == Qundef) {
+                    if (UNDEF_P(val)) {
                         if (am == klass) break;
                         am = klass;
                         if (is_defined) return 1;
@@ -1212,7 +1212,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 
         val = ivar_list[index];
-        RUBY_ASSERT(val != Qundef);
+        RUBY_ASSERT(!UNDEF_P(val));
     }
     else { // cache miss case
 #if RUBY_DEBUG
@@ -1243,7 +1243,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
             // We fetched the ivar list above
             val = ivar_list[index];
-            RUBY_ASSERT(val != Qundef);
+            RUBY_ASSERT(!UNDEF_P(val));
         }
         else {
             if (is_attr) {
@@ -1258,7 +1258,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     }
 
-    RUBY_ASSERT(val != Qundef);
+    RUBY_ASSERT(!UNDEF_P(val));
 
     return val;
 
@@ -1517,7 +1517,7 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
-        RUBY_ASSERT(v != Qundef);
+        RUBY_ASSERT(!UNDEF_P(v));
 
         return v;
     }
@@ -1573,14 +1573,14 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     attr_index_t index;
     vm_ic_atomic_shape_and_index(ic, &dest_shape_id, &index);
 
-    if (UNLIKELY(vm_setivar(obj, id, val, dest_shape_id, index) == Qundef)) {
+    if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
           case T_CLASS:
           case T_MODULE:
             break;
           default:
-            if (vm_setivar_default(obj, id, val, dest_shape_id, index) != Qundef) {
+            if (!UNDEF_P(vm_setivar_default(obj, id, val, dest_shape_id, index))) {
                 return;
             }
         }
@@ -2303,7 +2303,7 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
     VM_ASSERT(cd_owner != NULL);
 
     VALUE val = opt_equality_specialized(recv, obj);
-    if (val != Qundef) return val;
+    if (!UNDEF_P(val)) return val;
 
     if (!vm_method_cfunc_is(cd_owner, cd, recv, rb_obj_equal)) {
         return Qundef;
@@ -2337,7 +2337,7 @@ static VALUE
 opt_equality_by_mid(VALUE recv, VALUE obj, ID mid)
 {
     VALUE val = opt_equality_specialized(recv, obj);
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
@@ -3301,7 +3301,7 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     ID id = vm_cc_cme(cc)->def->body.attr.id;
     rb_check_frozen_internal(obj);
     VALUE res = vm_setivar(obj, id, val, dest_shape_id, index);
-    if (res == Qundef) {
+    if (UNDEF_P(res)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
           case T_CLASS:
@@ -3310,7 +3310,7 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
           default:
             {
                 res = vm_setivar_default(obj, id, val, dest_shape_id, index);
-                if (res != Qundef) {
+                if (!UNDEF_P(res)) {
                     return res;
                 }
             }
@@ -4526,7 +4526,7 @@ check_respond_to_missing(VALUE obj, VALUE v)
 
     args[0] = obj; args[1] = Qfalse;
     r = rb_check_funcall(v, idRespond_to_missing, 2, args);
-    if (r != Qundef && RTEST(r)) {
+    if (!UNDEF_P(r) && RTEST(r)) {
         return true;
     }
     else {
@@ -5076,7 +5076,7 @@ vm_sendish(
     }
 #endif
 
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;             /* CFUNC normal return */
     }
     else {
@@ -5094,7 +5094,7 @@ vm_sendish(
         VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
         return vm_exec(ec, true);
     }
-    else if ((val = jit_exec(ec)) == Qundef) {
+    else if (UNDEF_P(val = jit_exec(ec))) {
         VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
         return vm_exec(ec, false);
     }
@@ -5550,7 +5550,7 @@ vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VAL
     if (vm_method_cfunc_is(iseq, cd, recv, rb_obj_not_equal)) {
         VALUE val = opt_equality(iseq, recv, obj, cd_eq);
 
-        if (val != Qundef) {
+        if (!UNDEF_P(val)) {
             return RBOOL(!RTEST(val));
         }
     }

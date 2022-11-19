@@ -499,7 +499,7 @@ register_fstring(VALUE str, bool copy)
         do {
             args.fstr = str;
             st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&args);
-        } while (args.fstr == Qundef);
+        } while (UNDEF_P(args.fstr));
     }
     RB_VM_LOCK_LEAVE();
 
@@ -1877,10 +1877,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
         venc = kwargs[0];
         vcapa = kwargs[1];
-        if (venc != Qundef && !NIL_P(venc)) {
+        if (!UNDEF_P(venc) && !NIL_P(venc)) {
             enc = rb_to_encoding(venc);
         }
-        if (vcapa != Qundef && !NIL_P(vcapa)) {
+        if (!UNDEF_P(vcapa) && !NIL_P(vcapa)) {
             long capa = NUM2LONG(vcapa);
             long len = 0;
             int termlen = enc ? rb_enc_mbminlen(enc) : 1;
@@ -8926,7 +8926,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
             keywords[0] = rb_intern_const("chomp");
         }
         rb_get_kwargs(opts, keywords, 0, 1, &chomp);
-        chomp = (chomp != Qundef && RTEST(chomp));
+        chomp = (!UNDEF_P(chomp) && RTEST(chomp));
     }
 
     if (NIL_P(rs)) {
@@ -11528,23 +11528,6 @@ rb_sym_to_s(VALUE sym)
     return str_new_shared(rb_cString, rb_sym2str(sym));
 }
 
-/*
- *  call-seq:
- *    to_sym -> self
- *
- *  Returns +self+.
- *
- *  Symbol#intern is an alias for Symbol#to_sym.
- *
- *  Related: String#to_sym.
- */
-
-static VALUE
-sym_to_sym(VALUE sym)
-{
-    return sym;
-}
-
 MJIT_FUNC_EXPORTED VALUE
 rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc)
 {
@@ -12111,8 +12094,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "name", rb_sym2str, 0); /* in symbol.c */
-    rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0); /* in proc.c */
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);

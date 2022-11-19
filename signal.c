@@ -1129,7 +1129,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
             break;
         }
     }
-    else if (cmd == Qundef) {
+    else if (UNDEF_P(cmd)) {
         rb_threadptr_signal_exit(th);
     }
     else {

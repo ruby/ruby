@@ -629,6 +629,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
 #define HAVE_MEMORY_H 1
+!if $(MSC_VER) >= 1920
+#define HAVE_AFUNIX_H 1
+!endif
 !if $(MSC_VER) >= 1400
 #define HAVE_LONG_LONG 1
 !else

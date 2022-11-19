@@ -85,7 +85,7 @@ fn main() {
         // From shape.h
         .allowlist_function("rb_shape_get_shape_id")
         .allowlist_function("rb_shape_get_shape_by_id")
-        .allowlist_function("rb_shape_flags_mask")
+        .allowlist_function("rb_shape_id_num_bits")
         .allowlist_function("rb_shape_get_iv_index")
 
         // From ruby/internal/intern/object.h

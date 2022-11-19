@@ -99,6 +99,7 @@ rb_call_builtin_inits(void)
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(kernel);
+    BUILTIN(symbol);
     BUILTIN(timev);
     BUILTIN(thread_sync);
     BUILTIN(yjit);

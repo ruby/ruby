@@ -540,8 +540,6 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 pub fn ldurh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rt.num_bits == 32, "Rt should be a 32 bit register");
-            assert!(rn.num_bits == 64, "Rn should be a 64 bit register");
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::ldurh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()

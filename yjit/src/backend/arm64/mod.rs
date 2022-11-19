@@ -344,7 +344,14 @@ impl Assembler
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, left);
                     let opnd0 = split_less_than_32_cmp(asm, opnd0);
-                    let opnd1 = split_shifted_immediate(asm, right);
+                    let split_right = split_shifted_immediate(asm, right);
+                    let opnd1 = match split_right {
+                        Opnd::InsnOut { .. } if opnd0.num_bits() != split_right.num_bits() => {
+                            split_right.with_num_bits(opnd0.num_bits().unwrap()).unwrap()
+                        },
+                        _ => split_right
+                    };
+
                     asm.cmp(opnd0, opnd1);
                 },
                 Insn::CRet(opnd) => {
@@ -828,6 +835,7 @@ impl Assembler
                         Opnd::Mem(_) => {
                             match opnd.rm_num_bits() {
                                 64 | 32 => ldur(cb, out.into(), opnd.into()),
+                                16 => ldurh(cb, out.into(), opnd.into()),
                                 8 => ldurb(cb, out.into(), opnd.into()),
                                 num_bits => panic!("unexpected num_bits: {}", num_bits)
                             };
@@ -1354,6 +1362,15 @@ mod tests {
 
         // Assert that a test instruction is written.
         assert_eq!(4, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_32_bit_register_with_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
+        asm.cmp(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
     }
 
     #[test]

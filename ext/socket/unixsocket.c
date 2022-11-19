@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 struct unixsock_arg {
     struct sockaddr_un *sockaddr;
     socklen_t sockaddrlen;
@@ -42,6 +42,10 @@ unixsock_path_value(VALUE path)
             return name;             /* ignore encoding */
         }
     }
+#endif
+#ifdef _WIN32
+    /* UNIXSocket requires UTF-8 per spec. */
+    path = rb_str_export_to_enc(path, rb_utf8_encoding());
 #endif
     return rb_get_path(path);
 }
@@ -571,7 +575,7 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 void
 rsock_init_unixsocket(void)
 {
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     /*
      * Document-class: UNIXSocket < BasicSocket
      *

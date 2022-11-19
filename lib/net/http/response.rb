@@ -1,20 +1,136 @@
 # frozen_string_literal: false
-# HTTP response class.
+
+# This class is the base class for \Net::HTTP request classes.
 #
-# This class wraps together the response header and the response body (the
-# entity requested).
+# == About the Examples
 #
-# It mixes in the HTTPHeader module, which provides access to response
-# header values both via hash-like methods and via individual readers.
+# :include: doc/net-http/examples.rdoc
 #
-# Note that each possible HTTP response code defines its own
-# HTTPResponse subclass. All classes are defined under the Net module.
-# Indentation indicates inheritance.  For a list of the classes see Net::HTTP.
+# == Returned Responses
 #
-# Correspondence <code>HTTP code => class</code> is stored in CODE_TO_OBJ
-# constant:
+# \Method Net::HTTP.get_response returns
+# an instance of one of the subclasses of \Net::HTTPResponse:
 #
-#    Net::HTTPResponse::CODE_TO_OBJ['404'] #=> Net::HTTPNotFound
+#   Net::HTTP.get_response(uri)
+#   # => #<Net::HTTPOK 200 OK readbody=true>
+#   Net::HTTP.get_response(hostname, '/nosuch')
+#   # => #<Net::HTTPNotFound 404 Not Found readbody=true>
+#
+# As does method Net::HTTP#request:
+#
+#   req = Net::HTTP::Get.new(uri)
+#   Net::HTTP.start(hostname) do |http|
+#     http.request(req)
+#   end # => #<Net::HTTPOK 200 OK readbody=true>
+#
+# \Class \Net::HTTPResponse includes module Net::HTTPHeader,
+# which provides access to response header values via (among others):
+#
+# - \Hash-like method <tt>[]</tt>.
+# - Specific reader methods, such as +content_type+.
+#
+# Examples:
+#
+#   res = Net::HTTP.get_response(uri) # => #<Net::HTTPOK 200 OK readbody=true>
+#   res['Content-Type']               # => "text/html; charset=UTF-8"
+#   res.content_type                  # => "text/html"
+#
+# == Response Subclasses
+#
+# \Class \Net::HTTPResponse has a subclass for each
+# {HTTP status code}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes].
+# You can look up the response class for a given code:
+#
+#   Net::HTTPResponse::CODE_TO_OBJ['200'] # => Net::HTTPOK
+#   Net::HTTPResponse::CODE_TO_OBJ['400'] # => Net::HTTPBadRequest
+#   Net::HTTPResponse::CODE_TO_OBJ['404'] # => Net::HTTPNotFound
+#
+# And you can retrieve the status code for a response object:
+#
+#   Net::HTTP.get_response(uri).code                 # => "200"
+#   Net::HTTP.get_response(hostname, '/nosuch').code # => "404"
+#
+# The response subclasses (indentation shows class hierarchy):
+#
+# - Net::HTTPUnknownResponse (for unhandled \HTTP extensions).
+#
+# - Net::HTTPInformation:
+#
+#   - Net::HTTPContinue (100)
+#   - Net::HTTPSwitchProtocol (101)
+#   - Net::HTTPProcessing (102)
+#   - Net::HTTPEarlyHints (103)
+#
+# - Net::HTTPSuccess:
+#
+#   - Net::HTTPOK (200)
+#   - Net::HTTPCreated (201)
+#   - Net::HTTPAccepted (202)
+#   - Net::HTTPNonAuthoritativeInformation (203)
+#   - Net::HTTPNoContent (204)
+#   - Net::HTTPResetContent (205)
+#   - Net::HTTPPartialContent (206)
+#   - Net::HTTPMultiStatus (207)
+#   - Net::HTTPAlreadyReported (208)
+#   - Net::HTTPIMUsed (226)
+#
+# - Net::HTTPRedirection:
+#
+#   - Net::HTTPMultipleChoices (300)
+#   - Net::HTTPMovedPermanently (301)
+#   - Net::HTTPFound (302)
+#   - Net::HTTPSeeOther (303)
+#   - Net::HTTPNotModified (304)
+#   - Net::HTTPUseProxy (305)
+#   - Net::HTTPTemporaryRedirect (307)
+#   - Net::HTTPPermanentRedirect (308)
+#
+# - Net::HTTPClientError:
+#
+#   - Net::HTTPBadRequest (400)
+#   - Net::HTTPUnauthorized (401)
+#   - Net::HTTPPaymentRequired (402)
+#   - Net::HTTPForbidden (403)
+#   - Net::HTTPNotFound (404)
+#   - Net::HTTPMethodNotAllowed (405)
+#   - Net::HTTPNotAcceptable (406)
+#   - Net::HTTPProxyAuthenticationRequired (407)
+#   - Net::HTTPRequestTimeOut (408)
+#   - Net::HTTPConflict (409)
+#   - Net::HTTPGone (410)
+#   - Net::HTTPLengthRequired (411)
+#   - Net::HTTPPreconditionFailed (412)
+#   - Net::HTTPRequestEntityTooLarge (413)
+#   - Net::HTTPRequestURITooLong (414)
+#   - Net::HTTPUnsupportedMediaType (415)
+#   - Net::HTTPRequestedRangeNotSatisfiable (416)
+#   - Net::HTTPExpectationFailed (417)
+#   - Net::HTTPMisdirectedRequest (421)
+#   - Net::HTTPUnprocessableEntity (422)
+#   - Net::HTTPLocked (423)
+#   - Net::HTTPFailedDependency (424)
+#   - Net::HTTPUpgradeRequired (426)
+#   - Net::HTTPPreconditionRequired (428)
+#   - Net::HTTPTooManyRequests (429)
+#   - Net::HTTPRequestHeaderFieldsTooLarge (431)
+#   - Net::HTTPUnavailableForLegalReasons (451)
+#
+# - Net::HTTPServerError:
+#
+#   - Net::HTTPInternalServerError (500)
+#   - Net::HTTPNotImplemented (501)
+#   - Net::HTTPBadGateway (502)
+#   - Net::HTTPServiceUnavailable (503)
+#   - Net::HTTPGatewayTimeOut (504)
+#   - Net::HTTPVersionNotSupported (505)
+#   - Net::HTTPVariantAlsoNegotiates (506)
+#   - Net::HTTPInsufficientStorage (507)
+#   - Net::HTTPLoopDetected (508)
+#   - Net::HTTPNotExtended (510)
+#   - Net::HTTPNetworkAuthenticationRequired (511)
+#
+# There is also the Net::HTTPBadResponse exception which is raised when
+# there is a protocol error.
 #
 class Net::HTTPResponse
   class << self

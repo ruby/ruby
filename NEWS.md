@@ -103,7 +103,8 @@ Note that each entry is kept to a minimum, see links for details.
 Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
-    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`. [[Feature #19060]]
+    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`.
+    [[Feature #19060]]
 
 * IO
     * Introduce `IO#timeout=` and `IO#timeout` which can cause
@@ -114,6 +115,11 @@ Note: We're only listing outstanding class updates.
     STDIN.timeout = 1
     STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
     ```
+
+* UNIXSocket
+    * Add support for `UNIXSocket` on Windows. Emulate anonymous sockets. Add
+    support for `File.socket?` and `File::Stat#socket?` where possible.
+    [[Feature #19135]]
 
 * Class
     * `Class#attached_object`, which returns the object for which
@@ -239,7 +245,7 @@ Note: We're only listing outstanding class updates.
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
     * ipaddr 1.2.4
-    * irb 1.4.2
+    * irb 1.4.3
     * json 2.6.2
     * logger 1.5.1
     * net-http 0.3.0
@@ -301,7 +307,22 @@ The following deprecated methods are removed.
 * `Psych` no longer bundles libyaml sources.
   And also `Fiddle` no longer bundles libffi sources.
   Users need to install the libyaml/libffi library themselves via the package
-  system. [[Feature #18571]]
+  manager like apt, yum, brew, etc.
+
+  Psych and fiddle supported the static build with specific version of libyaml
+  and libffi sources. You can build psych with libyaml-0.2.5 like this.
+
+  ```bash
+  $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
+  ```
+
+  And you can build fiddle with libffi-3.4.4 like this.
+
+  ```bash
+  $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
+  ```
+
+  [[Feature #18571]]
 
 ## C API updates
 
@@ -356,6 +377,7 @@ The following deprecated APIs are removed.
   doing it in a native thread called MJIT worker. [[Feature #18968]]
   * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
 * MinGW is no longer supported. [[Feature #18824]]
+* Rename `--mjit-min-calls` to `--mjit-call-threshold`.
 
 ## Static analysis
 
@@ -416,3 +438,4 @@ The following deprecated APIs are removed.
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
+[Feature #19135]: https://bugs.ruby-lang.org/issues/19135
