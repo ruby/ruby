@@ -3144,9 +3144,10 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  If the string from the first form (<code>exec("command")</code>) follows
  *  these simple rules:
  *
- *  * no meta characters
- *  * not starting with shell reserved word or special built-in
- *  * Ruby invokes the command directly without shell
+ *  * no meta characters,
+ *  * not starting with shell reserved word or special built-in,
+ *
+ *  Ruby invokes the command directly without shell.
  *
  *  You can force shell invocation by adding ";" to the string (because ";" is
  *  a meta character).
