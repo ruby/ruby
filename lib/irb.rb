@@ -53,6 +53,50 @@ require_relative "irb/easter-egg"
 #
 #   :include: ./irb/lc/help-message
 #
+# == Commands
+#
+# The following commands are available on IRB.
+#
+# * cwws
+#   * Show the current workspace.
+# * cb, cws, chws
+#   * Change the current workspace to an object.
+# * bindings, workspaces
+#   * Show workspaces.
+# * pushb, pushws
+#   * Push an object to the workspace stack.
+# * popb, popws
+#   * Pop a workspace from the workspace stack.
+# * load
+#   * Load a Ruby file.
+# * require
+#   * Require a Ruby file.
+# * source
+#   * Loads a given file in the current session.
+# * irb
+#   * Start a child IRB.
+# * jobs
+#   * List of current sessions.
+# * fg
+#   * Switches to the session of the given number.
+# * kill
+#   * Kills the session with the given number.
+# * help
+#   * Enter the mode to look up RI documents.
+# * irb_info
+#   * Show information about IRB.
+# * ls
+#   * Show methods, constants, and variables.
+#     -g [query] or -G [query] allows you to filter out the output.
+# * measure
+#   * measure enables the mode to measure processing time. measure :off disables it.
+# * $, show_source
+#   * Show the source code of a given method or constant.
+# * @, whereami
+#   * Show the source code around binding.irb again.
+# * debug
+#   * Start the debugger of debug.gem.
+#
 # == Configuration
 #
 # IRB reads a personal initialization file when it's invoked.

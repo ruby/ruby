@@ -165,26 +165,7 @@ module IRB # :nodoc:
       nil
     end
 
-    # Installs the default irb commands:
-    #
-    # +irb_current_working_workspace+::   Context#main
-    # +irb_change_workspace+::            Context#change_workspace
-    # +irb_workspaces+::                  Context#workspaces
-    # +irb_push_workspace+::              Context#push_workspace
-    # +irb_pop_workspace+::               Context#pop_workspace
-    # +irb_load+::                        #irb_load
-    # +irb_require+::                     #irb_require
-    # +irb_source+::                      IrbLoader#source_file
-    # +irb+::                             IRB.irb
-    # +irb_jobs+::                        JobManager
-    # +irb_fg+::                          JobManager#switch
-    # +irb_kill+::                        JobManager#kill
-    # +irb_help+::                        IRB@Command+line+options
-    # +irb_info+::                        #inspect
-    # +irb_ls+::                          Output#dump
-    # +irb_measure+::                     IRB::unset_measure_callback
-    # +irb_show_source+::                 #find_source, #show_source
-    # +irb_whereami+::                    Workspace#code_around_binding
+    # Installs the default irb commands.
     def self.install_extend_commands
       for args in @EXTEND_COMMANDS
         def_extend_command(*args)
