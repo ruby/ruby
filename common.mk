@@ -891,7 +891,7 @@ $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-test-spec-precheck: programs
+test-spec-precheck: programs yes-fake
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: test-spec-precheck
