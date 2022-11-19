@@ -93,9 +93,9 @@ require_relative "irb/easter-egg"
 #
 # === Autocompletion
 #
-# To enable autocompletion for irb, add the following to your +.irbrc+:
+# To disable autocompletion for irb, add the following to your +.irbrc+:
 #
-#     require 'irb/completion'
+#     IRB.conf[:USE_AUTOCOMPLETE] = false
 #
 # === History
 #
