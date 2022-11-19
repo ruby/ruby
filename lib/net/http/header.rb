@@ -1,16 +1,159 @@
 # frozen_string_literal: false
-# The HTTPHeader module defines methods for reading and writing
-# HTTP headers.
 #
-# It is used as a mixin by other classes, to provide hash-like
-# access to HTTP header values. Unlike raw hash access, HTTPHeader
-# provides access via case-insensitive keys. It also provides
-# methods for accessing commonly-used HTTP header values in more
-# convenient formats.
+# The \HTTPHeader module provides access to \HTTP headers.
+# The headers are a hash-like collection of key/value pairs called _fields_.
+#
+# The module is included in:
+#
+# - Net::HTTPGenericRequest (and therefore Net::HTTPRequest).
+# - Net::HTTPResponse.
+#
+# == About the Examples
+#
+# :include: doc/net-http/examples.rdoc
+#
+# == Fields
+#
+# A header field is a key/value pair.
+#
+# === Field Keys
+#
+# A field key may be:
+#
+# - A string: Key <tt>'Foo'</tt> is treated as if it were
+#   <tt>'Foo'.downcase</tt>;  i.e., <tt>'foo'</tt>.
+# - A symbol: Key <tt>:Foo</tt> is treated as if it were
+#   <tt>:Foo.to_s.downcase</tt>;  i.e., <tt>'foo'</tt>.
+#
+# Examples:
+#
+#   req = Net::HTTP.get(uri)
+#   req[:Accept]  # => "*/*"
+#   req['Accept'] # => "*/*"
+#   req['ACCEPT'] # => "*/*"
+#
+#   req['accept'] = 'text/html'
+#   req['accept'] # => "text/html"
+#   req[:Accept] = 'text/html'
+#   req['accept'] # => "text/html"
+#   req['Accept'] = 'application/json'
+#   req['accept'] # => "application/json"
+#   req['ACCEPT'] = 'text/plain'
+#   req['accept'] # => "text/plain"
+#
+# === Field Values
+#
+# A field value may be returned as an array or as a string:
+#
+# - These methods return field values as arrays:
+#
+#   - #get_fields: Returns the array value for the given key,
+#     or +nil+ if it does not exist.
+#   - #to_hash: Returns a hash of all header fields:
+#     each key is a field name; its value is the array value for the field.
+#
+# - These methods return field values as string;
+#   the string value for a field is equivalent to
+#   <tt>self[key.downcase.to_s].join(', '))</tt>:
+#
+#   - #[]: Returns the string value for the given key,
+#     or +nil+ if it does not exist.
+#   - #fetch: Like #[], but accepts a default value
+#     to be returned if the key does not exist.
+#
+# The field value may be set:
+#
+# - #[]=: Sets the value for the given key;
+#   the given value may be a string, a symbol, an array, or a hash.
+# - #add_field: Adds a given value to a value for the given key
+#   (not overwriting the existing value).
+# - #delete: Deletes the field for the given key.
+#
+# Example field values:
+#
+# - \String:
+#
+#     req[:foo] = 'bar'
+#     req[:foo]            # => "bar"
+#     req.get_fields(:foo) # => ["bar"]
+#
+# - \Symbol:
+#
+#     req[:foo] = :bar
+#     req[:foo]            # => "bar"
+#     req.get_fields(:foo) # => ["bar"]
+#
+# - Simple array:
+#
+#     req[:foo] = %w[bar baz bat]
+#     req[:foo]            # => "bar, baz, bat"
+#     req.get_fields(:foo) # => ["bar", "baz", "bat"]
+#
+# - Simple hash:
+#
+#     req[:foo] = {bar: 0, baz: 1, bat: 2}
+#     req[:foo]            # => "bar, 0, baz, 1, bat, 2"
+#     req.get_fields(:foo) # => ["bar", "0", "baz", "1", "bat", "2"]
+#
+# - Nested:
+#
+#     req[:foo] = [%w[bar baz], {bat: 0, bam: 1}]
+#     req[:foo]            # => "bar, baz, bat, 0, bam, 1"
+#     req.get_fields(:foo) # => ["bar", "baz", "bat", "0", "bam", "1"]
+#
+#     req[:foo] = {bar: %w[baz bat], bam: {bah: 0, bad: 1}}
+#     req[:foo]            # => "bar, baz, bat, bam, bah, 0, bad, 1"
+#     req.get_fields(:foo) # => ["bar", "baz", "bat", "bam", "bah", "0", "bad", "1"]
+#
+# == Convenience Methods
+#
+# Various convenience methods retrieve values, set values, query values,
+# set form values, or iterate over fields.
+#
+# === Getters
+#
+# - #[]: Returns the string value for the given field.
+# - #content_length: Returns the integer value of field +:content-length+.
+# - #content_range: Returns the Range value of field +:content-range+.
+# - #content_type: Returns the string value of field +:content-type+.
+# - #main_type: Returns first part of the string value of field +:content-type+.
+# - #sub_type: Returns second part of the string value of field +:content-type+.
+# - #range: Returns an array of Range objects, or +nil+.
+# - #range_length: Returns the integer length of the range given in field +:range+.
+# - #type_params: Returns the string parameters for +:content-type+.
+#
+# === Setters
+#
+# - #[]=: Sets the string or array value for the given field.
+# - #basic_auth: Sets the string authorization header for +:Basic+ authorization.
+# - #content_length=: Sets the integer length for field +:content-length+.
+# - #content_type=: Sets the string value for field +:content-type+.
+# - #proxy_basic_auth: Set Proxy-Authorization: header for “Basic” authorization.
+# - #range=: Sets the HTTP Range: header. Accepts either a Range object as a single argument, or a beginning index and a length from that index. Example:
+#
+# === Queries
+#
+# - #chunked?: Returns whether field +:transfer-encoding+ is set to <tt>'chunked'</tt>.
+# - #connection_close?: Returns whether field +:connection+ is set to <tt>'close'</tt>.
+# - #connection_keep_alive?: Returns whether field +:connection+ is set to <tt>'keep-alive'</tt>.
+# - #key?: Returns whether a given field exists.
+#
+# === Form Setters
+#
+# - #set_form: Sets an HTML form data set.
+# - #set_form_data: Set header fields and a body from HTML form data.
+#
+# === Iterators
+#
+# - #each_capitalized: Passes each field capitalized-name/value pair to the block.
+# - #each_capitalized_name: Passes each capitalized field name to the block.
+# - #each_header: Passes each field name/value pair to the block.
+# - #each_name: Passes each field name to the block.
+# - #each_value: Passes each field value to the block.
 #
 module Net::HTTPHeader
 
-  def initialize_http_header(initheader)
+  def initialize_http_header(initheader) #:nodoc:
     @header = {}
     return unless initheader
     initheader.each do |key, value|
@@ -33,14 +176,30 @@ module Net::HTTPHeader
 
   alias length size   #:nodoc: obsolete
 
-  # Returns the header field corresponding to the case-insensitive key.
-  # For example, a key of "Content-Type" might return "text/html"
+  # Returns the string field value for the case-insensitive field +key+,
+  # or +nil+ if there is no such key;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req[:accept] # => "*/*"
+  #   req[:foo] = %w[bar baz bat]
+  #   req[:foo] # => "bar, baz, bat"
+  #   res[:nosuch]       # => nil
+  #
   def [](key)
     a = @header[key.downcase.to_s] or return nil
     a.join(', ')
   end
 
-  # Sets the header field corresponding to the case-insensitive key.
+  # Sets the value for the case-insensitive +key+ to +val+,
+  # overwriting the previous value if the field exists;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req[:accept] # => "*/*"
+  #   req[:accept] = 'text/html'
+  #   req[:accept] # => "text/html"
+  #
   def []=(key, val)
     unless val
       @header.delete key.downcase.to_s
@@ -49,20 +208,18 @@ module Net::HTTPHeader
     set_field(key, val)
   end
 
-  # [Ruby 1.8.3]
-  # Adds a value to a named header field, instead of replacing its value.
-  # Second argument +val+ must be a String.
-  # See also #[]=, #[] and #get_fields.
+  # Adds value +val+ to the value array for field +key+ if the field exists;
+  # creates the field with the given +key+ and +val+ if it does not exist.
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  #   request.add_field 'X-My-Header', 'a'
-  #   p request['X-My-Header']              #=> "a"
-  #   p request.get_fields('X-My-Header')   #=> ["a"]
-  #   request.add_field 'X-My-Header', 'b'
-  #   p request['X-My-Header']              #=> "a, b"
-  #   p request.get_fields('X-My-Header')   #=> ["a", "b"]
-  #   request.add_field 'X-My-Header', 'c'
-  #   p request['X-My-Header']              #=> "a, b, c"
-  #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.add_field(:foo, 'bar')
+  #   req[:foo]            # => "bar"
+  #   req.add_field(:foo, 'baz')
+  #   req[:foo]            # => "bar, baz"
+  #   req.add_field(:foo, %w[baz bam])
+  #   req[:foo]            # => "bar, baz, baz, bam"
+  #   req.get_fields(:foo) # => ["bar", "baz", "baz", "bam"]
   #
   def add_field(key, val)
     stringified_downcased_key = key.downcase.to_s
@@ -101,16 +258,16 @@ module Net::HTTPHeader
     end
   end
 
-  # [Ruby 1.8.3]
-  # Returns an array of header field strings corresponding to the
-  # case-insensitive +key+.  This method allows you to get duplicated
-  # header fields without any processing.  See also #[].
+  # Returns the array field value for the given +key+,
+  # or +nil+ if there is no such field;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  #   p response.get_fields('Set-Cookie')
-  #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
-  #          "query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"]
-  #   p response['Set-Cookie']
-  #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
+  #   req = Net::HTTP::Get.new(uri)
+  #   req[:foo] = 'bar'
+  #   req.get_fields(:foo)    # => ["bar"]
+  #   req.add_field(:foo, 'baz')
+  #   req.get_fields(:foo)    # => ["bar", "baz"]
+  #   req.get_fields(:nosuch) # => nil
   #
   def get_fields(key)
     stringified_downcased_key = key.downcase.to_s
@@ -118,24 +275,46 @@ module Net::HTTPHeader
     @header[stringified_downcased_key].dup
   end
 
-  # Returns the header field corresponding to the case-insensitive key.
-  # Returns the default value +args+, or the result of the block, or
-  # raises an IndexError if there's no header field named +key+
-  # See Hash#fetch
+  # :call-seq
+  #   fetch(key, default_val = nil) {|key| ... }
+  #
+  # With a block, returns the string value for +key+ if it exists;
+  # otherwise returns the value of the block;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req[:foo] = 'bar'
+  #   req.fetch(:foo) {|key| key.capitalize }    # => "bar"
+  #   req.fetch(:nosuch) {|key| key.capitalize } # => "Nosuch"
+  #
+  # With no block, returns the string value for +key+ if it exists;
+  # otherwise, returns +default_val+ if it was given;
+  # otherwise raises an exception:
+  #
+  #   req.fetch(:foo)          # => "bar"
+  #   req.fetch(:nosuch, :baz) # => :baz
+  #   req.fetch(:nosuch)       # Raises IndexError.
+  #
   def fetch(key, *args, &block)   #:yield: +key+
     a = @header.fetch(key.downcase.to_s, *args, &block)
     a.kind_of?(Array) ? a.join(', ') : a
   end
 
-  # Iterates through the header names and values, passing in the name
-  # and value to the code block supplied.
+  # Calls the block with each key/value pair;
+  # returns the value of #to_hash;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.each_header {|key, value| p [key, value] }
+  #
+  # Output:
+  #
+  #   ["accept-encoding", "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"]
+  #   ["accept", "*/*"]
+  #   ["user-agent", "Ruby"]
+  #   ["host", "jsonplaceholder.typicode.com"]
   #
   # Returns an enumerator if no block is given.
-  #
-  # Example:
-  #
-  #     response.header.each_header {|key,value| puts "#{key} = #{value}" }
-  #
   def each_header   #:yield: +key+, +value+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,va|
@@ -145,10 +324,23 @@ module Net::HTTPHeader
 
   alias each each_header
 
-  # Iterates through the header names in the header, passing
-  # each header name to the code block.
+  # Calls the block with each field key;
+  # returns the value of #to_hash;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.each_key {|key| p key }
+  #
+  # Output:
+  #
+  #   "accept-encoding"
+  #   "accept"
+  #   "user-agent"
+  #   "host"
   #
   # Returns an enumerator if no block is given.
+  #
+  # Net::HTTPHeader#each_name is an alias for Net::HTTPHeader#each_key.
   def each_name(&block)   #:yield: +key+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each_key(&block)
@@ -156,12 +348,22 @@ module Net::HTTPHeader
 
   alias each_key each_name
 
-  # Iterates through the header names in the header, passing
-  # capitalized header names to the code block.
+  # Calls the block with each capitalized field name;
+  # returns the value of #to_hash;
+  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  # Note that header names are capitalized systematically;
-  # capitalization may not match that used by the remote HTTP
-  # server in its response.
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.each_capitalized_name {|key| p key }
+  #
+  # Output:
+  #
+  #   "Accept-Encoding"
+  #   "Accept"
+  #   "User-Agent"
+  #   "Host"
+  #
+  # The capitalization is system-dependent;
+  # see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
   #
   # Returns an enumerator if no block is given.
   def each_capitalized_name  #:yield: +key+
