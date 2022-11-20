@@ -115,6 +115,7 @@ class TestAst < Test::Unit::TestCase
   SRCDIR = File.expand_path("../../..", __FILE__)
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+    next if path.include? 'test/tmp/'
     define_method("test_ranges:#{path}") do
       helper = Helper.new("#{SRCDIR}/#{path}")
       helper.validate_range
@@ -124,6 +125,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+    next if path.include? 'test/tmp/'
     define_method("test_not_cared:#{path}") do
       helper = Helper.new("#{SRCDIR}/#{path}")
       helper.validate_not_cared
@@ -133,6 +135,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+    next if path.include? 'test/tmp/'
     define_method("test_all_tokens:#{path}") do
       node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
       tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
