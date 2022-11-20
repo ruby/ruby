@@ -20,26 +20,21 @@
 #
 # A field key may be:
 #
-# - A string: Key <tt>'Foo'</tt> is treated as if it were
-#   <tt>'Foo'.downcase</tt>;  i.e., <tt>'foo'</tt>.
-# - A symbol: Key <tt>:Foo</tt> is treated as if it were
-#   <tt>:Foo.to_s.downcase</tt>;  i.e., <tt>'foo'</tt>.
+# - A string: Key <tt>'Accept'</tt> is treated as if it were
+#   <tt>'Accept'.downcase</tt>;  i.e., <tt>'accept'</tt>.
+# - A symbol: Key <tt>:Accept</tt> is treated as if it were
+#   <tt>:Accept.to_s.downcase</tt>;  i.e., <tt>'accept'</tt>.
 #
 # Examples:
 #
-#   req = Net::HTTP.get(uri)
-#   req[:Accept]  # => "*/*"
+#   req = Net::HTTP::Get.new(uri)
+#   req[:accept]  # => "*/*"
 #   req['Accept'] # => "*/*"
 #   req['ACCEPT'] # => "*/*"
 #
 #   req['accept'] = 'text/html'
-#   req['accept'] # => "text/html"
-#   req[:Accept] = 'text/html'
-#   req['accept'] # => "text/html"
-#   req['Accept'] = 'application/json'
-#   req['accept'] # => "application/json"
-#   req['ACCEPT'] = 'text/plain'
-#   req['accept'] # => "text/plain"
+#   req[:accept] = 'text/html'
+#   req['ACCEPT'] = 'text/html'
 #
 # === Field Values
 #
@@ -73,15 +68,15 @@
 #
 # - \String:
 #
-#     req[:foo] = 'bar'
-#     req[:foo]            # => "bar"
-#     req.get_fields(:foo) # => ["bar"]
+#     req['Accept'] = 'text/html' # => "text/html"
+#     req['Accept']               # => "text/html"
+#     req.get_fields('Accept')    # => ["text/html"]
 #
 # - \Symbol:
 #
-#     req[:foo] = :bar
-#     req[:foo]            # => "bar"
-#     req.get_fields(:foo) # => ["bar"]
+#     req['Accept'] = :text    # => :text
+#     req['Accept']            # => "text"
+#     req.get_fields('Accept') # => ["text"]
 #
 # - Simple array:
 #
@@ -113,35 +108,35 @@
 # === Getters
 #
 # - #[]: Returns the string value for the given field.
-# - #content_length: Returns the integer value of field +:content-length+.
-# - #content_range: Returns the Range value of field +:content-range+.
-# - #content_type: Returns the string value of field +:content-type+.
-# - #main_type: Returns first part of the string value of field +:content-type+.
-# - #sub_type: Returns second part of the string value of field +:content-type+.
-# - #range: Returns an array of Range objects, or +nil+.
-# - #range_length: Returns the integer length of the range given in field +:range+.
-# - #type_params: Returns the string parameters for +:content-type+.
+# - #content_length: Returns the integer value of field <tt>'Content-Length'</tt>.
+# - #content_range: Returns the Range value of field <tt>'Content-Range'</tt>.
+# - #content_type: Returns the string value of field <tt>'Content-Type'</tt>.
+# - #main_type: Returns first part of the string value of field <tt>'Content-Type'</tt>.
+# - #sub_type: Returns second part of the string value of field <tt>'Content-Type'</tt>.
+# - #range: Returns an array of Range objects of field <tt>'Range'</tt>, or +nil+.
+# - #range_length: Returns the integer length of the range given in field <tt>'Content-Range'</tt>.
+# - #type_params: Returns the string parameters for <tt>'Content-Type'</tt>.
 #
 # === Setters
 #
 # - #[]=: Sets the string or array value for the given field.
-# - #basic_auth: Sets the string authorization header for +:Basic+ authorization.
-# - #content_length=: Sets the integer length for field +:content-length+.
-# - #content_type=: Sets the string value for field +:content-type+.
-# - #proxy_basic_auth: Set Proxy-Authorization: header for “Basic” authorization.
-# - #range=: Sets the HTTP Range: header. Accepts either a Range object as a single argument, or a beginning index and a length from that index. Example:
+# - #basic_auth: Sets the string authorization header for <tt>'Authorization'</tt>.
+# - #content_length=: Sets the integer length for field <tt>'Content-Length</tt>.
+# - #content_type=: Sets the string value for field <tt>'Content-Type'</tt>.
+# - #proxy_basic_auth: Sets the string authorization header for <tt>'Proxy-Authorization'</tt>.
+# - #range=: Sets the value for field +'Range'+.
 #
 # === Queries
 #
-# - #chunked?: Returns whether field +:transfer-encoding+ is set to <tt>'chunked'</tt>.
-# - #connection_close?: Returns whether field +:connection+ is set to <tt>'close'</tt>.
-# - #connection_keep_alive?: Returns whether field +:connection+ is set to <tt>'keep-alive'</tt>.
+# - #chunked?: Returns whether field <tt>'Transfer-Encoding'</tt> is set to <tt>'chunked'</tt>.
+# - #connection_close?: Returns whether field <tt>'Connection'</tt> is set to <tt>'close'</tt>.
+# - #connection_keep_alive?: Returns whether field <tt>'Connection'</tt> is set to <tt>'keep-alive'</tt>.
 # - #key?: Returns whether a given field exists.
 #
 # === Form Setters
 #
 # - #set_form: Sets an HTML form data set.
-# - #set_form_data: Set header fields and a body from HTML form data.
+# - #set_form_data: Sets header fields and a body from HTML form data.
 #
 # === Iterators
 #
@@ -150,6 +145,15 @@
 # - #each_header: Passes each field name/value pair to the block.
 # - #each_name: Passes each field name to the block.
 # - #each_value: Passes each field value to the block.
+#
+# == Hash of Headers
+#
+# Each of the iterator methods above returns a hash of the headers of +self+.
+# Note that modifying that returned hash actually modifies the headers:
+#
+#   h = req.each_header {|k, v| }
+#   h.clear
+#   req.to_hash # => {}
 #
 module Net::HTTPHeader
 
@@ -181,10 +185,10 @@ module Net::HTTPHeader
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req[:accept] # => "*/*"
-  #   req[:foo] = %w[bar baz bat]
-  #   req[:foo] # => "bar, baz, bat"
-  #   res[:nosuch]       # => nil
+  #   req['Accept'] # => "*/*"
+  #   req['Foo'] = %w[bar baz bat]
+  #   req['Foo']    # => "bar, baz, bat"
+  #   res['Nosuch'] # => nil
   #
   def [](key)
     a = @header[key.downcase.to_s] or return nil
@@ -196,9 +200,9 @@ module Net::HTTPHeader
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req[:accept] # => "*/*"
-  #   req[:accept] = 'text/html'
-  #   req[:accept] # => "text/html"
+  #   req['Accept'] # => "*/*"
+  #   req['Accept'] = 'text/html'
+  #   req['Accept'] # => "text/html"
   #
   def []=(key, val)
     unless val
@@ -213,13 +217,13 @@ module Net::HTTPHeader
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req.add_field(:foo, 'bar')
-  #   req[:foo]            # => "bar"
-  #   req.add_field(:foo, 'baz')
-  #   req[:foo]            # => "bar, baz"
-  #   req.add_field(:foo, %w[baz bam])
-  #   req[:foo]            # => "bar, baz, baz, bam"
-  #   req.get_fields(:foo) # => ["bar", "baz", "baz", "bam"]
+  #   req.add_field('Foo', 'bar')
+  #   req['Foo']            # => "bar"
+  #   req.add_field('Foo', 'baz')
+  #   req['Foo']            # => "bar, baz"
+  #   req.add_field('Foo', %w[baz bam])
+  #   req['Foo']            # => "bar, baz, baz, bam"
+  #   req.get_fields('Foo') # => ["bar", "baz", "baz", "bam"]
   #
   def add_field(key, val)
     stringified_downcased_key = key.downcase.to_s
@@ -263,11 +267,11 @@ module Net::HTTPHeader
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req[:foo] = 'bar'
-  #   req.get_fields(:foo)    # => ["bar"]
-  #   req.add_field(:foo, 'baz')
-  #   req.get_fields(:foo)    # => ["bar", "baz"]
-  #   req.get_fields(:nosuch) # => nil
+  #   req['Foo'] = 'bar'
+  #   req.get_fields('Foo')    # => ["bar"]
+  #   req.add_field('Foo', 'baz')
+  #   req.get_fields('Foo')    # => ["bar", "baz"]
+  #   req.get_fields('Nosuch') # => nil
   #
   def get_fields(key)
     stringified_downcased_key = key.downcase.to_s
@@ -283,17 +287,17 @@ module Net::HTTPHeader
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req[:foo] = 'bar'
-  #   req.fetch(:foo) {|key| key.capitalize }    # => "bar"
-  #   req.fetch(:nosuch) {|key| key.capitalize } # => "Nosuch"
+  #   req['Foo'] = 'bar'
+  #   req.fetch('Foo') {|key| key.capitalize }    # => "bar"
+  #   req.fetch('Nosuch') {|key| key.capitalize } # => "Nosuch"
   #
   # With no block, returns the string value for +key+ if it exists;
   # otherwise, returns +default_val+ if it was given;
   # otherwise raises an exception:
   #
-  #   req.fetch(:foo)          # => "bar"
-  #   req.fetch(:nosuch, :baz) # => :baz
-  #   req.fetch(:nosuch)       # Raises IndexError.
+  #   req.fetch('Foo')          # => "bar"
+  #   req.fetch('Nosuch', :baz) # => :baz
+  #   req.fetch('Nosuch')       # Raises KeyError.
   #
   def fetch(key, *args, &block)   #:yield: +key+
     a = @header.fetch(key.downcase.to_s, *args, &block)
@@ -301,7 +305,7 @@ module Net::HTTPHeader
   end
 
   # Calls the block with each key/value pair;
-  # returns the value of #to_hash;
+  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
@@ -315,6 +319,8 @@ module Net::HTTPHeader
   #   ["host", "jsonplaceholder.typicode.com"]
   #
   # Returns an enumerator if no block is given.
+  #
+  # Net::HTTPHeader#each is an alias for Net::HTTPHeader#each_header.
   def each_header   #:yield: +key+, +value+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,va|
@@ -325,7 +331,7 @@ module Net::HTTPHeader
   alias each each_header
 
   # Calls the block with each field key;
-  # returns the value of #to_hash;
+  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
@@ -349,7 +355,7 @@ module Net::HTTPHeader
   alias each_key each_name
 
   # Calls the block with each capitalized field name;
-  # returns the value of #to_hash;
+  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
@@ -410,6 +416,8 @@ module Net::HTTPHeader
   # server in its response.
   #
   # Returns an enumerator if no block is given.
+  #
+  # Net::HTTPHeader#canonical_each is an alias for Net::HTTPHeader#each_capitalized.
   def each_capitalized
     block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,v|
@@ -505,7 +513,7 @@ module Net::HTTPHeader
     r
   end
 
-  alias range= set_range
+  n range= set_range
 
   # Returns an Integer object which represents the HTTP Content-Length:
   # header field, or +nil+ if that field was not provided.
@@ -596,7 +604,9 @@ module Net::HTTPHeader
   # Sets the content type in an HTTP header.
   # The +type+ should be a full HTTP content type, e.g. "text/html".
   # The +params+ are an optional Hash of parameters to add after the
-  # content type, e.g. {'charset' => 'iso-8859-1'}
+  # content type, e.g. {'charset' => 'iso-8859-1'}.
+  #
+  # Net::HTTPHeader#content_type= is an alias for Net::HTTPHeader#set_content_type.
   def set_content_type(type, params = {})
     @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
   end
@@ -616,6 +626,7 @@ module Net::HTTPHeader
   #    http.form_data = {"q" => ["ruby", "perl"], "lang" => "en"}
   #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
   #
+  # Net::HTTPHeader#form_data= is an alias for Net::HTTPHeader#set_form_data.
   def set_form_data(params, sep = '&')
     query = URI.encode_www_form(params)
     query.gsub!(/&/, sep) if sep != '&'
