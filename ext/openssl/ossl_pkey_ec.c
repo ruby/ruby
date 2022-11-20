@@ -483,16 +483,28 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 #ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
-    int ret;
+    EC_KEY *ec;
 
     GetPKey(self, pkey);
+    GetEC(self, ec);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
-    ret = EVP_PKEY_public_check(pctx);
+        ossl_raise(eECError, "EVP_PKEY_CTX_new");
+
+    if (EC_KEY_get0_private_key(ec) != NULL) {
+        if (EVP_PKEY_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_check");
+        }
+    }
+    else {
+        if (EVP_PKEY_public_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_public_check");
+        }
+    }
+
     EVP_PKEY_CTX_free(pctx);
-    if (ret != 1)
-        ossl_raise(eECError, "EVP_PKEY_public_check");
 #else
     EC_KEY *ec;
 
