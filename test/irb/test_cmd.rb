@@ -617,7 +617,7 @@ module TestIRB
 
       def test_edit_with_non_existing_path
         out, err = execute_lines(
-          "edit foo.rb"
+          "edit test_cmd_non_existing_path.rb"
         )
 
         assert_empty err
