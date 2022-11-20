@@ -1,4 +1,8 @@
 require "test/unit"
+begin
+  require_relative "../lib/helper"
+rescue LoadError # ruby/ruby defines helpers differently
+end
 
 module IRB
   class InputMethod; end
