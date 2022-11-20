@@ -5,7 +5,24 @@ require "irb/extend-command"
 require_relative "helper"
 
 module TestIRB
-  class ExtendCommandTest < TestCase
+  class CommandTestCase < TestCase
+    def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
+      IRB.init_config(nil)
+      IRB.conf[:VERBOSE] = false
+      IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf.merge!(conf)
+      input = TestInputMethod.new(lines)
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+      irb.context.return_format = "=> %s\n"
+      irb.context.irb_path = irb_path if irb_path
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      capture_output do
+        irb.eval_input
+      end
+    end
+  end
+
+  class ExtendCommandTest < CommandTestCase
     def setup
       @pwd = Dir.pwd
       @tmpdir = File.join(Dir.tmpdir, "test_reline_config_#{$$}")
@@ -565,7 +582,7 @@ module TestIRB
       $bar = nil
     end
 
-    class EditTest < ExtendCommandTest
+    class EditTest < CommandTestCase
       def setup
         @original_editor = ENV["EDITOR"]
         # noop the command so nothing gets executed
@@ -637,23 +654,6 @@ module TestIRB
         assert_empty err
         assert_match(/path: .*\/lib\/irb\.rb/, out)
         assert_match("command: ': code'", out)
-      end
-    end
-
-    private
-
-    def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
-      IRB.init_config(nil)
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf.merge!(conf)
-      input = TestInputMethod.new(lines)
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
-      irb.context.return_format = "=> %s\n"
-      irb.context.irb_path = irb_path if irb_path
-      IRB.conf[:MAIN_CONTEXT] = irb.context
-      capture_output do
-        irb.eval_input
       end
     end
   end
