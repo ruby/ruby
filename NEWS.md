@@ -300,6 +300,9 @@ Note: We're only listing outstanding class updates.
     * Time#deconstruct_keys is added, allowing to use Time instances
       in pattern-matching expressions [[Feature #19071]]
 
+* SyntaxError
+    * SyntaxError#path has been added.  [[Bug #19138]]
+
 * TracePoint
 
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
@@ -551,3 +554,4 @@ The following deprecated APIs are removed.
 [Feature #19071]: https://bugs.ruby-lang.org/issues/19071
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
+[Feature #19138]: https://bugs.ruby-lang.org/issues/19138
