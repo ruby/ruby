@@ -64,6 +64,13 @@ The following commands are available on IRB.
   * Change the current workspace to an object.
 * `bindings`, `workspaces`
   * Show workspaces.
+* `edit`
+  * Open a file with the editor command defined with `ENV["EDITOR"]`
+    * `edit` - opens the file the current context belongs to (if applicable)
+    * `edit foo.rb` - opens `foo.rb`
+    * `edit Foo` - opens the location of `Foo`
+    * `edit Foo.bar` - opens the location of `Foo.bar`
+    * `edit Foo#bar` - opens the location of `Foo#bar`
 * `pushb`, `pushws`
   * Push an object to the workspace stack.
 * `popb`, `popws`

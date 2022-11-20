@@ -121,6 +121,10 @@ module IRB # :nodoc:
         [:debug, NO_OVERRIDE],
       ],
       [
+        :irb_edit, :Edit, "cmd/edit",
+        [:edit, NO_OVERRIDE],
+      ],
+      [
         :irb_help, :Help, "cmd/help",
         [:help, NO_OVERRIDE],
       ],

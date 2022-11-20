@@ -565,9 +565,84 @@ module TestIRB
       $bar = nil
     end
 
+    class EditTest < ExtendCommandTest
+      def setup
+        @original_editor = ENV["EDITOR"]
+        # noop the command so nothing gets executed
+        ENV["EDITOR"] = ": code"
+      end
+
+      def teardown
+        ENV["EDITOR"] = @original_editor
+      end
+
+      def test_edit_without_arg
+        out, err = execute_lines(
+          "edit",
+          irb_path: __FILE__
+        )
+
+        assert_empty err
+        assert_match("path: #{__FILE__}", out)
+        assert_match("command: ': code'", out)
+      end
+
+      def test_edit_with_path
+        out, err = execute_lines(
+          "edit #{__FILE__}"
+        )
+
+        assert_empty err
+        assert_match("path: #{__FILE__}", out)
+        assert_match("command: ': code'", out)
+      end
+
+      def test_edit_with_non_existing_path
+        out, err = execute_lines(
+          "edit foo.rb"
+        )
+
+        assert_empty err
+        assert_match /Can not find file: foo\.rb/, out
+      end
+
+      def test_edit_with_constant
+        # const_source_location is supported after Ruby 2.7
+        omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0') || RUBY_ENGINE == 'truffleruby'
+
+        out, err = execute_lines(
+          "edit IRB::Irb"
+        )
+
+        assert_empty err
+        assert_match(/path: .*\/lib\/irb\.rb/, out)
+        assert_match("command: ': code'", out)
+      end
+
+      def test_edit_with_class_method
+        out, err = execute_lines(
+          "edit IRB.start"
+        )
+
+        assert_empty err
+        assert_match(/path: .*\/lib\/irb\.rb/, out)
+        assert_match("command: ': code'", out)
+      end
+
+      def test_edit_with_instance_method
+        out, err = execute_lines(
+          "edit IRB::Irb#run"
+        )
+
+        assert_empty err
+        assert_match(/path: .*\/lib\/irb\.rb/, out)
+        assert_match("command: ': code'", out)
+      end
+    end
+
     private
 
-    def execute_lines(*lines, conf: {}, main: self)
+    def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
       IRB.init_config(nil)
       IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
@@ -575,6 +650,7 @@ module TestIRB
       input = TestInputMethod.new(lines)
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
       irb.context.return_format = "=> %s\n"
+      irb.context.irb_path = irb_path if irb_path
       IRB.conf[:MAIN_CONTEXT] = irb.context
       capture_output do
         irb.eval_input
