@@ -92,4 +92,10 @@ class TestFiberStorage < Test::Unit::TestCase
       assert_equal 1, Fiber[:count]
     end.resume
   end
+
+  def test_storage_assignment_type_error
+    assert_raise(TypeError) do
+      Fiber.new(storage: {"foo" => "bar"}) {}
+    end
+  end
 end

@@ -2079,6 +2079,26 @@ rb_fiber_storage_get(VALUE self)
     return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
 }
 
+static int
+fiber_storage_validate_each(VALUE key, VALUE value, VALUE _argument)
+{
+    if (!RB_TYPE_P(key, T_SYMBOL)) {
+        rb_raise(rb_eTypeError, "storage key must be a symbol");
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+fiber_storage_validate(VALUE value)
+{
+    if (!RB_TYPE_P(value, T_HASH)) {
+        rb_raise(rb_eTypeError, "storage must be a hash");
+    }
+
+    rb_hash_foreach(value, fiber_storage_validate_each, Qundef);
+}
+
 /**
  *  call-seq: Fiber.current.storage = hash
  *
@@ -2095,6 +2115,8 @@ rb_fiber_storage_get(VALUE self)
 static VALUE
 rb_fiber_storage_set(VALUE self, VALUE value)
 {
+    fiber_storage_validate(value);
+
     fiber_ptr(self)->cont.saved_ec.storage = rb_obj_dup(value);
     return value;
 }
@@ -2156,8 +2178,6 @@ rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 static VALUE
 fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking, VALUE storage)
 {
-    rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
-
     if (storage == Qundef || storage == Qtrue) {
         // The default, inherit storage (dup) from the current fiber:
         storage = inherit_fiber_storage();
@@ -2166,8 +2186,11 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
         storage = current_fiber_storage();
     }
     else /* nil, hash, etc. */ {
+        fiber_storage_validate(storage);
         storage = rb_obj_dup(storage);
     }
+
+    rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
     fiber->cont.saved_ec.storage = storage;
     fiber->first_proc = proc;
