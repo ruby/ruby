@@ -63,6 +63,10 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
+    if RUBY_PLATFORM.match?(/mswin/)
+      @omitted = true
+      omit 'This test seems to randomly hang on GitHub Actions mswin'
+    end
     LeakChecker.skip if defined?(LeakChecker)
     @drb_service = DRbSSLService.new
     super
