@@ -56,6 +56,10 @@ module TestIRB
 
       yield
     ensure
+      begin
+        require_relative "../lib/envutil"
+      rescue LoadError # ruby/ruby defines EnvUtil differently
+      end
       EnvUtil.suppress_warning { ::Kernel.send(:alias_method, :require, :old_require) }
     end
   end
