@@ -513,7 +513,7 @@ module Net::HTTPHeader
     r
   end
 
-  n range= set_range
+  alias range= set_range
 
   # Returns an Integer object which represents the HTTP Content-Length:
   # header field, or +nil+ if that field was not provided.
