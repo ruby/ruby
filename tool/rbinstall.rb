@@ -143,7 +143,7 @@ def parse_args(argv = ARGV)
 
   if $installed_list ||= $mflags.defined?('INSTALLED_LIST')
     RbConfig.expand($installed_list, RbConfig::CONFIG)
-    $installed_list = open($installed_list, "ab")
+    $installed_list = File.open($installed_list, "ab")
     $installed_list.sync = true
   end
 
@@ -291,11 +291,11 @@ def install_recursive(srcdir, dest, options = {})
 end
 
 def open_for_install(path, mode)
-  data = open(realpath = with_destdir(path), "rb") {|f| f.read} rescue nil
+  data = File.binread(realpath = with_destdir(path)) rescue nil
   newdata = yield
   unless $dryrun
     unless newdata == data
-      open(realpath, "wb", mode) {|f| f.write newdata}
+      File.open(realpath, "wb", mode) {|f| f.write newdata}
     end
     File.chmod(mode, realpath)
   end
@@ -550,7 +550,7 @@ $script_installer = Class.new(installer) do
   def install(src, cmd)
     cmd = cmd.sub(/[^\/]*\z/m) {|n| transform(n)}
 
-    shebang, body = open(src, "rb") do |f|
+    shebang, body = File.open(src, "rb") do |f|
       next f.gets, f.read
     end
     shebang or raise "empty file - #{src}"
@@ -622,7 +622,7 @@ install?(:local, :comm, :man) do
   has_goruby = File.exist?(goruby_install_name+exeext)
   require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ $mantype
   mdocs.each do |mdoc|
-    next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
+    next unless File.file?(mdoc) and File.read(mdoc, 1) == '.'
     base = File.basename(mdoc)
     if base == "goruby.1"
       next unless has_goruby
@@ -634,17 +634,14 @@ install?(:local, :comm, :man) do
 
     if /\Adoc\b/ =~ $mantype
       if compress
-        w = open(mdoc) {|f|
-          stdin = STDIN.dup
-          STDIN.reopen(f)
-          begin
-            destfile << suffix
-            IO.popen(compress, &:read)
-          ensure
-            STDIN.reopen(stdin)
-            stdin.close
-          end
-        }
+        begin
+          w = IO.popen(compress, "rb", in: mdoc, &:read)
+        rescue
+        else
+          destfile << suffix
+        end
+      end
+      if w
         open_for_install(destfile, $data_mode) {w}
       else
         install mdoc, destfile, :mode => $data_mode
@@ -657,19 +654,19 @@ install?(:local, :comm, :man) do
          File.basename(mdoc).start_with?('gemfile')
         w = File.read(mdoc)
       else
-        open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+        File.open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
         w = w.join("")
       end
       if compress
-        require 'tmpdir'
-        Dir.mktmpdir("man") {|d|
-          dest = File.join(d, File.basename(destfile))
-          File.open(dest, "wb") {|f| f.write w}
-          if system(compress, dest)
-            w = File.open(dest+suffix, "rb") {|f| f.read}
-            destfile << suffix
+        begin
+          w = IO.popen(compress, "r+b") do |f|
+            Thread.start {f.write w; f.close_write}
+            f.read
           end
-        }
+        rescue
+        else
+          destfile << suffix
+        end
       end
       open_for_install(destfile, $data_mode) {w}
     end

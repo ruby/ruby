@@ -1762,7 +1762,7 @@ SRC
     hdr << "#endif\n"
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
-    unless (IO.read(header) == hdr rescue false)
+    unless (File.read(header) == hdr rescue false)
       File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end

@@ -26,7 +26,7 @@ class Exports
 
   def self.output(output = $output, &block)
     if output
-      open(output, 'wb', &block)
+      File.open(output, 'wb', &block)
     else
       yield STDOUT
     end

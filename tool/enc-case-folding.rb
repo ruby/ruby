@@ -409,9 +409,7 @@ if $0 == __FILE__
     s = f.string
   end
   if dest
-    open(dest, "wb") do |file|
-      file.print(s)
-    end
+    File.binwrite(dest, s)
   else
     STDOUT.print(s)
   end
