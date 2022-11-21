@@ -49,10 +49,13 @@ module IRB
       if IRB.conf.has_key?(:USE_MULTILINE)
         @use_multiline = IRB.conf[:USE_MULTILINE]
       elsif IRB.conf.has_key?(:USE_RELINE) # backward compatibility
+        warn <<~MSG.strip
+          USE_RELINE is deprecated, please use USE_MULTILINE instead.
+        MSG
         @use_multiline = IRB.conf[:USE_RELINE]
       elsif IRB.conf.has_key?(:USE_REIDLINE)
         warn <<~MSG.strip
-          USE_REIDLINE is deprecated, please use USE_RELINE instead.
+          USE_REIDLINE is deprecated, please use USE_MULTILINE instead.
         MSG
         @use_multiline = IRB.conf[:USE_REIDLINE]
       else

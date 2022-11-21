@@ -316,6 +316,7 @@ end
   netpacket/packet.h
   net/ethernet.h
   sys/un.h
+  afunix.h
   ifaddrs.h
   sys/ioctl.h
   sys/sockio.h

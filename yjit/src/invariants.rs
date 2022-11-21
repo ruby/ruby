@@ -25,11 +25,6 @@ pub struct Invariants {
     /// Tracks block assumptions about callable method entry validity.
     cme_validity: HashMap<*const rb_callable_method_entry_t, HashSet<BlockRef>>,
 
-    /// Tracks block assumptions about method lookup. Maps a class to a table of
-    /// method ID points to a set of blocks. While a block `b` is in the table,
-    /// b->callee_cme == rb_callable_method_entry(klass, mid).
-    method_lookup: HashMap<VALUE, HashMap<ID, HashSet<BlockRef>>>,
-
     /// A map from a class and its associated basic operator to a set of blocks
     /// that are assuming that that operator is not redefined. This is used for
     /// quick access to all of the blocks that are making this assumption when
@@ -68,7 +63,6 @@ impl Invariants {
         unsafe {
             INVARIANTS = Some(Invariants {
                 cme_validity: HashMap::new(),
-                method_lookup: HashMap::new(),
                 basic_operator_blocks: HashMap::new(),
                 block_basic_operators: HashMap::new(),
                 single_ractor: HashSet::new(),
@@ -124,34 +118,20 @@ pub fn assume_bop_not_redefined(
 pub fn assume_method_lookup_stable(
     jit: &mut JITState,
     ocb: &mut OutlinedCb,
-    receiver_klass: VALUE,
     callee_cme: *const rb_callable_method_entry_t,
 ) {
-    // RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
-    // RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS) || RB_TYPE_P(receiver_klass, T_ICLASS));
-    // RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
-
     jit_ensure_block_entry_exit(jit, ocb);
 
     let block = jit.get_block();
     block
         .borrow_mut()
-        .add_cme_dependency(receiver_klass, callee_cme);
+        .add_cme_dependency(callee_cme);
 
     Invariants::get_instance()
         .cme_validity
         .entry(callee_cme)
         .or_default()
         .insert(block.clone());
-
-    let mid = unsafe { (*callee_cme).called_id };
-    Invariants::get_instance()
-        .method_lookup
-        .entry(receiver_klass)
-        .or_default()
-        .entry(mid)
-        .or_default()
-        .insert(block);
 }
 
 // Checks rb_method_basic_definition_p and registers the current block for invalidation if method
@@ -166,7 +146,7 @@ pub fn assume_method_basic_definition(
     ) -> bool {
     if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
         let cme = unsafe { rb_callable_method_entry(klass, mid) };
-        assume_method_lookup_stable(jit, ocb, klass, cme);
+        assume_method_lookup_stable(jit, ocb, cme);
         true
     } else {
         false
@@ -272,31 +252,6 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
     });
 }
 
-/// Callback for when rb_callable_method_entry(klass, mid) is going to change.
-/// Invalidate blocks that assume stable method lookup of `mid` in `klass` when this happens.
-/// This needs to be wrapped on the C side with RB_VM_LOCK_ENTER().
-#[no_mangle]
-pub extern "C" fn rb_yjit_method_lookup_change(klass: VALUE, mid: ID) {
-    // If YJIT isn't enabled, do nothing
-    if !yjit_enabled_p() {
-        return;
-    }
-
-    with_vm_lock(src_loc!(), || {
-        Invariants::get_instance()
-            .method_lookup
-            .entry(klass)
-            .and_modify(|deps| {
-                if let Some(deps) = deps.remove(&mid) {
-                    for block in &deps {
-                        invalidate_block_version(block);
-                        incr_counter!(invalidate_method_lookup);
-                    }
-                }
-            });
-    });
-}
-
 /// Callback for then Ruby is about to spawn a ractor. In that case we need to
 /// invalidate every block that is assuming single ractor mode.
 #[no_mangle]
@@ -387,16 +342,6 @@ pub extern "C" fn rb_yjit_root_mark() {
 
         unsafe { rb_gc_mark(cme) };
     }
-
-    // Mark class and iclass objects
-    for klass in invariants.method_lookup.keys() {
-        // TODO: This is a leak. Unused blocks linger in the table forever, preventing the
-        // callee class they speculate on from being collected.
-        // We could do a bespoke weak reference scheme on classes similar to
-        // the interpreter's call cache. See finalizer for T_CLASS and cc_table_free().
-
-        unsafe { rb_gc_mark(*klass) };
-    }
 }
 
 /// Remove all invariant assumptions made by the block by removing the block as
@@ -410,16 +355,8 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         // For each method lookup dependency
         for dep in block.iter_cme_deps() {
             // Remove tracking for cme validity
-            if let Some(blockset) = invariants.cme_validity.get_mut(&dep.callee_cme) {
+            if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
                 blockset.remove(blockref);
-            }
-
-            // Remove tracking for lookup stability
-            if let Some(id_to_block_set) = invariants.method_lookup.get_mut(&dep.receiver_klass) {
-                let mid = unsafe { (*dep.callee_cme).called_id };
-                if let Some(block_set) = id_to_block_set.get_mut(&mid) {
-                    block_set.remove(&blockref);
-                }
             }
         }
     }

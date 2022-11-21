@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 static ID id_frozen;
+static ID id_t_object;
 static ID size_pool_edge_names[SIZE_POOL_COUNT];
 
 /*
@@ -152,6 +153,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type)
                   case SHAPE_CAPACITY_CHANGE:
                   case SHAPE_IVAR_UNDEF:
                   case SHAPE_FROZEN:
+                  case SHAPE_T_OBJECT:
                     new_shape->next_iv_index = shape->next_iv_index;
                     break;
                   case SHAPE_INITIAL_CAPACITY:
@@ -264,6 +266,7 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
               case SHAPE_IVAR_UNDEF:
               case SHAPE_ROOT:
               case SHAPE_INITIAL_CAPACITY:
+              case SHAPE_T_OBJECT:
                 return false;
               case SHAPE_FROZEN:
                 rb_bug("Ivar should not exist on transition\n");
@@ -322,10 +325,10 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
 
-VALUE
-rb_shape_flags_mask(void)
+uint8_t
+rb_shape_id_num_bits(void)
 {
-    return SHAPE_FLAG_MASK;
+    return SHAPE_ID_NUM_BITS;
 }
 
 rb_shape_t *
@@ -333,29 +336,33 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 {
     rb_shape_t * midway_shape;
 
-    if (dest_shape->type != SHAPE_ROOT) {
+    RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
+
+    if (dest_shape->type != initial_shape->type) {
         midway_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_parent(dest_shape));
     }
     else {
         midway_shape = initial_shape;
     }
 
-    switch (dest_shape->type) {
-        case SHAPE_IVAR:
-            if (midway_shape->capacity < midway_shape->next_iv_index) {
-                // There isn't enough room to write this IV, so we need to increase the capacity
-                midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
-            }
+    switch ((enum shape_type)dest_shape->type) {
+      case SHAPE_IVAR:
+        if (midway_shape->capacity <= midway_shape->next_iv_index) {
+            // There isn't enough room to write this IV, so we need to increase the capacity
+            midway_shape = rb_shape_transition_shape_capa(midway_shape, midway_shape->capacity * 2);
+        }
 
-            midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
-            break;
-        case SHAPE_IVAR_UNDEF:
-            midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR_UNDEF);
-            break;
-        case SHAPE_ROOT:
-        case SHAPE_FROZEN:
-        case SHAPE_CAPACITY_CHANGE:
-            break;
+        midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        break;
+      case SHAPE_IVAR_UNDEF:
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR_UNDEF);
+        break;
+      case SHAPE_ROOT:
+      case SHAPE_FROZEN:
+      case SHAPE_CAPACITY_CHANGE:
+      case SHAPE_INITIAL_CAPACITY:
+      case SHAPE_T_OBJECT:
+        break;
     }
 
     return midway_shape;
@@ -592,6 +599,7 @@ void
 Init_default_shapes(void)
 {
     id_frozen = rb_make_internal_id();
+    id_t_object = rb_make_internal_id();
 
     // Shapes by size pool
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
@@ -613,6 +621,16 @@ Init_default_shapes(void)
         new_shape->type = SHAPE_INITIAL_CAPACITY;
         new_shape->size_pool_index = i;
         RUBY_ASSERT(rb_shape_id(new_shape) == (shape_id_t)i);
+    }
+
+    // Make shapes for T_OBJECT
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_shape_t * shape = rb_shape_get_shape_by_id(i);
+#if RUBY_DEBUG
+        rb_shape_t * t_object_shape =
+#endif
+            get_next_shape_internal(shape, id_t_object, SHAPE_T_OBJECT);
+        RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + SIZE_POOL_COUNT));
     }
 
     // Special const shape
@@ -644,9 +662,10 @@ Init_shape(void)
     rb_define_method(rb_cShape, "capacity", rb_shape_capacity, 0);
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
+    rb_define_const(rb_cShape, "SHAPE_T_OBJECT", INT2NUM(SHAPE_T_OBJECT));
     rb_define_const(rb_cShape, "SHAPE_IVAR_UNDEF", INT2NUM(SHAPE_IVAR_UNDEF));
     rb_define_const(rb_cShape, "SHAPE_FROZEN", INT2NUM(SHAPE_FROZEN));
-    rb_define_const(rb_cShape, "SHAPE_BITS", INT2NUM(SHAPE_BITS));
+    rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SPECIAL_CONST_SHAPE_ID", INT2NUM(SPECIAL_CONST_SHAPE_ID));
 

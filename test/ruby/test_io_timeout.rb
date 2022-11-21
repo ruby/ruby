@@ -9,12 +9,6 @@ class TestIOTimeout < Test::Unit::TestCase
     begin
       i, o = UNIXSocket.pair
 
-      unless i.nonblock? && o.nonblock?
-        i.close
-        o.close
-        omit "I/O is not non-blocking!"
-      end
-
       yield i, o
     ensure
       i.close

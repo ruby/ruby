@@ -650,7 +650,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
             keyword_ids[0] = rb_intern("keyword_init");
         }
         rb_get_kwargs(opt, keyword_ids, 0, 1, &keyword_init);
-        if (keyword_init == Qundef) {
+        if (UNDEF_P(keyword_init)) {
             keyword_init = Qnil;
         }
         else if (RTEST(keyword_init)) {

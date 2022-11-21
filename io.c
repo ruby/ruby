@@ -1255,7 +1255,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 0);
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
         }
     }
@@ -1288,7 +1288,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, 0);
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
         }
     }
@@ -1323,7 +1323,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
         for (int i = 0; i < iovcnt; i += 1) {
             VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[i].iov_base, iov[i].iov_len, 0);
 
-            if (result != Qundef) {
+            if (!UNDEF_P(result)) {
                 return rb_fiber_scheduler_io_result_apply(result);
             }
         }
@@ -1424,7 +1424,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     struct timeval tv_storage;
     struct timeval *tv = NULL;
 
-    if (timeout == Qnil || timeout == Qundef) {
+    if (timeout == Qnil || UNDEF_P(timeout)) {
         timeout = fptr->timeout;
     }
 
@@ -3352,7 +3352,7 @@ io_read_memory_call(VALUE arg)
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa, 0);
 
-        if (result != Qundef) {
+        if (!UNDEF_P(result)) {
             // This is actually returned as a pseudo-VALUE and later cast to a long:
             return (VALUE)rb_fiber_scheduler_io_result_apply(result);
         }
@@ -3972,7 +3972,7 @@ extract_getline_opts(VALUE opts, struct getline_arg *args)
             kwds[0] = rb_intern_const("chomp");
         }
         rb_get_kwargs(opts, kwds, 0, -2, &vchomp);
-        chomp = (vchomp != Qundef) && RTEST(vchomp);
+        chomp = (!UNDEF_P(vchomp)) && RTEST(vchomp);
     }
     args->chomp = chomp;
 }
@@ -5445,7 +5445,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     //     VALUE scheduler = rb_fiber_scheduler_current();
     //     if (scheduler != Qnil) {
     //         VALUE result = rb_fiber_scheduler_io_close(scheduler, fptr->self);
-    //         if (result != Qundef) done = 1;
+    //         if (!UNDEF_P(result)) done = 1;
     //     }
     // }
 
@@ -5704,7 +5704,7 @@ static VALUE
 io_close(VALUE io)
 {
     VALUE closed = rb_check_funcall(io, rb_intern("closed?"), 0, 0);
-    if (closed != Qundef && RTEST(closed)) return io;
+    if (!UNDEF_P(closed) && RTEST(closed)) return io;
     rb_rescue2(io_call_close, io, ignore_closed_stream, io,
                rb_eIOError, (VALUE)0);
     return io;
@@ -6622,21 +6622,21 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
         v = rb_hash_lookup2(opt, sym_extenc, Qundef);
         if (v != Qnil) extenc = v;
         v = rb_hash_lookup2(opt, sym_intenc, Qundef);
-        if (v != Qundef) intenc = v;
+        if (!UNDEF_P(v)) intenc = v;
     }
-    if ((extenc != Qundef || intenc != Qundef) && !NIL_P(encoding)) {
+    if ((!UNDEF_P(extenc) || !UNDEF_P(intenc)) && !NIL_P(encoding)) {
         if (!NIL_P(ruby_verbose)) {
             int idx = rb_to_encoding_index(encoding);
             if (idx >= 0) encoding = rb_enc_from_encoding(rb_enc_from_index(idx));
             rb_warn("Ignoring encoding parameter '%"PRIsVALUE"': %s_encoding is used",
-                    encoding, extenc == Qundef ? "internal" : "external");
+                    encoding, UNDEF_P(extenc) ? "internal" : "external");
         }
         encoding = Qnil;
     }
-    if (extenc != Qundef && !NIL_P(extenc)) {
+    if (!UNDEF_P(extenc) && !NIL_P(extenc)) {
         extencoding = rb_to_encoding(extenc);
     }
-    if (intenc != Qundef) {
+    if (!UNDEF_P(intenc)) {
         if (NIL_P(intenc)) {
             /* internal_encoding: nil => no transcoding */
             intencoding = (rb_encoding *)Qnil;
@@ -6669,7 +6669,7 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
             rb_io_ext_int_to_encs(rb_to_encoding(encoding), NULL, enc_p, enc2_p, 0);
         }
     }
-    else if (extenc != Qundef || intenc != Qundef) {
+    else if (!UNDEF_P(extenc) || !UNDEF_P(intenc)) {
         extracted = 1;
         rb_io_ext_int_to_encs(extencoding, intencoding, enc_p, enc2_p, 0);
     }
@@ -9724,7 +9724,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
             if (RB_SYMBOL_P(argv[i])) {
                 events |= wait_mode_sym(argv[i]);
             }
-            else if (timeout == Qundef) {
+            else if (UNDEF_P(timeout)) {
                 rb_time_interval(timeout = argv[i]);
             }
             else {
@@ -9732,7 +9732,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
             }
         }
 
-        if (timeout == Qundef) timeout = Qnil;
+        if (UNDEF_P(timeout)) timeout = Qnil;
 
         if (events == 0) {
             events = RUBY_IO_READABLE;
@@ -10918,7 +10918,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     if (scheduler != Qnil) {
         // It's optionally supported.
         VALUE result = rb_fiber_scheduler_io_selectv(scheduler, argc, argv);
-        if (result != Qundef) return result;
+        if (!UNDEF_P(result)) return result;
     }
 
     VALUE timeout;
@@ -14042,7 +14042,7 @@ static void
 argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
 {
     VALUE ret = ARGF_block_call(mid, argc, argv, argf_block_call_i, argf);
-    if (ret != Qundef) ARGF.next_p = 1;
+    if (!UNDEF_P(ret)) ARGF.next_p = 1;
 }
 
 static VALUE
@@ -14058,7 +14058,7 @@ static void
 argf_block_call_line(ID mid, int argc, VALUE *argv, VALUE argf)
 {
     VALUE ret = ARGF_block_call(mid, argc, argv, argf_block_call_line_i, argf);
-    if (ret != Qundef) ARGF.next_p = 1;
+    if (!UNDEF_P(ret)) ARGF.next_p = 1;
 }
 
 /*

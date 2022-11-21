@@ -1,10 +1,12 @@
 #ifndef RUBY_WIN32_FILE_H
 #define RUBY_WIN32_FILE_H
 
-#define MAX_REPARSE_PATH_LEN 4092
+#ifndef IO_REPARSE_TAG_AF_UNIX
+# define IO_REPARSE_TAG_AF_UNIX 0x80000023
+#endif
 
 enum {
-    MINIMUM_REPARSE_BUFFER_PATH_LEN = 4
+    MINIMUM_REPARSE_BUFFER_PATH_LEN = 100
 };
 /* License: Ruby's */
 typedef struct {
@@ -18,14 +20,14 @@ typedef struct {
             USHORT PrintNameOffset;
             USHORT PrintNameLength;
             ULONG  Flags;
-            WCHAR  PathBuffer[4];
+            WCHAR  PathBuffer[MINIMUM_REPARSE_BUFFER_PATH_LEN];
         } SymbolicLinkReparseBuffer;
         struct {
             USHORT SubstituteNameOffset;
             USHORT SubstituteNameLength;
             USHORT PrintNameOffset;
             USHORT PrintNameLength;
-            WCHAR  PathBuffer[4];
+            WCHAR  PathBuffer[MINIMUM_REPARSE_BUFFER_PATH_LEN];
         } MountPointReparseBuffer;
     };
 } rb_w32_reparse_buffer_t;

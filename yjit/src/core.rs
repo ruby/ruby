@@ -304,6 +304,7 @@ pub struct Context {
 /// Tuple of (iseq, idx) used to identify basic blocks
 /// There are a lot of blockid objects so we try to keep the size small.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[repr(packed)]
 pub struct BlockId {
     /// Instruction sequence
     pub iseq: IseqPtr,
@@ -369,13 +370,8 @@ impl Branch {
     }
 }
 
-// In case this block is invalidated, these two pieces of info
-// help to remove all pointers to this block in the system.
-#[derive(Debug)]
-pub struct CmeDependency {
-    pub receiver_klass: VALUE,
-    pub callee_cme: *const rb_callable_method_entry_t,
-}
+// In case a block is invalidated, this helps to remove all pointers to the block.
+pub type CmePtr = *const rb_callable_method_entry_t;
 
 /// Basic block version
 /// Represents a portion of an iseq compiled with a given context
@@ -412,7 +408,7 @@ pub struct Block {
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
-    cme_dependencies: Vec<CmeDependency>,
+    cme_dependencies: Vec<CmePtr>,
 
     // Code address of an exit for `ctx` and `blockid`.
     // Used for block invalidation.
@@ -635,9 +631,8 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             unsafe { rb_gc_mark_movable(block.blockid.iseq.into()) };
 
             // Mark method entry dependencies
-            for cme_dep in &block.cme_dependencies {
-                unsafe { rb_gc_mark_movable(cme_dep.receiver_klass) };
-                unsafe { rb_gc_mark_movable(cme_dep.callee_cme.into()) };
+            for &cme_dep in &block.cme_dependencies {
+                unsafe { rb_gc_mark_movable(cme_dep.into()) };
             }
 
             // Mark outgoing branch entries
@@ -692,8 +687,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
 
             // Update method entry dependencies
             for cme_dep in &mut block.cme_dependencies {
-                cme_dep.receiver_klass = unsafe { rb_gc_location(cme_dep.receiver_klass) };
-                cme_dep.callee_cme = unsafe { rb_gc_location(cme_dep.callee_cme.into()) }.as_cme();
+                *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
             // Update outgoing branch entries
@@ -884,13 +878,13 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let version_list = get_or_create_version_list(block.blockid);
 
     version_list.push(blockref.clone());
+    version_list.shrink_to_fit();
 
     // By writing the new block to the iseq, the iseq now
     // contains new references to Ruby objects. Run write barriers.
     let iseq: VALUE = block.blockid.iseq.into();
-    for dep in block.iter_cme_deps() {
-        obj_written!(iseq, dep.receiver_klass);
-        obj_written!(iseq, dep.callee_cme.into());
+    for &dep in block.iter_cme_deps() {
+        obj_written!(iseq, dep.into());
     }
 
     // Run write barriers for all objects in generated code.
@@ -972,7 +966,7 @@ impl Block {
     }
 
     /// Get an immutable iterator over cme dependencies
-    pub fn iter_cme_deps(&self) -> std::slice::Iter<'_, CmeDependency> {
+    pub fn iter_cme_deps(&self) -> std::slice::Iter<'_, CmePtr> {
         self.cme_dependencies.iter()
     }
 
@@ -1000,22 +994,31 @@ impl Block {
         self.end_idx = end_idx;
     }
 
-    pub fn add_gc_obj_offset(self: &mut Block, ptr_offset: u32) {
-        self.gc_obj_offsets.push(ptr_offset);
-        incr_counter!(num_gc_obj_refs);
+    pub fn add_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
+        for offset in gc_offsets {
+            self.gc_obj_offsets.push(offset);
+            incr_counter!(num_gc_obj_refs);
+        }
+        self.gc_obj_offsets.shrink_to_fit();
     }
 
     /// Instantiate a new CmeDependency struct and add it to the list of
     /// dependencies for this block.
-    pub fn add_cme_dependency(
-        &mut self,
-        receiver_klass: VALUE,
-        callee_cme: *const rb_callable_method_entry_t,
-    ) {
-        self.cme_dependencies.push(CmeDependency {
-            receiver_klass,
-            callee_cme,
-        });
+    pub fn add_cme_dependency(&mut self, callee_cme: CmePtr) {
+        self.cme_dependencies.push(callee_cme);
+        self.cme_dependencies.shrink_to_fit();
+    }
+
+    // Push an incoming branch ref and shrink the vector
+    fn push_incoming(&mut self, branch: BranchRef) {
+        self.incoming.push(branch);
+        self.incoming.shrink_to_fit();
+    }
+
+    // Push an outgoing branch ref and shrink the vector
+    fn push_outgoing(&mut self, branch: BranchRef) {
+        self.outgoing.push(branch);
+        self.outgoing.shrink_to_fit();
     }
 
     // Compute the size of the block code
@@ -1508,8 +1511,7 @@ fn gen_block_series_body(
         last_branch.dst_addrs[0] = new_blockref.borrow().start_addr;
         new_blockref
             .borrow_mut()
-            .incoming
-            .push(last_branchref.clone());
+            .push_incoming(last_branchref.clone());
 
         // Track the block
         batch.push(new_blockref.clone());
@@ -1526,7 +1528,8 @@ fn gen_block_series_body(
             let iseq_location = iseq_get_location(blockid.iseq);
             if iseq_location.contains(substr) {
                 let last_block = last_blockref.borrow();
-                println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid.idx, last_block.end_idx);
+                let blockid_idx = blockid.idx;
+                println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid_idx, last_block.end_idx);
                 print!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
             }
         }
@@ -1668,7 +1671,8 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
 
     // Add to the list of outgoing branches for the block
     let branchref = Rc::new(RefCell::new(branch));
-    block.borrow_mut().outgoing.push(branchref.clone());
+    block.borrow_mut().push_outgoing(branchref.clone());
+    incr_counter!(compiled_branch_count);
 
     return branchref;
 }
@@ -1799,7 +1803,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             assert!(!(branch.shape == target_branch_shape && block.start_addr != branch.end_addr));
 
             // Add this branch to the list of incoming branches for the target
-            block.incoming.push(branch_rc.clone());
+            block.push_incoming(branch_rc.clone());
 
             // Update the branch target address
             let dst_addr = block.start_addr;
@@ -1847,8 +1851,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let new_branch_size = branch.code_size();
     assert!(
         new_branch_size <= branch_size_on_entry,
-        "branch stubs should never enlarge branches: (old_size: {}, new_size: {})",
-        branch_size_on_entry, new_branch_size,
+        "branch stubs should never enlarge branches (start_addr: {:?}, old_size: {}, new_size: {})",
+        branch.start_addr.unwrap().raw_ptr(), branch_size_on_entry, new_branch_size,
     );
 
     // Return a pointer to the compiled block version
@@ -1870,7 +1874,7 @@ fn get_branch_target(
         let mut block = blockref.borrow_mut();
 
         // Add an incoming branch into this block
-        block.incoming.push(branchref.clone());
+        block.push_incoming(branchref.clone());
         let mut branch = branchref.borrow_mut();
         branch.blocks[target_idx.as_usize()] = Some(blockref.clone());
 
@@ -2017,7 +2021,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     if let Some(blockref) = maybe_block {
         let mut block = blockref.borrow_mut();
 
-        block.incoming.push(branchref.clone());
+        block.push_incoming(branchref.clone());
 
         branch.dst_addrs[0] = block.start_addr;
         branch.blocks[0] = Some(blockref.clone());
@@ -2147,7 +2151,8 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
             let iseq_location = iseq_get_location(block.blockid.iseq);
             if iseq_location.contains(substr) {
-                println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, block.blockid.idx, block.end_idx);
+                let blockid_idx = block.blockid.idx;
+                println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, blockid_idx, block.end_idx);
             }
         }
     }
@@ -2253,14 +2258,17 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Rewrite the branch with the new jump target address
-        let branch_end_addr = branch.end_addr;
+        let old_branch_size = branch.code_size();
         regenerate_branch(cb, &mut branch);
 
         if target_next && branch.end_addr > block.end_addr {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
         }
-        if !target_next && branch.end_addr > branch_end_addr {
-            panic!("invalidated branch grew in size: {:?}", branch);
+        if !target_next && branch.code_size() > old_branch_size {
+            panic!(
+                "invalidated branch grew in size (start_addr: {:?}, old_size: {}, new_size: {})",
+                branch.start_addr.unwrap().raw_ptr(), old_branch_size, branch.code_size()
+            );
         }
     }
 

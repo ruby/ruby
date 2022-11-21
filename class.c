@@ -64,7 +64,7 @@ push_subclass_entry_to_list(VALUE super, VALUE klass)
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
-    if (super && super != Qundef) {
+    if (super && !UNDEF_P(super)) {
         rb_subclass_entry_t *entry = push_subclass_entry_to_list(super, klass);
         RCLASS_SUBCLASS_ENTRY(klass) = entry;
     }
@@ -277,7 +277,7 @@ rb_class_update_superclasses(VALUE klass)
     VALUE super = RCLASS_SUPER(klass);
 
     if (!RB_TYPE_P(klass, T_CLASS)) return;
-    if (super == Qundef) return;
+    if (UNDEF_P(super)) return;
 
     // If the superclass array is already built
     if (RCLASS_SUPERCLASSES(klass))
@@ -608,7 +608,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
             arg.klass = clone;
             rb_id_table_foreach(RCLASS_CONST_TBL(klass), clone_const_i, &arg);
         }
-        if (attach != Qundef) {
+        if (!UNDEF_P(attach)) {
             rb_singleton_class_attached(clone, attach);
         }
         RCLASS_M_TBL_INIT(clone);

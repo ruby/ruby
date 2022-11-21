@@ -1028,13 +1028,13 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
     switch (type) {
       case 0:
         if (ft)
-            goto statically_linked;
+            goto feature_present;
         ftptr = RSTRING_PTR(tmp);
         return rb_feature_p(vm, ftptr, 0, FALSE, TRUE, 0);
 
       default:
         if (ft) {
-            goto statically_linked;
+            goto feature_present;
         }
         /* fall through */
       case 1:
@@ -1045,7 +1045,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
     }
     return type ? 's' : 'r';
 
-  statically_linked:
+  feature_present:
     if (loading) *path = rb_filesystem_str_new_cstr(loading);
     return ft;
 }

@@ -1034,6 +1034,20 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
     };
 }
 
+/// A variant of mov used for always writing the value in 64 bits for GC offsets.
+pub fn movabs(cb: &mut CodeBlock, dst: X86Opnd, value: u64) {
+    match dst {
+        X86Opnd::Reg(reg) => {
+            assert_eq!(reg.num_bits, 64);
+            write_rex(cb, true, 0, 0, reg.reg_no);
+
+            write_opcode(cb, 0xb8, reg);
+            cb.write_int(value, 64);
+        },
+        _ => unreachable!()
+    }
+}
+
 /// movsx - Move with sign extension (signed integers)
 pub fn movsx(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
     if let X86Opnd::Reg(_dst_reg) = dst {

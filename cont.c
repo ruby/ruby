@@ -1831,7 +1831,7 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
     /* push ensure stack */
     for (j = 0; j < i; j++) {
         func = lookup_rollback_func(target[i - j - 1].e_proc);
-        if ((VALUE)func != Qundef) {
+        if (!UNDEF_P((VALUE)func)) {
             (*func)(target[i - j - 1].data2);
         }
     }
@@ -2058,11 +2058,11 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
         argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
         rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
 
-        if (arguments[0] != Qundef) {
+        if (!UNDEF_P(arguments[0])) {
             blocking = arguments[0];
         }
 
-        if (arguments[1] != Qundef) {
+        if (!UNDEF_P(arguments[1])) {
             pool = arguments[1];
         }
     }

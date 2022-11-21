@@ -172,7 +172,7 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
     if (VM_EP_IN_HEAP_P(ec, ep)) {
         VALUE envval = ep[VM_ENV_DATA_INDEX_ENV]; /* VM_ENV_ENVVAL(ep); */
 
-        if (envval != Qundef) {
+        if (!UNDEF_P(envval)) {
             const rb_env_t *env = (const rb_env_t *)envval;
 
             VM_ASSERT(vm_assert_env(envval));
@@ -391,7 +391,7 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
     ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
     switch ((enum rb_mjit_iseq_func)func_i) {
       case NOT_ADDED_JIT_ISEQ_FUNC:
-        if (body->total_calls == mjit_opts.min_calls) {
+        if (body->total_calls == mjit_opts.call_threshold) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
                 return body->jit_func(ec, ec->cfp);
@@ -1838,7 +1838,7 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
       default:
         return Qnil;
     }
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         val = GET_EC()->tag->retval;
     }
     return make_localjump_error(mesg, val, state);
@@ -2278,7 +2278,7 @@ vm_exec_enter_vm_loop(rb_execution_context_t *ec, struct rb_vm_exec_context *ctx
 
     ctx->result = ec->errinfo;
     rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
-    while ((ctx->result = vm_exec_handle_exception(ec, ctx->state, ctx->result, &ctx->initial)) == Qundef) {
+    while (UNDEF_P(ctx->result = vm_exec_handle_exception(ec, ctx->state, ctx->result, &ctx->initial))) {
         /* caught a jump, exec the handler */
         ctx->result = vm_exec_core(ec, ctx->initial);
     vm_loop_start:
@@ -2295,7 +2295,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (!ctx->jit_enable_p || (ctx->result = jit_exec(ctx->ec)) == Qundef) {
+    if (!ctx->jit_enable_p || UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
         ctx->result = vm_exec_core(ctx->ec, ctx->initial);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
@@ -2347,7 +2347,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (!jit_enable_p || (result = jit_exec(ec)) == Qundef) {
+        if (!jit_enable_p || UNDEF_P(result = jit_exec(ec))) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */
@@ -2355,7 +2355,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
     else {
         result = ec->errinfo;
         rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW | RAISED_NOMEMORY);
-        while ((result = vm_exec_handle_exception(ec, state, result, &initial)) == Qundef) {
+        while (UNDEF_P(result = vm_exec_handle_exception(ec, state, result, &initial))) {
             /* caught a jump, exec the handler */
             result = vm_exec_core(ec, initial);
           vm_loop_start:

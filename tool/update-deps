@@ -88,7 +88,6 @@ result.each {|k,v|
 # They can be referenced as $(top_srcdir)/filename.
 # % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
 FILES_IN_SOURCE_DIRECTORY = %w[
-  revision.h
 ]
 
 # Files built in the build directory (except extconf.h).
@@ -129,6 +128,7 @@ FILES_NEED_VPATH = %w[
   parse.c
   parse.h
   probes.dmyh
+  revision.h
   vm.inc
   vmtc.inc
 
@@ -340,7 +340,7 @@ def read_single_cc_deps(path_i, cwd)
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
-    next if /\.erb\z/ =~ dep
+    next if /\.e?rb\z/ =~ dep
     compiler_wd ||= dep
     files[dep] = true
   }

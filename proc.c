@@ -89,7 +89,7 @@ block_mark(const struct rb_block *block)
             const struct rb_captured_block *captured = &block->as.captured;
             RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
             RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
-            if (captured->ep && captured->ep[VM_ENV_DATA_INDEX_ENV] != Qundef /* cfunc_proc_t */) {
+            if (captured->ep && !UNDEF_P(captured->ep[VM_ENV_DATA_INDEX_ENV]) /* cfunc_proc_t */) {
                 rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
             }
         }
@@ -1645,7 +1645,7 @@ respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
     /* TODO: merge with obj_respond_to() */
     ID rmiss = idRespond_to_missing;
 
-    if (obj == Qundef) return 0;
+    if (UNDEF_P(obj)) return 0;
     if (rb_method_basic_definition_p(klass, rmiss)) return 0;
     return RTEST(rb_funcall(obj, rmiss, 2, sym, RBOOL(!scope)));
 }
@@ -1746,7 +1746,7 @@ mnew_callable(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     const rb_method_entry_t *me;
     VALUE iclass = Qnil;
 
-    ASSUME(obj != Qundef);
+    ASSUME(!UNDEF_P(obj));
     me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
 }
@@ -1988,7 +1988,7 @@ rb_method_name_error(VALUE klass, VALUE str)
     else if (RB_TYPE_P(c, T_MODULE)) {
         s = MSG(" module");
     }
-    if (s == Qundef) {
+    if (UNDEF_P(s)) {
         s = MSG(" class");
     }
     rb_name_err_raise_str(s, c, str);
@@ -2493,7 +2493,7 @@ rb_method_call_with_block_kw(int argc, const VALUE *argv, VALUE method, VALUE pa
     rb_execution_context_t *ec = GET_EC();
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    if (data->recv == Qundef) {
+    if (UNDEF_P(data->recv)) {
         rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
     return call_method_data(ec, data, argc, argv, passed_procval, kw_splat);
@@ -3142,7 +3142,7 @@ method_inspect(VALUE method)
     if (FL_TEST(mklass, FL_SINGLETON)) {
         VALUE v = rb_ivar_get(mklass, attached);
 
-        if (data->recv == Qundef) {
+        if (UNDEF_P(data->recv)) {
             rb_str_buf_append(str, rb_inspect(mklass));
         }
         else if (data->recv == v) {

@@ -3832,14 +3832,14 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
         str = RREGEXP_SRC(re);
     }
     else {
-        if (opts != Qundef) {
+        if (!UNDEF_P(opts)) {
             int f;
             if (FIXNUM_P(opts)) flags = FIX2INT(opts);
             else if ((f = str_to_option(opts)) >= 0) flags = f;
             else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
                 flags = ONIG_OPTION_IGNORECASE;
         }
-        if (n_flag != Qundef && !NIL_P(n_flag)) {
+        if (!UNDEF_P(n_flag) && !NIL_P(n_flag)) {
             char *kcode = StringValuePtr(n_flag);
             if (kcode[0] == 'n' || kcode[0] == 'N') {
                 enc = rb_ascii8bit_encoding();

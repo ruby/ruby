@@ -461,7 +461,7 @@ module IRB
     # For debug message
     def inspect
       config = Reline::Config.new
-      str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
+      str = "RelineInputMethod with Reline #{Reline::VERSION}"
       if config.respond_to?(:inputrc_path)
         inputrc_path = File.expand_path(config.inputrc_path)
       else

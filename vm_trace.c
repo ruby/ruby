@@ -262,7 +262,7 @@ remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th
     while (hook) {
         if (func == 0 || hook->func == func) {
             if (hook->filter.th == filter_th || filter_th == MATCH_ANY_FILTER_TH) {
-                if (data == Qundef || hook->data == data) {
+                if (UNDEF_P(data) || hook->data == data) {
                     hook->hook_flags |= RUBY_EVENT_HOOK_FLAG_DELETED;
                     ret+=1;
                     list->need_clean = true;
@@ -857,7 +857,7 @@ rb_tracearg_event(rb_trace_arg_t *trace_arg)
 static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->path == Qundef) {
+    if (UNDEF_P(trace_arg->path)) {
         get_path_and_lineno(trace_arg->ec, trace_arg->cfp, trace_arg->event, &trace_arg->path, &trace_arg->lineno);
     }
 }
@@ -986,7 +986,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
-    if (trace_arg->data == Qundef) {
+    if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_return_value: unreachable");
     }
     return trace_arg->data;
@@ -1001,7 +1001,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
-    if (trace_arg->data == Qundef) {
+    if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
     return trace_arg->data;
@@ -1018,7 +1018,7 @@ rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
-    if (data == Qundef) {
+    if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
     if (rb_obj_is_iseq(data)) {
@@ -1042,7 +1042,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
-    if (data == Qundef) {
+    if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
 
@@ -1067,7 +1067,7 @@ rb_tracearg_object(rb_trace_arg_t *trace_arg)
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
-    if (trace_arg->data == Qundef) {
+    if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_object: unreachable");
     }
     return trace_arg->data;

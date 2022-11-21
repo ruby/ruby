@@ -267,6 +267,7 @@ make_counters! {
     vm_insns_count,
     compiled_iseq_count,
     compiled_block_count,
+    compiled_branch_count,
     compilation_failure,
     freed_iseq_count,
 
@@ -401,6 +402,9 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
         // Code GC count
         hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
+
+        // Size of memory region allocated for JIT code
+        hash_aset_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
         #[cfg(feature="stats")]

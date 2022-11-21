@@ -1,4 +1,5 @@
 # frozen_string_literal: false
+require "tmpdir"
 
 require_relative "helper"
 

@@ -97,7 +97,7 @@ sign_bits(int base, const char *p)
     blen += (l);\
 } while (0)
 
-#define GETARG() (nextvalue != Qundef ? nextvalue : \
+#define GETARG() (!UNDEF_P(nextvalue) ? nextvalue : \
                   GETNEXTARG())
 
 #define GETNEXTARG() ( \
@@ -193,7 +193,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
 {
     VALUE tmp;
 
-    if (*hash != Qundef) return *hash;
+    if (!UNDEF_P(*hash)) return *hash;
     if (argc != 2) {
         rb_raise(rb_eArgError, "one hash required");
     }
@@ -336,7 +336,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             n = 0;
             GETNUM(n, width);
             if (*p == '$') {
-                if (nextvalue != Qundef) {
+                if (!UNDEF_P(nextvalue)) {
                     rb_raise(rb_eArgError, "value given twice - %d$", n);
                 }
                 nextvalue = GETPOSARG(n);
@@ -381,7 +381,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                                            len - 2 /* without parenthesis */,
                                            enc);
                 if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
-                if (nextvalue == Qundef) {
+                if (UNDEF_P(nextvalue)) {
                     if (NIL_P(sym)) {
                         sym = rb_sym_intern(start + 1,
                                             len - 2 /* without parenthesis */,

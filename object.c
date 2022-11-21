@@ -129,7 +129,7 @@ rb_equal(VALUE obj1, VALUE obj2)
 
     if (obj1 == obj2) return Qtrue;
     result = rb_equal_opt(obj1, obj2);
-    if (result == Qundef) {
+    if (UNDEF_P(result)) {
         result = rb_funcall(obj1, id_eq, 1, obj2);
     }
     return RBOOL(RTEST(result));
@@ -142,7 +142,7 @@ rb_eql(VALUE obj1, VALUE obj2)
 
     if (obj1 == obj2) return TRUE;
     result = rb_eql_opt(obj1, obj2);
-    if (result == Qundef) {
+    if (UNDEF_P(result)) {
         result = rb_funcall(obj1, id_eql, 1, obj2);
     }
     return RTEST(result);
@@ -297,7 +297,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     rb_shape_t * initial_shape = rb_shape_get_shape(dest);
 
     if (initial_shape->size_pool_index != src_shape->size_pool_index) {
-        RUBY_ASSERT(initial_shape->parent_id == ROOT_SHAPE_ID || initial_shape->type == SHAPE_ROOT);
+        RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
     }
@@ -310,7 +310,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         rb_shape_t * initial_shape = rb_shape_get_shape(dest);
 
         if (initial_shape->size_pool_index != src_shape->size_pool_index) {
-            RUBY_ASSERT(initial_shape->parent_id == ROOT_SHAPE_ID || initial_shape->type == SHAPE_ROOT);
+            RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
             shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
         }
@@ -421,7 +421,7 @@ rb_get_freeze_opt(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
         rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-        if (kwfreeze != Qundef)
+        if (!UNDEF_P(kwfreeze))
             kwfreeze = obj_freeze_opt(kwfreeze);
     }
     return kwfreeze;
@@ -2555,7 +2555,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
 #if 0
         mod = rb_const_search(mod, id, beglen > 0 || !RTEST(recur), RTEST(recur), FALSE);
-        if (mod == Qundef) return Qfalse;
+        if (UNDEF_P(mod)) return Qfalse;
 #else
         if (!RTEST(recur)) {
             if (!rb_const_defined_at(mod, id))
@@ -2985,7 +2985,7 @@ static VALUE
 convert_type_with_id(VALUE val, const char *tname, ID method, int raise, int index)
 {
     VALUE r = rb_check_funcall(val, method, 0, 0);
-    if (r == Qundef) {
+    if (UNDEF_P(r)) {
         if (raise) {
             const char *msg =
                 ((index < 0 ? conv_method_index(rb_id2name(method)) : index)

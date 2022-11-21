@@ -115,6 +115,8 @@ int flock(int, int);
 # define link(f, t)      rb_w32_ulink((f), (t))
 # undef unlink
 # define unlink(p)       rb_w32_uunlink(p)
+# undef readlink
+# define readlink(f, t, l)    rb_w32_ureadlink((f), (t), (l))
 # undef rename
 # define rename(f, t)    rb_w32_urename((f), (t))
 # undef symlink
@@ -1763,8 +1765,8 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     if (S_ISSOCK(st.st_mode)) return Qtrue;
-
 #endif
+
     return Qfalse;
 }
 
@@ -3152,7 +3154,6 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     return rb_readlink(path, rb_filesystem_encoding());
 }
 
-#ifndef _WIN32
 struct readlink_arg {
     const char *path;
     char *buf;
@@ -3208,7 +3209,6 @@ rb_readlink(VALUE path, rb_encoding *enc)
 
     return v;
 }
-#endif
 #else
 #define rb_file_s_readlink rb_f_notimplement
 #endif
@@ -5600,6 +5600,7 @@ rb_stat_init(VALUE obj, VALUE fname)
     if (STAT(StringValueCStr(fname), &st) == -1) {
         rb_sys_fail_path(fname);
     }
+
     if (DATA_PTR(obj)) {
         xfree(DATA_PTR(obj));
         DATA_PTR(obj) = NULL;

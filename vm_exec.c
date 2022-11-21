@@ -183,7 +183,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
         }
     }
 
-    if ((th = rb_ec_thread_ptr(ec))->retval != Qundef) {
+    if (!UNDEF_P((th = rb_ec_thread_ptr(ec))->retval)) {
         VALUE ret = th->retval;
         th->retval = Qundef;
         return ret;

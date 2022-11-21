@@ -49,6 +49,9 @@
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
+#ifdef HAVE_AFUNIX_H
+# include <afunix.h>
+#endif
 #include "ruby/win32.h"
 #include "ruby/vm.h"
 #include "win32/dir.h"
@@ -4018,15 +4021,93 @@ rb_w32_getservbyport(int port, const char *proto)
     return r;
 }
 
+#ifdef HAVE_AFUNIX_H
+
+/* License: Ruby's */
+static size_t
+socketpair_unix_path(struct sockaddr_un *sock_un)
+{
+    SOCKET listener;
+    WCHAR wpath[sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path)] = L"";
+
+    /* AF_UNIX/SOCK_STREAM became available in Windows 10
+     * See https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows
+     */
+    listener = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (listener == INVALID_SOCKET)
+        return 0;
+
+    memset(sock_un, 0, sizeof(*sock_un));
+    sock_un->sun_family = AF_UNIX;
+
+    /* Abstract sockets (filesystem-independent) don't work, contrary to
+     * the claims of the aforementioned blog post:
+     * https://github.com/microsoft/WSL/issues/4240#issuecomment-549663217
+     *
+     * So we must use a named path, and that comes with all the attendant
+     * problems of permissions and collisions. Trying various temporary
+     * directories and putting high-res time and PID in the filename.
+     */
+    for (int try = 0; ; try++) {
+        LARGE_INTEGER ticks;
+        size_t path_len = 0;
+        const size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
+
+        switch (try) {
+        case 0:
+            /* user temp dir from TMP or TEMP env var, it ends with a backslash */
+            path_len = GetTempPathW(maxpath, wpath);
+            break;
+        case 1:
+            wcsncpy(wpath, L"C:/Temp/", maxpath);
+            path_len = lstrlenW(wpath);
+            break;
+        case 2:
+            /* Current directory */
+            path_len = 0;
+            break;
+        case 3:
+            closesocket(listener);
+            return 0;
+        }
+
+        /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
+        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
+        QueryPerformanceCounter(&ticks);
+        path_len += snprintf(sock_un->sun_path + path_len,
+                 maxpath - path_len,
+                 "%lld-%ld.($)",
+                 ticks.QuadPart,
+                 GetCurrentProcessId());
+
+        /* Convert to UTF16 for DeleteFileW */
+        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
+
+        if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
+            break;
+    }
+    closesocket(listener);
+    DeleteFileW(wpath);
+    return sizeof(*sock_un);
+}
+#endif
+
 /* License: Ruby's */
 static int
 socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 {
     SOCKET svr = INVALID_SOCKET, r = INVALID_SOCKET, w = INVALID_SOCKET;
     struct sockaddr_in sock_in4;
+
 #ifdef INET6
     struct sockaddr_in6 sock_in6;
 #endif
+
+#ifdef HAVE_AFUNIX_H
+    struct sockaddr_un sock_un = {0, {0}};
+    WCHAR wpath[sizeof(sock_un.sun_path)/sizeof(*sock_un.sun_path)] = L"";
+#endif
+
     struct sockaddr *addr;
     int ret = -1;
     int len;
@@ -4050,6 +4131,15 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         addr = (struct sockaddr *)&sock_in6;
         len = sizeof(sock_in6);
         break;
+#endif
+#ifdef HAVE_AFUNIX_H
+      case AF_UNIX:
+        addr = (struct sockaddr *)&sock_un;
+        len = socketpair_unix_path(&sock_un);
+        MultiByteToWideChar(CP_UTF8, 0, sock_un.sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
+        if (len)
+            break;
+        /* fall through */
 #endif
       default:
         errno = EAFNOSUPPORT;
@@ -4101,6 +4191,10 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         }
         if (svr != INVALID_SOCKET)
             closesocket(svr);
+#ifdef HAVE_AFUNIX_H
+        if (sock_un.sun_family == AF_UNIX)
+            DeleteFileW(wpath);
+#endif
     }
 
     return ret;
@@ -5144,31 +5238,34 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 static ssize_t
 w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 {
-    VALUE wtmp;
+    VALUE rp_buf, rp_buf_bigger = 0;
     DWORD len = MultiByteToWideChar(cp, 0, path, -1, NULL, 0);
-    size_t size = rb_w32_reparse_buffer_size(len);
-    WCHAR *wname, *wpath = ALLOCV(wtmp, size + sizeof(WCHAR) * len);
+    size_t size = rb_w32_reparse_buffer_size(bufsize);
+    WCHAR *wname;
+    WCHAR *wpath = ALLOCV(rp_buf, sizeof(WCHAR) * len + size);
     rb_w32_reparse_buffer_t *rp = (void *)(wpath + len);
     ssize_t ret;
     int e;
 
     MultiByteToWideChar(cp, 0, path, -1, wpath, len);
     e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
-    if (e && e != ERROR_MORE_DATA) {
-        ALLOCV_END(wtmp);
-        errno = map_errno(e);
+    if (e == ERROR_MORE_DATA) {
+        size = rb_w32_reparse_buffer_size(len + 1);
+        rp = ALLOCV(rp_buf_bigger, size);
+        e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
+    }
+    if (e) {
+        ALLOCV_END(rp_buf);
+        ALLOCV_END(rp_buf_bigger);
+        errno = e == -1 ? EINVAL : map_errno(e);
         return -1;
     }
-    len = lstrlenW(wname) + 1;
+    len = lstrlenW(wname);
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
-    ALLOCV_END(wtmp);
-    if (e) {
+    ALLOCV_END(rp_buf);
+    ALLOCV_END(rp_buf_bigger);
+    if (!ret) {
         ret = bufsize;
-    }
-    else if (!ret) {
-        e = GetLastError();
-        errno = map_errno(e);
-        ret = -1;
     }
     return ret;
 }
@@ -5629,10 +5726,8 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path, unsigned mode)
         /* format is already set */
     }
     else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-        if (rb_w32_reparse_symlink_p(path))
-            mode |= S_IFLNK | S_IEXEC;
-        else
-            mode |= S_IFDIR | S_IEXEC;
+        /* Only used by stat_by_find in the case the file can not be opened.
+         * In this case we can't get more details. */
     }
     else if (attr & FILE_ATTRIBUTE_DIRECTORY) {
         mode |= S_IFDIR | S_IEXEC;
@@ -5707,14 +5802,6 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
-    /* GetFileAttributesEx failed; check why. */
-    int e = GetLastError();
-
-    if ((e == ERROR_FILE_NOT_FOUND) || (e == ERROR_INVALID_NAME)
-        || (e == ERROR_PATH_NOT_FOUND || (e == ERROR_BAD_NETPATH))) {
-        errno = map_errno(e);
-        return -1;
-    }
 
     /* Fall back to FindFirstFile for ERROR_SHARING_VIOLATION */
     h = FindFirstFileW(path, &wfd);
@@ -5750,9 +5837,24 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
     WCHAR finalname[PATH_MAX];
+    int open_error;
 
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, flags);
+    open_error = GetLastError();
+    if (f == INVALID_HANDLE_VALUE && !lstat) {
+        /* Support stat (not only lstat) of UNIXSocket */
+        FILE_ATTRIBUTE_TAG_INFO attr_info;
+        DWORD e;
+
+        f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
+        e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
+                &attr_info, sizeof(attr_info));
+        if (!e || attr_info.ReparseTag != IO_REPARSE_TAG_AF_UNIX) {
+            CloseHandle(f);
+            f = INVALID_HANDLE_VALUE;
+        }
+    }
     if (f != INVALID_HANDLE_VALUE) {
         DWORD attr = stati128_handle(f, st);
         const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
@@ -5764,15 +5866,26 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
           case FILE_TYPE_PIPE:
             mode = S_IFIFO;
             break;
+          default:
+            if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+                FILE_ATTRIBUTE_TAG_INFO attr_info;
+                DWORD e;
+
+                e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
+                        &attr_info, sizeof(attr_info));
+                if (e && attr_info.ReparseTag == IO_REPARSE_TAG_AF_UNIX) {
+                    st->st_size = 0;
+                    mode |= S_IFSOCK;
+                } else if (rb_w32_reparse_symlink_p(path)) {
+                    /* TODO: size in which encoding? */
+                    st->st_size = 0;
+                    mode |= S_IFLNK | S_IEXEC;
+                } else {
+                    mode |= S_IFDIR | S_IEXEC;
+                }
+            }
         }
         CloseHandle(f);
-        if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-            /* TODO: size in which encoding? */
-            if (rb_w32_reparse_symlink_p(path))
-                st->st_size = 0;
-            else
-                attr &= ~FILE_ATTRIBUTE_REPARSE_POINT;
-        }
         if (attr & FILE_ATTRIBUTE_DIRECTORY) {
             if (check_valid_dir(path)) return -1;
         }
@@ -5785,6 +5898,12 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
         }
     }
     else {
+        if ((open_error == ERROR_FILE_NOT_FOUND) || (open_error == ERROR_INVALID_NAME)
+            || (open_error == ERROR_PATH_NOT_FOUND || (open_error == ERROR_BAD_NETPATH))) {
+            errno = map_errno(open_error);
+            return -1;
+        }
+
         if (stat_by_find(path, st)) return -1;
     }
 

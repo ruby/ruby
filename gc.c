@@ -3135,6 +3135,12 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 #endif
 
     VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
+    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT ||
+            rb_shape_get_shape(obj)->type == SHAPE_INITIAL_CAPACITY);
+
+    // Set the shape to the specific T_OBJECT shape which is always
+    // SIZE_POOL_COUNT away from the root shape.
+    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
 
 #if RUBY_DEBUG
     VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -4568,7 +4574,7 @@ run_single_final(VALUE cmd, VALUE objid)
 static void
 warn_exception_in_finalizer(rb_execution_context_t *ec, VALUE final)
 {
-    if (final != Qundef && !NIL_P(ruby_verbose)) {
+    if (!UNDEF_P(final) && !NIL_P(ruby_verbose)) {
         VALUE errinfo = ec->errinfo;
         rb_warn("Exception in finalizer %+"PRIsVALUE, final);
         rb_ec_error_print(ec, errinfo);
@@ -5038,7 +5044,7 @@ id2ref(VALUE objid)
         }
     }
 
-    if ((orig = id2ref_obj_tbl(objspace, objid)) != Qundef &&
+    if (!UNDEF_P(orig = id2ref_obj_tbl(objspace, objid)) &&
         is_live_object(objspace, orig)) {
 
         if (!rb_multi_ractor_p() || rb_ractor_shareable_p(orig)) {
@@ -7785,7 +7791,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 #endif
 
     while (pop_mark_stack(mstack, &obj)) {
-        if (obj == Qundef) continue; /* skip */
+        if (UNDEF_P(obj)) continue; /* skip */
 
         if (RGENGC_CHECK_MODE && !RVALUE_MARKED(obj)) {
             rb_bug("gc_mark_stacked_objects: %s is not marked.", obj_info(obj));
@@ -10492,7 +10498,7 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
         }
         ptr = ROBJECT(v)->as.ary;
         size_t size_pool_shape_id = size_pool_idx_for_size(embed_size);
-        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id);
+        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id + SIZE_POOL_COUNT);
         rb_shape_t * new_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape(v));
         rb_shape_set_shape(v, new_shape);
     }
@@ -13301,7 +13307,7 @@ wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self))
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
     /* Get reference from object id. */
-    if ((obj = id2ref_obj_tbl(&rb_objspace, objid)) == Qundef) {
+    if (UNDEF_P(obj = id2ref_obj_tbl(&rb_objspace, objid))) {
         rb_bug("wmap_finalize: objid is not found.");
     }
 
@@ -13592,14 +13598,14 @@ static VALUE
 wmap_aref(VALUE self, VALUE key)
 {
     VALUE obj = wmap_lookup(self, key);
-    return obj != Qundef ? obj : Qnil;
+    return !UNDEF_P(obj) ? obj : Qnil;
 }
 
 /* Returns +true+ if +key+ is registered */
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
-    return RBOOL(wmap_lookup(self, key) != Qundef);
+    return RBOOL(!UNDEF_P(wmap_lookup(self, key)));
 }
 
 /* Returns the number of referenced objects */

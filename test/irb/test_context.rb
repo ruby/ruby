@@ -7,32 +7,6 @@ require_relative "helper"
 
 module TestIRB
   class TestContext < TestCase
-    class TestInputMethod < ::IRB::InputMethod
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
-    end
-
     def setup
       IRB.init_config(nil)
       IRB.conf[:USE_SINGLELINE] = false
@@ -518,7 +492,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -549,7 +523,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t 2: from \(irb\):1:in `<main>'\n/,
@@ -586,7 +560,7 @@ module TestIRB
         irb.eval_input
       end
       assert_empty err
-      if '2.5.0' <= RUBY_VERSION && RUBY_VERSION < '3.0.0' && STDOUT.tty?
+      if RUBY_VERSION < '3.0.0' && STDOUT.tty?
         expected = [
           :*, /Traceback \(most recent call last\):\n/,
           :*, /\t... \d+ levels...\n/,

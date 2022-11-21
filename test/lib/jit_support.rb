@@ -38,10 +38,10 @@ module JITSupport
     [stdout, stderr]
   end
 
-  def eval_with_jit_without_retry(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
+  def eval_with_jit_without_retry(env = nil, script, verbose: 0, call_threshold: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
       '--disable-gems', "--mjit-verbose=#{verbose}",
-      "--mjit-min-calls=#{min_calls}", "--mjit-max-cache=#{max_cache}",
+      "--mjit-call-threshold=#{call_threshold}", "--mjit-max-cache=#{max_cache}",
     ]
     args << '--disable-yjit'
     args << '--mjit-wait' if wait

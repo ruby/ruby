@@ -20,7 +20,7 @@ Racc is a LALR(1) parser generator.
 DESC
   s.authors = ["Minero Aoki", "Aaron Patterson"]
   s.email = [nil, "aaron@tenderlovemaking.com"]
-  s.homepage = "https://i.loveruby.net/en/projects/racc/"
+  s.homepage = "https://github.com/ruby/racc"
   s.licenses = ["Ruby", "BSD-2-Clause"]
   s.executables = ["racc"]
   s.files = [

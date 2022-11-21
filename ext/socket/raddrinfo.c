@@ -644,7 +644,7 @@ rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
     return ary;
 }
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 static long
 unixsocket_len(const struct sockaddr_un *su, socklen_t socklen)
 {
@@ -1017,7 +1017,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 }
 
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 static void
 init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 {
@@ -1146,7 +1146,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
             break;
           }
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
           case AF_UNIX: /* ["AF_UNIX", "/tmp/sock"] */
           {
             VALUE path = rb_ary_entry(sockaddr_ary, 1);
@@ -1286,7 +1286,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
           }
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
           case AF_UNIX:
           {
             struct sockaddr_un *addr = &sockaddr->un;
@@ -1622,7 +1622,7 @@ addrinfo_mdump(VALUE self)
     afamily = rb_id2str(id);
 
     switch(afamily_int) {
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case AF_UNIX:
       {
         sockaddr = rb_str_new(rai->addr.un.sun_path, rai_unixsocket_len(rai));
@@ -1715,7 +1715,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 
     v = rb_ary_entry(ary, 1);
     switch(afamily) {
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case AF_UNIX:
       {
         struct sockaddr_un uaddr;
@@ -2343,7 +2343,7 @@ addrinfo_ipv6_to_ipv4(VALUE self)
 
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 /*
  * call-seq:
  *   addrinfo.unix_path => path
@@ -2491,7 +2491,7 @@ addrinfo_s_udp(VALUE self, VALUE host, VALUE port)
             INT2NUM(PF_UNSPEC), INT2NUM(SOCK_DGRAM), INT2NUM(IPPROTO_UDP), INT2FIX(0));
 }
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 
 /*
  * call-seq:
@@ -2629,7 +2629,7 @@ rsock_init_addrinfo(void)
     rb_define_singleton_method(rb_cAddrinfo, "ip", addrinfo_s_ip, 1);
     rb_define_singleton_method(rb_cAddrinfo, "tcp", addrinfo_s_tcp, 2);
     rb_define_singleton_method(rb_cAddrinfo, "udp", addrinfo_s_udp, 2);
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     rb_define_singleton_method(rb_cAddrinfo, "unix", addrinfo_s_unix, -1);
 #endif
 
@@ -2670,7 +2670,7 @@ rsock_init_addrinfo(void)
     rb_define_method(rb_cAddrinfo, "ipv6_to_ipv4", addrinfo_ipv6_to_ipv4, 0);
 #endif
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     rb_define_method(rb_cAddrinfo, "unix_path", addrinfo_unix_path, 0);
 #endif
 

@@ -721,7 +721,8 @@ pub fn gen_single_block(
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
-        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid.idx));
+        let blockid_idx = blockid.idx;
+        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid_idx));
     }
 
     // For each instruction to compile
@@ -829,9 +830,7 @@ pub fn gen_single_block(
         let gc_offsets = asm.compile(cb);
 
         // Add the GC offsets to the block
-        for offset in gc_offsets {
-            block.add_gc_obj_offset(offset)
-        }
+        block.add_gc_obj_offsets(gc_offsets);
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());
@@ -2041,16 +2040,14 @@ fn gen_get_ivar(
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
 
-    let flags_mask: usize = unsafe { rb_shape_flags_mask() }.as_usize();
-    let expected_flags_mask: usize = (RUBY_T_MASK as usize) | !flags_mask | (ROBJECT_EMBED as usize);
-    let expected_flags = comptime_receiver.builtin_flags() & expected_flags_mask;
+    let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
+    let shape_bit_size = unsafe { rb_shape_id_num_bits() }; // either 16 or 32 depending on RUBY_DEBUG
+    let shape_byte_size = shape_bit_size / 8;
+    let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
 
-    // Combined guard for all flags: shape, embeddedness, and T_OBJECT
-    let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
-
-    asm.comment("guard shape, embedded, and T_OBJECT");
-    let flags_opnd = asm.and(flags_opnd, Opnd::UImm(expected_flags_mask as u64));
-    asm.cmp(flags_opnd, Opnd::UImm(expected_flags as u64));
+    asm.comment("guard shape");
+    asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
+    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
     jit_chain_guard(
         JCC_JNE,
         jit,
@@ -2058,7 +2055,7 @@ fn gen_get_ivar(
         asm,
         ocb,
         max_chain_depth,
-        side_exit,
+        megamorphic_side_exit,
     );
 
     match ivar_index {
@@ -3895,7 +3892,7 @@ fn jit_obj_respond_to(
     // Invalidate this block if method lookup changes for the method being queried. This works
     // both for the case where a method does or does not exist, as for the latter we asked for a
     // "negative CME" earlier.
-    assume_method_lookup_stable(jit, ocb, recv_class, target_cme);
+    assume_method_lookup_stable(jit, ocb, target_cme);
 
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -4179,7 +4176,7 @@ fn gen_send_cfunc(
     }
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() {
+    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, ctx, asm, ocb, ci, cme, block, argc, recv_known_klass) {
@@ -5291,7 +5288,7 @@ fn gen_send_general(
 
     // Register block for invalidation
     //assert!(cme->called_id == mid);
-    assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
+    assume_method_lookup_stable(jit, ocb, cme);
 
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     loop {
@@ -5470,7 +5467,7 @@ fn gen_send_general(
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
-                        assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
+                        assume_method_lookup_stable(jit, ocb, cme);
 
                         let (known_class, type_mismatch_exit) = {
                             if compile_time_name.string_p() {
@@ -5891,8 +5888,8 @@ fn gen_invokesuper(
 
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
-    assume_method_lookup_stable(jit, ocb, current_defined_class, me);
-    assume_method_lookup_stable(jit, ocb, comptime_superclass, cme);
+    assume_method_lookup_stable(jit, ocb, me);
+    assume_method_lookup_stable(jit, ocb, cme);
 
     // Method calls may corrupt types
     ctx.clear_local_types();

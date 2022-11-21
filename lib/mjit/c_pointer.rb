@@ -282,12 +282,16 @@ module RubyVM::MJIT
 
       # Dereference
       def *
-        if @width != 1
-          raise NotImplementedError.new("Non-1 width is not implemented yet")
-        end
         byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
-        bit = 1 & (byte >> @offset)
-        bit == 1
+        if @width == 1
+          bit = (1 & (byte >> @offset))
+          bit == 1
+        elsif @width <= 8 && @offset == 0
+          bitmask = @width.times.map { |i| 1 << i }.sum
+          byte & bitmask
+        else
+          raise NotImplementedError.new("not-implemented bit field access: width=#{@width} offset=#{@offset}")
+        end
       end
 
       # @param width [Integer]

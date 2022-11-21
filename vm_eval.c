@@ -621,7 +621,7 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
                                        ID2SYM(mid), Qtrue);
     if (!RTEST(ret)) return def;
     args.respond = respond > 0;
-    args.respond_to_missing = (ret != Qundef);
+    args.respond_to_missing = !UNDEF_P(ret);
     ret = def;
     cme = callable_method_entry(klass, idMethodMissing, &args.defined_class);
 
@@ -684,7 +684,7 @@ rb_check_funcall_default_kw(VALUE recv, ID mid, int argc, const VALUE *argv, VAL
     if (!check_funcall_callable(ec, me)) {
         VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
                                           respond, def, kw_splat);
-        if (ret == Qundef) ret = def;
+        if (UNDEF_P(ret)) ret = def;
         return ret;
     }
     stack_check(ec);
@@ -715,7 +715,7 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
     if (!check_funcall_callable(ec, me)) {
         VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
                                           respond, Qundef, kw_splat);
-        (*hook)(ret != Qundef, recv, mid, argc, argv, arg);
+        (*hook)(!UNDEF_P(ret), recv, mid, argc, argv, arg);
         return ret;
     }
     stack_check(ec);
@@ -846,7 +846,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
                 defined_class = RBASIC(defined_class)->klass;
             }
 
-            if (self == Qundef || !rb_obj_is_kind_of(self, defined_class)) {
+            if (UNDEF_P(self) || !rb_obj_is_kind_of(self, defined_class)) {
                 return MISSING_PROTECTED;
             }
         }
@@ -1357,7 +1357,7 @@ rb_yield_1(VALUE val)
 VALUE
 rb_yield(VALUE val)
 {
-    if (val == Qundef) {
+    if (UNDEF_P(val)) {
         return rb_yield_0(0, NULL);
     }
     else {
@@ -1698,7 +1698,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
         fname = rb_source_location(&line);
     }
 
-    if (fname != Qundef) {
+    if (!UNDEF_P(fname)) {
         if (!NIL_P(fname)) fname = rb_fstring(fname);
     }
     else {

@@ -146,7 +146,10 @@ module RubyVM::YJIT
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
     stats = Primitive.rb_yjit_get_stats
-    return stats if stats.nil? || !Primitive.rb_yjit_stats_enabled_p
+    return stats if stats.nil?
+
+    stats[:object_shape_count] = Primitive.object_shape_count
+    return stats unless Primitive.rb_yjit_stats_enabled_p
 
     side_exits = total_exit_count(stats)
     total_exits = side_exits + stats[:leave_interp_return]
@@ -163,6 +166,7 @@ module RubyVM::YJIT
       # Proportion of instructions that retire in YJIT
       total_insns_count = retired_in_yjit + stats[:vm_insns_count]
       yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
+      stats[:total_insns_count] = total_insns_count
       stats[:ratio_in_yjit] = yjit_ratio_pct
     end
 
@@ -254,22 +258,25 @@ module RubyVM::YJIT
       $stderr.puts "bindings_allocations:  " + ("%10d" % stats[:binding_allocations])
       $stderr.puts "bindings_set:          " + ("%10d" % stats[:binding_set])
       $stderr.puts "compilation_failure:   " + ("%10d" % compilation_failure) if compilation_failure != 0
-      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
+      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
+      $stderr.puts "compiled_branch_count: " + ("%10d" % stats[:compiled_branch_count])
       $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])
       $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
       $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
       $stderr.puts "freed_code_size:       " + ("%10d" % stats[:freed_code_size])
+      $stderr.puts "code_region_size:      " + ("%10d" % stats[:code_region_size])
       $stderr.puts "yjit_alloc_size:       " + ("%10d" % stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
       $stderr.puts "live_page_count:       " + ("%10d" % stats[:live_page_count])
       $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
       $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
       $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
+      $stderr.puts "object_shape_count:    " + ("%10d" % stats[:object_shape_count])
       $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
-      $stderr.puts "total_exit_count:      " + ("%10d" % stats[:side_exit_count])
-      $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_exit_count])
+      $stderr.puts "total_exit_count:      " + ("%10d" % stats[:total_exit_count])
+      $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_insns_count]) if stats.key?(:total_insns_count)
       if stats.key?(:vm_insns_count)
         $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
       end

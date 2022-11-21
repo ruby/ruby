@@ -23,6 +23,7 @@ nilclass.rb
 pack.rb
 ractor.rb
 string.rb
+symbol.rb
 timev.rb
 thread_sync.rb
 trace_point.rb

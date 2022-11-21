@@ -59,7 +59,7 @@ pub trait Allocator {
 /// We may later change this to wrap an u32.
 /// Note: there is no NULL constant for CodePtr. You should use Option<CodePtr> instead.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug)]
-#[repr(C)]
+#[repr(C, packed)]
 pub struct CodePtr(*const u8);
 
 /// Errors that can happen when writing to [VirtualMemory]
