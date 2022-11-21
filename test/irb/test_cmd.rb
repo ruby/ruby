@@ -621,7 +621,7 @@ module TestIRB
         )
 
         assert_empty err
-        assert_match /Can not find file: test_cmd_non_existing_path\.rb/, out
+        assert_match(/Can not find file: test_cmd_non_existing_path\.rb/, out)
       end
 
       def test_edit_with_constant
