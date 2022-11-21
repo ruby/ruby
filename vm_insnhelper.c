@@ -4946,6 +4946,11 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     }
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
+    // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
+    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+
+        RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
+    }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {
         klass = rb_singleton_class(klass);
