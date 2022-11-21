@@ -2086,7 +2086,7 @@ rb_ary_first(int argc, VALUE *argv, VALUE ary)
  *
  *  If +self+ is empty, returns +nil+.
  *
- *  When non-negative \Innteger argument +n+ is given,
+ *  When non-negative \Integer argument +n+ is given,
  *  returns the last +n+ elements in a new \Array:
  *
  *    a = [:foo, 'bar', 2]

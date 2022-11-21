@@ -131,7 +131,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
  * Start/resume the coverage measurement.
  *
  * Caveat: Currently, only process-global coverage measurement is supported.
- * You cannot measure per-thread covearge. If your process has multiple thread,
+ * You cannot measure per-thread coverage. If your process has multiple thread,
  * using Coverage.resume/suspend to capture code coverage executed from only
  * a limited code block, may yield misleading results.
  */
@@ -470,7 +470,7 @@ rb_coverage_running(VALUE klass)
  * This feature is experimental, so these APIs may be changed in future.
  *
  * Caveat: Currently, only process-global coverage measurement is supported.
- * You cannot measure per-thread covearge.
+ * You cannot measure per-thread coverage.
  *
  * = Usage
  *
