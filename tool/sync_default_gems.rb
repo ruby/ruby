@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# sync upstream github repositories to ruby repository
+# Sync upstream github repositories to ruby repository.
+# See `tool/sync_default_gems.rb --help` for how to use this.
 
 require 'fileutils'
 include FileUtils
@@ -559,7 +560,7 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
     head = `git log --format=%H -1 HEAD`.chomp
     system(*%w"git reset --quiet HEAD~ --")
     amend = replace_rdoc_ref_all
-    system(*%w"git reset --quiet #{head} --")
+    system(*%W"git reset --quiet #{head} --")
     if amend
       `git commit --amend --no-edit --all`
     end
