@@ -367,7 +367,7 @@ The following deprecated APIs are removed.
 ### YJIT
 
 * Support arm64 / aarch64 on UNIX platforms.
-* Building YJIT requires Rust 1.58.1+. [[Feature #18481]]
+* Building YJIT requires Rust 1.58.0+. [[Feature #18481]]
 * Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
   the RSS of a Ruby process is minimized because virtual memory pages
   allocated by `--yjit-exec-mem-size` will not be mapped to physical
