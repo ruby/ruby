@@ -1447,6 +1447,18 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal("\e[1mRuntimeError (\e[1;4mRuntimeError\e[m\e[1m)\e[m", e.detailed_message(highlight: true))
   end
 
+  def test_error_in_detailed_message
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], /:in `<main>': FooError$/)
+    begin;
+      class FooError < StandardError
+        def detailed_message(*, **)
+          raise "foo"
+        end
+      end
+      raise FooError
+    end;
+  end
+
   def test_full_message_with_custom_detailed_message
     e = RuntimeError.new("message")
     opt_ = nil
