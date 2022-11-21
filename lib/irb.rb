@@ -96,6 +96,8 @@ require_relative "irb/easter-egg"
 #   * Show the source code around binding.irb again.
 # * debug
 #   * Start the debugger of debug.gem.
+# * break, delete, next, step, continue, finish, backtrace, info, catch
+#   * Start the debugger of debug.gem and run the command on it.
 #
 # == Configuration
 #
@@ -470,10 +472,6 @@ module IRB
     def initialize(workspace = nil, input_method = nil)
       @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
-      @context.command_aliases.each do |alias_name, cmd_name|
-        next if @context.symbol_alias(alias_name)
-        @context.main.install_alias_method(alias_name, cmd_name)
-      end
       @signal_status = :IN_IRB
       @scanner = RubyLex.new
     end

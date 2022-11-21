@@ -6,13 +6,10 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Info < Debug
-      def self.transform_args(args)
-        args&.dump
-      end
-
+    class Step < Debug
       def execute(*args)
-        super(pre_cmds: ["info", *args].join(" "))
+        # Run `next` first to move out of binding.irb
+        super(pre_cmds: "next", do_cmds: ["step", *args].join(" "))
       end
     end
   end

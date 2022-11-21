@@ -125,12 +125,47 @@ module IRB # :nodoc:
         [:edit, NO_OVERRIDE],
       ],
       [
+        :irb_break, :Break, "cmd/break",
+      ],
+      [
+        :irb_catch, :Catch, "cmd/catch",
+      ],
+      [
+        :irb_next, :Next, "cmd/next",
+      ],
+      [
+        :irb_delete, :Delete, "cmd/delete",
+        [:delete, NO_OVERRIDE],
+      ],
+      [
+        :irb_step, :Step, "cmd/step",
+        [:step, NO_OVERRIDE],
+      ],
+      [
+        :irb_continue, :Continue, "cmd/continue",
+        [:continue, NO_OVERRIDE],
+      ],
+      [
+        :irb_finish, :Finish, "cmd/finish",
+        [:finish, NO_OVERRIDE],
+      ],
+      [
+        :irb_backtrace, :Backtrace, "cmd/backtrace",
+        [:backtrace, NO_OVERRIDE],
+        [:bt, NO_OVERRIDE],
+      ],
+      [
+        :irb_debug_info, :Info, "cmd/info",
+        [:info, NO_OVERRIDE],
+      ],
+
+      [
         :irb_help, :Help, "cmd/help",
         [:help, NO_OVERRIDE],
       ],
 
       [
-        :irb_info, :Info, "cmd/info"
+        :irb_info, :IrbInfo, "cmd/irb_info"
       ],
 
       [
