@@ -763,41 +763,23 @@ EXPECTED
   end
 
   def test_pack_garbage
-    verbose = $VERBOSE
-    $VERBOSE = false
-
-    assert_silent do
+    assert_warn("") do
       assert_equal "\000", [0].pack("*U")
     end
 
-    $VERBOSE = true
-
-    _, err = capture_output do
+    assert_warning(%r%unknown pack directive '\*' in '\*U'$%) do
       assert_equal "\000", [0].pack("*U")
     end
-
-    assert_match %r%unknown pack directive '\*' in '\*U'$%, err
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_unpack_garbage
-    verbose = $VERBOSE
-    $VERBOSE = false
-
-    assert_silent do
+    assert_warn("") do
       assert_equal [0], "\000".unpack("*U")
     end
 
-    $VERBOSE = true
-
-    _, err = capture_output do
+    assert_warning(%r%unknown unpack directive '\*' in '\*U'$%) do
       assert_equal [0], "\000".unpack("*U")
     end
-
-    assert_match %r%unknown unpack directive '\*' in '\*U'$%, err
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_invalid_warning
