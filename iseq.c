@@ -2526,6 +2526,8 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
         count += RCLASS_EXT(superclass)->max_iv_count;
     }
 
+    rb_id_table_free(iv_names);
+
     return count;
 }
 
