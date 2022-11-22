@@ -14,6 +14,11 @@ Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
 YJIT is currently supported for macOS and Linux on x86-64 and arm64/aarch64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
+<p align="center"><b>
+    If you're using YJIT in production, please
+    <a href="mailto:maxime.chevalierboisvert@shopify.com">share your success stories with us!</a>
+ </b></p>
+
 If you wish to learn more about the approach taken, here are some conference talks and publications:
 - RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
