@@ -37,6 +37,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   def build_env
     build_env = rb_config_env
     build_env["RUBY_STATIC"] = "true" if ruby_static? && ENV.key?("RUBY_STATIC")
+    build_env["RUSTFLAGS"] = "#{ENV["RUSTFLAGS"]} --cfg=rb_sys_gem".strip
     build_env
   end
 
@@ -92,6 +93,9 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       # run on one that isn't the missing libraries will cause the extension
       # to fail on start.
       flags += ["-C", "link-arg=-static-libgcc"]
+    elsif darwin_target?
+      # Ventura does not always have this flag enabled
+      flags += ["-C", "link-arg=-Wl,-undefined,dynamic_lookup"]
     end
 
     flags
