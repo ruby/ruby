@@ -437,6 +437,14 @@ module Spec
       pristine_system_gems :bundler
     end
 
+    def simulate_ruby_platform(ruby_platform)
+      old = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = ruby_platform.to_s
+      yield
+    ensure
+      ENV["BUNDLER_SPEC_RUBY_PLATFORM"] = old
+    end
+
     def simulate_platform(platform)
       old = ENV["BUNDLER_SPEC_PLATFORM"]
       ENV["BUNDLER_SPEC_PLATFORM"] = platform.to_s
