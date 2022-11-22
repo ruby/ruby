@@ -939,13 +939,14 @@ hex2num(char c)
 # define AVOID_CC_BUG
 #endif
 
-/* unpack mode */
-#define UNPACK_ARRAY 0
-#define UNPACK_BLOCK 1
-#define UNPACK_1 2
+enum unpack_mode {
+    UNPACK_ARRAY,
+    UNPACK_BLOCK,
+    UNPACK_1
+};
 
 static VALUE
-pack_unpack_internal(VALUE str, VALUE fmt, int mode, long offset)
+pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 {
 #define hexdigits ruby_hexdigits
     char *s, *send;
@@ -1624,7 +1625,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode, long offset)
 static VALUE
 pack_unpack(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
-    int mode = rb_block_given_p() ? UNPACK_BLOCK : UNPACK_ARRAY;
+    enum unpack_mode mode = rb_block_given_p() ? UNPACK_BLOCK : UNPACK_ARRAY;
     return pack_unpack_internal(str, fmt, mode, RB_NUM2LONG(offset));
 }
 
