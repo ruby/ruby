@@ -60,6 +60,24 @@ class CGICookieTest < Test::Unit::TestCase
   end
 
 
+  def test_cgi_cookie_new_with_domain
+    h = {'name'=>'name1', 'value'=>'value1'}
+    cookie = CGI::Cookie.new('domain'=>'a.example.com', **h)
+    assert_equal('a.example.com', cookie.domain)
+
+    cookie = CGI::Cookie.new('domain'=>'1.example.com', **h)
+    assert_equal('1.example.com', cookie.domain, 'enhanced by RFC 1123')
+
+    assert_raise(ArgumentError) {
+      CGI::Cookie.new('domain'=>'-a.example.com', **h)
+    }
+
+    assert_raise(ArgumentError) {
+      CGI::Cookie.new('domain'=>'a-.example.com', **h)
+    }
+  end
+
+
   def test_cgi_cookie_scriptname
     cookie = CGI::Cookie.new('name1', 'value1')
     assert_equal('', cookie.path)
