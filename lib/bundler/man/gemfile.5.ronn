@@ -64,10 +64,10 @@ All parameters are `OPTIONAL` unless otherwise specified.
 ### VERSION (required)
 
 The version of Ruby that your application requires. If your application
-requires an alternate Ruby engine, such as JRuby, Rubinius or TruffleRuby, this
+requires an alternate Ruby engine, such as JRuby, TruffleRuby, etc., this
 should be the Ruby version that the engine is compatible with.
 
-    ruby "1.9.3"
+    ruby "3.1.2"
 
 ### ENGINE
 
@@ -86,9 +86,10 @@ What exactly is an Engine?
 
   - [Other implementations](https://www.ruby-lang.org/en/about/) of Ruby exist.
     Some of the more well-known implementations include
-    [Rubinius](https://rubinius.com/), and [JRuby](http://jruby.org/).
+    [JRuby](http://jruby.org/) and [TruffleRuby](https://www.graalvm.org/ruby/).
     Rubinius is an alternative implementation of Ruby written in Ruby.
     JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine.
+    TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM.
 
 ### ENGINE VERSION
 
@@ -96,13 +97,17 @@ Each application _may_ specify a Ruby engine version. If an engine version is
 specified, an engine _must_ also be specified. If the engine is "ruby" the
 engine version specified _must_ match the Ruby version.
 
-    ruby "1.8.7", engine: "jruby", engine_version: "1.6.7"
+    ruby "2.6.8", engine: "jruby", engine_version: "9.3.8.0"
 
 ### PATCHLEVEL
 
-Each application _may_ specify a Ruby patchlevel.
+Each application _may_ specify a Ruby patchlevel. Specifying the patchlevel has
+been meaningless since Ruby 2.1.0 was released as the patchlevel is now
+uniquely determined by a combination of major, minor, and teeny version numbers.
 
-    ruby "2.0.0", patchlevel: "247"
+This option was implemented in Bundler 1.4.0 for Ruby 2.0 or earlier.
+
+    ruby "3.1.2", patchlevel: "20"
 
 ## GEMS
 
@@ -195,6 +200,10 @@ There are a number of `Gemfile` platforms:
     C Ruby (MRI) only, but not Windows
   * `windows`:
     Windows C Ruby (MRI), including RubyInstaller 32-bit and 64-bit versions
+  * `mswin`:
+    Windows C Ruby (MRI), including RubyInstaller 32-bit versions
+  * `mswin64`:
+    Windows C Ruby (MRI), including RubyInstaller 64-bit versions
   * `rbx`:
     Rubinius
   * `jruby`:
@@ -202,17 +211,18 @@ There are a number of `Gemfile` platforms:
   * `truffleruby`:
     TruffleRuby
 
-On platforms `ruby`, `mri`, and `windows`, you may additionally specify a version
-by appending the major and minor version numbers without a delimiter. For example,
-to specify that a gem should only be used on platform `ruby` version 2.3, use:
+On platforms `ruby`, `mri`, `mswin`, `mswin64`, and `windows`, you may
+additionally specify a version by appending the major and minor version numbers
+without a delimiter. For example, to specify that a gem should only be used on
+platform `ruby` version 3.1, use:
 
-    ruby_23
+    ruby_31
 
 As with groups (above), you may specify one or more platforms:
 
     gem "weakling",   platforms: :jruby
-    gem "ruby-debug", platforms: :mri_18
-    gem "nokogiri",   platforms: [:windows_26, :jruby]
+    gem "ruby-debug", platforms: :mri_31
+    gem "nokogiri",   platforms: [:windows_31, :jruby]
 
 All operations involving groups ([`bundle install`](bundle-install.1.html), `Bundler.setup`,
 `Bundler.require`) behave exactly the same as if any groups not
@@ -369,7 +379,7 @@ same, you can omit one.
 
 Are both equivalent to
 
-    gem "rails", git: "git://github.com/rails/rails.git"
+    gem "rails", git: "https://github.com/rails/rails.git"
 
 Since the `github` method is a specialization of `git_source`, it accepts a `:branch` named argument.
 

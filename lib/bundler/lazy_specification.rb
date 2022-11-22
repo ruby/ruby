@@ -79,9 +79,7 @@ module Bundler
       candidates = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
         target_platform = ruby_platform_materializes_to_ruby_platform? ? platform : local_platform
 
-        source.specs.search(Dependency.new(name, version)).select do |spec|
-          MatchPlatform.platforms_match?(spec.platform, target_platform)
-        end
+        GemHelpers.select_best_platform_match(source.specs.search(Dependency.new(name, version)), target_platform)
       else
         source.specs.search(self)
       end
