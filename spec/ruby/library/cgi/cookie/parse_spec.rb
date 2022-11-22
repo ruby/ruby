@@ -6,16 +6,16 @@ describe "CGI::Cookie.parse" do
     expected = { "test-cookie" => ["one", "two", "three"] }
     CGI::Cookie.parse("test-cookie=one&two&three").should == expected
 
-    expected = { "second cookie" => ["three", "four"], "first cookie" => ["one", "two"] }
-    CGI::Cookie.parse("first cookie=one&two;second cookie=three&four").should == expected
+    expected = { "second-cookie" => ["three", "four"], "first-cookie" => ["one", "two"] }
+    CGI::Cookie.parse("first-cookie=one&two;second-cookie=three&four").should == expected
   end
 
   it "does not use , for cookie separators" do
     expected = {
-      "first cookie" => ["one", "two"],
-      "second cookie" => ["three", "four,third_cookie=five", "six"]
+      "first-cookie" => ["one", "two"],
+      "second-cookie" => ["three", "four,third_cookie=five", "six"]
     }
-    CGI::Cookie.parse("first cookie=one&two;second cookie=three&four,third_cookie=five&six").should == expected
+    CGI::Cookie.parse("first-cookie=one&two;second-cookie=three&four,third_cookie=five&six").should == expected
   end
 
   it "unescapes the Cookie values" do
