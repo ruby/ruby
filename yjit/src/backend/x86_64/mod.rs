@@ -548,8 +548,24 @@ impl Assembler
 
                 // Compare
                 Insn::Cmp { left, right } => {
-                    let emitted = emit_64bit_immediate(cb, right);
-                    cmp(cb, left.into(), emitted);
+                    let num_bits = match right {
+                        Opnd::Imm(value) => Some(imm_num_bits(*value)),
+                        Opnd::UImm(value) => Some(uimm_num_bits(*value)),
+                        _ => None
+                    };
+
+                    // If the immediate is less than 64 bits (like 32, 16, 8), and the operand
+                    // sizes match, then we can represent it as an immediate in the instruction
+                    // without moving it to a register first.
+                    // IOW, 64 bit immediates must always be moved to a register
+                    // before comparisons, where other sizes may be encoded
+                    // directly in the instruction.
+                    if num_bits.is_some() && left.num_bits() == num_bits && num_bits.unwrap() < 64 {
+                        cmp(cb, left.into(), right.into());
+                    } else {
+                        let emitted = emit_64bit_immediate(cb, right);
+                        cmp(cb, left.into(), emitted);
+                    }
                 }
 
                 // Test and set flags
@@ -779,6 +795,30 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
 
         assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c39d8");
+    }
+
+    #[test]
+    fn test_emit_cmp_mem_16_bits_with_imm_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(16, Opnd::Reg(RAX_REG), 6);
+
+        asm.cmp(shape_opnd, Opnd::UImm(0xF000));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "6681780600f0");
+    }
+
+    #[test]
+    fn test_emit_cmp_mem_32_bits_with_imm_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, Opnd::Reg(RAX_REG), 4);
+
+        asm.cmp(shape_opnd, Opnd::UImm(0xF000_0000));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "817804000000f0");
     }
 
     #[test]
