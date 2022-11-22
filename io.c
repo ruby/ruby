@@ -1424,7 +1424,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     struct timeval tv_storage;
     struct timeval *tv = NULL;
 
-    if (timeout == Qnil || UNDEF_P(timeout)) {
+    if (NIL_OR_UNDEF_P(timeout)) {
         timeout = fptr->timeout;
     }
 
