@@ -208,6 +208,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     int integer_size, bigendian_p;
 
     StringValue(fmt);
+    rb_must_asciicompat(fmt);
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
 
@@ -975,6 +976,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     StringValue(str);
     StringValue(fmt);
+    rb_must_asciicompat(fmt);
 
     if (offset < 0) rb_raise(rb_eArgError, "offset can't be negative");
     len = RSTRING_LEN(str);
