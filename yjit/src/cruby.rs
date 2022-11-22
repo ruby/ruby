@@ -112,6 +112,8 @@ pub use autogened::*;
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    // Ruby only defines these in vm_insnhelper.c, not in any header.
+    // Parsing it would result in a lot of duplicate definitions.
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
@@ -619,6 +621,24 @@ where
     ret
 }
 
+/// Returns whether any instance of this class or any of its subclasses can be an immediate special
+/// constant.
+pub fn class_or_subclass_can_be_immediate(klass: VALUE) -> bool {
+    assert!(unsafe { RB_TYPE_P(klass, RUBY_T_CLASS) });
+
+    return unsafe {
+        klass == rb_cInteger ||    // FIXNUM
+            klass == rb_cFloat ||      // FLONUM
+            klass == rb_cNumeric ||    // FIXNUM/FLONUM
+            klass == rb_cSymbol ||     // static symbol
+            klass == rb_cTrueClass ||  // Qtrue
+            klass == rb_cFalseClass || // Qfalse
+            klass == rb_cNilClass ||   // Qnil
+            klass == rb_cObject ||     // All of the above inherit Object
+            klass == rb_cBasicObject   // Everything inherits BasicObject
+    };
+}
+
 // Non-idiomatic capitalization for consistency with CRuby code
 #[allow(non_upper_case_globals)]
 pub const Qfalse: VALUE = VALUE(RUBY_Qfalse as usize);
@@ -692,5 +712,9 @@ mod manual_defs {
     // Constants from iseq_inline_constant_cache (IC) and iseq_inline_constant_cache_entry (ICE) in vm_core.h
     pub const RUBY_OFFSET_IC_ENTRY: i32 = 0;
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
+
+    // From internal/class.h
+    pub const RUBY_OFFSET_RCLASS_SUPERCLASS_DEPTH: i32 = 32 + 40;
+    pub const RUBY_OFFSET_RCLASS_SUPERCLASSES: i32 = 32 + 48;
 }
 pub use manual_defs::*;

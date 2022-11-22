@@ -1308,6 +1308,42 @@ fn guard_object_is_heap(
     asm.jbe(side_exit.as_side_exit());
 }
 
+// Guard that the object is a heap object
+// Unlike guard_object_is_heap this uses jit_chain_guard so that we can generate other block
+// versions for non-heap objects if that stub is hit. This also upgrades information on the tested
+// object in the ctx for both the heap and non-heap branches.
+fn chain_guard_object_is_heap(
+    jit: &JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    object_opnd: Opnd,
+    insn_opnd: InsnOpnd,
+    depth_limit: i32,
+    side_exit: CodePtr,
+) {
+    let val_type = ctx.get_opnd_type(insn_opnd);
+
+    assert!(!val_type.is_imm());
+
+    if !val_type.is_heap() {
+        asm.comment("guard object is heap");
+
+        let mut ctx_imm = *ctx;
+        ctx_imm.upgrade_opnd_type(insn_opnd, Type::UnknownImm);
+
+        // Test that the object is not an immediate
+        asm.test(object_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
+        jit_chain_guard(JCC_JNZ, jit, &ctx_imm, asm, ocb, depth_limit, side_exit);
+
+        // Test that the object is not false or nil
+        asm.cmp(object_opnd, Qnil.into());
+        jit_chain_guard(JCC_JBE, jit, &ctx_imm, asm, ocb, depth_limit, side_exit);
+
+        ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
+    }
+}
+
 fn guard_object_is_array(
     asm: &mut Assembler,
     object_opnd: Opnd,
@@ -3497,17 +3533,16 @@ fn jit_guard_known_klass(
         assert!(!val_type.is_imm());
 
         // Check that the receiver is a heap object
-        // Note: if we get here, the class doesn't have immediate instances.
-        if !val_type.is_heap() {
-            asm.comment("guard not immediate");
-            assert!(Qfalse.as_i32() < Qnil.as_i32());
-            asm.test(obj_opnd, Opnd::Imm(RUBY_IMMEDIATE_MASK as i64));
-            jit_chain_guard(JCC_JNZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
-            asm.cmp(obj_opnd, Qnil.into());
-            jit_chain_guard(JCC_JBE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
-
-            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
-        }
+        chain_guard_object_is_heap(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            obj_opnd,
+            insn_opnd,
+            SEND_MAX_DEPTH,
+            side_exit
+            );
 
         // If obj_opnd isn't already a register, load it.
         let obj_opnd = match obj_opnd {
@@ -3938,6 +3973,173 @@ fn jit_thread_s_current(
     let stack_ret = ctx.stack_push(Type::UnknownHeap);
     asm.mov(stack_ret, thread_self);
     true
+}
+
+fn gen_branch_direct(
+    asm: &mut Assembler,
+    target0: CodePtr,
+    target1: Option<CodePtr>,
+    shape: BranchShape,
+) {
+    assert!(target1 == None);
+    match shape {
+        BranchShape::Default => {
+            asm.jmp(target0.into());
+        }
+        _ => unreachable!()
+    }
+}
+
+// Codegen for Module#===
+fn jit_rb_mod_eqq(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    known_recv_class: *const VALUE,
+) -> bool {
+    asm.comment("Module#===");
+
+    // If we're here from invokesuper, we didn't guard on the class so don't actually know the
+    // class we're checking against. Use the generic implementation.
+    if known_recv_class.is_null() {
+        return false;
+    }
+
+    let comptime_arg = jit_peek_at_stack(jit, ctx, 0);
+    let comptime_arg_klass = comptime_arg.class_of();
+    let arg_type = ctx.get_opnd_type(StackOpnd(0));
+
+    let klass = unsafe { rb_attr_get(*known_recv_class, id__attached__ as ID) };
+
+    // Fast ancestry checks only exist between classes. If we're checking against a module use the
+    // fallback generic implementation.
+    if !klass.test() || !unsafe { RB_TYPE_P(klass, RUBY_T_CLASS) } {
+        return false;
+    }
+
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // If the class of the arg is known via ctx type information, we can just push the result.
+    // observed at compile time.
+    let known_result =
+        if let Some(known_klass) = arg_type.known_class() {
+            Some(unsafe { rb_class_search_ancestor(known_klass, klass) })
+        } else if arg_type.is_imm() && !class_or_subclass_can_be_immediate(klass) {
+            Some(Qfalse)
+        } else {
+            None
+        };
+
+    if known_result.is_some() {
+        let result = if known_result.unwrap().test() { Qtrue } else { Qfalse };
+        ctx.stack_pop(2);
+        jit_putobject(jit, ctx, asm, result);
+        return true;
+    }
+
+    if comptime_arg.special_const_p() {
+        // For immediate values, first we guard on the type of immediate we see at compile time and
+        // then push a constant result based on that.
+
+        jit_guard_known_klass(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            comptime_arg_klass,
+            ctx.stack_opnd(0),
+            StackOpnd(0),
+            comptime_arg,
+            SEND_MAX_DEPTH,
+            side_exit,
+            );
+
+        let result = unsafe { rb_class_search_ancestor(comptime_arg_klass, klass) };
+        let result = if result.test() { Qtrue } else { Qfalse };
+        ctx.stack_pop(2);
+        jit_putobject(jit, ctx, asm, result);
+        return true;
+    } else {
+        chain_guard_object_is_heap(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            ctx.stack_opnd(0),
+            StackOpnd(0),
+            SEND_MAX_DEPTH,
+            side_exit
+            );
+
+        let arg = ctx.stack_pop(1);
+        let _recv = ctx.stack_pop(1);
+
+        let return_true  = asm.new_label("return_true");
+        let return_false = asm.new_label("return_false");
+
+        let arg_val = asm.load(arg);
+
+        // For heap objects we use the superclasses array to determine whether the given class is
+        // in the class heirarchy of the given object. From here this always finds us an exact
+        // result without additional chain guards or side exits.
+        // See class_search_class_ancestor in object.c
+
+        // First we check for an exact match
+        asm.comment("return true if cl == c");
+        let klass_opnd = asm.load(Opnd::mem(64, arg_val, RUBY_OFFSET_RBASIC_KLASS));
+        asm.cmp(klass_opnd, klass.into());
+        asm.je(return_true);
+
+        // Next we do a bounds check on the superclass array. If the given class depth is outside
+        // the object's class's depth, we know it is not inherited.
+        asm.comment("return false if cl.depth <= c.depth");
+        let klass_depth = unsafe { rb_RCLASS_SUPERCLASS_DEPTH(klass) };
+        let depth_opnd = Opnd::mem(64, klass_opnd, RUBY_OFFSET_RCLASS_SUPERCLASS_DEPTH);
+        asm.cmp(depth_opnd, klass_depth.into());
+        asm.jbe(return_false);
+
+        // Finally check for the class in the superclass array at the expected index.
+        asm.comment("return cl.superclasses[c.depth] == c");
+        let superclasses_opnd = asm.load(Opnd::mem(64, klass_opnd, RUBY_OFFSET_RCLASS_SUPERCLASSES));
+        let superclasses_off = Opnd::mem(64, superclasses_opnd, klass_depth * SIZEOF_VALUE as i32);
+        asm.cmp(superclasses_off, klass.into());
+        asm.jne(return_false);
+
+        // fall through to return true
+        let stack_ret = ctx.stack_push(Type::UnknownImm);
+
+        {
+            asm.write_label(return_true);
+
+            // Create a new context where the pushed value is of type true
+            let mut true_ctx = *ctx;
+            true_ctx.reset_chain_depth();
+            true_ctx.upgrade_opnd_type(StackOpnd(0), Type::True);
+
+            asm.mov(stack_ret, Qtrue.into());
+            let next_block = BlockId {
+                iseq: jit.iseq,
+                idx: jit_next_insn_idx(jit),
+            };
+            gen_branch(jit, ctx, asm, ocb, next_block, &true_ctx, None, None, gen_branch_direct);
+        }
+
+        {
+            asm.write_label(return_false);
+
+            ctx.upgrade_opnd_type(StackOpnd(0), Type::False);
+            asm.mov(stack_ret, Qfalse.into());
+
+            // fall through
+        }
+
+        true
+    }
 }
 
 // Check if we know how to codegen for a particular cfunc method
@@ -6891,6 +7093,8 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
+
+            self.yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
 
             // Thread.current
             self.yjit_reg_method(

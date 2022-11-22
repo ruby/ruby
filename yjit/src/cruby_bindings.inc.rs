@@ -245,6 +245,9 @@ pub type ruby_rmodule_flags = u32;
 extern "C" {
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
 }
+extern "C" {
+    pub static mut rb_cObject: VALUE;
+}
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
 pub type ruby_robject_flags = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: i32 = 16;
@@ -258,6 +261,9 @@ extern "C" {
 }
 extern "C" {
     pub static mut rb_cArray: VALUE;
+}
+extern "C" {
+    pub static mut rb_cClass: VALUE;
 }
 extern "C" {
     pub static mut rb_cFalseClass: VALUE;
@@ -276,6 +282,9 @@ extern "C" {
 }
 extern "C" {
     pub static mut rb_cNilClass: VALUE;
+}
+extern "C" {
+    pub static mut rb_cNumeric: VALUE;
 }
 extern "C" {
     pub static mut rb_cString: VALUE;
@@ -410,6 +419,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
+}
+extern "C" {
+    pub fn rb_class_search_ancestor(klass: VALUE, super_: VALUE) -> VALUE;
 }
 pub type attr_index_t = u32;
 pub type shape_id_t = u32;
@@ -1579,6 +1591,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_assert_cme_handle(handle: VALUE);
+}
+extern "C" {
+    pub fn rb_RCLASS_SUPERCLASS_DEPTH(c: VALUE) -> ::std::os::raw::c_int;
 }
 extern "C" {
     pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
