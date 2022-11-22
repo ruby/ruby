@@ -357,7 +357,7 @@ module Bundler
           "bundle config unset deployment"
         end
         msg << "\n\nIf this is a development machine, remove the #{Bundler.default_gemfile} " \
-               "freeze \nby running `#{suggested_command}`."
+               "freeze \nby running `#{suggested_command}`." if suggested_command
       end
 
       added =   []
