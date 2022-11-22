@@ -82,6 +82,24 @@ RSpec.describe Bundler::Definition do
       G
     end
 
+    it "with an explicit update" do
+      build_repo4 do
+        build_gem("ffi", "1.9.23") {|s| s.platform = "java" }
+        build_gem("ffi", "1.9.23")
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "ffi"
+      G
+
+      bundle "lock --add-platform java"
+
+      bundle "update ffi", :env => { "DEBUG" => "1" }
+
+      expect(out).to match(/because bundler is unlocking gems: \(ffi\)/)
+    end
+
     it "for a path gem with deps and no changes" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"

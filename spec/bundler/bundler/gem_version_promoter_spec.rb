@@ -28,7 +28,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
     def build_spec_groups(name, versions)
       versions.map do |v|
-        Bundler::Resolver::SpecGroup.create_for({ Gem::Platform::RUBY => build_spec(name, v) }, [Gem::Platform::RUBY], Gem::Platform::RUBY)
+        Bundler::Resolver::SpecGroup.new(build_spec(name, v), [Gem::Platform::RUBY])
       end
     end
 
