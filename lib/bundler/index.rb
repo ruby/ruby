@@ -71,7 +71,6 @@ module Bundler
       when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
       when String then specs_by_name(query)
       when Gem::Dependency then search_by_dependency(query)
-      when DepProxy then search_by_dependency(query.dep)
       else
         raise "You can't search for a #{query.inspect}."
       end

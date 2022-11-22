@@ -187,7 +187,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1", "DEBUG" => "1" }
 
-        activated_groups = "net_b (1.0) (ruby), net_b (1.0) (#{specific_local_platform})"
+        activated_groups = "net_b (1.0) (ruby)"
 
         expect(out).to include(" net_b").
           and include("BUNDLER: Starting resolution").
@@ -305,7 +305,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      context "in a transitive dependencies in a lockfile" do
+      context "with transitive dependencies in a lockfile" do
         before do
           build_repo2 do
             build_gem "rubocop", "1.28.2" do |s|
