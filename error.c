@@ -2084,7 +2084,7 @@ name_err_mesg_to_str(VALUE obj)
             break;
           default:
             d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-            if (state || UNDEF_P(d) || NIL_P(d))
+            if (state || NIL_OR_UNDEF_P(d))
                 d = rb_protect(rb_inspect, obj, &state);
             if (state) {
                 rb_set_errinfo(Qnil);
