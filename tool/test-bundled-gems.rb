@@ -25,6 +25,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   puts "#{github_actions ? "##[group]" : "\n"}Testing the #{gem} gem"
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
+  envs = {}
   first_timeout = 600 # 10min
 
   toplib = gem
@@ -46,6 +47,11 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     # environment variable.
     load_path = true
 
+    # disable remote test in debug.gem on macOS
+    if /darwin/ =~ RUBY_PLATFORM
+      envs["RUBY_DEBUG_TEST_NO_REMOTE"] = "1"
+    end
+
   when /\Anet-/
     toplib = gem.tr("-", "/")
 
@@ -62,7 +68,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   print "[command]" if github_actions
   puts test_command
-  pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
+  pid = Process.spawn(envs, test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
   {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
