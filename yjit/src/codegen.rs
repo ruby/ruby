@@ -1303,9 +1303,9 @@ fn guard_object_is_heap(
     asm.test(object_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
     asm.jnz(side_exit.as_side_exit());
 
-    // Test that the object is not false or nil
-    asm.cmp(object_opnd, Qnil.into());
-    asm.jbe(side_exit.as_side_exit());
+    // Test that the object is not false
+    asm.cmp(object_opnd, Qfalse.into());
+    asm.je(side_exit.as_side_exit());
 }
 
 fn guard_object_is_array(
@@ -2234,10 +2234,10 @@ fn gen_checktype(
         if !val_type.is_heap() {
             // if (SPECIAL_CONST_P(val)) {
             // Return Qfalse via REG1 if not on heap
-            asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
             asm.jnz(ret);
-            asm.cmp(val, Opnd::UImm(Qnil.into()));
-            asm.jbe(ret);
+            asm.cmp(val, Qfalse.into());
+            asm.je(ret);
         }
 
         // Check type on object
@@ -3500,11 +3500,10 @@ fn jit_guard_known_klass(
         // Note: if we get here, the class doesn't have immediate instances.
         if !val_type.is_heap() {
             asm.comment("guard not immediate");
-            assert!(Qfalse.as_i32() < Qnil.as_i32());
-            asm.test(obj_opnd, Opnd::Imm(RUBY_IMMEDIATE_MASK as i64));
+            asm.test(obj_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
             jit_chain_guard(JCC_JNZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
-            asm.cmp(obj_opnd, Qnil.into());
-            jit_chain_guard(JCC_JBE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+            asm.cmp(obj_opnd, Qfalse.into());
+            jit_chain_guard(JCC_JE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
             ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
         }
@@ -3773,10 +3772,10 @@ fn jit_rb_str_concat(
         let arg_opnd = asm.load(concat_arg);
         if !arg_type.is_heap() {
             asm.comment("guard arg not immediate");
-            asm.test(arg_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.test(arg_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
             asm.jnz(side_exit.as_side_exit());
-            asm.cmp(arg_opnd, Qnil.into());
-            asm.jbe(side_exit.as_side_exit());
+            asm.cmp(arg_opnd, Qfalse.into());
+            asm.je(side_exit.as_side_exit());
         }
         guard_object_is_string(asm, arg_opnd, side_exit);
     }
