@@ -38,7 +38,7 @@
 #
 # === Field Values
 #
-# A field value may be returned as an array or as a string:
+# A field value may be returned as an array of strings or as a string:
 #
 # - These methods return field values as arrays:
 #
@@ -145,15 +145,6 @@
 # - #each_header: Passes each field name/value pair to the block.
 # - #each_name: Passes each field name to the block.
 # - #each_value: Passes each field value to the block.
-#
-# == Hash of Headers
-#
-# Each of the iterator methods above returns a hash of the headers of +self+.
-# Note that modifying that returned hash actually modifies the headers:
-#
-#   h = req.each_header {|k, v| }
-#   h.clear
-#   req.to_hash # => {}
 #
 module Net::HTTPHeader
 
@@ -280,10 +271,12 @@ module Net::HTTPHeader
   end
 
   # :call-seq
-  #   fetch(key, default_val = nil) {|key| ... }
+  #   fetch(key, default_val = nil) {|key| ... } -> object
+  #   fetch(key, default_val = nil) value or default_val
   #
   # With a block, returns the string value for +key+ if it exists;
   # otherwise returns the value of the block;
+  # ignores the +default_val+;
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
   #   req = Net::HTTP::Get.new(uri)
@@ -304,9 +297,7 @@ module Net::HTTPHeader
     a.kind_of?(Array) ? a.join(', ') : a
   end
 
-  # Calls the block with each key/value pair;
-  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
-  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  # Calls the block with each key/value pair:
   #
   #   req = Net::HTTP::Get.new(uri)
   #   req.each_header {|key, value| p [key, value] }
@@ -330,9 +321,7 @@ module Net::HTTPHeader
 
   alias each each_header
 
-  # Calls the block with each field key;
-  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
-  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  # Calls the block with each field key:
   #
   #   req = Net::HTTP::Get.new(uri)
   #   req.each_key {|key| p key }
@@ -354,9 +343,7 @@ module Net::HTTPHeader
 
   alias each_key each_name
 
-  # Calls the block with each capitalized field name;
-  # returns the {hash of headers}[rdoc-ref:Net::HTTPHeader@Hash+of+Headers];
-  # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
+  # Calls the block with each capitalized field name:
   #
   #   req = Net::HTTP::Get.new(uri)
   #   req.each_capitalized_name {|key| p key }
