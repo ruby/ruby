@@ -720,7 +720,8 @@ pub const BOP_MIN: ruby_basic_operators = 25;
 pub const BOP_CALL: ruby_basic_operators = 26;
 pub const BOP_AND: ruby_basic_operators = 27;
 pub const BOP_OR: ruby_basic_operators = 28;
-pub const BOP_LAST_: ruby_basic_operators = 29;
+pub const BOP_CMP: ruby_basic_operators = 29;
+pub const BOP_LAST_: ruby_basic_operators = 30;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 extern "C" {

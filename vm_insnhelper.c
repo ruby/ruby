@@ -5176,12 +5176,11 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+                if (OPTIMIZED_CMP(v, result) > 0) {
                     result = v;
                 }
             }
@@ -5201,12 +5200,11 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+                if (OPTIMIZED_CMP(v, result) < 0) {
                     result = v;
                 }
             }

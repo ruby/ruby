@@ -34,6 +34,7 @@ enum ruby_basic_operators {
     BOP_CALL,
     BOP_AND,
     BOP_OR,
+    BOP_CMP,
 
     BOP_LAST_
 };

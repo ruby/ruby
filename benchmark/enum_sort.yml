@@ -1,0 +1,15 @@
+prelude: |
+  set2 = 2.times.to_a.shuffle.to_set
+  set10 = 10.times.to_a.shuffle.to_set
+  set100 = 100.times.to_a.shuffle.to_set
+  set1000 = 1000.times.to_a.shuffle.to_set
+  set10000 = 10000.times.to_a.shuffle.to_set
+
+benchmark:
+  set2.sort_by: set2.sort_by { 0 }
+  set10.sort_by: set10.sort_by { 0 }
+  set100.sort_by: set100.sort_by { 0 }
+  set1000.sort_by: set1000.sort_by { 0 }
+  set10000.sort_by: set10000.sort_by { 0 }
+
+loop_count: 10000

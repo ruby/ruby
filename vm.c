@@ -2035,6 +2035,7 @@ vm_init_redefined_flag(void)
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
     OP(NilP, NIL_P), (C(NilClass));
+    OP(Cmp, CMP), (C(Integer), C(Float), C(String));
 #undef C
 #undef OP
 }
