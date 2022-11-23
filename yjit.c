@@ -748,12 +748,6 @@ rb_leaf_builtin_function(const rb_iseq_t *iseq)
     return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
 }
 
-VALUE
-rb_yjit_str_simple_append(VALUE str1, VALUE str2)
-{
-    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
-}
-
 struct rb_control_frame_struct *
 rb_get_ec_cfp(const rb_execution_context_t *ec)
 {
