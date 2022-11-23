@@ -256,19 +256,11 @@ pub enum Target
 {
     CodePtr(CodePtr),     // Pointer to a piece of YJIT-generated code
     SideExitPtr(CodePtr), // Pointer to a side exit code
-    FunPtr(*const u8),    // Pointer to a C function
     Label(usize),         // A label within the generated code
 }
 
 impl Target
 {
-    pub fn unwrap_fun_ptr(&self) -> *const u8 {
-        match self {
-            Target::FunPtr(ptr) => *ptr,
-            _ => unreachable!("trying to unwrap {:?} into fun ptr", self)
-        }
-    }
-
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
             Target::Label(idx) => *idx,
@@ -330,7 +322,7 @@ pub enum Insn {
     CPushAll,
 
     // C function call with N arguments (variadic)
-    CCall { opnds: Vec<Opnd>, target: Target, out: Opnd },
+    CCall { opnds: Vec<Opnd>, fptr: *const u8, out: Opnd },
 
     // C function return
     CRet(Opnd),
@@ -1297,7 +1289,7 @@ impl Assembler {
 
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
-        self.push_insn(Insn::CCall { target: Target::FunPtr(fptr), opnds, out });
+        self.push_insn(Insn::CCall { fptr, opnds, out });
         out
     }
 

@@ -304,7 +304,7 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
-                Insn::CCall { opnds, target, .. } => {
+                Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // Load each operand into the corresponding argument
@@ -315,7 +315,7 @@ impl Assembler
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
-                    asm.ccall(target.unwrap_fun_ptr(), vec![]);
+                    asm.ccall(*fptr, vec![]);
                 },
                 _ => {
                     if insn.out_opnd().is_some() {
@@ -533,8 +533,8 @@ impl Assembler
                 },
 
                 // C function call
-                Insn::CCall { target, .. } => {
-                    call_ptr(cb, RAX, target.unwrap_fun_ptr());
+                Insn::CCall { fptr, .. } => {
+                    call_ptr(cb, RAX, *fptr);
                 },
 
                 Insn::CRet(opnd) => {
@@ -567,7 +567,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
@@ -575,7 +574,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
@@ -583,7 +581,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
@@ -591,7 +588,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 },
 
@@ -599,7 +595,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 },
 
@@ -607,7 +602,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
@@ -615,7 +609,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
@@ -623,7 +616,6 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
-                        _ => unreachable!()
                     }
                 }
 
