@@ -16,7 +16,7 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 
 if $output
-  output = open($output, "wb", $mode &&= $mode.oct)
+  output = File.open($output, "wb", $mode &&= $mode.oct)
   output.chmod($mode) if $mode
 else
   output = STDOUT

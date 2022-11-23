@@ -1400,6 +1400,17 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
+extract-gems: outdate-bundled-gems
+outdate-bundled-gems: PHONY
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	-rfileutils \
+	-e "Dir.glob('.bundle/gems/*/') {|g|" \
+	-e   "FileUtils::Verbose.rm_rf(g) unless File.exist?(%[gems/#{File.basename(g)}.gem])" \
+	-e "}" \
+	-e "Dir.glob('.bundle/specifications/*.gemspec') {|g|" \
+	-e   "FileUtils::Verbose.rm_f(g) unless File.exist?(%[gems/#{File.basename(g, '.gemspec')}.gem])" \
+	-e "}"
+
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	     $(tooldir)/update-bundled_gems.rb \
@@ -15822,6 +15833,7 @@ time.$(OBJEXT): $(top_srcdir)/internal/compar.h
 time.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 time.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 time.$(OBJEXT): $(top_srcdir)/internal/gc.h
+time.$(OBJEXT): $(top_srcdir)/internal/hash.h
 time.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 time.$(OBJEXT): $(top_srcdir)/internal/rational.h
 time.$(OBJEXT): $(top_srcdir)/internal/serial.h

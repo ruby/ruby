@@ -1676,7 +1676,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_cache_optimization_exponential
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-      timeout = #{ EnvUtil.apply_timeout_scale(2).inspect }
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
       Regexp.timeout = timeout
 

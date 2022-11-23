@@ -1329,4 +1329,18 @@ class TestTime < Test::Unit::TestCase
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
   end
+
+  def test_deconstruct_keys
+    t = in_timezone('JST-9') { Time.local(2022, 10, 16, 14, 1, 30, 500) }
+    assert_equal(
+      {year: 2022, month: 10, day: 16, wday: 0, yday: 289,
+        hour: 14, min: 1, sec: 30, subsec: 1/2000r, dst: false, zone: 'JST'},
+      t.deconstruct_keys(nil)
+    )
+
+    assert_equal(
+      {year: 2022, month: 10, sec: 30},
+      t.deconstruct_keys(%i[year month sec nonexistent])
+    )
+  end
 end

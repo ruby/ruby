@@ -254,9 +254,10 @@ impl From<VALUE> for Opnd {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target
 {
-    CodePtr(CodePtr),   // Pointer to a piece of YJIT-generated code (e.g. side-exit)
-    FunPtr(*const u8),  // Pointer to a C function
-    Label(usize),       // A label within the generated code
+    CodePtr(CodePtr),     // Pointer to a piece of YJIT-generated code
+    SideExitPtr(CodePtr), // Pointer to a side exit code
+    FunPtr(*const u8),    // Pointer to a C function
+    Label(usize),         // A label within the generated code
 }
 
 impl Target

@@ -29,8 +29,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
   #    # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-1:9>
-  def self.parse string, keep_script_lines: false, error_tolerant: false
-    Primitive.ast_s_parse string, keep_script_lines, error_tolerant
+  def self.parse string, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+    Primitive.ast_s_parse string, keep_script_lines, error_tolerant, keep_tokens
   end
 
   #  call-seq:
@@ -44,8 +44,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
-  def self.parse_file pathname, keep_script_lines: false, error_tolerant: false
-    Primitive.ast_s_parse_file pathname, keep_script_lines, error_tolerant
+  def self.parse_file pathname, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+    Primitive.ast_s_parse_file pathname, keep_script_lines, error_tolerant, keep_tokens
   end
 
   #  call-seq:
@@ -63,8 +63,8 @@ module RubyVM::AbstractSyntaxTree
   #
   #     RubyVM::AbstractSyntaxTree.of(method(:hello))
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
-  def self.of body, keep_script_lines: false, error_tolerant: false
-    Primitive.ast_s_of body, keep_script_lines, error_tolerant
+  def self.of body, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+    Primitive.ast_s_of body, keep_script_lines, error_tolerant, keep_tokens
   end
 
   #  call-seq:
@@ -134,6 +134,46 @@ module RubyVM::AbstractSyntaxTree
     #  The column number in the source code where this AST's text ended.
     def last_column
       Primitive.ast_node_last_column
+    end
+
+    #  call-seq:
+    #     node.tokens -> array
+    #
+    # Returns tokens corresponding to the location of the node.
+    # Returns nil if keep_tokens is not enabled when parse method is called.
+    # Token is an array of:
+    #
+    #  - id
+    #  - token type
+    #  - source code text
+    #  - location [first_lineno, first_column, last_lineno, last_column]
+    #
+    #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
+    #    root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+    #    root.tokens.map{_1[2]}.join # => "x = 1 + 2"
+    def tokens
+      return nil unless all_tokens
+
+      all_tokens.each_with_object([]) do |token, a|
+        loc = token.last
+        if ([first_lineno, first_column] <=> [loc[0], loc[1]]) <= 0 &&
+           ([last_lineno, last_column]   <=> [loc[2], loc[3]]) >= 0
+           a << token
+        end
+      end
+    end
+
+    #  call-seq:
+    #     node.all_tokens -> array
+    #
+    # Returns all tokens for the input script regardless the receiver node.
+    # Returns nil if keep_tokens is not enabled when parse method is called.
+    #
+    #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
+    #    root.all_tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+    #    root.children[-1].all_tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+    def all_tokens
+      Primitive.ast_node_all_tokens
     end
 
     #  call-seq:

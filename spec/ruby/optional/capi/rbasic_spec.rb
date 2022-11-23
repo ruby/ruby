@@ -1,7 +1,6 @@
 require_relative 'spec_helper'
 require_relative 'shared/rbasic'
 load_extension("rbasic")
-return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 load_extension("data")
 load_extension("array")
 

@@ -1299,38 +1299,12 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
         {
             rb_check_frozen_internal(obj);
 
-            attr_index_t index;
+            attr_index_t index = rb_obj_ivar_set(obj, id, val);
 
-            rb_shape_t* shape = rb_shape_get_shape(obj);
-            uint32_t num_iv = shape->capacity;
             shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
-
-            if (!rb_shape_get_iv_index(shape, id, &index)) {
-                if (UNLIKELY(shape->next_iv_index >= num_iv)) {
-                    RUBY_ASSERT(shape->next_iv_index == num_iv);
-
-                    shape = rb_grow_iv_list(obj);
-                    RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
-                }
-
-                index = shape->next_iv_index;
-
-                if (index >= MAX_IVARS) {
-                    rb_raise(rb_eArgError, "too many instance variables");
-                }
-
-                rb_shape_t * next_shape = rb_shape_get_next(shape, obj, id);
-                RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-                RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
-                next_shape_id = rb_shape_id(next_shape);
-
-                rb_shape_set_shape(obj, next_shape);
-            }
 
             populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
 
-            VALUE *ptr = ROBJECT_IVPTR(obj);
-            RB_OBJ_WRITE(obj, &ptr[index], val);
             RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
             return val;
         }
@@ -4972,6 +4946,11 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     }
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
+    // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
+    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+
+        RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
+    }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {
         klass = rb_singleton_class(klass);

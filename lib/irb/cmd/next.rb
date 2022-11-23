@@ -6,13 +6,9 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Info < Debug
-      def self.transform_args(args)
-        args&.dump
-      end
-
+    class Next < Debug
       def execute(*args)
-        super(pre_cmds: ["info", *args].join(" "))
+        super(do_cmds: ["next", *args].join(" "))
       end
     end
   end

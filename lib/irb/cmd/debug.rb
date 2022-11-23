@@ -11,7 +11,7 @@ module IRB
       ].map { |file| /\A#{Regexp.escape(file)}:\d+:in `irb'\z/ }
       IRB_DIR = File.expand_path('..', __dir__)
 
-      def execute(*args)
+      def execute(pre_cmds: nil, do_cmds: nil)
         unless binding_irb?
           puts "`debug` command is only available when IRB is started with binding.irb"
           return
@@ -25,11 +25,19 @@ module IRB
           return
         end
 
+        options = { oneshot: true, hook_call: false }
+        if pre_cmds || do_cmds
+          options[:command] = ['irb', pre_cmds, do_cmds]
+        end
+        if DEBUGGER__::LineBreakpoint.instance_method(:initialize).parameters.include?([:key, :skip_src])
+          options[:skip_src] = true
+        end
+
         # To make debugger commands like `next` or `continue` work without asking
         # the user to quit IRB after that, we need to exit IRB first and then hit
         # a TracePoint on #debug_break.
         file, lineno = IRB::Irb.instance_method(:debug_break).source_location
-        DEBUGGER__::SESSION.add_line_breakpoint(file, lineno + 1, oneshot: true, hook_call: false)
+        DEBUGGER__::SESSION.add_line_breakpoint(file, lineno + 1, **options)
         # exit current Irb#run call
         throw :IRB_EXIT
       end

@@ -1276,28 +1276,33 @@ static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
+
+    attr_index_t index;
     // The returned shape will have `id` in its iv_table
-    rb_shape_t * shape = rb_shape_get_next(rb_shape_get_shape(obj), obj, id);
+    rb_shape_t *shape = rb_shape_get_shape(obj);
+    bool found = rb_shape_get_iv_index(shape, id, &index);
+    if (!found) {
+        index = shape->next_iv_index;
+        shape = rb_shape_get_next(shape, obj, id);
+        RUBY_ASSERT(index == (shape->next_iv_index - 1));
+    }
+
     ivup.shape = shape;
 
     RB_VM_LOCK_ENTER();
     {
-        attr_index_t ent_data;
-        if (rb_shape_get_iv_index(shape, id, &ent_data)) {
-            ivup.iv_index = (uint32_t) ent_data;
-        }
-        else {
-            rb_bug("unreachable.  Shape was not found for id: %s", rb_id2name(id));
-        }
+        ivup.iv_index = (uint32_t)index;
 
         st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_update, (st_data_t)&ivup);
     }
     RB_VM_LOCK_LEAVE();
 
     ivup.ivtbl->ivptr[ivup.iv_index] = val;
-
-    rb_shape_set_shape(obj, shape);
     RB_OBJ_WRITTEN(obj, Qundef, val);
+
+    if (!found) {
+        rb_shape_set_shape(obj, shape);
+    }
 }
 
 static VALUE *
@@ -1415,36 +1420,39 @@ rb_grow_iv_list(VALUE obj)
     return res;
 }
 
-static VALUE
-obj_ivar_set(VALUE obj, ID id, VALUE val)
+attr_index_t
+rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
     attr_index_t index;
 
-    // Get the current shape
-    rb_shape_t * shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+    shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
+    rb_shape_t *shape = rb_shape_get_shape_by_id(next_shape_id);
+    uint32_t num_iv = shape->capacity;
 
-    bool found = true;
     if (!rb_shape_get_iv_index(shape, id, &index)) {
         index = shape->next_iv_index;
-        found = false;
-    }
+        if (index >= MAX_IVARS) {
+            rb_raise(rb_eArgError, "too many instance variables");
+        }
 
-    // Reallocating can kick off GC.  We can't set the new shape
-    // on this object until the buffer has been allocated, otherwise
-    // GC could read off the end of the buffer.
-    if (shape->capacity <= index) {
-        shape = rb_grow_iv_list(obj);
-    }
+        if (UNLIKELY(shape->next_iv_index >= num_iv)) {
+            RUBY_ASSERT(shape->next_iv_index == num_iv);
 
-    if (!found) {
-        shape = rb_shape_get_next(shape, obj, id);
-        RUBY_ASSERT(index == (shape->next_iv_index - 1));
-        rb_shape_set_shape(obj, shape);
+            shape = rb_grow_iv_list(obj);
+            RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
+        }
+
+        rb_shape_t *next_shape = rb_shape_get_next(shape, obj, id);
+        RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
+        RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
+        next_shape_id = rb_shape_id(next_shape);
+
+        rb_shape_set_shape(obj, next_shape);
     }
 
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
 
-    return val;
+    return index;
 }
 
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
@@ -1455,7 +1463,7 @@ VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
     rb_check_frozen_internal(obj);
-    obj_ivar_set(obj, id, val);
+    rb_obj_ivar_set(obj, id, val);
     return val;
 }
 
@@ -1526,7 +1534,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
       {
-          obj_ivar_set(obj, id, val);
+          rb_obj_ivar_set(obj, id, val);
           break;
       }
       case T_CLASS:

@@ -503,7 +503,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(), "patches should not overlap");
 
             let mut asm = crate::backend::ir::Assembler::new();
-            asm.jmp(patch.outlined_target_pos.into());
+            asm.jmp(patch.outlined_target_pos.as_side_exit());
 
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);

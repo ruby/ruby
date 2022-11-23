@@ -192,6 +192,14 @@ Note: We're only listing outstanding class updates.
 
 * RubyVM::AbstractSyntaxTree
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
+    * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
+      for `RubyVM::AbstractSyntaxTree::Node` [[Feature #19070]]
+
+    ```ruby
+    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
+    root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+    root.tokens.map{_1[2]}.join # => "x = 1 + 2"
+    ```
 
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
@@ -217,6 +225,10 @@ Note: We're only listing outstanding class updates.
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on `Struct.new` [[Feature #16806]]
 
+* Time
+    * `Time#deconstruct_keys` is added, allowing to use `Time` instances
+      in pattern-matching expressions [[Feature #19071]]
+
 * TracePoint
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
       [[Bug #18487]]
@@ -235,7 +247,7 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
-    * cgi 0.3.3
+    * cgi 0.3.5
     * date 3.2.3
     * erb 3.0.0
     * error_highlight 0.5.1
@@ -245,7 +257,7 @@ Note: We're only listing outstanding class updates.
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
     * ipaddr 1.2.4
-    * irb 1.4.3
+    * irb 1.5.0
     * json 2.6.2
     * logger 1.5.1
     * net-http 0.3.0
@@ -359,7 +371,7 @@ The following deprecated APIs are removed.
 ### YJIT
 
 * Support arm64 / aarch64 on UNIX platforms.
-* Building YJIT requires Rust 1.58.1+. [[Feature #18481]]
+* Building YJIT requires Rust 1.58.0+. [[Feature #18481]]
 * Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
   the RSS of a Ruby process is minimized because virtual memory pages
   allocated by `--yjit-exec-mem-size` will not be mapped to physical
@@ -437,5 +449,7 @@ The following deprecated APIs are removed.
 [Feature #19013]: https://bugs.ruby-lang.org/issues/19013
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
+[Feature #19070]: https://bugs.ruby-lang.org/issues/19070
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
+[Feature #19071]: https://bugs.ruby-lang.org/issues/19071

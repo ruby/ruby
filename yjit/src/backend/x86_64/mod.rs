@@ -565,7 +565,7 @@ impl Assembler
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -573,7 +573,7 @@ impl Assembler
 
                 Insn::Je(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -581,7 +581,7 @@ impl Assembler
 
                 Insn::Jne(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -589,7 +589,7 @@ impl Assembler
 
                 Insn::Jl(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -597,7 +597,7 @@ impl Assembler
 
                 Insn::Jbe(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -605,7 +605,7 @@ impl Assembler
 
                 Insn::Jz(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -613,7 +613,7 @@ impl Assembler
 
                 Insn::Jnz(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
                         _ => unreachable!()
                     }
@@ -621,7 +621,7 @@ impl Assembler
 
                 Insn::Jo(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
                         _ => unreachable!()
                     }

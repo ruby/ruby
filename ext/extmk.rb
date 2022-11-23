@@ -144,7 +144,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     d = target
     until (d = File.dirname(d)) == '.'
       if File.exist?("#{$top_srcdir}/#{basedir}/#{d}/extconf.rb")
-        parent = (/^all:\s*install/ =~ IO.read("#{d}/Makefile") rescue false)
+        parent = (/^all:\s*install/ =~ File.read("#{d}/Makefile") rescue false)
         break
       end
     end
@@ -447,9 +447,8 @@ if $extstatic
 end
 for dir in ["ext", File::join($top_srcdir, "ext")]
   setup = File::join(dir, CONFIG['setup'])
-  if File.file? setup
-    f = open(setup)
-    while line = f.gets()
+  if (f = File.stat(setup) and f.file? rescue next)
+    File.foreach(setup) do |line|
       line.chomp!
       line.sub!(/#.*$/, '')
       next if /^\s*$/ =~ line
@@ -466,7 +465,6 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
     end
     MTIMES << f.mtime
     $setup = setup
-    f.close
     break
   end
 end unless $extstatic

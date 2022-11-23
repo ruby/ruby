@@ -67,7 +67,7 @@ End
 
   def test_id2ref_invalid_symbol_id
     msg = /is not symbol id value/
-    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + 40) }
+    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]) }
   end
 
   def test_count_objects

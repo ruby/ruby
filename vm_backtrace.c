@@ -805,7 +805,7 @@ backtrace_load_data(VALUE self, VALUE str)
  *  call-seq: Thread::Backtrace::limit -> integer
  *
  *  Returns maximum backtrace length set by <tt>--backtrace-limit</tt>
- *  command-line option. The defalt is <tt>-1</tt> which means unlimited
+ *  command-line option. The default is <tt>-1</tt> which means unlimited
  *  backtraces. If the value is zero or positive, the error backtraces,
  *  produced by Exception#full_message, are abbreviated and the extra lines
  *  are replaced by <tt>... 3 levels... </tt>

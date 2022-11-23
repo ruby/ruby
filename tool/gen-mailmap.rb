@@ -13,7 +13,7 @@ YAML.load(DATA.read).each do |name, mails|
   email[name] |= mails
 end
 
-open(File.join(__dir__, "../.mailmap"), "w") do |f|
+File.open(File.join(__dir__, "../.mailmap"), "w") do |f|
   email.each do |name, mails|
     canonical = "#{ name }@ruby-lang.org"
     mails.delete(canonical)

@@ -34,7 +34,8 @@ def compile_extension(name)
   abi_header = "#{rubyhdrdir}/ruby/internal/abi.h"
 
   if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-    libdirname = RbConfig::CONFIG['libdirname'] # defined since 2.1
+    # below is defined since 2.1, except for mswin, and maybe other platforms
+    libdirname = RbConfig::CONFIG.fetch 'libdirname', 'libdir'
     libruby = "#{RbConfig::CONFIG[libdirname]}/#{RbConfig::CONFIG['LIBRUBY']}"
   end
 

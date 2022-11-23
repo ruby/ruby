@@ -89,7 +89,7 @@ yjit_task:
     matrix:
       - CC: clang-12
         configure: --enable-yjit=dev
-        rustup_init: --default-toolchain=1.58.1
+        rustup_init: --default-toolchain=1.58.0
       - CC: gcc-11
         configure: --enable-yjit
   id_script: id

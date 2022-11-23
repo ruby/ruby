@@ -73,12 +73,6 @@ set_backtrace(VALUE info, VALUE bt)
     rb_check_funcall(info, set_backtrace, 1, &bt);
 }
 
-static void
-error_print(rb_execution_context_t *ec)
-{
-    rb_ec_error_print(ec, ec->errinfo);
-}
-
 #define CSI_BEGIN "\033["
 #define CSI_SGR "m"
 
@@ -338,12 +332,11 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VA
     }
 }
 
-void
-rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
+static void
+rb_ec_error_print_detailed(rb_execution_context_t *volatile ec, volatile VALUE errinfo, VALUE str, volatile VALUE emesg)
 {
     volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
-    volatile VALUE emesg = Qundef;
     volatile bool written = false;
 
     VALUE opt = rb_hash_new();
@@ -365,12 +358,18 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, Qnil, opt, highlight, Qfalse);
+        rb_error_write(errinfo, emesg, errat, str, opt, highlight, Qfalse);
     }
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
     rb_ec_raised_set(ec, raised_flag);
+}
+
+void
+rb_ec_error_print(rb_execution_context_t *volatile ec, volatile VALUE errinfo)
+{
+    rb_ec_error_print_detailed(ec, errinfo, Qnil, Qundef);
 }
 
 #define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method `%1$s' for "k" `%2$s'")
@@ -429,11 +428,58 @@ sysexit_status(VALUE err)
     return NUM2INT(st);
 }
 
+enum {
+    EXITING_WITH_MESSAGE = 1,
+    EXITING_WITH_STATUS = 2,
+    EXITING_WITH_SIGNAL = 4
+};
+static int
+exiting_split(VALUE errinfo, volatile int *exitcode, volatile int *sigstatus)
+{
+    int ex = EXIT_SUCCESS;
+    VALUE signo;
+    int sig = 0;
+    int result = 0;
+
+    if (NIL_P(errinfo)) return 0;
+
+    if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+        ex = sysexit_status(errinfo);
+        result |= EXITING_WITH_STATUS;
+    }
+    else if (rb_obj_is_kind_of(errinfo, rb_eSignal)) {
+        signo = rb_ivar_get(errinfo, id_signo);
+        sig = FIX2INT(signo);
+        result |= EXITING_WITH_SIGNAL;
+        /* no message when exiting by signal */
+        if (signo == INT2FIX(SIGSEGV) || !rb_obj_is_instance_of(errinfo, rb_eSignal))
+            /* except for SEGV and subclasses */
+            result |= EXITING_WITH_MESSAGE;
+    }
+    else if (rb_obj_is_kind_of(errinfo, rb_eSystemCallError) &&
+        FIXNUM_P(signo = rb_attr_get(errinfo, id_signo))) {
+        sig = FIX2INT(signo);
+        result |= EXITING_WITH_SIGNAL;
+        /* no message when exiting by error to be mapped to signal */
+    }
+    else {
+        ex = EXIT_FAILURE;
+        result |= EXITING_WITH_STATUS | EXITING_WITH_MESSAGE;
+    }
+
+    if (exitcode && (result & EXITING_WITH_STATUS))
+        *exitcode = ex;
+    if (sigstatus && (result & EXITING_WITH_SIGNAL))
+        *sigstatus = sig;
+
+    return result;
+}
+
 #define unknown_longjmp_status(status) \
     rb_bug("Unknown longjmp status %d", status)
 
 static int
-error_handle(rb_execution_context_t *ec, int ex)
+error_handle(rb_execution_context_t *ec, VALUE errinfo, enum ruby_tag_type ex)
 {
     int status = EXIT_FAILURE;
 
@@ -469,26 +515,13 @@ error_handle(rb_execution_context_t *ec, int ex)
         error_pos(Qnil);
         warn_print("unexpected throw\n");
         break;
-      case TAG_RAISE: {
-        VALUE errinfo = ec->errinfo;
-        if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
-            status = sysexit_status(errinfo);
+      case TAG_RAISE:
+        if (!(exiting_split(errinfo, &status, NULL) & EXITING_WITH_MESSAGE)) {
+            break;
         }
-        else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
-                 rb_ivar_get(errinfo, id_signo) != INT2FIX(SIGSEGV)) {
-            /* no message when exiting by signal */
-        }
-        else if (rb_obj_is_kind_of(errinfo, rb_eSystemCallError) &&
-                 FIXNUM_P(rb_attr_get(errinfo, id_signo))) {
-            /* no message when exiting by error to be mapped to signal */
-        }
-        else {
-            rb_ec_error_print(ec, errinfo);
-        }
-        break;
-      }
+        /* fallthrough */
       case TAG_FATAL:
-        error_print(ec);
+        rb_ec_error_print(ec, errinfo);
         break;
       default:
         unknown_longjmp_status(ex);

@@ -34,6 +34,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/hash.h"
 #include "internal/compar.h"
 #include "internal/numeric.h"
 #include "internal/rational.h"
@@ -50,6 +51,10 @@ static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst;
 static VALUE str_utc, str_empty;
+
+// used by deconstruct_keys
+static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
+static VALUE sym_hour, sym_min, sym_sec, sym_subsec, sym_dst, sym_zone;
 
 #define id_quo idQuo
 #define id_div idDiv
@@ -4834,6 +4839,96 @@ time_to_a(VALUE time)
                     time_zone(time));
 }
 
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *  Possible keys are the same as returned by #to_h.
+ *
+ *  Possible usages:
+ *
+ *    t = Time.utc(2022, 10, 5, 21, 25, 30)
+ *
+ *    if t in wday: 3, day: ..7  # uses deconstruct_keys underneath
+ *      puts "first Wednesday of the month"
+ *    end
+ *    #=> prints "first Wednesday of the month"
+ *
+ *    case t
+ *    in year: ...2022
+ *      puts "too old"
+ *    in month: ..9
+ *      puts "quarter 1-3"
+ *    in wday: 1..5, month:
+ *      puts "working day in month #{month}"
+ *    end
+ *    #=> prints "working day in month 10"
+ *
+ *  Note that deconstruction by pattern can also be combined with class check:
+ *
+ *    if t in Time(wday: 3, day: ..7)
+ *      puts "first Wednesday of the month"
+ *    end
+ *
+ */
+static VALUE
+time_deconstruct_keys(VALUE time, VALUE keys)
+{
+    struct time_object *tobj;
+    VALUE h;
+    long i;
+
+    GetTimeval(time, tobj);
+    MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
+
+    if (NIL_P(keys)) {
+        h = rb_hash_new_with_size(11);
+
+        rb_hash_aset(h, sym_year, tobj->vtm.year);
+        rb_hash_aset(h, sym_month, INT2FIX(tobj->vtm.mon));
+        rb_hash_aset(h, sym_day, INT2FIX(tobj->vtm.mday));
+        rb_hash_aset(h, sym_yday, INT2FIX(tobj->vtm.yday));
+        rb_hash_aset(h, sym_wday, INT2FIX(tobj->vtm.wday));
+        rb_hash_aset(h, sym_hour, INT2FIX(tobj->vtm.hour));
+        rb_hash_aset(h, sym_min, INT2FIX(tobj->vtm.min));
+        rb_hash_aset(h, sym_sec, INT2FIX(tobj->vtm.sec));
+        rb_hash_aset(h, sym_subsec,
+                     quov(w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE))), INT2FIX(TIME_SCALE)));
+        rb_hash_aset(h, sym_dst, RBOOL(tobj->vtm.isdst));
+        rb_hash_aset(h, sym_zone, time_zone(time));
+
+        return h;
+    }
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+        rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+
+        if (sym_year == key) rb_hash_aset(h, key, tobj->vtm.year);
+        if (sym_month == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.mon));
+        if (sym_day == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.mday));
+        if (sym_yday == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.yday));
+        if (sym_wday == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.wday));
+        if (sym_hour == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.hour));
+        if (sym_min == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.min));
+        if (sym_sec == key) rb_hash_aset(h, key, INT2FIX(tobj->vtm.sec));
+        if (sym_subsec == key) {
+            rb_hash_aset(h, key, quov(w2v(wmod(tobj->timew, WINT2FIXWV(TIME_SCALE))), INT2FIX(TIME_SCALE)));
+        }
+        if (sym_dst == key) rb_hash_aset(h, key, RBOOL(tobj->vtm.isdst));
+        if (sym_zone == key) rb_hash_aset(h, key, time_zone(time));
+    }
+    return h;
+}
+
 static VALUE
 rb_strftime_alloc(const char *format, size_t format_len, rb_encoding *enc,
                   VALUE time, struct vtm *vtm, wideval_t timew, int gmt)
@@ -5537,6 +5632,18 @@ Init_Time(void)
     id_isdst = rb_intern_const("isdst");
     id_find_timezone = rb_intern_const("find_timezone");
 
+    sym_year = ID2SYM(rb_intern_const("year"));
+    sym_month = ID2SYM(rb_intern_const("month"));
+    sym_yday = ID2SYM(rb_intern_const("yday"));
+    sym_wday = ID2SYM(rb_intern_const("wday"));
+    sym_day = ID2SYM(rb_intern_const("day"));
+    sym_hour = ID2SYM(rb_intern_const("hour"));
+    sym_min = ID2SYM(rb_intern_const("min"));
+    sym_sec = ID2SYM(rb_intern_const("sec"));
+    sym_subsec = ID2SYM(rb_intern_const("subsec"));
+    sym_dst = ID2SYM(rb_intern_const("dst"));
+    sym_zone = ID2SYM(rb_intern_const("zone"));
+
     str_utc = rb_fstring_lit("UTC");
     rb_gc_register_mark_object(str_utc);
     str_empty = rb_fstring_lit("");
@@ -5572,6 +5679,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);
     rb_define_method(rb_cTime, "inspect", time_inspect, 0);
     rb_define_method(rb_cTime, "to_a", time_to_a, 0);
+    rb_define_method(rb_cTime, "deconstruct_keys", time_deconstruct_keys, 1);
 
     rb_define_method(rb_cTime, "+", time_plus, 1);
     rb_define_method(rb_cTime, "-", time_minus, 1);

@@ -535,7 +535,7 @@ io_flags_for_size(size_t size)
  *  Create a new zero-filled IO::Buffer of +size+ bytes.
  *  By default, the buffer will be _internal_: directly allocated chunk
  *  of the memory. But if the requested +size+ is more than OS-specific
- *  IO::Bufer::PAGE_SIZE, the buffer would be allocated using the
+ *  IO::Buffer::PAGE_SIZE, the buffer would be allocated using the
  *  virtual memory mechanism (anonymous +mmap+ on Unix, +VirtualAlloc+
  *  on Windows). The behavior can be forced by passing IO::Buffer::MAPPED
  *  as a second parameter.

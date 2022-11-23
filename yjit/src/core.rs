@@ -2195,7 +2195,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             cb.set_write_ptr(block_start);
 
             let mut asm = Assembler::new();
-            asm.jmp(block_entry_exit.into());
+            asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
             asm.compile(&mut cb);
 

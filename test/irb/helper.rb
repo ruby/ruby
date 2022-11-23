@@ -1,4 +1,8 @@
 require "test/unit"
+begin
+  require_relative "../lib/helper"
+rescue LoadError # ruby/ruby defines helpers differently
+end
 
 module IRB
   class InputMethod; end
@@ -56,6 +60,10 @@ module TestIRB
 
       yield
     ensure
+      begin
+        require_relative "../lib/envutil"
+      rescue LoadError # ruby/ruby defines EnvUtil differently
+      end
       EnvUtil.suppress_warning { ::Kernel.send(:alias_method, :require, :old_require) }
     end
   end

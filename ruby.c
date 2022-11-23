@@ -2125,11 +2125,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    rb_parser_set_context(parser, 0, TRUE);
-
     if (opt->e_script) {
         VALUE progname = rb_progname;
         rb_encoding *eenc;
+        rb_parser_set_context(parser, 0, TRUE);
+
         if (opt->src.enc.index >= 0) {
             eenc = rb_enc_from_index(opt->src.enc.index);
         }
@@ -2154,6 +2154,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     else {
         VALUE f;
         f = open_load_file(script_name, &opt->xflag);
+        rb_parser_set_context(parser, 0, f == rb_stdin);
         ast = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);

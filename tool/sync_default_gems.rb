@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-# sync upstream github repositories to ruby repository
+# Sync upstream github repositories to ruby repository.
+# See `tool/sync_default_gems.rb --help` for how to use this.
 
 require 'fileutils'
 include FileUtils
@@ -86,7 +87,8 @@ end
 
 def replace_rdoc_ref(file)
   src = File.binread(file)
-  src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
+  changed = false
+  changed |= src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
     name, mod, label = $1, $2, $3
     mod &&= mod.gsub('/', '::')
     if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
@@ -94,7 +96,8 @@ def replace_rdoc_ref(file)
       scope = scope ? scope.tr('ci', '.#') : '@'
     end
     "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
-  end or return false
+  end
+  changed or return false
   File.rename(file, file + "~")
   File.binwrite(file, src)
   return true
@@ -554,7 +557,11 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       next
     end
 
-    if replace_rdoc_ref_all
+    head = `git log --format=%H -1 HEAD`.chomp
+    system(*%w"git reset --quiet HEAD~ --")
+    amend = replace_rdoc_ref_all
+    system(*%W"git reset --quiet #{head} --")
+    if amend
       `git commit --amend --no-edit --all`
     end
 

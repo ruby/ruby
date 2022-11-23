@@ -7284,7 +7284,7 @@ const char ruby_null_device[] =
  *
  *  - ::blockdev?: Returns whether the file at the given path is a block device.
  *  - ::chardev?: Returns whether the file at the given path is a character device.
- *  - ::directory?: Returns whether the file at the given path is a diretory.
+ *  - ::directory?: Returns whether the file at the given path is a directory.
  *  - ::executable?: Returns whether the file at the given path is executable
  *    by the effective user and group of the current process.
  *  - ::executable_real?: Returns whether the file at the given path is executable

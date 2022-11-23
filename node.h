@@ -421,6 +421,8 @@ void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+void rb_ast_set_tokens(rb_ast_t*, VALUE);
+VALUE rb_ast_tokens(rb_ast_t *ast);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);

@@ -12,22 +12,12 @@ typedef uint16_t attr_index_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
 
-#if RUBY_DEBUG || (defined(VM_CHECK_MODE) && VM_CHECK_MODE > 0)
-#  if SIZEOF_SHAPE_T == 4
-typedef uint32_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 16
-#  else
-typedef uint16_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 16
-#  endif
-#else
-#  if SIZEOF_SHAPE_T == 4
+#if SIZEOF_SHAPE_T == 4
 typedef uint32_t shape_id_t;
 # define SHAPE_ID_NUM_BITS 32
-#  else
+#else
 typedef uint16_t shape_id_t;
 # define SHAPE_ID_NUM_BITS 16
-#  endif
 #endif
 
 # define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)

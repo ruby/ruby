@@ -256,7 +256,7 @@ def wait_writable
     wait = (wait = options[:w]) ? Float(wait) : 0.2
     argv.each do |file|
       begin
-        open(file, "r+b")
+        File.open(file, "r+b")
       rescue Errno::ENOENT
         break
       rescue Errno::EACCES => e
@@ -422,7 +422,7 @@ module UN # :nodoc:
       messages = {}
       store = proc {|msg| messages[cmd] = msg}
     end
-    open(__FILE__) do |me|
+    File.open(__FILE__) do |me|
       while me.gets("##\n")
         if help = me.gets("\n\n")
           if all or argv.include?(cmd = help[/^#\s*ruby\s.*-e\s+(\w+)/, 1])

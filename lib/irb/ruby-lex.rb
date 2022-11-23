@@ -65,9 +65,9 @@ class RubyLex
             false
           end
         else
-          # Accept any single-line input starting with a non-identifier alias (ex: @, $)
+          # Accept any single-line input for symbol aliases or commands that transform args
           command = code.split(/\s/, 2).first
-          if context.symbol_alias(command)
+          if context.symbol_alias?(command) || context.transform_args?(command)
             next true
           end
 

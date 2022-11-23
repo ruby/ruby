@@ -3,7 +3,7 @@
 // usize->pointer casts is viable. It seems like a lot of work for us to participate for not much
 // benefit.
 
-use crate::utils::IntoUsize;
+use crate::{utils::IntoUsize, backend::ir::Target};
 
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
@@ -61,6 +61,12 @@ pub trait Allocator {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug)]
 #[repr(C, packed)]
 pub struct CodePtr(*const u8);
+
+impl CodePtr {
+    pub fn as_side_exit(self) -> Target {
+        Target::SideExitPtr(self)
+    }
+}
 
 /// Errors that can happen when writing to [VirtualMemory]
 #[derive(Debug, PartialEq)]

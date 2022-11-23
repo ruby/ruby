@@ -624,7 +624,7 @@ impl Assembler
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
-                Target::CodePtr(dst_ptr) => {
+                Target::CodePtr(dst_ptr) | Target::SideExitPtr(dst_ptr) => {
                     let dst_addr = dst_ptr.into_i64();
                     let src_addr = cb.get_write_ptr().into_i64();
 
@@ -659,10 +659,12 @@ impl Assembler
                         load_insns + 2
                     };
 
-                    // We need to make sure we have at least 6 instructions for
-                    // every kind of jump for invalidation purposes, so we're
-                    // going to write out padding nop instructions here.
-                    for _ in num_insns..6 { nop(cb); }
+                    if let Target::CodePtr(_) = target {
+                        // We need to make sure we have at least 6 instructions for
+                        // every kind of jump for invalidation purposes, so we're
+                        // going to write out padding nop instructions here.
+                        for _ in num_insns..6 { nop(cb); }
+                    }
                 },
                 Target::Label(label_idx) => {
                     // Here we're going to save enough space for ourselves and
@@ -690,7 +692,7 @@ impl Assembler
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
-        fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+        fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
             let src_addr = cb.get_write_ptr().into_i64();
             let dst_addr = dst_ptr.into_i64();
 
@@ -707,11 +709,13 @@ impl Assembler
                 num_insns + 1
             };
 
-            // Make sure it's always a consistent number of
-            // instructions in case it gets patched and has to
-            // use the other branch.
-            for _ in num_insns..(JMP_PTR_BYTES / 4) {
-                nop(cb);
+            if padding {
+                // Make sure it's always a consistent number of
+                // instructions in case it gets patched and has to
+                // use the other branch.
+                for _ in num_insns..(JMP_PTR_BYTES / 4) {
+                    nop(cb);
+                }
             }
         }
 
@@ -723,7 +727,7 @@ impl Assembler
         fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
             #[cfg(not(test))]
             let start = cb.get_write_ptr();
-            emit_jmp_ptr(cb, dst_ptr);
+            emit_jmp_ptr(cb, dst_ptr, true);
             #[cfg(not(test))]
             {
                 let end = cb.get_write_ptr();
@@ -963,7 +967,10 @@ impl Assembler
                 Insn::Jmp(target) => {
                     match target {
                         Target::CodePtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, *dst_ptr);
+                            emit_jmp_ptr(cb, *dst_ptr, true);
+                        },
+                        Target::SideExitPtr(dst_ptr) => {
+                            emit_jmp_ptr(cb, *dst_ptr, false);
                         },
                         Target::Label(label_idx) => {
                             // Here we're going to save enough space for

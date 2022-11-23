@@ -2491,6 +2491,47 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 }
 
 /*
+ * Estimates the number of instance variables that will be set on
+ * a given `class` with the initialize method defined in
+ * `initialize_iseq`
+ */
+attr_index_t
+rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
+{
+    bool calls_super = false;
+
+    struct rb_id_table * iv_names = rb_id_table_create(0);
+
+    VALUE * code = ISEQ_BODY(initialize_iseq)->iseq_encoded;
+
+    for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->iseq_size; ) {
+        VALUE insn = code[i];
+        int original_insn = rb_vm_insn_addr2insn((const void *)insn);
+
+        if (BIN(setinstancevariable) == original_insn) {
+            ID name = (ID)code[i + 1];
+            rb_id_table_insert(iv_names, name, Qtrue);
+        }
+        else if (BIN(invokesuper) == original_insn) {
+            calls_super = true;
+        }
+
+        i += insn_len(original_insn);
+    }
+
+    attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
+
+    if (calls_super) {
+        VALUE superclass = rb_class_superclass(klass);
+        count += RCLASS_EXT(superclass)->max_iv_count;
+    }
+
+    rb_id_table_free(iv_names);
+
+    return count;
+}
+
+/*
  *  call-seq:
  *     iseq.disasm -> str
  *     iseq.disassemble -> str

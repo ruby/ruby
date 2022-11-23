@@ -43,7 +43,7 @@ NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
-static int rb_ec_cleanup(rb_execution_context_t *ec, int ex);
+static int rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex);
 static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
 
 VALUE rb_eLocalJumpError;
@@ -100,8 +100,10 @@ ruby_init(void)
 {
     int state = ruby_setup();
     if (state) {
-        if (RTEST(ruby_debug))
-            error_print(GET_EC());
+        if (RTEST(ruby_debug)) {
+            rb_execution_context_t *ec = GET_EC();
+            rb_ec_error_print(ec, ec->errinfo);
+        }
         exit(EXIT_FAILURE);
     }
 }
@@ -120,8 +122,9 @@ ruby_options(int argc, char **argv)
     }
     else {
         rb_ec_clear_current_thread_trace_func(ec);
-        state = error_handle(ec, state);
-        iseq = (void *)INT2FIX(state);
+        int exitcode = error_handle(ec, ec->errinfo, state);
+        ec->errinfo = Qnil; /* just been handled */
+        iseq = (void *)INT2FIX(exitcode);
     }
     EC_POP_TAG();
     return iseq;
@@ -137,7 +140,7 @@ rb_ec_fiber_scheduler_finalize(rb_execution_context_t *ec)
         rb_fiber_scheduler_set(Qnil);
     }
     else {
-        state = error_handle(ec, state);
+        state = error_handle(ec, ec->errinfo, state);
     }
     EC_POP_TAG();
 }
@@ -176,20 +179,21 @@ ruby_finalize(void)
 int
 ruby_cleanup(int ex)
 {
-    return rb_ec_cleanup(GET_EC(), ex);
+    return rb_ec_cleanup(GET_EC(), (enum ruby_tag_type)ex);
 }
 
 static int
-rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
+rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
 {
     int state;
-    volatile VALUE errs[2] = { Qundef, Qundef };
-    int nerr;
+    volatile VALUE save_error = Qundef;
+    volatile int sysex = EXIT_SUCCESS;
+    volatile int signaled = 0;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_thread_t *const volatile th0 = th;
-    volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
-    volatile int ex = ex0;
+    volatile VALUE message = Qnil;
+    VALUE buf;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
@@ -199,56 +203,57 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-        errs[1] = ec->errinfo;
+        save_error = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
-        ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
+        ruby_init_stack(&message);
 
+        /* exits with failure but silently when an exception raised
+         * here */
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
+        VALUE err = ec->errinfo;
+        int mode0 = 0, mode1 = 0;
+        if (err != save_error && !NIL_P(err)) {
+            mode0 = exiting_split(err, &sysex, &signaled);
+        }
+
+        /* exceptions after here will be ignored */
+
+        /* build error message including causes */
+        err = ATOMIC_VALUE_EXCHANGE(save_error, Qnil);
+
+        if (!NIL_P(err) && !THROW_DATA_P(err)) {
+            mode1 = exiting_split(err, (mode0 & EXITING_WITH_STATUS) ? NULL : &sysex, &signaled);
+            if (mode1 & EXITING_WITH_MESSAGE) {
+                buf = rb_str_new(NULL, 0);
+                SAVE_ROOT_JMPBUF(th, rb_ec_error_print_detailed(ec, err, buf, Qundef));
+                message = buf;
+            }
+        }
+
+      step_2: step++;
         /* protect from Thread#raise */
         th->status = THREAD_KILLED;
 
-        errs[0] = ec->errinfo;
         SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
+
+      step_3: step++;
+        if (!NIL_P(buf = message)) {
+            warn_print_str(buf);
+        }
+        else if (!NIL_OR_UNDEF_P(err = save_error) ||
+                 (ex != TAG_NONE && !((mode0|mode1) & EXITING_WITH_STATUS))) {
+            sysex = error_handle(ec, err, ex);
+        }
     }
     else {
         th = th0;
         switch (step) {
           case 0: goto step_0;
           case 1: goto step_1;
-        }
-        if (ex == 0) ex = state;
-    }
-    ec->errinfo = errs[1];
-    sysex = error_handle(ec, ex);
-
-    state = 0;
-    for (nerr = 0; nerr < numberof(errs); ++nerr) {
-        VALUE err = ATOMIC_VALUE_EXCHANGE(errs[nerr], Qnil);
-        VALUE sig;
-
-        if (!RTEST(err)) continue;
-
-        /* ec->errinfo contains a NODE while break'ing */
-        if (THROW_DATA_P(err)) continue;
-
-        if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
-            sysex = sysexit_status(err);
-            break;
-        }
-        else if (rb_obj_is_kind_of(err, rb_eSignal)) {
-            VALUE sig = rb_ivar_get(err, id_signo);
-            state = NUM2INT(sig);
-            break;
-        }
-        else if (rb_obj_is_kind_of(err, rb_eSystemCallError) &&
-                 FIXNUM_P(sig = rb_attr_get(err, id_signo))) {
-            state = NUM2INT(sig);
-            break;
-        }
-        else if (sysex == EXIT_SUCCESS) {
-            sysex = EXIT_FAILURE;
+          case 2: goto step_2;
+          case 3: goto step_3;
         }
     }
 
@@ -265,7 +270,8 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     ruby_vm_destruct(th->vm);
     // For YJIT, call this after ruby_vm_destruct() frees jit_cont for the root fiber.
     rb_jit_cont_finish();
-    if (state) ruby_default_signal(state);
+
+    if (signaled) ruby_default_signal(signaled);
 
     return sysex;
 }
@@ -317,7 +323,7 @@ ruby_run_node(void *n)
     rb_execution_context_t *ec = GET_EC();
     int status;
     if (!ruby_executable_node(n, &status)) {
-        rb_ec_cleanup(ec, 0);
+        rb_ec_cleanup(ec, (NIL_P(ec->errinfo) ? TAG_NONE : TAG_RAISE));
         return status;
     }
     ruby_init_stack((void *)&status);

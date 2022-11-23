@@ -1925,7 +1925,7 @@ XXX
       }
     end
     begin
-      parse(*IO.readlines(filename).each {|s| s.chomp!}, into: into)
+      parse(*File.readlines(filename, chomp: true), into: into)
       true
     rescue Errno::ENOENT, Errno::ENOTDIR
       false
