@@ -272,7 +272,7 @@ module Net::HTTPHeader
 
   # :call-seq
   #   fetch(key, default_val = nil) {|key| ... } -> object
-  #   fetch(key, default_val = nil) value or default_val
+  #   fetch(key, default_val = nil) -> value or default_val
   #
   # With a block, returns the string value for +key+ if it exists;
   # otherwise returns the value of the block;
