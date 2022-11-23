@@ -5067,8 +5067,8 @@ fn gen_send_iseq(
         ocb,
         return_block,
         &return_ctx,
-        Some(return_block),
-        Some(&return_ctx),
+        None,
+        None,
         gen_return_branch,
     );
 
