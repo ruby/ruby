@@ -588,7 +588,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_global_cvar_state, sym_next_shape_id;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -609,6 +609,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     S(constant_cache_invalidations);
     S(constant_cache_misses);
         S(global_cvar_state);
+    S(next_shape_id);
 #undef S
 
 #define SET(name, attr) \
@@ -620,6 +621,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
+    SET(next_shape_id, (rb_serial_t)GET_VM()->next_shape_id);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
