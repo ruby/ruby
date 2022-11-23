@@ -3560,23 +3560,21 @@ rsort_noflonum(VALUE *const p, const long l, VALUE *pp,
         _r[i] = (rsort_double_t){ _rf[i], p[i] };
     free(_rf);
 
-    {
-        while (!is_unordered && pp < P) {
-            VALUE *PP = pp + 100; if (PP > P) PP = P;
-            for (; pp < PP; pa++) {
-                union { double d; uint64_t z; } u;
-                if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
-                    free(_r); return 1;
-                }
-                u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
-                is_unordered |= prev > u.z, prev = u.z;
-                for (int i = 0; i < NUM_PASSES; i++)
-                    F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
-                *pa = (rsort_double_t){ u.z, *pp++ };
+    while (!is_unordered && pp < P) {
+        VALUE *PP = pp + 100; if (PP > P) PP = P;
+        for (; pp < PP; pa++) {
+            union { double d; uint64_t z; } u;
+            if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
+                free(_r); return 1;
             }
+            u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+            is_unordered |= prev > u.z, prev = u.z;
+            for (int i = 0; i < NUM_PASSES; i++)
+                F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
+            *pa = (rsort_double_t){ u.z, *pp++ };
         }
-        if (!is_unordered) { free(_r); return 0; }
     }
+    if (!is_unordered) { free(_r); return 0; }
 
     for (; pp < P; pa++) {
         union { double d; uint64_t z; } u;
