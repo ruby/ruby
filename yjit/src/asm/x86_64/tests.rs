@@ -97,6 +97,7 @@ fn test_cmp() {
     check_bytes("39f9", |cb| cmp(cb, ECX, EDI));
     check_bytes("493b1424", |cb| cmp(cb, RDX, mem_opnd(64, R12, 0)));
     check_bytes("4883f802", |cb| cmp(cb, RAX, imm_opnd(2)));
+    check_bytes("81f900000080", |cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
 }
 
 #[test]
@@ -355,6 +356,14 @@ fn test_shr() {
 fn test_sub() {
     check_bytes("83e801", |cb| sub(cb, EAX, imm_opnd(1)));
     check_bytes("4883e802", |cb| sub(cb, RAX, imm_opnd(2)));
+}
+
+#[test]
+#[should_panic]
+fn test_sub_uimm_too_large() {
+    // This immedaite becomes a different value after
+    // sign extension, so not safe to encode.
+    check_bytes("ff", |cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
 }
 
 #[test]
