@@ -10,7 +10,7 @@ name: Pull Request
 on: [pull_request]
 jobs:
   check_branch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Check if branch is ruby_2_7
         run: |
