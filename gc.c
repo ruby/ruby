@@ -1932,7 +1932,7 @@ rb_objspace_alloc(void)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        MMTk_Builder mmtk_builder = mmtk_builder_default();
+        MMTk_Builder *mmtk_builder = mmtk_builder_default();
 
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
 
@@ -4808,7 +4808,7 @@ void
 rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
 {
     if (on_exit) {
-        struct RawVecOfObjRef resurrrected_objs = mmtk_get_all_finalizers();
+        struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_finalizers();
 
         for (size_t i = 0; i < resurrrected_objs.len; i++) {
             void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
@@ -15327,7 +15327,7 @@ rb_mmtk_reset_mutator_iterator(void)
     thread_iter->cursor = 0;
 }
 
-static MMTk_Mutator
+static MMTk_Mutator*
 rb_mmtk_get_next_mutator(void)
 {
     rb_mmtk_assert_mmtk_worker();
