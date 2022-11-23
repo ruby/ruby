@@ -317,7 +317,7 @@ impl Assembler
                     let (opnd0, opnd1) = split_boolean_operands(asm, left, right);
                     asm.xor(opnd0, opnd1);
                 },
-                Insn::CCall { opnds, target, .. } => {
+                Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // Load each operand into the corresponding argument
@@ -339,7 +339,7 @@ impl Assembler
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
-                    asm.ccall(target.unwrap_fun_ptr(), vec![]);
+                    asm.ccall(fptr, vec![]);
                 },
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, left);
@@ -676,7 +676,6 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
-                Target::FunPtr(_) => unreachable!()
             };
         }
 
@@ -938,10 +937,10 @@ impl Assembler
                         emit_pop(cb, A64Opnd::Reg(reg));
                     }
                 },
-                Insn::CCall { target, .. } => {
+                Insn::CCall { fptr, .. } => {
                     // The offset to the call target in bytes
                     let src_addr = cb.get_write_ptr().into_i64();
-                    let dst_addr = target.unwrap_fun_ptr() as i64;
+                    let dst_addr = *fptr as i64;
 
                     // Use BL if the offset is short enough to encode as an immediate.
                     // Otherwise, use BLR with a register.
@@ -983,7 +982,6 @@ impl Assembler
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
-                        _ => unreachable!()
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
