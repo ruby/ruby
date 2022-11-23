@@ -3521,6 +3521,223 @@ sort_2(const void *ap, const void *bp, void *dummy)
     return n;
 }
 
+/* Radix_Sort */
+
+#define RSORT_GUARD SIZEOF_VALUE == 8
+#define RSORT_THRESHOLD 1000
+
+#if RSORT_GUARD
+
+#define RDX_BITS   8  /* radix bit-length */
+#define NUM_PASSES 8  /* number of passes on uint64_t, 64 / RDX_BITS + (64 % RDX_BITS > 0) */
+#define RADIX    256  /* radix, number of values in the range 0...(1 << RDX_BITS) */
+
+typedef struct rsort_double_t { uint64_t z; VALUE v; } rsort_double_t;
+
+static void
+rsort_calc_offsets(uint64_t (*F)[RADIX], int *skip, int *last, long l)
+{
+    for (int i = 0; i < NUM_PASSES; i++) {
+        uint64_t offset = 0, count, *const o = F[i];
+        for (int j = 0; j < RADIX; j++) {
+            if ((count = o[j]) == (uint64_t)l) { skip[i] = 1; break; }
+            offset = (o[j] = offset) + count;
+        }
+        if (skip[i] == 0) *last = i;
+    }
+}
+
+static int
+rsort_noflonum(VALUE *const p, const long l, VALUE *pp,
+               uint64_t (*F)[RADIX], _Bool is_unordered, uint64_t prev,
+               uint64_t *const _rf)
+{
+    VALUE *const P = p + l;
+    rsort_double_t *const _r = malloc(l * 2 * sizeof(rsort_double_t)),
+                   *a = _r, *pa = a + (pp - p), *PA, *b = a + l, *tmp;
+    if (_r == NULL) { free(_rf); return 1; }
+    for (long i = 0, I = pp - p; i < I; i++)
+        _r[i] = (rsort_double_t){ _rf[i], p[i] };
+    free(_rf);
+
+    {
+        while (!is_unordered && pp < P) {
+            VALUE *PP = pp + 100; if (PP > P) PP = P;
+            for (; pp < PP; pa++) {
+                union { double d; uint64_t z; } u;
+                if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
+                    free(_r); return 1;
+                }
+                u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+                is_unordered |= prev > u.z, prev = u.z;
+                for (int i = 0; i < NUM_PASSES; i++)
+                    F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
+                *pa = (rsort_double_t){ u.z, *pp++ };
+            }
+        }
+        if (!is_unordered) { free(_r); return 0; }
+    }
+
+    for (; pp < P; pa++) {
+        union { double d; uint64_t z; } u;
+        if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
+            free(_r); return 1;
+        }
+        u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+        for (int i = 0; i < NUM_PASSES; i++)
+            F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
+        *pa = (rsort_double_t){ u.z, *pp++ };
+    }
+
+    int skip[NUM_PASSES] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
+
+    for (int i = 0; i <= last; i++) {
+        if (skip[i]) continue;
+        uint64_t *const o = F[i];
+        if (i < last)
+            for (pa = a, PA = pa + l; pa < PA; pa++)
+                b[o[(uint8_t)(pa->z >> i * RDX_BITS)]++] = *pa;
+        else
+            for (pa = a, PA = pa + l; pa < PA; pa++)
+                p[o[(uint8_t)(pa->z >> i * RDX_BITS)]++] = pa->v;
+        tmp = a, a = b, b = tmp;
+    }
+
+    free(_r); return 0;
+}
+
+static int
+rsort_double(VALUE *const p, const long l)
+{
+    VALUE *pp = p, *const P = pp + l;
+    uint64_t F[NUM_PASSES][RADIX] = {{0}},
+             *const _r = malloc(l * 2 * sizeof(uint64_t)),
+             *a = _r, *pa = a, *PA, *b = a + l;
+    if (_r == NULL) return 1;
+
+    {
+        uint64_t prev = 0; _Bool is_unordered = 0;
+        while (!is_unordered && pp < P) {
+            VALUE *PP = pp + 100; if (PP > P) PP = P;
+            for (; pp < PP; pa++) {
+                union { double d; uint64_t z; } u;
+                if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
+                    free(_r); return 1;
+                }
+                /* u.z = (u.d < +0.0) ? ~(u.z) : u.z ^ ((uint64_t)1 << 63); */
+                *pa = u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+                is_unordered |= prev > u.z, prev = u.z;
+                for (int i = 0; i < NUM_PASSES; i++)
+                    F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
+                if (!FLONUM_P(*pp++))
+                    return rsort_noflonum(p, l, pp, F, is_unordered, prev, _r);
+            }
+        }
+        if (!is_unordered) { free(_r); return 0; }
+    }
+
+    for (; pp < P; pa++) {
+        union { double d; uint64_t z; } u;
+        if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
+            free(_r); return 1;
+        }
+        *pa = u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+        for (int i = 0; i < NUM_PASSES; i++)
+            F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
+        if (!FLONUM_P(*pp++))
+            return rsort_noflonum(p, l, pp, F, 1, 0, _r);
+    }
+
+    int skip[NUM_PASSES] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
+
+    for (int i = 0; i <= last; i++) {
+        if (skip[i]) continue;
+        uint64_t *const o = F[i], *tmp;
+        if (i < last)
+            for (pa = a, PA = pa + l; pa < PA; pa++)
+                b[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = *pa;
+        else
+            for (pa = a, PA = pa + l; pa < PA; pa++) {
+                union { double d; uint64_t z; } u; u.z = *pa;
+                u.z ^= ((u.z >> 63) - 1) | (((uint64_t)1 << 63));
+                p[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = rb_float_new(u.d);
+            }
+        tmp = a, a = b, b = tmp;
+    }
+
+    free(_r); return 0;
+}
+
+#endif
+
+static int
+rsort(VALUE *const p, const long l)
+{
+
+#if RSORT_GUARD
+
+    if (!FIXNUM_P(*p)) {
+        if (!RB_FLOAT_TYPE_P(*p)) return 1;
+        return rsort_double(p, l);
+    }
+
+    VALUE *pp = p, *const P = pp + l;
+    uint64_t F[NUM_PASSES][RADIX] = {{0}},
+             *const _r = malloc(l * 2 * sizeof(uint64_t)),
+             *a = _r, *pa = a, *PA, *b = a + l;
+    if (_r == NULL) return 1;
+
+    {
+        uint64_t prev = 0; _Bool is_unordered = 0;
+        while (!is_unordered && pp < P) {
+            VALUE *PP = pp + 100; if (PP > P) PP = P;
+            for (; pp < PP; pa++) {
+                is_unordered |= prev > (*pa = *pp ^ ((uint64_t)1 << 63)), prev = *pa;
+                for (int i = 0; i < NUM_PASSES; i++)
+                    F[i][(uint8_t)(*pa >> i * RDX_BITS)]++;
+                if (!FIXNUM_P(*pp++)) { free(_r); return 1; }
+            }
+        }
+        if (!is_unordered) { free(_r); return 0; }
+    }
+
+    for (; pp < P; pa++) {
+        *pa = *pp ^ ((uint64_t)1 << 63);
+        for (int i = 0; i < NUM_PASSES; i++)
+            F[i][(uint8_t)(*pa >> i * RDX_BITS)]++;
+        if (!FIXNUM_P(*pp++)) { free(_r); return 1; }
+    }
+
+    int skip[NUM_PASSES] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
+
+    for (int i = 0; i <= last; i++) {
+        if (skip[i]) continue;
+        uint64_t *const o = F[i], *tmp;
+        if (i < last)
+            for (pa = a, PA = pa + l; pa < PA; pa++)
+                b[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = *pa;
+        else
+            for (pa = a, PA = pa + l; pa < PA; pa++)
+                p[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = (VALUE)(*pa ^ ((uint64_t)1 << 63));
+        tmp = a, a = b, b = tmp;
+    }
+
+    free(_r); return 0;
+
+#undef RDX_BITS
+#undef NUM_PASSES
+#undef RADIX
+
+#else
+
+    return 1;
+
+#endif
+
+}
+
+#undef RSORT_GUARD
+
 /*
  *  call-seq:
  *    array.sort! -> self
@@ -3570,15 +3787,16 @@ rb_ary_sort_bang(VALUE ary)
     if (RARRAY_LEN(ary) > 1) {
         VALUE tmp = ary_make_substitution(ary); /* only ary refers tmp */
         struct ary_sort_data data;
-        long len = RARRAY_LEN(ary);
+        const long len = RARRAY_LEN(ary);
         RBASIC_CLEAR_CLASS(tmp);
         data.ary = tmp;
         data.receiver = ary;
         data.cmp_opt.opt_methods = 0;
         data.cmp_opt.opt_inited = 0;
+        const int is_bg = rb_block_given_p();
         RARRAY_PTR_USE(tmp, ptr, {
-            ruby_qsort(ptr, len, sizeof(VALUE),
-                       rb_block_given_p()?sort_1:sort_2, &data);
+            if (is_bg || len < RSORT_THRESHOLD || rsort(ptr, len))
+                ruby_qsort(ptr, len, sizeof(VALUE), is_bg ? sort_1 : sort_2, &data);
         }); /* WB: no new reference */
         rb_ary_modify(ary);
         if (ARY_EMBED_P(tmp)) {
@@ -3622,6 +3840,8 @@ rb_ary_sort_bang(VALUE ary)
     ary_verify(ary);
     return ary;
 }
+
+#undef RSORT_THRESHOLD
 
 /*
  *  call-seq:
