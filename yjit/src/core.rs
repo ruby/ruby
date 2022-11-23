@@ -15,7 +15,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::rc::{Rc};
-use InsnOpnd::*;
+use YARVOpnd::*;
 use TempMapping::*;
 
 // Maximum number of temp value types we keep track of
@@ -263,9 +263,9 @@ impl Default for TempMapping {
     }
 }
 
-// Operand to a bytecode instruction
+// Operand to a YARV bytecode instruction
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum InsnOpnd {
+pub enum YARVOpnd {
     // The value is self
     SelfOpnd,
 
@@ -1156,7 +1156,7 @@ impl Context {
     }
 
     /// Get the type of an instruction operand
-    pub fn get_opnd_type(&self, opnd: InsnOpnd) -> Type {
+    pub fn get_opnd_type(&self, opnd: YARVOpnd) -> Type {
         match opnd {
             SelfOpnd => self.self_type,
             StackOpnd(idx) => {
@@ -1192,7 +1192,7 @@ impl Context {
     /// This value must be compatible and at least as specific as the previously known type.
     /// If this value originated from self, or an lvar, the learned type will be
     /// propagated back to its source.
-    pub fn upgrade_opnd_type(&mut self, opnd: InsnOpnd, opnd_type: Type) {
+    pub fn upgrade_opnd_type(&mut self, opnd: YARVOpnd, opnd_type: Type) {
         // If type propagation is disabled, store no types
         if get_option!(no_type_prop) {
             return;
@@ -1230,7 +1230,7 @@ impl Context {
     This is can be used with stack_push_mapping or set_opnd_mapping to copy
     a stack value's type while maintaining the mapping.
     */
-    pub fn get_opnd_mapping(&self, opnd: InsnOpnd) -> (TempMapping, Type) {
+    pub fn get_opnd_mapping(&self, opnd: YARVOpnd) -> (TempMapping, Type) {
         let opnd_type = self.get_opnd_type(opnd);
 
         match opnd {
@@ -1253,7 +1253,7 @@ impl Context {
     }
 
     /// Overwrite both the type and mapping of a stack operand.
-    pub fn set_opnd_mapping(&mut self, opnd: InsnOpnd, (mapping, opnd_type): (TempMapping, Type)) {
+    pub fn set_opnd_mapping(&mut self, opnd: YARVOpnd, (mapping, opnd_type): (TempMapping, Type)) {
         match opnd {
             SelfOpnd => unreachable!("self always maps to self"),
             StackOpnd(idx) => {

@@ -10,7 +10,7 @@ use crate::options::*;
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
-use InsnOpnd::*;
+use YARVOpnd::*;
 
 use std::cmp;
 use std::collections::HashMap;
@@ -1956,7 +1956,7 @@ fn gen_get_ivar(
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
-    recv_opnd: InsnOpnd,
+    recv_opnd: YARVOpnd,
     side_exit: CodePtr,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
@@ -3397,7 +3397,7 @@ fn jit_guard_known_klass(
     ocb: &mut OutlinedCb,
     known_klass: VALUE,
     obj_opnd: Opnd,
-    insn_opnd: InsnOpnd,
+    insn_opnd: YARVOpnd,
     sample_instance: VALUE,
     max_chain_depth: i32,
     side_exit: CodePtr,
