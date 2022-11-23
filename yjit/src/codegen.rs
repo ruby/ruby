@@ -6780,11 +6780,12 @@ impl CodegenGlobals {
             assert_eq!(code_page_size % page_size.as_usize(), 0, "code_page_size was not page-aligned");
 
             use crate::virtualmem::*;
+            use std::ptr::NonNull;
 
             let mem_block = VirtualMem::new(
                 SystemAllocator {},
                 page_size,
-                virt_block,
+                NonNull::new(virt_block).unwrap(),
                 mem_size,
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
