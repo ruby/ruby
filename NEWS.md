@@ -238,8 +238,10 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-* SyntaxSuggest
+* ERB
+  * `-S` option is removed from `erb` command.
 
+* SyntaxSuggest
   * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
     [[Feature #18159]]
 
