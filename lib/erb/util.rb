@@ -1,3 +1,9 @@
+begin
+  # ERB::Util.html_escape
+  require 'erb/escape'
+rescue LoadError # JRuby can't load .so
+end
+
 #--
 # ERB::Util
 #
@@ -15,10 +21,7 @@ module ERB::Util
   #
   #   is a &gt; 0 &amp; a &lt; 10?
   #
-  begin
-    # ERB::Util.html_escape
-    require 'erb/escape'
-  rescue LoadError
+  unless method_defined?(:html_escape) # for JRuby
     def html_escape(s)
       CGI.escapeHTML(s.to_s)
     end
