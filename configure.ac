@@ -3744,8 +3744,16 @@ AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
 YJIT_RUSTC_OK=no
 AS_IF([test "$RUSTC" != "no"],
-    AC_MSG_CHECKING([whether ${RUSTC} is new enough for YJIT])
-    AS_IF([echo "fn main() { let x = 1; format!(\"{x}\"); }" | $RUSTC - --emit asm=/dev/null 2>/dev/null],
+    AC_MSG_CHECKING([whether ${RUSTC} works for YJIT])
+    YJIT_TARGET_ARCH=
+    AS_CASE(["$target_cpu"],
+        [arm64|aarch64], [YJIT_TARGET_ARCH=aarch64],
+        [x86_64], [YJIT_TARGET_ARCH=x86_64],
+    )
+    dnl Fails in case rustc target doesn't match ruby target.
+    dnl Can happen on Rosetta, for example.
+    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")]\n fn main() { let x = 1; format!(\"{x}\"); }" |
+            $RUSTC - --emit asm=/dev/null 2>/dev/null],
         [YJIT_RUSTC_OK=yes]
     )
     AC_MSG_RESULT($YJIT_RUSTC_OK)
