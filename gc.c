@@ -41,7 +41,7 @@
 #include "mmtk.h"
 #include "internal/cmdlineopt.h"
 
-RubyUpcalls ruby_upcalls;
+MMTk_RubyUpcalls ruby_upcalls;
 #endif
 
 /* MALLOC_HEADERS_BEGIN */
@@ -15109,16 +15109,8 @@ struct rb_mmtk_address_buffer {
     size_t capa;
 };
 
-// Thread-local data for each GC worker.
-// Must match struct GCThreadTLS in Rust.
-typedef struct rb_mmtk_gc_thread_tls {
-    int kind;                      // Controller or worker
-    void *gc_context;              // Point to MMTk's GCController or GCWorker
-    struct ObjectClosure mark_closure;
-} rb_mmtk_gc_thread_tls_t;
-
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-RB_THREAD_LOCAL_SPECIFIER rb_mmtk_gc_thread_tls_t *rb_mmtk_gc_thread_tls;
+RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
 #else // RB_THREAD_LOCAL_SPECIFIER
 #error We currently need language-supported TLS
 #endif // RB_THREAD_LOCAL_SPECIFIER
@@ -15150,15 +15142,15 @@ rb_gc_init_collection(void)
 
 static inline void*
 rb_mmtk_call_object_closure(void* object) {
-    return rb_mmtk_gc_thread_tls->mark_closure.c_function(rb_mmtk_gc_thread_tls->mark_closure.rust_closure,
-                                                          rb_mmtk_gc_thread_tls->gc_context,
-                                                          object);
+    return rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
+                                                            rb_mmtk_gc_thread_tls->gc_context,
+                                                            object);
 }
 
 static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
-    rb_mmtk_gc_thread_tls = (rb_mmtk_gc_thread_tls_t*)gc_thread_tls;
+    rb_mmtk_gc_thread_tls = (struct MMTk_GCThreadTLS*)gc_thread_tls;
 }
 
 static MMTk_VMWorkerThread
@@ -15425,7 +15417,7 @@ rb_mmtk_scan_object_ruby_style(void *object)
     gc_mark_children(objspace, obj);
 }
 
-RubyUpcalls ruby_upcalls = {
+MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
     rb_mmtk_stop_the_world,

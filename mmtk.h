@@ -11,11 +11,12 @@
 
 typedef struct MMTk_Builder MMTk_Builder;
 typedef struct MMTk_Mutator MMTk_Mutator;
-typedef struct MMTk_GCWorker MMTk_GCWorker;
-typedef struct MMTk_GCController MMTk_GCController;
-typedef void* MMTk_VMThread;
-typedef void* MMTk_VMMutatorThread;
-typedef void* MMTk_VMWorkerThread;
+
+struct rb_thread_struct;
+typedef struct rb_thread_struct rb_thread_t;
+typedef rb_thread_t* MMTk_VMThread;
+typedef rb_thread_t* MMTk_VMMutatorThread;
+typedef struct MMTk_GCThreadTLS* MMTk_VMWorkerThread;
 typedef void* MMTk_Address;
 typedef void* MMTk_ObjectReference;
 typedef uint32_t MMTk_AllocationSemantics;
@@ -31,7 +32,7 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 typedef MMTk_ObjectReference (*ObjectClosureFunction)(void*, void*, MMTk_ObjectReference);
 
-typedef struct ObjectClosure {
+typedef struct MMTk_ObjectClosure {
     /**
      * The function to be called from C.
      */
@@ -40,17 +41,17 @@ typedef struct ObjectClosure {
      * The pointer to the Rust-level closure object.
      */
     void *rust_closure;
-} ObjectClosure;
+} MMTk_ObjectClosure;
 
-typedef struct GCThreadTLS {
+typedef struct MMTk_GCThreadTLS {
     int kind;
     void *gc_context;
-    struct ObjectClosure object_closure;
-} GCThreadTLS;
+    struct MMTk_ObjectClosure object_closure;
+} MMTk_GCThreadTLS;
 
-typedef struct RubyUpcalls {
-    void (*init_gc_worker_thread)(struct GCThreadTLS *gc_worker_tls);
-    struct GCThreadTLS *(*get_gc_thread_tls)(void);
+typedef struct MMTk_RubyUpcalls {
+    void (*init_gc_worker_thread)(struct MMTk_GCThreadTLS *gc_worker_tls);
+    struct MMTk_GCThreadTLS *(*get_gc_thread_tls)(void);
     void (*stop_the_world)(MMTk_VMWorkerThread tls);
     void (*resume_mutators)(MMTk_VMWorkerThread tls);
     void (*block_for_gc)(MMTk_VMMutatorThread tls);
@@ -61,7 +62,7 @@ typedef struct RubyUpcalls {
     void (*scan_thread_roots)(void);
     void (*scan_thread_root)(MMTk_VMMutatorThread mutator_tls, MMTk_VMWorkerThread worker_tls);
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
-} RubyUpcalls;
+} MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
     MMTk_ObjectReference *ptr;
@@ -94,7 +95,7 @@ void mmtk_builder_set_plan(MMTk_Builder *builder, const char *plan_name);
  *     the MMTk instance.
  * -   `upcalls` points to the struct that contains upcalls.  It is allocated in C as static.
  */
-void mmtk_init_binding(MMTk_Builder *builder, const struct RubyUpcalls *upcalls);
+void mmtk_init_binding(MMTk_Builder *builder, const struct MMTk_RubyUpcalls *upcalls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
 
@@ -112,10 +113,6 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
                      MMTk_AllocationSemantics semantics);
 
 bool mmtk_will_never_move(MMTk_ObjectReference object);
-
-void mmtk_start_control_collector(MMTk_VMWorkerThread tls, MMTk_GCController *controller);
-
-void mmtk_start_worker(MMTk_VMWorkerThread tls, MMTk_GCWorker *worker);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
