@@ -229,7 +229,7 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
         }
     }
     if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
-        rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+        rb_raise(rb_eArgError, "min argument must be equal to or smaller than max argument");
     }
 
     if (!NIL_P(min)) {
