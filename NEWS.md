@@ -370,17 +370,25 @@ The following deprecated APIs are removed.
 
 ### YJIT
 
-* Support arm64 / aarch64 on UNIX platforms.
+* YJIT now supports both x86-64 and arm64/aarch64 CPUs on Linux, MacOS, BSD and other UNIX platforms.
+  * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4 ARM64 processors.
 * Building YJIT requires Rust 1.58.0+. [[Feature #18481]]
+  * In order to ensure that CRuby is built with YJIT, please install rustc >= 1.58.0 and
+    run `./configure` with `--enable-yjit`.
+  * Please reach out to the YJIT team should you run into any issues.
 * Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
   the RSS of a Ruby process is minimized because virtual memory pages
   allocated by `--yjit-exec-mem-size` will not be mapped to physical
   memory pages until actually utilized by JIT code.
 * Introduce Code GC that frees all code pages when the memory consumption
   by JIT code reaches `--yjit-exec-mem-size`.
-* `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
-  existing `inline_code_size` and `outlined_code_size` keys:
-  `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
+  * `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
+    existing `inline_code_size` and `outlined_code_size` keys:
+    `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
+* Most of the statistics produced by `RubyVM::YJIT.runtime_stats` are now available in release builds.
+  * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
+* YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
+* Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
 
 ### MJIT
 
@@ -432,12 +440,13 @@ The following deprecated APIs are removed.
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
-[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
+[Feature #18589]: https://bugs.ruby-lang.org/issues/
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Feature #18630]: https://bugs.ruby-lang.org/issues/18630
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
 [Feature #18685]: https://bugs.ruby-lang.org/issues/18685
+[Feature #18776]: https://bugs.ruby-lang.org/issues/18776
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
