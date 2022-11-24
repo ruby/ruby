@@ -84,7 +84,7 @@ erb_escape_html(VALUE self, VALUE str)
 }
 
 void
-Init_erb(void)
+Init_escape(void)
 {
     rb_cERB = rb_define_class("ERB", rb_cObject);
     rb_mUtil = rb_define_module_under(rb_cERB, "Util");

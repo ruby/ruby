@@ -1000,7 +1000,7 @@ class ERB
     #
     begin
       # ERB::Util.html_escape
-      require 'erb.so'
+      require 'erb/escape'
     rescue LoadError
       def html_escape(s)
         CGI.escapeHTML(s.to_s)
