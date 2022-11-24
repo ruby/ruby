@@ -8,8 +8,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = 'erb'
   spec.version       = ERB.const_get(:VERSION, false)
-  spec.authors       = ['Masatoshi SEKI']
-  spec.email         = ['seki@ruby-lang.org']
+  spec.authors       = ['Masatoshi SEKI', 'Takashi Kokubun']
+  spec.email         = ['seki@ruby-lang.org', 'takashikkbn@gmail.com']
 
   spec.summary       = %q{An easy to use but powerful templating system for Ruby.}
   spec.description   = %q{An easy to use but powerful templating system for Ruby.}
