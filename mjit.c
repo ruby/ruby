@@ -566,11 +566,11 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 
 // Print _mjitX, but make a human-readable funcname when --mjit-debug is used
 static void
-sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
+sprint_funcname(char *funcname, size_t funcname_size, const struct rb_mjit_unit *unit)
 {
     const rb_iseq_t *iseq = unit->iseq;
     if (iseq == NULL || (!mjit_opts.debug && !mjit_opts.debug_flags)) {
-        sprintf(funcname, "_mjit%d", unit->id);
+        snprintf(funcname, funcname_size, "_mjit%d", unit->id);
         return;
     }
 
@@ -589,7 +589,7 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
     if (!strcmp(method, "[]=")) method = "ASET";
 
     // Print and normalize
-    sprintf(funcname, "_mjit%d_%s_%s", unit->id, path, method);
+    snprintf(funcname, funcname_size, "_mjit%d_%s_%s", unit->id, path, method);
     for (size_t i = 0; i < strlen(funcname); i++) {
         char c = funcname[i];
         if (!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_')) {
@@ -705,7 +705,7 @@ mjit_compact(char* c_file)
         if (ISEQ_BODY(child_unit->iseq)->jit_unit == NULL) continue; // Sometimes such units are created. TODO: Investigate why
 
         char funcname[MAXPATHLEN];
-        sprint_funcname(funcname, child_unit);
+        sprint_funcname(funcname, sizeof(funcname), child_unit);
 
         int iseq_lineno = ISEQ_BODY(child_unit->iseq)->location.first_lineno;
         const char *sep = "@";
@@ -777,7 +777,7 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
     ccan_list_for_each(&active_units.head, cur, unode) {
         void *func;
         char funcname[MAXPATHLEN];
-        sprint_funcname(funcname, cur);
+        sprint_funcname(funcname, sizeof(funcname), cur);
 
         if ((func = dlsym(handle, funcname)) == NULL) {
             mjit_warning("skipping to reload '%s' from '%s': %s", funcname, so_file, dlerror());
@@ -857,7 +857,7 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
 
     sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
-    sprint_funcname(funcname, unit);
+    sprint_funcname(funcname, sizeof(funcname), unit);
 
     FILE *f;
     int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
@@ -1267,7 +1267,7 @@ mjit_notify_waitpid(int exit_code)
     else { // Normal unit
         // Load the function from so
         char funcname[MAXPATHLEN];
-        sprint_funcname(funcname, current_cc_unit);
+        sprint_funcname(funcname, sizeof(funcname), current_cc_unit);
         void *func = load_func_from_so(so_file, funcname, current_cc_unit);
 
         // Delete .so file

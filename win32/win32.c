@@ -1423,18 +1423,20 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
         while (ISSPACE(*cmd)) cmd++;
         if ((shell = w32_getenv("RUBYSHELL", cp)) && (redir = has_redirection(cmd, cp))) {
             size_t shell_len = strlen(shell);
-            char *tmp = ALLOCV(v, shell_len + strlen(cmd) + sizeof(" -c ") + 2);
+            size_t cmd_len = strlen(cmd) + sizeof(" -c ") + 2;
+            char *tmp = ALLOCV(v, shell_len + cmd_len);
             memcpy(tmp, shell, shell_len + 1);
             translate_char(tmp, '/', '\\', cp);
-            sprintf(tmp + shell_len, " -c \"%s\"", cmd);
+            snprintf(tmp + shell_len, cmd_len, " -c \"%s\"", cmd);
             cmd = tmp;
         }
         else if ((shell = w32_getenv("COMSPEC", cp)) &&
                  (nt = !is_command_com(shell),
                   (redir < 0 ? has_redirection(cmd, cp) : redir) ||
                   is_internal_cmd(cmd, nt))) {
-            char *tmp = ALLOCV(v, strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0));
-            sprintf(tmp, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
+            size_t cmd_len = strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0);
+            char *tmp = ALLOCV(v, cmd_len);
+            snprintf(tmp, cmd_len, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
             cmd = tmp;
         }
         else {
