@@ -2594,8 +2594,8 @@ maybe_register_finalizable(VALUE obj) {
       case T_STRUCT:
       case T_SYMBOL:
       case T_IMEMO:
-        mmtk_add_finalizer((MMTk_ObjectReference)obj);
-        RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
+        mmtk_add_obj_free_candidate((MMTk_ObjectReference)obj);
+        RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
             (MMTk_ObjectReference)obj,
             rb_type_str(RB_BUILTIN_TYPE(obj)),
             rb_obj_class(obj)==0?"(null)":rb_class2name(rb_obj_class(obj))
@@ -4766,7 +4766,7 @@ bool rb_obj_is_main_ractor(VALUE gv);
 
 #if USE_MMTK
 void
-rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
+rb_mmtk_call_obj_free_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
     if (on_exit) {
         if (rb_obj_is_thread(obj)) {
             RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
@@ -4798,28 +4798,18 @@ rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
 }
 
 void
-rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
+rb_mmtk_call_obj_free_on_exit(rb_objspace_t *objspace)
 {
-    if (on_exit) {
-        struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_finalizers();
+    struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_obj_free_candidates();
 
-        for (size_t i = 0; i < resurrrected_objs.len; i++) {
-            void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
+    for (size_t i = 0; i < resurrrected_objs.len; i++) {
+        void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
 
-            VALUE obj = (VALUE)resurrected;
-            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
-        }
-
-        mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
-    } else {
-        void *resurrected;
-        // mmtk_get_finalized_object is thread-safe,
-        // so in theory multiple Ruby threads can poll for resurrected objects concurrently.
-        while ((resurrected = mmtk_get_finalized_object()) != NULL) {
-            VALUE obj = (VALUE)resurrected;
-            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
-        }
+        VALUE obj = (VALUE)resurrected;
+        rb_mmtk_call_obj_free_inner(objspace, obj, true);
     }
+
+    mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
 }
 #endif
 
@@ -4919,7 +4909,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        rb_mmtk_call_finalizer(objspace, true);
+        rb_mmtk_call_obj_free_on_exit(objspace);
     }
 #endif
 
@@ -15259,12 +15249,9 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
     RB_GC_SAVE_MACHINE_CONTEXT(th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 
-    // Use this opportunity to execute finalizers.
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        RUBY_DEBUG_LOG("Call finalizers after GC finished...");
-        rb_mmtk_call_finalizer(&rb_objspace, false);
-        RUBY_DEBUG_LOG("Finished calling finalizers.");
+        RUBY_DEBUG_LOG("GC finished.  Mutator resumed.");
     }
 #endif
 }
@@ -15410,6 +15397,17 @@ rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
     gc_mark_children(objspace, obj);
 }
 
+static inline void
+rb_mmtk_call_obj_free(MMTk_ObjectReference object)
+{
+    rb_mmtk_assert_mmtk_worker();
+
+    VALUE obj = (VALUE)object;
+
+    rb_objspace_t *objspace = &rb_objspace;
+    rb_mmtk_call_obj_free_inner(objspace, obj, false);
+}
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -15423,6 +15421,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
+    rb_mmtk_call_obj_free,
 };
 
 // Use up to 80% of memory for the heap
