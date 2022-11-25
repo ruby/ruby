@@ -56,7 +56,7 @@ Note that each entry is kept to a minimum, see links for details.
 
     [[Bug #15928]]
 
-* Find pattern is no longer experimental.
+* "Find pattern" is no longer experimental.
   [[Feature #18585]]
 
 * Methods taking a rest parameter (like `*args`) and wishing to delegate keyword
