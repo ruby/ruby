@@ -150,5 +150,21 @@ module SyntaxSuggest
         expect(out).to_not include("Could not find filename")
       end
     end
+
+    it "does not say 'syntax ok' when a syntax error fires" do
+      Dir.mktmpdir do |dir|
+        tmpdir = Pathname(dir)
+        script = tmpdir.join("script.rb")
+        script.write <<~'EOM'
+          break
+        EOM
+
+        out = `ruby -I#{lib_dir} -rsyntax_suggest -e "require_relative '#{script}'" 2>&1`
+
+        expect($?.success?).to be_falsey
+        expect(out.downcase).to_not include("syntax ok")
+        puts out
+      end
+    end
   end
 end
