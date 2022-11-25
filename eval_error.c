@@ -333,11 +333,12 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VA
 }
 
 static void
-rb_ec_error_print_detailed(rb_execution_context_t *volatile ec, volatile VALUE errinfo, VALUE str, volatile VALUE emesg)
+rb_ec_error_print_detailed(rb_execution_context_t *const ec, const VALUE errinfo, const VALUE str, VALUE emesg0)
 {
     volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
     volatile bool written = false;
+    volatile VALUE emesg = emesg0;
 
     VALUE opt = rb_hash_new();
     VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
