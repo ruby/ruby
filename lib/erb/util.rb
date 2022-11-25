@@ -21,14 +21,14 @@ module ERB::Util
   #
   #   is a &gt; 0 &amp; a &lt; 10?
   #
-  unless method_defined?(:html_escape) # for JRuby
+  unless defined?(ERB::Util.html_escape) # for JRuby
     def html_escape(s)
       CGI.escapeHTML(s.to_s)
     end
+    module_function :html_escape
   end
   alias h html_escape
   module_function :h
-  module_function :html_escape
 
   #
   # A utility method for encoding the String _s_ as a URL.

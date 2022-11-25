@@ -88,7 +88,7 @@ Init_escape(void)
 {
     rb_cERB = rb_define_class("ERB", rb_cObject);
     rb_mUtil = rb_define_module_under(rb_cERB, "Util");
-    rb_define_method(rb_mUtil, "html_escape", erb_escape_html, 1);
+    rb_define_module_function(rb_mUtil, "html_escape", erb_escape_html, 1);
 
     rb_cCGI = rb_define_class("CGI", rb_cObject);
     id_escapeHTML = rb_intern("escapeHTML");
