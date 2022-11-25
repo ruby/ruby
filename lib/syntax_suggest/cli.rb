@@ -65,6 +65,7 @@ module SyntaxSuggest
       )
 
       if display.document_ok?
+        @io.puts "Syntax OK"
         @exit_obj.exit(0)
       else
         @exit_obj.exit(1)

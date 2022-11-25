@@ -25,7 +25,7 @@ module SyntaxSuggest
         io: io
       )
 
-      expect(io.string.strip).to eq("Syntax OK")
+      expect(io.string.strip).to eq("")
     end
 
     it "raises original error with warning if a non-syntax error is passed" do

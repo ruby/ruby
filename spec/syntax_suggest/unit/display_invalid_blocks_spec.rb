@@ -25,7 +25,7 @@ module SyntaxSuggest
         code_lines: search.code_lines
       )
       display.call
-      expect(io.string).to include("Syntax OK")
+      expect(io.string).to include("")
     end
 
     it "selectively prints to terminal if input is a tty by default" do

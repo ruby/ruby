@@ -23,7 +23,6 @@ module SyntaxSuggest
 
     def call
       if document_ok?
-        @io.puts "Syntax OK"
         return self
       end
 
