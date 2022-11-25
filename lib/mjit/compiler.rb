@@ -376,19 +376,9 @@ module RubyVM::MJIT
         src << "    VALUE obj = GET_SELF();\n"
         # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
         if insn_name == :setinstancevariable
-          src << "    const shape_id_t source_shape_id = (shape_id_t)#{source_shape_id};\n"
           src << "    const uint32_t index = #{attr_index - 1};\n"
           src << "    const shape_id_t dest_shape_id = (shape_id_t)#{dest_shape_id};\n"
-          src << "    if (source_shape_id == ROBJECT_SHAPE_ID(obj) && \n"
-          src << "        dest_shape_id != ROBJECT_SHAPE_ID(obj)) {\n"
-          # Conditionally generate a capacity change if there is one
-          # between the destination and the parent IV set
-          src << "        rb_ensure_iv_list_size(obj, ROBJECT_IV_CAPACITY(obj), #{capa});\n" if capa
-          src << "        ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);\n"
-          src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
-          src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"
-          src << "    }\n"
-          src << "    else if (dest_shape_id == ROBJECT_SHAPE_ID(obj)) {\n"
+          src << "    if (dest_shape_id == ROBJECT_SHAPE_ID(obj)) {\n"
           src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
           src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"
           src << "    }\n"

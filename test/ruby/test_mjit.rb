@@ -856,7 +856,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 2, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 5, call_threshold: 2)
     begin;
       class Foo
         def initialize
