@@ -1,21 +1,23 @@
 # frozen_string_literal: true
 #
 # This set of tests can be run with:
-# make test-all TESTS='test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
+# make test-all TESTS='test/ruby/test_yjit.rb'
 
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+return unless JITSupport.yjit_supported?
 
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_mjit.rb
 class TestYJIT < Test::Unit::TestCase
+  running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
   def test_yjit_in_ruby_description
     assert_includes(RUBY_DESCRIPTION, '+YJIT')
-  end
+  end if running_with_yjit
 
   # Check that YJIT is in the version string
   def test_yjit_in_version
@@ -27,22 +29,20 @@ class TestYJIT < Test::Unit::TestCase
       %w(--version --disable=yjit --yjit),
       %w(--version --disable=yjit --enable-yjit),
       %w(--version --disable=yjit --enable=yjit),
-      *([
-        %w(--version --jit),
-        %w(--version --disable-jit --jit),
-        %w(--version --disable-jit --enable-jit),
-        %w(--version --disable-jit --enable=jit),
-        %w(--version --disable=jit --yjit),
-        %w(--version --disable=jit --enable-jit),
-        %w(--version --disable=jit --enable=jit),
-      ] if JITSupport.yjit_supported?),
+      %w(--version --jit),
+      %w(--version --disable-jit --jit),
+      %w(--version --disable-jit --enable-jit),
+      %w(--version --disable-jit --enable=jit),
+      %w(--version --disable=jit --yjit),
+      %w(--version --disable=jit --enable-jit),
+      %w(--version --disable=jit --enable=jit),
     ].each do |version_args|
       assert_in_out_err(version_args) do |stdout, stderr|
         assert_equal(RUBY_DESCRIPTION, stdout.first)
         assert_equal([], stderr)
       end
     end
-  end
+  end if running_with_yjit
 
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
@@ -64,7 +64,7 @@ class TestYJIT < Test::Unit::TestCase
     end
     assert_in_out_err([yjit_child_env, '-e puts RUBY_DESCRIPTION'], '', [RUBY_DESCRIPTION])
     assert_in_out_err([yjit_child_env, '-e p RubyVM::YJIT.enabled?'], '', ['true'])
-  end
+  end if running_with_yjit
 
   def test_compile_setclassvariable
     script = 'class Foo; def self.foo; @@foo = 1; end; end; Foo.foo'
