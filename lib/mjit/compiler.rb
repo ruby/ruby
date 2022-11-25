@@ -351,7 +351,6 @@ module RubyVM::MJIT
       dest_shape_id = ic_copy.value >> C.SHAPE_FLAG_SHIFT
       attr_index = ic_copy.value & ((1 << C.SHAPE_FLAG_SHIFT) - 1)
 
-      capa = nil
       source_shape_id = if dest_shape_id == C.INVALID_SHAPE_ID
                           dest_shape_id
                         else
@@ -359,7 +358,6 @@ module RubyVM::MJIT
                           parent = C.rb_shape_get_shape_by_id(parent_id)
 
                           if parent.type == C.SHAPE_CAPACITY_CHANGE
-                            capa = parent.capacity
                             parent.parent_id
                           else
                             parent_id
