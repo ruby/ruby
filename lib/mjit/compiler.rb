@@ -349,20 +349,8 @@ module RubyVM::MJIT
     def compile_ivar(insn_name, stack_size, pos, status, operands, body)
       ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(operands[1]) - body.is_entries)).iv_cache
       dest_shape_id = ic_copy.value >> C.SHAPE_FLAG_SHIFT
+      source_shape_id = parent_shape_id(dest_shape_id)
       attr_index = ic_copy.value & ((1 << C.SHAPE_FLAG_SHIFT) - 1)
-
-      source_shape_id = if dest_shape_id == C.INVALID_SHAPE_ID
-                          dest_shape_id
-                        else
-                          parent_id = C.rb_shape_get_shape_by_id(dest_shape_id).parent_id
-                          parent = C.rb_shape_get_shape_by_id(parent_id)
-
-                          if parent.type == C.SHAPE_CAPACITY_CHANGE
-                            parent.parent_id
-                          else
-                            parent_id
-                          end
-                        end
 
       src = +''
       if !status.compile_info.disable_ivar_cache && source_shape_id != C.INVALID_SHAPE_ID
@@ -975,6 +963,19 @@ module RubyVM::MJIT
     # @param struct [RubyVM::MJIT::CPointer::Struct]
     def to_addr(struct)
       struct&.to_s || 'NULL'
+    end
+
+    def parent_shape_id(shape_id)
+      return shape_id if shape_id == C.INVALID_SHAPE_ID
+
+      parent_id = C.rb_shape_get_shape_by_id(shape_id).parent_id
+      parent = C.rb_shape_get_shape_by_id(parent_id)
+
+      if parent.type == C.SHAPE_CAPACITY_CHANGE
+        parent.parent_id
+      else
+        parent_id
+      end
     end
   end
 
