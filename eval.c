@@ -213,7 +213,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
 
       step_1: step++;
         VALUE err = ec->errinfo;
-        int mode0 = 0, mode1 = 0;
+        volatile int mode0 = 0, mode1 = 0;
         if (err != save_error && !NIL_P(err)) {
             mode0 = exiting_split(err, &sysex, &signaled);
         }
