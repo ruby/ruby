@@ -23,13 +23,13 @@ Note that each entry is kept to a minimum, see links for details.
 * A proc that accepts a single positional argument and keywords will
   no longer autosplat. [[Bug #18633]]
 
-  ```ruby
-  proc{|a, **k| a}.call([1, 2])
-  # Ruby 3.1 and before
-  # => 1
-  # Ruby 3.2 and after
-  # => [1, 2]
-  ```
+    ```ruby
+    proc{|a, **k| a}.call([1, 2])
+    # Ruby 3.1 and before
+    # => 1
+    # Ruby 3.2 and after
+    # => [1, 2]
+    ```
 
 * Constant assignment evaluation order for constants set on explicit
   objects has been made consistent with single attribute assignment
@@ -39,22 +39,22 @@ Note that each entry is kept to a minimum, see links for details.
     foo::BAR = baz
     ```
 
-  `foo` is now called before `baz`. Similarly, for multiple assignments
-  to constants,  left-to-right evaluation order is used. With this
-  code:
+    `foo` is now called before `baz`. Similarly, for multiple assignments
+    to constants,  left-to-right evaluation order is used. With this
+    code:
 
     ```ruby
-      foo1::BAR1, foo2::BAR2 = baz1, baz2
+    foo1::BAR1, foo2::BAR2 = baz1, baz2
     ```
 
-  The following evaluation order is now used:
+    The following evaluation order is now used:
 
-  1. `foo1`
-  2. `foo2`
-  3. `baz1`
-  4. `baz2`
+    1. `foo1`
+    2. `foo2`
+    3. `baz1`
+    4. `baz2`
 
-  [[Bug #15928]]
+    [[Bug #15928]]
 
 * Find pattern is no longer experimental.
   [[Feature #18585]]
@@ -111,10 +111,10 @@ Note: We're only listing outstanding class updates.
     `IO::TimeoutError` to be raised if a blocking operation exceeds the
     specified timeout. [[Feature #18630]]
 
-    ```ruby
-    STDIN.timeout = 1
-    STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
-    ```
+        ```ruby
+        STDIN.timeout = 1
+        STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
+        ```
 
 * UNIXSocket
     * Add support for `UNIXSocket` on Windows. Emulate anonymous sockets. Add
@@ -127,14 +127,14 @@ Note: We're only listing outstanding class updates.
       receiver is not a singleton class.
       [[Feature #12084]]
 
-      ```ruby
-      class Foo; end
+        ```ruby
+        class Foo; end
 
-      Foo.singleton_class.attached_object        #=> Foo
-      Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
-      Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
-      nil.singleton_class.attached_object        #=> TypeError: `NilClass' is not a singleton class
-      ```
+        Foo.singleton_class.attached_object        #=> Foo
+        Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
+        Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
+        nil.singleton_class.attached_object        #=> TypeError: `NilClass' is not a singleton class
+        ```
 
 * Data
     * New core class to represent simple immutable value object. The class is
@@ -194,53 +194,53 @@ Note: We're only listing outstanding class updates.
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
       With this option
 
-      1. SyntaxError is suppressed
-      2. AST is returned for invalid input
-      3. `end` is complemented when a parser reachs to the end of input but `end` is insufficient
-      4. `end` is treated as keyword based on indent
+        1. SyntaxError is suppressed
+        2. AST is returned for invalid input
+        3. `end` is complemented when a parser reachs to the end of input but `end` is insufficient
+        4. `end` is treated as keyword based on indent
 
-    ```ruby
-    # Without error_tolerant option
-    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY)
-    def m
-      a = 10
-      if
-    end
-    RUBY
-    # => <internal:ast>:33:in `parse': syntax error, unexpected `end' (SyntaxError)
+        ```ruby
+        # Without error_tolerant option
+        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY)
+        def m
+          a = 10
+          if
+        end
+        RUBY
+        # => <internal:ast>:33:in `parse': syntax error, unexpected `end' (SyntaxError)
 
-    # With error_tolerant option
-    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
-    def m
-      a = 10
-      if
-    end
-    RUBY
-    p root # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-4:3>
+        # With error_tolerant option
+        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
+        def m
+          a = 10
+          if
+        end
+        RUBY
+        p root # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-4:3>
 
-    # `end` is treated as keyword based on indent
-    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
-    module Z
-      class Foo
-        foo.
-      end
+        # `end` is treated as keyword based on indent
+        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
+        module Z
+          class Foo
+            foo.
+          end
 
-      def bar
-      end
-    end
-    RUBY
-    p root.children[-1].children[-1].children[-1].children[-2..-1]
-    # => [#<RubyVM::AbstractSyntaxTree::Node:CLASS@2:2-4:5>, #<RubyVM::AbstractSyntaxTree::Node:DEFN@6:2-7:5>]
-    ```
+          def bar
+          end
+        end
+        RUBY
+        p root.children[-1].children[-1].children[-1].children[-2..-1]
+        # => [#<RubyVM::AbstractSyntaxTree::Node:CLASS@2:2-4:5>, #<RubyVM::AbstractSyntaxTree::Node:DEFN@6:2-7:5>]
+        ```
 
     * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
       for `RubyVM::AbstractSyntaxTree::Node` [[Feature #19070]]
 
-    ```ruby
-    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
-    root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
-    root.tokens.map{_1[2]}.join # => "x = 1 + 2"
-    ```
+        ```ruby
+        root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
+        root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+        root.tokens.map{_1[2]}.join # => "x = 1 + 2"
+        ```
 
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
@@ -280,11 +280,11 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 * ERB
-  * `-S` option is removed from `erb` command.
+    * `-S` option is removed from `erb` command.
 
 * SyntaxSuggest
-  * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
-    [[Feature #18159]]
+    * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
+      [[Feature #18159]]
 
 *   The following default gems are updated.
     * RubyGems 3.4.0.dev
@@ -364,20 +364,20 @@ The following deprecated methods are removed.
   Users need to install the libyaml/libffi library themselves via the package
   manager like apt, yum, brew, etc.
 
-  Psych and fiddle supported the static build with specific version of libyaml
-  and libffi sources. You can build psych with libyaml-0.2.5 like this.
+    Psych and fiddle supported the static build with specific version of libyaml
+    and libffi sources. You can build psych with libyaml-0.2.5 like this.
 
-  ```bash
-  $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
-  ```
+    ```bash
+    $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
+    ```
 
-  And you can build fiddle with libffi-3.4.4 like this.
+    And you can build fiddle with libffi-3.4.4 like this.
 
-  ```bash
-  $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
-  ```
+    ```bash
+    $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
+    ```
 
-  [[Feature #18571]]
+    [[Feature #18571]]
 
 ## C API updates
 
