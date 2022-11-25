@@ -103,12 +103,12 @@ Note that each entry is kept to a minimum, see links for details.
 Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
-    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`.
+    * Introduce `Fiber::Scheduler#io_select` for non-blocking IO.select.
     [[Feature #19060]]
 
 * IO
-    * Introduce `IO#timeout=` and `IO#timeout` which can cause
-    `IO::TimeoutError` to be raised if a blocking operation exceeds the
+    * Introduce IO#timeout= and IO#timeout which can cause
+    IO::TimeoutError to be raised if a blocking operation exceeds the
     specified timeout. [[Feature #18630]]
 
         ```ruby
@@ -117,13 +117,13 @@ Note: We're only listing outstanding class updates.
         ```
 
 * UNIXSocket
-    * Add support for `UNIXSocket` on Windows. Emulate anonymous sockets. Add
-    support for `File.socket?` and `File::Stat#socket?` where possible.
+    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
+    support for File.socket? and File::Stat#socket? where possible.
     [[Feature #19135]]
 
 * Class
-    * `Class#attached_object`, which returns the object for which
-      the receiver is the singleton class. Raises `TypeError` if the
+    * Class#attached_object, which returns the object for which
+      the receiver is the singleton class. Raises TypeError if the
       receiver is not a singleton class.
       [[Feature #12084]]
 
@@ -138,14 +138,14 @@ Note: We're only listing outstanding class updates.
 
 * Data
     * New core class to represent simple immutable value object. The class is
-      similar to `Struct` and partially shares an implementation, but has more
+      similar to Struct and partially shares an implementation, but has more
       lean and strict API. [[Feature #16122]]
 
 * Encoding
     * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
     * The dummy `Encoding::UTF_16` and `Encoding::UTF_32` encodings no longer
       try to dynamically guess the endian based on a byte order mark.
-      Use `Encoding::UTF_16BE/UTF_16LE` and `Encoding::UTF_32BE/UTF_32LE` instead.
+      Use `Encoding::UTF_16BE`/`UTF_16LE` and `Encoding::UTF_32BE`/`UTF_32LE` instead.
       This change speeds up getting the encoding of a String. [[Feature #18949]]
 
 * Enumerator
@@ -234,7 +234,7 @@ Note: We're only listing outstanding class updates.
         ```
 
     * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
-      for `RubyVM::AbstractSyntaxTree::Node` [[Feature #19070]]
+      for RubyVM::AbstractSyntaxTree::Node [[Feature #19070]]
 
         ```ruby
         root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
@@ -244,7 +244,7 @@ Note: We're only listing outstanding class updates.
 
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
-      It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+      It is currently autoloaded via the Set constant or a call to Enumerable#to_set.
 
 * Socket
     * Added the following constants for supported platforms.
@@ -264,10 +264,10 @@ Note: We're only listing outstanding class updates.
 
 * Struct
     * A Struct class can also be initialized with keyword arguments
-      without `keyword_init: true` on `Struct.new` [[Feature #16806]]
+      without `keyword_init: true` on Struct.new [[Feature #16806]]
 
 * Time
-    * `Time#deconstruct_keys` is added, allowing to use `Time` instances
+    * Time#deconstruct_keys is added, allowing to use Time instances
       in pattern-matching expressions [[Feature #19071]]
 
 * TracePoint
@@ -354,13 +354,13 @@ The following deprecated methods are removed.
 
 ### Source code incompatiblity of extension libraries [[Bug #19100]]
 
-* Extension libraries provide PRNG, subclasses of `Random`, need updates.
+* Extension libraries provide PRNG, subclasses of Random, need updates.
   See [PRNG update] below for more information.
 
 ## Stdlib compatibility issues
 
-* `Psych` no longer bundles libyaml sources.
-  And also `Fiddle` no longer bundles libffi sources.
+* Psych no longer bundles libyaml sources.
+  And also Fiddle no longer bundles libffi sources.
   Users need to install the libyaml/libffi library themselves via the package
   manager like apt, yum, brew, etc.
 
@@ -400,7 +400,7 @@ The following deprecated APIs are removed.
 
 ## Implementation improvements
 
-* Fixed several race conditions in `Kernel#autoload`. [[Bug #18782]]
+* Fixed several race conditions in Kernel#autoload. [[Bug #18782]]
 * Cache invalidation for expressions referencing constants is now
   more fine-grained. `RubyVM.stat(:global_constant_state)` was
   removed because it was closely tied to the previous caching scheme
@@ -425,10 +425,10 @@ The following deprecated APIs are removed.
   memory pages until actually utilized by JIT code.
 * Introduce Code GC that frees all code pages when the memory consumption
   by JIT code reaches `--yjit-exec-mem-size`.
-  * `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
+  * RubyVM::YJIT.runtime_stats returns Code GC metrics in addition to
     existing `inline_code_size` and `outlined_code_size` keys:
     `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
-* Most of the statistics produced by `RubyVM::YJIT.runtime_stats` are now available in release builds.
+* Most of the statistics produced by RubyVM::YJIT.runtime_stats are now available in release builds.
   * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
 * YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
 * Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
