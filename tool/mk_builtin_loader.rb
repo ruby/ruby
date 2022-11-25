@@ -276,10 +276,10 @@ def mk_builtin_header file
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   begin
-    f = open(ofile, 'w')
-  rescue Errno::EACCES
+    f = File.open(ofile, 'w')
+  rescue SystemCallError # EACCES, EPERM, EROFS, etc.
     # Fall back to the current directory
-    f = open(File.basename(ofile), 'w')
+    f = File.open(File.basename(ofile), 'w')
   end
   begin
     if File::ALT_SEPARATOR
