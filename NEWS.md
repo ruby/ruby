@@ -282,6 +282,10 @@ Note: We're only listing outstanding class updates.
 * ERB
     * `-S` option is removed from `erb` command.
 
+* FileUtils
+    * Add FileUtils.ln_sr method and `relative:` option to FileUtils.ln_s.
+      [[Feature #18925]]
+
 * SyntaxSuggest
     * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
       [[Feature #18159]]
@@ -495,6 +499,7 @@ The following deprecated APIs are removed.
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18821]: https://bugs.ruby-lang.org/issues/18821
 [Feature #18824]: https://bugs.ruby-lang.org/issues/18824
+[Feature #18925]: https://bugs.ruby-lang.org/issues/18925
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Feature #18968]: https://bugs.ruby-lang.org/issues/18968
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
