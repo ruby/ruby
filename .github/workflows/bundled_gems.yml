@@ -13,8 +13,13 @@ on:
     - cron: '45 6 * * *'
   workflow_dispatch:
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   update:
+    permissions:
+      contents: write  # for Git to git push
     if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
     name: update ${{ github.workflow }}
     runs-on: ubuntu-latest
