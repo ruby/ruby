@@ -725,7 +725,7 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
     path << ".src"
     path[path.rindex('/')] = '%'
     STDOUT.puts 'load mapsrc %s' % path if VERBOSE_MODE > 1
-    open(path, 'rb') do |f|
+    File.open(path, 'rb') do |f|
       f.each_line do |l|
         break if /^BEGIN_MAP/ =~ l
       end

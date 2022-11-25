@@ -729,7 +729,7 @@ module Test
           return result
         ensure
           if file = @options[:timetable_data]
-            open(file, 'w'){|f|
+            File.open(file, 'w'){|f|
               @records.each{|(worker, suite), (st, ed)|
                 f.puts '[' + [worker.dump, suite.dump, st.to_f * 1_000, ed.to_f * 1_000].join(", ") + '],'
               }
