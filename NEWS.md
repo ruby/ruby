@@ -192,6 +192,47 @@ Note: We're only listing outstanding class updates.
 
 * RubyVM::AbstractSyntaxTree
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
+      With this option
+
+      1. SyntaxError is suppressed
+      2. AST is returned for invalid input
+      3. `end` is complemented when a parser reachs to the end of input but `end` is insufficient
+      4. `end` is treated as keyword based on indent
+
+    ```ruby
+    # Without error_tolerant option
+    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY)
+    def m
+      a = 10
+      if
+    end
+    RUBY
+    # => <internal:ast>:33:in `parse': syntax error, unexpected `end' (SyntaxError)
+
+    # With error_tolerant option
+    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
+    def m
+      a = 10
+      if
+    end
+    RUBY
+    p root # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-4:3>
+
+    # `end` is treated as keyword based on indent
+    root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
+    module Z
+      class Foo
+        foo.
+      end
+
+      def bar
+      end
+    end
+    RUBY
+    p root.children[-1].children[-1].children[-1].children[-2..-1]
+    # => [#<RubyVM::AbstractSyntaxTree::Node:CLASS@2:2-4:5>, #<RubyVM::AbstractSyntaxTree::Node:DEFN@6:2-7:5>]
+    ```
+
     * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
       for `RubyVM::AbstractSyntaxTree::Node` [[Feature #19070]]
 
