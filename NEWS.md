@@ -445,6 +445,7 @@ The following deprecated APIs are removed.
   * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
 * MinGW is no longer supported. [[Feature #18824]]
 * Rename `--mjit-min-calls` to `--mjit-call-threshold`.
+* Change default `--mjit-max-cache` back from 10000 to 100.
 
 ## Static analysis
 

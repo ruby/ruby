@@ -1626,7 +1626,7 @@ system_tmpdir(void)
 // Minimum value for JIT cache size.
 #define MIN_CACHE_SIZE 10
 // Default permitted number of units with a JIT code kept in memory.
-#define DEFAULT_MAX_CACHE_SIZE 10000
+#define DEFAULT_MAX_CACHE_SIZE 100
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 10000
 
