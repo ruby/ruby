@@ -108,7 +108,6 @@ rb_call_builtin_inits(void)
 #if USE_MJIT
     BUILTIN(mjit);
     BUILTIN(mjit_c);
-    BUILTIN(mjit_compiler);
 #endif
     Init_builtin_prelude();
 }

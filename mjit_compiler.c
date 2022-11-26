@@ -173,6 +173,4 @@ extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
 
 #include "mjit_c.rbinc"
 
-#include "mjit_compiler.rbinc"
-
 #endif // USE_MJIT

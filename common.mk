@@ -1085,7 +1085,6 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/marshal.rb \
 		$(srcdir)/mjit.rb \
 		$(srcdir)/mjit_c.rb \
-		$(srcdir)/mjit_compiler.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -9584,7 +9583,6 @@ miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}mjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}mjit_c.rb
-miniinit.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
@@ -10027,7 +10025,6 @@ mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_c.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile_attr.inc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.c
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.h
-mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}node.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}ruby_assert.h
