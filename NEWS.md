@@ -248,13 +248,13 @@ Note: We're only listing outstanding class updates.
 
 * Socket
     * Added the following constants for supported platforms.
-      * `SO_INCOMING_CPU`
-      * `SO_INCOMING_NAPI_ID`
-      * `SO_RTABLE`
-      * `SO_SETFIB`
-      * `SO_USER_COOKIE`
-      * `TCP_KEEPALIVE`
-      * `TCP_CONNECTION_INFO`
+        * `SO_INCOMING_CPU`
+        * `SO_INCOMING_NAPI_ID`
+        * `SO_RTABLE`
+        * `SO_SETFIB`
+        * `SO_USER_COOKIE`
+        * `TCP_KEEPALIVE`
+        * `TCP_CONNECTION_INFO`
 
 * String
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
@@ -418,22 +418,22 @@ The following deprecated APIs are removed.
 ### YJIT
 
 * YJIT now supports both x86-64 and arm64/aarch64 CPUs on Linux, MacOS, BSD and other UNIX platforms.
-  * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4 ARM64 processors.
+    * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4 ARM64 processors.
 * Building YJIT requires Rust 1.58.0+. [[Feature #18481]]
-  * In order to ensure that CRuby is built with YJIT, please install rustc >= 1.58.0 and
-    run `./configure` with `--enable-yjit`.
-  * Please reach out to the YJIT team should you run into any issues.
+    * In order to ensure that CRuby is built with YJIT, please install rustc >= 1.58.0 and
+      run `./configure` with `--enable-yjit`.
+    * Please reach out to the YJIT team should you run into any issues.
 * Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
   the RSS of a Ruby process is minimized because virtual memory pages
   allocated by `--yjit-exec-mem-size` will not be mapped to physical
   memory pages until actually utilized by JIT code.
 * Introduce Code GC that frees all code pages when the memory consumption
   by JIT code reaches `--yjit-exec-mem-size`.
-  * RubyVM::YJIT.runtime_stats returns Code GC metrics in addition to
-    existing `inline_code_size` and `outlined_code_size` keys:
-    `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
+    * RubyVM::YJIT.runtime_stats returns Code GC metrics in addition to
+      existing `inline_code_size` and `outlined_code_size` keys:
+      `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
 * Most of the statistics produced by RubyVM::YJIT.runtime_stats are now available in release builds.
-  * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
+    * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
 * YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
 * Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
 
@@ -442,7 +442,7 @@ The following deprecated APIs are removed.
 * The MJIT compiler is re-implemented in Ruby as a standard library `mjit`.
 * MJIT compiler is executed under a forked Ruby process instead of
   doing it in a native thread called MJIT worker. [[Feature #18968]]
-  * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
+    * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
 * MinGW is no longer supported. [[Feature #18824]]
 * Rename `--mjit-min-calls` to `--mjit-call-threshold`.
 * Change default `--mjit-max-cache` back from 10000 to 100.
