@@ -74,7 +74,7 @@ jobs:
               g, v = l.split(" ", 3)
               [g, v] unless last[g] == v
             end
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n\K(?: \1\* .*\n)*/) do
+            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n+\K(?: \1\* .*\n)*/) do
               mark = "#{$1} * "
               changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
             end or next
