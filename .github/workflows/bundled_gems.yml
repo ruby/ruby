@@ -69,12 +69,12 @@ jobs:
               [g, v] unless last[g] == v
             end
             changed, added = changed.partition {|g, _| last[g]}
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
+            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n+\K(?: \1\*( +).*\n)*/) do
+              mark = "#{$1} *#{$2}"
               changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
             end or next
-            news.sub!(/^\*( +)The following default gems are now bundled gems\.\n\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
+            news.sub!(/^\*( +)The following default gems are now bundled gems\.\n+\K(?: \1\*( +).*\n)*/) do
+              mark = "#{$1} *#{$2}"
               added.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
             end or next if added
             File.write("NEWS.md", news)
