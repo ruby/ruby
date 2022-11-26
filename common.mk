@@ -1372,6 +1372,7 @@ update-config_files: PHONY
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
+extract-gems: $(HAVE_BASERUBY:yes=update-gems) $(DOT_WAIT) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 
 update-gems$(gnumake:yes=-sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
@@ -1403,16 +1404,36 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
-extract-gems: outdate-bundled-gems
 outdate-bundled-gems: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	$(Q) $(BASERUBY) \
 	-rfileutils \
-	-e "Dir.glob('.bundle/gems/*/') {|g|" \
-	-e   "FileUtils::Verbose.rm_rf(g) unless File.exist?(%[gems/#{File.basename(g)}.gem])" \
+	-e "srcdir = ARGV.shift" \
+	-e "FU = /\A-\w*n/ =~ ENV['MFLAGS'] ? FileUtils::DryRun : FileUtils::Verbose" \
+	-e "Dir.glob(%[#{srcdir}/.bundle/gems/*/]) {|dir|" \
+	-e   "gem = %[#{srcdir}/gems/#{File.basename(dir)}.gem]" \
+	-e   "FU.rm_rf(dir) unless File.exist?(gem)" \
 	-e "}" \
-	-e "Dir.glob('.bundle/specifications/*.gemspec') {|g|" \
-	-e   "FileUtils::Verbose.rm_f(g) unless File.exist?(%[gems/#{File.basename(g, '.gemspec')}.gem])" \
-	-e "}"
+	-e "Dir.glob(%[#{srcdir}/.bundle/specifications/*.gemspec]) {|spec|" \
+	-e   "gem = %[#{srcdir}/gems/#{File.basename(spec, '.gemspec')}.gem]" \
+	-e   "FU.rm_f(spec) unless File.exist?(gem)" \
+	-e "}" \
+	-e "Dir.glob('.bundle/specifications/*.gemspec') {|spec|" \
+	-e   "dir = %[#{srcdir}/.bundle/gems/#{File.basename(spec, '.gemspec')}]" \
+	-e   "FU.rm_f(spec) unless File.directory?(dir)" \
+	-e "}" \
+	-e "Dir.glob('.bundle/gems/*/') {|dir|" \
+	-e   "spec = %[.bundle/specifications/#{File.basename(dir)}.gemspec]" \
+	-e   "FU.rm_rf(dir) unless File.exist?(spec)" \
+	-e "}" \
+	-e "Dir.glob('.bundle/extensions/*/*/*/') {|dir|" \
+	-e   "spec = %[.bundle/specifications/#{File.basename(dir)}.gemspec]" \
+	-e   "unless File.exist?(spec)" \
+	-e     "FU.rm_rf(dir)" \
+	-e     "FU.rmdir(File.dirname(dir), parents: true) rescue nil" \
+	-e   "end" \
+	-e "}" \
+	-e "# $(MAKE)" \
+	"$(srcdir)"
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \

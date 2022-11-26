@@ -268,8 +268,6 @@ HELP_EXTRA_TASKS = \
 	"  update-github:         merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-extract-gems: $(HAVE_BASERUBY:yes=update-gems)
-
 # 1. squeeze spaces
 # 2. strip and skip comment/empty lines
 # 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z|xxxxxx|URL"
@@ -288,6 +286,7 @@ bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst |, ,$(value g))))
+update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/$(word 1,$(subst |, ,$(value g)))-$(word 2,$(subst |, ,$(value g))).gem)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
