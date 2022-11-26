@@ -97,6 +97,8 @@ module RubyVM::MJIT
       return status.success
     end
 
+    private
+
     # Compile one conditional branch. If it has branchXXX insn, this should be
     # called multiple times for each branch.
     def compile_insns(stack_size, pos, status, body, f)
@@ -240,12 +242,7 @@ module RubyVM::MJIT
       end
 
       return compile_insn_default(insn, stack_size, sp_inc, local_stack_p, pos, next_pos, insn_len, inlined_iseq_p, operands)
-    rescue => e
-      puts e.full_message
-      nil
     end
-
-    private
 
     # Optimized case of send / opt_send_without_block instructions.
     # _mjit_compile_send.erb
