@@ -1,7 +1,19 @@
+#--
+# ERB::Escape
+#
+# A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope
+# Rails will not monkey-patch ERB::Escape#html_escape.
 begin
-  # ERB::Util.html_escape
   require 'erb/escape'
 rescue LoadError # JRuby can't load .so
+end
+unless defined?(ERB::Escape) # JRuby
+  module ERB::Escape
+    def html_escape(s)
+      CGI.escapeHTML(s.to_s)
+    end
+    module_function :html_escape
+  end
 end
 
 #--
@@ -21,12 +33,8 @@ module ERB::Util
   #
   #   is a &gt; 0 &amp; a &lt; 10?
   #
-  unless defined?(ERB::Util.html_escape) # for JRuby
-    def html_escape(s)
-      CGI.escapeHTML(s.to_s)
-    end
-    module_function :html_escape
-  end
+  include ERB::Escape # html_escape
+  module_function :html_escape
   alias h html_escape
   module_function :h
 
