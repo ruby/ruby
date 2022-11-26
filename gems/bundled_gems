@@ -11,6 +11,6 @@ net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.3.3   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
-rbs             2.8.0   https://github.com/ruby/rbs 89c9cfb0fb594181d8d47f90289c7da4937f3921
+rbs             2.8.0   https://github.com/ruby/rbs 5509ff13117d94d11e6e09d5026676cd79d6edc4
 typeprof        0.21.3  https://github.com/ruby/typeprof
 debug           1.6.3   https://github.com/ruby/debug
