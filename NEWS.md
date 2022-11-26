@@ -103,13 +103,15 @@ Note that each entry is kept to a minimum, see links for details.
 Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
+
     * Introduce `Fiber::Scheduler#io_select` for non-blocking IO.select.
-    [[Feature #19060]]
+      [[Feature #19060]]
 
 * IO
+
     * Introduce IO#timeout= and IO#timeout which can cause
-    IO::TimeoutError to be raised if a blocking operation exceeds the
-    specified timeout. [[Feature #18630]]
+      IO::TimeoutError to be raised if a blocking operation exceeds the
+      specified timeout. [[Feature #18630]]
 
         ```ruby
         STDIN.timeout = 1
@@ -117,11 +119,13 @@ Note: We're only listing outstanding class updates.
         ```
 
 * UNIXSocket
+
     * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
-    support for File.socket? and File::Stat#socket? where possible.
-    [[Feature #19135]]
+      support for File.socket? and File::Stat#socket? where possible.
+      [[Feature #19135]]
 
 * Class
+
     * Class#attached_object, which returns the object for which
       the receiver is the singleton class. Raises TypeError if the
       receiver is not a singleton class.
@@ -137,11 +141,13 @@ Note: We're only listing outstanding class updates.
         ```
 
 * Data
+
     * New core class to represent simple immutable value object. The class is
       similar to Struct and partially shares an implementation, but has more
       lean and strict API. [[Feature #16122]]
 
 * Encoding
+
     * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
     * The dummy `Encoding::UTF_16` and `Encoding::UTF_32` encodings no longer
       try to dynamically guess the endian based on a byte order mark.
@@ -149,32 +155,39 @@ Note: We're only listing outstanding class updates.
       This change speeds up getting the encoding of a String. [[Feature #18949]]
 
 * Enumerator
+
     * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
 
 * Hash
+
     * Hash#shift now always returns nil if the hash is
       empty, instead of returning the default value or
       calling the default proc. [[Bug #16908]]
 
 * Integer
+
     * Integer#ceildiv has been added. [[Feature #18809]]
 
 * Kernel
+
     * Kernel#binding raises RuntimeError if called from a non-Ruby frame
       (such as a method defined in C). [[Bug #18487]]
 
 * MatchData
+
     * MatchData#byteoffset has been added. [[Feature #13110]]
     * MatchData#deconstruct has been added. [[Feature #18821]]
     * MatchData#deconstruct_keys has been added. [[Feature #18821]]
 
 * Module
+
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
     * Module#const_added has been added. [[Feature #17881]]
     * Module#undefined_instance_methods has been added. [[Feature #12655]]
 
 * Proc
+
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
     * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
@@ -182,15 +195,18 @@ Note: We're only listing outstanding class updates.
     * Added `RLIMIT_NPTS` constant to FreeBSD platform
 
 * Regexp
+
     * Regexp.new now supports passing the regexp flags not only as an Integer,
       but also as a String.  Unknown flags raise ArgumentError.
       Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
       [[Feature #18788]]
 
 * Refinement
+
     * Refinement#refined_class has been added. [[Feature #12737]]
 
 * RubyVM::AbstractSyntaxTree
+
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
       With this option
 
@@ -243,10 +259,12 @@ Note: We're only listing outstanding class updates.
         ```
 
 * Set
+
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the Set constant or a call to Enumerable#to_set.
 
 * Socket
+
     * Added the following constants for supported platforms.
         * `SO_INCOMING_CPU`
         * `SO_INCOMING_NAPI_ID`
@@ -257,20 +275,24 @@ Note: We're only listing outstanding class updates.
         * `TCP_CONNECTION_INFO`
 
 * String
+
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
     * Update Unicode to Version 14.0.0 and Emoji Version 14.0. [[Feature #18037]]
       (also applies to Regexp)
     * String#bytesplice has been added.  [[Feature #18598]]
 
 * Struct
+
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on Struct.new [[Feature #16806]]
 
 * Time
+
     * Time#deconstruct_keys is added, allowing to use Time instances
       in pattern-matching expressions [[Feature #19071]]
 
 * TracePoint
+
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
       [[Bug #18487]]
     * TracePoint#enable `target_thread` keyword argument now defaults to the
@@ -280,17 +302,21 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 * ERB
+
     * `-S` option is removed from `erb` command.
 
 * FileUtils
+
     * Add FileUtils.ln_sr method and `relative:` option to FileUtils.ln_s.
       [[Feature #18925]]
 
 * SyntaxSuggest
+
     * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
       [[Feature #18159]]
 
 *   The following default gems are updated.
+
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
@@ -318,7 +344,9 @@ Note: We're only listing outstanding class updates.
     * stringio 3.0.3
     * syntax_suggest 0.0.1
     * timeout 0.3.0
+
 *   The following bundled gems are updated.
+
     * minitest 5.16.3
     * power_assert 2.0.2
     * test-unit 3.5.5
@@ -329,6 +357,7 @@ Note: We're only listing outstanding class updates.
     * rbs 2.7.0
     * typeprof 0.21.3
     * debug 1.6.3
+
 *   The following default gems are now bundled gems.
 
 ## Compatibility issues
