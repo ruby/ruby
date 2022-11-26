@@ -424,11 +424,11 @@ IGNORE_FILE_PATTERN =
 def message_filter(repo, sha, input: ARGF)
   log = input.read
   log.delete!("\r")
-  url = "https://github.com/#{repo}"
+  repo_url = "https://github.com/#{repo}"
   subject, log = log.split(/\n(?:[\s\t]*(?:\n|\z))/, 2)
   conv = proc do |s|
     mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?|close[sd]?|resolve[sd]?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
-      "#{url}/pull/"
+      "#{repo_url}/pull/"
     }
     mod |= true if s.gsub!(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
       "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
@@ -442,15 +442,15 @@ def message_filter(repo, sha, input: ARGF)
       subject.gsub!(/\G.{,67}[^\s.,][.,]*\K\s+/, "\n")
     end
   end
-  url = "#{url}/commit/#{sha[0,10]}\n"
+  commit_url = "#{repo_url}/commit/#{sha[0,10]}\n"
   if log and !log.empty?
     log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
     conv[log]
     log.sub!(/(?:(\A\s*)|\s*\n)(?=(?i:Co-authored-by:.*)*\Z)/) {
-      $~.begin(1) ? "#{url}\n" : "\n\n#{url}"
+      $~.begin(1) ? "#{commit_url}\n" : "\n\n#{commit_url}"
     }
   else
-    log = url
+    log = commit_url
   end
   print subject, "\n\n", log
 end
