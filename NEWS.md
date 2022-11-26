@@ -316,6 +316,33 @@ Note: We're only listing outstanding class updates.
       [[Feature #18159]]
 
 *   The following default gems are updated.
+    * RubyGems 3.4.0.dev
+    * bigdecimal 3.1.2
+    * bundler 2.4.0.dev
+    * cgi 0.3.5
+    * date 3.2.3
+    * erb 3.0.0
+    * error_highlight 0.5.1
+    * etc 1.4.0
+    * fiddle 1.1.1
+    * io-console 0.5.11
+    * io-nonblock 0.1.1
+    * io-wait 0.3.0.pre
+    * ipaddr 1.2.4
+    * irb 1.5.0
+    * json 2.6.2
+    * logger 1.5.1
+    * net-http 0.3.0
+    * net-protocol 0.1.3
+    * openssl 3.1.0.pre
+    * ostruct 0.5.5
+    * psych 5.0.0.dev
+    * reline 0.3.1
+    * securerandom 0.2.0
+    * set 1.0.3
+    * stringio 3.0.3
+    * syntax_suggest 0.0.1
+    * timeout 0.3.0
 
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
