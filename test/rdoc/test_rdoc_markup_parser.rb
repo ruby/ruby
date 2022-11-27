@@ -1591,7 +1591,8 @@ Example heading:
       [:TEXT,    'Example heading:',  0, 0],
       [:NEWLINE, "\n",               16, 0],
       [:NEWLINE, "\n",                0, 1],
-      [:TEXT,    '=== heading three', 3, 2],
+      [:HEADER,  3,                   3, 2],
+      [:TEXT,    'heading three',     7, 2],
       [:NEWLINE, "\n",               20, 2],
     ]
 
@@ -1607,7 +1608,7 @@ Example heading:
     expected = [
       [:TEXT,    'Verbatim section here that is double-underlined',  2, 0],
       [:NEWLINE, "\n",                                              49, 0],
-      [:TEXT,    '='*47,                                             2, 1],
+      [:HEADER,  47,                                                 2, 1],
       [:NEWLINE, "\n",                                              49, 1],
     ]
 
@@ -1623,14 +1624,14 @@ Example heading:
     STR
 
     expected = [
-      [:TEXT,    'A',     2, 0],
-      [:NEWLINE, "\n",    3, 0],
-      [:TEXT,    'b',     4, 1],
-      [:NEWLINE, "\n",    5, 1],
-      [:TEXT,    '='*47,  2, 2],
-      [:NEWLINE, "\n",   49, 2],
-      [:TEXT,    'c',     4, 3],
-      [:NEWLINE, "\n",    5, 3],
+      [:TEXT,    'A',   2, 0],
+      [:NEWLINE, "\n",  3, 0],
+      [:TEXT,    'b',   4, 1],
+      [:NEWLINE, "\n",  5, 1],
+      [:HEADER,  47,    2, 2],
+      [:NEWLINE, "\n", 49, 2],
+      [:TEXT,    'c',   4, 3],
+      [:NEWLINE, "\n",  5, 3],
     ]
 
     assert_equal expected, @RMP.tokenize(str)
