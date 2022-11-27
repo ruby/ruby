@@ -779,25 +779,41 @@ argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const char 
 }
 
 static inline void
-vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calling)
+vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calling, int allow_heap_argv)
 {
     int argc = calling->argc;
     VALUE *argv = cfp->sp - argc;
     VALUE ary = argv[argc-1];
 
     vm_check_canary(GET_EC(), cfp->sp);
-    cfp->sp--;
 
     if (!NIL_P(ary)) {
         const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
-        long len = RARRAY_LEN(ary), i;
+        long len = RARRAY_LEN(ary);
 
-        CHECK_VM_STACK_OVERFLOW(cfp, len);
-
-        for (i = 0; i < len; i++) {
-            *cfp->sp++ = ptr[i];
+        if (UNLIKELY(allow_heap_argv && len + argc > VM_ARGC_STACK_MAX)) {
+            /* Avoid SystemStackError when calling cfuncs with splatted large arrays by storing
+             * argv in a temporary array, instead of trying to keeping it on the VM stack.
+             */
+            VALUE argv_array = rb_ary_new_capa(len + argc - 1);
+            rb_obj_hide(argv_array);
+            rb_ary_cat(argv_array, argv, argc-1);
+            rb_ary_cat(argv_array, ptr, len);
+            cfp->sp -= argc - 1;
+            cfp->sp[-1] = argv_array;
+            calling->argc = 1;
+            RB_CFUNC_SET_HEAP_ARGV(calling);
         }
-        calling->argc += i - 1;
+        else {
+            cfp->sp--;
+            long i;
+            CHECK_VM_STACK_OVERFLOW(cfp, len);
+
+            for (i = 0; i < len; i++) {
+                *cfp->sp++ = ptr[i];
+            }
+            calling->argc += i - 1;
+        }
     }
 }
 

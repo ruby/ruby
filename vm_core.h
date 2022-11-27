@@ -298,6 +298,17 @@ struct rb_calling_info {
     int kw_splat;
 };
 
+/* Abuse rb_calling_info.kw_splat to hold heap argv flag for
+ * cfunc calls, to avoid performance decrease for other calls.
+ */
+#define RB_CFUNC_KWSPLAT 1
+#define RB_CFUNC_HEAP_ARGV 2
+#define RB_CFUNC_KWSPLAT_P(calling) ((calling)->kw_splat & RB_CFUNC_KWSPLAT)
+#define RB_CFUNC_HEAP_ARGV_P(calling) ((calling)->kw_splat & RB_CFUNC_HEAP_ARGV)
+#define RB_CFUNC_SET_HEAP_ARGV(calling) (calling)->kw_splat |= RB_CFUNC_HEAP_ARGV
+#define RB_CFUNC_SET_KWSPLAT(calling) (calling)->kw_splat |= RB_CFUNC_KWSPLAT
+#define RB_CFUNC_UNSET_KWSPLAT(calling) (calling)->kw_splat &= ~RB_CFUNC_KWSPLAT
+
 struct rb_execution_context_struct;
 
 #if 1
@@ -831,6 +842,13 @@ typedef struct rb_vm_struct {
 
 #ifndef VM_DEBUG_VERIFY_METHOD_CACHE
 #define VM_DEBUG_VERIFY_METHOD_CACHE (VMDEBUG != 0)
+#endif
+
+/* Cfunc calls with more than this many arguments when using a splat use a temporary
+ * array for argv.
+ */
+#ifndef VM_ARGC_STACK_MAX
+#define VM_ARGC_STACK_MAX 1024
 #endif
 
 struct rb_captured_block {
