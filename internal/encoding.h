@@ -12,9 +12,9 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 
 #define rb_enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
-#define rb_is_usascii_enc(enc) (enc) == rb_usascii_encoding()
-#define rb_is_ascii8bit_enc(enc) (enc) == rb_ascii8bit_encoding()
-#define rb_is_locale_enc(enc) (enc) == rb_locale_encoding()
+#define rb_is_usascii_enc(enc) ((enc) == rb_usascii_encoding())
+#define rb_is_ascii8bit_enc(enc) ((enc) == rb_ascii8bit_encoding())
+#define rb_is_locale_enc(enc) ((enc) == rb_locale_encoding())
 
 /* encoding.c */
 ID rb_id_encoding(void);
