@@ -113,6 +113,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     refute_match(/Ignored/, File.read('index.html'))
     summary = File.read('index.html')[%r[<summary.*Klass\.html.*</summary>.*</details>]m]
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
+    omit 'The following line crashes with "invalid byte sequence in US-ASCII" on ci.rvm.jp and some RubyCIs'
     klassnav = File.read('Klass.html')[%r[<div class="nav-section">.*<div id="class-metadata">]m]
     assert_match(
       %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
