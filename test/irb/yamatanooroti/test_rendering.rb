@@ -297,9 +297,9 @@ begin
       write("continue\n")
       write("delete 0\n")
       close
-      assert_include_screen(<<~EOC)
+      assert_include_screen(<<~EOC.strip)
         (rdbg:irb) delete 0
-        deleted: #0  BP - Line  #{@ruby_file}:5 (line)
+        deleted: #0  BP - Line
       EOC
     end
 
