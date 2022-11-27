@@ -1,12 +1,33 @@
 # frozen_string_literal: false
 #
 # The \HTTPHeader module provides access to \HTTP headers.
-# The headers are a hash-like collection of key/value pairs called _fields_.
 #
 # The module is included in:
 #
 # - Net::HTTPGenericRequest (and therefore Net::HTTPRequest).
 # - Net::HTTPResponse.
+#
+# The headers are a hash-like collection of key/value pairs called _fields_.
+#
+# == Request and Response Fields
+#
+# Headers may be included in:
+#
+# - A Net::HTTPRequest object:
+#   the object's headers will be sent with the request.
+#   Any fields may be defined in the request;
+#   see {Setters}[rdoc-ref:Net::HTTPHeader@Setters].
+# - A Net::HTTPResponse object:
+#   the objects headers are usually those returned from the host.
+#   Fields may be retrieved from the object;
+#   see {Getters}[rdoc-ref:Net::HTTPHeader@Getters]
+#   and {Iterators}[rdoc-ref:Net::HTTPHeader@Iterators].
+#
+# Exactly which fields should be sent or expected depends on the host;
+# see:
+#
+# - {Request fields}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields].
+# - {Response fields}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields].
 #
 # == About the Examples
 #
@@ -366,8 +387,17 @@ module Net::HTTPHeader
     end
   end
 
-  # Iterates through header values, passing each value to the
-  # code block.
+  # Calls the block with each field value:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.each_value {|value| p value }
+  #
+  # Output:
+  #
+  #   "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+  #   "*/*"
+  #   "Ruby"
+  #   "jsonplaceholder.typicode.com"
   #
   # Returns an enumerator if no block is given.
   def each_value   #:yield: +value+
@@ -377,32 +407,43 @@ module Net::HTTPHeader
     end
   end
 
-  # Removes a header field, specified by case-insensitive key.
+  # Removes the header for the given case-insensitive +key+
+  # (see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]);
+  # returns the deleted value, or +nil+ if no such field exists:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.delete('Accept') # => ["*/*"]
+  #   req.delete('Nosuch') # => nil
+  #
   def delete(key)
     @header.delete(key.downcase.to_s)
   end
 
-  # true if +key+ header exists.
+  # Returns +true+ if the field for the case-insensitive +key+ exists, +false+ otherwise:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.key?('Accept') # => true
+  #   req.key?('Nosuch') # => false
+  #
   def key?(key)
     @header.key?(key.downcase.to_s)
   end
 
-  # Returns a Hash consisting of header names and array of values.
-  # e.g.
-  # {"cache-control" => ["private"],
-  #  "content-type" => ["text/html"],
-  #  "date" => ["Wed, 22 Jun 2005 22:11:50 GMT"]}
+  # Returns a hash of the key/value pairs:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.to_hash
+  #   # =>
+  #   {"accept-encoding"=>["gzip;q=1.0,deflate;q=0.6,identity;q=0.3"],
+  #    "accept"=>["*/*"],
+  #    "user-agent"=>["Ruby"],
+  #    "host"=>["jsonplaceholder.typicode.com"]}
+  #
   def to_hash
     @header.dup
   end
 
-  # As for #each_header, except the keys are provided in capitalized form.
-  #
-  # Note that header names are capitalized systematically;
-  # capitalization may not match that used by the remote HTTP
-  # server in its response.
-  #
-  # Returns an enumerator if no block is given.
+  # Like #each_header, but the keys are returned in capitalized form.
   #
   # Net::HTTPHeader#canonical_each is an alias for Net::HTTPHeader#each_capitalized.
   def each_capitalized
