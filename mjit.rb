@@ -23,4 +23,8 @@ if RubyVM::MJIT.enabled?
   require "mjit/c_type"
   require "mjit/instruction"
   require "mjit/compiler"
+
+  module RubyVM::MJIT
+    private_constant *constants
+  end
 end

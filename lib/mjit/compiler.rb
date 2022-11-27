@@ -1,25 +1,24 @@
+# Available variables and macros in JIT-ed function:
+#   ec: the first argument of _mjitXXX
+#   reg_cfp: the second argument of _mjitXXX
+#   GET_CFP(): refers to `reg_cfp`
+#   GET_EP(): refers to `reg_cfp->ep`
+#   GET_SP(): refers to `reg_cfp->sp`, or `(stack + stack_size)` if local_stack_p
+#   GET_SELF(): refers to `cfp_self`
+#   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
+#   EXEC_EC_CFP(): refers to `val = vm_exec(ec, true)` with frame setup
+#   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
+#   TOPN(): refers to `reg_cfp->sp`, or `*(stack + (stack_size - num - 1))` if local_stack_p
+#   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, or `stack + (stack_size - num)` if local_stack_p
+#   DISPATCH_ORIGINAL_INSN(): expanded in _mjit_compile_insn.erb
+#   THROW_EXCEPTION(): specially defined for JIT
+#   RESTORE_REGS(): specially defined for `leave`
 module RubyVM::MJIT
   UNSUPPORTED_INSNS = [
     :defineclass, # low priority
   ]
 
-  # Available variables and macros in JIT-ed function:
-  #   ec: the first argument of _mjitXXX
-  #   reg_cfp: the second argument of _mjitXXX
-  #   GET_CFP(): refers to `reg_cfp`
-  #   GET_EP(): refers to `reg_cfp->ep`
-  #   GET_SP(): refers to `reg_cfp->sp`, or `(stack + stack_size)` if local_stack_p
-  #   GET_SELF(): refers to `cfp_self`
-  #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
-  #   EXEC_EC_CFP(): refers to `val = vm_exec(ec, true)` with frame setup
-  #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
-  #   TOPN(): refers to `reg_cfp->sp`, or `*(stack + (stack_size - num - 1))` if local_stack_p
-  #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, or `stack + (stack_size - num)` if local_stack_p
-  #   DISPATCH_ORIGINAL_INSN(): expanded in _mjit_compile_insn.erb
-  #   THROW_EXCEPTION(): specially defined for JIT
-  #   RESTORE_REGS(): specially defined for `leave`
   class << Compiler = Module.new
-    # mjit_compile
     # @param funcname [String]
     def compile(f, iseq, funcname, id)
       status = C.compile_status.new # not freed for now
@@ -50,7 +49,8 @@ module RubyVM::MJIT
       return false
     end
 
-    # mjit_compile_body
+    private
+
     def compile_body(f, iseq, status)
       status.success = true
       status.local_stack_p = !iseq.body.catch_except_p
@@ -96,8 +96,6 @@ module RubyVM::MJIT
       C.fprintf(f, "#undef GET_SELF\n")
       return status.success
     end
-
-    private
 
     # Compile one conditional branch. If it has branchXXX insn, this should be
     # called multiple times for each branch.
@@ -174,7 +172,6 @@ module RubyVM::MJIT
       return next_pos
     end
 
-    # mjit_comiple.inc.erb
     def compile_insn_entry(f, insn, stack_size, sp_inc, local_stack_p, pos, next_pos, insn_len, inlined_iseq_p, status, operands, body)
       finish_p = false
       compile_insns = false
@@ -245,7 +242,6 @@ module RubyVM::MJIT
     end
 
     # Optimized case of send / opt_send_without_block instructions.
-    # _mjit_compile_send.erb
     def compile_send(insn, stack_size, sp_inc, local_stack_p, pos, next_pos, status, operands, body)
       # compiler: Use captured cc to avoid race condition
       cd = C.CALL_DATA.new(operands[0])
@@ -342,7 +338,6 @@ module RubyVM::MJIT
       end
     end
 
-    # _mjit_compile_ivar.erb
     def compile_ivar(insn_name, stack_size, pos, status, operands, body)
       ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(operands[1]) - body.is_entries)).iv_cache
       dest_shape_id = ic_copy.value >> C.SHAPE_FLAG_SHIFT
@@ -412,7 +407,6 @@ module RubyVM::MJIT
       end
     end
 
-    # _mjit_compile_invokebulitin.erb
     def compile_invokebuiltin(f, insn, stack_size, sp_inc, body, operands)
       bf = C.RB_BUILTIN.new(operands[0])
       if bf.compiler > 0
@@ -428,7 +422,6 @@ module RubyVM::MJIT
       end
     end
 
-    # _mjit_compile_getconstant_path.erb
     def compile_getconstant_path(stack_size, pos, insn_len, operands, status)
       ice = C.IC.new(operands[0]).entry
       if !status.compile_info.disable_const_cache && ice
@@ -447,7 +440,6 @@ module RubyVM::MJIT
       end
     end
 
-    # _mjit_compile_insn.erb
     def compile_insn_default(insn, stack_size, sp_inc, local_stack_p, pos, next_pos, insn_len, inlined_iseq_p, operands)
       src = +''
       finish_p = false
@@ -520,7 +512,6 @@ module RubyVM::MJIT
       return src, next_pos, finish_p, compile_insns
     end
 
-    # _mjit_compile_insn_body.erb
     def compile_insn_body(src, insn, pos, next_pos, insn_len, local_stack_p, stack_size, sp_inc, operands)
       # Print a body of insn, but with macro expansion.
       expand_simple_macros(insn.expr).each_line do |line|
@@ -607,7 +598,6 @@ module RubyVM::MJIT
       return next_pos
     end
 
-    # _mjit_compile_pc_and_sp.erb
     def compile_pc_and_sp(src, insn, stack_size, sp_inc, local_stack_p, next_pos)
       # JIT: When an insn is leaf, we don't need to Move pc for a catch table on catch_except_p, #caller_locations,
       #      and rb_profile_frames. For check_ints, we lazily move PC when we have interruptions.
@@ -975,6 +965,4 @@ module RubyVM::MJIT
       end
     end
   end
-
-  private_constant(*constants)
 end
