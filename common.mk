@@ -1406,35 +1406,7 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    gems/bundled_gems
 
 outdate-bundled-gems: PHONY
-	$(Q) $(BASERUBY) \
-	-rfileutils \
-	-e "srcdir = ARGV.shift" \
-	-e "FU = /\A-\w*n/ =~ ENV['MFLAGS'] ? FileUtils::DryRun : FileUtils::Verbose" \
-	-e "Dir.glob(%[#{srcdir}/.bundle/gems/*/]) {|dir|" \
-	-e   "gem = %[#{srcdir}/gems/#{File.basename(dir)}.gem]" \
-	-e   "FU.rm_rf(dir) unless File.exist?(gem)" \
-	-e "}" \
-	-e "Dir.glob(%[#{srcdir}/.bundle/specifications/*.gemspec]) {|spec|" \
-	-e   "gem = %[#{srcdir}/gems/#{File.basename(spec, '.gemspec')}.gem]" \
-	-e   "FU.rm_f(spec) unless File.exist?(gem)" \
-	-e "}" \
-	-e "Dir.glob('.bundle/specifications/*.gemspec') {|spec|" \
-	-e   "dir = %[#{srcdir}/.bundle/gems/#{File.basename(spec, '.gemspec')}]" \
-	-e   "FU.rm_f(spec) unless File.directory?(dir)" \
-	-e "}" \
-	-e "Dir.glob('.bundle/gems/*/') {|dir|" \
-	-e   "spec = %[.bundle/specifications/#{File.basename(dir)}.gemspec]" \
-	-e   "FU.rm_rf(dir) unless File.exist?(spec)" \
-	-e "}" \
-	-e "Dir.glob('.bundle/extensions/*/*/*/') {|dir|" \
-	-e   "spec = %[.bundle/specifications/#{File.basename(dir)}.gemspec]" \
-	-e   "unless File.exist?(spec)" \
-	-e     "FU.rm_rf(dir)" \
-	-e     "FU.rmdir(File.dirname(dir), parents: true) rescue nil" \
-	-e   "end" \
-	-e "}" \
-	-e "# $(MAKE)" \
-	"$(srcdir)"
+	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" "$(srcdir)"
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
