@@ -329,6 +329,13 @@ cflags = [
   File.join(build_dir, ".ext/include/#{RUBY_PLATFORM}"),
 ].map { |dir| "-I#{dir}" }
 
+# Clear .cache/clangd created by the language server, which could break this bindgen
+clangd_cache = File.join(src_dir, '.cache/clangd')
+if Dir.exist?(clangd_cache)
+  system('rm', '-rf', clangd_cache, exception: true)
+end
+
+# Parse mjit_compiler.h and generate mjit_c.rb
 nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
@@ -424,4 +431,5 @@ generator = BindingGenerator.new(
 )
 generator.generate(nodes)
 
+# Write mjit_c.rb
 File.write(src_path, generator.src)
