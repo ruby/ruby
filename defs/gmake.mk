@@ -284,9 +284,18 @@ bundled-gems := $(shell sed \
 bundled-gems-rev := $(filter-out $(subst |,,$(bundled-gems)),$(bundled-gems))
 bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
 
+# calls $(1) with name, version, revision, URL
+foreach-bundled-gems-rev = \
+    $(foreach g,$(bundled-gems-rev),$(call foreach-bundled-gems-rev-0,$(1),$(subst |, ,$(value g))))
+foreach-bundled-gems-rev-0 = \
+    $(call $(1),$(word 1,$(2)),$(word 2,$(2)),$(word 3,$(2)),$(word 4,$(2)))
+bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
+bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
-update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst |, ,$(value g))))
-update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/$(word 1,$(subst |, ,$(value g)))-$(word 2,$(subst |, ,$(value g))).gem)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -306,8 +315,7 @@ $(srcdir)/gems/%.gem:
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
 extract-gems: | $(patsubst %,$(srcdir)/.bundle/gems/%,$(bundled-gems))
-extract-gems: | $(foreach g,$(bundled-gems-rev), \
-	$(srcdir)/.bundle/gems/$(word 1,$(subst |, ,$(value g)))-$(word 2,$(subst |, ,$(value g))))
+extract-gems: | $(call foreach-bundled-gems-rev,bundled-gem-extracted)
 
 $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
@@ -332,10 +340,10 @@ $(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
 
 endef
 define copy-gem-0
-$(call copy-gem,$(word 1,$(1)),$(word 2,$(1)),$(word 3,$(1)),$(word 4,$(1)))
+$(eval $(call copy-gem,$(1),$(2),$(3),$(4)))
 endef
 
-$(foreach g,$(bundled-gems-rev),$(eval $(call copy-gem-0,$(subst |, ,$(value g)))))
+$(call foreach-bundled-gems-rev,copy-gem-0)
 
 $(srcdir)/gems/src:
 	$(MAKEDIRS) $@
