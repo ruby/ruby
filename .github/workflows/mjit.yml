@@ -25,14 +25,14 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--mjit", "--mjit-wait" ]
+        test_task: [check] # to make job names consistent
+        mjit_opts: [--mjit-wait]
       fail-fast: false
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --mjit-debug=-ggdb3'
+      RUN_OPTS: '--disable-gems ${{ matrix.mjit_opts }} --mjit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
@@ -89,7 +89,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }}",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.mjit_opts }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}"
