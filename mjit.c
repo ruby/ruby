@@ -645,7 +645,7 @@ make_pch(void)
 }
 
 static int
-compile_c_to_so(const char *c_file, const char *so_file)
+c_compile(const char *c_file, const char *so_file)
 {
     const char *so_args[] = {
         "-o", so_file,
@@ -672,6 +672,19 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     free(args);
     return exit_code;
+}
+
+static int
+c_compile_unit(struct rb_mjit_unit *unit)
+{
+    static const char c_ext[] = ".c";
+    static const char so_ext[] = DLEXT;
+    char c_file[MAXPATHLEN], so_file[MAXPATHLEN];
+
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
+
+    return c_compile(c_file, so_file);
 }
 
 static void compile_prelude(FILE *f);
@@ -722,7 +735,7 @@ mjit_compact(char* c_file)
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
-static int
+static bool
 mjit_compact_unit(struct rb_mjit_unit *unit)
 {
     static const char c_ext[] = ".c";
@@ -732,26 +745,7 @@ mjit_compact_unit(struct rb_mjit_unit *unit)
     sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
-    bool success = mjit_compact(c_file);
-    if (success) {
-        return compile_c_to_so(c_file, so_file);
-    }
-    return 1;
-}
-
-extern pid_t rb_mjit_fork();
-
-static pid_t
-start_mjit_compact(struct rb_mjit_unit *unit)
-{
-    pid_t pid = rb_mjit_fork();
-    if (pid == 0) {
-        int exit_code = mjit_compact_unit(unit);
-        exit(exit_code);
-    }
-    else {
-        return pid;
-    }
+    return mjit_compact(c_file);
 }
 
 static void
@@ -848,7 +842,7 @@ compile_prelude(FILE *f)
 
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
-static int
+static bool
 mjit_compile_unit(struct rb_mjit_unit *unit)
 {
     static const char c_ext[] = ".c";
@@ -865,7 +859,7 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
         int e = errno;
         if (fd >= 0) (void)close(fd);
         verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return 1;
+        return false;
     }
 
     // print #include of MJIT header, etc.
@@ -887,18 +881,17 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
         if (!mjit_opts.save_temps)
             remove_file(c_file);
         verbose(1, "JIT failure: %s@%s:%d -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-        return 1;
     }
-
-    return compile_c_to_so(c_file, so_file);
+    return success;
 }
 
 static pid_t
-start_mjit_compile(struct rb_mjit_unit *unit)
+start_c_compile_unit(struct rb_mjit_unit *unit)
 {
+    extern pid_t rb_mjit_fork();
     pid_t pid = rb_mjit_fork();
     if (pid == 0) {
-        int exit_code = mjit_compile_unit(unit);
+        int exit_code = c_compile_unit(unit);
         exit(exit_code);
     }
     else {
@@ -1165,19 +1158,26 @@ check_unit_queue(void)
     struct rb_mjit_unit *unit = get_from_list(&unit_queue);
     if (unit == NULL) return;
 
+    // Run the MJIT compiler synchronously
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
+    bool success = mjit_compile_unit(unit);
+    if (!success) {
+        mjit_notify_waitpid(1);
+        return;
+    }
+
+    // Run the C compiler asynchronously (unless --mjit-wait)
     if (mjit_opts.wait) {
-        int exit_code = mjit_compile_unit(unit);
+        int exit_code = c_compile_unit(unit);
         mjit_notify_waitpid(exit_code);
     }
     else {
-        current_cc_pid = start_mjit_compile(unit);
+        current_cc_pid = start_c_compile_unit(unit);
         if (current_cc_pid == -1) { // JIT failure
             current_cc_pid = 0;
             current_cc_unit->iseq->body->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
             current_cc_unit = NULL;
-            return;
         }
     }
 }
@@ -1219,17 +1219,24 @@ check_compaction(void)
         && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
             || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
         struct rb_mjit_unit *unit = create_unit(NULL);
-        if (unit != NULL) {
-            // TODO: assert unit is null
-            current_cc_ms = real_ms_time();
-            current_cc_unit = unit;
-            if (mjit_opts.wait) {
-                int exit_code = mjit_compact_unit(unit);
-                mjit_notify_waitpid(exit_code);
-            }
-            else {
-                current_cc_pid = start_mjit_compact(unit);
-            }
+        if (unit == NULL) return;
+
+        // Run the MJIT compiler synchronously
+        current_cc_ms = real_ms_time();
+        current_cc_unit = unit;
+        bool success = mjit_compact_unit(unit);
+        if (!success) {
+            mjit_notify_waitpid(1);
+            return;
+        }
+
+        // Run the C compiler asynchronously (unless --mjit-wait)
+        if (mjit_opts.wait) {
+            int exit_code = c_compile_unit(unit);
+            mjit_notify_waitpid(exit_code);
+        }
+        else {
+            current_cc_pid = start_c_compile_unit(unit);
             // TODO: check -1
         }
     }
