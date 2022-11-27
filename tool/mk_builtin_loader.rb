@@ -325,10 +325,10 @@ def mk_builtin_header file
            . map {|i|", argv[#{i}]"} \
            . join('')
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
       f.puts %'{'
-      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
-      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+      f.puts %'    rb_str_catf(buf, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
       if inlines.has_key? cfunc_name
         body_lineno, text, locals, func_name = inlines[cfunc_name]
         lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
@@ -336,22 +336,22 @@ def mk_builtin_header file
         str.gsub(/^(?!#)/, '    ').each_line {|i|
           j = RubyVM::CEscape.rstring2cstr(i).dup
           j.sub!(/^    return\b/ , '    val =')
-          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
+          f.printf(%'        rb_str_catf(buf, "%%s", %s);\n', j)
         }
         f.puts(%'        return;')
         f.puts(%'    }')
       end
       if argc > 0
         f.puts %'    if (index == -1) {'
-        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
         f.puts %'    }'
         f.puts %'    else {'
-        f.puts %'        fprintf(f, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
-        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end
-      f.puts %'    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
-      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
+      f.puts %'    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
+      f.puts %'    rb_str_catf(buf, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
     }

@@ -143,11 +143,11 @@ cdhash_to_hash(rb_execution_context_t *ec, VALUE self, VALUE cdhash_addr)
 }
 
 static VALUE
-builtin_compile(rb_execution_context_t *ec, VALUE self, VALUE f_addr, VALUE bf_addr, VALUE index, VALUE stack_size, VALUE builtin_inline_p)
+builtin_compile(rb_execution_context_t *ec, VALUE self, VALUE buf, VALUE bf_addr, VALUE index, VALUE stack_size, VALUE builtin_inline_p)
 {
-    FILE *f = (FILE *)NUM2PTR(f_addr);
+    // Call "mjit_compile_invokebuiltin_for_#{func}" in mk_builtin_loader.rb
     RB_BUILTIN bf = (RB_BUILTIN)NUM2PTR(bf_addr);
-    bf->compiler(f, NIL_P(index) ? -1 : NUM2LONG(index), NUM2UINT(stack_size), RTEST(builtin_inline_p));
+    bf->compiler(buf, NIL_P(index) ? -1 : NUM2LONG(index), NUM2UINT(stack_size), RTEST(builtin_inline_p));
     return Qnil;
 }
 

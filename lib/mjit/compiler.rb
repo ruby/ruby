@@ -203,8 +203,8 @@ module RubyVM::MJIT
           return src, next_pos, finish_p, compile_insns
         end
       when :invokebuiltin, :opt_invokebuiltin_delegate
-        if compile_invokebuiltin(f, insn, stack_size, sp_inc, body, operands)
-          return '', next_pos, finish_p, compile_insns
+        if src = compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
+          return src, next_pos, finish_p, compile_insns
         end
       when :opt_getconstant_path
         if src = compile_getconstant_path(stack_size, pos, insn_len, operands, status)
@@ -215,7 +215,9 @@ module RubyVM::MJIT
 
         # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
         if insn.name == :opt_invokebuiltin_delegate_leave
-          compile_invokebuiltin(f, insn, stack_size, sp_inc, body, operands)
+          if invokebuiltin_src = compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
+            src << invokebuiltin_src
+          end
         else
           if stack_size != 1
             $stderr.puts "MJIT warning: Unexpected JIT stack_size on leave: #{stack_size}" # TODO: check mjit_opts?
@@ -407,18 +409,18 @@ module RubyVM::MJIT
       end
     end
 
-    def compile_invokebuiltin(f, insn, stack_size, sp_inc, body, operands)
+    def compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
       bf = C.RB_BUILTIN.new(operands[0])
       if bf.compiler > 0
         index = (insn.name == :invokebuiltin ? -1 : operands[1])
-        C.fprintf(f, "{\n")
-        C.fprintf(f, "    VALUE val;\n")
-        C.builtin_compiler(f, bf, index, stack_size, body.builtin_inline_p)
-        C.fprintf(f, "    stack[#{stack_size + sp_inc - 1}] = val;\n")
-        C.fprintf(f, "}\n")
-        return true
+        src = +"{\n"
+        src << "    VALUE val;\n"
+        C.builtin_compiler(src, bf, index, stack_size, body.builtin_inline_p)
+        src << "    stack[#{stack_size + sp_inc - 1}] = val;\n"
+        src << "}\n"
+        return src
       else
-        return false
+        return nil
       end
     end
 
