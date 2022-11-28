@@ -320,7 +320,7 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
-    * cgi 0.3.5
+    * cgi 0.3.6.dev
     * date 3.2.3
     * erb 4.0.1
     * error_highlight 0.5.1
