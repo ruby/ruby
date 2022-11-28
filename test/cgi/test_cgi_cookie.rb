@@ -65,6 +65,9 @@ class CGICookieTest < Test::Unit::TestCase
     cookie = CGI::Cookie.new(h.merge('domain'=>'a.example.com'))
     assert_equal('a.example.com', cookie.domain)
 
+    cookie = CGI::Cookie.new(h.merge('domain'=>'.example.com'))
+    assert_equal('.example.com', cookie.domain)
+
     cookie = CGI::Cookie.new(h.merge('domain'=>'1.example.com'))
     assert_equal('1.example.com', cookie.domain, 'enhanced by RFC 1123')
 
