@@ -533,6 +533,11 @@ rb_gc_update_global_tbl(void)
     }
 }
 
+void rb_gc_update_generic_iv_tbl(void(*updater)(st_table**))
+{
+    updater(&generic_iv_tbl_);
+}
+
 static ID
 global_id(const char *name)
 {

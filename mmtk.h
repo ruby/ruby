@@ -63,6 +63,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*scan_thread_root)(MMTk_VMMutatorThread mutator_tls, MMTk_VMWorkerThread worker_tls);
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
+    void (*update_global_weak_tables)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
@@ -126,6 +127,8 @@ size_t mmtk_used_bytes(void);
 size_t mmtk_free_bytes(void);
 
 size_t mmtk_total_bytes(void);
+
+bool mmtk_is_reachable(MMTk_ObjectReference object);
 
 bool mmtk_is_live_object(MMTk_ObjectReference object);
 

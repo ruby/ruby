@@ -3679,6 +3679,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         break;
     }
 
+#if USE_MMTK
+    /* If MMTk is enabled, we process generic ivar table and the ID tables in bulk. */
+    if (!rb_mmtk_enabled_p()) {
+#endif
     if (FL_TEST(obj, FL_EXIVAR)) {
         rb_free_generic_ivar((VALUE)obj);
         FL_UNSET(obj, FL_EXIVAR);
@@ -3687,6 +3691,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     if (FL_TEST(obj, FL_SEEN_OBJ_ID) && !FL_TEST(obj, FL_FINALIZE)) {
         obj_free_object_id(objspace, obj);
     }
+#if USE_MMTK
+    }
+#endif
 
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
@@ -15408,6 +15415,83 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     rb_mmtk_call_obj_free_inner(objspace, obj, false);
 }
 
+struct rb_mmtk_update_weak_table_context {
+    st_table *old_table;
+    st_table *new_table;
+    bool update_value;
+};
+
+static int
+rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
+{
+    struct rb_mmtk_update_weak_table_context *ctx = (struct rb_mmtk_update_weak_table_context*)arg;
+
+    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+        st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key);
+        st_data_t new_value = ctx->update_value ?
+            (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)value) :
+            value;
+        st_insert(ctx->new_table, new_key, new_value);
+        RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
+            (void*)key, (void*)value, (void*)new_key, (void*)new_value);
+    } else {
+        // The key is dead. Discard the entry silently.
+        RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p)",
+            (void*)key, (void*)value);
+    }
+
+    return ST_CONTINUE;
+}
+
+/*
+ * Update a weak hash table after a copying GC finished.
+ * If a key points to a live object, keep the key-value pair, and update the key (and optionally
+ * the value) to point to their new addresses.
+ * If a key points to a dead object, discard the key-value pair.
+ * Because the keys changed, their hashes change as well.
+ * Therefore we rebuild the whole hash table.
+ */
+static void
+rb_mmtk_update_weak_table(st_table **table_holder, bool update_value)
+{
+    st_table *old_table = *table_holder;
+
+    if (!old_table || old_table->num_entries == 0) return;
+
+    st_table *new_table = st_init_table(old_table->type);
+
+    struct rb_mmtk_update_weak_table_context ctx = {
+        .old_table = old_table,
+        .new_table = new_table,
+        .update_value = update_value,
+    };
+    if (st_foreach(old_table, rb_mmtk_update_weak_table_each, (st_data_t)&ctx)) {
+        fprintf(stderr, "Did anything go wrong?");
+        abort();
+    }
+
+    st_free_table(old_table);
+    *table_holder = new_table;
+}
+
+static void
+rb_mmtk_update_weak_table_key_only(st_table **table_holder)
+{
+    rb_mmtk_update_weak_table(table_holder, false);
+}
+
+static void
+rb_mmtk_update_weak_table_key_value(st_table **table_holder)
+{
+    rb_mmtk_update_weak_table(table_holder, true);
+}
+
+static void
+rb_mmtk_update_global_weak_tables(void)
+{
+    rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_key_only);
+}
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -15422,6 +15506,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
     rb_mmtk_call_obj_free,
+    rb_mmtk_update_global_weak_tables,
 };
 
 // Use up to 80% of memory for the heap
