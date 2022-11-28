@@ -3,7 +3,11 @@
 # See `tool/sync_default_gems.rb --help` for how to use this.
 
 require 'fileutils'
+
+module SyncDefaultGems
 include FileUtils
+
+module_function
 
 REPOSITORIES = {
   rubygems: 'rubygems/rubygems',
@@ -726,4 +730,5 @@ else
   else
     sync_default_gems(gem)
   end
+end if $0 == __FILE__
 end
