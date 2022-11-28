@@ -665,10 +665,6 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
-#define ANON_BLOCK_ID '&'
-#define ANON_REST_ID '*'
-#define ANON_KEYWORD_REST_ID idPow
-
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
 #ifndef RIPPER
@@ -3116,11 +3112,11 @@ block_arg	: tAMPER arg_value
 		    }
                 | tAMPER
                     {
-                        if (!local_id(p, ANON_BLOCK_ID)) {
+                        if (!local_id(p, idFWD_BLOCK)) {
                             compile_error(p, "no anonymous block parameter");
                         }
                     /*%%%*/
-                        $$ = NEW_BLOCK_PASS(NEW_LVAR(ANON_BLOCK_ID, &@1), &@$);
+                        $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% %*/
                     /*% ripper: Qnil %*/
                     }
@@ -3153,11 +3149,11 @@ args		: arg_value
 		    }
 		| tSTAR
 		    {
-                        if (!local_id(p, ANON_REST_ID)) {
+                        if (!local_id(p, idFWD_REST)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
-			$$ = NEW_SPLAT(NEW_LVAR(ANON_REST_ID, &@1), &@$);
+			$$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!(args_new!, Qnil) %*/
 		    }
@@ -3177,11 +3173,11 @@ args		: arg_value
 		    }
 		| args ',' tSTAR
 		    {
-                        if (!local_id(p, ANON_REST_ID)) {
+                        if (!local_id(p, idFWD_REST)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
-			$$ = rest_arg_append(p, $1, NEW_LVAR(ANON_REST_ID, &@3), &@$);
+			$$ = rest_arg_append(p, $1, NEW_LVAR(idFWD_REST, &@3), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!($1, Qnil) %*/
 		    }
@@ -5813,9 +5809,9 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		| kwrest_mark
 		    {
-			arg_var(p, ANON_KEYWORD_REST_ID);
+			arg_var(p, idFWD_KWREST);
 		    /*%%%*/
-			$$ = ANON_KEYWORD_REST_ID;
+			$$ = idFWD_KWREST;
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5889,9 +5885,9 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    }
 		| restarg_mark
 		    {
-			arg_var(p, ANON_REST_ID);
+			arg_var(p, idFWD_REST);
 		    /*%%%*/
-			$$ = ANON_REST_ID;
+			$$ = idFWD_REST;
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5911,9 +5907,9 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    }
                 | blkarg_mark
                     {
-			arg_var(p, ANON_BLOCK_ID);
+			arg_var(p, idFWD_BLOCK);
                     /*%%%*/
-			$$ = ANON_BLOCK_ID;
+			$$ = idFWD_BLOCK;
                     /*% %*/
 		    /*% ripper: blockarg!(Qnil) %*/
                     }
@@ -6047,12 +6043,12 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		| tDSTAR
 		    {
-                        if (!local_id(p, ANON_KEYWORD_REST_ID)) {
+                        if (!local_id(p, idFWD_KWREST)) {
                             compile_error(p, "no anonymous keyword rest parameter");
                         }
 		    /*%%%*/
                         $$ = list_append(p, NEW_LIST(0, &@$),
-                                         NEW_LVAR(ANON_KEYWORD_REST_ID, &@$));
+                                         NEW_LVAR(idFWD_KWREST, &@$));
 		    /*% %*/
 		    /*% ripper: assoc_splat!(Qnil) %*/
 		    }
