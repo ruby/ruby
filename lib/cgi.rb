@@ -288,7 +288,7 @@
 #
 
 class CGI
-  VERSION = "0.3.6.dev"
+  VERSION = "0.3.6"
 end
 
 require 'cgi/core'
