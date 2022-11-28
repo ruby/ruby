@@ -202,40 +202,23 @@ module RubyVM::MJIT
         if src = compile_ivar(insn.name, stack_size, pos, status, operands, body)
           return src, next_pos, finish_p, compile_insns
         end
-      when :invokebuiltin, :opt_invokebuiltin_delegate
-        if src = compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
-          return src, next_pos, finish_p, compile_insns
-        end
       when :opt_getconstant_path
         if src = compile_getconstant_path(stack_size, pos, insn_len, operands, status)
           return src, next_pos, finish_p, compile_insns
         end
-      when :leave, :opt_invokebuiltin_delegate_leave
-        src = +''
-
-        # opt_invokebuiltin_delegate_leave also implements leave insn. We need to handle it here for inlining.
-        if insn.name == :opt_invokebuiltin_delegate_leave
-          if invokebuiltin_src = compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
-            src << invokebuiltin_src
+      when :invokebuiltin, :opt_invokebuiltin_delegate, :opt_invokebuiltin_delegate_leave
+        if src = compile_invokebuiltin(insn, stack_size, sp_inc, body, operands)
+          if insn.name == :opt_invokebuiltin_delegate_leave
+            src << compile_leave(stack_size, pos, inlined_iseq_p)
+            finish_p = true
           end
-        else
-          if stack_size != 1
-            $stderr.puts "MJIT warning: Unexpected JIT stack_size on leave: #{stack_size}" # TODO: check mjit_opts?
-            return nil
-          end
+          return src, next_pos, finish_p, compile_insns
         end
-
-        # Skip vm_pop_frame for inlined call
-        unless inlined_iseq_p
-          # Cancel on interrupts to make leave insn leaf
-          src << "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n"
-          src << "        reg_cfp->sp = vm_base_ptr(reg_cfp) + #{stack_size};\n"
-          src << "        reg_cfp->pc = original_body_iseq + #{pos};\n"
-          src << "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n"
-          src << "    }\n"
-          src << "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n" # vm_pop_frame
+      when :leave
+        if stack_size != 1
+          raise "Unexpected JIT stack_size on leave: #{stack_size}"
         end
-        src << "    return stack[0];\n"
+        src = compile_leave(stack_size, pos, inlined_iseq_p)
         finish_p = true
         return src, next_pos, finish_p, compile_insns
       end
@@ -422,6 +405,21 @@ module RubyVM::MJIT
       else
         return nil
       end
+    end
+
+    def compile_leave(stack_size, pos, inlined_iseq_p)
+      src = +''
+      # Skip vm_pop_frame for inlined call
+      unless inlined_iseq_p
+        # Cancel on interrupts to make leave insn leaf
+        src << "    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {\n"
+        src << "        reg_cfp->sp = vm_base_ptr(reg_cfp) + #{stack_size};\n"
+        src << "        reg_cfp->pc = original_body_iseq + #{pos};\n"
+        src << "        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n"
+        src << "    }\n"
+        src << "    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(reg_cfp);\n" # vm_pop_frame
+      end
+      src << "    return stack[0];\n"
     end
 
     def compile_getconstant_path(stack_size, pos, insn_len, operands, status)
