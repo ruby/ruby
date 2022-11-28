@@ -1349,4 +1349,4 @@ require_relative "rubygems/core_ext/kernel_gem"
 require_relative "rubygems/core_ext/kernel_require"
 require_relative "rubygems/core_ext/kernel_warn"
 
-require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"]
+require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
