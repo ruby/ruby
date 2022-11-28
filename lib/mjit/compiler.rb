@@ -19,7 +19,7 @@ module RubyVM::MJIT
   ]
 
   class << Compiler = Module.new
-    # @param iseq [RubyVM::MJIT::CPointer::Struct_rb_iseq_struct]
+    # @param iseq [RubyVM::MJIT::CPointer::Struct_*]
     # @param funcname [String]
     # @param id [Integer]
     # @return [String,NilClass]
