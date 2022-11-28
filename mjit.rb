@@ -25,6 +25,6 @@ if RubyVM::MJIT.enabled?
   require "mjit/compiler"
 
   module RubyVM::MJIT
-    private_constant *constants
+    private_constant(*constants)
   end
 end
