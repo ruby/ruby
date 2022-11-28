@@ -123,11 +123,14 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
     extern VALUE rb_mMJITCompiler;
-    bool success = RTEST(rb_funcall(rb_mMJITCompiler, rb_intern("compile"), 4,
-                PTR2NUM((VALUE)f), rb_ptr("rb_iseq_t", iseq), rb_str_new_cstr(funcname), INT2NUM(id)));
+    VALUE src = rb_funcall(rb_mMJITCompiler, rb_intern("compile"), 3,
+                           rb_ptr("rb_iseq_t", iseq), rb_str_new_cstr(funcname), INT2NUM(id));
+    if (!NIL_P(src)) {
+        fprintf(f, "%s", RSTRING_PTR(src));
+    }
 
     mjit_call_p = original_call_p;
-    return success;
+    return !NIL_P(src);
 }
 
 //

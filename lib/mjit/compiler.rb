@@ -19,46 +19,50 @@ module RubyVM::MJIT
   ]
 
   class << Compiler = Module.new
+    # @param iseq [RubyVM::MJIT::CPointer::Struct_rb_iseq_struct]
     # @param funcname [String]
-    def compile(f, iseq, funcname, id)
+    # @param id [Integer]
+    # @return [String,NilClass]
+    def compile(iseq, funcname, id)
       status = C.compile_status.new # not freed for now
       status.compiled_iseq = iseq.body
       status.compiled_id = id
       init_compile_status(status, iseq.body, true) # not freed for now
       if iseq.body.ci_size > 0 && status.cc_entries_index == -1
-        return false
+        return nil
       end
 
       init_ivar_compile_status(iseq.body, status)
 
+      src = +''
       if !status.compile_info.disable_send_cache && !status.compile_info.disable_inlining
-        unless precompile_inlinable_iseqs(f, iseq, status)
-          return false
+        unless precompile_inlinable_iseqs(src, iseq, status)
+          return nil
         end
       end
 
-      C.fprintf(f, "VALUE\n#{funcname}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n")
-      success = compile_body(f, iseq, status)
-      C.fprintf(f, "\n} // end of #{funcname}\n")
+      src << "VALUE\n#{funcname}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n"
+      success = compile_body(src, iseq, status)
+      src << "\n} // end of #{funcname}\n"
 
-      return success
+      return success ? src : nil
     rescue Exception => e # should we use rb_rescue in C instead?
       if C.mjit_opts.warnings || C.mjit_opts.verbose > 0
         $stderr.puts "MJIT error: #{e.full_message}"
       end
-      return false
+      return nil
     end
 
     private
 
-    def compile_body(f, iseq, status)
+    def compile_body(src, iseq, status)
       status.success = true
       status.local_stack_p = !iseq.body.catch_except_p
 
       if status.local_stack_p
-        src = +"    VALUE stack[#{iseq.body.stack_max}];\n"
+        src << "    VALUE stack[#{iseq.body.stack_max}];\n"
       else
-        src = +"    VALUE *stack = reg_cfp->sp;\n"
+        src << "    VALUE *stack = reg_cfp->sp;\n"
       end
 
       unless status.inlined_iseqs.nil? # i.e. compile root
@@ -90,16 +94,15 @@ module RubyVM::MJIT
         src << "    }\n"
       end
 
-      C.fprintf(f, src)
-      compile_insns(0, 0, status, iseq.body, f)
-      compile_cancel_handler(f, iseq.body, status)
-      C.fprintf(f, "#undef GET_SELF\n")
+      compile_insns(0, 0, status, iseq.body, src)
+      compile_cancel_handler(src, iseq.body, status)
+      src << "#undef GET_SELF\n"
       return status.success
     end
 
     # Compile one conditional branch. If it has branchXXX insn, this should be
     # called multiple times for each branch.
-    def compile_insns(stack_size, pos, status, body, f)
+    def compile_insns(stack_size, pos, status, body, src)
       branch = C.compile_branch.new # not freed for now
       branch.stack_size = stack_size
       branch.finish_p = false
@@ -108,8 +111,8 @@ module RubyVM::MJIT
         insn = INSNS.fetch(C.rb_vm_insn_decode(body.iseq_encoded[pos]))
         status.stack_size_for_pos[pos] = branch.stack_size
 
-        C.fprintf(f, "\nlabel_#{pos}: /* #{insn.name} */\n")
-        pos = compile_insn(insn, pos, status, body.iseq_encoded + (pos+1), body, branch, f)
+        src << "\nlabel_#{pos}: /* #{insn.name} */\n"
+        pos = compile_insn(insn, pos, status, body.iseq_encoded + (pos+1), body, branch, src)
         if status.success && branch.stack_size > body.stack_max
           if mjit_opts.warnings || mjit_opts.verbose > 0
             $stderr.puts "MJIT warning: JIT stack size (#{branch.stack_size}) exceeded its max size (#{body.stack_max})"
@@ -126,11 +129,11 @@ module RubyVM::MJIT
     # When you add a new instruction to insns.def, it would be nice to have JIT compilation support here but
     # it's optional. This JIT compiler just ignores ISeq which includes unknown instruction, and ISeq which
     # does not have it can be compiled as usual.
-    def compile_insn(insn, pos, status, operands, body, b, f)
+    def compile_insn(insn, pos, status, operands, body, b, src)
       sp_inc = C.mjit_call_attribute_sp_inc(insn.bin, operands)
       next_pos = pos + insn.len
 
-      result = compile_insn_entry(f, insn, b.stack_size, sp_inc, status.local_stack_p, pos, next_pos, insn.len,
+      result = compile_insn_entry(insn, b.stack_size, sp_inc, status.local_stack_p, pos, next_pos, insn.len,
                                   status.inlined_iseqs.nil?, status, operands, body)
       if result.nil?
         if C.mjit_opts.warnings || C.mjit_opts.verbose > 0
@@ -138,9 +141,9 @@ module RubyVM::MJIT
         end
         status.success = false
       else
-        src, next_pos, finish_p, compile_insns_p = result
+        result_src, next_pos, finish_p, compile_insns_p = result
 
-        C.fprintf(f, src)
+        src << result_src
         b.stack_size += sp_inc
 
         if finish_p
@@ -148,9 +151,9 @@ module RubyVM::MJIT
         end
         if compile_insns_p
           if already_compiled?(status, pos + insn.len)
-            C.fprintf(f, "goto label_#{pos + insn.len};\n")
+            src << "goto label_#{pos + insn.len};\n"
           else
-            compile_insns(b.stack_size, pos + insn.len, status, body, f)
+            compile_insns(b.stack_size, pos + insn.len, status, body, src)
           end
         end
       end
@@ -158,7 +161,7 @@ module RubyVM::MJIT
       # If next_pos is already compiled and this branch is not finished yet,
       # next instruction won't be compiled in C code next and will need `goto`.
       if !b.finish_p && next_pos < body.iseq_size && already_compiled?(status, next_pos)
-        C.fprintf(f, "goto label_#{next_pos};\n")
+        src << "goto label_#{next_pos};\n"
 
         # Verify stack size assumption is the same among multiple branches
         if status.stack_size_for_pos[next_pos] != b.stack_size
@@ -172,7 +175,7 @@ module RubyVM::MJIT
       return next_pos
     end
 
-    def compile_insn_entry(f, insn, stack_size, sp_inc, local_stack_p, pos, next_pos, insn_len, inlined_iseq_p, status, operands, body)
+    def compile_insn_entry(insn, stack_size, sp_inc, local_stack_p, pos, next_pos, insn_len, inlined_iseq_p, status, operands, body)
       finish_p = false
       compile_insns = false
 
@@ -630,8 +633,8 @@ module RubyVM::MJIT
     end
 
     # Print the block to cancel inlined method call. It's supporting only `opt_send_without_block` for now.
-    def compile_inlined_cancel_handler(f, body, inline_context)
-      src = +"\ncancel:\n"
+    def compile_inlined_cancel_handler(src, body, inline_context)
+      src << "\ncancel:\n"
       src << "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n"
       src << "    rb_mjit_recompile_inlining(original_iseq);\n"
 
@@ -660,17 +663,16 @@ module RubyVM::MJIT
       # We're not just returning Qundef here so that caller's normal cancel handler can
       # push back `stack` to `cfp->sp`.
       src << "    return vm_exec(ec, false);\n"
-      C.fprintf(f, src)
     end
 
     # Print the block to cancel JIT execution.
-    def compile_cancel_handler(f, body, status)
+    def compile_cancel_handler(src, body, status)
       if status.inlined_iseqs.nil? # the current ISeq is being inlined
-        compile_inlined_cancel_handler(f, body, status.inline_context)
+        compile_inlined_cancel_handler(src, body, status.inline_context)
         return
       end
 
-      src = +"\nsend_cancel:\n"
+      src << "\nsend_cancel:\n"
       src << "    RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n"
       src << "    rb_mjit_recompile_send(original_iseq);\n"
       src << "    goto cancel;\n"
@@ -697,10 +699,9 @@ module RubyVM::MJIT
         end
       end
       src << "    return Qundef;\n"
-      C.fprintf(f, src)
     end
 
-    def precompile_inlinable_child_iseq(f, child_iseq, status, ci, cc, pos)
+    def precompile_inlinable_child_iseq(src, child_iseq, status, ci, cc, pos)
       child_status = C.compile_status.new # not freed for now
       child_status.compiled_iseq = status.compiled_iseq
       child_status.compiled_id = status.compiled_id
@@ -714,20 +715,19 @@ module RubyVM::MJIT
       end
       init_ivar_compile_status(child_iseq.body, child_status)
 
-      src = +"ALWAYS_INLINE(static VALUE _mjit#{status.compiled_id}_inlined_#{pos}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n"
+      src << "ALWAYS_INLINE(static VALUE _mjit#{status.compiled_id}_inlined_#{pos}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n"
       src << "static inline VALUE\n_mjit#{status.compiled_id}_inlined_#{pos}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n"
       src << "    const VALUE *orig_pc = reg_cfp->pc;\n"
       src << "    VALUE *orig_sp = reg_cfp->sp;\n"
-      C.fprintf(f, src)
 
-      success = compile_body(f, child_iseq, child_status)
+      success = compile_body(src, child_iseq, child_status)
 
-      C.fprintf(f, "\n} /* end of _mjit#{status.compiled_id}_inlined_#{pos} */\n\n")
+      src << "\n} /* end of _mjit#{status.compiled_id}_inlined_#{pos} */\n\n"
 
       return success;
     end
 
-    def precompile_inlinable_iseqs(f, iseq, status)
+    def precompile_inlinable_iseqs(src, iseq, status)
       body = iseq.body
       pos = 0
       while pos < body.iseq_size
@@ -745,7 +745,7 @@ module RubyVM::MJIT
               $stderr.puts "JIT inline: #{child_location.label}@#{C.rb_iseq_path(child_iseq)}:#{C.rb_iseq_first_lineno(child_iseq)} " \
                 "=> #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{C.rb_iseq_first_lineno(iseq)}"
             end
-            if !precompile_inlinable_child_iseq(f, child_iseq, status, ci, cc, pos)
+            if !precompile_inlinable_child_iseq(src, child_iseq, status, ci, cc, pos)
               return false
             end
           end

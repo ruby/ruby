@@ -114,14 +114,6 @@ module RubyVM::MJIT
       iseq_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_iseqw_to_iseq(iseqw))'
       rb_iseq_t.new(iseq_addr)
     end
-
-    # TODO: remove this after migration
-    def fprintf(f, str)
-      Primitive.cstmt! %{
-        fprintf((FILE *)NUM2PTR(f), "%s", RSTRING_PTR(str));
-        return Qnil;
-      }
-    end
   end
 
   ### MJIT bindgen begin ###
