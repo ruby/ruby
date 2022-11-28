@@ -6,6 +6,7 @@ require 'fileutils'
 
 module SyncDefaultGems
 include FileUtils
+extend FileUtils
 
 module_function
 
