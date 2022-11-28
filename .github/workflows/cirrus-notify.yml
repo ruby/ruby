@@ -2,6 +2,10 @@ on:
   check_suite:
     type: ['completed']
 name: Cirrus CI failure notification
+
+permissions:
+  contents: read
+
 jobs:
   cirrus-notify:
     name: After Cirrus CI Failure
