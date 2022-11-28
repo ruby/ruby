@@ -122,8 +122,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     bool original_call_p = mjit_call_p;
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
-    extern VALUE rb_cMJITCompiler;
-    VALUE src = rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 3,
+    extern VALUE rb_mMJITCompiler;
+    VALUE src = rb_funcall(rb_mMJITCompiler, rb_intern("compile"), 3,
                            rb_ptr("rb_iseq_t", iseq), rb_str_new_cstr(funcname), INT2NUM(id));
     if (!NIL_P(src)) {
         fprintf(f, "%s", RSTRING_PTR(src));
