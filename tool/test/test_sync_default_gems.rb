@@ -51,5 +51,16 @@ module Test_SyncDefaultGems
       ]
       assert_message_filter(expected, trailers, [expected, "", trailers, ""].join("\n"))
     end
+
+    def test_multiple_co_authored_by
+      expected = [
+        "many commits",
+      ]
+      trailers = [
+        "Co-authored-by: git <git@ruby-lang.org>",
+        "Co-authored-by: svn <svn@ruby-lang.org>",
+      ]
+      assert_message_filter(expected, trailers, [expected, "", trailers, ""].join("\n"))
+    end
   end
 end
