@@ -145,7 +145,7 @@
 # - #content_length=: Sets the integer length for field <tt>'Content-Length</tt>.
 # - #content_type=: Sets the string value for field <tt>'Content-Type'</tt>.
 # - #proxy_basic_auth: Sets the string authorization header for <tt>'Proxy-Authorization'</tt>.
-# - #range=: Sets the value for field +'Range'+.
+# - #set_range: Sets the value for field <tt>'Range'</tt>.
 #
 # === Queries
 #
@@ -460,8 +460,16 @@ module Net::HTTPHeader
   end
   private :capitalize
 
-  # Returns an Array of Range objects which represent the Range:
-  # HTTP header field, or +nil+ if there is no such header.
+  # Returns an array of Range objects that represent
+  # the value of field <tt>'Range'</tt>,
+  # or +nil+ if there is no such field;
+  # see {Range request header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#range-request-header]:
+  #
+  #   req['Range'] = 'bytes=0-99,200-299,400-499'
+  #   req.range # => [0..99, 200..299, 400..499]
+  #   req.delete('Range')
+  #   req.range # # => nil
+  #
   def range
     return nil unless @header['range']
 
@@ -504,14 +512,30 @@ module Net::HTTPHeader
     result
   end
 
-  # Sets the HTTP Range: header.
-  # Accepts either a Range object as a single argument,
-  # or a beginning index and a length from that index.
-  # Example:
+  # :call-seq:
+  #   set_range(length) -> length
+  #   set_range(offset, length) -> range
+  #   set_range(begin..length) -> range
   #
-  #   req.range = (0..1023)
-  #   req.set_range 0, 1023
+  # Sets the value for field <tt>'Range'</tt>;
+  # see {Range request header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#range-request-header]:
   #
+  # With argument +length+:
+  #
+  #   req.set_range(100)      # => 100
+  #   req['Range']            # => "bytes=0-99"
+  #
+  # With arguments +offset+ and +length+:
+  #
+  #   req.set_range(100, 100) # => 100...200
+  #   req['Range']            # => "bytes=100-199"
+  #
+  # With argument +range+:
+  #
+  #   req.set_range(100..199) # => 100..199
+  #   req['Range']            # => "bytes=100-199"
+  #
+  # Net::HTTPHeader#range= is an alias for Net::HTTPHeader#set_range.
   def set_range(r, e = nil)
     unless r
       @header.delete 'range'
