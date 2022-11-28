@@ -1775,7 +1775,16 @@ XXX
   #   # params["bar"] = "x"  # --bar x
   #   # params["zot"] = "z"  # --zot Z
   #
-  def getopts(*args)
+  # Option +symbolize_names+ (boolean) specifies whether returned Hash keys should be Symbols; defaults to +false+ (use Strings).
+  #
+  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option", symbolize_names: true)
+  #   # params[:a] = true   # -a
+  #   # params[:b] = "1"    # -b1
+  #   # params[:foo] = "1"  # --foo
+  #   # params[:bar] = "x"  # --bar x
+  #   # params[:zot] = "z"  # --zot Z
+  #
+  def getopts(*args, symbolize_names: false)
     argv = Array === args.first ? args.shift : default_argv
     single_options, *long_options = *args
 
@@ -1804,14 +1813,14 @@ XXX
     end
 
     parse_in_order(argv, result.method(:[]=))
-    result
+    symbolize_names ? result.transform_keys(&:to_sym) : result
   end
 
   #
   # See #getopts.
   #
-  def self.getopts(*args)
-    new.getopts(*args)
+  def self.getopts(*args, symbolize_names: false)
+    new.getopts(*args, symbolize_names: symbolize_names)
   end
 
   #
@@ -2289,8 +2298,8 @@ XXX
     #   rescue OptionParser::ParseError
     #   end
     #
-    def getopts(*args)
-      options.getopts(self, *args)
+    def getopts(*args, symbolize_names: false)
+      options.getopts(self, *args, symbolize_names: symbolize_names)
     end
 
     #
