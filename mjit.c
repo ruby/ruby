@@ -1387,8 +1387,13 @@ static void
 mjit_wait(struct rb_iseq_constant_body *body)
 {
     pid_t initial_pid = current_cc_pid;
-    struct timeval tv;
+    if (initial_pid == 0) {
+        mjit_warning("initial_pid was 0 on mjit_wait");
+        return;
+    }
+
     int tries = 0;
+    struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
     while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (jit_func_t)NOT_READY_JIT_ISEQ_FUNC) { // TODO: refactor this
