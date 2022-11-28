@@ -944,11 +944,7 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #endif
 
 #define idFWD_REST   '*'
-#ifdef RUBY3_KEYWORDS
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
-#else
-#define idFWD_KWREST 0
-#endif
 #define idFWD_BLOCK  '&'
 
 #define RE_OPTION_ONCE (1<<16)
@@ -12581,7 +12577,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = args->forwarding;
+    args->ruby2_keywords = 0;
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
@@ -13266,9 +13262,7 @@ static int
 check_forwarding_args(struct parser_params *p)
 {
     if (local_id(p, idFWD_REST) &&
-#if idFWD_KWREST
         local_id(p, idFWD_KWREST) &&
-#endif
         local_id(p, idFWD_BLOCK)) return TRUE;
     compile_error(p, "unexpected ...");
     return FALSE;
@@ -13278,9 +13272,7 @@ static void
 add_forwarding_args(struct parser_params *p)
 {
     arg_var(p, idFWD_REST);
-#if idFWD_KWREST
     arg_var(p, idFWD_KWREST);
-#endif
     arg_var(p, idFWD_BLOCK);
 }
 
@@ -13288,15 +13280,11 @@ add_forwarding_args(struct parser_params *p)
 static NODE *
 new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
 {
-    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, loc), loc);
-#if idFWD_KWREST
+    NODE *rest = NEW_LVAR(idFWD_REST, loc);
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
-#endif
     NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
-    NODE *args = leading ? rest_arg_append(p, leading, splat, argsloc) : splat;
-#if idFWD_KWREST
-    args = arg_append(p, splat, new_hash(p, kwrest, loc), loc);
-#endif
+    NODE *args = leading ? rest_arg_append(p, leading, rest, loc) : NEW_SPLAT(rest, loc);
+    args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
     return arg_blk_pass(args, block);
 }
 #endif

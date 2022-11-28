@@ -171,6 +171,23 @@ class TestSyntax < Test::Unit::TestCase
     end;
   end
 
+  def test_argument_forwarding_with_anon_rest_kwrest_and_block
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+        def args(*args); args end
+        def kw(**kw); kw end
+        def block(&block); block end
+        def deconstruct(...); [args(*), kw(**), block(&)&.call] end
+        assert_equal([[], {}, nil], deconstruct)
+        assert_equal([[1], {}, nil], deconstruct(1))
+        assert_equal([[1, 2], {}, nil], deconstruct(1, 2))
+        assert_equal([[], {x: 1}, nil], deconstruct(x: 1))
+        assert_equal([[], {x: 1, y: 2}, nil], deconstruct(x: 1, y: 2))
+        assert_equal([[], {}, "x"], deconstruct { "x" })
+        assert_equal([[1, 2], {x: 3, y: 4}, "x"], deconstruct(1, 2, x: 3, y: 4) { "x" })
+    end;
+  end
+
   def test_newline_in_block_parameters
     bug = '[ruby-dev:45292]'
     ["", "a", "a, b"].product(["", ";x", [";", "x"]]) do |params|
