@@ -82,14 +82,22 @@ module IRB
       # it's a bundled gem. This method tries to activate and load that.
       def load_bundled_debug_gem
         # Discover latest debug.gem under GEM_PATH
-        debug_gem = Gem.paths.path.map { |path| Dir.glob("#{path}/gems/debug-*") }.flatten.select do |path|
-          File.basename(path).match?(/\Adebug-\d+\.\d+\.\d+\z/)
+        debug_gem = Gem.paths.path.flat_map { |path| Dir.glob("#{path}/gems/debug-*") }.select do |path|
+          File.basename(path).match?(/\Adebug-\d+\.\d+\.\d+(\w+)?\z/)
         end.sort_by do |path|
           Gem::Version.new(File.basename(path).delete_prefix('debug-'))
         end.last
         return false unless debug_gem
 
+        # Discover debug/debug.so under extensions for Ruby 3.2+
+        debug_so = Gem.paths.path.flat_map do |path|
+          Dir.glob("#{path}/extensions/**/#{File.basename(debug_gem)}/debug/debug.so")
+        end.first
+
         # Attempt to forcibly load the bundled gem
+        if debug_so
+          $LOAD_PATH << debug_so.delete_suffix('/debug/debug.so')
+        end
         $LOAD_PATH << "#{debug_gem}/lib"
         begin
           require "debug/session"
