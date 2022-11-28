@@ -2594,11 +2594,11 @@ maybe_register_finalizable(VALUE obj) {
       case T_STRUCT:
       case T_SYMBOL:
       case T_IMEMO:
-        mmtk_add_finalizer((void*)obj);
+        mmtk_add_finalizer((MMTk_ObjectReference)obj);
         RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
-            (void*)obj,
+            (MMTk_ObjectReference)obj,
             rb_type_str(RB_BUILTIN_TYPE(obj)),
-            klass==0?"(null)":rb_class2name(klass)
+            rb_obj_class(obj)==0?"(null)":rb_class2name(rb_obj_class(obj))
             );
         break;
       case T_RATIONAL:
@@ -4767,31 +4767,26 @@ bool rb_obj_is_main_ractor(VALUE gv);
 #if USE_MMTK
 void
 rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
-    if (USE_RUBY_DEBUG_LOG) {
-        RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
-                resurrected,
-                rb_type_str(RB_BUILTIN_TYPE(obj)),
-                CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
-                );
-    }
     if (on_exit) {
         if (rb_obj_is_thread(obj)) {
-            RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
             return;
         }
         if (rb_obj_is_mutex(obj)) {
-            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
             return;
         }
         if (rb_obj_is_fiber(obj)) {
-            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
             return;
         }
         if (rb_obj_is_main_ractor(obj)) {
-            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
             return;
         }
     }
+
+    RUBY_DEBUG_LOG("Freeing object: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
     obj_free(objspace, obj);
 
     // The object may contain dangling pointers after `obj_free`.
@@ -4800,8 +4795,6 @@ rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
     RVALUE *v = RANY(obj);
     v->as.free.flags = 0;
     v->as.free.next = NULL;
-
-    RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
 }
 
 void
