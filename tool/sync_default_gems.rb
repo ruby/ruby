@@ -430,7 +430,7 @@ module SyncDefaultGems
     log = input.read
     log.delete!("\r")
     repo_url = "https://github.com/#{repo}"
-    subject, log = log.split(/\n(?:[\s\t]*(?:\n|\z))/, 2)
+    subject, log = log.split(/\n(?:[ \t]*(?:\n|\z))/, 2)
     conv = proc do |s|
       mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?|close[sd]?|resolve[sd]?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
         "#{repo_url}/pull/"
