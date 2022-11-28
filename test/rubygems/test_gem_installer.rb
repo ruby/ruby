@@ -1559,7 +1559,7 @@ gem 'other', version
         write_file File.join(@tempdir, file)
       end
 
-      so = File.join(@spec.gem_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
+      so = File.join(@spec.extension_dir, "#{@spec.name}.#{RbConfig::CONFIG["DLEXT"]}")
       assert_path_not_exist so
       use_ui @ui do
         path = Gem::Package.build @spec
