@@ -1354,6 +1354,10 @@ after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
 
+update-src::
+	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
+	$(Q) touch "$(srcdir)/revision.h"
+
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
 update-download:: update-gems
