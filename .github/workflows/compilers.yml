@@ -60,6 +60,9 @@ env:
     --color=always
     --tty=no
 
+permissions:
+  contents: read
+
 jobs:
   compile:
     strategy:
