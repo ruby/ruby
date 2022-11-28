@@ -99,14 +99,14 @@ class TestOptionParser < Test::Unit::TestCase
   end
 
   def test_raise_unknown
-    @opt.def_option('--foo [ARG]') {|arg| @foo = arg}
+    @opt.def_option('--my-foo [ARG]') {|arg| @foo = arg}
     assert @opt.raise_unknown
 
     @opt.raise_unknown = false
-    assert_equal(%w[--bar], @opt.parse(%w[--foo --bar]))
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo --my-bar]))
     assert_nil(@foo)
 
-    assert_equal(%w[--bar], @opt.parse(%w[--foo x --bar]))
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo x --my-bar]))
     assert_equal("x", @foo)
   end
 
