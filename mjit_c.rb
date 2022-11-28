@@ -767,4 +767,4 @@ module RubyVM::MJIT
   end
 
   ### MJIT bindgen end ###
-end if RubyVM::MJIT.enabled?
+end if RubyVM::MJIT.enabled? && RubyVM::MJIT.const_defined?(:C) # not defined for miniruby
