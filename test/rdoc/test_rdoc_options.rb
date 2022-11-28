@@ -83,6 +83,7 @@ class TestRDocOptions < RDoc::TestCase
       'title'                => nil,
       'visibility'           => :protected,
       'webcvs'               => nil,
+      'skip_tests'           => true,
     }
 
     assert_equal expected, coder
@@ -869,6 +870,16 @@ rdoc_include:
 
       assert_kind_of RDoc::Options, options
     end
+  end
+
+  def test_skip_test_default_value
+    @options.parse %w[]
+    assert_equal true, @options.skip_tests
+  end
+
+  def test_no_skip_test_value
+    @options.parse %w[--no-skipping-tests]
+    assert_equal false, @options.skip_tests
   end
 
   class DummyCoder < Hash
