@@ -15133,8 +15133,8 @@ rb_gc_init_collection(void)
     cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
 }
 
-static inline void*
-rb_mmtk_call_object_closure(void* object) {
+static inline MMTk_ObjectReference
+rb_mmtk_call_object_closure(MMTk_ObjectReference object) {
     return rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
                                                             rb_mmtk_gc_thread_tls->gc_context,
                                                             object);
@@ -15143,7 +15143,7 @@ rb_mmtk_call_object_closure(void* object) {
 static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
 {
-    rb_mmtk_gc_thread_tls = (struct MMTk_GCThreadTLS*)gc_thread_tls;
+    rb_mmtk_gc_thread_tls = gc_thread_tls;
 }
 
 static MMTk_VMWorkerThread
@@ -15358,7 +15358,7 @@ rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worke
 {
     rb_mmtk_assert_mmtk_worker();
 
-    rb_thread_t *thread = (rb_thread_t*)mutator;
+    rb_thread_t *thread = mutator;
     rb_execution_context_t *ec = thread->ec;
 
     RUBY_DEBUG_LOG("[Worker: %p] We will scan thread root for thread: %p, ec: %p", worker, thread, ec);
@@ -15378,7 +15378,7 @@ rb_mmtk_mark(VALUE obj, bool pin)
         (void*)obj);
 
     if (!RB_SPECIAL_CONST_P(obj)) {
-        rb_mmtk_call_object_closure((void*)obj);
+        rb_mmtk_call_object_closure((MMTk_ObjectReference)obj);
     }
 }
 
@@ -15395,7 +15395,7 @@ rb_mmtk_mark_pin(VALUE obj)
 }
 
 static inline void
-rb_mmtk_scan_object_ruby_style(void *object)
+rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
 {
     rb_mmtk_assert_mmtk_worker();
 
