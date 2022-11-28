@@ -79,10 +79,25 @@ module SyncDefaultGems
     pathname: "ruby/pathname",
     digest: "ruby/digest",
     error_highlight: "ruby/error_highlight",
-    syntax_suggest: "ruby/syntax_suggest",
+    syntax_suggest: ["ruby/syntax_suggest", "main"],
     un: "ruby/un",
     win32ole: "ruby/win32ole",
   }
+
+  CLASSICAL_DEFAULT_BRANCH = "master"
+
+  class << REPOSITORIES
+    def [](gem)
+      repo, branch = super
+      return repo, branch || CLASSICAL_DEFAULT_BRANCH
+    end
+
+    def each_pair
+      super do |gem, (repo, branch)|
+        yield gem, [repo, branch || CLASSICAL_DEFAULT_BRANCH]
+      end
+    end
+  end
 
   def pipe_readlines(args, rs: "\0", chomp: true)
     IO.popen(args) do |f|
@@ -118,7 +133,7 @@ module SyncDefaultGems
 
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
-    repo = REPOSITORIES[gem.to_sym]
+    repo, = REPOSITORIES[gem.to_sym]
     puts "Sync #{repo}"
 
     upstream = File.join("..", "..", repo)
@@ -465,7 +480,7 @@ module SyncDefaultGems
   # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
   # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
   def sync_default_gems_with_commits(gem, ranges, edit: nil)
-    repo = REPOSITORIES[gem.to_sym]
+    repo, default_branch = REPOSITORIES[gem.to_sym]
     puts "Sync #{repo} with commit history."
 
     IO.popen(%W"git remote") do |f|
@@ -478,7 +493,7 @@ module SyncDefaultGems
     if ranges == true
       pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
-      ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/master"]
+      ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
 
     commits = ranges.flat_map do |range|
@@ -609,13 +624,8 @@ module SyncDefaultGems
 
   def update_default_gems(gem, release: false)
 
-    author, repository = REPOSITORIES[gem.to_sym].split('/')
-    default_branch = case gem
-                     when 'syntax_suggest'
-                       "main"
-                     else
-                       "master"
-                     end
+    repository, default_branch = REPOSITORIES[gem.to_sym]
+    author, repository = repository.split('/')
 
     puts "Update #{author}/#{repository}"
 
@@ -652,21 +662,21 @@ module SyncDefaultGems
     if ARGV[1]
       update_default_gems(ARGV[1])
     else
-      REPOSITORIES.keys.each{|gem| update_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| update_default_gems(gem.to_s)}
     end
   when "all"
     if ARGV[1] == "release"
-      REPOSITORIES.keys.each do |gem|
+      REPOSITORIES.each_key do |gem|
         update_default_gems(gem.to_s, release: true)
         sync_default_gems(gem.to_s)
       end
     else
-      REPOSITORIES.keys.each{|gem| sync_default_gems(gem.to_s)}
+      REPOSITORIES.each_key {|gem| sync_default_gems(gem.to_s)}
     end
   when "list"
     ARGV.shift
     pattern = Regexp.new(ARGV.join('|'))
-    REPOSITORIES.each_pair do |name, gem|
+    REPOSITORIES.each_pair do |name, (gem)|
       next unless pattern =~ name or pattern =~ gem
       printf "%-15s https://github.com/%s\n", name, gem
     end
