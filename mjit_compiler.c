@@ -56,9 +56,6 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
 #define PTR2NUM(x) ULL2NUM(x)
 #endif
 
-extern int
-mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
-
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
@@ -102,8 +99,6 @@ has_cache_for_send(rb_execution_context_t *ec, VALUE self, VALUE cc_addr, VALUE 
         !(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_CFUNC && rb_vm_opt_cfunc_p(cc, NUM2INT(insn)));
     return RBOOL(has_cache);
 }
-
-extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
 
 // An offsetof implementation that works for unnamed struct and union.
 // Multiplying 8 for compatibility with libclang's offsetof.

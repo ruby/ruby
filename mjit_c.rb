@@ -51,7 +51,10 @@ module RubyVM::MJIT
 
     def rb_splat_or_kwargs_p(ci)
       _ci_addr = ci.to_i
-      Primitive.cexpr! 'RBOOL(rb_splat_or_kwargs_p((CALL_INFO)NUM2PTR(_ci_addr)))'
+      Primitive.cstmt! %{
+        extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
+        return RBOOL(rb_splat_or_kwargs_p((CALL_INFO)NUM2PTR(_ci_addr)));
+      }
     end
 
     def fastpath_applied_iseq_p(ci, cc, iseq)
@@ -74,7 +77,10 @@ module RubyVM::MJIT
     def mjit_capture_cc_entries(compiled_body, captured_body)
       _compiled_body_addr = compiled_body.to_i
       _captured_body_addr = captured_body.to_i
-      Primitive.cexpr! 'INT2NUM(mjit_capture_cc_entries((struct rb_iseq_constant_body *)NUM2PTR(_compiled_body_addr), (struct rb_iseq_constant_body *)NUM2PTR(_captured_body_addr)))'
+      Primitive.cstmt! %{
+        extern int mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
+        return INT2NUM(mjit_capture_cc_entries((struct rb_iseq_constant_body *)NUM2PTR(_compiled_body_addr), (struct rb_iseq_constant_body *)NUM2PTR(_captured_body_addr)));
+      }
     end
 
     # Convert encoded VM pointers to insn BINs.
