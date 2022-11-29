@@ -544,12 +544,12 @@ class RubyVM::MJIT::Compiler
       when /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
         dest = Regexp.last_match[:dest]
         if insn.name == :opt_case_dispatch # special case... TODO: use another macro to avoid checking name
+          hash_offsets = C.rb_hash_values(operands[0])
           else_offset = cast_offset(operands[1])
-          cdhash = C.cdhash_to_hash(operands[0])
           base_pos = pos + insn_len
 
           src << "    switch (#{dest}) {\n"
-          cdhash.each do |_key, offset|
+          hash_offsets.each do |offset|
             src << "      case #{offset}:\n"
             src << "        goto label_#{base_pos + offset};\n"
           end

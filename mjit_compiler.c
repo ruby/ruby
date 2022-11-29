@@ -27,12 +27,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-struct case_dispatch_var {
-    FILE *f;
-    unsigned int base_pos;
-    VALUE last_value;
-};
-
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
 has_valid_method_type(CALL_CACHE cc)
@@ -50,37 +44,6 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
         && !(vm_ci_flag(ci) & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
         && vm_ci_argc(ci) == (unsigned int)ISEQ_BODY(iseq)->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
         && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
-}
-
-#define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
-
-// TODO: Share this with iseq.c
-static inline VALUE
-obj_resurrect(VALUE obj)
-{
-    if (hidden_obj_p(obj)) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_STRING:
-            obj = rb_str_resurrect(obj);
-            break;
-          case T_ARRAY:
-            obj = rb_ary_resurrect(obj);
-            break;
-          case T_HASH:
-            obj = rb_hash_resurrect(obj);
-            break;
-          default:
-            break;
-        }
-    }
-    return obj;
-}
-
-static int
-cdhash_each(VALUE key, VALUE value, VALUE hash)
-{
-    rb_hash_aset(hash, obj_resurrect(key), value);
-    return ST_CONTINUE;
 }
 
 #include "mjit_compile_attr.inc"
@@ -119,14 +82,6 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 //
 // Primitive.methods
 //
-
-static VALUE
-cdhash_to_hash(rb_execution_context_t *ec, VALUE self, VALUE cdhash_addr)
-{
-    VALUE hash = rb_hash_new();
-    rb_hash_foreach((VALUE)NUM2PTR(cdhash_addr), cdhash_each, hash);
-    return hash;
-}
 
 static VALUE
 builtin_compile(rb_execution_context_t *ec, VALUE self, VALUE buf, VALUE bf_addr, VALUE index, VALUE stack_size, VALUE builtin_inline_p)

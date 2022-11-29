@@ -5,8 +5,8 @@ module RubyVM::MJIT
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/mjit/bindgen.rb instead.
   class << C
-    def cdhash_to_hash(cdhash_addr)
-      Primitive.cdhash_to_hash(cdhash_addr)
+    def rb_hash_values(cdhash_addr)
+      Primitive.cexpr! 'rb_hash_values((VALUE)NUM2PTR(cdhash_addr))'
     end
 
     def builtin_compiler(f, bf, index, stack_size, builtin_inline_p)
