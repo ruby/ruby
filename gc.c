@@ -10255,6 +10255,12 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
 static int
 gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 {
+#ifdef USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
+    }
+#endif
+
     GC_ASSERT(!SPECIAL_CONST_P(obj));
 
     switch (BUILTIN_TYPE(obj)) {
@@ -15564,9 +15570,26 @@ rb_mmtk_update_global_weak_tables(void)
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
 
+    // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
+    rb_objspace_t *objspace = &rb_objspace;
+
     // Now that dead objects are removed, we forward keys and values now.
-    // Bignum objects are hashed by value, not by address, so we can replace keys in place.
-    gc_update_table_refs(&rb_objspace, rb_objspace.id_to_obj_tbl);
+    // This table hashes Fixnum and Bignum by value (object_id_hash_type),
+    // so the hash will not change if the key is Bignum and it is moved.
+    // We can update keys and values in place.
+    gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
+
+    // This table hashes strings by value (rb_str_hash),
+    // so the hash will not change if the key (String) is moved.
+    // We can update keys and values in place.
+    gc_update_table_refs(objspace, global_symbols.str_sym);
+
+    // This table maps object addresses to its finalizer functions.
+    // Not all keys point to live objects.
+    // If a key points to a dead object, we shall enqueue its finalizers to be called.
+    // TODO: We should make zombies for the dead objects, or their finalizers will never get called.
+    // Currently finalizers are disabled when running with MMTk.
+    gc_update_table_refs(objspace, finalizer_table);
 }
 
 MMTk_RubyUpcalls ruby_upcalls = {
