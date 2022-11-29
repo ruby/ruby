@@ -1683,9 +1683,19 @@ check_rvalue_consistency(const VALUE obj)
 }
 #endif
 
+#if USE_MMTK
+static inline bool rb_mmtk_object_moved_p(VALUE obj);
+#endif
+
 static inline int
 gc_object_moved_p(rb_objspace_t * objspace, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return rb_mmtk_object_moved_p(obj);
+    }
+#endif
+
     if (RB_SPECIAL_CONST_P(obj)) {
         return FALSE;
     }
@@ -10756,11 +10766,20 @@ check_id_table_move(VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+#if USE_MMTK
+static inline VALUE rb_mmtk_maybe_forward(VALUE object);
+#endif
+
 /* Returns the new location of an object, if it moved.  Otherwise returns
  * the existing location. */
 VALUE
 rb_gc_location(VALUE value)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return rb_mmtk_maybe_forward(value);
+    }
+#endif
 
     VALUE destination;
 
@@ -15415,10 +15434,35 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     rb_mmtk_call_obj_free_inner(objspace, obj, false);
 }
 
+static inline bool
+rb_mmtk_object_moved_p(VALUE value)
+{
+    if (!SPECIAL_CONST_P(value)) {
+        MMTk_ObjectReference object = (MMTk_ObjectReference)value;
+        return rb_mmtk_call_object_closure(object) == object;
+    } else {
+        return false;
+    }
+}
+
+static inline VALUE
+rb_mmtk_maybe_forward(VALUE value)
+{
+    if (!SPECIAL_CONST_P(value)) {
+        return (VALUE)rb_mmtk_call_object_closure((MMTk_ObjectReference)value);
+    } else {
+        return value;
+    }
+}
+
+typedef void (*rb_mmtk_hash_on_delete_func)(st_data_t, st_data_t, void *arg);
+
 struct rb_mmtk_update_weak_table_context {
     st_table *old_table;
     st_table *new_table;
-    bool update_value;
+    bool update_values;
+    rb_mmtk_hash_on_delete_func on_delete;
+    void *on_delete_arg;
 };
 
 static int
@@ -15428,16 +15472,19 @@ rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
 
     if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
         st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key);
-        st_data_t new_value = ctx->update_value ?
-            (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)value) :
+        st_data_t new_value = ctx->update_values ?
+            (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
             value;
         st_insert(ctx->new_table, new_key, new_value);
         RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
             (void*)key, (void*)value, (void*)new_key, (void*)new_value);
     } else {
-        // The key is dead. Discard the entry silently.
+        // The key is dead. Discard the entry.
         RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p)",
             (void*)key, (void*)value);
+        if (ctx->on_delete != NULL) {
+            ctx->on_delete(key, value, ctx->on_delete_arg);
+        }
     }
 
     return ST_CONTINUE;
@@ -15452,7 +15499,10 @@ rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
  * Therefore we rebuild the whole hash table.
  */
 static void
-rb_mmtk_update_weak_table(st_table **table_holder, bool update_value)
+rb_mmtk_update_weak_table(st_table **table_holder,
+                          bool update_values,
+                          rb_mmtk_hash_on_delete_func on_delete,
+                          void *on_delete_arg)
 {
     st_table *old_table = *table_holder;
 
@@ -15463,7 +15513,9 @@ rb_mmtk_update_weak_table(st_table **table_holder, bool update_value)
     struct rb_mmtk_update_weak_table_context ctx = {
         .old_table = old_table,
         .new_table = new_table,
-        .update_value = update_value,
+        .update_values = update_values,
+        .on_delete = on_delete,
+        .on_delete_arg = on_delete_arg,
     };
     if (st_foreach(old_table, rb_mmtk_update_weak_table_each, (st_data_t)&ctx)) {
         fprintf(stderr, "Did anything go wrong?");
@@ -15477,19 +15529,44 @@ rb_mmtk_update_weak_table(st_table **table_holder, bool update_value)
 static void
 rb_mmtk_update_weak_table_key_only(st_table **table_holder)
 {
-    rb_mmtk_update_weak_table(table_holder, false);
+    rb_mmtk_update_weak_table(table_holder, false, NULL, NULL);
 }
 
 static void
 rb_mmtk_update_weak_table_key_value(st_table **table_holder)
 {
-    rb_mmtk_update_weak_table(table_holder, true);
+    rb_mmtk_update_weak_table(table_holder, true, NULL, NULL);
+}
+
+static void
+rb_mmtk_on_obj_to_id_tbl_delete(st_data_t key, st_data_t value, void *arg)
+{
+    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, __FILE__)) {
+        if (RB_FIXNUM_P((VALUE)value)) {
+            RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=%lu)", (void*)key, rb_fix2ulong((VALUE)value));
+        } else {
+            RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=BigNum@%p)", (void*)key, (void*)value);
+        }
+    }
+    int result = rb_st_delete(rb_objspace.id_to_obj_tbl, &value, NULL);
+    RUBY_ASSERT_ALWAYS(result != 0);
 }
 
 static void
 rb_mmtk_update_global_weak_tables(void)
 {
     rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_key_only);
+
+    // Update the obj_to_id_tbl first, and remove dead objects from both
+    // obj_to_id_tbl and id_to_obj_tbl.
+    rb_mmtk_update_weak_table(&rb_objspace.obj_to_id_tbl,
+                              false,
+                              rb_mmtk_on_obj_to_id_tbl_delete,
+                              NULL);
+
+    // Now that dead objects are removed, we forward keys and values now.
+    // Bignum objects are hashed by value, not by address, so we can replace keys in place.
+    gc_update_table_refs(&rb_objspace, rb_objspace.id_to_obj_tbl);
 }
 
 MMTk_RubyUpcalls ruby_upcalls = {
