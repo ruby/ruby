@@ -526,6 +526,16 @@ class TestAst < Test::Unit::TestCase
     assert_equal([:a], kwrest.call('**a'))
   end
 
+  def test_argument_forwarding
+    forwarding = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1]
+      node ? [node.children[-4], node.children[-2].children, node.children[-1]] : []
+    end
+
+    assert_equal([:*, [:**], :&], forwarding.call('...'))
+  end
+
   def test_ranges_numbered_parameter
     helper = Helper.new(__FILE__, src: "1.times {_1}")
     helper.validate_range
