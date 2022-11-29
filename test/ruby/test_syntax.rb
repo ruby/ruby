@@ -183,8 +183,21 @@ class TestSyntax < Test::Unit::TestCase
         assert_equal([[1, 2], {}, nil], deconstruct(1, 2))
         assert_equal([[], {x: 1}, nil], deconstruct(x: 1))
         assert_equal([[], {x: 1, y: 2}, nil], deconstruct(x: 1, y: 2))
-        assert_equal([[], {}, "x"], deconstruct { "x" })
-        assert_equal([[1, 2], {x: 3, y: 4}, "x"], deconstruct(1, 2, x: 3, y: 4) { "x" })
+        assert_equal([[], {}, 1], deconstruct { 1 })
+        assert_equal([[1, 2], {x: 3, y: 4}, 5], deconstruct(1, 2, x: 3, y: 4) { 5 })
+    end;
+
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+        def deconstruct(*args, **kw, &block); [args, kw, block&.call] end
+        def deconstruct2(*, **, &); deconstruct(...); end
+        assert_equal([[], {}, nil], deconstruct2)
+        assert_equal([[1], {}, nil], deconstruct2(1))
+        assert_equal([[1, 2], {}, nil], deconstruct2(1, 2))
+        assert_equal([[], {x: 1}, nil], deconstruct2(x: 1))
+        assert_equal([[], {x: 1, y: 2}, nil], deconstruct2(x: 1, y: 2))
+        assert_equal([[], {}, 1], deconstruct2 { 1 })
+        assert_equal([[1, 2], {x: 3, y: 4}, 5], deconstruct2(1, 2, x: 3, y: 4) { 5 })
     end;
   end
 
