@@ -1324,7 +1324,7 @@ static VALUE rb_mMJIT = 0;
 // RubyVM::MJIT::C
 VALUE rb_mMJITC = 0;
 // RubyVM::MJIT::Compiler
-VALUE rb_mMJITCompiler = 0;
+VALUE rb_cMJITCompiler = 0;
 
 // [experimental] Call custom RubyVM::MJIT.compile if defined
 static void
@@ -1765,8 +1765,9 @@ mjit_init(const struct mjit_options *opts)
         mjit_enabled = false;
         return;
     }
-    rb_mMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
+    rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
+    rb_gc_register_mark_object(rb_cMJITCompiler);
 
     mjit_call_p = true;
     mjit_pid = getpid();
