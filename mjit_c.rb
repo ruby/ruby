@@ -10,20 +10,20 @@ module RubyVM::MJIT
     end
 
     def builtin_compiler(buf, bf_ptr, index, stack_size, builtin_inline_p)
-      bf_addr = bf_ptr.to_i
+      _bf_addr = bf_ptr.to_i
       # Call "mjit_compile_invokebuiltin_for_#{func}" in mk_builtin_loader.rb
       Primitive.cstmt! %{
-        RB_BUILTIN bf = (RB_BUILTIN)NUM2PTR(bf_addr);
+        RB_BUILTIN bf = (RB_BUILTIN)NUM2PTR(_bf_addr);
         bf->compiler(buf, NIL_P(index) ? -1 : NUM2LONG(index), NUM2UINT(stack_size), RTEST(builtin_inline_p));
         return Qnil;
       }
     end
 
     def has_cache_for_send(cc_ptr, insn)
-      cc_addr = cc_ptr.to_i
+      _cc_addr = cc_ptr.to_i
       Primitive.cstmt! %{
         extern bool rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn);
-        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(cc_addr);
+        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(_cc_addr);
         bool has_cache = vm_cc_cme(cc) != NULL &&
             !(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_CFUNC && rb_vm_opt_cfunc_p(cc, NUM2INT(insn)));
         return RBOOL(has_cache);
@@ -73,14 +73,14 @@ module RubyVM::MJIT
     # Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
     # as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup.
     def fastpath_applied_iseq_p(ci_ptr, cc_ptr, iseq_ptr)
-      ci_addr = ci_ptr.to_i
-      cc_addr = cc_ptr.to_i
-      iseq_addr = iseq_ptr.to_i
+      _ci_addr = ci_ptr.to_i
+      _cc_addr = cc_ptr.to_i
+      _iseq_addr = iseq_ptr.to_i
       Primitive.cstmt! %q{
         extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
-        CALL_INFO ci = (CALL_INFO)NUM2PTR(ci_addr);
-        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(cc_addr);
-        const rb_iseq_t *iseq = (rb_iseq_t *)NUM2PTR(iseq_addr);
+        CALL_INFO ci = (CALL_INFO)NUM2PTR(_ci_addr);
+        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(_cc_addr);
+        const rb_iseq_t *iseq = (rb_iseq_t *)NUM2PTR(_iseq_addr);
 
         bool result = iseq != NULL
             && !(vm_ci_flag(ci) & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
