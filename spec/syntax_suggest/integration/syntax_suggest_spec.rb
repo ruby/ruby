@@ -29,9 +29,9 @@ module SyntaxSuggest
              6  class SyntaxTree < Ripper
            170    def self.parse(source)
            174    end
-        ❯  754    def on_args_add(arguments, argument)
-        ❯  776    class ArgsAddBlock
-        ❯  810    end
+        >  754    def on_args_add(arguments, argument)
+        >  776    class ArgsAddBlock
+        >  810    end
           9233  end
       EOM
     end
@@ -54,10 +54,10 @@ module SyntaxSuggest
 
       expect(io.string).to_not include("def ruby_install_binstub_path")
       expect(io.string).to include(<<~'EOM')
-        ❯ 1067    def add_yarn_binary
-        ❯ 1068      return [] if yarn_preinstalled?
-        ❯ 1069  |
-        ❯ 1075    end
+        > 1067    def add_yarn_binary
+        > 1068      return [] if yarn_preinstalled?
+        > 1069  |
+        > 1075    end
       EOM
     end
 
@@ -73,9 +73,9 @@ module SyntaxSuggest
 
       expect(io.string).to include(<<~'EOM')
            1  Rails.application.routes.draw do
-        ❯ 113    namespace :admin do
-        ❯ 116    match "/foobar(*path)", via: :all, to: redirect { |_params, req|
-        ❯ 120    }
+        > 113    namespace :admin do
+        > 116    match "/foobar(*path)", via: :all, to: redirect { |_params, req|
+        > 120    }
           121  end
       EOM
     end
@@ -94,8 +94,8 @@ module SyntaxSuggest
            1  describe "webmock tests" do
           22    it "body" do
           27      query = Cutlass::FunctionQuery.new(
-        ❯ 28        port: port
-        ❯ 29        body: body
+        > 28        port: port
+        > 29        body: body
           30      ).call
           34    end
           35  end
@@ -118,9 +118,9 @@ module SyntaxSuggest
            7      REQUIRED_BY = {}
            9      attr_reader   :name
           10      attr_writer   :cost
-        ❯ 13      def initialize(name)
-        ❯ 18      def self.reset!
-        ❯ 25      end
+        > 13      def initialize(name)
+        > 18      def self.reset!
+        > 25      end
           73    end
           74  end
       EOM
@@ -140,9 +140,9 @@ module SyntaxSuggest
 
       expect(out).to include(<<~EOM)
            16  class Rexe
-        ❯  77    class Lookups
-        ❯  78      def input_modes
-        ❯ 148    end
+        >  77    class Lookups
+        >  78      def input_modes
+        > 148    end
           551  end
       EOM
     end
@@ -161,9 +161,9 @@ module SyntaxSuggest
       expect(out).to include(<<~EOM)
            16  class Rexe
            18    VERSION = '1.5.1'
-        ❯  77    class Lookups
-        ❯ 140      def format_requires
-        ❯ 148    end
+        >  77    class Lookups
+        > 140      def format_requires
+        > 148    end
           551  end
       EOM
     end
@@ -182,9 +182,9 @@ module SyntaxSuggest
       )
       out = io.string
       expect(out).to include(<<~EOM)
-        ❯ 1  def call          # 0
-        ❯ 3    end # one       # 2
-        ❯ 4  end # two         # 3
+        > 1  def call          # 0
+        > 3    end # one       # 2
+        > 4  end # two         # 3
       EOM
     end
 
@@ -202,9 +202,9 @@ module SyntaxSuggest
       )
       out = io.string
       expect(out).to include(<<~EOM)
-        ❯ 1  class Dog
-        ❯ 2    def bark
-        ❯ 4  end
+        > 1  class Dog
+        > 2    def bark
+        > 4  end
       EOM
     end
   end

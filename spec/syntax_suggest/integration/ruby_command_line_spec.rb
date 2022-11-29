@@ -72,7 +72,7 @@ module SyntaxSuggest
         out = `ruby -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
 
         expect($?.success?).to be_falsey
-        expect(out).to include('❯  5    it "flerg"').once
+        expect(out).to include('>  5    it "flerg"').once
       end
     end
 
@@ -101,7 +101,7 @@ module SyntaxSuggest
         out = `ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
-        expect(out).to include('❯  5    it "flerg"').once
+        expect(out).to include('>  5    it "flerg"').once
       end
     end
 
