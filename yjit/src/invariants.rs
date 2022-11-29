@@ -497,21 +497,28 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
+        let mut on_stack_iseqs = HashSet::new();
+        for_each_on_stack_iseq(|iseq| {
+            on_stack_iseqs.insert(iseq);
+        });
         for_each_iseq(|iseq| {
             if let Some(payload) = get_iseq_payload(iseq) {
-                // C comment:
-                //   Leaking the blocks for now since we might have situations where
-                //   a different ractor is waiting for the VM lock in branch_stub_hit().
-                //   If we free the block that ractor can wake up with a dangling block.
-                //
-                // Deviation: since we ref count the the blocks now, we might be deallocating and
-                //   not leak the block.
-                //
-                // Empty all blocks on the iseq so we don't compile new blocks that jump to the
-                // invalidated region.
                 let blocks = payload.take_all_blocks();
-                for blockref in blocks {
-                    block_assumptions_free(&blockref);
+
+                if on_stack_iseqs.contains(&iseq) {
+                    // This ISEQ is running, so we can't free blocks immediately
+                    for block in blocks {
+                        delayed_deallocation(&block);
+                    }
+                    payload.dead_blocks.shrink_to_fit();
+                } else {
+                    // Safe to free dead blocks since the ISEQ isn't running
+                    for block in blocks {
+                        free_block(&block);
+                    }
+                    mem::take(&mut payload.dead_blocks)
+                        .iter()
+                        .for_each(free_block);
                 }
             }
 
