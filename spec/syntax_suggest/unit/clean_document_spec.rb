@@ -66,9 +66,9 @@ module SyntaxSuggest
           highlight_lines: lines[0]
         ).call
       ).to eq(<<~'EOM')
-        ❯ 1  User
-        ❯ 2    .where(name: 'schneems')
-        ❯ 3    .first
+        > 1  User
+        > 2    .where(name: 'schneems')
+        > 3    .first
       EOM
     end
 
@@ -169,8 +169,8 @@ module SyntaxSuggest
         ).call
       ).to eq(<<~'EOM')
           1  context "timezones workaround" do
-        ❯ 2    it "should receive a time in UTC format and return the time with the"\
-        ❯ 3      "office's UTC offset substracted from it" do
+        > 2    it "should receive a time in UTC format and return the time with the"\
+        > 3      "office's UTC offset substracted from it" do
           4      travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
           5        office = build(:office)
           6      end
@@ -227,9 +227,9 @@ module SyntaxSuggest
           highlight_lines: lines[0]
         ).call
       ).to eq(<<~'EOM')
-        ❯ 1  it "should " \
-        ❯ 2     "keep " \
-        ❯ 3     "going " do
+        > 1  it "should " \
+        > 2     "keep " \
+        > 3     "going " do
           4  end
       EOM
     end

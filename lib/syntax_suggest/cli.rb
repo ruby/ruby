@@ -92,8 +92,8 @@ module SyntaxSuggest
 
             # ...
 
-              ❯ 10  defdog
-              ❯ 15  end
+              > 10  defdog
+              > 15  end
 
           ENV options:
 
