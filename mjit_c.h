@@ -47,7 +47,6 @@ struct compile_status {
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
     bool merge_ivar_guards_p; // If true, merge guards of ivar accesses
-    size_t max_ivar_index; // Max IVC index in is_entries (used only when merge_ivar_guards_p)
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
     const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;

@@ -241,7 +241,6 @@ module RubyVM::MJIT
       compiled_id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_id)")],
       compile_info: [CType::Pointer.new { self.rb_mjit_compile_info }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compile_info)")],
       merge_ivar_guards_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), merge_ivar_guards_p)")],
-      max_ivar_index: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), max_ivar_index)")],
       inlined_iseqs: [CType::Pointer.new { CType::Pointer.new { self.rb_iseq_constant_body } }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inlined_iseqs)")],
       inline_context: [self.inlined_call_context, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inline_context)")],
     )
