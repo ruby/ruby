@@ -167,6 +167,8 @@ off_t __syscall(quad_t number, ...);
 #define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)
 #define IO_WBUF_CAPA_MIN  8192
 
+#define IO_MAX_BUFFER_GROWTH 8 * 1024 * 1024 // 8MB
+
 /* define system APIs */
 #ifdef _WIN32
 #undef open
@@ -3244,7 +3246,9 @@ io_setstrbuf(VALUE *str, long len)
         }
         len -= clen;
     }
-    rb_str_modify_expand(*str, len);
+    if ((rb_str_capacity(*str) - (size_t)RSTRING_LEN(*str)) < (size_t)len) {
+        rb_str_modify_expand(*str, len);
+    }
     return FALSE;
 }
 
@@ -3327,7 +3331,17 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
             pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + bytes, enc, &cr);
         if (bytes < siz) break;
         siz += BUFSIZ;
-        rb_str_modify_expand(str, BUFSIZ);
+
+        size_t capa = rb_str_capacity(str);
+        if (capa < (size_t)RSTRING_LEN(str) + BUFSIZ) {
+            if (capa < BUFSIZ) {
+                capa = BUFSIZ;
+            }
+            else if (capa > IO_MAX_BUFFER_GROWTH) {
+                capa = IO_MAX_BUFFER_GROWTH;
+            }
+            rb_str_modify_expand(str, capa);
+        }
     }
     if (shrinkable) io_shrink_read_string(str, RSTRING_LEN(str));
     str = io_enc_str(str, fptr);
