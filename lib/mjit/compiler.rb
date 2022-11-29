@@ -35,8 +35,6 @@ class RubyVM::MJIT::Compiler
       return nil
     end
 
-    init_ivar_compile_status(iseq.body, status)
-
     src = +''
     if !status.compile_info.disable_send_cache && !status.compile_info.disable_inlining
       unless precompile_inlinable_iseqs(src, iseq, status)
@@ -91,8 +89,13 @@ class RubyVM::MJIT::Compiler
     end
 
     # Generate merged ivar guards first if needed
-    if !status.compile_info.disable_ivar_cache && status.merge_ivar_guards_p
-      src << "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT)))) {"
+    has_getivar, has_setivar = ivar_usages(iseq.body)
+    if !status.compile_info.disable_ivar_cache && (has_getivar || has_setivar)
+      src << "    if (UNLIKELY(!RB_TYPE_P(GET_SELF(), T_OBJECT))) {"
+      src << "        goto ivar_cancel;\n"
+      src << "    }\n"
+    elsif !status.compile_info.disable_exivar_cache && has_getivar
+      src << "    if (UNLIKELY(!FL_TEST_RAW(GET_SELF(), FL_EXIVAR))) {"
       src << "        goto ivar_cancel;\n"
       src << "    }\n"
     end
@@ -383,7 +386,7 @@ class RubyVM::MJIT::Compiler
       src << "    const uint32_t index = #{attr_index - 1};\n"
       # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
       src << "    struct gen_ivtbl *ivtbl;\n"
-      src << "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && source_shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {\n"
+      src << "    if (LIKELY(source_shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {\n"
       src << "        stack[#{stack_size}] = ivtbl->ivptr[index];\n"
       src << "    }\n"
       src << "    else {\n"
@@ -716,7 +719,6 @@ class RubyVM::MJIT::Compiler
     if child_iseq.body.ci_size > 0 && child_status.cc_entries_index == -1
       return false
     end
-    init_ivar_compile_status(child_iseq.body, child_status)
 
     src << "ALWAYS_INLINE(static VALUE _mjit#{status.compiled_id}_inlined_#{pos}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n"
     src << "static inline VALUE\n_mjit#{status.compiled_id}_inlined_#{pos}(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n"
@@ -786,17 +788,22 @@ class RubyVM::MJIT::Compiler
     end
   end
 
-  def init_ivar_compile_status(body, status)
+  def ivar_usages(body)
+    has_getivar = false
+    has_setivar = false
     pos = 0
-
     while pos < body.iseq_size
       insn = INSNS.fetch(C.rb_vm_insn_decode(body.iseq_encoded[pos]))
-      if insn.name == :getinstancevariable || insn.name == :setinstancevariable
-        status.merge_ivar_guards_p = true
-        return
+      case insn.name
+      when :getinstancevariable
+        has_getivar = true
+      when :setinstancevariable
+        has_setivar = true
       end
+      break if has_getivar && has_setivar
       pos += insn.len
     end
+    return has_getivar, has_setivar
   end
 
   # Expand simple macro that doesn't require dynamic C code.

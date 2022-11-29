@@ -46,7 +46,6 @@ struct compile_status {
     int compiled_id; // Just a copy of compiled_iseq->jit_unit->id
     // Mutated optimization levels
     struct rb_mjit_compile_info *compile_info;
-    bool merge_ivar_guards_p; // If true, merge guards of ivar accesses
     // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
     const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;
