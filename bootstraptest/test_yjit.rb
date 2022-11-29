@@ -3423,3 +3423,16 @@ assert_equal '1', %q{
   bar { }
   bar { }
 }
+
+# test for return stub lifetime issue
+assert_equal '1', %q{
+  def foo(n)
+    if n == 2
+      return 1.times { Object.define_method(:foo) {} }
+    end
+
+    foo(n + 1)
+  end
+
+  foo(1)
+}

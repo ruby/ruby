@@ -1,4 +1,3 @@
-//use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::codegen::*;
@@ -17,6 +16,7 @@ use std::mem;
 use std::rc::{Rc};
 use YARVOpnd::*;
 use TempMapping::*;
+use crate::invariants::block_assumptions_free;
 
 // Maximum number of temp value types we keep track of
 pub const MAX_TEMP_TYPES: usize = 8;
@@ -492,6 +492,10 @@ pub struct IseqPayload {
 
     // Indexes of code pages used by this this ISEQ
     pub pages: HashSet<usize>,
+
+    // Blocks that are invalidated but are not yet deallocated.
+    // The code GC will free them later.
+    pub dead_blocks: Vec<BlockRef>,
 }
 
 impl IseqPayload {
@@ -599,8 +603,6 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
         }
     };
 
-    use crate::invariants;
-
     // Take ownership of the payload with Box::from_raw().
     // It drops right before this function returns.
     // SAFETY: We got the pointer from Box::into_raw().
@@ -609,10 +611,10 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     // Increment the freed iseq count
     incr_counter!(freed_iseq_count);
 
-    // Remove all blocks in the payload from global invariants table.
+    // Free all blocks in the payload
     for versions in &payload.version_map {
         for block in versions {
-            invariants::block_assumptions_free(&block);
+            free_block(block);
         }
     }
 }
@@ -1896,10 +1898,12 @@ fn set_branch_target(
     // Generate an outlined stub that will call branch_stub_hit()
     let stub_addr = ocb.get_write_ptr();
 
-    // Get a raw pointer to the branch while keeping the reference count alive
-    // Here clone increments the strong count by 1
-    // This means the branch stub owns its own reference to the branch
+    // Get a raw pointer to the branch. We clone and then decrement the strong count which overall
+    // balances the strong count. We do this so that we're passing the result of [Rc::into_raw] to
+    // [Rc::from_raw] as required.
+    // We make sure the block housing the branch is still alive when branch_stub_hit() is running.
     let branch_ptr: *const RefCell<Branch> = BranchRef::into_raw(branchref.clone());
+    unsafe { BranchRef::decrement_strong_count(branch_ptr) };
 
     let mut asm = Assembler::new();
     asm.comment("branch stub hit");
@@ -2087,12 +2091,7 @@ pub fn defer_compilation(
     asm.mark_branch_end(&branch_rc);
 }
 
-// Remove all references to a block then free it.
-pub fn free_block(blockref: &BlockRef) {
-    use crate::invariants::*;
-
-    block_assumptions_free(blockref);
-
+fn remove_from_graph(blockref: &BlockRef) {
     let block = blockref.borrow();
 
     // Remove this block from the predecessor's targets
@@ -2123,6 +2122,19 @@ pub fn free_block(blockref: &BlockRef) {
             }
         }
     }
+}
+
+/// Remove most references to a block to deallocate it.
+/// Does not touch references from iseq payloads.
+pub fn free_block(blockref: &BlockRef) {
+    block_assumptions_free(blockref);
+
+    remove_from_graph(blockref);
+
+    // Branches have a Rc pointing at the block housing them.
+    // Break the cycle.
+    blockref.borrow_mut().incoming.clear();
+    blockref.borrow_mut().outgoing.clear();
 
     // No explicit deallocation here as blocks are ref-counted.
 }
@@ -2293,12 +2305,37 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     // FIXME:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
 
-    free_block(blockref);
+    delayed_deallocation(blockref);
 
     ocb.unwrap().mark_all_executable();
     cb.mark_all_executable();
 
     incr_counter!(invalidation_count);
+}
+
+// We cannot deallocate blocks immediately after invalidation since there
+// could be stubs waiting to access branch pointers. Return stubs can do
+// this since patching the code for setting up return addresses does not
+// affect old return addresses that are already set up to use potentially
+// invalidated branch pointers. Example:
+//   def foo(n)
+//     if n == 2
+//       return 1.times { Object.define_method(:foo) {} }
+//     end
+//
+//     foo(n + 1)
+//   end
+//   p foo(1)
+pub fn delayed_deallocation(blockref: &BlockRef) {
+    block_assumptions_free(blockref);
+
+    // We do this another time when we deem that it's safe
+    // to deallocate in case there is another Ractor waiting to acquire the
+    // VM lock inside branch_stub_hit().
+    remove_from_graph(blockref);
+
+    let payload = get_iseq_payload(blockref.borrow().blockid.iseq).unwrap();
+    payload.dead_blocks.push(blockref.clone());
 }
 
 #[cfg(test)]
