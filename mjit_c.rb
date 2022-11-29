@@ -77,16 +77,6 @@ module RubyVM::MJIT
       Primitive.cexpr! 'INT2NUM(mjit_capture_cc_entries((struct rb_iseq_constant_body *)NUM2PTR(_compiled_body_addr), (struct rb_iseq_constant_body *)NUM2PTR(_captured_body_addr)))'
     end
 
-    #const struct rb_iseq_constant_body *body, union iseq_inline_storage_entry *is_entries
-    def mjit_capture_is_entries(body, is_entries)
-      _body_addr = body.to_i
-      _is_entries_addr = is_entries.to_i
-      Primitive.cstmt! %{
-        mjit_capture_is_entries((struct rb_iseq_constant_body *)NUM2PTR(_body_addr), (union iseq_inline_storage_entry *)NUM2PTR(_is_entries_addr));
-        return Qnil;
-      }
-    end
-
     # Convert encoded VM pointers to insn BINs.
     def rb_vm_insn_decode(encoded)
       Primitive.cexpr! 'INT2NUM(rb_vm_insn_decode(NUM2PTR(encoded)))'
@@ -246,7 +236,6 @@ module RubyVM::MJIT
       success: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), success)")],
       stack_size_for_pos: [CType::Pointer.new { CType::Immediate.parse("int") }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), stack_size_for_pos)")],
       local_stack_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), local_stack_p)")],
-      is_entries: [CType::Pointer.new { self.iseq_inline_storage_entry }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), is_entries)")],
       cc_entries_index: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), cc_entries_index)")],
       compiled_iseq: [CType::Pointer.new { self.rb_iseq_constant_body }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_iseq)")],
       compiled_id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_id)")],

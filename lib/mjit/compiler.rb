@@ -330,10 +330,10 @@ class RubyVM::MJIT::Compiler
   end
 
   def compile_ivar(insn_name, stack_size, pos, status, operands, body)
-    ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(operands[1]) - body.is_entries)).iv_cache
-    dest_shape_id = ic_copy.value >> C.SHAPE_FLAG_SHIFT
+    iv_cache = C.iseq_inline_storage_entry.new(operands[1]).iv_cache
+    dest_shape_id = iv_cache.value >> C.SHAPE_FLAG_SHIFT
     source_shape_id = parent_shape_id(dest_shape_id)
-    attr_index = ic_copy.value & ((1 << C.SHAPE_FLAG_SHIFT) - 1)
+    attr_index = iv_cache.value & ((1 << C.SHAPE_FLAG_SHIFT) - 1)
 
     src = +''
     if !status.compile_info.disable_ivar_cache && source_shape_id != C.INVALID_SHAPE_ID
@@ -769,9 +769,6 @@ class RubyVM::MJIT::Compiler
         status.inlined_iseqs[i] = nil
       end
     end
-    if ISEQ_IS_SIZE(body) > 0
-      status.is_entries = Fiddle.malloc(C.iseq_inline_storage_entry.sizeof * ISEQ_IS_SIZE(body))
-    end
     if body.ci_size > 0
       status.cc_entries_index = C.mjit_capture_cc_entries(status.compiled_iseq, body)
     else
@@ -790,8 +787,6 @@ class RubyVM::MJIT::Compiler
   end
 
   def init_ivar_compile_status(body, status)
-    C.mjit_capture_is_entries(body, status.is_entries)
-
     pos = 0
 
     while pos < body.iseq_size

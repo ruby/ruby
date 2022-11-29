@@ -39,8 +39,6 @@ struct compile_status {
     // If true, JIT-ed code will use local variables to store pushed values instead of
     // using VM's stack and moving stack pointer.
     bool local_stack_p;
-    // Safely-accessible ivar cache entries copied from main thread.
-    union iseq_inline_storage_entry *is_entries;
     // Index of call cache entries captured to compiled_iseq to be marked on GC
     int cc_entries_index;
     // A pointer to root (i.e. not inlined) iseq being compiled.

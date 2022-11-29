@@ -104,17 +104,6 @@ cdhash_each(VALUE key, VALUE value, VALUE hash)
 extern int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
 
-// Copy current is_entries and use it throughout the current compilation consistently.
-// While ic->entry has been immutable since https://github.com/ruby/ruby/pull/3662,
-// we still need this to avoid a race condition between entries and ivar_serial/max_ivar_index.
-static void
-mjit_capture_is_entries(const struct rb_iseq_constant_body *body, union iseq_inline_storage_entry *is_entries)
-{
-    if (is_entries == NULL)
-        return;
-    memcpy(is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * ISEQ_IS_SIZE(body));
-}
-
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
