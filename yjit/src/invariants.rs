@@ -357,7 +357,13 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
             // Remove tracking for cme validity
             if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
                 blockset.remove(blockref);
+                if blockset.is_empty() {
+                    invariants.cme_validity.remove(dep);
+                }
             }
+        }
+        if invariants.cme_validity.is_empty() {
+            invariants.cme_validity.shrink_to_fit();
         }
     }
 
@@ -369,19 +375,41 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         for key in &bops {
             if let Some(blocks) = invariants.basic_operator_blocks.get_mut(key) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.basic_operator_blocks.remove(key);
+                }
             }
         }
     }
+    if invariants.block_basic_operators.is_empty() {
+        invariants.block_basic_operators.shrink_to_fit();
+    }
+    if invariants.basic_operator_blocks.is_empty() {
+        invariants.basic_operator_blocks.shrink_to_fit();
+    }
 
+    // Remove tracking for blocks assuming single ractor mode
     invariants.single_ractor.remove(&blockref);
+    if invariants.single_ractor.is_empty() {
+        invariants.single_ractor.shrink_to_fit();
+    }
 
     // Remove tracking for constant state for a given ID.
     if let Some(ids) = invariants.block_constant_states.remove(&blockref) {
         for id in ids {
             if let Some(blocks) = invariants.constant_state_blocks.get_mut(&id) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.constant_state_blocks.remove(&id);
+                }
             }
         }
+    }
+    if invariants.block_constant_states.is_empty() {
+        invariants.block_constant_states.shrink_to_fit();
+    }
+    if invariants.constant_state_blocks.is_empty() {
+        invariants.constant_state_blocks.shrink_to_fit();
     }
 }
 
