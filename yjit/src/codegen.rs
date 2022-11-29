@@ -642,12 +642,10 @@ fn gen_check_ints(asm: &mut Assembler, side_exit: CodePtr) {
     // see RUBY_VM_CHECK_INTS(ec) macro
     asm.comment("RUBY_VM_CHECK_INTS(ec)");
 
-    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
-
-    asm.test(
-        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
-        not_mask,
-    );
+    // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
+    // signal_exec, or rb_postponed_job_flush.
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    asm.test(interrupt_flag, interrupt_flag);
 
     asm.jnz(Target::SideExitPtr(side_exit));
 }
