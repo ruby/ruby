@@ -33,14 +33,6 @@ struct case_dispatch_var {
     VALUE last_value;
 };
 
-static VALUE
-rb_ptr(const char *type, const void *ptr)
-{
-    extern VALUE rb_mMJITC;
-    VALUE rb_type = rb_funcall(rb_mMJITC, rb_intern(type), 0);
-    return rb_funcall(rb_type, rb_intern("new"), 1, ULONG2NUM((size_t)ptr));
-}
-
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
 static bool
 has_valid_method_type(CALL_CACHE cc)
@@ -112,8 +104,10 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
     extern VALUE rb_cMJITCompiler;
+    extern VALUE rb_cMJITIseqPtr;
+    VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
     VALUE src = rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 3,
-                           rb_ptr("rb_iseq_t", iseq), rb_str_new_cstr(funcname), INT2NUM(id));
+                           iseq_ptr, rb_str_new_cstr(funcname), INT2NUM(id));
     if (!NIL_P(src)) {
         fprintf(f, "%s", RSTRING_PTR(src));
     }

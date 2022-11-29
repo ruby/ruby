@@ -1322,9 +1322,11 @@ mjit_target_iseq_p(const rb_iseq_t *iseq)
 // RubyVM::MJIT
 static VALUE rb_mMJIT = 0;
 // RubyVM::MJIT::C
-VALUE rb_mMJITC = 0;
+static VALUE rb_mMJITC = 0;
 // RubyVM::MJIT::Compiler
 VALUE rb_cMJITCompiler = 0;
+// RubyVM::MJIT::CPointer::Struct_rb_iseq_t
+VALUE rb_cMJITIseqPtr = 0;
 
 // [experimental] Call custom RubyVM::MJIT.compile if defined
 static void
@@ -1767,7 +1769,9 @@ mjit_init(const struct mjit_options *opts)
     }
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
     rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
+    rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
     rb_gc_register_mark_object(rb_cMJITCompiler);
+    rb_gc_register_mark_object(rb_cMJITIseqPtr);
 
     mjit_call_p = true;
     mjit_pid = getpid();
