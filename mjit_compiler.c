@@ -10,7 +10,7 @@
 
 #if USE_MJIT
 
-#include "mjit_compiler.h"
+#include "mjit_c.h"
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/hash.h"

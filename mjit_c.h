@@ -1,4 +1,4 @@
-// This file is parsed by tool/mjit/generate.rb for MJIT's C/Ruby interop.
+// This file is parsed by tool/mjit/generate.rb to generate mjit_c.rb
 #ifndef MJIT_COMPILER_H
 #define MJIT_COMPILER_H
 

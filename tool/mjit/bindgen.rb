@@ -335,8 +335,8 @@ if Dir.exist?(clangd_cache)
   system('rm', '-rf', clangd_cache, exception: true)
 end
 
-# Parse mjit_compiler.h and generate mjit_c.rb
-nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
+# Parse mjit_c.h and generate mjit_c.rb
+nodes = HeaderParser.new(File.join(src_dir, 'mjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
   uses: %w[
