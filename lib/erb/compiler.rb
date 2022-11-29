@@ -384,7 +384,7 @@ class ERB::Compiler # :nodoc:
     when '<%='
       add_insert_cmd(out, content)
     when '<%#'
-      # commented out
+      out.push("\n" * content.count("\n")) # only adjust lineno
     end
   end
 
