@@ -88,7 +88,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "mjit.h"
-#include "mjit_unit.h"
+#include "mjit_c.h"
 #include "gc.h"
 #include "ruby_assert.h"
 #include "ruby/debug.h"
