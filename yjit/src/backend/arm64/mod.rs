@@ -153,9 +153,7 @@ impl Assembler
                         out_opnd
                     }
                 },
-                _ => {
-                    asm.load(opnd)
-                }
+                _ => asm.load(opnd)
             }
         }
 
