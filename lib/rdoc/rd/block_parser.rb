@@ -137,7 +137,7 @@ def next_token # :nodoc:
 =end
       @in_part = part
     # non-RD part end
-    when /^=end/
+    when /^=end(?:$|[\s\0\C-d\C-z])/
       if @in_part # if in non-RD part
 =begin # not imported to RDoc
 #  p "END_PART: #{@in_part}" # DEBUG
