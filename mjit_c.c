@@ -21,7 +21,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-#include "mjit_compile_attr.inc"
+#include "mjit_sp_inc.inc"
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #define NUM2PTR(x) NUM2ULONG(x)

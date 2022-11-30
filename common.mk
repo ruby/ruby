@@ -1074,7 +1074,7 @@ $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_c
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb
-$(srcs_vpath)mjit_compile_attr.inc: $(tooldir)/ruby_vm/views/mjit_compile_attr.inc.erb
+$(srcs_vpath)mjit_sp_inc.inc: $(tooldir)/ruby_vm/views/mjit_sp_inc.inc.erb
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
@@ -10022,7 +10022,7 @@ mjit_c.$(OBJEXT): {$(VPATH)}mjit_c.c
 mjit_c.$(OBJEXT): {$(VPATH)}mjit_c.h
 mjit_c.$(OBJEXT): {$(VPATH)}mjit_c.rb
 mjit_c.$(OBJEXT): {$(VPATH)}mjit_c.rbinc
-mjit_c.$(OBJEXT): {$(VPATH)}mjit_compile_attr.inc
+mjit_c.$(OBJEXT): {$(VPATH)}mjit_sp_inc.inc
 mjit_c.$(OBJEXT): {$(VPATH)}node.h
 mjit_c.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit_c.$(OBJEXT): {$(VPATH)}ruby_atomic.h
