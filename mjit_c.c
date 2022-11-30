@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  mjit_compiler.c - MRI method JIT compiler
+  mjit_c.c - C helpers for MJIT
 
   Copyright (C) 2017 Takashi Kokubun <takashikkbn@gmail.com>.
 
@@ -10,20 +10,14 @@
 
 #if USE_MJIT
 
+#include "mjit.h"
 #include "mjit_c.h"
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/hash.h"
-#include "internal/object.h"
-#include "internal/variable.h"
-#include "mjit.h"
-#include "mjit_unit.h"
 #include "yjit.h"
-#include "vm_callinfo.h"
-#include "vm_exec.h"
 #include "vm_insnhelper.h"
 
-#include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
 
@@ -36,26 +30,6 @@
 #define NUM2PTR(x) NUM2ULL(x)
 #define PTR2NUM(x) ULL2NUM(x)
 #endif
-
-// Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
-bool
-mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
-{
-    bool original_call_p = mjit_call_p;
-    mjit_call_p = false; // Avoid impacting JIT metrics by itself
-
-    extern VALUE rb_cMJITCompiler;
-    extern VALUE rb_cMJITIseqPtr;
-    VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
-    VALUE src = rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 3,
-                           iseq_ptr, rb_str_new_cstr(funcname), INT2NUM(id));
-    if (!NIL_P(src)) {
-        fprintf(f, "%s", RSTRING_PTR(src));
-    }
-
-    mjit_call_p = original_call_p;
-    return !NIL_P(src);
-}
 
 // An offsetof implementation that works for unnamed struct and union.
 // Multiplying 8 for compatibility with libclang's offsetof.

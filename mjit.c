@@ -1324,9 +1324,9 @@ static VALUE rb_mMJIT = 0;
 // RubyVM::MJIT::C
 static VALUE rb_mMJITC = 0;
 // RubyVM::MJIT::Compiler
-VALUE rb_cMJITCompiler = 0;
+static VALUE rb_cMJITCompiler = 0;
 // RubyVM::MJIT::CPointer::Struct_rb_iseq_t
-VALUE rb_cMJITIseqPtr = 0;
+static VALUE rb_cMJITIseqPtr = 0;
 
 // [experimental] Call custom RubyVM::MJIT.compile if defined
 static void
@@ -2015,6 +2015,24 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
             }
         }
     }
+}
+
+// Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
+bool
+mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
+{
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+
+    VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
+    VALUE src = rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 3,
+                           iseq_ptr, rb_str_new_cstr(funcname), INT2NUM(id));
+    if (!NIL_P(src)) {
+        fprintf(f, "%s", RSTRING_PTR(src));
+    }
+
+    mjit_call_p = original_call_p;
+    return !NIL_P(src);
 }
 
 #include "mjit.rbinc"
