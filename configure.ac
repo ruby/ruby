@@ -366,12 +366,6 @@ AS_CASE(["$target_os"],
 	[AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)
 	AC_MSG_ERROR([Unsupported OS X version is required])])
-    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
-	[AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
-	    [rb_cv_tls_supported=yes],
-	    [rb_cv_tls_supported=no])])
-    AS_IF([test x"$rb_cv_tls_supported" != xyes],
-	[AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ])
 
 RUBY_MINGW32
@@ -391,6 +385,13 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$gcc_major" -lt 4], [
         AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
     ])
+
+    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+            [rb_cv_tls_supported=yes],
+            [rb_cv_tls_supported=no])])
+    AS_IF([test x"$rb_cv_tls_supported" != xyes],
+        [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ], [
     linker_flag=
 ])
