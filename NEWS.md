@@ -351,7 +351,7 @@ Note: We're only listing outstanding class updates.
     * securerandom 0.2.0
     * set 1.0.3
     * stringio 3.0.3
-    * syntax_suggest 1.0.0
+    * syntax_suggest 1.0.1
     * timeout 0.3.0
 
 *   The following bundled gems are updated.
