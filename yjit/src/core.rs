@@ -1489,6 +1489,8 @@ fn gen_block_series_body(
             _ => break
         };
 
+        incr_counter!(block_next_count);
+
         // Get id and context for the new block
         let requested_id = last_target.id;
         let requested_ctx = &last_target.ctx;
@@ -2089,6 +2091,8 @@ pub fn defer_compilation(
         gen_jump_branch(asm, dst_addr, None, BranchShape::Default);
     }
     asm.mark_branch_end(&branch_rc);
+
+    incr_counter!(defer_count);
 }
 
 fn remove_from_graph(blockref: &BlockRef) {
