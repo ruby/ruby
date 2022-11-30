@@ -830,7 +830,7 @@ impl Assembler
                     match dest.rm_num_bits() {
                         64 => stur(cb, src.into(), dest.into()),
                         32 => sturh(cb, src.into(), dest.into()),
-                        _ => panic!("unexpected dest num_bits: {}, src: {:#?}, dest: {:#?}", dest.rm_num_bits(), src, dest),
+                        num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },
                 Insn::Load { opnd, out } |
