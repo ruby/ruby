@@ -854,6 +854,8 @@ OnigPosition onig_search_gpos(OnigRegex, const OnigUChar* str, const OnigUChar* 
 ONIG_EXTERN
 OnigPosition onig_match(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* at, OnigRegion* region, OnigOptionType option);
 ONIG_EXTERN
+int onig_check_redos_safe(OnigRegex reg);
+ONIG_EXTERN
 OnigRegion* onig_region_new(void);
 ONIG_EXTERN
 void onig_region_init(OnigRegion* region);

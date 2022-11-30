@@ -694,7 +694,19 @@ unexpected_bytecode_error:
 bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
-#endif /* USE_MATCH_CACHE */
+#else /* USE_MATCH_CACHE */
+static OnigPosition count_num_cache_opcode(regex_t* reg, long* num, long* table_size) {
+  *num = NUM_CACHE_OPCODE_FAIL;
+  return 0;
+}
+#endif
+
+extern int
+onig_check_redos_safe(OnigRegexType* reg) {
+  int num, table_size;
+  count_num_cache_opcode(reg, &num, &table_size);
+  return num != NUM_CACHE_OPCODE_FAIL;
+}
 
 extern void
 onig_region_clear(OnigRegion* region)
