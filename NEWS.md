@@ -158,6 +158,12 @@ Note: We're only listing outstanding class updates.
 
     * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
 
+* Exception
+
+    * Exception#detailed_message has been added.
+      The default error printer calls this method on the Exception object
+      instead of #message. [[Feature #18564]]
+
 * Hash
 
     * Hash#shift now always returns nil if the hash is
@@ -519,6 +525,7 @@ The following deprecated APIs are removed.
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
+[Feature #18564]: https://bugs.ruby-lang.org/issues/18564
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
 [Feature #18589]: https://bugs.ruby-lang.org/issues/18589
