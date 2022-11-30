@@ -173,6 +173,7 @@ module Bundler
       end
 
       def install(spec, options = {})
+        return if Bundler.settings[:no_install]
         force = options[:force]
 
         print_using_message "Using #{version_message(spec, options[:previous_spec])} from #{self}"
