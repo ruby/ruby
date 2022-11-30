@@ -127,15 +127,19 @@ def next_token # :nodoc:
     # non-RD part begin
     when /^=begin\s+(\w+)/
       part = $1
+=begin # not imported to RDoc
       if @in_part # if in non-RD part
         @part_content.push(line)
       else
         @in_part = part if @tree.filter[part] # if filter exists
 #  p "BEGIN_PART: #{@in_part}" # DEBUG
       end
+=end
+      @in_part = part
     # non-RD part end
     when /^=end/
       if @in_part # if in non-RD part
+=begin # not imported to RDoc
 #  p "END_PART: #{@in_part}" # DEBUG
         # make Part-in object
         part = RDoc::RD::Part.new(@part_content.join(""), @tree, "r")
@@ -154,11 +158,14 @@ def next_token # :nodoc:
         end
         @in_part = nil
         return [:SUBTREE, subtree]
+=end
       end
     else
+=begin # not imported to RDoc
       if @in_part # if in non-RD part
         @part_content.push(line)
       end
+=end
     end
   end
 
