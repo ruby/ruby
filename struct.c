@@ -48,7 +48,7 @@ struct_ivar_get(VALUE c, ID id)
 
     for (;;) {
         c = rb_class_superclass(c);
-        if (c == 0 || c == rb_cStruct || c == rb_cData || c == Qnil)
+        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
             return Qnil;
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);

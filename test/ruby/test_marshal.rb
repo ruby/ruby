@@ -92,6 +92,14 @@ class TestMarshal < Test::Unit::TestCase
     TestMarshal.instance_eval { remove_const :StructInvalidMembers }
   end
 
+  def test_load_range_as_struct
+    assert_raise(TypeError, 'GH-6832') do
+      # Can be obtained with:
+      #  $ ruby -e 'Range = Struct.new(:a, :b, :c); p Marshal.dump(Range.new(nil, nil, nil))'
+      Marshal.load("\x04\bS:\nRange\b:\x06a0:\x06b0:\x06c0")
+    end
+  end
+
   class C
     def initialize(str)
       @str = str
