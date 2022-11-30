@@ -19,6 +19,7 @@ on:
   #     - '**.ronn'
   schedule:
     - cron: '0 12 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
