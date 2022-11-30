@@ -201,6 +201,9 @@ Note: We're only listing outstanding class updates.
       Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
       [[Feature #18788]]
 
+    * Regexp.timeout= has been added. Also, Regexp.new new supports timeout keyword.
+      See [[Feature #17837]]
+
 * Refinement
 
     * Refinement#refined_class has been added. [[Feature #12737]]
@@ -509,6 +512,7 @@ The following deprecated APIs are removed.
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
+[Feature #17837]: https://bugs.ruby-lang.org/issues/17837
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18037]: https://bugs.ruby-lang.org/issues/18037
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
