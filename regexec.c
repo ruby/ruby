@@ -703,7 +703,7 @@ static OnigPosition count_num_cache_opcode(regex_t* reg, long* num, long* table_
 
 extern int
 onig_check_redos_safe(OnigRegexType* reg) {
-  int num, table_size;
+  long num = 0, table_size = 0;
   count_num_cache_opcode(reg, &num, &table_size);
   return num != NUM_CACHE_OPCODE_FAIL;
 }
