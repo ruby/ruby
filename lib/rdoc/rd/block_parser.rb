@@ -18,8 +18,6 @@ class BlockParser < Racc::Parser
 
 # :stopdoc:
 
-TMPFILE = ["rdtmp", $$, 0]
-
 MARK_TO_LEVEL = {
   '='    => 1,
   '=='   => 2,
@@ -148,11 +146,10 @@ def next_token # :nodoc:
         if @tree.filter[@in_part].mode == :rd # if output is RD formatted
           subtree = parse_subtree(part_out.to_a)
         else # if output is target formatted
-          basename = TMPFILE.join('.')
-          TMPFILE[-1] += 1
-          tmpfile = open(@tree.tmp_dir + "/" + basename + ".#{@in_part}", "w")
-          tmpfile.print(part_out)
-          tmpfile.close
+          basename = Tempfile.create(["rdtmp", ".#{@in_part}"], @tree.tmp_dir) do |tmpfile|
+            tmpfile.print(part_out)
+            File.basename(tmpfile.path)
+          end
           subtree = parse_subtree(["=begin\n", "<<< #{basename}\n", "=end\n"])
         end
         @in_part = nil
