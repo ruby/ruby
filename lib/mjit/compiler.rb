@@ -89,13 +89,8 @@ class RubyVM::MJIT::Compiler
     end
 
     # Generate merged ivar guards first if needed
-    has_getivar, has_setivar = ivar_usages(iseq.body)
-    if !status.compile_info.disable_ivar_cache && (has_getivar || has_setivar)
+    if !status.compile_info.disable_ivar_cache && using_ivar?(iseq.body)
       src << "    if (UNLIKELY(!RB_TYPE_P(GET_SELF(), T_OBJECT))) {"
-      src << "        goto ivar_cancel;\n"
-      src << "    }\n"
-    elsif !status.compile_info.disable_exivar_cache && has_getivar
-      src << "    if (UNLIKELY(!FL_TEST_RAW(GET_SELF(), FL_EXIVAR))) {"
       src << "        goto ivar_cancel;\n"
       src << "    }\n"
     end
@@ -345,7 +340,7 @@ class RubyVM::MJIT::Compiler
 
       # JIT: prepare vm_getivar/vm_setivar arguments and variables
       src << "{\n"
-      src << "    VALUE obj = GET_SELF();\n"
+      src << "    VALUE obj = GET_SELF();\n" # T_OBJECT guaranteed by compile_body
       # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
       if insn_name == :setinstancevariable
         src << "    const uint32_t index = #{attr_index - 1};\n"
@@ -386,7 +381,7 @@ class RubyVM::MJIT::Compiler
       src << "    const uint32_t index = #{attr_index - 1};\n"
       # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
       src << "    struct gen_ivtbl *ivtbl;\n"
-      src << "    if (LIKELY(source_shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {\n"
+      src << "    if (LIKELY(FL_TEST_RAW(GET_SELF(), FL_EXIVAR) && source_shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {\n"
       src << "        stack[#{stack_size}] = ivtbl->ivptr[index];\n"
       src << "    }\n"
       src << "    else {\n"
@@ -788,22 +783,17 @@ class RubyVM::MJIT::Compiler
     end
   end
 
-  def ivar_usages(body)
-    has_getivar = false
-    has_setivar = false
+  def using_ivar?(body)
     pos = 0
     while pos < body.iseq_size
       insn = INSNS.fetch(C.rb_vm_insn_decode(body.iseq_encoded[pos]))
       case insn.name
-      when :getinstancevariable
-        has_getivar = true
-      when :setinstancevariable
-        has_setivar = true
+      when :getinstancevariable, :setinstancevariable
+        return true
       end
-      break if has_getivar && has_setivar
       pos += insn.len
     end
-    return has_getivar, has_setivar
+    return false
   end
 
   # Expand simple macro that doesn't require dynamic C code.
