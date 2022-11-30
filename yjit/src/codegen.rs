@@ -3651,6 +3651,35 @@ fn jit_rb_obj_equal(
     true
 }
 
+// Codegen for rb_int_equal()
+fn jit_rb_int_equal(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Check that both operands are fixnums
+    guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
+
+    // Compare the arguments
+    asm.comment("rb_int_equal");
+    let arg1 = ctx.stack_pop(1);
+    let arg0 = ctx.stack_pop(1);
+    asm.cmp(arg0, arg1);
+    let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
+
+    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    asm.mov(stack_ret, ret_opnd);
+    true
+}
+
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
     _jit: &mut JITState,
@@ -6880,6 +6909,8 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
+            self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
+            self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
             // rb_str_to_s() methods in string.c
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
