@@ -153,7 +153,9 @@ impl Assembler
                         out_opnd
                     }
                 },
-                _ => asm.load(opnd)
+                _ => {
+                    asm.load(opnd)
+                }
             }
         }
 
@@ -501,6 +503,12 @@ impl Assembler
                     // than 9 bits long. If it's longer, we need to load the
                     // memory address into a register first.
                     let opnd0 = split_memory_address(asm, dest);
+                    let opnd0 = match (opnd0, src) {
+                        (Opnd::Mem(dest), Opnd::UImm(src)) if dest.num_bits == 16 && src < 65536 => {
+                            opnd0.with_num_bits(32).unwrap()
+                        }
+                        _ => opnd0,
+                    };
 
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
@@ -821,7 +829,11 @@ impl Assembler
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
-                    stur(cb, src.into(), dest.into());
+                    match dest.rm_num_bits() {
+                        64 => stur(cb, src.into(), dest.into()),
+                        32 => sturh(cb, src.into(), dest.into()),
+                        _ => panic!("unexpected dest num_bits: {}, src: {:#?}, dest: {:#?}", dest.rm_num_bits(), src, dest),
+                    }
                 },
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { opnd, dest: out } => {
@@ -1375,6 +1387,24 @@ mod tests {
 
         let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
         asm.cmp(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_16_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(16, Opnd::Reg(X0_REG), 0);
+        asm.store(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_32_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
+        asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
     }
 
