@@ -1601,6 +1601,15 @@ CODE
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
   end
 
+  def test_scan_segv
+    bug19159 = '[Bug #19159]'
+    assert_nothing_raised(Exception, bug19159) do
+      ObjectSpace.each_object(MatchData).to_a
+      "".scan(//)
+      ObjectSpace.each_object(MatchData).to_a.inspect
+    end
+  end
+
   def test_size
     assert_equal(0, S("").size)
     assert_equal(4, S("1234").size)
