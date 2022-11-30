@@ -1739,6 +1739,13 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     if (set_backref_str) {
         RMATCH(match)->str = rb_str_new4(str);
     }
+    else {
+        /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
+         * We need to hide the object from ObjectSpace.each_object.
+         * https://bugs.ruby-lang.org/issues/19159
+         */
+        rb_obj_hide(match);
+    }
 
     RMATCH(match)->regexp = re;
     rb_backref_set(match);
