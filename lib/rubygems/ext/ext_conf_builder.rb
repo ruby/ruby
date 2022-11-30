@@ -55,6 +55,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         destent = ent.class.new(dest_path, ent.rel)
         destent.exist? || FileUtils.mv(ent.path, destent.path)
       end
+
+      make dest_path, results, extension_dir, tmp_dest_relative, ["clean"]
     ensure
       ENV["DESTDIR"] = destdir
     end
