@@ -2082,6 +2082,13 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
     if (!b) return DoSomeOne(self, r, rb_intern("remainder"));
     SAVE(b);
 
+    if (VpIsPosInf(b) || VpIsNegInf(b)) {
+       GUARD_OBJ(*dv, NewZeroWrapLimited(1, 1));
+       VpSetZero(*dv, 1);
+       *rv = a;
+       return Qnil;
+    }
+
     mx = (a->MaxPrec + b->MaxPrec) *VpBaseFig();
     GUARD_OBJ(c,   NewZeroWrapLimited(1, mx));
     GUARD_OBJ(res, NewZeroWrapNolimit(1, (mx+1) * 2 + (VpBaseFig() + 1)));

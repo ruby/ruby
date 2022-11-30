@@ -2260,6 +2260,17 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal(minus_ullong_max.to_s), BigDecimal(minus_ullong_max), "[GH-200]")
   end
 
+  def test_reminder_infinity_gh_187
+    # https://github.com/ruby/bigdecimal/issues/187
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      bd = BigDecimal("4.2")
+      assert_equal(bd.remainder(BigDecimal("+Infinity")), bd)
+      assert_equal(bd.remainder(BigDecimal("-Infinity")), bd)
+    end
+  end
+
   def assert_no_memory_leak(code, *rest, **opt)
     code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
     super(["-rbigdecimal"],
