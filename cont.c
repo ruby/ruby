@@ -2082,9 +2082,7 @@ rb_fiber_storage_get(VALUE self)
 static int
 fiber_storage_validate_each(VALUE key, VALUE value, VALUE _argument)
 {
-    if (!RB_TYPE_P(key, T_SYMBOL)) {
-        rb_raise(rb_eTypeError, "storage key must be a symbol");
-    }
+    rb_check_id(&key);
 
     return ST_CONTINUE;
 }
@@ -2102,7 +2100,15 @@ fiber_storage_validate(VALUE value)
 /**
  *  call-seq: Fiber.current.storage = hash
  *
- *  Sets the storage hash for the current fiber.
+ *  Sets the storage hash for the current fiber. This feature is experimental
+ *  and may change in the future.
+ *
+ *  You should be careful about using this method as you may inadvertently clear
+ *  important fiber-storage state. You should mostly prefer to assign specific
+ *  keys in the storage using Fiber#[]=.
+ *
+ *  You can also use Fiber.new(storage: nil) to create a fiber with an empty
+ *  storage.
  *
  *  Example:
  *
@@ -2134,19 +2140,14 @@ rb_fiber_storage_set(VALUE self, VALUE value)
 static VALUE
 rb_fiber_storage_aref(VALUE class, VALUE key)
 {
+    ID id = rb_check_id(&key);
+    if (!id) return Qnil;
+
     VALUE storage = fiber_storage_get(fiber_current());
 
     if (storage == Qnil) return Qnil;
 
-    if (!RB_TYPE_P(key, T_SYMBOL)) {
-        rb_raise(rb_eTypeError, "The given key must be a Symbol!");
-    }
-
-    if (RB_TYPE_P(storage, T_HASH)) {
-        return rb_hash_aref(storage, key);
-    } else {
-        return rb_funcall(storage, idAREF, 1, key);
-    }
+    return rb_hash_aref(storage, key);
 }
 
 /**
@@ -2162,17 +2163,12 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
+    ID id = rb_check_id(&key);
+    if (!id) return Qnil;
+
     VALUE storage = fiber_storage_get(fiber_current());
 
-    if (!RB_TYPE_P(key, T_SYMBOL)) {
-        rb_raise(rb_eTypeError, "The given key must be a Symbol!");
-    }
-
-    if (RB_TYPE_P(storage, T_HASH)) {
-        return rb_hash_aset(storage, key, value);
-    } else {
-        return rb_funcall(storage, idASET, 2, key, value);
-    }
+    return rb_hash_aset(storage, key, value);
 }
 
 static VALUE
@@ -2265,8 +2261,9 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *  call-seq:
  *     Fiber.new(blocking: false, storage: true) { |*args| ... } -> fiber
  *
- *  Creates new Fiber. Initially, the fiber is not running and can be resumed with
- *  #resume. Arguments to the first #resume call will be passed to the block:
+ *  Creates new Fiber. Initially, the fiber is not running and can be resumed
+ *  with #resume. Arguments to the first #resume call will be passed to the
+ *  block:
  *
  *    f = Fiber.new do |initial|
  *       current = initial
@@ -2280,20 +2277,23 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *    f.resume          # prints: current: nil
  *    # ... and so on ...
  *
- *  If <tt>blocking: false</tt> is passed to <tt>Fiber.new</tt>, _and_ current thread
- *  has a Fiber.scheduler defined, the Fiber becomes non-blocking (see "Non-blocking
- *  Fibers" section in class docs).
+ *  If <tt>blocking: false</tt> is passed to <tt>Fiber.new</tt>, _and_ current
+ *  thread has a Fiber.scheduler defined, the Fiber becomes non-blocking (see
+ *  "Non-blocking Fibers" section in class docs).
  *
  *  If the <tt>storage</tt> is unspecified, the default is to inherit a copy of
- *  the storage from the current fiber.
+ *  the storage from the current fiber. This is the same as specifying
+ *  <tt>storage: true</tt>.
  *
  *    Fiber[:x] = 1
  *    Fiber.new do
  *      Fiber[:x] # => 1
- *    end
+ *      Fiber[:x] = 2
+ *    end.resume
+ *    Fiber[:x] # => 1
  *
  *  If the <tt>storage</tt> is <tt>false</tt>, this function uses the current
- *  fiber's storage by reference. This is used for `Enumerator` to create
+ *  fiber's storage by reference. This is used for Enumerator to create
  *  hidden fiber.
  *
  *    Fiber[:count] = 0
@@ -2305,14 +2305,18 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *    Fiber[:count] # => 1
  *
  *  If the given <tt>storage</tt> is <tt>nil</tt>, this function will lazy
- *  initialize the internal storage, and starts as empty.
+ *  initialize the internal storage, which starts as an empty hash.
  *
  *    Fiber[:x] = "Hello World"
  *    Fiber.new(storage: nil) do
  *      Fiber[:x] # nil
  *    end
  *
- *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage.
+ *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage,
+ *  and it must be an instance of Hash.
+ *
+ *  Explicitly using `storage: true/false` is currently experimental and may
+ *  change in the future.
  */
 static VALUE
 rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
