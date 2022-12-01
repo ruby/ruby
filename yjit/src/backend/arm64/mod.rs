@@ -501,12 +501,6 @@ impl Assembler
                     // than 9 bits long. If it's longer, we need to load the
                     // memory address into a register first.
                     let opnd0 = split_memory_address(asm, dest);
-                    let opnd0 = match (opnd0, src) {
-                        (Opnd::Mem(dest), Opnd::UImm(src)) if dest.num_bits == 16 && src < u16::MAX.into() => {
-                            opnd0.with_num_bits(32).unwrap()
-                        }
-                        _ => opnd0,
-                    };
 
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
@@ -828,8 +822,8 @@ impl Assembler
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
                     match dest.rm_num_bits() {
-                        64 => stur(cb, src.into(), dest.into()),
-                        32 => sturh(cb, src.into(), dest.into()),
+                        64 | 32 => stur(cb, src.into(), dest.into()),
+                        16 => sturh(cb, src.into(), dest.into()),
                         num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
                     }
                 },

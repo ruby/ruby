@@ -903,7 +903,7 @@ pub fn strh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(rn.num_bits == 32 || rn.num_bits == 64);
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
@@ -918,7 +918,7 @@ pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 pub fn sturh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rn.num_bits == 32);
+            assert!(rn.num_bits == 16);
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::sturh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
