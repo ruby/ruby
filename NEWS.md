@@ -104,42 +104,44 @@ Note: We're only listing outstanding class updates.
 
 * Fiber
 
-    * Introduce `Fiber.[]` and `Fiber.[]=` for inheritable fiber storage.
-      Introduce `Fiber#storage` and `Fiber#storage=` (experimental) for getting
-      and resetting the current storage. Introduce `Fiber.new(storage:)` for
-      setting the storage when creating a fiber. [[Feature #19078]]
+    *   Introduce Fiber.[] and Fiber.[]= for inheritable fiber storage.
+        Introduce Fiber#storage and Fiber#storage= (experimental) for
+        getting and resetting the current storage.  Introduce
+        `Fiber.new(storage:)` for setting the storage when creating a
+        fiber. [[Feature #19078]]
 
-      Existing Thread and Fiber local variables can be tricky to use. Thread
-      local variables are shared between all fibers, making it hard to isolate,
-      while Fiber local variables can be hard to share. It is often desirable
-      to define unit of execution ("execution context") such that some state
-      is shared between all fibers and threads created in that context. This is
-      what Fiber storage provides.
+        Existing Thread and Fiber local variables can be tricky to use.
+        Thread local variables are shared between all fibers, making it
+        hard to isolate, while Fiber local variables can be hard to
+        share.  It is often desirable to define unit of execution
+        ("execution context") such that some state is shared between all
+        fibers and threads created in that context.  This is what Fiber
+        storage provides.
 
-      ```ruby
-      def log(message)
-        puts "#{Fiber[:request_id]}: #{message}"
-      end
-      
-      def handle_requests
-        while request = read_request
-          Fiber.schedule do
-            Fiber[:request_id] = SecureRandom.uuid
+        ```ruby
+        def log(message)
+          puts "#{Fiber[:request_id]}: #{message}"
+        end
 
-            request.messages.each do |message|
-              Fiber.schedule do
-                log("Handling #{message}") # Log includes inherited request_id.
+        def handle_requests
+          while request = read_request
+            Fiber.schedule do
+              Fiber[:request_id] = SecureRandom.uuid
+
+              request.messages.each do |message|
+                Fiber.schedule do
+                  log("Handling #{message}") # Log includes inherited request_id.
+                end
               end
             end
           end
         end
-      end
-      ```
+        ```
 
-      You should generally consider Fiber storage for any state which you want
-      to be shared implicitly between all fibers and threads created in a given
-      context, e.g. a connection pool, a request id, a logger level,
-      environment variables, configuration, etc.
+        You should generally consider Fiber storage for any state which
+        you want to be shared implicitly between all fibers and threads
+        created in a given context, e.g. a connection pool, a request
+        id, a logger level, environment variables, configuration, etc.
 
 * Fiber::Scheduler
 
