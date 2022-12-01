@@ -91,6 +91,7 @@ extern int ruby_assert_critical_section_entered;
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/basic_operators.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
 #include "method.h"
@@ -582,40 +583,6 @@ enum ruby_special_exceptions {
     ruby_special_error_count
 };
 
-enum ruby_basic_operators {
-    BOP_PLUS,
-    BOP_MINUS,
-    BOP_MULT,
-    BOP_DIV,
-    BOP_MOD,
-    BOP_EQ,
-    BOP_EQQ,
-    BOP_LT,
-    BOP_LE,
-    BOP_LTLT,
-    BOP_AREF,
-    BOP_ASET,
-    BOP_LENGTH,
-    BOP_SIZE,
-    BOP_EMPTY_P,
-    BOP_NIL_P,
-    BOP_SUCC,
-    BOP_GT,
-    BOP_GE,
-    BOP_NOT,
-    BOP_NEQ,
-    BOP_MATCH,
-    BOP_FREEZE,
-    BOP_UMINUS,
-    BOP_MAX,
-    BOP_MIN,
-    BOP_CALL,
-    BOP_AND,
-    BOP_OR,
-
-    BOP_LAST_
-};
-
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_vm_t, (ptr))
 
@@ -775,7 +742,6 @@ typedef struct rb_vm_struct {
         size_t fiber_machine_stack_size;
     } default_params;
 
-    short redefined_flag[BOP_LAST_];
 } rb_vm_t;
 
 /* default values */
@@ -807,23 +773,6 @@ typedef struct rb_vm_struct {
 #undef  RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  ( 128 * 1024 * sizeof(VALUE))
 #endif
-
-/* optimize insn */
-#define INTEGER_REDEFINED_OP_FLAG (1 << 0)
-#define FLOAT_REDEFINED_OP_FLAG  (1 << 1)
-#define STRING_REDEFINED_OP_FLAG (1 << 2)
-#define ARRAY_REDEFINED_OP_FLAG  (1 << 3)
-#define HASH_REDEFINED_OP_FLAG   (1 << 4)
-/* #define BIGNUM_REDEFINED_OP_FLAG (1 << 5) */
-#define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
-#define TIME_REDEFINED_OP_FLAG   (1 << 7)
-#define REGEXP_REDEFINED_OP_FLAG (1 << 8)
-#define NIL_REDEFINED_OP_FLAG    (1 << 9)
-#define TRUE_REDEFINED_OP_FLAG   (1 << 10)
-#define FALSE_REDEFINED_OP_FLAG  (1 << 11)
-#define PROC_REDEFINED_OP_FLAG   (1 << 12)
-
-#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((GET_VM()->redefined_flag[(op)]&(klass)) == 0))
 
 #ifndef VM_DEBUG_BP_CHECK
 #define VM_DEBUG_BP_CHECK 0

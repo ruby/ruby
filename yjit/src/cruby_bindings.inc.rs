@@ -691,6 +691,37 @@ extern "C" {
         elts: *const VALUE,
     ) -> VALUE;
 }
+pub const BOP_PLUS: ruby_basic_operators = 0;
+pub const BOP_MINUS: ruby_basic_operators = 1;
+pub const BOP_MULT: ruby_basic_operators = 2;
+pub const BOP_DIV: ruby_basic_operators = 3;
+pub const BOP_MOD: ruby_basic_operators = 4;
+pub const BOP_EQ: ruby_basic_operators = 5;
+pub const BOP_EQQ: ruby_basic_operators = 6;
+pub const BOP_LT: ruby_basic_operators = 7;
+pub const BOP_LE: ruby_basic_operators = 8;
+pub const BOP_LTLT: ruby_basic_operators = 9;
+pub const BOP_AREF: ruby_basic_operators = 10;
+pub const BOP_ASET: ruby_basic_operators = 11;
+pub const BOP_LENGTH: ruby_basic_operators = 12;
+pub const BOP_SIZE: ruby_basic_operators = 13;
+pub const BOP_EMPTY_P: ruby_basic_operators = 14;
+pub const BOP_NIL_P: ruby_basic_operators = 15;
+pub const BOP_SUCC: ruby_basic_operators = 16;
+pub const BOP_GT: ruby_basic_operators = 17;
+pub const BOP_GE: ruby_basic_operators = 18;
+pub const BOP_NOT: ruby_basic_operators = 19;
+pub const BOP_NEQ: ruby_basic_operators = 20;
+pub const BOP_MATCH: ruby_basic_operators = 21;
+pub const BOP_FREEZE: ruby_basic_operators = 22;
+pub const BOP_UMINUS: ruby_basic_operators = 23;
+pub const BOP_MAX: ruby_basic_operators = 24;
+pub const BOP_MIN: ruby_basic_operators = 25;
+pub const BOP_CALL: ruby_basic_operators = 26;
+pub const BOP_AND: ruby_basic_operators = 27;
+pub const BOP_OR: ruby_basic_operators = 28;
+pub const BOP_LAST_: ruby_basic_operators = 29;
+pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
 extern "C" {
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
@@ -837,37 +868,6 @@ pub struct rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword {
     pub table: *const ID,
     pub default_values: *mut VALUE,
 }
-pub const BOP_PLUS: ruby_basic_operators = 0;
-pub const BOP_MINUS: ruby_basic_operators = 1;
-pub const BOP_MULT: ruby_basic_operators = 2;
-pub const BOP_DIV: ruby_basic_operators = 3;
-pub const BOP_MOD: ruby_basic_operators = 4;
-pub const BOP_EQ: ruby_basic_operators = 5;
-pub const BOP_EQQ: ruby_basic_operators = 6;
-pub const BOP_LT: ruby_basic_operators = 7;
-pub const BOP_LE: ruby_basic_operators = 8;
-pub const BOP_LTLT: ruby_basic_operators = 9;
-pub const BOP_AREF: ruby_basic_operators = 10;
-pub const BOP_ASET: ruby_basic_operators = 11;
-pub const BOP_LENGTH: ruby_basic_operators = 12;
-pub const BOP_SIZE: ruby_basic_operators = 13;
-pub const BOP_EMPTY_P: ruby_basic_operators = 14;
-pub const BOP_NIL_P: ruby_basic_operators = 15;
-pub const BOP_SUCC: ruby_basic_operators = 16;
-pub const BOP_GT: ruby_basic_operators = 17;
-pub const BOP_GE: ruby_basic_operators = 18;
-pub const BOP_NOT: ruby_basic_operators = 19;
-pub const BOP_NEQ: ruby_basic_operators = 20;
-pub const BOP_MATCH: ruby_basic_operators = 21;
-pub const BOP_FREEZE: ruby_basic_operators = 22;
-pub const BOP_UMINUS: ruby_basic_operators = 23;
-pub const BOP_MAX: ruby_basic_operators = 24;
-pub const BOP_MIN: ruby_basic_operators = 25;
-pub const BOP_CALL: ruby_basic_operators = 26;
-pub const BOP_AND: ruby_basic_operators = 27;
-pub const BOP_OR: ruby_basic_operators = 28;
-pub const BOP_LAST_: ruby_basic_operators = 29;
-pub type ruby_basic_operators = u32;
 #[repr(C)]
 pub struct rb_captured_block {
     pub self_: VALUE,

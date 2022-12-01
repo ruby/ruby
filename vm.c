@@ -466,7 +466,6 @@ VALUE rb_cThread;
 VALUE rb_mRubyVMFrozenCore;
 VALUE rb_block_param_proxy;
 
-#define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_ractor_t *ruby_single_main_ractor;
@@ -1894,6 +1893,7 @@ rb_iter_break_value(VALUE val)
 
 /* optimization: redefine management */
 
+short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
