@@ -133,9 +133,12 @@ AC_CANONICAL_TARGET
 AS_CASE(["$target_cpu-$target_os"],
     [aarch64-darwin*], [
         target_cpu=arm64
-        AS_CASE(["$target_vendor"], [unknown], [target_vendor=apple target=${target/-unknown-/-apple-}])
-        target="${target/aarch64/arm64}"
-        target_alias="${target_alias/aarch64/arm64}"
+        AS_CASE(["$target_vendor"], [unknown], [
+            target_vendor=apple
+            target=${target%%-unknown-*}-apple-${target@%:@*-unknown-}
+        ])
+        target="arm64-${target@%:@aarch64-}"
+        target_alias="arm64-${target_alias@%:@aarch64-}"
     ])
 
 AC_ARG_PROGRAM
@@ -3104,7 +3107,7 @@ AS_IF([test "$rb_cv_dlopen" = yes], [
 
             AC_MSG_CHECKING([whether $flag is accepted for bundle])
             : > conftest.c
-            AS_IF([${LDSHARED/'$(CC)'/$CC} -o conftest.bundle $flag conftest.c >/dev/null 2>conftest.err &&
+            AS_IF([${LDSHARED%%'$(CC)'*}$CC${LDSHARED@%:@*'$(CC)'} -o conftest.bundle $flag conftest.c >/dev/null 2>conftest.err &&
                 test ! -s conftest.err], [
                 AC_MSG_RESULT([yes])
                 RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])

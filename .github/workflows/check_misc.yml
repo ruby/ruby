@@ -17,10 +17,13 @@ jobs:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
       - name: Check if C-sources are US-ASCII
         run: |
-          ! grep -r -n '[^	 -~]' *.[chy] include internal win32/*.[ch]
+          ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' '*.rb' '*.[chy]'
+          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]'
+      - name: Check for bash specific substitution in configure.ac
+        run: |
+          ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac
       - name: Check for header macros
         run: |
           ! for header in ruby/*.h; do \
