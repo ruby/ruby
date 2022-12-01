@@ -95,7 +95,7 @@ class TestFiberStorage < Test::Unit::TestCase
 
   def test_storage_assignment_type_error
     assert_raise(TypeError) do
-      Fiber.new(storage: {"foo" => "bar"}) {}
+      Fiber.new(storage: {Object.new => "bar"}) {}
     end
   end
 end
