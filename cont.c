@@ -2333,7 +2333,7 @@ rb_fiber_new_storage(rb_block_call_func_t func, VALUE obj, VALUE storage)
 VALUE
 rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
-    return rb_fiber_new_storage(func, obj, inherit_fiber_storage());
+    return rb_fiber_new_storage(func, obj, Qtrue);
 }
 
 static VALUE
