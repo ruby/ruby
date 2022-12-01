@@ -3154,7 +3154,7 @@ fn gen_opt_case_dispatch(
     // Supporting only Fixnum for now so that the implementation can be an equality check.
     let key_opnd = ctx.stack_pop(1);
     let comptime_key = jit_peek_at_stack(jit, ctx, 0);
-    if comptime_key.fixnum_p() {
+    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() {
         if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQQ) {
             return CantCompile;
         }
