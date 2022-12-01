@@ -2350,6 +2350,18 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:foo, removed)
   end
 
+  def test_frozen_prepend_remove_method
+    [Module, Class].each do |klass|
+      mod = klass.new do
+        prepend(Module.new)
+        def foo; end
+      end
+      mod.freeze
+      assert_raise(FrozenError, '[Bug #19166]') { mod.send(:remove_method, :foo) }
+      assert_equal([:foo], mod.instance_methods(false))
+    end
+  end
+
   def test_prepend_class_ancestors
     bug6658 = '[ruby-core:45919]'
     m = labeled_module("m")
