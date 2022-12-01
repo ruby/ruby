@@ -25,15 +25,12 @@ if SyntaxError.method_defined?(:detailed_message)
       require "syntax_suggest/api" unless defined?(SyntaxSuggest::DEFAULT_VALUE)
 
       message = super
-      file = if highlight
-        SyntaxSuggest::PathnameFromMessage.new(super(highlight: false, **kwargs)).call.name
-      else
-        SyntaxSuggest::PathnameFromMessage.new(message).call.name
-      end
-
-      io = SyntaxSuggest::MiniStringIO.new
+      file = path
 
       if file
+        file = Pathname.new(file)
+        io = SyntaxSuggest::MiniStringIO.new
+
         SyntaxSuggest.call(
           io: io,
           source: file.read,
