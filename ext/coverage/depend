@@ -170,6 +170,7 @@ coverage.o: $(top_srcdir)/gc.h
 coverage.o: $(top_srcdir)/id_table.h
 coverage.o: $(top_srcdir)/internal.h
 coverage.o: $(top_srcdir)/internal/array.h
+coverage.o: $(top_srcdir)/internal/basic_operators.h
 coverage.o: $(top_srcdir)/internal/compilers.h
 coverage.o: $(top_srcdir)/internal/gc.h
 coverage.o: $(top_srcdir)/internal/hash.h
