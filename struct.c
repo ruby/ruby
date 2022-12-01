@@ -1818,7 +1818,17 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
+    OBJ_FREEZE_RAW(self);
     return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+rb_data_init_copy(VALUE copy, VALUE s)
+{
+    copy = rb_struct_init_copy(copy, s);
+    RB_OBJ_FREEZE_RAW(copy);
+    return copy;
 }
 
 /*
@@ -2180,7 +2190,7 @@ InitVM_Struct(void)
 #endif
 
     rb_define_method(rb_cData, "initialize", rb_data_initialize_m, -1);
-    rb_define_method(rb_cData, "initialize_copy", rb_struct_init_copy, 1);
+    rb_define_method(rb_cData, "initialize_copy", rb_data_init_copy, 1);
 
     rb_define_method(rb_cData, "==", rb_data_equal, 1);
     rb_define_method(rb_cData, "eql?", rb_data_eql, 1);

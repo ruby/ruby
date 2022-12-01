@@ -62,6 +62,7 @@ class TestData < Test::Unit::TestCase
     assert_equal(1, test.foo)
     assert_equal(2, test.bar)
     assert_equal(test, klass.new(1, 2))
+    assert_predicate(test, :frozen?)
 
     # Keywords
     test_kw = klass.new(foo: 1, bar: 2)
@@ -168,5 +169,12 @@ class TestData < Test::Unit::TestCase
     assert_equal('#<data >', test.inspect)
     assert_equal([], test.members)
     assert_equal({}, test.to_h)
+  end
+
+  def test_dup
+    klass = Data.define(:foo, :bar)
+    test = klass.new(foo: 1, bar: 2)
+    assert_equal(klass.new(foo: 1, bar: 2), test.dup)
+    assert_predicate(test.dup, :frozen?)
   end
 end
