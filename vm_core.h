@@ -483,10 +483,6 @@ struct rb_iseq_constant_body {
     unsigned int icvarc_size; // Number of ICVARC caches
     unsigned int ci_size;
     unsigned int stack_max; /* for stack overflow check */
-    union {
-        iseq_bits_t * list; /* Find references for GC */
-        iseq_bits_t single;
-    } mark_bits;
 
     bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
     // If true, this ISeq is leaf *and* backtraces are not used, for example,
@@ -495,6 +491,12 @@ struct rb_iseq_constant_body {
     // ObjectSpace#trace_object_allocations.
     // For more details, see: https://bugs.ruby-lang.org/issues/16956
     bool builtin_inline_p;
+
+    union {
+        iseq_bits_t * list; /* Find references for GC */
+        iseq_bits_t single;
+    } mark_bits;
+
     struct rb_id_table *outer_variables;
 
     const rb_iseq_t *mandatory_only_iseq;
