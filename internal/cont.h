@@ -22,6 +22,9 @@ void rb_jit_cont_init(void);
 void rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data);
 void rb_jit_cont_finish(void);
 
+// Copy locals from the current execution to the specified fiber.
+VALUE rb_fiber_inherit_storage(struct rb_execution_context_struct *ec, struct rb_fiber_struct *fiber);
+
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber);
 unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber);
 struct rb_execution_context_struct * rb_fiberptr_get_ec(struct rb_fiber_struct *fiber);

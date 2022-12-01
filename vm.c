@@ -3047,7 +3047,7 @@ vm_init2(rb_vm_t *vm)
 }
 
 void
-rb_execution_context_update(const rb_execution_context_t *ec)
+rb_execution_context_update(rb_execution_context_t *ec)
 {
     /* update VM stack */
     if (ec->vm_stack) {
@@ -3087,6 +3087,8 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
     }
+
+    ec->storage = rb_gc_location(ec->storage);
 }
 
 static enum rb_id_table_iterator_result
@@ -3154,6 +3156,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
     RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
+
+    RUBY_MARK_MOVABLE_UNLESS_NULL(ec->storage);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -3343,6 +3347,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
+
+    th->ec->storage = Qnil;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
