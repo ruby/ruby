@@ -1541,8 +1541,8 @@ remove_method(VALUE klass, ID mid)
     rb_method_entry_t *me = 0;
     VALUE self = klass;
 
-    klass = RCLASS_ORIGIN(klass);
     rb_class_modify_check(klass);
+    klass = RCLASS_ORIGIN(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
         rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
