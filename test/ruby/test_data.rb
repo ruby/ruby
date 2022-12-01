@@ -177,4 +177,14 @@ class TestData < Test::Unit::TestCase
     assert_equal(klass.new(foo: 1, bar: 2), test.dup)
     assert_predicate(test.dup, :frozen?)
   end
+
+  Klass = Data.define(:foo, :bar)
+
+  def test_marshal
+    test = Klass.new(foo: 1, bar: 2)
+    loaded = Marshal.load(Marshal.dump(test))
+    assert_equal(test, loaded)
+    assert_not_same(test, loaded)
+    assert_predicate(loaded, :frozen?)
+  end
 end

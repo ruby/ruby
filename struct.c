@@ -786,6 +786,7 @@ VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
     rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    if (rb_obj_is_kind_of(self, rb_cData)) OBJ_FREEZE_RAW(self);
     RB_GC_GUARD(values);
     return Qnil;
 }
