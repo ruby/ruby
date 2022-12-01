@@ -821,7 +821,11 @@ impl Assembler
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
-                    stur(cb, src.into(), dest.into());
+                    match dest.rm_num_bits() {
+                        64 | 32 => stur(cb, src.into(), dest.into()),
+                        16 => sturh(cb, src.into(), dest.into()),
+                        num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
+                    }
                 },
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { opnd, dest: out } => {
@@ -1375,6 +1379,24 @@ mod tests {
 
         let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
         asm.cmp(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_16_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(16, Opnd::Reg(X0_REG), 0);
+        asm.store(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_32_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
+        asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
     }
 
