@@ -100,6 +100,10 @@ fn main() {
         // From internal/hash.h
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
+        .allowlist_function("rb_hash_stlike_foreach")
+
+        // From include/ruby/st.h
+        .allowlist_type("st_retval")
 
         // From include/ruby/internal/intern/hash.h
         .allowlist_function("rb_hash_aset")

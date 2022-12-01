@@ -234,6 +234,19 @@ pub const RUBY_FL_SINGLETON: ruby_fl_type = 4096;
 pub type ruby_fl_type = i32;
 pub type st_data_t = ::std::os::raw::c_ulong;
 pub type st_index_t = st_data_t;
+pub const ST_CONTINUE: st_retval = 0;
+pub const ST_STOP: st_retval = 1;
+pub const ST_DELETE: st_retval = 2;
+pub const ST_CHECK: st_retval = 3;
+pub const ST_REPLACE: st_retval = 4;
+pub type st_retval = u32;
+pub type st_foreach_callback_func = ::std::option::Option<
+    unsafe extern "C" fn(
+        arg1: st_data_t,
+        arg2: st_data_t,
+        arg3: st_data_t,
+    ) -> ::std::os::raw::c_int,
+>;
 pub const RARRAY_EMBED_FLAG: ruby_rarray_flags = 8192;
 pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub const RARRAY_TRANSIENT_FLAG: ruby_rarray_flags = 33554432;
@@ -414,6 +427,7 @@ extern "C" {
 pub type attr_index_t = u32;
 pub type shape_id_t = u32;
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
@@ -1022,6 +1036,13 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_ec_str_resurrect(ec: *mut rb_execution_context_struct, str_: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_hash_stlike_foreach(
+        hash: VALUE,
+        func: st_foreach_callback_func,
+        arg: st_data_t,
+    ) -> ::std::os::raw::c_int;
 }
 extern "C" {
     pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
