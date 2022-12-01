@@ -265,6 +265,9 @@ struct rb_fiber_struct {
     unsigned int yielding : 1;
     unsigned int blocking : 1;
 
+    // A (string) annotation attached to this fiber.
+    VALUE annotation;
+
     struct coroutine_context context;
     struct fiber_pool_stack stack;
 };
@@ -1108,6 +1111,7 @@ fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
     fiber->first_proc = rb_gc_location(fiber->first_proc);
+    fiber->annotation = rb_gc_location(fiber->annotation);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
 
@@ -1122,6 +1126,7 @@ fiber_mark(void *ptr)
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
     rb_gc_mark_movable(fiber->first_proc);
+    rb_gc_mark_movable(fiber->annotation);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
     RUBY_MARK_LEAVE("cont");
@@ -2013,6 +2018,7 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
     rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
     fiber->first_proc = proc;
+    fiber->annotation = Qnil;
     fiber->stack.base = NULL;
     fiber->stack.pool = fiber_pool;
 
@@ -2290,6 +2296,8 @@ root_fiber_alloc(rb_thread_t *th)
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
 
+    fiber->annotation = Qnil;
+
     coroutine_initialize_main(&fiber->context);
 
     return fiber;
@@ -2516,6 +2524,59 @@ VALUE
 rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 {
     return fiber_switch(fiber_ptr(fiber_value), argc, argv, RB_NO_KEYWORDS, NULL, false);
+}
+
+/**
+ *  call-seq:
+ *    fiber.annotation -> object
+ *
+ *  Returns the current annotation of the fiber, if any.
+ *
+ *  A fiber annotation is used to indicate what the fiber is doing for the
+ *  purpose of debugging, profiling and logging. It is generally appropriate
+ *  to use anotations when a fiber is going to perform a long running operation
+ *  like `connect`, `pop`, `sleep`, `wait`, etc.
+ */
+VALUE
+rb_fiber_annotation_get(VALUE _fiber)
+{
+    rb_fiber_t *fiber = fiber_ptr(_fiber);
+    return fiber->annotation;
+}
+
+/*
+ *  call-seq:
+ *    fiber.annnotation = "some annotation"
+ *
+ *  Attaches an annotation to the specified fiber. This annotation can be
+ *  retrieved by Fiber#annotation.
+ *
+ *  The annotation can be any object but should generally be a String.
+ */
+VALUE
+rb_fiber_annotation_set(VALUE _fiber, VALUE annotation)
+{
+    rb_fiber_t *fiber = fiber_ptr(_fiber);
+    VALUE old = fiber->annotation;
+    fiber->annotation = annotation;
+    return old;
+}
+
+/*
+ *  call-seq:
+ *     Fiber.annotate "some annotation" => previous annotation
+ *
+ *  Attaches an annotation to the current fiber. This annotation can be
+ *  retrieved by Fiber#annotation.
+ *
+ *  The annotation can be any object but should generally be a String.
+ *
+ *  Returns the previous annotation, if any.
+ */
+VALUE
+rb_fiber_annotate(VALUE class, VALUE annotation) {
+    VALUE fiber = rb_fiber_current();
+    return rb_fiber_annotation_set(fiber, annotation);
 }
 
 /*
@@ -3155,10 +3216,15 @@ Init_Cont(void)
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
+
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);
+    rb_define_singleton_method(rb_cFiber, "annotate", rb_fiber_annotate, 1);
+
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
+    rb_define_method(rb_cFiber, "annotation", rb_fiber_annotation_get, 0);
+    rb_define_method(rb_cFiber, "annotation=", rb_fiber_annotation_set, 1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);

@@ -493,4 +493,22 @@ class TestFiber < Test::Unit::TestCase
       GC.start
     RUBY
   end
+
+  TEST_ANNOTATION = "I'm being tested!"
+
+  def test_fiber_annotate
+    Fiber.new do
+      Fiber.annotate TEST_ANNOTATION
+      assert_equal TEST_ANNOTATION, Fiber.current.annotation
+    end.resume
+  end
+
+  def test_fiber_annotate_attribute
+    Fiber.new do
+      fiber = Fiber.current
+
+      fiber.annotate = TEST_ANNOTATION
+      assert_equal TEST_ANNOTATION, fiber.annotation
+    end
+  end
 end
