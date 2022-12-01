@@ -843,6 +843,23 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_case_dispatch
+    assert_compiles(<<~'RUBY', exits: :any, result: [:"1", "2", 3])
+      def case_dispatch(val)
+        case val
+        when 1
+          :"#{val}"
+        when 2
+          "#{val}"
+        else
+          val
+        end
+      end
+
+      [case_dispatch(1), case_dispatch(2), case_dispatch(3)]
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages

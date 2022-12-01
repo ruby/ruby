@@ -1030,6 +1030,13 @@ extern "C" {
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
 }
 extern "C" {
+    pub fn rb_hash_stlike_lookup(
+        hash: VALUE,
+        key: st_data_t,
+        pval: *mut st_data_t,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
 }
 extern "C" {

@@ -1895,6 +1895,9 @@ pub const SEND_MAX_DEPTH: i32 = 5;
 // up to 20 different methods for send
 pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
 
+// up to 20 different offsets for case-when
+pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
+
 // Codegen for setting an instance variable.
 // Preconditions:
 //   - receiver is in REG0
@@ -3126,10 +3129,10 @@ fn gen_opt_regexpmatch2(
 }
 
 fn gen_opt_case_dispatch(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
-    _asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Normally this instruction would lookup the key in a hash and jump to an
     // offset based on that.
@@ -3138,10 +3141,54 @@ fn gen_opt_case_dispatch(
     // We'd hope that our jitted code will be sufficiently fast without the
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
+    if !jit_at_current_insn(jit) {
+        defer_compilation(jit, ctx, asm, ocb);
+        return EndBlock;
+    }
+    let starting_context = *ctx;
 
-    ctx.stack_pop(1);
+    let case_hash = jit_get_arg(jit, 0);
+    let else_offset = jit_get_arg(jit, 1).as_u32();
 
-    KeepCompiling // continue with the next instruction
+    // Try to reorder case/else branches so that ones that are actually used come first.
+    // Supporting only Fixnum for now so that the implementation can be an equality check.
+    let key_opnd = ctx.stack_pop(1);
+    let comptime_key = jit_peek_at_stack(jit, ctx, 0);
+    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() {
+        if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQQ) {
+            return CantCompile;
+        }
+
+        // Check if the key is the same value
+        asm.cmp(key_opnd, comptime_key.into());
+        let side_exit = get_side_exit(jit, ocb, &starting_context);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            &starting_context,
+            asm,
+            ocb,
+            CASE_WHEN_MAX_DEPTH as i32,
+            side_exit,
+        );
+
+        // Get the offset for the compile-time key
+        let mut offset = 0;
+        unsafe { rb_hash_stlike_lookup(case_hash, comptime_key.0 as _, &mut offset) };
+        let jump_offset = if offset == 0 {
+            // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
+            else_offset
+        } else {
+            (offset as u32) >> 1 // FIX2LONG
+        };
+
+        // Jump to the offset of case or else
+        let jump_block = BlockId { iseq: jit.iseq, idx: jit_next_insn_idx(jit) + jump_offset };
+        gen_direct_jump(jit, &ctx, jump_block, asm);
+        EndBlock
+    } else {
+        KeepCompiling // continue with === branches
+    }
 }
 
 fn gen_branchif_branch(
