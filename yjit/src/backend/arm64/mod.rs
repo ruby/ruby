@@ -502,7 +502,7 @@ impl Assembler
                     // memory address into a register first.
                     let opnd0 = split_memory_address(asm, dest);
                     let opnd0 = match (opnd0, src) {
-                        (Opnd::Mem(dest), Opnd::UImm(src)) if dest.num_bits == 16 && src < 65536 => {
+                        (Opnd::Mem(dest), Opnd::UImm(src)) if dest.num_bits == 16 && src < u16::MAX.into() => {
                             opnd0.with_num_bits(32).unwrap()
                         }
                         _ => opnd0,
