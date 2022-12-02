@@ -55,7 +55,7 @@ pub struct Options {
 pub static mut OPTIONS: Options = Options {
     exec_mem_size: 128 * 1024 * 1024,
     code_page_size: 16 * 1024,
-    call_threshold: 10,
+    call_threshold: 30,
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
