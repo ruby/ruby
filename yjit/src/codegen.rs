@@ -2046,8 +2046,8 @@ fn gen_get_ivar(
 
     let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
     let shape_bit_size = unsafe { rb_shape_id_num_bits() }; // either 16 or 32 depending on RUBY_DEBUG
-    let shape_byte_size = shape_bit_size / 8;
-    let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let shape_opnd = Opnd::mem(shape_bit_size, recv, shape_id_offset);
 
     asm.comment("guard shape");
     asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
@@ -2270,8 +2270,8 @@ fn gen_setinstancevariable(
 
         let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
         let shape_bit_size = unsafe { rb_shape_id_num_bits() }; // either 16 or 32 depending on RUBY_DEBUG
-        let shape_byte_size = shape_bit_size / 8;
-        let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
+        let shape_id_offset = unsafe { rb_shape_id_offset() };
+        let shape_opnd = Opnd::mem(shape_bit_size, recv, shape_id_offset);
 
         asm.comment("guard shape");
         asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
@@ -2335,8 +2335,8 @@ fn gen_setinstancevariable(
                 asm.comment("write shape");
 
                 let shape_bit_size = unsafe { rb_shape_id_num_bits() }; // either 16 or 32 depending on RUBY_DEBUG
-                let shape_byte_size = shape_bit_size / 8;
-                let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
+                let shape_id_offset = unsafe { rb_shape_id_offset() };
+                let shape_opnd = Opnd::mem(shape_bit_size, recv, shape_id_offset);
 
                 // Store the new shape
                 asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));

@@ -306,6 +306,12 @@ rb_shape_id_num_bits(void)
     return SHAPE_ID_NUM_BITS;
 }
 
+int32_t
+rb_shape_id_offset(void)
+{
+    return 8 - rb_shape_id_num_bits() / 8;
+}
+
 uint8_t
 rb_shape_flag_shift(void)
 {
