@@ -49,6 +49,14 @@ class TestIO_Console < Test::Unit::TestCase
       assert_include(e.message, IO::NULL)
     end
   end
+
+  def test_bad_keyword
+    assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
+      File.open(IO::NULL) do |f|
+        f.raw(bad: 0)
+      end
+    end
+  end
 end
 
 defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
