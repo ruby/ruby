@@ -16,7 +16,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
-use std::os::raw::c_uint;
+use std::os::raw::{c_int, c_uint};
 use std::ptr;
 use std::slice;
 
@@ -3154,7 +3154,27 @@ fn gen_opt_case_dispatch(
     // Supporting only Fixnum for now so that the implementation can be an equality check.
     let key_opnd = ctx.stack_pop(1);
     let comptime_key = jit_peek_at_stack(jit, ctx, 0);
-    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() {
+
+    // Check that all cases are fixnums to avoid having to register BOP assumptions on
+    // all the types that case hashes support. This spends compile time to save memory.
+    fn case_hash_all_fixnum_p(hash: VALUE) -> bool {
+        let mut all_fixnum = true;
+        unsafe {
+            unsafe extern "C" fn per_case(key: st_data_t, _value: st_data_t, data: st_data_t) -> c_int {
+                (if VALUE(key as usize).fixnum_p() {
+                    ST_CONTINUE
+                } else {
+                    (data as *mut bool).write(false);
+                    ST_STOP
+                }) as c_int
+            }
+            rb_hash_stlike_foreach(hash, Some(per_case), (&mut all_fixnum) as *mut _ as st_data_t);
+        }
+
+        all_fixnum
+    }
+
+    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() && case_hash_all_fixnum_p(case_hash) {
         if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQQ) {
             return CantCompile;
         }

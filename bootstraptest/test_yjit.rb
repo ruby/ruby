@@ -3436,3 +3436,23 @@ assert_equal '1', %q{
 
   foo(1)
 }
+
+# case-when with redefined ===
+assert_equal 'ok', %q{
+  class Symbol
+    def ===(a)
+      true
+    end
+  end
+
+  def cw(arg)
+    case arg
+    when :b
+      :ok
+    when 4
+      :ng
+    end
+  end
+
+  cw(4)
+}
