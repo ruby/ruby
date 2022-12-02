@@ -21,18 +21,21 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--mjit", "--mjit-wait" ]
+        test_task: [check] # to make job names consistent
+        mjit_opts: [--mjit-wait]
       fail-fast: false
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --mjit-debug=-ggdb3'
+      RUN_OPTS: '--disable-gems ${{ matrix.mjit_opts }} --mjit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
@@ -46,10 +49,10 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
         with:
           path: src
-      - uses: actions/cache@v3
+      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -74,22 +77,22 @@ jobs:
           ulimit -c unlimited
           make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - name: Run test-all
-        run: |
-          ulimit -c unlimited
-          make -s test-all RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 60
+      # - name: Run test-all
+      #   run: |
+      #     ulimit -c unlimited
+      #     make -s test-all RUN_OPTS="$RUN_OPTS"
+      #   timeout-minutes: 60
       - name: Run test-spec
         run: |
           ulimit -c unlimited
           make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - uses: ruby/action-slack@v3.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }}",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.mjit_opts }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}"

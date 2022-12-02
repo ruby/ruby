@@ -36,6 +36,7 @@ end
 # - ::ln, ::link: Creates hard links.
 # - ::ln_s, ::symlink: Creates symbolic links.
 # - ::ln_sf: Creates symbolic links, overwriting if necessary.
+# - ::ln_sr: Creates symbolic links relative to targets
 #
 # === Deleting
 #
@@ -690,6 +691,7 @@ module FileUtils
   # Keyword arguments:
   #
   # - <tt>force: true</tt> - overwrites +dest+ if it exists.
+  # - <tt>relative: false</tt> - create links relative to +dest+.
   # - <tt>noop: true</tt> - does not create links.
   # - <tt>verbose: true</tt> - prints an equivalent command:
   #
@@ -709,7 +711,10 @@ module FileUtils
   #
   # Related: FileUtils.ln_sf.
   #
-  def ln_s(src, dest, force: nil, noop: nil, verbose: nil)
+  def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
+    if relative
+      return ln_sr(src, dest, force: force, noop: noop, verbose: verbose)
+    end
     fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
     fu_each_src_dest0(src, dest) do |s,d|
@@ -728,6 +733,48 @@ module FileUtils
     ln_s src, dest, force: true, noop: noop, verbose: verbose
   end
   module_function :ln_sf
+
+  # Like FileUtils.ln_s, but create links relative to +dest+.
+  #
+  def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
+    options = "#{force ? 'f' : ''}#{target_directory ? '' : 'T'}"
+    dest = File.path(dest)
+    srcs = Array(src)
+    link = proc do |s, target_dir_p = true|
+      s = File.path(s)
+      if target_dir_p
+        d = File.join(destdirs = dest, File.basename(s))
+      else
+        destdirs = File.dirname(d = dest)
+      end
+      destdirs = fu_split_path(File.realpath(destdirs))
+      if fu_starting_path?(s)
+        srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
+        base = fu_relative_components_from(srcdirs, destdirs)
+        s = File.join(*base)
+      else
+        srcdirs = fu_clean_components(*fu_split_path(s))
+        base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
+        while srcdirs.first&. == ".." and base.last&.!=("..") and !fu_starting_path?(base.last)
+          srcdirs.shift
+          base.pop
+        end
+        s = File.join(*base, *srcdirs)
+      end
+      fu_output_message "ln -s#{options} #{s} #{d}" if verbose
+      next if noop
+      remove_file d, true if force
+      File.symlink s, d
+    end
+    case srcs.size
+    when 0
+    when 1
+      link[srcs[0], target_directory && File.directory?(dest)]
+    else
+      srcs.each(&link)
+    end
+  end
+  module_function :ln_sr
 
   # Creates {hard links}[https://en.wikipedia.org/wiki/Hard_link]; returns +nil+.
   #
@@ -2436,15 +2483,15 @@ module FileUtils
   end
   private_module_function :fu_each_src_dest
 
-  def fu_each_src_dest0(src, dest)   #:nodoc:
+  def fu_each_src_dest0(src, dest, target_directory = true)   #:nodoc:
     if tmp = Array.try_convert(src)
       tmp.each do |s|
         s = File.path(s)
-        yield s, File.join(dest, File.basename(s))
+        yield s, (target_directory ? File.join(dest, File.basename(s)) : dest)
       end
     else
       src = File.path(src)
-      if File.directory?(dest)
+      if target_directory and File.directory?(dest)
         yield src, File.join(dest, File.basename(src))
       else
         yield src, File.path(dest)
@@ -2467,6 +2514,56 @@ module FileUtils
     output.puts msg
   end
   private_module_function :fu_output_message
+
+  def fu_split_path(path)
+    path = File.path(path)
+    list = []
+    until (parent, base = File.split(path); parent == path or parent == ".")
+      list << base
+      path = parent
+    end
+    list << path
+    list.reverse!
+  end
+  private_module_function :fu_split_path
+
+  def fu_relative_components_from(target, base) #:nodoc:
+    i = 0
+    while target[i]&.== base[i]
+      i += 1
+    end
+    Array.new(base.size-i, '..').concat(target[i..-1])
+  end
+  private_module_function :fu_relative_components_from
+
+  def fu_clean_components(*comp)
+    comp.shift while comp.first == "."
+    return comp if comp.empty?
+    clean = [comp.shift]
+    path = File.join(*clean, "") # ending with File::SEPARATOR
+    while c = comp.shift
+      if c == ".." and clean.last != ".." and !(fu_have_symlink? && File.symlink?(path))
+        clean.pop
+        path.chomp!(%r((?<=\A|/)[^/]+/\z), "")
+      else
+        clean << c
+        path << c << "/"
+      end
+    end
+    clean
+  end
+  private_module_function :fu_clean_components
+
+  if fu_windows?
+    def fu_starting_path?(path)
+      path&.start_with?(%r(\w:|/))
+    end
+  else
+    def fu_starting_path?(path)
+      path&.start_with?("/")
+    end
+  end
+  private_module_function :fu_starting_path?
 
   # This hash table holds command options.
   OPT_TABLE = {}    #:nodoc: internal use only

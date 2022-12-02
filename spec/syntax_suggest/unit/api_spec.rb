@@ -25,7 +25,7 @@ module SyntaxSuggest
         io: io
       )
 
-      expect(io.string.strip).to eq("Syntax OK")
+      expect(io.string.strip).to eq("")
     end
 
     it "raises original error with warning if a non-syntax error is passed" do
@@ -67,6 +67,8 @@ module SyntaxSuggest
 
       error = SyntaxError.new("#{fixtures_dir.join("this_project_extra_def.rb.txt")}:1 ")
 
+      skip if error.respond_to?(:path)
+
       require "syntax_suggest/core_ext"
 
       expect(error.detailed_message(highlight: true)).to include(SyntaxSuggest::DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT)
@@ -77,6 +79,8 @@ module SyntaxSuggest
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
       error = SyntaxError.new("#{fixtures_dir.join("this_project_extra_def.rb.txt")}:1 ")
+
+      skip if error.respond_to?(:path)
 
       require "syntax_suggest/core_ext"
 

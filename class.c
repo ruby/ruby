@@ -326,7 +326,13 @@ rb_class_new(VALUE super)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
-    return rb_class_boot(super);
+    VALUE klass = rb_class_boot(super);
+
+    if (super != rb_cObject && super != rb_cBasicObject) {
+        RCLASS_EXT(klass)->max_iv_count = RCLASS_EXT(super)->max_iv_count;
+    }
+
+    return klass;
 }
 
 VALUE

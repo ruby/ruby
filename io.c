@@ -1424,7 +1424,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     struct timeval tv_storage;
     struct timeval *tv = NULL;
 
-    if (timeout == Qnil || UNDEF_P(timeout)) {
+    if (NIL_OR_UNDEF_P(timeout)) {
         timeout = fptr->timeout;
     }
 
@@ -1646,7 +1646,7 @@ make_writeconv(rb_io_t *fptr)
         ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_READ_MASK;
         ecopts = fptr->encs.ecopts;
 
-        if (!fptr->encs.enc || (fptr->encs.enc == rb_ascii8bit_encoding() && !fptr->encs.enc2)) {
+        if (!fptr->encs.enc || (rb_is_ascii8bit_enc(fptr->encs.enc) && !fptr->encs.enc2)) {
             /* no encoding conversion */
             fptr->writeconv_pre_ecflags = 0;
             fptr->writeconv_pre_ecopts = Qnil;
@@ -6514,7 +6514,7 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
         ext = rb_default_external_encoding();
         default_ext = 1;
     }
-    if (ext == rb_ascii8bit_encoding()) {
+    if (rb_is_ascii8bit_enc(ext)) {
         /* If external is ASCII-8BIT, no transcoding */
         intern = NULL;
     }
@@ -13406,6 +13406,17 @@ global_argf_p(VALUE arg)
     return arg == argf;
 }
 
+typedef VALUE (*argf_encoding_func)(VALUE io);
+
+static VALUE
+argf_encoding(VALUE argf, argf_encoding_func func)
+{
+    if (!RTEST(ARGF.current_file)) {
+        return rb_enc_default_external();
+    }
+    return func(rb_io_check_io(ARGF.current_file));
+}
+
 /*
  *  call-seq:
  *     ARGF.external_encoding   -> encoding
@@ -13425,10 +13436,7 @@ global_argf_p(VALUE arg)
 static VALUE
 argf_external_encoding(VALUE argf)
 {
-    if (!RTEST(ARGF.current_file)) {
-        return rb_enc_from_encoding(rb_default_external_encoding());
-    }
-    return rb_io_external_encoding(rb_io_check_io(ARGF.current_file));
+    return argf_encoding(argf, rb_io_external_encoding);
 }
 
 /*
@@ -13447,10 +13455,7 @@ argf_external_encoding(VALUE argf)
 static VALUE
 argf_internal_encoding(VALUE argf)
 {
-    if (!RTEST(ARGF.current_file)) {
-        return rb_enc_from_encoding(rb_default_external_encoding());
-    }
-    return rb_io_internal_encoding(rb_io_check_io(ARGF.current_file));
+    return argf_encoding(argf, rb_io_internal_encoding);
 }
 
 /*

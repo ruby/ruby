@@ -30,6 +30,7 @@ module IRB
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
+        nil
       end
 
       def dump_methods(o, klass, obj)

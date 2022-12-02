@@ -546,7 +546,7 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator('A'..'Z', :===, 'ana')
     assert_operator('A'.., :===, 'ANA')
     assert_operator(..'Z', :===, 'ANA')
-    assert_operator(nil..nil, :===, 'ANA')
+    assert_raise(TypeError) {(nil..nil) === 'ANA'}
   end
 
   def test_eqq_time
@@ -599,13 +599,14 @@ class TestRange < Test::Unit::TestCase
     assert_include("a"..."z", "y")
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
-    assert_include("a".., "c")
-    assert_not_include("a".., "5")
+    assert_raise(TypeError) {("a"..).include?("c")}
+    assert_raise(TypeError) {("a"..).include?("5")}
+
     assert_include(0...10, 5)
     assert_include(5..., 10)
     assert_not_include(5..., 0)
-    assert_include(.."z", "z")
-    assert_not_include(..."z", "z")
+    assert_raise(TypeError) {(.."z").include?("z")}
+    assert_raise(TypeError) {(..."z").include?("z")}
     assert_include(..10, 10)
     assert_not_include(...10, 10)
   end

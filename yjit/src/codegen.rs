@@ -10,7 +10,7 @@ use crate::options::*;
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
-use InsnOpnd::*;
+use YARVOpnd::*;
 
 use std::cmp;
 use std::collections::HashMap;
@@ -642,12 +642,10 @@ fn gen_check_ints(asm: &mut Assembler, side_exit: CodePtr) {
     // see RUBY_VM_CHECK_INTS(ec) macro
     asm.comment("RUBY_VM_CHECK_INTS(ec)");
 
-    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
-
-    asm.test(
-        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
-        not_mask,
-    );
+    // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
+    // signal_exec, or rb_postponed_job_flush.
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    asm.test(interrupt_flag, interrupt_flag);
 
     asm.jnz(Target::SideExitPtr(side_exit));
 }
@@ -1303,9 +1301,9 @@ fn guard_object_is_heap(
     asm.test(object_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
     asm.jnz(side_exit.as_side_exit());
 
-    // Test that the object is not false or nil
-    asm.cmp(object_opnd, Qnil.into());
-    asm.jbe(side_exit.as_side_exit());
+    // Test that the object is not false
+    asm.cmp(object_opnd, Qfalse.into());
+    asm.je(side_exit.as_side_exit());
 }
 
 fn guard_object_is_array(
@@ -1897,6 +1895,9 @@ pub const SEND_MAX_DEPTH: i32 = 5;
 // up to 20 different methods for send
 pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
 
+// up to 20 different offsets for case-when
+pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
+
 // Codegen for setting an instance variable.
 // Preconditions:
 //   - receiver is in REG0
@@ -1956,7 +1957,7 @@ fn gen_get_ivar(
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
-    recv_opnd: InsnOpnd,
+    recv_opnd: YARVOpnd,
     side_exit: CodePtr,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
@@ -2234,10 +2235,10 @@ fn gen_checktype(
         if !val_type.is_heap() {
             // if (SPECIAL_CONST_P(val)) {
             // Return Qfalse via REG1 if not on heap
-            asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
             asm.jnz(ret);
-            asm.cmp(val, Opnd::UImm(Qnil.into()));
-            asm.jbe(ret);
+            asm.cmp(val, Qfalse.into());
+            asm.je(ret);
         }
 
         // Check type on object
@@ -3128,10 +3129,10 @@ fn gen_opt_regexpmatch2(
 }
 
 fn gen_opt_case_dispatch(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
-    _asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Normally this instruction would lookup the key in a hash and jump to an
     // offset based on that.
@@ -3140,10 +3141,54 @@ fn gen_opt_case_dispatch(
     // We'd hope that our jitted code will be sufficiently fast without the
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
+    if !jit_at_current_insn(jit) {
+        defer_compilation(jit, ctx, asm, ocb);
+        return EndBlock;
+    }
+    let starting_context = *ctx;
 
-    ctx.stack_pop(1);
+    let case_hash = jit_get_arg(jit, 0);
+    let else_offset = jit_get_arg(jit, 1).as_u32();
 
-    KeepCompiling // continue with the next instruction
+    // Try to reorder case/else branches so that ones that are actually used come first.
+    // Supporting only Fixnum for now so that the implementation can be an equality check.
+    let key_opnd = ctx.stack_pop(1);
+    let comptime_key = jit_peek_at_stack(jit, ctx, 0);
+    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() {
+        if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQQ) {
+            return CantCompile;
+        }
+
+        // Check if the key is the same value
+        asm.cmp(key_opnd, comptime_key.into());
+        let side_exit = get_side_exit(jit, ocb, &starting_context);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            &starting_context,
+            asm,
+            ocb,
+            CASE_WHEN_MAX_DEPTH as i32,
+            side_exit,
+        );
+
+        // Get the offset for the compile-time key
+        let mut offset = 0;
+        unsafe { rb_hash_stlike_lookup(case_hash, comptime_key.0 as _, &mut offset) };
+        let jump_offset = if offset == 0 {
+            // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
+            else_offset
+        } else {
+            (offset as u32) >> 1 // FIX2LONG
+        };
+
+        // Jump to the offset of case or else
+        let jump_block = BlockId { iseq: jit.iseq, idx: jit_next_insn_idx(jit) + jump_offset };
+        gen_direct_jump(jit, &ctx, jump_block, asm);
+        EndBlock
+    } else {
+        KeepCompiling // continue with === branches
+    }
 }
 
 fn gen_branchif_branch(
@@ -3397,7 +3442,7 @@ fn jit_guard_known_klass(
     ocb: &mut OutlinedCb,
     known_klass: VALUE,
     obj_opnd: Opnd,
-    insn_opnd: InsnOpnd,
+    insn_opnd: YARVOpnd,
     sample_instance: VALUE,
     max_chain_depth: i32,
     side_exit: CodePtr,
@@ -3500,11 +3545,10 @@ fn jit_guard_known_klass(
         // Note: if we get here, the class doesn't have immediate instances.
         if !val_type.is_heap() {
             asm.comment("guard not immediate");
-            assert!(Qfalse.as_i32() < Qnil.as_i32());
-            asm.test(obj_opnd, Opnd::Imm(RUBY_IMMEDIATE_MASK as i64));
+            asm.test(obj_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
             jit_chain_guard(JCC_JNZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
-            asm.cmp(obj_opnd, Qnil.into());
-            jit_chain_guard(JCC_JBE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+            asm.cmp(obj_opnd, Qfalse.into());
+            jit_chain_guard(JCC_JE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
             ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
         }
@@ -3654,6 +3698,35 @@ fn jit_rb_obj_equal(
     true
 }
 
+// Codegen for rb_int_equal()
+fn jit_rb_int_equal(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Check that both operands are fixnums
+    guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
+
+    // Compare the arguments
+    asm.comment("rb_int_equal");
+    let arg1 = ctx.stack_pop(1);
+    let arg0 = ctx.stack_pop(1);
+    asm.cmp(arg0, arg1);
+    let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
+
+    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    asm.mov(stack_ret, ret_opnd);
+    true
+}
+
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
     _jit: &mut JITState,
@@ -3773,10 +3846,10 @@ fn jit_rb_str_concat(
         let arg_opnd = asm.load(concat_arg);
         if !arg_type.is_heap() {
             asm.comment("guard arg not immediate");
-            asm.test(arg_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.test(arg_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
             asm.jnz(side_exit.as_side_exit());
-            asm.cmp(arg_opnd, Qnil.into());
-            asm.jbe(side_exit.as_side_exit());
+            asm.cmp(arg_opnd, Qfalse.into());
+            asm.je(side_exit.as_side_exit());
         }
         guard_object_is_string(asm, arg_opnd, side_exit);
     }
@@ -5067,8 +5140,8 @@ fn gen_send_iseq(
         ocb,
         return_block,
         &return_ctx,
-        Some(return_block),
-        Some(&return_ctx),
+        None,
+        None,
         gen_return_branch,
     );
 
@@ -6781,11 +6854,12 @@ impl CodegenGlobals {
             assert_eq!(code_page_size % page_size.as_usize(), 0, "code_page_size was not page-aligned");
 
             use crate::virtualmem::*;
+            use std::ptr::NonNull;
 
             let mem_block = VirtualMem::new(
                 SystemAllocator {},
                 page_size,
-                virt_block,
+                NonNull::new(virt_block).unwrap(),
                 mem_size,
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
@@ -6882,6 +6956,8 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
+            self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
+            self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
             // rb_str_to_s() methods in string.c
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);

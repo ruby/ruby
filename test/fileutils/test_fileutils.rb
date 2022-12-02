@@ -1002,6 +1002,43 @@ class TestFileUtils < Test::Unit::TestCase
     }
   end if have_symlink?
 
+  def test_ln_sr
+    check_singleton :ln_sr
+
+    TARGETS.each do |fname|
+      begin
+        lnfname = 'tmp/lnsdest'
+        ln_sr fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal "../#{fname}", File.readlink(lnfname), fname
+      ensure
+        rm_f lnfname
+      end
+    end
+    mkdir 'data/src'
+    File.write('data/src/xxx', 'ok')
+    File.symlink '../data/src', 'tmp/src'
+    ln_sr 'tmp/src/xxx', 'data'
+    assert File.symlink?('data/xxx')
+    assert_equal 'ok', File.read('data/xxx')
+  end if have_symlink?
+
+  def test_ln_sr_broken_symlink
+    assert_nothing_raised {
+      ln_sr 'tmp/symlink', 'tmp/symlink'
+    }
+  end if have_symlink? and !no_broken_symlink?
+
+  def test_ln_sr_pathname
+    # pathname
+    touch 'tmp/lns_dest'
+    assert_nothing_raised {
+      ln_sr Pathname.new('tmp/lns_dest'), 'tmp/symlink_tmp1'
+      ln_sr 'tmp/lns_dest', Pathname.new('tmp/symlink_tmp2')
+      ln_sr Pathname.new('tmp/lns_dest'), Pathname.new('tmp/symlink_tmp3')
+    }
+  end if have_symlink?
+
   def test_mkdir
     check_singleton :mkdir
 

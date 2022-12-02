@@ -70,8 +70,9 @@ module JITSupport
   end
 
   def yjit_supported?
-    # e.g. x86_64-linux, x64-mswin64_140, x64-mingw32, x64-mingw-ucrt
-    RUBY_PLATFORM.match?(/^(x86_64|x64|arm64|aarch64)-/)
+    return @yjit_supported if defined?(@yjit_supported)
+    # nil in mswin
+    @yjit_supported = ![nil, 'no'].include?(RbConfig::CONFIG['YJIT_SUPPORT'])
   end
 
   def remove_mjit_logs(stderr)

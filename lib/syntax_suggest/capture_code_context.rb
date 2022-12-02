@@ -140,7 +140,7 @@ module SyntaxSuggest
     # However due to https://github.com/ruby/syntax_suggest/issues/32
     # the problem line will be identified as:
     #
-    #  ❯ class Dog       # 1
+    #  > class Dog       # 1
     #
     # Because lines 2, 3, and 4 are technically valid code and are expanded
     # first, deemed valid, and hidden. We need to un-hide the matching end
@@ -200,7 +200,7 @@ module SyntaxSuggest
     #
     # the problem line will be identified as:
     #
-    #  ❯ end            # 4
+    #  > end            # 4
     #
     # This happens because lines 1, 2, and 3 are technically valid code and are expanded
     # first, deemed valid, and hidden. We need to un-hide the matching keyword on

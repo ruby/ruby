@@ -824,6 +824,8 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
                  "can't start a new thread (frozen ThreadGroup)");
     }
 
+    rb_fiber_inherit_storage(ec, th->ec->fiber_ptr);
+
     switch (params->type) {
       case thread_invoke_type_proc:
         th->invoke_type = thread_invoke_type_proc;

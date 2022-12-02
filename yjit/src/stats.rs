@@ -269,6 +269,8 @@ make_counters! {
     compiled_block_count,
     compiled_branch_count,
     compilation_failure,
+    block_next_count,
+    defer_count,
     freed_iseq_count,
 
     exit_from_branch_stub,

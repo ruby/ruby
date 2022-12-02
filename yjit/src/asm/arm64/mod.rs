@@ -903,10 +903,25 @@ pub fn strh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
-            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(rn.num_bits == 32 || rn.num_bits == 64);
             assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
-            LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
+            LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rn.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stur instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STURH - store a value in a register at a memory address
+pub fn sturh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rn.num_bits == 16);
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::sturh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
         },
         _ => panic!("Invalid operand combination to stur instruction.")
     };
@@ -1484,8 +1499,13 @@ mod tests {
     }
 
     #[test]
-    fn test_stur() {
+    fn test_stur_64_bits() {
         check_bytes("6a0108f8", |cb| stur(cb, X10, A64Opnd::new_mem(64, X11, 128)));
+    }
+
+    #[test]
+    fn test_stur_32_bits() {
+        check_bytes("6a0108b8", |cb| stur(cb, X10, A64Opnd::new_mem(32, X11, 128)));
     }
 
     #[test]

@@ -588,7 +588,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_global_cvar_state, sym_next_shape_id;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -609,6 +609,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     S(constant_cache_invalidations);
     S(constant_cache_misses);
         S(global_cvar_state);
+    S(next_shape_id);
 #undef S
 
 #define SET(name, attr) \
@@ -620,6 +621,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
+    SET(next_shape_id, (rb_serial_t)GET_VM()->next_shape_id);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -3045,7 +3047,7 @@ vm_init2(rb_vm_t *vm)
 }
 
 void
-rb_execution_context_update(const rb_execution_context_t *ec)
+rb_execution_context_update(rb_execution_context_t *ec)
 {
     /* update VM stack */
     if (ec->vm_stack) {
@@ -3085,6 +3087,8 @@ rb_execution_context_update(const rb_execution_context_t *ec)
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
     }
+
+    ec->storage = rb_gc_location(ec->storage);
 }
 
 static enum rb_id_table_iterator_result
@@ -3155,6 +3159,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
     RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
+
+    RUBY_MARK_MOVABLE_UNLESS_NULL(ec->storage);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
@@ -3344,6 +3350,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
+
+    th->ec->storage = Qnil;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
@@ -4012,6 +4020,9 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
+#if EXTSTATIC
+    vm->static_ext_inits = st_init_strtable();
+#endif
 
 #ifdef HAVE_MMAP
     vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t), rb_eRuntimeError),

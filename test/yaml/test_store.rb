@@ -133,7 +133,7 @@ class YAMLStoreTest < Test::Unit::TestCase
   def test_yaml_store_files_are_accessed_as_binary_files
     bug5311 = '[ruby-core:39503]'
     n = 128
-    assert_in_out_err(["-Eutf-8:utf-8", "-ryaml/store", "-", @yaml_store_file], <<-SRC, [bug5311], [], bug5311, timeout: 15)
+    assert_in_out_err(["-Eutf-8:utf-8", "-ryaml/store", "-", @yaml_store_file], <<-SRC, [bug5311], [], bug5311, timeout: 60)
       @yaml_store = YAML::Store.new(ARGV[0])
       (1..#{n}).each do |i|
         @yaml_store.transaction {@yaml_store["Key\#{i}"] = "value \#{i}"}

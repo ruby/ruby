@@ -256,7 +256,7 @@ def wait_writable
     wait = (wait = options[:w]) ? Float(wait) : 0.2
     argv.each do |file|
       begin
-        File.open(file, "r+b")
+        File.open(file, "r+b") {}
       rescue Errno::ENOENT
         break
       rescue Errno::EACCES => e

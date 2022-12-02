@@ -139,18 +139,19 @@ module RubyVM::AbstractSyntaxTree
     #  call-seq:
     #     node.tokens -> array
     #
-    # Returns tokens corresponding to the location of the node.
-    # Returns nil if keep_tokens is not enabled when parse method is called.
-    # Token is an array of:
-    #
-    #  - id
-    #  - token type
-    #  - source code text
-    #  - location [first_lineno, first_column, last_lineno, last_column]
+    #  Returns tokens corresponding to the location of the node.
+    #  Returns +nil+ if +keep_tokens+ is not enabled when #parse method is called.
     #
     #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
     #    root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
     #    root.tokens.map{_1[2]}.join # => "x = 1 + 2"
+    #
+    #  Token is an array of:
+    #
+    #  - id
+    #  - token type
+    #  - source code text
+    #  - location [ first_lineno, first_column, last_lineno, last_column ]
     def tokens
       return nil unless all_tokens
 
@@ -166,8 +167,8 @@ module RubyVM::AbstractSyntaxTree
     #  call-seq:
     #     node.all_tokens -> array
     #
-    # Returns all tokens for the input script regardless the receiver node.
-    # Returns nil if keep_tokens is not enabled when parse method is called.
+    #  Returns all tokens for the input script regardless the receiver node.
+    #  Returns +nil+ if +keep_tokens+ is not enabled when #parse method is called.
     #
     #    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
     #    root.all_tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]

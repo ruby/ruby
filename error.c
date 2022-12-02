@@ -125,6 +125,8 @@ err_vcatf(VALUE str, const char *pre, const char *file, int line,
     return str;
 }
 
+static VALUE syntax_error_with_path(VALUE, VALUE, VALUE*, rb_encoding*);
+
 VALUE
 rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
                        rb_encoding *enc, const char *fmt, va_list args)
@@ -138,15 +140,7 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     }
     else {
         VALUE mesg;
-        if (NIL_P(exc)) {
-            mesg = rb_enc_str_new(0, 0, enc);
-            exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
-        }
-        else {
-            mesg = rb_attr_get(exc, idMesg);
-            if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
-                rb_str_cat_cstr(mesg, "\n");
-        }
+        exc = syntax_error_with_path(exc, file, &mesg, enc);
         err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
 
@@ -2090,7 +2084,7 @@ name_err_mesg_to_str(VALUE obj)
             break;
           default:
             d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-            if (state || UNDEF_P(d) || NIL_P(d))
+            if (state || NIL_OR_UNDEF_P(d))
                 d = rb_protect(rb_inspect, obj, &state);
             if (state) {
                 rb_set_errinfo(Qnil);
@@ -2351,6 +2345,25 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
         argv = &mesg;
     }
     return rb_call_super(argc, argv);
+}
+
+static VALUE
+syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
+{
+    if (NIL_P(exc)) {
+        *mesg = rb_enc_str_new(0, 0, enc);
+        exc = rb_class_new_instance(1, mesg, rb_eSyntaxError);
+        rb_ivar_set(exc, id_i_path, path);
+    }
+    else {
+        if (rb_attr_get(exc, id_i_path) != path) {
+            rb_raise(rb_eArgError, "SyntaxError#path changed");
+        }
+        VALUE s = *mesg = rb_attr_get(exc, idMesg);
+        if (RSTRING_LEN(s) > 0 && *(RSTRING_END(s)-1) != '\n')
+            rb_str_cat_cstr(s, "\n");
+    }
+    return exc;
 }
 
 /*
@@ -3011,9 +3024,14 @@ Init_Exception(void)
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
+    ID id_path = rb_intern_const("path");
+
+    /* the path failed to parse */
+    rb_attr(rb_eSyntaxError, id_path, TRUE, FALSE, FALSE);
+
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
-    rb_attr(rb_eLoadError, rb_intern_const("path"), TRUE, FALSE, FALSE);
+    rb_attr(rb_eLoadError, id_path, TRUE, FALSE, FALSE);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 

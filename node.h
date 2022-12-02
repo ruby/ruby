@@ -462,7 +462,6 @@ struct rb_args_info {
 
     NODE *opt_args;
     unsigned int no_kwarg: 1;
-    unsigned int ruby2_keywords: 1;
     unsigned int forwarding: 1;
 
     VALUE imemo;
