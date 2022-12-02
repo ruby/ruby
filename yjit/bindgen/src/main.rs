@@ -90,8 +90,6 @@ fn main() {
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_get_next")
         .allowlist_function("rb_shape_id")
-        .allowlist_function("rb_shape_flag_mask")
-        .allowlist_function("rb_shape_flag_shift")
         .allowlist_function("rb_shape_transition_shape_capa")
 
         // From ruby/internal/intern/object.h
