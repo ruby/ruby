@@ -51,7 +51,7 @@ jobs:
             configure: "--with-gcc=clang-12 --enable-yjit=dev"
 
           - test_task: "check"
-            # YJIT should be automatically built in release mode
+            # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
             #configure: "--enable-yjit RUSTC='rustc +1.58.0'"
             configure: "RUSTC='rustc +1.58.0'"
             rust_version: "1.58.0"
@@ -128,7 +128,7 @@ jobs:
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
       # Check that the binary was built with YJIT
       - name: Check YJIT enabled
-        run: ruby --yjit -v | grep "+YJIT"
+        run: ./miniruby --yjit -v | grep "+YJIT"
       - name: make ${{ matrix.test_task }}
         run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
         timeout-minutes: 60
