@@ -39,13 +39,17 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_fiber_new(rb_block_call_func_t func, VALUE callback_obj);
 
 /**
- * Creates a Fiber instance from a C-backended block with the specified storage.
+ * Creates a Fiber instance from a C-backended block with the specified
+ * storage.
  *
- * If the given storage is Qundef, this function is equivalent to
+ * If the given storage is Qundef or Qtrue, this function is equivalent to
  * rb_fiber_new() which inherits storage from the current fiber.
  *
  * If the given storage is Qfalse, this function uses the current fiber's
  * storage by reference.
+ *
+ * Specifying either Qtrue or Qfalse is experimental and may be changed in the
+ * future.
  *
  * If the given storage is Qnil, this function will lazy initialize the
  * internal storage which starts of empty (without any inheritance).
@@ -54,6 +58,7 @@ VALUE rb_fiber_new(rb_block_call_func_t func, VALUE callback_obj);
  *
  * @param[in]  func          A function, to become the fiber's body.
  * @param[in]  callback_obj  Passed as-is to `func`.
+ * @param[in]  storage       The way to set up the storage for the fiber.
  * @return     An allocated  new instance  of rb_cFiber, which  is ready  to be
  *             "resume"d.
  */
