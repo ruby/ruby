@@ -593,7 +593,7 @@ The following deprecated APIs are removed.
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
 [Feature #19070]: https://bugs.ruby-lang.org/issues/19070
 [Feature #19071]: https://bugs.ruby-lang.org/issues/19071
+[Feature #19078]: https://bugs.ruby-lang.org/issues/19078
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
-[Feature #19078]: https://bugs.ruby-lang.org/issues/19078
