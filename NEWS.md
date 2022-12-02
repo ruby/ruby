@@ -409,7 +409,7 @@ Note: We're only listing outstanding class updates.
     * net-smtp 0.3.3
     * rbs 2.8.1
     * typeprof 0.21.3
-    * debug 1.6.3
+    * debug 1.7.0
 
 *   The following default gems are now bundled gems.
 
