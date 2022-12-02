@@ -444,6 +444,9 @@ extern "C" {
     pub fn rb_shape_id_num_bits() -> u8;
 }
 extern "C" {
+    pub fn rb_shape_id_offset() -> i32;
+}
+extern "C" {
     pub fn rb_shape_flag_mask() -> u64;
 }
 extern "C" {

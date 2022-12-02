@@ -86,6 +86,7 @@ fn main() {
         .allowlist_function("rb_shape_get_shape_id")
         .allowlist_function("rb_shape_get_shape_by_id")
         .allowlist_function("rb_shape_id_num_bits")
+        .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_get_next")
         .allowlist_function("rb_shape_id")
