@@ -16,8 +16,8 @@ module TestIRB
     }
 
     def setup
-      if ENV["GITHUB_ACTION_REPOSITORY"] == "ruby/ruby"
-        omit "This doesn't work on ruby/ruby CI"
+      if ENV["GITHUB_ACTION_REPOSITORY"] != "ruby/irb"
+        omit "This test works only on ruby/irb CI"
       end
     end
 
