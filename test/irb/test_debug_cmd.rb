@@ -3,10 +3,13 @@
 require "pty" unless RUBY_ENGINE == 'truffleruby'
 require "tempfile"
 require "tmpdir"
+require "envutil"
 
 require_relative "helper"
 
 module TestIRB
+  LIB = File.expand_path("../../lib", __dir__)
+
   class DebugCommandTestCase < TestCase
     IRB_AND_DEBUGGER_OPTIONS = {
       "RUBY_DEBUG_NO_RELINE" => "true", "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
@@ -196,7 +199,7 @@ module TestIRB
     private
 
     def run_ruby_file(&block)
-      cmd = "ruby -Ilib #{@ruby_file.to_path}"
+      cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
       tmp_dir = Dir.mktmpdir
       rc_file = File.open(File.join(tmp_dir, ".irbrc"), "w+")
       rc_file.write("IRB.conf[:USE_SINGLELINE] = true")
@@ -207,7 +210,7 @@ module TestIRB
 
       yield
 
-      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("IRBRC" => rc_file.to_path), cmd) do |read, write, pid|
+      PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("IRBRC" => rc_file.to_path), *cmd) do |read, write, pid|
         Timeout.timeout(3) do
           while line = safe_gets(read)
             lines << line
