@@ -1236,12 +1236,12 @@ class TestMethod < Test::Unit::TestCase
     unbound = b.instance_method(:foo)
 
     assert_equal unbound, b.public_instance_method(:foo)
-    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
     assert_equal [[:opt, :arg]], unbound.parameters
 
     a.remove_method(:foo)
 
-    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
     assert_equal [[:opt, :arg]], unbound.parameters
 
     obj = b.new
@@ -1281,7 +1281,7 @@ class TestMethod < Test::Unit::TestCase
 
     a.remove_method(:foo)
 
-    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
     assert_equal [[:opt, :arg]], unbound.parameters
     assert_equal a0_foo, unbound.super_method
 
@@ -1289,7 +1289,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal 1, unbound.bind_call(obj)
 
     assert_include b.instance_methods(false), :foo
-    assert_equal "#<UnboundMethod: B(A0)#foo(arg1=..., arg2=...) #{__FILE__}:#{line0}>", b.instance_method(:foo).inspect
+    assert_equal "#<UnboundMethod: A0#foo(arg1=..., arg2=...) #{__FILE__}:#{line0}>", b.instance_method(:foo).inspect
   end
 
   def test_zsuper_method_redefined_bind_call
