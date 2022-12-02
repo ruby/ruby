@@ -342,7 +342,7 @@ Note: We're only listing outstanding class updates.
       in pattern-matching expressions [[Feature #19071]]
 
 * SyntaxError
-    * SyntaxError#path has been added.  [[Bug #19138]]
+    * SyntaxError#path has been added.  [[Feature #19138]]
 
 * TracePoint
 
