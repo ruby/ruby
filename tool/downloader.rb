@@ -317,7 +317,7 @@ class Downloader
       rescue ArgumentError
         abs = cache.expand_path
         link = abs.relative_path_from(file.parent.expand_path)
-        if link.to_s.size > abs.to_s.size
+        if link.to_s.count("/") > abs.to_s.count("/")
           link = abs
         end
       end
