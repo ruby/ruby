@@ -104,11 +104,11 @@ Note: We're only listing outstanding class updates.
 
 * Fiber
 
-    *   Introduce Fiber.[] and Fiber.[]= for inheritable fiber storage.
-        Introduce Fiber#storage and Fiber#storage= (experimental) for
-        getting and resetting the current storage.  Introduce
-        `Fiber.new(storage:)` for setting the storage when creating a
-        fiber. [[Feature #19078]]
+    * Introduce Fiber.[] and Fiber.[]= for inheritable fiber storage.
+      Introduce Fiber#storage and Fiber#storage= (experimental) for
+      getting and resetting the current storage.  Introduce
+      `Fiber.new(storage:)` for setting the storage when creating a
+      fiber. [[Feature #19078]]
 
         Existing Thread and Fiber local variables can be tricky to use.
         Thread local variables are shared between all fibers, making it
