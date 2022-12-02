@@ -138,7 +138,7 @@ AS_CASE(["$target_cpu-$target_os"],
             target=${target%%-unknown-*}-apple-${target@%:@*-unknown-}
         ])
         target="arm64-${target@%:@aarch64-}"
-        target_alias="arm64-${target_alias@%:@aarch64-}"
+        AS_IF([test -n "$target_alias"], [target_alias="arm64-${target_alias@%:@aarch64-}"])
     ])
 
 AC_ARG_PROGRAM
