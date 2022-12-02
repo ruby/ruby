@@ -1,4 +1,6 @@
 require "test/unit"
+require "pathname"
+
 begin
   require_relative "../lib/helper"
 rescue LoadError # ruby/ruby defines helpers differently
