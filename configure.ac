@@ -3755,7 +3755,7 @@ AS_IF([test "$RUSTC" != "no"],
     )
     dnl Fails in case rustc target doesn't match ruby target.
     dnl Can happen on Rosetta, for example.
-    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")]\n fn main() { let x = 1; format!(\"{x}\"); }" |
+    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
             $RUSTC - --emit asm=/dev/null 2>/dev/null],
         [YJIT_RUSTC_OK=yes]
     )
