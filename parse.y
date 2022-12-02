@@ -704,6 +704,14 @@ parser_get_node_id(struct parser_params *p)
     return node_id;
 }
 
+static void
+anddot_multiple_assignment_check(struct parser_params* p, const YYLTYPE *loc, ID id)
+{
+    if (id == tANDDOT) {
+	yyerror1(loc, "&. inside multiple assignment destination");
+    }
+}
+
 #ifndef RIPPER
 static inline void
 set_line_body(NODE *body, int line)
@@ -2388,9 +2396,7 @@ mlhs_node	: user_variable
 		    }
 		| primary_value call_op tIDENTIFIER
 		    {
-			if ($2 == tANDDOT) {
-			    yyerror1(&@2, "&. inside multiple assignment destination");
-			}
+			anddot_multiple_assignment_check(p, &@2, $2);
 		    /*%%%*/
 			$$ = attrset(p, $1, $2, $3, &@$);
 		    /*% %*/
@@ -2405,9 +2411,7 @@ mlhs_node	: user_variable
 		    }
 		| primary_value call_op tCONSTANT
 		    {
-			if ($2 == tANDDOT) {
-			    yyerror1(&@2, "&. inside multiple assignment destination");
-			}
+			anddot_multiple_assignment_check(p, &@2, $2);
 		    /*%%%*/
 			$$ = attrset(p, $1, $2, $3, &@$);
 		    /*% %*/
