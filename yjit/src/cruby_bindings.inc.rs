@@ -450,12 +450,6 @@ extern "C" {
     pub fn rb_shape_id_offset() -> i32;
 }
 extern "C" {
-    pub fn rb_shape_flag_mask() -> u64;
-}
-extern "C" {
-    pub fn rb_shape_flag_shift() -> u8;
-}
-extern "C" {
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
 }
 extern "C" {
