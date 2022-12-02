@@ -1263,6 +1263,7 @@ q.pop
       assert_predicate(status, :success?, bug18902)
     ensure
       th.kill
+      th.join
     end
   end if Process.respond_to?(:fork)
 
