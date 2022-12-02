@@ -247,6 +247,9 @@ pub type st_foreach_callback_func = ::std::option::Option<
         arg3: st_data_t,
     ) -> ::std::os::raw::c_int,
 >;
+extern "C" {
+    pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
+}
 pub const RARRAY_EMBED_FLAG: ruby_rarray_flags = 8192;
 pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub const RARRAY_TRANSIENT_FLAG: ruby_rarray_flags = 33554432;
