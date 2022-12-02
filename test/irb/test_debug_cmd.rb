@@ -15,6 +15,12 @@ module TestIRB
       "RUBY_DEBUG_NO_RELINE" => "true", "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
     }
 
+    def setup
+      if ENV["GITHUB_ACTION_REPOSITORY"] == "ruby/ruby"
+        omit "This doesn't work on ruby/ruby CI"
+      end
+    end
+
     def test_backtrace
       omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
