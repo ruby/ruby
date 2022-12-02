@@ -114,7 +114,8 @@ MJIT_SYMBOL_EXPORT_BEGIN
 shape_id_t rb_rclass_shape_id(VALUE obj);
 MJIT_SYMBOL_EXPORT_END
 
-static inline shape_id_t RCLASS_SHAPE_ID(VALUE obj) {
+static inline shape_id_t RCLASS_SHAPE_ID(VALUE obj)
+{
     return rb_rclass_shape_id(obj);
 }
 

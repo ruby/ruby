@@ -103,7 +103,8 @@ compile_data_free(struct iseq_compile_data *compile_data)
 }
 
 static void
-remove_from_constant_cache(ID id, IC ic) {
+remove_from_constant_cache(ID id, IC ic)
+{
     rb_vm_t *vm = GET_VM();
     VALUE lookup_result;
     st_data_t ic_data = (st_data_t)ic;

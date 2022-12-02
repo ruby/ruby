@@ -3924,7 +3924,8 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 }
 
 static int
-tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest) {
+tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest)
+{
     rb_class_ivar_set(dest, key, val);
 
     return ST_CONTINUE;
