@@ -518,6 +518,8 @@ The following deprecated APIs are removed.
     * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
 * YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
 * Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
+* The default `--yjit-exec-mem-size` is changed to 128 (MiB).
+* The default `--yjit-call-threshold` is changed to 30.
 
 ### MJIT
 
