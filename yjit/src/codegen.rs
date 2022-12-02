@@ -2339,7 +2339,6 @@ fn gen_setinstancevariable(
                 let shape_opnd = Opnd::mem(shape_bit_size, recv, RUBY_OFFSET_RBASIC_FLAGS + (8 - shape_byte_size as i32));
 
                 // Store the new shape
-                asm.store(shape_opnd, Opnd::UImm(0 as u64));
                 asm.store(shape_opnd, Opnd::UImm(new_shape_id as u64));
             },
 
