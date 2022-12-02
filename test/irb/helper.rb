@@ -36,6 +36,10 @@ module TestIRB
       end
     end
 
+    def ruby_core?
+      !Pathname(__dir__).join("../../", "irb.gemspec").exist?
+    end
+
     def save_encodings
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }

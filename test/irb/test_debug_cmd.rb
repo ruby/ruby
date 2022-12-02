@@ -16,13 +16,16 @@ module TestIRB
     }
 
     def setup
-      if ENV["GITHUB_ACTION_REPOSITORY"] != "ruby/irb"
-        omit "This test works only on ruby/irb CI"
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
+      if RUBY_ENGINE == 'truffleruby'
+        omit "This test runs with ruby/debug, which doesn't work with truffleruby"
       end
     end
 
     def test_backtrace
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           binding.irb
@@ -40,7 +43,6 @@ module TestIRB
     end
 
     def test_debug
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'ruby'
         binding.irb
         puts "hello"
@@ -57,7 +59,6 @@ module TestIRB
     end
 
     def test_next
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'ruby'
         binding.irb
         puts "hello"
@@ -73,7 +74,6 @@ module TestIRB
     end
 
     def test_break
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -90,7 +90,6 @@ module TestIRB
     end
 
     def test_delete
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -110,7 +109,6 @@ module TestIRB
     end
 
     def test_step
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           puts "Hello"
@@ -129,7 +127,6 @@ module TestIRB
     end
 
     def test_continue
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -147,7 +144,6 @@ module TestIRB
     end
 
     def test_finish
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           binding.irb
@@ -166,7 +162,6 @@ module TestIRB
     end
 
     def test_info
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           a = "He" + "llo"
@@ -186,7 +181,6 @@ module TestIRB
     end
 
     def test_catch
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         1 / 0
