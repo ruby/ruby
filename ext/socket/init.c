@@ -771,6 +771,7 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+    rsock_init_credentials();
 
 #undef rb_intern
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));

@@ -178,6 +178,29 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     end
   end
 
+  def test_credential_passing
+    return if /linux|freebsd/ !~ RUBY_PLATFORM
+    s1, s2 = UNIXSocket.pair
+    # Linux needs this sockopt
+    s2.setsockopt :SOCKET, :PASSCRED, 1 if defined?(Socket::SO_PASSCRED)
+    creds_out = Socket::Credentials.for_process.as_ancillary_data
+    s1.sendmsg "ohai", 0, nil, creds_out
+    body, _, _, creds_in = s2.recvmsg
+
+    assert_not_nil creds_in
+    assert_equal Process.pid, creds_in.credentials.pid
+    assert_equal Process.uid, creds_in.credentials.uid
+    assert_equal Process.gid, creds_in.credentials.gid
+    if /freebsd/ =~ RUBY_PLATFORM
+      # FreeBSD can send EUID and groups too
+      assert_equal Process.euid, creds_in.credentials.euid
+      assert_equal Process.groups.sort, creds_in.credentials.groups.sort
+    end
+  ensure
+    s1&.close
+    s2&.close
+  end
+
   def test_sendmsg
     return if !defined?(Socket::SCM_RIGHTS)
     IO.pipe {|r1, w|
@@ -588,7 +611,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_getcred_ucred
-    return if /linux/ !~ RUBY_PLATFORM
+    return if /linux|openbsd/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       Socket.unix_server_socket(sockpath) {|serv|
@@ -600,7 +623,14 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
             assert_match(/ pid=#{$$} /, inspect)
             assert_match(/ euid=#{Process.euid} /, inspect)
             assert_match(/ egid=#{Process.egid} /, inspect)
-            assert_match(/ \(ucred\)/, inspect)
+            if /linux/ =~ RUBY_PLATFORM
+              assert_match(/ \(ucred\)/, inspect)
+            elsif /openbsd/ =~ RUBY_PLATFORM
+              assert_match(/ \(sockpeercred\)/, inspect)
+            end
+            assert_equal $$, cred.credentials.pid
+            assert_equal Process.uid, cred.credentials.uid
+            assert_equal Process.gid, cred.credentials.gid
           ensure
             s.close
           end
@@ -620,6 +650,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       inspect = cred.inspect
       assert_match(/ euid=#{Process.euid} /, inspect)
       assert_match(/ \(xucred\)/, inspect)
+      assert_equal Process.euid, cred.credentials.euid
     ensure
       s&.close
       u&.close
@@ -644,6 +675,9 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
             assert_match(/ uid=#{Process.uid} /, inspect)
             assert_match(/ gid=#{Process.gid} /, inspect)
             assert_match(/ \(ucred\)/, inspect)
+            assert_equal $$, cred.credentials.pid
+            assert_equal Process.uid, cred.credentials.uid
+            assert_equal Process.gid, cred.credentials.gid
           ensure
             s.close
           end
@@ -669,6 +703,10 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert_match(/ gid=#{Process.gid} /, inspect)
       assert_match(/ egid=#{Process.egid} /, inspect)
       assert_match(/ \(sockcred\)/, inspect)
+      assert_equal Process.uid, cred.credentials(socket: s).uid
+      assert_equal Process.euid, cred.credentials(socket: s).euid
+      assert_equal Process.gid, cred.credentials(socket: s).gid
+      assert_equal Process.egid, cred.credentials(socket: s).egid
     }
   end
 

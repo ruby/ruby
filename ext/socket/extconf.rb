@@ -364,6 +364,22 @@ have_type("struct in6_pktinfo", headers) {|src|
 
 have_type("struct sockcred", headers)
 have_type("struct cmsgcred", headers)
+have_type("struct ucred", headers)
+# Linux and OpenBSD both have "struct ucred", and it's a totally
+# different struct. The OpenBSD version is a kernel structure though
+# and not part of its userspace API.
+if %w(pid uid gid).all? { have_struct_member("struct ucred", _1, headers) }
+    $defs << "-DHAVE_LINUX_STYLE_UCRED"
+end
+have_type("struct sockpeercred", headers)
+have_type("struct xucred", headers)
+# MacOS, FreeBSD and OpenBSD all have "struct xucred". MacOS and FreeBSD both
+# return this structure from getsockopt(LOCAL_PEERCRED), but OpenBSD does not use
+# this structure in its socket API at all (it has struct sockpeercred instead,
+# used in getsockopt(SO_PEERCRED))
+if %w(cr_version cr_uid cr_ngroups cr_groups).all? { have_struct_member("struct xucred", _1, headers) }
+  $defs << "-DHAVE_FREEBSD_STYLE_XUCRED"
+end
 
 have_type("struct ip_mreq", headers) # 4.4BSD
 have_type("struct ip_mreqn", headers) # Linux 2.4
@@ -622,7 +638,8 @@ EOS
     "option.#{$OBJEXT}",
     "ancdata.#{$OBJEXT}",
     "raddrinfo.#{$OBJEXT}",
-    "ifaddr.#{$OBJEXT}"
+    "ifaddr.#{$OBJEXT}",
+    "credentials.#{$OBJEXT}"
   ]
 
   if getaddr_info_ok == :wide

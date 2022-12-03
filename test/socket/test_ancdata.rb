@@ -65,4 +65,28 @@ class TestSocketAncData < Test::Unit::TestCase
       }
     end
   end
+
+  def test_credentials
+    default_creds = Socket::Credentials.for_process
+    assert_equal(Process.pid, default_creds.pid)
+    assert_equal(Process.uid, default_creds.uid)
+    assert_equal(Process.gid, default_creds.gid)
+    if /linux/ =~ RUBY_PLATFORM
+      default_creds_as_ancdata = default_creds.as_ancillary_data
+      assert_equal(Process.pid, default_creds_as_ancdata.credentials.pid)
+      assert_equal(Process.uid, default_creds_as_ancdata.credentials.uid)
+      assert_equal(Process.gid, default_creds_as_ancdata.credentials.gid)
+    end
+
+    root_creds = Socket::Credentials.new(uid: 0, gid: 0, pid: 1)
+    assert_equal(1, root_creds.pid)
+    assert_equal(0, root_creds.uid)
+    assert_equal(0, root_creds.gid)
+    if /linux/ =~ RUBY_PLATFORM
+      root_creds_as_ancdata = root_creds.as_ancillary_data
+      assert_equal(1, root_creds_as_ancdata.credentials.pid)
+      assert_equal(0, root_creds_as_ancdata.credentials.uid)
+      assert_equal(0, root_creds_as_ancdata.credentials.gid)
+    end
+  end
 end if defined? Socket::AncillaryData
