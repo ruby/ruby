@@ -513,9 +513,9 @@ and modifier +if+ has lower precedence than <code>=</code>.
 
 == Flip-Flop
 
-The flip-flop is a rarely seen conditional expression.  It's primary use is
-for processing text from ruby one-line programs used with <code>ruby -n</code>
-or <code>ruby -p</code>.
+The flip-flop is a slightly special conditional expression.  One of its
+typical uses is processing text from ruby one-line programs used with
+<code>ruby -n</code> or <code>ruby -p</code>.
 
 The form of the flip-flop is an expression that indicates when the
 flip-flop turns on, <code>..</code> (or <code>...</code>), then an expression
@@ -523,7 +523,6 @@ that indicates when the flip-flop will turn off.  While the flip-flop is on it
 will continue to evaluate to +true+, and +false+ when off.
 
 Here is an example:
-
 
   selected = []
 
@@ -533,15 +532,16 @@ Here is an example:
 
   p selected # prints [2, 3, 4, 5, 6, 7, 8]
 
-In the above example, the on condition is <code>n==2</code>.  The flip-flop
-is initially off (false) for 0 and 1, but becomes on (true) for 2 and remains
-on through 8.  After 8 it turns off and remains off for 9 and 10.
+In the above example, the `on' condition is <code>n==2</code>.  The flip-flop
+is initially `off' (false) for 0 and 1, but becomes `on' (true) for 2 and
+remains `on' through 8.  After 8 it turns off and remains `off' for 9 and 10.
 
-The flip-flop must be used inside a conditional such as +if+, +while+,
-+unless+, +until+ etc. including the modifier forms.
+The flip-flop must be used inside a conditional such as <code>!</code>,
+<code>? :</code>, +not+, +if+, +while+, +unless+, +until+ etc. including the
+modifier forms.
 
-When you use an inclusive range (<code>..</code>), the off condition is
-evaluated when the on condition changes:
+When you use an inclusive range (<code>..</code>), the `off' condition is
+evaluated when the `on' condition changes:
 
   selected = []
 
@@ -555,7 +555,7 @@ Here, both sides of the flip-flop are evaluated so the flip-flop turns on and
 off only when +value+ equals 2.  Since the flip-flop turned on in the
 iteration it returns true.
 
-When you use an exclusive range (<code>...</code>), the off condition is
+When you use an exclusive range (<code>...</code>), the `off' condition is
 evaluated on the following iteration:
 
   selected = []
@@ -567,5 +567,5 @@ evaluated on the following iteration:
   p selected # prints [2, 3, 4, 5]
 
 Here, the flip-flop turns on when +value+ equals 2, but doesn't turn off on the
-same iteration.  The off condition isn't evaluated until the following
+same iteration.  The `off' condition isn't evaluated until the following
 iteration and +value+ will never be two again.

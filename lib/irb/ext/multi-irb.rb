@@ -9,7 +9,6 @@
 #
 #
 #
-fail CantShiftToMultiIrbMode unless defined?(Thread)
 
 module IRB
   class JobManager

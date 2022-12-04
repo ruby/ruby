@@ -172,8 +172,8 @@ module TSort
   #   each_child = lambda {|n, &b| g[n].each(&b) }
   #   p TSort.tsort(each_node, each_child) # raises TSort::Cyclic
   #
-  def TSort.tsort(each_node, each_child)
-    TSort.tsort_each(each_node, each_child).to_a
+  def self.tsort(each_node, each_child)
+    tsort_each(each_node, each_child).to_a
   end
 
   # The iterator version of the #tsort method.
@@ -220,10 +220,10 @@ module TSort
   #   #   3
   #   #   1
   #
-  def TSort.tsort_each(each_node, each_child) # :yields: node
+  def self.tsort_each(each_node, each_child) # :yields: node
     return to_enum(__method__, each_node, each_child) unless block_given?
 
-    TSort.each_strongly_connected_component(each_node, each_child) {|component|
+    each_strongly_connected_component(each_node, each_child) {|component|
       if component.size == 1
         yield component.first
       else
@@ -277,8 +277,8 @@ module TSort
   #   p TSort.strongly_connected_components(each_node, each_child)
   #   #=> [[4], [2, 3], [1]]
   #
-  def TSort.strongly_connected_components(each_node, each_child)
-    TSort.each_strongly_connected_component(each_node, each_child).to_a
+  def self.strongly_connected_components(each_node, each_child)
+    each_strongly_connected_component(each_node, each_child).to_a
   end
 
   # The iterator version of the #strongly_connected_components method.
@@ -339,14 +339,14 @@ module TSort
   #   #   [2, 3]
   #   #   [1]
   #
-  def TSort.each_strongly_connected_component(each_node, each_child) # :yields: nodes
+  def self.each_strongly_connected_component(each_node, each_child) # :yields: nodes
     return to_enum(__method__, each_node, each_child) unless block_given?
 
     id_map = {}
     stack = []
     each_node.call {|node|
       unless id_map.include? node
-        TSort.each_strongly_connected_component_from(node, each_child, id_map, stack) {|c|
+        each_strongly_connected_component_from(node, each_child, id_map, stack) {|c|
           yield c
         }
       end
@@ -405,7 +405,7 @@ module TSort
   #   #   [2, 3]
   #   #   [1]
   #
-  def TSort.each_strongly_connected_component_from(node, each_child, id_map={}, stack=[]) # :yields: nodes
+  def self.each_strongly_connected_component_from(node, each_child, id_map={}, stack=[]) # :yields: nodes
     return to_enum(__method__, node, each_child, id_map, stack) unless block_given?
 
     minimum_id = node_id = id_map[node] = id_map.size
@@ -418,7 +418,7 @@ module TSort
         minimum_id = child_id if child_id && child_id < minimum_id
       else
         sub_minimum_id =
-          TSort.each_strongly_connected_component_from(child, each_child, id_map, stack) {|c|
+          each_strongly_connected_component_from(child, each_child, id_map, stack) {|c|
             yield c
           }
         minimum_id = sub_minimum_id if sub_minimum_id < minimum_id

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'psych/omap'
-require 'psych/set'
+require_relative 'omap'
+require_relative 'set'
 
 module Psych
   class ClassLoader # :nodoc:
@@ -35,9 +35,11 @@ module Psych
 
     constants.each do |const|
       konst = const_get const
-      define_method(const.to_s.downcase) do
-        load konst
-      end
+      class_eval <<~RUBY
+        def #{const.to_s.downcase}
+          load #{konst.inspect}
+        end
+      RUBY
     end
 
     private
@@ -69,7 +71,7 @@ module Psych
       rescue
         nil
       end
-    }.compact]
+    }.compact].freeze
 
     class Restricted < ClassLoader
       def initialize classes, symbols
@@ -84,7 +86,7 @@ module Psych
         if @symbols.include? sym
           super
         else
-          raise DisallowedClass, 'Symbol'
+          raise DisallowedClass.new('load', 'Symbol')
         end
       end
 
@@ -94,7 +96,7 @@ module Psych
         if @classes.include? klassname
           super
         else
-          raise DisallowedClass, klassname
+          raise DisallowedClass.new('load', klassname)
         end
       end
     end

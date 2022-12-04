@@ -3,148 +3,148 @@ require 'mspec/runner/mspec'
 require 'mspec/runner/filters/tag'
 require 'mspec/commands/mspec-ci'
 
-describe MSpecCI, "#options" do
+RSpec.describe MSpecCI, "#options" do
   before :each do
     @options, @config = new_option
-    MSpecOptions.stub(:new).and_return(@options)
+    allow(MSpecOptions).to receive(:new).and_return(@options)
 
     @script = MSpecCI.new
-    @script.stub(:config).and_return(@config)
-    @script.stub(:files).and_return([])
+    allow(@script).to receive(:config).and_return(@config)
+    allow(@script).to receive(:files).and_return([])
   end
 
   it "enables the chdir option" do
-    @options.should_receive(:chdir)
+    expect(@options).to receive(:chdir)
     @script.options []
   end
 
   it "enables the prefix option" do
-    @options.should_receive(:prefix)
+    expect(@options).to receive(:prefix)
     @script.options []
   end
 
   it "enables the config option" do
-    @options.should_receive(:configure)
+    expect(@options).to receive(:configure)
     @script.options []
   end
 
   it "provides a custom action (block) to the config option" do
-    @script.should_receive(:load).with("cfg.mspec")
+    expect(@script).to receive(:load).with("cfg.mspec")
     @script.options ["-B", "cfg.mspec"]
   end
 
   it "enables the dry run option" do
-    @options.should_receive(:pretend)
+    expect(@options).to receive(:pretend)
     @script.options []
   end
 
   it "enables the unguarded option" do
-    @options.should_receive(:unguarded)
+    expect(@options).to receive(:unguarded)
     @script.options []
   end
 
   it "enables the interrupt single specs option" do
-    @options.should_receive(:interrupt)
+    expect(@options).to receive(:interrupt)
     @script.options []
   end
 
   it "enables the formatter options" do
-    @options.should_receive(:formatters)
+    expect(@options).to receive(:formatters)
     @script.options []
   end
 
   it "enables the verbose option" do
-    @options.should_receive(:verbose)
+    expect(@options).to receive(:verbose)
     @script.options []
   end
 
   it "enables the action options" do
-    @options.should_receive(:actions)
+    expect(@options).to receive(:actions)
     @script.options []
   end
 
   it "enables the action filter options" do
-    @options.should_receive(:action_filters)
+    expect(@options).to receive(:action_filters)
     @script.options []
   end
 
   it "enables the version option" do
-    @options.should_receive(:version)
+    expect(@options).to receive(:version)
     @script.options []
   end
 
   it "enables the help option" do
-    @options.should_receive(:help)
+    expect(@options).to receive(:help)
     @script.options []
   end
 
   it "calls #custom_options" do
-    @script.should_receive(:custom_options).with(@options)
+    expect(@script).to receive(:custom_options).with(@options)
     @script.options []
   end
 end
 
-describe MSpecCI, "#run" do
+RSpec.describe MSpecCI, "#run" do
   before :each do
-    MSpec.stub(:process)
+    allow(MSpec).to receive(:process)
 
     @filter = double("TagFilter")
-    TagFilter.stub(:new).and_return(@filter)
-    @filter.stub(:register)
+    allow(TagFilter).to receive(:new).and_return(@filter)
+    allow(@filter).to receive(:register)
 
     @tags = ["fails", "critical", "unstable", "incomplete", "unsupported"]
 
     @config = { :ci_files => ["one", "two"] }
     @script = MSpecCI.new
-    @script.stub(:exit)
-    @script.stub(:config).and_return(@config)
-    @script.stub(:files).and_return(["one", "two"])
+    allow(@script).to receive(:exit)
+    allow(@script).to receive(:config).and_return(@config)
+    allow(@script).to receive(:files).and_return(["one", "two"])
     @script.options []
   end
 
   it "registers the tags patterns" do
     @config[:tags_patterns] = [/spec/, "tags"]
-    MSpec.should_receive(:register_tags_patterns).with([/spec/, "tags"])
+    expect(MSpec).to receive(:register_tags_patterns).with([/spec/, "tags"])
     @script.run
   end
 
   it "registers the files to process" do
-    MSpec.should_receive(:register_files).with(["one", "two"])
+    expect(MSpec).to receive(:register_files).with(["one", "two"])
     @script.run
   end
 
   it "registers a tag filter for 'fails', 'unstable', 'incomplete', 'critical', 'unsupported'" do
     filter = double("fails filter")
-    TagFilter.should_receive(:new).with(:exclude, *@tags).and_return(filter)
-    filter.should_receive(:register)
+    expect(TagFilter).to receive(:new).with(:exclude, *@tags).and_return(filter)
+    expect(filter).to receive(:register)
     @script.run
   end
 
   it "registers an additional exclude tag specified by :ci_xtags" do
     @config[:ci_xtags] = "windows"
     filter = double("fails filter")
-    TagFilter.should_receive(:new).with(:exclude, *(@tags + ["windows"])).and_return(filter)
-    filter.should_receive(:register)
+    expect(TagFilter).to receive(:new).with(:exclude, *(@tags + ["windows"])).and_return(filter)
+    expect(filter).to receive(:register)
     @script.run
   end
 
   it "registers additional exclude tags specified by a :ci_xtags array" do
     @config[:ci_xtags] = ["windows", "windoze"]
     filter = double("fails filter")
-    TagFilter.should_receive(:new).with(:exclude,
+    expect(TagFilter).to receive(:new).with(:exclude,
         *(@tags + ["windows", "windoze"])).and_return(filter)
-    filter.should_receive(:register)
+    expect(filter).to receive(:register)
     @script.run
   end
 
   it "processes the files" do
-    MSpec.should_receive(:process)
+    expect(MSpec).to receive(:process)
     @script.run
   end
 
   it "exits with the exit code registered with MSpec" do
-    MSpec.stub(:exit_code).and_return(7)
-    @script.should_receive(:exit).with(7)
+    allow(MSpec).to receive(:exit_code).and_return(7)
+    expect(@script).to receive(:exit).with(7)
     @script.run
   end
 end

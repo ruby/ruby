@@ -82,7 +82,9 @@ module Bundler
       end
 
       def install(spec, options = {})
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        using_message = "Using #{version_message(spec, options[:previous_spec])} from #{self}"
+        using_message += " and installing its executables" unless spec.executables.empty?
+        print_using_message using_message
         generate_bin(spec, :disable_extensions => true)
         nil # no post-install message
       end
@@ -125,7 +127,7 @@ module Bundler
         @expanded_original_path ||= expand(original_path)
       end
 
-    private
+      private
 
       def expanded_path
         @expanded_path ||= expand(path)
@@ -171,7 +173,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Dir["#{expanded_path}/#{@glob}"].sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 

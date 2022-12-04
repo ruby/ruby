@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative "helper"
 
 class TestKernel < Gem::TestCase
   def setup
@@ -8,6 +8,8 @@ class TestKernel < Gem::TestCase
     @old_path = $:.dup
 
     util_make_gems
+
+    without_any_upwards_gemfiles
   end
 
   def teardown
@@ -17,77 +19,77 @@ class TestKernel < Gem::TestCase
   end
 
   def test_gem
-    assert gem('a', '= 1'), "Should load"
-    assert $:.any? {|p| %r{a-1/lib} =~ p }
+    assert gem("a", "= 1"), "Should load"
+    assert $:.any? {|p| p.include?("a-1/lib") }
   end
 
   def test_gem_default
-    assert gem('a', '>= 0')
+    assert gem("a", ">= 0")
 
-    assert_equal @a2, Gem.loaded_specs['a']
+    assert_equal @a2, Gem.loaded_specs["a"]
   end
 
   def test_gem_default_re_gem
-    assert gem('a', '=1')
+    assert gem("a", "=1")
 
-    refute gem('a', '>= 0')
+    refute gem("a", ">= 0")
 
-    assert_equal @a1, Gem.loaded_specs['a']
+    assert_equal @a1, Gem.loaded_specs["a"]
   end
 
   def test_gem_re_gem_mismatch
-    assert gem('a', '=1')
+    assert gem("a", "=1")
 
-    assert_raises Gem::LoadError do
-      gem('a', '= 2')
+    assert_raise Gem::LoadError do
+      gem("a", "= 2")
     end
 
-    assert_equal @a1, Gem.loaded_specs['a']
+    assert_equal @a1, Gem.loaded_specs["a"]
   end
 
   def test_gem_redundant
-    assert gem('a', '= 1'), "Should load"
-    refute gem('a', '= 1'), "Should not load"
-    assert_equal 1, $:.select {|p| %r{a-1/lib} =~ p }.size
+    assert gem("a", "= 1"), "Should load"
+    refute gem("a", "= 1"), "Should not load"
+    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
   end
 
   def test_gem_overlapping
-    assert gem('a', '= 1'), "Should load"
-    refute gem('a', '>= 1'), "Should not load"
-    assert_equal 1, $:.select {|p| %r{a-1/lib} =~ p }.size
+    assert gem("a", "= 1"), "Should load"
+    refute gem("a", ">= 1"), "Should not load"
+    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
   end
 
   def test_gem_prerelease
-    quick_gem 'd', '1.1.a'
-    refute gem('d', '>= 1'),   'release requirement must not load prerelease'
-    assert gem('d', '>= 1.a'), 'prerelease requirement may load prerelease'
+    quick_gem "d", "1.1.a"
+    refute gem("d", ">= 1"),   "release requirement must not load prerelease"
+    assert gem("d", ">= 1.a"), "prerelease requirement may load prerelease"
   end
 
   def test_gem_env_req
-    ENV["GEM_REQUIREMENT_A"] = '~> 2.0'
-    assert_raises(Gem::MissingSpecVersionError) { gem('a', '= 1') }
-    assert gem('a', '> 1')
-    assert_equal @a2, Gem.loaded_specs['a']
+    ENV["GEM_REQUIREMENT_A"] = "~> 2.0"
+    assert_raise(Gem::MissingSpecVersionError) { gem("a", "= 1") }
+    assert gem("a", "> 1")
+    assert_equal @a2, Gem.loaded_specs["a"]
   end
 
   def test_gem_conflicting
-    assert gem('a', '= 1'), "Should load"
+    assert gem("a", "= 1"), "Should load"
 
-    ex = assert_raises Gem::LoadError do
-      gem 'a', '= 2'
+    ex = assert_raise Gem::LoadError do
+      gem "a", "= 2"
     end
 
     assert_equal "can't activate a-2, already activated a-1", ex.message
     assert_match(/activated a-1/, ex.message)
-    assert_equal 'a', ex.name
+    assert_equal "a", ex.name
 
-    assert $:.any? {|p| %r{a-1/lib} =~ p }
-    refute $:.any? {|p| %r{a-2/lib} =~ p }
+    assert $:.any? {|p| p.include?("a-1/lib") }
+    refute $:.any? {|p| p.include?("a-2/lib") }
   end
 
   def test_gem_not_adding_bin
-    assert gem('a', '= 1'), "Should load"
-    refute $:.any? {|p| %r{a-1/bin} =~ p }
+    assert gem("a", "= 1"), "Should load"
+    refute $:.any? {|p| p.include?("a-1/bin") }
   end
 
   def test_gem_failing_inside_require_doesnt_cause_double_exceptions
@@ -108,32 +110,20 @@ class TestKernel < Gem::TestCase
   end
 
   def test_gem_bundler
-    quick_gem 'bundler', '1'
-    quick_gem 'bundler', '2.a'
+    quick_gem "bundler", "1"
+    quick_gem "bundler", "2.a"
 
-    assert gem('bundler')
-    assert $:.any? {|p| %r{bundler-1/lib} =~ p }
-  end
-
-  def test_gem_bundler_missing_bundler_version
-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
-      quick_gem 'bundler', '1'
-      quick_gem 'bundler', '2.a'
-
-      e = assert_raises Gem::MissingSpecVersionError do
-        gem('bundler')
-      end
-      assert_match "Could not find 'bundler' (55) required by reason.", e.message
-    end
+    assert gem("bundler")
+    assert $:.any? {|p| p.include?("bundler-1/lib") }
   end
 
   def test_gem_bundler_inferred_bundler_version
-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
-      quick_gem 'bundler', '1'
-      quick_gem 'bundler', '2.a'
+    Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
+      quick_gem "bundler", "1"
+      quick_gem "bundler", "2.a"
 
-      assert gem('bundler', '>= 0.a')
-      assert $:.any? {|p| %r{bundler-1/lib} =~ p }
+      assert gem("bundler", ">= 0.a")
+      assert $:.any? {|p| p.include?("bundler-1/lib") }
     end
   end
 end

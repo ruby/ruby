@@ -16,11 +16,11 @@ class Test_Integer < Test::Unit::TestCase
   def test_positive_pow
     assert_separately(%w[-r-test-/integer], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 3)
     begin;
-      assert_equal(1, 1.positive_pow(1))
-      assert_equal(0, 0.positive_pow(1))
-      assert_equal(3, 3.positive_pow(1))
-      assert_equal(-3, -3.positive_pow(1))
-      assert_equal(9, -3.positive_pow(2))
+      assert_equal(1, Bug::Integer.positive_pow(1, 1))
+      assert_equal(0, Bug::Integer.positive_pow(0, 1))
+      assert_equal(3, Bug::Integer.positive_pow(3, 1))
+      assert_equal(-3, Bug::Integer.positive_pow(-3, 1))
+      assert_equal(9, Bug::Integer.positive_pow(-3, 2))
     end;
   end
 end

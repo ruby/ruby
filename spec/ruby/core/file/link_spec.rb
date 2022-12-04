@@ -13,7 +13,7 @@ describe "File.link" do
     rm_r @link, @file
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :android do
     it "link a file with another" do
       File.link(@file, @link).should == 0
       File.should.exist?(@link)

@@ -17,8 +17,9 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
- * @brief      Routines to manipulate struct ::RStruct.
+ *             extension libraries.  They could be written in C++98.
+ * @brief      Routines to manipulate struct RStruct.
+ * @note       The struct RStruct itself is opaque.
  */
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/dllexport.h"
@@ -30,6 +31,17 @@
 # include "ruby/backward.h"
 #endif
 
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ *
+ * @internal
+ *
+ * Declaration of rb_struct_ptr() is at include/ruby/backward.h.
+ */
 #define RSTRUCT_PTR(st) rb_struct_ptr(st)
 /** @cond INTERNAL_MACRO */
 #define RSTRUCT_LEN RSTRUCT_LEN
@@ -38,12 +50,46 @@
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-VALUE rb_struct_size(VALUE s);
-VALUE rb_struct_aref(VALUE, VALUE);
-VALUE rb_struct_aset(VALUE, VALUE, VALUE);
+/**
+ * Returns the number of struct members.
+ *
+ * @param[in]  st  An instance of RStruct.
+ * @return     The number of members of `st`.
+ * @pre        `st` must be of ::RUBY_T_STRUCT.
+ */
+VALUE rb_struct_size(VALUE st);
+
+/**
+ * Resembles `Struct#[]`.
+ *
+ * @param[in]  st              An instance of RStruct.
+ * @param[in]  k               Index a.k.a. key of the struct.
+ * @exception  rb_eTypeError   `k` is neither Numeric, Symbol, nor String.
+ * @exception  rb_eIndexError  Numerical index out of range.
+ * @exception  rb_eNameError   No such key.
+ * @return     The member stored at `k` in `st`.
+ * @pre        `st` must be of ::RUBY_T_STRUCT.
+ */
+VALUE rb_struct_aref(VALUE st, VALUE k);
+
+/**
+ * Resembles `Struct#[]=`.
+ *
+ * @param[out]  st              An instance of RStruct.
+ * @param[in]   k               Index a.k.a. key of the struct.
+ * @param[in]   v               Value to store.
+ * @exception  rb_eTypeError    `k` is neither Numeric, Symbol, nor String.
+ * @exception  rb_eIndexError   Numerical index out of range.
+ * @exception  rb_eNameError    No such key.
+ * @return     Passed `v`.
+ * @pre        `st` must be of ::RUBY_T_STRUCT.
+ * @post       `v` is stored at `k` in `st`.
+ */
+VALUE rb_struct_aset(VALUE st, VALUE k, VALUE v);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_ARTIFICIAL()
+/** @copydoc rb_struct_size()  */
 static inline long
 RSTRUCT_LEN(VALUE st)
 {
@@ -53,6 +99,7 @@ RSTRUCT_LEN(VALUE st)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+/** @copydoc rb_struct_aset()  */
 static inline VALUE
 RSTRUCT_SET(VALUE st, int k, VALUE v)
 {
@@ -62,6 +109,7 @@ RSTRUCT_SET(VALUE st, int k, VALUE v)
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
+/** @copydoc rb_struct_aref()  */
 static inline VALUE
 RSTRUCT_GET(VALUE st, int k)
 {

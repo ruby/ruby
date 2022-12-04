@@ -18,7 +18,7 @@ describe :io_new, shared: true do
     rm_r @name
   end
 
-  it "creates an IO instance from a Fixnum argument" do
+  it "creates an IO instance from an Integer argument" do
     @io = IO.send(@method, @fd, "w")
     @io.should be_an_instance_of(IO)
   end
@@ -55,7 +55,7 @@ describe :io_new, shared: true do
     end
   end
 
-  it "calls #to_int on an object to convert to a Fixnum" do
+  it "calls #to_int on an object to convert to an Integer" do
     obj = mock("file descriptor")
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
@@ -197,7 +197,7 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
-  ruby_version_is ''...'2.8' do
+  ruby_version_is ''...'3.0' do
     it "accepts nil options" do
       @io = suppress_keyword_warning do
         IO.send(@method, @fd, 'w', nil)
@@ -206,7 +206,7 @@ describe :io_new, shared: true do
     end
   end
 
-  ruby_version_is '2.8' do
+  ruby_version_is '3.0' do
     it "raises ArgumentError for nil options" do
       -> {
         IO.send(@method, @fd, 'w', nil)
@@ -382,7 +382,7 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.8' do
+  ruby_version_is ''...'3.0' do
     it "raises TypeError if passed a hash for mode and nil for options" do
       -> {
         suppress_keyword_warning do
@@ -392,7 +392,7 @@ describe :io_new_errors, shared: true do
     end
   end
 
-  ruby_version_is '2.8' do
+  ruby_version_is '3.0' do
     it "raises ArgumentError if passed a hash for mode and nil for options" do
       -> {
         @io = IO.send(@method, @fd, {mode: 'w'}, nil)

@@ -27,7 +27,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "includes the relevant tasks" do
-    with_gem_path_as(base_system_gems.to_s) do
+    with_gem_path_as(base_system_gem_path.to_s) do
       sys_exec "#{rake} -T", :env => { "GEM_HOME" => system_gem_path.to_s }
     end
 
@@ -44,7 +44,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "defines a working `rake install` task", :ruby_repo do
-    with_gem_path_as(base_system_gems.to_s) do
+    with_gem_path_as(base_system_gem_path.to_s) do
       sys_exec "#{rake} install", :env => { "GEM_HOME" => system_gem_path.to_s }
     end
 
@@ -60,6 +60,18 @@ RSpec.describe "require 'bundler/gem_tasks'" do
       spaced_bundled_app = tmp.join("bundled app")
       FileUtils.cp_r bundled_app, spaced_bundled_app
       bundle "exec rake build", :dir => spaced_bundled_app
+    end
+
+    it "still runs successfully" do
+      expect(err).to be_empty
+    end
+  end
+
+  context "rake build when path has brackets", :ruby_repo do
+    before do
+      bracketed_bundled_app = tmp.join("bundled[app")
+      FileUtils.cp_r bundled_app, bracketed_bundled_app
+      bundle "exec rake build", :dir => bracketed_bundled_app
     end
 
     it "still runs successfully" do
@@ -86,7 +98,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
   end
 
   it "adds 'pkg' to rake/clean's CLOBBER" do
-    with_gem_path_as(base_system_gems.to_s) do
+    with_gem_path_as(base_system_gem_path.to_s) do
       sys_exec %(#{rake} -e 'load "Rakefile"; puts CLOBBER.inspect'), :env => { "GEM_HOME" => system_gem_path.to_s }
     end
     expect(out).to eq '["pkg"]'

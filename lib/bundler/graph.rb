@@ -27,7 +27,7 @@ module Bundler
       GraphVizClient.new(self).run
     end
 
-  private
+    private
 
     def _populate_relations
       parent_dependencies = _groups.values.to_set.flatten
@@ -114,10 +114,10 @@ module Bundler
         @groups.each do |group|
           g.add_nodes(
             group, {
-              :style     => "filled",
+              :style => "filled",
               :fillcolor => "#B9B9D5",
-              :shape     => "box3d",
-              :fontsize  => 16,
+              :shape => "box3d",
+              :fontsize => 16,
             }.merge(@node_options[group])
           )
         end

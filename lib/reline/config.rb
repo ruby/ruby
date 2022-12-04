@@ -34,41 +34,62 @@ class Reline::Config
     show-all-if-unmodified
     visible-stats
     show-mode-in-prompt
-    vi-cmd-mode-icon
-    vi-ins-mode-icon
+    vi-cmd-mode-string
+    vi-ins-mode-string
     emacs-mode-string
+    enable-bracketed-paste
+    isearch-terminators
   }
   VARIABLE_NAME_SYMBOLS = VARIABLE_NAMES.map { |v| :"#{v.tr(?-, ?_)}" }
   VARIABLE_NAME_SYMBOLS.each do |v|
     attr_accessor v
   end
 
+  attr_accessor :autocompletion
+  attr_reader :dialog_default_bg_color_sequence,
+    :dialog_default_fg_color_sequence,
+    :dialog_highlight_bg_color_sequence,
+    :dialog_highlight_fg_color_sequence
+
   def initialize
     @additional_key_bindings = {} # from inputrc
-    @default_key_bindings = {} # environment-dependent
+    @additional_key_bindings[:emacs] = {}
+    @additional_key_bindings[:vi_insert] = {}
+    @additional_key_bindings[:vi_command] = {}
+    @oneshot_key_bindings = {}
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
     @keymap_label = :emacs
+    @keymap_prefix = []
     @key_actors = {}
     @key_actors[:emacs] = Reline::KeyActor::Emacs.new
     @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
     @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
-    @vi_cmd_mode_icon = '(cmd)'
-    @vi_ins_mode_icon = '(ins)'
+    @vi_cmd_mode_string = '(cmd)'
+    @vi_ins_mode_string = '(ins)'
     @emacs_mode_string = '@'
     # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
     @history_size = -1 # unlimited
     @keyseq_timeout = 500
     @test_mode = false
+    @autocompletion = false
+    @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
+    @dialog_default_bg_color_sequence = nil
+    @dialog_highlight_bg_color_sequence = nil
+    @dialog_default_fg_color_sequence = nil
+    @dialog_highlight_fg_color_sequence = nil
   end
 
   def reset
     if editing_mode_is?(:vi_command)
       @editing_mode_label = :vi_insert
     end
-    @additional_key_bindings = {}
-    @default_key_bindings = {}
+    @additional_key_bindings.keys.each do |key|
+      @additional_key_bindings[key].clear
+    end
+    @oneshot_key_bindings.clear
+    reset_default_key_bindings
   end
 
   def editing_mode
@@ -81,6 +102,65 @@ class Reline::Config
 
   def editing_mode_is?(*val)
     (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
+  end
+
+  def dialog_default_bg_color=(color)
+    @dialog_default_bg_color_sequence = dialog_color_to_code(:bg, color)
+  end
+
+  def dialog_default_fg_color=(color)
+    @dialog_default_fg_color_sequence = dialog_color_to_code(:fg, color)
+  end
+
+  def dialog_highlight_bg_color=(color)
+    @dialog_highlight_bg_color_sequence = dialog_color_to_code(:bg, color)
+  end
+
+  def dialog_highlight_fg_color=(color)
+    @dialog_highlight_fg_color_sequence = dialog_color_to_code(:fg, color)
+  end
+
+  def dialog_default_bg_color
+    dialog_code_to_color(:bg, @dialog_default_bg_color_sequence)
+  end
+
+  def dialog_default_fg_color
+    dialog_code_to_color(:fg, @dialog_default_fg_color_sequence)
+  end
+
+  def dialog_highlight_bg_color
+    dialog_code_to_color(:bg, @dialog_highlight_bg_color_sequence)
+  end
+
+  def dialog_highlight_fg_color
+    dialog_code_to_color(:fg, @dialog_highlight_fg_color_sequence)
+  end
+
+  COLORS = [
+    :black,
+    :red,
+    :green,
+    :yellow,
+    :blue,
+    :magenta,
+    :cyan,
+    :white
+  ].freeze
+
+  private def dialog_color_to_code(type, color)
+    base = type == :bg ? 40 : 30
+    c = COLORS.index(color.to_sym)
+
+    if c
+      base + c
+    else
+      raise ArgumentError.new("Unknown color: #{color}.\nAvailable colors: #{COLORS.join(", ")}")
+    end
+  end
+
+  private def dialog_code_to_color(type, code)
+    base = type == :bg ? 40 : 30
+    COLORS[code - base]
   end
 
   def keymap
@@ -113,8 +193,12 @@ class Reline::Config
     return home_rc_path
   end
 
+  private def default_inputrc_path
+    @default_inputrc_path ||= inputrc_path
+  end
+
   def read(file = nil)
-    file ||= inputrc_path
+    file ||= default_inputrc_path
     begin
       if file.respond_to?(:readlines)
         lines = file.readlines
@@ -133,19 +217,46 @@ class Reline::Config
   end
 
   def key_bindings
-    # override @default_key_bindings with @additional_key_bindings
-    @default_key_bindings.merge(@additional_key_bindings)
+    # The key bindings for each editing mode will be overwritten by the user-defined ones.
+    kb = @key_actors[@editing_mode_label].default_key_bindings.dup
+    kb.merge!(@additional_key_bindings[@editing_mode_label])
+    kb.merge!(@oneshot_key_bindings)
+    kb
+  end
+
+  def add_oneshot_key_binding(keystroke, target)
+    @oneshot_key_bindings[keystroke] = target
+  end
+
+  def reset_oneshot_key_bindings
+    @oneshot_key_bindings.clear
+  end
+
+  def add_default_key_binding_by_keymap(keymap, keystroke, target)
+    @key_actors[keymap].default_key_bindings[keystroke] = target
   end
 
   def add_default_key_binding(keystroke, target)
-    @default_key_bindings[keystroke] = target
+    @key_actors[@keymap_label].default_key_bindings[keystroke] = target
   end
 
   def reset_default_key_bindings
-    @default_key_bindings = {}
+    @key_actors.values.each do |ka|
+      ka.reset_default_key_bindings
+    end
   end
 
   def read_lines(lines, file = nil)
+    if not lines.empty? and lines.first.encoding != Reline.encoding_system_needs
+      begin
+        lines = lines.map do |l|
+          l.encode(Reline.encoding_system_needs)
+        rescue Encoding::UndefinedConversionError
+          mes = "The inputrc encoded in #{lines.first.encoding.name} can't be converted to the locale #{Reline.encoding_system_needs.name}."
+          raise Reline::ConfigEncodingConversionError.new(mes)
+        end
+      end
+    end
     conditions = [@skip_section, @if_stack]
     @skip_section = nil
     @if_stack = []
@@ -172,7 +283,7 @@ class Reline::Config
         key, func_name = $1, $2
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[keystroke] = func
+        @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
       end
     end
     unless @if_stack.empty?
@@ -237,24 +348,35 @@ class Reline::Config
     when 'completion-query-items'
       @completion_query_items = value.to_i
     when 'isearch-terminators'
-      @isearch_terminators = instance_eval(value)
+      @isearch_terminators = retrieve_string(value)
     when 'editing-mode'
       case value
       when 'emacs'
         @editing_mode_label = :emacs
         @keymap_label = :emacs
+        @keymap_prefix = []
       when 'vi'
         @editing_mode_label = :vi_insert
         @keymap_label = :vi_insert
+        @keymap_prefix = []
       end
     when 'keymap'
       case value
-      when 'emacs', 'emacs-standard', 'emacs-meta', 'emacs-ctlx'
+      when 'emacs', 'emacs-standard'
         @keymap_label = :emacs
+        @keymap_prefix = []
+      when 'emacs-ctlx'
+        @keymap_label = :emacs
+        @keymap_prefix = [?\C-x.ord]
+      when 'emacs-meta'
+        @keymap_label = :emacs
+        @keymap_prefix = [?\e.ord]
       when 'vi', 'vi-move', 'vi-command'
         @keymap_label = :vi_command
+        @keymap_prefix = []
       when 'vi-insert'
         @keymap_label = :vi_insert
+        @keymap_prefix = []
       end
     when 'keyseq-timeout'
       @keyseq_timeout = value.to_i
@@ -268,11 +390,19 @@ class Reline::Config
         @show_mode_in_prompt = false
       end
     when 'vi-cmd-mode-string'
-      @vi_cmd_mode_icon = retrieve_string(value)
+      @vi_cmd_mode_string = retrieve_string(value)
     when 'vi-ins-mode-string'
-      @vi_ins_mode_icon = retrieve_string(value)
+      @vi_ins_mode_string = retrieve_string(value)
     when 'emacs-mode-string'
       @emacs_mode_string = retrieve_string(value)
+    when 'dialog-default-bg-color'
+      self.dialog_default_bg_color = value
+    when 'dialog-default-fg-color'
+      self.dialog_default_fg_color = value
+    when 'dialog-highlight-bg-color'
+      self.dialog_highlight_bg_color = value
+    when 'dialog-highlight-fg-color'
+      self.dialog_highlight_fg_color = value
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
@@ -280,11 +410,8 @@ class Reline::Config
   end
 
   def retrieve_string(str)
-    if str =~ /\A"(.*)"\z/
-      parse_keyseq($1).map(&:chr).join
-    else
-      parse_keyseq(str).map(&:chr).join
-    end
+    str = $1 if str =~ /\A"(.*)"\z/
+    parse_keyseq(str).map { |c| c.chr(Reline.encoding_system_needs) }.join
   end
 
   def bind_key(key, func_name)
@@ -341,5 +468,9 @@ class Reline::Config
       ret << key_notation_to_code($&)
     end
     ret
+  end
+
+  private def seven_bit_encoding?(encoding)
+    encoding == Encoding::US_ASCII
   end
 end

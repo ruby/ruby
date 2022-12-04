@@ -3,6 +3,18 @@
 
 # Used in generating revision.h via Makefiles.
 
+help() {
+    cat <<HELP
+usage: $0 [options] target new-file
+options:
+  --timestamp[=file] touch timestamp file. (default: prefixed with ".time".
+                     under the directory of the target)
+  --keep[=suffix]    keep old file with suffix. (default: '.old')
+  --empty            assume unchanged if the new file is empty.
+  --color[=always|auto|never] colorize output.
+HELP
+}
+
 set -e
 timestamp=
 keepsuffix=
@@ -10,6 +22,10 @@ empty=
 color=auto
 until [ $# -eq 0 ]; do
     case "$1" in
+	--)
+	    shift
+	    break;
+	    ;;
 	--timestamp)
 	    timestamp=.
 	    ;;
@@ -34,12 +50,25 @@ until [ $# -eq 0 ]; do
 	--debug)
 	    set -x
 	    ;;
+	--help)
+	    help
+	    exit
+	    ;;
+	--*)
+	    echo "$0: unknown option: $1" 1>&2
+	    exit 1
+	    ;;
 	*)
 	    break
 	    ;;
     esac
     shift
 done
+
+if [ "$#" != 2 ]; then
+    help
+    exit 1
+fi
 
 target="$1"
 temp="$2"

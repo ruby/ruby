@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'tsort'
+require_relative "tsort"
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -15,7 +15,7 @@ require 'tsort'
 #   #=> ["nokogiri-1.6.0", "mini_portile-0.5.1", "pg-0.17.0"]
 
 class Gem::RequestSet
-  include TSort
+  include Gem::TSort
 
   ##
   # Array of gems to install even if already installed
@@ -151,7 +151,7 @@ class Gem::RequestSet
     @prerelease = options[:prerelease]
 
     requests = []
-    download_queue = Queue.new
+    download_queue = Thread::Queue.new
 
     # Create a thread-safe list of gems to download
     sorted_requests.each do |req|
@@ -195,19 +195,8 @@ class Gem::RequestSet
             yield req, installer if block_given?
           end
         rescue Gem::RuntimeRequirementNotMetError => e
-          recent_match = req.spec.set.find_all(req.request).sort_by(&:version).reverse_each.find do |s|
-            s = s.spec
-            s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-              s.required_rubygems_version.satisfied_by?(Gem.rubygems_version) &&
-              Gem::Platform.installable?(s)
-          end
-          if recent_match
-            suggestion = "The last version of #{req.request} to support your Ruby & RubyGems was #{recent_match.version}. Try installing it with `gem install #{recent_match.name} -v #{recent_match.version}`"
-            suggestion += " and then running the current command again" unless @always_install.include?(req.spec.spec)
-          else
-            suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
-            suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
-          end
+          suggestion = "There are no versions of #{req.request} compatible with your Ruby & RubyGems"
+          suggestion += ". Maybe try installing an older version of the gem you're looking for?" unless @always_install.include?(req.spec.spec)
           e.suggestion = suggestion
           raise
         end
@@ -265,7 +254,7 @@ class Gem::RequestSet
   end
 
   def install_into(dir, force = true, options = {})
-    gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
+    gem_home, ENV["GEM_HOME"] = ENV["GEM_HOME"], dir
 
     existing = force ? [] : specs_in(dir)
     existing.delete_if {|s| @always_install.include? s }
@@ -298,7 +287,7 @@ class Gem::RequestSet
 
     installed
   ensure
-    ENV['GEM_HOME'] = gem_home
+    ENV["GEM_HOME"] = gem_home
   end
 
   ##
@@ -314,7 +303,7 @@ class Gem::RequestSet
       end
     end
 
-    require "rubygems/dependency_installer"
+    require_relative "dependency_installer"
     inst = Gem::DependencyInstaller.new options
     inst.installed_gems.replace specs
 
@@ -348,32 +337,32 @@ class Gem::RequestSet
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[RequestSet:', ']' do
+    q.group 2, "[RequestSet:", "]" do
       q.breakable
 
       if @remote
-        q.text 'remote'
+        q.text "remote"
         q.breakable
       end
 
       if @prerelease
-        q.text 'prerelease'
+        q.text "prerelease"
         q.breakable
       end
 
       if @development_shallow
-        q.text 'shallow development'
+        q.text "shallow development"
         q.breakable
       elsif @development
-        q.text 'development'
+        q.text "development"
         q.breakable
       end
 
       if @soft_missing
-        q.text 'soft missing'
+        q.text "soft missing"
       end
 
-      q.group 2, '[dependencies:', ']' do
+      q.group 2, "[dependencies:", "]" do
         q.breakable
         @dependencies.map do |dep|
           q.text dep.to_s
@@ -382,7 +371,7 @@ class Gem::RequestSet
       end
 
       q.breakable
-      q.text 'sets:'
+      q.text "sets:"
 
       q.breakable
       q.pp @sets.map {|set| set.class }
@@ -454,14 +443,14 @@ class Gem::RequestSet
 
   def tsort_each_child(node) # :nodoc:
     node.spec.dependencies.each do |dep|
-      next if dep.type == :development and not @development
+      next if dep.type == :development && !@development
 
       match = @requests.find do |r|
-        dep.match? r.spec.name, r.spec.version, @prerelease
+        dep.match? r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease
       end
 
       unless match
-        next if dep.type == :development and @development_shallow
+        next if dep.type == :development && @development_shallow
         next if @soft_missing
         raise Gem::DependencyError,
               "Unresolved dependency found during sorting - #{dep} (requested by #{node.spec.full_name})"
@@ -472,6 +461,6 @@ class Gem::RequestSet
   end
 end
 
-require 'rubygems/request_set/gem_dependency_api'
-require 'rubygems/request_set/lockfile'
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative "request_set/gem_dependency_api"
+require_relative "request_set/lockfile"
+require_relative "request_set/lockfile/tokenizer"

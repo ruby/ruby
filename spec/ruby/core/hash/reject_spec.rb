@@ -31,13 +31,6 @@ describe "Hash#reject" do
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { false }.should be_kind_of(Hash)
       HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Hash)
     end
-
-    ruby_version_is ''...'2.7' do
-      it "does not taint the resulting hash" do
-        h = { a: 1 }.taint
-        h.reject {false}.should_not.tainted?
-      end
-    end
   end
 
   it "processes entries with the same order as reject!" do

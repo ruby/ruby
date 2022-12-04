@@ -1,7 +1,6 @@
 #ifndef INTERNAL_UTIL_H                                  /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_UTIL_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -23,9 +22,6 @@ char *ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* util.c (export) */
-extern const signed char ruby_digit36_to_number_table[];
-extern const char ruby_hexdigits[];
-extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_UTIL_H */

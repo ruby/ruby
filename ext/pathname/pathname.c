@@ -35,6 +35,7 @@ static ID id_lchmod;
 static ID id_lchown;
 static ID id_link;
 static ID id_lstat;
+static ID id_lutime;
 static ID id_mkdir;
 static ID id_mtime;
 static ID id_open;
@@ -360,10 +361,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, id_foreach, 1+n, args, 0, 0);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv(rb_cFile, id_foreach, 1+n, args);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -765,6 +766,19 @@ path_utime(VALUE self, VALUE atime, VALUE mtime)
 }
 
 /*
+ * Update the access and modification times of the file.
+ *
+ * Same as Pathname#utime, but does not follow symbolic links.
+ *
+ * See File.lutime.
+ */
+static VALUE
+path_lutime(VALUE self, VALUE atime, VALUE mtime)
+{
+    return rb_funcall(rb_cFile, id_lutime, 3, atime, mtime, get_strpath(self));
+}
+
+/*
  * Returns the last component of the path.
  *
  * See File.basename.
@@ -834,7 +848,7 @@ path_split(VALUE self)
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
     ary = rb_funcall(rb_cFile, id_split, 1, str);
-    ary = rb_check_array_type(ary);
+    Check_Type(ary, T_ARRAY);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
     dirname = rb_class_new_instance(1, &dirname, rb_obj_class(self));
@@ -1212,7 +1226,7 @@ path_entries(VALUE self)
     ary = rb_funcall(rb_cDir, id_entries, 1, str);
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	VALUE elt = RARRAY_AREF(ary, i);
+        VALUE elt = RARRAY_AREF(ary, i);
         elt = rb_class_new_instance(1, &elt, klass);
         rb_ary_store(ary, i, elt);
     }
@@ -1274,6 +1288,7 @@ static VALUE
 path_each_entry(VALUE self)
 {
     VALUE args[1];
+    RETURN_ENUMERATOR(self, 0, 0);
 
     args[0] = get_strpath(self);
     return rb_block_call(rb_cDir, id_foreach, 1, args, each_entry_i, rb_obj_class(self));
@@ -1464,6 +1479,7 @@ path_f_pathname(VALUE self, VALUE str)
  * - #make_symlink(old)
  * - #truncate(length)
  * - #utime(atime, mtime)
+ * - #lutime(atime, mtime)
  * - #basename(*args)
  * - #dirname
  * - #extname
@@ -1512,6 +1528,10 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
@@ -1558,6 +1578,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
     rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
     rb_define_method(rb_cPathname, "utime", path_utime, 2);
+    rb_define_method(rb_cPathname, "lutime", path_lutime, 2);
     rb_define_method(rb_cPathname, "basename", path_basename, -1);
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
     rb_define_method(rb_cPathname, "extname", path_extname, 0);
@@ -1641,6 +1662,7 @@ InitVM_pathname(void)
     id_lchown = rb_intern("lchown");
     id_link = rb_intern("link");
     id_lstat = rb_intern("lstat");
+    id_lutime = rb_intern("lutime");
     id_mkdir = rb_intern("mkdir");
     id_mtime = rb_intern("mtime");
     id_open = rb_intern("open");

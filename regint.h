@@ -41,6 +41,14 @@
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
+/* enable matching optimization by using cache. */
+#define USE_CACHE_MATCH_OPT
+
+#ifdef USE_CACHE_MATCH_OPT
+#  define NUM_CACHE_OPCODE_FAIL -1
+#  define NUM_CACHE_OPCODE_UNINIT -2
+#endif
+
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
     defined(ONIG_DEBUG_STATISTICS) || defined(ONIG_DEBUG_MEMLEAK)
@@ -49,10 +57,11 @@
 # endif
 #endif
 
+/* __POWERPC__ added to accommodate Darwin case. */
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || defined(__aarch64__) || \
+     defined(__powerpc64__) || defined(__POWERPC__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #  define UNALIGNED_WORD_ACCESS 1
 # else
@@ -148,7 +157,14 @@
 
 #ifdef RUBY
 
-# define CHECK_INTERRUPT_IN_MATCH_AT rb_thread_check_ints()
+# define CHECK_INTERRUPT_IN_MATCH_AT do { \
+  msa->counter++;                         \
+  if (msa->counter >= 128) {              \
+    msa->counter = 0;                     \
+    rb_reg_check_timeout(reg, &msa->end_time);  \
+    rb_thread_check_ints();               \
+  }                                       \
+} while(0)
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -371,6 +387,7 @@ typedef unsigned int  BitStatusType;
 
 
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
+#define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
 #define DIGITVAL(code)    ((code) - '0')
 #define ODIGITVAL(code)   DIGITVAL(code)
@@ -812,6 +829,7 @@ typedef intptr_t OnigStackIndex;
 
 typedef struct _OnigStackType {
   unsigned int type;
+  OnigStackIndex null_check;
   union {
     struct {
       UChar *pcode;      /* byte code position */
@@ -855,6 +873,14 @@ typedef struct _OnigStackType {
   } u;
 } OnigStackType;
 
+#ifdef USE_CACHE_MATCH_OPT
+typedef struct {
+  UChar *addr;
+  long num;
+  int outer_repeat;
+} OnigCacheIndex;
+#endif
+
 typedef struct {
   void* stack_p;
   size_t stack_n;
@@ -869,6 +895,21 @@ typedef struct {
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   void* state_check_buff;
   int   state_check_buff_size;
+#endif
+  int counter;
+  /* rb_hrtime_t from hrtime.h */
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+  int128_t end_time;
+#else
+  uint64_t end_time;
+#endif
+#ifdef USE_CACHE_MATCH_OPT
+  long            num_fail;
+  int             enable_cache_match_opt;
+  long            num_cache_opcode;
+  long            num_cache_table;
+  OnigCacheIndex* cache_index_table;
+  uint8_t*        match_cache;
 #endif
 } OnigMatchArg;
 
@@ -903,9 +944,13 @@ extern void onig_print_statistics(FILE* f);
 # endif
 #endif
 
+#ifndef PRINTF_ARGS
+#define PRINTF_ARGS(func, fmt, vargs) func
+#endif
+
 extern UChar* onig_error_code_to_format(OnigPosition code);
-extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, va_list args);
-extern void onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, ...);
+PRINTF_ARGS(extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const char *fmt, va_list args), 6, 0);
+PRINTF_ARGS(extern void onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const char *fmt, ...), 6, 7);
 extern int  onig_bbuf_init(BBuf* buf, OnigDistance size);
 extern int  onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end, OnigErrorInfo* einfo);
 #ifdef RUBY
@@ -931,6 +976,7 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 #ifdef RUBY
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
+void rb_reg_check_timeout(regex_t *reg, void *end_time);
 #endif
 
 RUBY_SYMBOL_EXPORT_END

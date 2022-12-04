@@ -10,7 +10,7 @@ describe "Float#divmod" do
     values[1].should be_close(2.8284, TOLERANCE)
     values = -1.0.divmod(bignum_value)
     values[0].should eql(-1)
-    values[1].should be_close(9223372036854775808.000, TOLERANCE)
+    values[1].should be_close(18446744073709551616.0, TOLERANCE)
     values = -1.0.divmod(1)
     values[0].should eql(-1)
     values[1].should eql(0.0)

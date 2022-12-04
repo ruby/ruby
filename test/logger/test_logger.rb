@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require_relative 'helper'
+require 'logger'
 require 'tempfile'
 
 class TestLogger < Test::Unit::TestCase
@@ -13,7 +13,7 @@ class TestLogger < Test::Unit::TestCase
   class Log
     attr_reader :label, :datetime, :pid, :severity, :progname, :msg
     def initialize(line)
-      /\A(\w+), \[([^#]*)#(\d+)\]\s+(\w+) -- (\w*): ([\x0-\xff]*)/ =~ line
+      /\A(\w+), \[([^#]*) #(\d+)\]\s+(\w+) -- (\w*): ([\x0-\xff]*)/ =~ line
       @label, @datetime, @pid, @severity, @progname, @msg = $1, $2, $3, $4, $5, $6
     end
   end
@@ -124,7 +124,7 @@ class TestLogger < Test::Unit::TestCase
     dummy = STDERR
     logger = Logger.new(dummy)
     log = log_add(logger, INFO, "foo")
-    assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+ $/, log.datetime)
+    assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+$/, log.datetime)
     logger.datetime_format = "%d%b%Y@%H:%M:%S"
     log = log_add(logger, INFO, "foo")
     assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
@@ -203,7 +203,7 @@ class TestLogger < Test::Unit::TestCase
     # default
     logger = Logger.new(STDERR)
     log = log_add(logger, INFO, "foo")
-    assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+ $/, log.datetime)
+    assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+$/, log.datetime)
     # config
     logger = Logger.new(STDERR, datetime_format: "%d%b%Y@%H:%M:%S")
     log = log_add(logger, INFO, "foo")

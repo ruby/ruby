@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../vendored_fileutils"
-require "stringio"
-require "zlib"
 
 module Bundler
   class CompactIndexClient
@@ -22,20 +20,19 @@ module Bundler
 
       def initialize(fetcher)
         @fetcher = fetcher
-        require "tmpdir"
+        require_relative "../vendored_tmpdir"
       end
 
       def update(local_path, remote_path, retrying = nil)
         headers = {}
 
-        Dir.mktmpdir("bundler-compact-index-") do |local_temp_dir|
+        Bundler::Dir.mktmpdir("bundler-compact-index-") do |local_temp_dir|
           local_temp_path = Pathname.new(local_temp_dir).join(local_path.basename)
 
           # first try to fetch any new bytes on the existing file
           if retrying.nil? && local_path.file?
-            SharedHelpers.filesystem_access(local_temp_path) do
-              FileUtils.cp local_path, local_temp_path
-            end
+            copy_file local_path, local_temp_path
+
             headers["If-None-Match"] = etag_for(local_temp_path)
             headers["Range"] =
               if local_temp_path.size.nonzero?
@@ -45,29 +42,27 @@ module Bundler
               else
                 "bytes=#{local_temp_path.size}-"
               end
-          else
-            # Fastly ignores Range when Accept-Encoding: gzip is set
-            headers["Accept-Encoding"] = "gzip"
           end
 
           response = @fetcher.call(remote_path, headers)
           return nil if response.is_a?(Net::HTTPNotModified)
 
           content = response.body
-          if response["Content-Encoding"] == "gzip"
-            content = Zlib::GzipReader.new(StringIO.new(content)).read
-          end
 
-          SharedHelpers.filesystem_access(local_temp_path) do
+          etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
+          correct_response = SharedHelpers.filesystem_access(local_temp_path) do
             if response.is_a?(Net::HTTPPartialContent) && local_temp_path.size.nonzero?
               local_temp_path.open("a") {|f| f << slice_body(content, 1..-1) }
+
+              etag_for(local_temp_path) == etag
             else
-              local_temp_path.open("w") {|f| f << content }
+              local_temp_path.open("wb") {|f| f << content }
+
+              etag.length.zero? || etag_for(local_temp_path) == etag
             end
           end
 
-          response_etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
-          if etag_for(local_temp_path) == response_etag
+          if correct_response
             SharedHelpers.filesystem_access(local_path) do
               FileUtils.mv(local_temp_path, local_path)
             end
@@ -75,16 +70,11 @@ module Bundler
           end
 
           if retrying
-            raise MisMatchedChecksumError.new(remote_path, response_etag, etag_for(local_temp_path))
+            raise MisMatchedChecksumError.new(remote_path, etag, etag_for(local_temp_path))
           end
 
           update(local_path, remote_path, :retrying)
         end
-      rescue Errno::EACCES
-        raise Bundler::PermissionError,
-          "Bundler does not have write access to create a temp directory " \
-          "within #{Dir.tmpdir}. Bundler must have write access to your " \
-          "systems temp directory to function properly. "
       rescue Zlib::GzipFile::Error
         raise Bundler::HTTPError
       end
@@ -100,11 +90,25 @@ module Bundler
 
       def checksum_for_file(path)
         return nil unless path.file?
-        # This must use IO.read instead of Digest.file().hexdigest
+        # This must use File.read instead of Digest.file().hexdigest
         # because we need to preserve \n line endings on windows when calculating
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
-          SharedHelpers.digest(:MD5).hexdigest(IO.read(path))
+          SharedHelpers.digest(:MD5).hexdigest(File.read(path))
+        end
+      end
+
+      private
+
+      def copy_file(source, dest)
+        SharedHelpers.filesystem_access(source, :read) do
+          File.open(source, "r") do |s|
+            SharedHelpers.filesystem_access(dest, :write) do
+              File.open(dest, "wb", s.stat.mode) do |f|
+                IO.copy_stream(s, f)
+              end
+            end
+          end
         end
       end
     end

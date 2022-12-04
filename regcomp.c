@@ -138,6 +138,27 @@ bitset_on_num(BitSetRef bs)
 }
 #endif
 
+// Attempt to right size allocated buffers for a regex post compile
+static void
+onig_reg_resize(regex_t *reg)
+{
+  do {
+    if (!reg->used) {
+      xfree(reg->p);
+      reg->alloc = 0;
+      reg->p = 0;
+    }
+    else if (reg->alloc > reg->used) {
+      unsigned char *new_ptr = xrealloc(reg->p, reg->used);
+      // Skip the right size optimization if memory allocation fails
+      if (new_ptr) {
+        reg->alloc = reg->used;
+        reg->p = new_ptr;
+      }
+    }
+  } while ((reg = reg->chain) != 0);
+}
+
 extern int
 onig_bbuf_init(BBuf* buf, OnigDistance size)
 {
@@ -320,7 +341,7 @@ static int
 select_str_opcode(int mb_len, OnigDistance byte_len, int ignore_case)
 {
   int op;
-  OnigDistance str_len = (byte_len + mb_len - 1) / mb_len;
+  OnigDistance str_len = roomof(byte_len, mb_len);
 
   if (ignore_case) {
     switch (str_len) {
@@ -1914,7 +1935,7 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
 }
 
 static int
-renumber_node_backref(Node* node, GroupNumRemap* map)
+renumber_node_backref(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int i, pos, n, old_num;
   int *backs;
@@ -1930,6 +1951,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
     backs = bn->back_dynamic;
 
   for (i = 0, pos = 0; i < old_num; i++) {
+    if (backs[i] > num_mem)  return ONIGERR_INVALID_BACKREF;
     n = map[backs[i]].new_val;
     if (n > 0) {
       backs[pos] = n;
@@ -1942,7 +1964,7 @@ renumber_node_backref(Node* node, GroupNumRemap* map)
 }
 
 static int
-renumber_by_map(Node* node, GroupNumRemap* map)
+renumber_by_map(Node* node, GroupNumRemap* map, const int num_mem)
 {
   int r = 0;
 
@@ -1950,28 +1972,30 @@ renumber_by_map(Node* node, GroupNumRemap* map)
   case NT_LIST:
   case NT_ALT:
     do {
-      r = renumber_by_map(NCAR(node), map);
+      r = renumber_by_map(NCAR(node), map, num_mem);
     } while (r == 0 && IS_NOT_NULL(node = NCDR(node)));
     break;
   case NT_QTFR:
-    r = renumber_by_map(NQTFR(node)->target, map);
+    r = renumber_by_map(NQTFR(node)->target, map, num_mem);
     break;
   case NT_ENCLOSE:
     {
       EncloseNode* en = NENCLOSE(node);
-      if (en->type == ENCLOSE_CONDITION)
+      if (en->type == ENCLOSE_CONDITION) {
+	if (en->regnum > num_mem)  return ONIGERR_INVALID_BACKREF;
 	en->regnum = map[en->regnum].new_val;
-      r = renumber_by_map(en->target, map);
+      }
+      r = renumber_by_map(en->target, map, num_mem);
     }
     break;
 
   case NT_BREF:
-    r = renumber_node_backref(node, map);
+    r = renumber_node_backref(node, map, num_mem);
     break;
 
   case NT_ANCHOR:
     if (NANCHOR(node)->target)
-      r = renumber_by_map(NANCHOR(node)->target, map);
+      r = renumber_by_map(NANCHOR(node)->target, map, num_mem);
     break;
 
   default:
@@ -2033,7 +2057,7 @@ disable_noname_group_capture(Node** root, regex_t* reg, ScanEnv* env)
   r = noname_disable_map(root, map, &counter);
   if (r != 0) return r;
 
-  r = renumber_by_map(*root, map);
+  r = renumber_by_map(*root, map, env->num_mem);
   if (r != 0) return r;
 
   for (i = 1, pos = 1; i <= env->num_mem; i++) {
@@ -3733,10 +3757,8 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
   switch (type) {
   case NT_LIST:
     {
-      Node* prev = NULL_NODE;
       do {
 	r = setup_comb_exp_check(NCAR(node), r, env);
-	prev = NCAR(node);
       } while (r >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
     break;
@@ -5014,7 +5036,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
 	  int n = onigenc_strlen(env->enc, sn->s, sn->end);
-	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * n;
+	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
 	}
 	else {
 	  concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,
@@ -5886,6 +5908,7 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 #endif
 
  end:
+  onig_reg_resize(reg);
   return r;
 
  err_unset:
@@ -5952,6 +5975,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
+
+  (reg)->timelimit        = 0;
+
   return 0;
 }
 

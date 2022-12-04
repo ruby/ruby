@@ -39,8 +39,11 @@ CodingUS_ASCII
 CodingUTF_8
 ComparisonTest
 ConstantSpecsIncludedModule
+ConstantSpecsTwo
+ConstantSpecsThree
 ConstantVisibility
 Coverage
+CoverageSpecs
 CustomArgumentError
 DRb
 DRbIdConv
@@ -72,6 +75,7 @@ EvalBindingProcA
 Exception2MessageMapper
 ExceptionForMatrix
 Fcntl
+Fiddle
 FileStat
 FileUtils
 Find

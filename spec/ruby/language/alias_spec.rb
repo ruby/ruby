@@ -218,7 +218,7 @@ describe "The alias keyword" do
     subclass.new.test("testing").should == 4
   end
 
-  it "is not allowed against Fixnum or String instances" do
+  it "is not allowed against Integer or String instances" do
     -> do
       1.instance_eval do
         alias :foo :to_s
@@ -242,6 +242,19 @@ describe "The alias keyword" do
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
+  end
+
+  it "defines the method on the aliased class when the original method is from a parent class" do
+    parent = Class.new do
+      def parent_method
+      end
+    end
+    child = Class.new(parent) do
+      alias parent_method_alias parent_method
+    end
+
+    child.instance_method(:parent_method_alias).owner.should == child
+    child.instance_methods(false).should include(:parent_method_alias)
   end
 end
 

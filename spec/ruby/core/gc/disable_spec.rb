@@ -5,7 +5,7 @@ describe "GC.disable" do
     GC.enable
   end
 
-  it "returns true iff the garbage collection was previously disabled" do
+  it "returns true if and only if the garbage collection was previously disabled" do
     GC.enable
     GC.disable.should == false
     GC.disable.should == true

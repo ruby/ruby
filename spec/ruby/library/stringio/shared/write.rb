@@ -45,14 +45,22 @@ describe :stringio_write_string, shared: true do
     @io.pos.should eql(4)
   end
 
-  ruby_version_is ""..."2.7" do
-    it "taints self's String when the passed argument is tainted" do
-      @io.send(@method, "test".taint)
-      @io.string.tainted?.should be_true
-    end
+  it "handles concurrent writes correctly" do
+    @io = StringIO.new
+    n = 8
+    go = false
+    threads = n.times.map { |i|
+      Thread.new {
+        Thread.pass until go
+        @io.write i.to_s
+      }
+    }
+    go = true
+    threads.each(&:join)
+    @io.string.size.should == n.times.map(&:to_s).join.size
   end
 
-  ruby_version_is ""..."2.8" do
+  ruby_version_is ""..."3.0" do
     it "does not taint self when the passed argument is tainted" do
       @io.send(@method, "test".taint)
       @io.tainted?.should be_false

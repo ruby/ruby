@@ -1,7 +1,7 @@
 # Contains all static code examples of all constants behavior in language and
 # library specs. The specs include language/constants_spec.rb and the specs
-# for Module#const_defined?, Module#const_get, Module#const_set,
-# Module#remove_const, Module#const_missing and Module#constants.
+# for Module#const_defined?, Module#const_get, Module#const_set, Module#remove_const,
+# Module#const_source_location, Module#const_missing and Module#constants.
 #
 # Rather than defining a class structure for each example, a canonical set of
 # classes is used along with numerous constants, in most cases, a unique
@@ -28,14 +28,17 @@
 # for completeness. No other constant of this name should be defined in the
 # specs.
 CS_CONST1 = :const1   # only defined here
+CS_CONST1_LINE = __LINE__ - 1
 
 module ConstantSpecs
 
   # Included at toplevel
   module ModuleA
     CS_CONST10 = :const10_1
+    CS_CONST10_LINE = __LINE__ - 1
     CS_CONST12 = :const12_2
     CS_CONST13 = :const13
+    CS_CONST13_LINE = __LINE__ - 1
     CS_CONST21 = :const21_2
   end
 
@@ -44,12 +47,14 @@ module ConstantSpecs
     CS_CONST10 = :const10_9
     CS_CONST11 = :const11_2
     CS_CONST12 = :const12_1
+    CS_CONST12_LINE = __LINE__ - 1
   end
 
   # Included in ChildA
   module ModuleC
     CS_CONST10 = :const10_4
     CS_CONST15 = :const15_1
+    CS_CONST15_LINE = __LINE__ - 1
   end
 
   # Included in ChildA metaclass
@@ -70,12 +75,21 @@ module ConstantSpecs
     CS_CONST10 = :const10_8
   end
 
+  # Included in ContainerA
+  module ModuleIncludePrepended
+    prepend ModuleD
+
+    CS_CONST11 = :const11_8
+  end
+
   # The following classes/modules have all the constants set "statically".
   # Contrast with the classes below where the constants are set as the specs
   # are run.
 
   class ClassA
+    CS_CLASS_A_LINE = __LINE__ - 1
     CS_CONST10 = :const10_10
+    CS_CONST10_LINE = __LINE__ - 1
     CS_CONST16 = :const16
     CS_CONST17 = :const17_2
     CS_CONST22 = :const22_1
@@ -97,10 +111,14 @@ module ConstantSpecs
     include ModuleB
 
     CS_CONST4 = :const4
+    CS_CONST4_LINE = __LINE__ - 1
     CS_CONST10 = :const10_5
+    CS_CONST10_LINE = __LINE__ - 1
     CS_CONST11 = :const11_1
+    CS_CONST11_LINE = __LINE__ - 1
     CS_CONST15 = :const15_2
     CS_CONST20 = :const20_2
+    CS_CONST20_LINE = __LINE__ - 1
     CS_CONST21 = :const21_1
     CS_CONST22 = :const22_2
 
@@ -118,6 +136,7 @@ module ConstantSpecs
 
     CS_CONST5 = :const5
     CS_CONST10 = :const10_2
+    CS_CONST10_LINE = __LINE__ - 1
     CS_CONST23 = :const23
 
     class ChildA < ParentA
@@ -135,6 +154,7 @@ module ConstantSpecs
 
       CS_CONST6 = :const6
       CS_CONST10 = :const10_3
+      CS_CONST10_LINE = __LINE__ - 1
       CS_CONST19 = :const19_2
 
       def self.const10; CS_CONST10; end
@@ -154,6 +174,10 @@ module ConstantSpecs
     def self.const10; CS_CONST10; end
 
     def const10; CS_CONST10; end
+  end
+
+  class ContainerPrepend
+    include ModuleIncludePrepended
   end
 
   class ContainerA::ChildA
@@ -282,7 +306,18 @@ module ConstantSpecs
   end
 
   CS_PRIVATE = :cs_private
+  CS_PRIVATE_LINE = __LINE__ - 1
   private_constant :CS_PRIVATE
+end
+
+module ConstantSpecsThree
+  module ConstantSpecsTwo
+    Foo = :cs_three_foo
+  end
+end
+
+module ConstantSpecsTwo
+  Foo = :cs_two_foo
 end
 
 include ConstantSpecs::ModuleA

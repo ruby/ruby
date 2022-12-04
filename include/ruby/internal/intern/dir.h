@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Public APIs related to ::rb_cDir.
  */
 #include "ruby/internal/dllexport.h"
@@ -26,6 +26,15 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /* dir.c */
+
+/**
+ * Queries the path of the current working directory of the current process.
+ *
+ * @return  An instance of ::rb_cString that holds the working directory.
+ * @note    The returned string  is in "filesystem" encoding.   Most notably on
+ *          Linux this is an alias  of default external encoding.  Most notably
+ *          on Windows it can be an alias of OS codepage.
+ */
 VALUE rb_dir_getwd(void);
 
 RBIMPL_SYMBOL_EXPORT_END()

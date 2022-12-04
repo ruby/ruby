@@ -1,9 +1,9 @@
 # two threads, two mutex, two condvar ping-pong
 require 'thread'
-m1 = Mutex.new
-m2 = Mutex.new
-cv1 = ConditionVariable.new
-cv2 = ConditionVariable.new
+m1 = Thread::Mutex.new
+m2 = Thread::Mutex.new
+cv1 = Thread::ConditionVariable.new
+cv2 = Thread::ConditionVariable.new
 max = 100000
 i = 0
 wait = nil

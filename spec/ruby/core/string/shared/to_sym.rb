@@ -53,6 +53,15 @@ describe :string_to_sym, shared: true do
     sym.to_s.should == binary_string
   end
 
+  it "ignores existing symbols with different encoding" do
+    source = "fée"
+
+    iso_symbol = source.force_encoding(Encoding::ISO_8859_1).send(@method)
+    iso_symbol.encoding.should == Encoding::ISO_8859_1
+    binary_symbol = source.force_encoding(Encoding::BINARY).send(@method)
+    binary_symbol.encoding.should == Encoding::BINARY
+  end
+
   it "raises an EncodingError for UTF-8 String containing invalid bytes" do
     invalid_utf8 = "\xC3"
     invalid_utf8.should_not.valid_encoding?

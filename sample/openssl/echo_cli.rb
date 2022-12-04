@@ -15,7 +15,7 @@ ca_path   = options["C"]
 ctx = OpenSSL::SSL::SSLContext.new()
 if cert_file && key_file
   ctx.cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
-  ctx.key  = OpenSSL::PKey::RSA.new(File::read(key_file))
+  ctx.key  = OpenSSL::PKey.read(File::read(key_file))
 end
 if ca_path
   ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER

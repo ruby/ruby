@@ -129,4 +129,24 @@ describe "main.using" do
 
     x.call_bar(cls2.new).should == 'bar'
   end
+
+  it "raises error when called from method in wrapped script" do
+    -> do
+      load File.expand_path('../fixtures/using_in_method.rb', __FILE__), true
+    end.should raise_error(RuntimeError)
+  end
+
+  it "raises error when called on toplevel from module" do
+    -> do
+      load File.expand_path('../fixtures/using_in_main.rb', __FILE__), true
+    end.should raise_error(RuntimeError)
+  end
+
+  ruby_version_is "3.2" do
+    it "does not raise error when wrapped with module" do
+      -> do
+        load File.expand_path('../fixtures/using.rb', __FILE__), true
+      end.should_not raise_error
+    end
+  end
 end

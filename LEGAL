@@ -314,17 +314,6 @@ mentioned below.
     This configure script is free software; the Free Software Foundation
     gives unlimited permission to copy, distribute and modify it.
 
-[aclocal.m4]
-
-  This file is free software.
-
-  >>>
-    Copyright (C) 1996-2020:: Free Software Foundation, Inc.
-
-    This file is free software; the Free Software Foundation
-    gives unlimited permission to copy and/or distribute it,
-    with or without modifications, as long as this notice is preserved.
-
 [tool/config.guess]
 [tool/config.sub]
 
@@ -353,6 +342,34 @@ mentioned below.
     the same distribution terms that you use for the rest of that
     program.  This Exception is an additional permission under section 7
     of the GNU General Public License, version 3 ("GPLv3").
+
+[tool/lib/test/*]
+[tool/lib/core_assertions.rb]
+
+  Some of methods on these files are based on MiniTest 4. MiniTest 4 is
+  distributed under the MIT License.
+
+  >>>
+    Copyright (c) Ryan Davis, seattle.rb
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    'Software'), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [parse.c]
 [parse.h]
@@ -451,7 +468,8 @@ mentioned below.
 
   >>>
     A C-program for MT19937, with initialization improved 2002/2/10.::
-    Coded by Takuji Nishimura and Makoto Matsumoto.  
+    Coded by Takuji Nishimura and Makoto Matsumoto.
+
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
 
@@ -542,12 +560,8 @@ mentioned below.
 [include/ruby/st.h]
 [missing/acosh.c]
 [missing/alloca.c]
-[missing/dup2.c]
 [missing/erf.c]
-[missing/finite.c]
 [missing/hypot.c]
-[missing/isinf.c]
-[missing/isnan.c]
 [missing/lgamma_r.c]
 [missing/memcmp.c]
 [missing/memmove.c]
@@ -945,15 +959,50 @@ mentioned below.
 
 [lib/bundler]
 [lib/bundler.rb]
-[lib/bundler.gemspec]
 [spec/bundler]
-[man/bundle-*,gemfile.*]
 
   Bundler is under the following license.
 
   >>>
     Portions copyright (c) 2010:: Andre Arko
     Portions copyright (c) 2009:: Engine Yard
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/bundler/vendor/thor]
+
+  Thor is under the following license.
+
+  >>>
+    Copyright (c) 2008 Yehuda Katz, Eric Hodel, et al.
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/rubygems/resolver/molinillo]
+[lib/bundler/vendor/molinillo]
+
+  molinillo is under the following license.
+
+  >>>
+    Copyright (c) 2014 Samuel E. Giddins segiddins@segiddins.me
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/bundler/vendor/connection_pool]
+
+  connection_pool is under the following license.
+
+  >>>
+    Copyright (c) 2011 Mike Perham
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/bundler/vendor/net-http-persistent]
+
+  net-http-persistent is under the following license.
+
+  >>>
+    Copyright (c) Eric Hodel, Aaron Patterson
 
     {MIT License}[rdoc-label:label-MIT+License]
 
@@ -965,6 +1014,17 @@ mentioned below.
 
   >>>
     Copyright (c) 2014-2016 Yuki Nishijima
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/error_highlight]
+[lib/error_highlight.rb]
+[test/error_highlight]
+
+  error_highlight is under the following license.
+
+  >>>
+    Copyright (c) 2021 Yusuke Endoh
 
     {MIT License}[rdoc-label:label-MIT+License]
 

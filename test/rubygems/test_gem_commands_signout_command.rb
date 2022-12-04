@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
-require 'rubygems/commands/signout_command'
-require 'rubygems/installer'
+require_relative "helper"
+require "rubygems/commands/signout_command"
+require "rubygems/installer"
 
 class TestGemCommandsSignoutCommand < Gem::TestCase
   def setup

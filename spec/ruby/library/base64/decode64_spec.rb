@@ -22,4 +22,8 @@ describe "Base64#decode64" do
   it "returns a binary encoded string" do
     Base64.decode64("SEk=").encoding.should == Encoding::BINARY
   end
+
+  it "decodes without padding suffix ==" do
+    Base64.decode64("eyJrZXkiOnsibiI6InR0dCJ9fQ").should == "{\"key\":{\"n\":\"ttt\"}}"
+  end
 end

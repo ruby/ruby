@@ -454,9 +454,8 @@ class RDoc::Stats
     [params.length, undoc]
   end
 
-  autoload :Quiet,   'rdoc/stats/quiet'
-  autoload :Normal,  'rdoc/stats/normal'
-  autoload :Verbose, 'rdoc/stats/verbose'
+  autoload :Quiet,   "#{__dir__}/stats/quiet"
+  autoload :Normal,  "#{__dir__}/stats/normal"
+  autoload :Verbose, "#{__dir__}/stats/verbose"
 
 end
-

@@ -39,12 +39,12 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
-  VERSION = "0.1.0"
+  VERSION = "0.2.0"
 
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s, :inspect, :=~, :!~, :===, :<=>, :hash].each do |m|
+    [:to_s, :inspect, :!~, :===, :<=>, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|

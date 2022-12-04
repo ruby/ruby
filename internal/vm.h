@@ -1,7 +1,6 @@
 #ifndef INTERNAL_VM_H                                    /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VM_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -27,8 +26,7 @@ struct rb_callable_method_entry_struct; /* in method.h */
 struct rb_method_definition_struct;     /* in method.h */
 struct rb_execution_context_struct;     /* in vm_core.h */
 struct rb_control_frame_struct;         /* in vm_core.h */
-struct rb_calling_info;                 /* in vm_core.h */
-struct rb_call_data;
+struct rb_callinfo;                     /* in vm_core.h */
 
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
@@ -42,18 +40,18 @@ enum method_missing_reason {
 };
 
 /* vm_insnhelper.h */
-rb_serial_t rb_next_class_serial(void);
+VALUE rb_vm_push_frame_fname(struct rb_execution_context_struct *ec, VALUE fname);
 
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
+void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
-void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
 MJIT_STATIC void rb_vm_pop_cfunc_frame(void);
-int rb_vm_add_root_module(ID id, VALUE module);
+int rb_vm_add_root_module(VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
@@ -61,7 +59,7 @@ MJIT_STATIC VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 MJIT_SYMBOL_EXPORT_BEGIN
-VALUE vm_exec(struct rb_execution_context_struct *, int); /* used in JIT-ed code */
+VALUE vm_exec(struct rb_execution_context_struct *, bool); /* used in JIT-ed code */
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_eval.c */
@@ -74,17 +72,13 @@ VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *a
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
+VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
-
-MJIT_SYMBOL_EXPORT_BEGIN
-VALUE rb_vm_call0(struct rb_execution_context_struct *ec, VALUE recv, ID id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
-VALUE rb_vm_call_kw(struct rb_execution_context_struct *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const struct rb_callable_method_entry_struct *me, int kw_splat);
-VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VALUE *argv, int priv);
-MJIT_SYMBOL_EXPORT_END
+void rb_check_stack_overflow(void);
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
@@ -92,7 +86,7 @@ VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
 struct rb_iseq_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
-void rb_vm_search_method_slowpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass);
+const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 MJIT_SYMBOL_EXPORT_END
 
 /* vm_method.c */
@@ -100,6 +94,8 @@ struct rb_execution_context_struct;
 MJIT_SYMBOL_EXPORT_BEGIN
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 MJIT_SYMBOL_EXPORT_END
+
+void rb_clear_constant_cache(void);
 
 /* vm_dump.c */
 void rb_print_backtrace(void);
@@ -115,6 +111,9 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
+int rb_frame_info_p(VALUE obj);
+int rb_get_node_id_from_frame_info(VALUE obj);
+const struct rb_iseq_struct *rb_get_iseq_from_frame_info(VALUE obj);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);

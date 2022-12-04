@@ -1,7 +1,6 @@
 #ifndef INTERNAL_IMEMO_H                                 /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_IMEMO_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -11,7 +10,7 @@
  */
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
-#include "internal/array.h"     /* for rb_ary_tmp_new_fill */
+#include "internal/array.h"     /* for rb_ary_hidden_new_fill */
 #include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
@@ -45,6 +44,7 @@ enum imemo_type {
     imemo_parser_strterm = 10,
     imemo_callinfo       = 11,
     imemo_callcache      = 12,
+    imemo_constcache     = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -117,18 +117,17 @@ struct MEMO {
 /* ment is in method.h */
 
 #define THROW_DATA_P(err) imemo_throw_data_p((VALUE)err)
-#define MEMO_CAST(m) (R_CAST(MEMO)(m))
+#define MEMO_CAST(m) ((struct MEMO *)(m))
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
+  ((value) = rb_ary_hidden_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 #define NEW_PARTIAL_MEMO_FOR(type, value, member) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), \
+  ((value) = rb_ary_hidden_new_fill(type_roomof(type, VALUE)), \
    rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), \
    MEMO_FOR(type, value))
 
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
-VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 void rb_strterm_mark(VALUE obj);

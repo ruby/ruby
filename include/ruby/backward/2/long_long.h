@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines old #LONG_LONG
  *
  * No  known  compiler   that  can  compile  today's  ruby   lacks  long  long.
@@ -29,7 +29,15 @@
 #include "ruby/internal/has/warning.h"
 #include "ruby/internal/warning_push.h"
 
-#if RBIMPL_HAS_WARNING("-Wc++11-long-long")
+#if defined(__DOXYGEN__)
+# /** @cond INTERNAL_MACRO */
+# define HAVE_LONG_LONG 1
+# define HAVE_TRUE_LONG_LONG 1
+# /** @endcond */
+# /** @deprecated  Just use `long long` directly. */
+# define LONG_LONG long long.
+
+#elif RBIMPL_HAS_WARNING("-Wc++11-long-long")
 # define HAVE_TRUE_LONG_LONG 1
 # define LONG_LONG                           \
     RBIMPL_WARNING_PUSH()                     \

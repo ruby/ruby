@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative "helper"
 
 class TestGemResolverVendorSet < Gem::TestCase
   def setup
@@ -27,7 +27,7 @@ class TestGemResolverVendorSet < Gem::TestCase
 
     FileUtils.rm_r directory
 
-    e = assert_raises Gem::GemNotFoundException do
+    e = assert_raise Gem::GemNotFoundException do
       @set.add_vendor_gem name, directory
     end
 
@@ -40,7 +40,7 @@ class TestGemResolverVendorSet < Gem::TestCase
 
     @set.add_vendor_gem name, directory
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = Gem::Resolver::DependencyRequest.new dependency, nil
 
@@ -51,22 +51,22 @@ class TestGemResolverVendorSet < Gem::TestCase
     source = Gem::Source::Vendor.new directory
 
     expected = [
-      Gem::Resolver::VendorSpecification.new(@set, spec, source)
+      Gem::Resolver::VendorSpecification.new(@set, spec, source),
     ]
 
     assert_equal expected, found
   end
 
   def test_find_all_prerelease
-    name, _, directory = vendor_gem 'a', '1.a'
+    name, _, directory = vendor_gem "a", "1.a"
 
     @set.add_vendor_gem name, directory
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_empty @set.find_all req
 
-    req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a", ">= 0.a"), nil
 
     refute_empty @set.find_all req
   end
@@ -74,8 +74,8 @@ class TestGemResolverVendorSet < Gem::TestCase
   def test_load_spec
     error = Object.const_defined?(:KeyError) ? KeyError : IndexError
 
-    assert_raises error do
-      @set.load_spec 'b', v(1), Gem::Platform::RUBY, nil
+    assert_raise error do
+      @set.load_spec "b", v(1), Gem::Platform::RUBY, nil
     end
   end
 end

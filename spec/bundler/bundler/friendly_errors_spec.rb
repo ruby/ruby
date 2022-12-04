@@ -104,7 +104,6 @@ RSpec.describe Bundler, "friendly errors" do
         expect(Bundler.ui).to receive(:error).with(error.message, :wrap => true)
         Bundler::FriendlyErrors.log_error(error)
       end
-      it_behaves_like "Bundler.ui receive trace", Bundler::BundlerError.new
     end
 
     context "Thor::Error" do
@@ -193,9 +192,9 @@ RSpec.describe Bundler, "friendly errors" do
 
   describe "#request_issue_report_for" do
     it "calls relevant methods for Bundler.ui" do
-      expect(Bundler.ui).to receive(:info)
-      expect(Bundler.ui).to receive(:error)
-      expect(Bundler.ui).to receive(:warn)
+      expect(Bundler.ui).not_to receive(:info)
+      expect(Bundler.ui).to receive(:error).exactly(3).times
+      expect(Bundler.ui).not_to receive(:warn)
       Bundler::FriendlyErrors.request_issue_report_for(StandardError.new)
     end
 

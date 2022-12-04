@@ -17,23 +17,56 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `double` and Ruby's.
  */
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
-#define NUM2DBL      rb_num2dbl
-#define RFLOAT_VALUE rb_float_value
-#define DBL2NUM      rb_float_new
+#define NUM2DBL      rb_num2dbl       /**< @old{rb_num2dbl} */
+#define RFLOAT_VALUE rb_float_value   /**< @old{rb_float_value} */
+#define DBL2NUM      rb_float_new     /**< @old{rb_float_new} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-double rb_num2dbl(VALUE);
+/**
+ * Converts an instance of ::rb_cNumeric into C's `double`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @return     The passed value converted into C's `double`.
+ */
+double rb_num2dbl(VALUE num);
+
 RBIMPL_ATTR_PURE()
-double rb_float_value(VALUE);
-VALUE rb_float_new(double);
-VALUE rb_float_new_in_heap(double);
+/**
+ * Extracts its double value from an instance of ::rb_cFloat.
+ *
+ * @param[in]  num  An instance of ::rb_cFloat.
+ * @pre        Must not pass anything other than a Fixnum.
+ * @return     The passed value converted into C's `double`.
+ */
+double rb_float_value(VALUE num);
+
+/**
+ * Converts a C's `double` into an instance of ::rb_cFloat.
+ *
+ * @param[in]  d  Arbitrary `double` value.
+ * @return     An instance of ::rb_cFloat.
+ */
+VALUE rb_float_new(double d);
+
+/**
+ * Identical to rb_float_new(), except it does not generate Flonums.
+ *
+ * @param[in]  d  Arbitrary `double` value.
+ * @return     An instance of ::rb_cFloat.
+ *
+ * @internal
+ *
+ * @shyouhei has no idea why it is here.
+ */
+VALUE rb_float_new_in_heap(double d);
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_ARITHMETIC_DOUBLE_H */

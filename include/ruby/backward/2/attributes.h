@@ -1,7 +1,6 @@
 #ifndef RUBY_BACKWARD2_ATTRIBUTES_H                  /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_ATTRIBUTES_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -17,7 +16,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Various attribute-related macros.
  *
  * ### Q&A ###
@@ -60,7 +59,20 @@
 #define DEPRECATED_BY(n,x) RBIMPL_ATTR_DEPRECATED(("by: " # n)) x
 
 #undef DEPRECATED_TYPE
-#define DEPRECATED_TYPE(mseg, decl) decl RBIMPL_ATTR_DEPRECATED(mseg)
+#if defined(__GNUC__)
+# define DEPRECATED_TYPE(mesg, decl)                      \
+    _Pragma("message \"DEPRECATED_TYPE is deprecated\""); \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#elif defined(_MSC_VER)
+# pragma deprecated(DEPRECATED_TYPE)
+# define DEPRECATED_TYPE(mesg, decl)                              \
+    __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: " \
+                     "DEPRECATED_TYPE is deprecated"))            \
+    decl RBIMPL_ATTR_DEPRECATED(mseg)
+#else
+# define DEPRECATED_TYPE(mesg, decl)                    \
+    <-<-"DEPRECATED_TYPE is deprecated"->->
+#endif
 
 #undef RUBY_CXX_DEPRECATED
 #define RUBY_CXX_DEPRECATED(mseg) RBIMPL_ATTR_DEPRECATED((mseg))
@@ -77,16 +89,12 @@
 #define ERRORFUNC(mesg, x) RBIMPL_ATTR_ERROR(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(error)
 # define HAVE_ATTRIBUTE_ERRORFUNC 1
-#else
-# define HAVE_ATTRIBUTE_ERRORFUNC 0
 #endif
 
 #undef WARNINGFUNC
 #define WARNINGFUNC(mesg, x) RBIMPL_ATTR_WARNING(mesg) x
 #if RBIMPL_HAS_ATTRIBUTE(warning)
 # define HAVE_ATTRIBUTE_WARNINGFUNC 1
-#else
-# define HAVE_ATTRIBUTE_WARNINGFUNC 0
 #endif
 
 /*

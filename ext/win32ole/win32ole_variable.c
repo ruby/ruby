@@ -369,7 +369,9 @@ VALUE cWIN32OLE_VARIABLE;
 
 void Init_win32ole_variable(void)
 {
-    cWIN32OLE_VARIABLE = rb_define_class("WIN32OLE_VARIABLE", rb_cObject);
+    cWIN32OLE_VARIABLE = rb_define_class_under(cWIN32OLE, "Variable", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_VARIABLE", cWIN32OLE_VARIABLE);
+    rb_undef_alloc_func(cWIN32OLE_VARIABLE);
     rb_define_method(cWIN32OLE_VARIABLE, "name", folevariable_name, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "ole_type", folevariable_ole_type, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "ole_type_detail", folevariable_ole_type_detail, 0);

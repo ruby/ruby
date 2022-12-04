@@ -3,9 +3,50 @@ require 'mkmf'
 
 # :stopdoc:
 
+def gcc?
+  RbConfig::CONFIG["GCC"] == "yes"
+end
+
+def disable_optimization_build_flag(flags)
+  if gcc?
+    expanded_flags = RbConfig.expand(flags.dup)
+    optimization_option_pattern = /(^|\s)?-O\d(\s|$)?/
+    if optimization_option_pattern.match?(expanded_flags)
+      expanded_flags.gsub(optimization_option_pattern, '\\1-Og\\2')
+    else
+      flags + " -Og"
+    end
+  else
+    flags
+  end
+end
+
+def enable_debug_build_flag(flags)
+  if gcc?
+    expanded_flags = RbConfig.expand(flags.dup)
+    debug_option_pattern = /(^|\s)-g(?:gdb)?\d?(\s|$)/
+    if debug_option_pattern.match?(expanded_flags)
+      expanded_flags.gsub(debug_option_pattern, '\\1-ggdb3\\2')
+    else
+      flags + " -ggdb3"
+    end
+  else
+    flags
+  end
+end
+
+checking_for(checking_message("--enable-debug-build option")) do
+  enable_debug_build = enable_config("debug-build", false)
+  if enable_debug_build
+    $CFLAGS = disable_optimization_build_flag($CFLAGS)
+    $CFLAGS = enable_debug_build_flag($CFLAGS)
+  end
+  enable_debug_build
+end
+
 libffi_version = nil
 have_libffi = false
-bundle = enable_config('bundled-libffi')
+bundle = with_config("libffi-source-dir")
 unless bundle
   dir_config 'libffi'
 
@@ -26,27 +67,11 @@ unless bundle
 end
 
 unless have_libffi
-  # for https://github.com/ruby/fiddle
-  extlibs_rb = File.expand_path("../../bin/extlibs.rb", $srcdir)
-  if bundle && File.exist?(extlibs_rb)
-    require "fileutils"
-    require_relative "../../bin/extlibs"
-    extlibs = ExtLibs.new
-    cache_dir = File.expand_path("../../tmp/.download_cache", $srcdir)
-    ext_dir = File.expand_path("../../ext", $srcdir)
-    Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
-    extlibs.run(["--cache=#{cache_dir}", ext_dir])
+  if bundle
+    libffi_srcdir = libffi_package_name = bundle
+  else
+    raise "missing libffi. Please install libffi or use --with-libffi-source-dir with libffi source location."
   end
-  if bundle != false
-    libffi_package_name = Dir.glob("#{$srcdir}/libffi-*/")
-                            .map {|n| File.basename(n)}
-                            .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  end
-  unless libffi_package_name
-    raise "missing libffi. Please install libffi."
-  end
-
-  libffi_srcdir = "#{$srcdir}/#{libffi_package_name}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
   libffi.dir = libffi_package_name
@@ -126,7 +151,7 @@ if libffi_version
   libffi_version = libffi_version.gsub(/-rc\d+/, '')
   libffi_version = (libffi_version.split('.').map(&:to_i) + [0,0])[0,3]
   $defs.push(%{-DRUBY_LIBFFI_MODVERSION=#{ '%d%03d%03d' % libffi_version }})
-  warn "libffi_version: #{libffi_version.join('.')}"
+  puts "libffi_version: #{libffi_version.join('.')}"
 end
 
 case
@@ -137,13 +162,16 @@ else
   have_func('ffi_closure_alloc', ffi_header)
 end
 
-if libffi
-  $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+if libffi_version
+  if (libffi_version <=> [3, 0, 11]) >= 0
+    $defs << "-DHAVE_FFI_PREP_CIF_VAR"
+  end
 else
   have_func('ffi_prep_cif_var', ffi_header)
 end
 
 have_header 'sys/mman.h'
+have_header 'link.h'
 
 if have_header "dlfcn.h"
   have_library "dl"
@@ -153,10 +181,14 @@ if have_header "dlfcn.h"
   end
 
   have_func "dlerror"
+  have_func "dlinfo"
+  have_const("RTLD_DI_LINKMAP", "dlfcn.h")
 elsif have_header "windows.h"
-  %w{ LoadLibrary FreeLibrary GetProcAddress }.each do |func|
+  %w{ LoadLibrary FreeLibrary GetProcAddress GetModuleFileName }.each do |func|
     abort "missing function #{func}" unless have_func(func)
   end
+
+  have_library "ws2_32"
 end
 
 have_const('FFI_STDCALL', ffi_header)
@@ -172,14 +204,15 @@ types.each do |type, signed|
     if signed
       check_signedness(type.downcase, "stddef.h")
     end
+  else
+    check_signedness(type.downcase, "stddef.h")
   end
 end
 
 if libffi
-  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
+  $LOCAL_LIBS.prepend("#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
-$INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"

@@ -205,6 +205,12 @@ describe "Array#fill with (filler, index, length)" do
     -> { [].fill('a', obj) }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError when the length is not numeric" do
+    -> { [1, 2, 3].fill("x", 1, "foo") }.should raise_error(TypeError, /no implicit conversion of String into Integer/)
+    -> { [1, 2, 3].fill("x", 1, :"foo") }.should raise_error(TypeError, /no implicit conversion of Symbol into Integer/)
+    -> { [1, 2, 3].fill("x", 1, Object.new) }.should raise_error(TypeError, /no implicit conversion of Object into Integer/)
+  end
+
   not_supported_on :opal do
     it "raises an ArgumentError or RangeError for too-large sizes" do
       error_types = [RangeError, ArgumentError]
@@ -316,12 +322,15 @@ describe "Array#fill with (filler, range)" do
     -> { [].fill('a', obj..obj) }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      [1, 2, 3, 4].fill('x', eval("(1..)")).should == [1, 'x', 'x', 'x']
-      [1, 2, 3, 4].fill('x', eval("(3...)")).should == [1, 2, 3, 'x']
-      [1, 2, 3, 4].fill(eval("(1..)")) { |x| x + 2 }.should == [1, 3, 4, 5]
-      [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
-    end
+  it "works with endless ranges" do
+    [1, 2, 3, 4].fill('x', eval("(1..)")).should == [1, 'x', 'x', 'x']
+    [1, 2, 3, 4].fill('x', eval("(3...)")).should == [1, 2, 3, 'x']
+    [1, 2, 3, 4].fill(eval("(1..)")) { |x| x + 2 }.should == [1, 3, 4, 5]
+    [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
+  end
+
+  it "works with beginless ranges" do
+    [1, 2, 3, 4].fill('x', (..2)).should == ["x", "x", "x", 4]
+    [1, 2, 3, 4].fill((...2)) { |x| x + 2 }.should == [2, 3, 3, 4]
   end
 end

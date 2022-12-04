@@ -61,14 +61,34 @@ require 'prettyprint'
 # Tanaka Akira <akr@fsij.org>
 
 class PP < PrettyPrint
+  # Returns the usable width for +out+.
+  # As the width of +out+:
+  # 1. If +out+ is assigned to a tty device, its width is used.
+  # 2. Otherwise, or it could not get the value, the +COLUMN+
+  #    environment variable is assumed to be set to the width.
+  # 3. If +COLUMN+ is not set to a non-zero number, 80 is assumed.
+  #
+  # And finally, returns the above width value - 1.
+  # * This -1 is for Windows command prompt, which moves the cursor to
+  #   the next line if it reaches the last column.
+  def PP.width_for(out)
+    begin
+      require 'io/console'
+      _, width = out.winsize
+    rescue LoadError, NoMethodError, SystemCallError
+    end
+    (width || ENV['COLUMNS']&.to_i&.nonzero? || 80) - 1
+  end
+
   # Outputs +obj+ to +out+ in pretty printed format of
   # +width+ columns in width.
   #
   # If +out+ is omitted, <code>$></code> is assumed.
-  # If +width+ is omitted, 79 is assumed.
+  # If +width+ is omitted, the width of +out+ is assumed (see
+  # width_for).
   #
   # PP.pp returns +out+.
-  def PP.pp(obj, out=$>, width=79)
+  def PP.pp(obj, out=$>, width=width_for(out))
     q = PP.new(out, width)
     q.guard_inspect_key {q.pp obj}
     q.flush
@@ -93,11 +113,25 @@ class PP < PrettyPrint
   end
   # :startdoc:
 
-  @sharing_detection = false
-  class << self
-    # Returns the sharing detection flag as a boolean value.
-    # It is false by default.
-    attr_accessor :sharing_detection
+  if defined? ::Ractor
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false (nil) by default.
+      def sharing_detection
+        Ractor.current[:pp_sharing_detection]
+      end
+      # Sets the sharing detection flag to b.
+      def sharing_detection=(b)
+        Ractor.current[:pp_sharing_detection] = b
+      end
+    end
+  else
+    @sharing_detection = false
+    class << self
+      # Returns the sharing detection flag as a boolean value.
+      # It is false by default.
+      attr_accessor :sharing_detection
+    end
   end
 
   module PPMethods
@@ -223,7 +257,7 @@ class PP < PrettyPrint
         else
           sep.call
         end
-        yield(*v, **{})
+        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
       }
     end
 
@@ -382,6 +416,26 @@ class Struct # :nodoc:
   end
 end
 
+class Data # :nodoc:
+  def pretty_print(q) # :nodoc:
+    q.group(1, sprintf("#<data %s", PP.mcall(self, Kernel, :class).name), '>') {
+      q.seplist(PP.mcall(self, Data, :members), lambda { q.text "," }) {|member|
+        q.breakable
+        q.text member.to_s
+        q.text '='
+        q.group(1) {
+          q.breakable ''
+          q.pp public_send(member)
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(q) # :nodoc:
+    q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
+  end
+end if "3.2" <= RUBY_VERSION
+
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
     q.pp self.begin
@@ -410,7 +464,7 @@ end
 class File < IO # :nodoc:
   class Stat # :nodoc:
     def pretty_print(q) # :nodoc:
-      require 'etc.so'
+      require 'etc'
       q.object_group(self) {
         q.breakable
         q.text sprintf("dev=0x%x", self.dev); q.comma_breakable
@@ -516,37 +570,39 @@ class MatchData # :nodoc:
   end
 end
 
-class RubyVM::AbstractSyntaxTree::Node
-  def pretty_print_children(q, names = [])
-    children.zip(names) do |c, n|
-      if n
-        q.breakable
-        q.text "#{n}:"
-      end
-      q.group(2) do
-        q.breakable
-        q.pp c
+if defined?(RubyVM::AbstractSyntaxTree)
+  class RubyVM::AbstractSyntaxTree::Node
+    def pretty_print_children(q, names = [])
+      children.zip(names) do |c, n|
+        if n
+          q.breakable
+          q.text "#{n}:"
+        end
+        q.group(2) do
+          q.breakable
+          q.pp c
+        end
       end
     end
-  end
 
-  def pretty_print(q)
-    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
-      case type
-      when :SCOPE
-        pretty_print_children(q, %w"tbl args body")
-      when :ARGS
-        pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
-      when :DEFN
-        pretty_print_children(q, %w[mid body])
-      when :ARYPTN
-        pretty_print_children(q, %w[const pre rest post])
-      when :HSHPTN
-        pretty_print_children(q, %w[const kw kwrest])
-      else
-        pretty_print_children(q)
-      end
-    }
+    def pretty_print(q)
+      q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+        case type
+        when :SCOPE
+          pretty_print_children(q, %w"tbl args body")
+        when :ARGS
+          pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
+        when :DEFN
+          pretty_print_children(q, %w[mid body])
+        when :ARYPTN
+          pretty_print_children(q, %w[const pre rest post])
+        when :HSHPTN
+          pretty_print_children(q, %w[const kw kwrest])
+        else
+          pretty_print_children(q)
+        end
+      }
+    end
   end
 end
 

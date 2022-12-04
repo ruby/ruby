@@ -1,32 +1,32 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
-require 'rubygems/commands/build_command'
-require 'rubygems/package'
+require_relative "helper"
+require "rubygems/commands/build_command"
+require "rubygems/package"
 
 class TestGemCommandsBuildCommand < Gem::TestCase
-  CERT_FILE = cert_path 'public3072'
-  SIGNING_KEY = key_path 'private3072'
+  CERT_FILE = cert_path "public3072"
+  SIGNING_KEY = key_path "private3072"
 
-  EXPIRED_CERT_FILE = cert_path 'expired'
-  PRIVATE_KEY_FILE  = key_path 'private'
+  EXPIRED_CERT_FILE = cert_path "expired"
+  PRIVATE_KEY_FILE  = key_path "private"
 
   def setup
     super
 
-    readme_file = File.join(@tempdir, 'README.md')
+    readme_file = File.join(@tempdir, "README.md")
 
     begin
       umask_orig = File.umask(2)
-      File.open readme_file, 'w' do |f|
-        f.write 'My awesome gem'
+      File.open readme_file, "w" do |f|
+        f.write "My awesome gem"
       end
     ensure
       File.umask(umask_orig)
     end
 
-    @gem = util_spec 'some_gem' do |s|
-      s.license = 'AGPL-3.0'
-      s.files = ['README.md']
+    @gem = util_spec "some_gem" do |s|
+      s.license = "AGPL-3.0"
+      s.files = ["README.md"]
     end
 
     @cmd = Gem::Commands::BuildCommand.new
@@ -37,12 +37,14 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     assert @cmd.options[:force]
     assert @cmd.options[:strict]
+    assert @cmd.handles?(%W[--platform #{Gem::Platform.local}])
+    assert_includes Gem.platforms, Gem::Platform.local
   end
 
   def test_options_filename
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -77,7 +79,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_execute
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -86,17 +88,37 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     util_test_build_gem @gem
   end
 
+  def test_execute_platform
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    platforms = Gem.platforms.dup
+    begin
+      Gem.platforms << Gem::Platform.new("java")
+
+      spec = util_test_build_gem @gem, suffix: "java"
+    ensure
+      Gem.platforms.replace(platforms)
+    end
+    assert_match spec.platform, "java"
+  end
+
   def test_execute_bad_name
     [".", "-", "_"].each do |special_char|
-      gem = util_spec 'some_gem_with_bad_name' do |s|
+      gem = util_spec "some_gem_with_bad_name" do |s|
         s.name = "#{special_char}bad_gem_name"
-        s.license = 'AGPL-3.0'
-        s.files = ['README.md']
+        s.license = "AGPL-3.0"
+        s.files = ["README.md"]
       end
 
       gemspec_file = File.join(@tempdir, gem.spec_name)
 
-      File.open gemspec_file, 'w' do |gs|
+      File.open gemspec_file, "w" do |gs|
         gs.write gem.to_ruby
       end
 
@@ -104,7 +126,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
       use_ui @ui do
         Dir.chdir @tempdir do
-          assert_raises Gem::InvalidSpecificationException do
+          assert_raise Gem::InvalidSpecificationException do
             @cmd.execute
           end
         end
@@ -115,7 +137,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_execute_strict_without_warnings
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -126,7 +148,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_rubyforge_project_warning
-    rubyforge_gemspec = File.join SPECIFICATIONS, "rubyforge-0.0.1.gemspec"
+    rubyforge_gemspec = File.expand_path File.join("specifications", "rubyforge-0.0.1.gemspec"), __dir__
 
     @cmd.options[:args] = [rubyforge_gemspec]
 
@@ -143,13 +165,13 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_strict_with_warnings
-    bad_gem = util_spec 'some_bad_gem' do |s|
-      s.files = ['README.md']
+    bad_gem = util_spec "some_bad_gem" do |s|
+      s.files = ["README.md"]
     end
 
     gemspec_file = File.join(@tempdir, bad_gem.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write bad_gem.to_ruby
     end
 
@@ -158,7 +180,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir @tempdir do
-        assert_raises Gem::InvalidSpecificationException do
+        assert_raise Gem::InvalidSpecificationException do
           @cmd.execute
         end
       end
@@ -179,15 +201,15 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby.sub(/11-08/, "11-8")
     end
 
     @cmd.options[:args] = [gemspec_file]
 
     out, err = use_ui @ui do
-      capture_io do
-        assert_raises Gem::MockGemUi::TermError do
+      capture_output do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -196,34 +218,34 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "", out
     assert_match(/invalid date format in specification/, err)
 
-    assert_equal '', @ui.output
+    assert_equal "", @ui.output
     assert_equal "ERROR:  Error loading gemspec. Aborting.\n", @ui.error
   end
 
   def test_execute_missing_file
     @cmd.options[:args] = %w[some_gem]
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
 
-    assert_equal '', @ui.output
-    assert_equal "ERROR:  Gemspec file not found: some_gem.gemspec\n", @ui.error
+    assert_equal "", @ui.output
+    assert_equal "ERROR:  Couldn't find a gemspec file matching 'some_gem' in #{@tempdir}\n", @ui.error
   end
 
   def test_execute_outside_dir
-    gemspec_dir = File.join @tempdir, 'build_command_gem'
+    gemspec_dir = File.join @tempdir, "build_command_gem"
     gemspec_file = File.join gemspec_dir, @gem.spec_name
-    readme_file = File.join gemspec_dir, 'README.md'
+    readme_file = File.join gemspec_dir, "README.md"
 
     FileUtils.mkdir_p gemspec_dir
 
-    File.open readme_file, 'w' do |f|
+    File.open readme_file, "w" do |f|
       f.write "My awesome gem"
     end
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -250,10 +272,202 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "this is a summary", spec.summary
   end
 
-  def test_can_find_gemspecs_without_dot_gemspec
-    gemspec_file = File.join(@tempdir, @gem.spec_name)
+  def test_execute_outside_dir_with_glob_argument
+    gemspec_dir = File.join @tempdir, "build_command_gem"
+    gemspec_file = File.join gemspec_dir, @gem.spec_name
+    readme_file = File.join gemspec_dir, "README.md"
 
-    File.open gemspec_file + ".gemspec", 'w' do |gs|
+    FileUtils.mkdir_p gemspec_dir
+
+    File.open readme_file, "w" do |f|
+      f.write "My awesome gem"
+    end
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:build_path] = gemspec_dir
+    @cmd.options[:args] = ["*.gemspec"]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join gemspec_dir, File.basename(@gem.cache_file)
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
+  def test_execute_outside_dir_no_gemspec_present
+    gemspec_dir = File.join @tempdir, "build_command_gem"
+    gemspec_file = File.join @tempdir, @gem.spec_name
+    readme_file = File.join gemspec_dir, "README.md"
+
+    FileUtils.mkdir_p gemspec_dir
+
+    File.open readme_file, "w" do |f|
+      f.write "My awesome gem"
+    end
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:build_path] = gemspec_dir
+    @cmd.options[:args] = ["*.gemspec"]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "ERROR:  Couldn't find a gemspec file matching '*.gemspec' in #{gemspec_dir}\n", @ui.error
+
+    gem_file = File.join gemspec_dir, File.basename(@gem.cache_file)
+    refute File.exist?(gem_file)
+  end
+
+  def test_execute_outside_dir_without_gem_name
+    gemspec_dir = File.join(@tempdir, "build_command_gem")
+    gemspec_file = File.join(gemspec_dir, @gem.spec_name)
+
+    readme_file = File.join gemspec_dir, "README.md"
+
+    FileUtils.mkdir_p(gemspec_dir)
+
+    File.open readme_file, "w" do |f|
+      f.write "My awesome gem"
+    end
+
+    File.open(gemspec_file, "w") do |gs|
+      gs.write(@gem.to_ruby)
+    end
+
+    @cmd.options[:build_path] = gemspec_dir
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      Dir.chdir(gemspec_dir) do
+        @cmd.execute
+      end
+    end
+
+    output = @ui.output.split("\n")
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join gemspec_dir, File.basename(@gem.cache_file)
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
+  def test_execute_outside_dir_with_external_gemspec
+    gemspec_dir = File.join @tempdir, "gemspec_dir"
+    gemspec_file = File.join gemspec_dir, @gem.spec_name
+
+    gemcode_dir = File.join @tempdir, "build_command_gem"
+    readme_file = File.join gemcode_dir, "README.md"
+
+    FileUtils.mkdir_p gemspec_dir
+    FileUtils.mkdir_p gemcode_dir
+
+    File.open readme_file, "w" do |f|
+      f.write "My awesome gem in nested directory"
+    end
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:build_path] = gemcode_dir
+    @cmd.options[:args] = [gemspec_file]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join gemcode_dir, File.basename(@gem.cache_file)
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
+  def test_execute_outside_dir_with_external_relative_gemspec
+    gemspec_dir = File.join @tempdir, "gemspec_dir"
+    gemspec_file = File.join gemspec_dir, @gem.spec_name
+
+    gemcode_dir = File.join @tempdir, "build_command_gem"
+    readme_file = File.join gemcode_dir, "README.md"
+
+    FileUtils.mkdir_p gemspec_dir
+    FileUtils.mkdir_p gemcode_dir
+
+    File.open readme_file, "w" do |f|
+      f.write "My awesome gem in nested directory"
+    end
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:build_path] = gemcode_dir
+    @cmd.options[:args] = [File.join("..", "gemspec_dir", @gem.spec_name)]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join gemcode_dir, File.basename(@gem.cache_file)
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
+  def test_can_find_gemspecs_without_dot_gemspec
+    gemspec_file = File.join(@tempdir, @gem.name)
+
+    File.open gemspec_file + ".gemspec", "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -313,7 +527,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     use_ui @ui do
       Dir.chdir(gemspec_dir) do
-        assert_raises Gem::MockGemUi::TermError do
+        assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       end
@@ -327,27 +541,29 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     refute File.exist?(expected_gem)
   end
 
-  def util_test_build_gem(gem)
+  def util_test_build_gem(gem, suffix: nil)
     use_ui @ui do
       Dir.chdir @tempdir do
         @cmd.execute
       end
     end
-
+    suffix &&= "-#{suffix}"
+    gem_file = "some_gem-2#{suffix}.gem"
     output = @ui.output.split "\n"
     assert_equal "  Successfully built RubyGem", output.shift
     assert_equal "  Name: some_gem", output.shift
     assert_equal "  Version: 2", output.shift
-    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal "  File: #{gem_file}", output.shift
     assert_equal [], output
 
-    gem_file = File.join(@tempdir, File.basename(gem.cache_file))
+    gem_file = File.join(@tempdir, gem_file)
     assert File.exist?(gem_file)
 
     spec = Gem::Package.new(gem_file).spec
 
     assert_equal "some_gem", spec.name
     assert_equal "this is a summary", spec.summary
+    spec
   end
 
   def test_execute_force
@@ -355,7 +571,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     @gem.send :remove_instance_variable, :@rubygems_version
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write @gem.to_ruby
     end
 
@@ -366,18 +582,18 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL && !java_platform?
 
     trust_dir = Gem::Security.trust_dir
 
-    spec = util_spec 'some_gem' do |s|
+    spec = util_spec "some_gem" do |s|
       s.signing_key = SIGNING_KEY
       s.cert_chain = [CERT_FILE]
     end
 
     gemspec_file = File.join(@tempdir, spec.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write spec.to_ruby
     end
 
@@ -393,7 +609,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_signed_gem_with_cert_expiration_length_days
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -406,14 +622,14 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     tmp_private_key_file = File.join gem_path, "gem-private_key.pem"
     File.write(tmp_private_key_file, File.read(PRIVATE_KEY_FILE))
 
-    spec = util_spec 'some_gem' do |s|
+    spec = util_spec "some_gem" do |s|
       s.signing_key = tmp_private_key_file
       s.cert_chain  = [tmp_expired_cert_file]
     end
 
     gemspec_file = File.join(@tempdir, spec.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write spec.to_ruby
     end
 
@@ -437,7 +653,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_build_auto_resign_cert
-    skip 'openssl is missing' unless defined?(OpenSSL::SSL) && !java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL && !java_platform?
 
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
@@ -450,14 +666,14 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     tmp_private_key_file = File.join gem_path, "gem-private_key.pem"
     File.write(tmp_private_key_file, File.read(PRIVATE_KEY_FILE))
 
-    spec = util_spec 'some_gem' do |s|
+    spec = util_spec "some_gem" do |s|
       s.signing_key = tmp_private_key_file
       s.cert_chain  = [tmp_expired_cert_file]
     end
 
     gemspec_file = File.join(@tempdir, spec.spec_name)
 
-    File.open gemspec_file, 'w' do |gs|
+    File.open gemspec_file, "w" do |gs|
       gs.write spec.to_ruby
     end
 

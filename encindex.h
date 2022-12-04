@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 enum ruby_preserved_encindex {
-    RUBY_ENCINDEX_ASCII,
+    RUBY_ENCINDEX_ASCII_8BIT,
     RUBY_ENCINDEX_UTF_8,
     RUBY_ENCINDEX_US_ASCII,
 
@@ -40,7 +40,7 @@ enum ruby_preserved_encindex {
     RUBY_ENCINDEX_BUILTIN_MAX
 };
 
-#define ENCINDEX_ASCII       RUBY_ENCINDEX_ASCII
+#define ENCINDEX_ASCII_8BIT  RUBY_ENCINDEX_ASCII_8BIT
 #define ENCINDEX_UTF_8       RUBY_ENCINDEX_UTF_8
 #define ENCINDEX_US_ASCII    RUBY_ENCINDEX_US_ASCII
 #define ENCINDEX_UTF_16BE    RUBY_ENCINDEX_UTF_16BE
@@ -54,7 +54,7 @@ enum ruby_preserved_encindex {
 #define ENCINDEX_Windows_31J RUBY_ENCINDEX_Windows_31J
 #define ENCINDEX_BUILTIN_MAX RUBY_ENCINDEX_BUILTIN_MAX
 
-#define rb_ascii8bit_encindex() RUBY_ENCINDEX_ASCII
+#define rb_ascii8bit_encindex() RUBY_ENCINDEX_ASCII_8BIT
 #define rb_utf8_encindex()      RUBY_ENCINDEX_UTF_8
 #define rb_usascii_encindex()   RUBY_ENCINDEX_US_ASCII
 

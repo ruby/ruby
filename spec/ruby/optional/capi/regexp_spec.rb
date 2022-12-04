@@ -75,5 +75,54 @@ describe "C-API Regexp function" do
       md = /c/.match('ab')
       @p.rb_backref_get.should == md
     end
+
+    it "returns MatchData when used with rb_reg_match" do
+       @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
+    end
+  end
+
+  describe "rb_backref_set" do
+    before :each do
+      @md = "foo".match(/foo/)
+      $~ = nil
+    end
+
+    it "sets the value of $~" do
+      @p.rb_backref_set(@md)
+      @p.rb_backref_get.should == @md
+      $~.should == @md
+    end
+
+    it "sets a Thread-local value" do
+      running = false
+
+      thr = Thread.new do
+        @p.rb_backref_set(@md)
+        @p.rb_backref_get.should == @md
+        $~.should == @md
+        running = true
+      end
+
+      Thread.pass while thr.status and !running
+      $~.should be_nil
+
+      thr.join
+    end
+  end
+
+  describe "rb_memicmp" do
+    it "returns 0 for identical strings" do
+      @p.rb_memcicmp('Hello', 'Hello').should == 0
+    end
+
+    it "returns 0 for strings which only differ in case" do
+      @p.rb_memcicmp('Hello', 'HELLO').should == 0
+      @p.rb_memcicmp('HELLO', 'Hello').should == 0
+    end
+
+    it "returns the difference between the first non matching characters" do
+      @p.rb_memcicmp('Hello', 'HELLP').should == -1
+      @p.rb_memcicmp('HELLp', 'Hello').should == 1
+    end
   end
 end

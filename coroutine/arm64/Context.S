@@ -8,8 +8,15 @@
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
+#if defined(__APPLE__)
+#define x29 fp
+#define x30 lr
+.text
+.p2align 2
+#else
 .text
 .align 2
+#endif
 
 .global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
@@ -60,3 +67,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
 	# Jump to return address (in x4)
 	ret x4
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif

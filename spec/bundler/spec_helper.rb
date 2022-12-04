@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/psyched_yaml"
+require "psych"
 require "bundler/vendored_fileutils"
 require "bundler/vendored_uri"
 require "digest"
@@ -13,16 +13,16 @@ require "bundler"
 require "rspec/core"
 require "rspec/expectations"
 require "rspec/mocks"
+require "rspec/support/differ"
 
 require_relative "support/builders"
+require_relative "support/build_metadata"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/sometimes"
-require_relative "support/sudo"
 
 $debug = false
 
@@ -39,7 +39,6 @@ RSpec.configure do |config|
   config.include Spec::Matchers
   config.include Spec::Path
   config.include Spec::Platforms
-  config.include Spec::Sudo
   config.include Spec::Permissions
 
   # Enable flags like --only-failures and --next-failure
@@ -59,26 +58,26 @@ RSpec.configure do |config|
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
+
+    c.max_formatted_output_length = 1000
   end
 
   config.mock_with :rspec do |mocks|
     mocks.allow_message_expectations_on_nil = false
   end
 
-  config.around :each do |example|
-    if ENV["RUBY"]
-      orig_ruby = Gem.ruby
-      Gem.ruby = ENV["RUBY"]
-    end
-    example.run
-    Gem.ruby = orig_ruby if ENV["RUBY"]
-  end
-
   config.before :suite do
+    Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
+
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
-    ENV["BUNDLE_SPEC_RUN"] = "true"
+    ENV["BUNDLER_SPEC_RUN"] = "true"
+    ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
+    ENV["BUNDLE_APP_CONFIG"] = nil
+    ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
+    ENV["RUBYGEMS_GEMDEPS"] = nil
+    ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
     # Don't wrap output in tests
@@ -89,6 +88,8 @@ RSpec.configure do |config|
   end
 
   config.before :all do
+    check_test_gems!
+
     build_repo1
 
     reset_paths!
@@ -103,7 +104,7 @@ RSpec.configure do |config|
 
         all_output = all_commands_output
         if example.exception && !all_output.empty?
-          message = example.exception.message + all_output
+          message = all_output + "\n" + example.exception.message
           (class << example.exception; self; end).send(:define_method, :message) do
             message
           end

@@ -14,12 +14,18 @@ describe "Kernel#sleep" do
     sleep(0.001).should >= 0
   end
 
-  it "accepts a Fixnum" do
+  it "accepts an Integer" do
     sleep(0).should >= 0
   end
 
   it "accepts a Rational" do
     sleep(Rational(1, 999)).should >= 0
+  end
+
+  it "accepts any Object that reponds to divmod" do
+    o = Object.new
+    def o.divmod(*); [0, 0.001]; end
+    sleep(o).should >= 0
   end
 
   it "raises an ArgumentError when passed a negative duration" do

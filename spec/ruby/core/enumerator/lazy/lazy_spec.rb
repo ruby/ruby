@@ -16,6 +16,10 @@ describe "Enumerator::Lazy" do
     ]
     lazy_methods += [:chunk_while, :uniq]
 
+    ruby_version_is '3.1' do
+      lazy_methods += [:compact]
+    end
+
     Enumerator::Lazy.instance_methods(false).should include(*lazy_methods)
   end
 end

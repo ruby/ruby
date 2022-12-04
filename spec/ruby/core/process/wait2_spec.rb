@@ -33,4 +33,13 @@ describe "Process.wait2" do
     -> { Process.wait2 }.should raise_error(Errno::ECHILD)
     -> { Process.wait2 }.should raise_error(StandardError)
   end
+
+  it "returns nil if the child process is still running when given the WNOHANG flag" do
+    IO.popen(ruby_cmd('STDIN.getbyte'), "w") do |io|
+      pid, status = Process.wait2(io.pid, Process::WNOHANG)
+      pid.should be_nil
+      status.should be_nil
+      io.write('a')
+    end
+  end
 end

@@ -257,7 +257,7 @@ Verbose mode is "verbose". It sets the
 .Li "$VERBOSE"
 to true.
 .Fl W Ns
-2 is same as
+2 is the same as
 .Fl w
 .
 .El
@@ -313,7 +313,7 @@ Enables automatic line-ending processing, which means to firstly set
 to the value of
 .Li "$/" ,
 and secondly chops every line read using
-.Li chop! .
+.Li chomp! .
 .Pp
 .It Fl n
 Causes Ruby to assume the following loop around your script, which
@@ -423,35 +423,37 @@ Dump some information.
 .Pp
 Prints the specified target.
 .Ar target
-can be one of;
+can be one of:
 .Bl -hang -offset indent
 .It Sy version
-version description same as
-.Fl -version
+Print version description (same as
+.Fl -version).
 .It Sy usage
-brief usage message same as
-.Fl h
+Print a brief usage message (same as
+.Fl h).
 .It Sy help
-Show long help message same as
-.Fl -help
+Show long help message (same as
+.Fl -help).
 .It Sy syntax
-check of syntax same as
+Check syntax (same as
 .Fl c
-.Fl -yydebug
+.Fl -yydebug).
+.Pp
+.El
+.Pp
+Or one of the following, which are intended for debugging the interpreter:
+.Bl -hang -offset indent -tag -width "parsetree_with_comment"
 .It Sy yydebug
-compiler debug mode, same as
-.Fl -yydebug
-.Pp
-Only specify this switch if you are going to debug the Ruby interpreter.
+Enable compiler debug mode (same as
+.Fl -yydebug).
 .It Sy parsetree
+Print a textual representation of the Ruby AST for the program.
 .It Sy parsetree_with_comment
-AST nodes tree
-.Pp
-Only specify this switch if you are going to debug the Ruby interpreter.
+Print a textual representation of the Ruby AST for the program, but with each node annoted with the associated Ruby source code.
 .It Sy insns
-disassembled instructions
-.Pp
-Only specify this switch if you are going to debug the Ruby interpreter.
+Print a list of disassembled bytecode instructions.
+.It Sy insns_without_opt
+Print the list of disassembled bytecode instructions before various optimizations have been applied.
 .El
 .Pp
 .It Fl -verbose
@@ -618,7 +620,7 @@ All values are specified in bytes.
 .Bl -hang -compact -width "RUBY_THREAD_MACHINE_STACK_SIZE"
 .It Ev RUBY_THREAD_VM_STACK_SIZE
 VM stack size used at thread creation.
-default: 131072 (32-bit CPU) or 262144 (64-bit)
+default: 524288 (32-bit CPU) or 1048575 (64-bit)
 .Pp
 .It Ev RUBY_THREAD_MACHINE_STACK_SIZE
 Machine stack size used at thread creation.

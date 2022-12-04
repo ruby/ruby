@@ -126,6 +126,28 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("D\xFCrst".force_encoding('iso-8859-2'), "D\xFCrst".encode('iso-8859-2', 'iso-8859-1'))
   end
 
+  def test_encode_xml_multibyte
+    encodings = %w'UTF-8 UTF-16LE UTF-16BE UTF-32LE UTF-32BE'
+    encodings.each do |src_enc|
+      encodings.each do |dst_enc|
+        escaped = "<>".encode(src_enc).encode(dst_enc, :xml=>:text)
+        assert_equal("&lt;&gt;", escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :text")
+
+        escaped = '<">'.encode(src_enc).encode(dst_enc, :xml=>:attr)
+        assert_equal('"&lt;&quot;&gt;"', escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :attr")
+
+        escaped = "<>".encode(src_enc).force_encoding("UTF-8").encode(dst_enc, src_enc, :xml=>:text)
+        assert_equal("&lt;&gt;", escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :text")
+
+        escaped = '<">'.encode(src_enc).force_encoding("UTF-8").encode(dst_enc, src_enc, :xml=>:attr)
+        assert_equal('"&lt;&quot;&gt;"', escaped.encode('UTF-8'), "failed encoding #{src_enc} to #{dst_enc} with xml: :attr")
+      end
+    end
+    # regression test; U+6E7F (湿) uses the same bytes in ISO-2022-JP as "<>"
+    assert_equal(  "&lt;&gt;\u6E7F",   "<>\u6E7F".encode("ISO-2022-JP").encode("ISO-2022-JP", :xml=>:text).encode("UTF-8"))
+    assert_equal("\"&lt;&gt;\u6E7F\"", "<>\u6E7F".encode("ISO-2022-JP").encode("ISO-2022-JP", :xml=>:attr).encode("UTF-8"))
+  end
+
   def test_ascii_range
     encodings = [
       'US-ASCII', 'ASCII-8BIT',
@@ -467,6 +489,25 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2229", "\xEF", 'IBM437') # ∩
     check_both_ways("\u2261", "\xF0", 'IBM437') # ≡
     check_both_ways("\u00A0", "\xFF", 'IBM437') # non-breaking space
+  end
+
+  def test_IBM720
+    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'IBM720') }
+    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'IBM720') }
+    check_both_ways("\u0627", "\x9F", 'IBM720') # ا
+    check_both_ways("\u0628", "\xA0", 'IBM720') # ب
+    check_both_ways("\u00BB", "\xAF", 'IBM720') # »
+    check_both_ways("\u2591", "\xB0", 'IBM720') # ░
+    check_both_ways("\u2510", "\xBF", 'IBM720') # ┐
+    check_both_ways("\u2514", "\xC0", 'IBM720') # └
+    check_both_ways("\u2567", "\xCF", 'IBM720') # ╧
+    check_both_ways("\u2568", "\xD0", 'IBM720') # ╨
+    check_both_ways("\u2580", "\xDF", 'IBM720') # ▀
+    check_both_ways("\u0636", "\xE0", 'IBM720') # ض
+    check_both_ways("\u064A", "\xEF", 'IBM720') # ي
+    check_both_ways("\u2261", "\xF0", 'IBM720') # ≡
+    check_both_ways("\u00A0", "\xFF", 'IBM720') # non-breaking space
   end
 
   def test_IBM775
@@ -2191,12 +2232,12 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
   end
 
-  bug8940 = '[ruby-core:57318] [Bug #8940]'
-  %w[UTF-32 UTF-16].each do |enc|
-    define_method("test_pseudo_encoding_inspect(#{enc})") do
-      assert_normal_exit("'aaa'.encode('#{enc}').inspect", bug8940)
-      assert_equal(4, 'aaa'.encode(enc).length, "should count in #{enc} with BOM")
-    end
+  def test_pseudo_encoding_inspect
+    s = 'aaa'.encode "UTF-16"
+    assert_equal '"\xFE\xFF\x00\x61\x00\x61\x00\x61"', s.inspect
+
+    s = 'aaa'.encode "UTF-32"
+    assert_equal '"\x00\x00\xFE\xFF\x00\x00\x00\x61\x00\x00\x00\x61\x00\x00\x00\x61"', s.inspect
   end
 
   def test_encode_with_invalid_chars
@@ -2264,5 +2305,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("A\rB\r\rC", s.encode(usascii, newline: :cr))
     assert_equal("A\r\nB\r\r\nC", s.encode(usascii, crlf_newline: true))
     assert_equal("A\r\nB\r\r\nC", s.encode(usascii, newline: :crlf))
+    assert_equal("A\nB\nC", s.encode(usascii, lf_newline: true))
+    assert_equal("A\nB\nC", s.encode(usascii, newline: :lf))
   end
 end

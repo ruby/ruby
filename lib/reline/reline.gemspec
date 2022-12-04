@@ -1,7 +1,9 @@
 
-lib = File.expand_path('../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'reline/version'
+begin
+  require_relative 'lib/reline/version'
+rescue LoadError
+  require_relative 'version'
+end
 
 Gem::Specification.new do |spec|
   spec.name          = 'reline'
@@ -14,13 +16,10 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/ruby/reline'
   spec.license       = 'Ruby'
 
-  spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'lib/**/*']
+  spec.files         = Dir['BSDL', 'COPYING', 'README.md', 'license_of_rb-readline', 'lib/**/*']
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.5')
+  spec.required_ruby_version = Gem::Requirement.new('>= 2.6')
 
   spec.add_dependency 'io-console', '~> 0.5'
-  spec.add_development_dependency 'bundler'
-  spec.add_development_dependency 'rake'
-  spec.add_development_dependency 'test-unit'
 end

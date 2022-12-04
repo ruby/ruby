@@ -265,8 +265,13 @@ define rp
     printf "%sT_ZOMBIE%s: ", $color_type, $color_end
     print (struct RData *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_MOVED
+    printf "%sT_MOVED%s: ", $color_type, $color_end
+    print *(struct RMoved *)$arg0
+  else
     printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
+  end
   end
   end
   end
@@ -539,13 +544,13 @@ end
 
 define rp_class
   printf "(struct RClass *) %p", (void*)$arg0
-  if ((struct RClass *)($arg0))->ptr.origin_ != $arg0
-    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin_
+  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
+    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
   end
   printf "\n"
   rb_classname $arg0
   print/x *(struct RClass *)($arg0)
-  print *((struct RClass *)($arg0))->ptr
+  print *RCLASS_EXT((struct RClass *)($arg0))
 end
 document rp_class
   Print the content of a Class/Module.
@@ -974,8 +979,8 @@ end
 
 define rb_ps_vm
   print $ps_vm = (rb_vm_t*)$arg0
-  set $ps_thread_ln = $ps_vm->living_threads.n.next
-  set $ps_thread_ln_last = $ps_vm->living_threads.n.prev
+  set $ps_thread_ln      = $ps_vm->ractor.main_ractor.threads.set.n.next
+  set $ps_thread_ln_last = $ps_vm->ractor.main_ractor.threads.set.n.prev
   while 1
     set $ps_thread_th = (rb_thread_t *)$ps_thread_ln
     set $ps_thread = (VALUE)($ps_thread_th->self)
@@ -1097,11 +1102,11 @@ define print_id
           set $arylen = $ary->as.heap.len
         end
         set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-	if $result != RUBY_Qnil
+        if $result != RUBY_Qnil
           print_string $result
-	else
-	  echo undef
-	end
+        else
+          echo undef
+        end
       end
     end
   end
@@ -1319,8 +1324,7 @@ define print_flags
   printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
   printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
   printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
-  printf "RUBY_FL_TAINT       : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_TAINT ? "1" : "0"
-  printf "RUBY_FL_UNTRUSTED   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_UNTRUSTED ? "1" : "0"
+  printf "RUBY_FL_SHAREABLE   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_SHAREABLE ? "1" : "0"
   printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"
   printf "RUBY_FL_FREEZE      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FREEZE ? "1" : "0"
 

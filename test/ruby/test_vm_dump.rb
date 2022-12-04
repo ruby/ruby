@@ -3,7 +3,7 @@ require 'test/unit'
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args)
-    skip if RUBY_PLATFORM !~ /darwin/
+    omit if RUBY_PLATFORM !~ /darwin/
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
   end
 

@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
 
 require 'openssl'
-include OpenSSL::X509
 
 def cert2text(cert_str)
-  [Certificate, CRL, Request].each do |klass|
+  [
+    OpenSSL::X509::Certificate,
+    OpenSSL::X509::CRL,
+    OpenSSL::X509::Request,
+  ].each do |klass|
     begin
       puts klass.new(cert_str).to_text
       return

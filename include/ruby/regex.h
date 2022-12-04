@@ -1,7 +1,6 @@
 #ifndef ONIGURUMA_REGEX_H                            /*-*-C++-*-vi:se ft=cpp:*/
 #define ONIGURUMA_REGEX_H 1
 /**
- * @file
  * @author     $Author$
  * @copyright  Copyright (C) 1993-2007 Yukihiro Matsumoto
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.

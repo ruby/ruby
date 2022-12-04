@@ -293,6 +293,21 @@ describe "The super keyword" do
 
   it "without explicit arguments passes arguments and rest arguments" do
     SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2, 3, 4, 5).should == [3, 4, 5]
+    SuperSpecs::ZSuperWithRestAndOthers::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2, 3, 4, 5).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2, 3, 4, 5).should == [2, 3, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m(1, 2).should == []
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m(1, 2).should == []
+  end
+
+  it "without explicit arguments passes arguments, rest arguments including modifications, and post arguments" do
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [1, 14, 3]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2, 3, 4, 5).should == [2, 14, 4]
+    SuperSpecs::ZSuperWithRestAndPost::B.new.m_modified(1, 2).should == [nil, 14]
+    SuperSpecs::ZSuperWithRestOthersAndPost::B.new.m_modified(1, 2).should == [nil, 14]
   end
 
   it "without explicit arguments passes arguments and rest arguments including any modifications" do

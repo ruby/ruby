@@ -5,25 +5,13 @@ require_relative 'fixtures/classes'
 # TODO: Add missing String#[]= specs:
 #   String#[re, idx] = obj
 
-describe "String#[]= with Fixnum index" do
+describe "String#[]= with Integer index" do
   it "replaces the char at idx with other_str" do
     a = "hello"
     a[0] = "bam"
     a.should == "bamello"
     a[-2] = ""
     a.should == "bamelo"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other_str is tainted" do
-      a = "hello"
-      a[0] = "".taint
-      a.should.tainted?
-
-      a = "hello"
-      a[0] = "x".taint
-      a.should.tainted?
-    end
   end
 
   it "raises an IndexError without changing self if idx is outside of self" do
@@ -85,7 +73,7 @@ describe "String#[]= with Fixnum index" do
     -> { "test"[1] = nil       }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if passed a Fixnum replacement" do
+  it "raises a TypeError if passed an Integer replacement" do
     -> { "abc"[1] = 65 }.should raise_error(TypeError)
   end
 
@@ -102,7 +90,7 @@ describe "String#[]= with Fixnum index" do
     str.should == "あa"
   end
 
-  it "raises a TypeError if #to_int does not return an Fixnum" do
+  it "raises a TypeError if #to_int does not return an Integer" do
     index = mock("string element set")
     index.should_receive(:to_int).and_return('1')
 
@@ -139,6 +127,12 @@ describe "String#[]= with Fixnum index" do
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0] = rep
     str.encoding.should equal(Encoding::BINARY)
+  end
+
+  it "updates the string to a compatible encoding" do
+    str = "  "
+    str[1] = [0xB9].pack("C*")
+    str.encoding.should == Encoding::ASCII_8BIT
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -243,7 +237,7 @@ describe "String#[]= with a Regexp index" do
       str.should == "axc"
     end
 
-    it "raises a TypeError if #to_int does not return a Fixnum" do
+    it "raises a TypeError if #to_int does not return an Integer" do
       ref = mock("string element set regexp ref")
       ref.should_receive(:to_int).and_return(nil)
 
@@ -363,11 +357,11 @@ describe "String#[]= with a Range index" do
   end
 
   it "raises a RangeError if negative Range begin is out of range" do
-    -> { "abc"[-4..-2] = "x" }.should raise_error(RangeError)
+    -> { "abc"[-4..-2] = "x" }.should raise_error(RangeError, "-4..-2 out of range")
   end
 
   it "raises a RangeError if positive Range begin is greater than String size" do
-    -> { "abc"[4..2] = "x" }.should raise_error(RangeError)
+    -> { "abc"[4..2] = "x" }.should raise_error(RangeError, "4..2 out of range")
   end
 
   it "uses the Range end as an index rather than a count" do
@@ -438,7 +432,7 @@ describe "String#[]= with a Range index" do
   end
 end
 
-describe "String#[]= with Fixnum index, count" do
+describe "String#[]= with Integer index, count" do
   it "starts at idx and overwrites count characters before inserting the rest of other_str" do
     a = "hello"
     a[0, 2] = "xx"
@@ -485,18 +479,6 @@ describe "String#[]= with Fixnum index, count" do
     a = "hello"
     a[5, 0] = "bob"
     a.should == "hellobob"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other_str is tainted" do
-      a = "hello"
-      a[0, 0] = "".taint
-      a.should.tainted?
-
-      a = "hello"
-      a[1, 4] = "x".taint
-      a.should.tainted?
-    end
   end
 
   it "calls #to_int to convert the index and count objects" do

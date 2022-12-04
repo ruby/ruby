@@ -27,4 +27,10 @@ describe "StringScanner#search_full" do
     @s.search_full(/This/, true, true).should == "This"
     @s.pos.should == 4
   end
+
+  it "raises TypeError if given a String" do
+    -> {
+      @s.search_full('T', true, true)
+    }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+  end
 end

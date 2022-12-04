@@ -39,18 +39,6 @@ describe :string_concat, shared: true do
     str.should be_an_instance_of(StringSpecs::MyString)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints self if other is tainted" do
-      "x".send(@method, "".taint).should.tainted?
-      "x".send(@method, "y".taint).should.tainted?
-    end
-
-    it "untrusts self if other is untrusted" do
-      "x".send(@method, "".untrust).should.untrusted?
-      "x".send(@method, "y".untrust).should.untrusted?
-    end
-  end
-
   describe "with Integer" do
     it "concatenates the argument interpreted as a codepoint" do
       b = "".send(@method, 33)

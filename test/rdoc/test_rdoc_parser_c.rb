@@ -101,6 +101,31 @@ class TestRDocParserC < RDoc::TestCase
     end
   end
 
+  def test_known_classes
+    RDoc::KNOWN_CLASSES.each do |var, name|
+      case name
+      when "Refinement"
+        next unless defined?(Refinement)
+      when "RubyVM"
+        next unless defined?(RubyVM)
+      when "Bignum", "Fixnum", "Data", "Socket", /\A(?![A-Z])/
+        next
+      end
+      obj = Object.const_get(name)
+      assert_equal obj.name, name
+      case var
+      when /\Arb_c/
+        assert_kind_of Class, obj
+      when /\Arb_m/
+        assert_kind_of Module, obj
+      when /\Arb_e/
+        assert_operator obj, :<=, Exception
+      else
+        raise "unknown prefix: #{var} => #{name}"
+      end
+    end
+  end
+
   def test_initialize
     some_ext        = @top_level.add_class RDoc::NormalClass, 'SomeExt'
                       @top_level.add_class RDoc::SingleClass, 'SomeExtSingle'
@@ -132,7 +157,7 @@ class TestRDocParserC < RDoc::TestCase
     assert_equal expected, known_classes
   end
 
-  def test_do_attr_rb_attr
+  def assert_do_attr(flags)
     content = <<-EOF
 void Init_Blah(void) {
   cBlah = rb_define_class("Blah", rb_cObject);
@@ -140,17 +165,17 @@ void Init_Blah(void) {
   /*
    * This is an accessor
    */
-  rb_attr(cBlah, rb_intern("accessor"), 1, 1, Qfalse);
+  #{yield "cBlah", "accessor", flags[1], flags[1]};
 
   /*
    * This is a reader
    */
-  rb_attr(cBlah, rb_intern("reader"), 1, 0, Qfalse);
+  #{yield "cBlah", "reader", flags[1], flags[0]};
 
   /*
    * This is a writer
    */
-  rb_attr(cBlah, rb_intern("writer"), 0, 1, Qfalse);
+  #{yield "cBlah", "writer", flags[0], flags[1]};
 }
     EOF
 
@@ -176,72 +201,21 @@ void Init_Blah(void) {
     assert_equal 'This is a writer', writer.comment.text
   end
 
-  def test_do_attr_rb_attr_2
-    content = <<-EOF
-void Init_Blah(void) {
-  cBlah = rb_define_class("Blah", rb_cObject);
-
-  /*
-   * This is an accessor
-   */
-  rb_attr(cBlah, rb_intern_const("accessor"), 1, 1, Qfalse);
-
-  /*
-   * This is a reader
-   */
-  rb_attr(cBlah, rb_intern_const("reader"), 1, 0, Qfalse);
-
-  /*
-   * This is a writer
-   */
-  rb_attr(cBlah, rb_intern_const("writer"), 0, 1, Qfalse);
-}
-    EOF
-
-    klass = util_get_class content, 'cBlah'
-
-    attrs = klass.attributes
-    assert_equal 3, attrs.length, attrs.inspect
-
-    accessor = attrs.shift
-    assert_equal 'accessor',            accessor.name
-    assert_equal 'RW',                  accessor.rw
-    assert_equal 'This is an accessor', accessor.comment.text
-    assert_equal @top_level,            accessor.file
-
-    reader = attrs.shift
-    assert_equal 'reader',           reader.name
-    assert_equal 'R',                reader.rw
-    assert_equal 'This is a reader', reader.comment.text
-
-    writer = attrs.shift
-    assert_equal 'writer',           writer.name
-    assert_equal 'W',                writer.rw
-    assert_equal 'This is a writer', writer.comment.text
-  end
-
-  def test_do_attr_rb_define_attr
-    content = <<-EOF
-void Init_Blah(void) {
-  cBlah = rb_define_class("Blah", rb_cObject);
-
-  /*
-   * This is an accessor
-   */
-  rb_define_attr(cBlah, "accessor", 1, 1);
-}
-    EOF
-
-    klass = util_get_class content, 'cBlah'
-
-    attrs = klass.attributes
-    assert_equal 1, attrs.length, attrs.inspect
-
-    accessor = attrs.shift
-    assert_equal 'accessor',            accessor.name
-    assert_equal 'RW',                  accessor.rw
-    assert_equal 'This is an accessor', accessor.comment.text
-    assert_equal @top_level,            accessor.file
+  {
+    num: %w[0 1],
+    macro: %w[FALSE TRUE],
+    ruby: %w[Qfalse Qtrue],
+    bool: %w[false true],
+  }.each_pair do |name, values|
+    define_method("test_do_attr:rb_attr:intern:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_attr(#{c}, rb_intern("#{name}"), #{r}, #{w}, Qfalse)]}
+    end
+    define_method("test_do_attr:rb_attr:intern_const:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_attr(#{c}, rb_intern_const("#{name}"), #{r}, #{w}, Qfalse)]}
+    end
+    define_method("test_do_attr:rb_define_attr:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_define_attr(#{c}, "#{name}", #{r}, #{w})]}
+    end
   end
 
   def test_do_aliases
@@ -355,6 +329,47 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
 /* Document-class: Foo
  * this is the Foo class
  */
+VALUE cFoo = rb_struct_define(
+        "Foo",
+        "some", "various", "fields", NULL);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal "this is the Foo class", klass.comment.text
+
+    attributes = klass.attributes
+    assert_equal 3, attributes.size, -> {attributes}
+    ["some", "various", "fields"].zip(attributes) do |name, attr|
+      assert_equal RDoc::Attr.new("", name, "RW", ""), attr
+    end
+  end
+
+  def test_do_classes_struct_under
+    content = <<-EOF
+/* Document-class: Kernel::Foo
+ * this is the Foo class under Kernel
+ */
+VALUE cFoo = rb_struct_define_under(
+        rb_mKernel, "Foo",
+        "some", "various", "fields", NULL);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal 'Kernel::Foo', klass.full_name
+    assert_equal "this is the Foo class under Kernel", klass.comment.text
+
+    attributes = klass.attributes
+    assert_equal 3, attributes.size, -> {attributes}
+    ["some", "various", "fields"].zip(attributes) do |name, attr|
+      assert_equal RDoc::Attr.new("", name, "RW", ""), attr
+    end
+  end
+
+  def test_do_classes_struct_without_accessor
+    content = <<-EOF
+/* Document-class: Foo
+ * this is the Foo class
+ */
 VALUE cFoo = rb_struct_define_without_accessor(
         "Foo", rb_cObject, foo_alloc,
         "some", "various", "fields", NULL);
@@ -362,6 +377,23 @@ VALUE cFoo = rb_struct_define_without_accessor(
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo class", klass.comment.text
+    assert_empty klass.attributes
+  end
+
+  def test_do_classes_struct_without_accessor_under
+    content = <<-EOF
+/* Document-class: Kernel::Foo
+ * this is the Foo class under Kernel
+ */
+VALUE cFoo = rb_struct_define_without_accessor_under(
+        rb_mKernel, "Foo", rb_cObject, foo_alloc,
+        "some", "various", "fields", NULL);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal 'Kernel::Foo', klass.full_name
+    assert_equal "this is the Foo class under Kernel", klass.comment.text
+    assert_empty klass.attributes
   end
 
   def test_do_classes_class_under
@@ -594,6 +626,17 @@ void Init_File(void) {
     assert_equal 'LOCK_SH',          constant.name
     assert_equal 'INT2FIX(LOCK_SH)', constant.value
     assert_equal 'Shared lock',      constant.comment.text
+
+    @parser = util_parser <<-EOF
+void Init_File(void) {
+  rb_cFile = rb_define_class("File", rb_cIO);
+  rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
+}
+    EOF
+    @parser.do_classes_and_modules
+    @parser.do_constants
+
+    assert_equal 'File::Constants',  klass.full_name
   end
 
   def test_do_includes
@@ -844,6 +887,23 @@ bar = rb_define_class("MyClassName2", rb_cObject);
  */
 void
 Init_Foo(void) {
+  VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "a comment for class Foo", klass.comment.text
+  end
+
+
+  def test_find_class_comment_initvm
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ */
+void
+InitVM_Foo(void) {
   VALUE foo = rb_define_class("Foo", rb_cObject);
 }
     EOF
@@ -1600,6 +1660,39 @@ Init_IO(void) {
     assert_equal "Method Comment!   ", read_method.comment.text
     assert_equal "rb_io_s_read", read_method.c_function
     assert read_method.singleton
+    assert_nil read_method.section.title
+  end
+
+  def test_define_method_with_category
+    content = <<-EOF
+/* :category: Awesome Methods
+   Method Comment!
+ */
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+}
+
+void
+Init_IO(void) {
+    /*
+     * a comment for class Foo on rb_define_class
+     */
+    VALUE rb_cIO = rb_define_class("IO", rb_cObject);
+    rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'rb_cIO'
+    read_method = klass.method_list.first
+    assert_equal "read", read_method.name
+    assert_equal "Method Comment!", read_method.comment.text.strip
+    assert_equal "rb_io_s_read", read_method.c_function
+    assert read_method.singleton
+    assert_equal "Awesome Methods", read_method.section.title
   end
 
   def test_define_method_dynamically
@@ -1928,6 +2021,39 @@ void d(void) {
 
     assert_equal %w[A A::B A::B::C],
                  @store.all_classes_and_modules.map { |m| m.full_name }.sort
+  end
+
+  def test_markup_format_default
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This should be interpreted in the default format.
+   */
+  rb_attr(cBlah, rb_intern("default_format"), 1, 1, Qfalse);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+    assert_equal("rdoc", klass.attributes.find {|a| a.name == "default_format"}.comment.format)
+  end
+
+  def test_markup_format_override
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This should be interpreted in the default format.
+   */
+  rb_attr(cBlah, rb_intern("default_format"), 1, 1, Qfalse);
+}
+    EOF
+
+    @options.markup = "markdown"
+    klass = util_get_class content, 'cBlah'
+    assert_equal("markdown", klass.attributes.find {|a| a.name == "default_format"}.comment.format)
   end
 
   def util_get_class content, name = nil

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'rubygems/local_remote_options'
-require 'rubygems/spec_fetcher'
-require 'rubygems/version_option'
-require 'rubygems/text'
+require_relative "local_remote_options"
+require_relative "spec_fetcher"
+require_relative "version_option"
+require_relative "text"
 
 module Gem::QueryUtils
 
@@ -12,41 +12,41 @@ module Gem::QueryUtils
   include Gem::VersionOption
 
   def add_query_options
-    add_option('-i', '--[no-]installed',
-               'Check for installed gem') do |value, options|
+    add_option("-i", "--[no-]installed",
+               "Check for installed gem") do |value, options|
       options[:installed] = value
     end
 
-    add_option('-I', 'Equivalent to --no-installed') do |value, options|
+    add_option("-I", "Equivalent to --no-installed") do |value, options|
       options[:installed] = false
     end
 
     add_version_option command, "for use with --installed"
 
-    add_option('-d', '--[no-]details',
-               'Display detailed information of gem(s)') do |value, options|
+    add_option("-d", "--[no-]details",
+               "Display detailed information of gem(s)") do |value, options|
       options[:details] = value
     end
 
-    add_option('--[no-]versions',
-               'Display only gem names') do |value, options|
+    add_option("--[no-]versions",
+               "Display only gem names") do |value, options|
       options[:versions] = value
       options[:details] = false unless value
     end
 
-    add_option('-a', '--all',
-               'Display all gem versions') do |value, options|
+    add_option("-a", "--all",
+               "Display all gem versions") do |value, options|
       options[:all] = value
     end
 
-    add_option('-e', '--exact',
-               'Name of gem(s) to query on matches the',
-               'provided STRING') do |value, options|
+    add_option("-e", "--exact",
+               "Name of gem(s) to query on matches the",
+               "provided STRING") do |value, options|
       options[:exact] = value
     end
 
-    add_option('--[no-]prerelease',
-               'Display prerelease versions') do |value, options|
+    add_option("--[no-]prerelease",
+               "Display prerelease versions") do |value, options|
       options[:prerelease] = value
     end
 
@@ -54,23 +54,14 @@ module Gem::QueryUtils
   end
 
   def defaults_str # :nodoc:
-    "--local --name-matches // --no-details --versions --no-installed"
-  end
-
-  def description # :nodoc:
-    <<-EOF
-The query command is the basis for the list and search commands.
-
-You should really use the list and search commands instead.  This command
-is too hard to use.
-    EOF
+    "--local --no-details --versions --no-installed"
   end
 
   def execute
-    gem_names = Array(options[:name])
-
-    if !args.empty?
-      gem_names = options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
+    gem_names = if args.empty?
+      [options[:name]]
+    else
+      options[:exact] ? args.map {|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map {|arg| /#{arg}/i }
     end
 
     terminate_interaction(check_installed_gems(gem_names)) if check_installed_gems?
@@ -105,7 +96,7 @@ is too hard to use.
   end
 
   def gem_name?
-    !options[:name].source.empty?
+    !options[:name].nil?
   end
 
   def prerelease
@@ -121,7 +112,7 @@ is too hard to use.
   end
 
   def display_header(type)
-    if (ui.outs.tty? and Gem.configuration.verbose) or both?
+    if (ui.outs.tty? && Gem.configuration.verbose) || both?
       say
       say "*** #{type} GEMS ***"
       say
@@ -138,12 +129,10 @@ is too hard to use.
     display_header("LOCAL")
 
     specs = Gem::Specification.find_all do |s|
-      s.name =~ name and req =~ s.version
-    end
+      name_matches = name ? s.name =~ name : true
+      version_matches = show_prereleases? || !s.version.prerelease?
 
-    dep = Gem::Deprecate.skip_during { Gem::Dependency.new name, req }
-    specs.select! do |s|
-      dep.match?(s.name, s.version, show_prereleases?)
+      name_matches && version_matches
     end
 
     spec_tuples = specs.map do |spec|
@@ -158,19 +147,19 @@ is too hard to use.
 
     fetcher = Gem::SpecFetcher.fetcher
 
-    spec_tuples = if name.respond_to?(:source) && name.source.empty?
-                    fetcher.detect(specs_type) { true }
-                  else
-                    fetcher.detect(specs_type) do |name_tuple|
-                      name === name_tuple.name
-                    end
-                  end
+    spec_tuples = if name.nil?
+      fetcher.detect(specs_type) { true }
+    else
+      fetcher.detect(specs_type) do |name_tuple|
+        name === name_tuple.name && options[:version].satisfied_by?(name_tuple.version)
+      end
+    end
 
     output_query_results(spec_tuples)
   end
 
   def specs_type
-    if options[:all]
+    if options[:all] || options[:version].specific?
       if options[:prerelease]
         :complete
       else
@@ -187,7 +176,7 @@ is too hard to use.
   # Check if gem +name+ version +version+ is installed.
 
   def installed?(name, req = Gem::Requirement.default)
-    Gem::Specification.any? {|s| s.name =~ name and req =~ s.version }
+    Gem::Specification.any? {|s| s.name =~ name && req =~ s.version }
   end
 
   def output_query_results(spec_tuples)
@@ -253,7 +242,7 @@ is too hard to use.
     return unless options[:versions]
 
     list =
-      if platforms.empty? or options[:details]
+      if platforms.empty? || options[:details]
         name_tuples.map {|n| n.version }.uniq
       else
         platforms.sort.reverse.map do |version, pls|
@@ -268,7 +257,7 @@ is too hard to use.
 
           if pls != [Gem::Platform::RUBY]
             platform_list = [pls.delete(Gem::Platform::RUBY), *pls.sort].compact
-            out = platform_list.unshift(out).join(' ')
+            out = platform_list.unshift(out).join(" ")
           end
 
           out
@@ -295,21 +284,21 @@ is too hard to use.
 
   def spec_authors(entry, spec)
     authors = "Author#{spec.authors.length > 1 ? 's' : ''}: ".dup
-    authors << spec.authors.join(', ')
+    authors << spec.authors.join(", ")
     entry << format_text(authors, 68, 4)
   end
 
   def spec_homepage(entry, spec)
-    return if spec.homepage.nil? or spec.homepage.empty?
+    return if spec.homepage.nil? || spec.homepage.empty?
 
     entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
   end
 
   def spec_license(entry, spec)
-    return if spec.license.nil? or spec.license.empty?
+    return if spec.license.nil? || spec.license.empty?
 
     licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: ".dup
-    licenses << spec.licenses.join(', ')
+    licenses << spec.licenses.join(", ")
     entry << "\n" << format_text(licenses, 68, 4)
   end
 
@@ -317,15 +306,15 @@ is too hard to use.
     return unless spec.loaded_from
 
     if specs.length == 1
-      default = spec.default_gem? ? ' (default)' : nil
+      default = spec.default_gem? ? " (default)" : nil
       entry << "\n" << "    Installed at#{default}: #{spec.base_dir}"
     else
-      label = 'Installed at'
+      label = "Installed at"
       specs.each do |s|
         version = s.version.to_s
-        version << ', default' if s.default_gem?
+        version << ", default" if s.default_gem?
         entry << "\n" << "    #{label} (#{version}): #{s.base_dir}"
-        label = ' ' * label.length
+        label = " " * label.length
       end
     end
   end
@@ -338,7 +327,7 @@ is too hard to use.
     return unless non_ruby
 
     if platforms.length == 1
-      title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
+      title = platforms.values.length == 1 ? "Platform" : "Platforms"
       entry << "    #{title}: #{platforms.values.sort.join(', ')}\n"
     else
       entry << "    Platforms:\n"
@@ -347,7 +336,7 @@ is too hard to use.
 
       sorted_platforms.each do |version, pls|
         label = "        #{version}: "
-        data = format_text pls.sort.join(', '), 68, label.length
+        data = format_text pls.sort.join(", "), 68, label.length
         data[0, label.length] = label
         entry << data << "\n"
       end

@@ -1,4 +1,4 @@
-# -*- Autoconf -*-
+dnl -*- Autoconf -*-
 AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     AS_CASE(["x${CONFIGURE_TTY}"],
@@ -9,6 +9,7 @@ AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
                        [configure_tty=0])])
     AS_IF([test $configure_tty -eq 1], [
 	msg_begin="`tput smso 2>/dev/null`"
+	AS_IF([test -z "$msg_begin"], [msg_begin="`tput so 2>/dev/null`"])
 	AS_CASE(["$msg_begin"], ['@<:@'*m],
 	    [msg_begin="`echo "$msg_begin" | sed ['s/[0-9]*m$//']`"
 	    msg_checking="${msg_begin}33m"

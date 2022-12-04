@@ -200,7 +200,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
     outargv = Qnil;
     if (is_outarg == Qtrue) {
-	outargv = rb_ary_new();
+        outargv = rb_ary_new();
         rb_ary_push(args, outargv);
     }
 
@@ -413,15 +413,15 @@ hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS 
                                      bstrs, pdispparams->cArgs + 1,
                                      &len);
     if (FAILED(hr))
-	return;
+        return;
 
     for (i = 0; i < len - 1; i++) {
-	key = WC2VSTR(bstrs[i + 1]);
+        key = WC2VSTR(bstrs[i + 1]);
         val = rb_hash_aref(hash, RB_UINT2NUM(i));
-	if (val == Qnil)
-	    val = rb_hash_aref(hash, key);
-	if (val == Qnil)
-	    val = rb_hash_aref(hash, rb_str_intern(key));
+        if (val == Qnil)
+            val = rb_hash_aref(hash, key);
+        if (val == Qnil)
+            val = rb_hash_aref(hash, rb_str_intern(key));
         pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
         ole_val2ptr_variant(val, pvar);
     }
@@ -433,7 +433,7 @@ hash2result(VALUE hash)
     VALUE ret = Qnil;
     ret = rb_hash_aref(hash, rb_str_new2("return"));
     if (ret == Qnil)
-	ret = rb_hash_aref(hash, rb_str_intern(rb_str_new2("return")));
+        ret = rb_hash_aref(hash, rb_str_intern(rb_str_new2("return")));
     return ret;
 }
 
@@ -610,7 +610,7 @@ find_coclass(
 
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, NULL);
     if (FAILED(hr)) {
-	return hr;
+        return hr;
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count && !found; i++) {
@@ -1264,7 +1264,8 @@ Init_win32ole_event(void)
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");
-    cWIN32OLE_EVENT = rb_define_class("WIN32OLE_EVENT", rb_cObject);
+    cWIN32OLE_EVENT = rb_define_class_under(cWIN32OLE, "Event", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_EVENT", cWIN32OLE_EVENT);
     rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);

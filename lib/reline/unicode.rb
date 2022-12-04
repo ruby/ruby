@@ -35,6 +35,17 @@ class Reline::Unicode
   }
   EscapedChars = EscapedPairs.keys.map(&:chr)
 
+  NON_PRINTING_START = "\1"
+  NON_PRINTING_END = "\2"
+  CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
+  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  WIDTH_SCANNER = /\G(?:(#{NON_PRINTING_START})|(#{NON_PRINTING_END})|(#{CSI_REGEXP})|(#{OSC_REGEXP})|(\X))/o
+  NON_PRINTING_START_INDEX = 0
+  NON_PRINTING_END_INDEX = 1
+  CSI_REGEXP_INDEX = 2
+  OSC_REGEXP_INDEX = 3
+  GRAPHEME_CLUSTER_INDEX = 4
+
   def self.get_mbchar_byte_size_by_first_char(c)
     # Checks UTF-8 character byte size
     case c.ord
@@ -66,23 +77,151 @@ class Reline::Unicode
     }.join
   end
 
+  require 'reline/unicode/east_asian_width'
+
+  HalfwidthDakutenHandakuten = /[\u{FF9E}\u{FF9F}]/
+
+  MBCharWidthRE = /
+    (?<width_2_1>
+      [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
+    )
+  | (?<width_3>^\u{2E3B}) (?# THREE-EM DASH)
+  | (?<width_0>^\p{M})
+  | (?<width_2_2>
+      #{ EastAsianWidth::TYPE_F }
+    | #{ EastAsianWidth::TYPE_W }
+    )
+  | (?<width_1>
+      #{ EastAsianWidth::TYPE_H }
+    | #{ EastAsianWidth::TYPE_NA }
+    | #{ EastAsianWidth::TYPE_N }
+    )(?!#{ HalfwidthDakutenHandakuten })
+  | (?<width_2_3>
+      (?: #{ EastAsianWidth::TYPE_H }
+        | #{ EastAsianWidth::TYPE_NA }
+        | #{ EastAsianWidth::TYPE_N })
+      #{ HalfwidthDakutenHandakuten }
+    )
+  | (?<ambiguous_width>
+      #{EastAsianWidth::TYPE_A}
+    )
+  /x
+
   def self.get_mbchar_width(mbchar)
-    case mbchar.encode(Encoding::UTF_8)
-    when *EscapedChars # ^ + char, such as ^M, ^H, ^[, ...
-      2
-    when /^\u{2E3B}/ # THREE-EM DASH
-      3
-    when /^\p{M}/
-      0
-    when EastAsianWidth::TYPE_A
-      Reline.ambiguous_width
-    when EastAsianWidth::TYPE_F, EastAsianWidth::TYPE_W
-      2
-    when EastAsianWidth::TYPE_H, EastAsianWidth::TYPE_NA, EastAsianWidth::TYPE_N
-      1
+    ord = mbchar.ord
+    if (0x00 <= ord and ord <= 0x1F) # in EscapedPairs
+      return 2
+    elsif (0x20 <= ord and ord <= 0x7E) # printable ASCII chars
+      return 1
+    end
+    m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
+    case
+    when m.nil? then 1 # TODO should be U+FFFD � REPLACEMENT CHARACTER
+    when m[:width_2_1], m[:width_2_2], m[:width_2_3] then 2
+    when m[:width_3] then 3
+    when m[:width_0] then 0
+    when m[:width_1] then 1
+    when m[:ambiguous_width] then Reline.ambiguous_width
     else
       nil
     end
+  end
+
+  def self.calculate_width(str, allow_escape_code = false)
+    if allow_escape_code
+      width = 0
+      rest = str.encode(Encoding::UTF_8)
+      in_zero_width = false
+      rest.scan(WIDTH_SCANNER) do |gc|
+        case
+        when gc[NON_PRINTING_START_INDEX]
+          in_zero_width = true
+        when gc[NON_PRINTING_END_INDEX]
+          in_zero_width = false
+        when gc[CSI_REGEXP_INDEX], gc[OSC_REGEXP_INDEX]
+        when gc[GRAPHEME_CLUSTER_INDEX]
+          gc = gc[GRAPHEME_CLUSTER_INDEX]
+          unless in_zero_width
+            width += get_mbchar_width(gc)
+          end
+        end
+      end
+      width
+    else
+      str.encode(Encoding::UTF_8).grapheme_clusters.inject(0) { |w, gc|
+        w + get_mbchar_width(gc)
+      }
+    end
+  end
+
+  def self.split_by_width(str, max_width, encoding = str.encoding)
+    lines = [String.new(encoding: encoding)]
+    height = 1
+    width = 0
+    rest = str.encode(Encoding::UTF_8)
+    in_zero_width = false
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case
+      when gc[NON_PRINTING_START_INDEX]
+        in_zero_width = true
+      when gc[NON_PRINTING_END_INDEX]
+        in_zero_width = false
+      when gc[CSI_REGEXP_INDEX]
+        lines.last << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        lines.last << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        unless in_zero_width
+          mbchar_width = get_mbchar_width(gc)
+          if (width += mbchar_width) > max_width
+            width = mbchar_width
+            lines << nil
+            lines << String.new(encoding: encoding)
+            height += 1
+          end
+        end
+        lines.last << gc
+      end
+    end
+    # The cursor moves to next line in first
+    if width == max_width
+      lines << nil
+      lines << String.new(encoding: encoding)
+      height += 1
+    end
+    [lines, height]
+  end
+
+  # Take a chunk of a String cut by width with escape sequences.
+  def self.take_range(str, start_col, max_width, encoding = str.encoding)
+    chunk = String.new(encoding: encoding)
+    total_width = 0
+    rest = str.encode(Encoding::UTF_8)
+    in_zero_width = false
+    rest.scan(WIDTH_SCANNER) do |gc|
+      case
+      when gc[NON_PRINTING_START_INDEX]
+        in_zero_width = true
+      when gc[NON_PRINTING_END_INDEX]
+        in_zero_width = false
+      when gc[CSI_REGEXP_INDEX]
+        chunk << gc[CSI_REGEXP_INDEX]
+      when gc[OSC_REGEXP_INDEX]
+        chunk << gc[OSC_REGEXP_INDEX]
+      when gc[GRAPHEME_CLUSTER_INDEX]
+        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        if in_zero_width
+          chunk << gc
+        else
+          mbchar_width = get_mbchar_width(gc)
+          total_width += mbchar_width
+          break if (start_col + max_width) < total_width
+          chunk << gc if start_col < total_width
+        end
+      end
+    end
+    chunk
   end
 
   def self.get_next_mbchar_size(line, byte_pointer)
@@ -359,8 +498,8 @@ class Reline::Unicode
     [byte_size, width]
   end
 
-  def self.vi_forward_word(line, byte_pointer)
-    if (line.bytesize - 1) > byte_pointer
+  def self.vi_forward_word(line, byte_pointer, drop_terminate_spaces = false)
+    if line.bytesize > byte_pointer
       size = get_next_mbchar_size(line, byte_pointer)
       mbchar = line.byteslice(byte_pointer, size)
       if mbchar =~ /\w/
@@ -375,7 +514,7 @@ class Reline::Unicode
     else
       return [0, 0]
     end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
+    while line.bytesize > (byte_pointer + byte_size)
       size = get_next_mbchar_size(line, byte_pointer + byte_size)
       mbchar = line.byteslice(byte_pointer + byte_size, size)
       case started_by
@@ -389,7 +528,8 @@ class Reline::Unicode
       width += get_mbchar_width(mbchar)
       byte_size += size
     end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
+    return [byte_size, width] if drop_terminate_spaces
+    while line.bytesize > (byte_pointer + byte_size)
       size = get_next_mbchar_size(line, byte_pointer + byte_size)
       mbchar = line.byteslice(byte_pointer + byte_size, size)
       break if mbchar =~ /\S/
@@ -523,5 +663,3 @@ class Reline::Unicode
     [byte_size, width]
   end
 end
-
-require 'reline/unicode/east_asian_width'

@@ -66,6 +66,11 @@ VALUE sws_change_struct(VALUE self, VALUE obj, VALUE new_val) {
   return Qnil;
 }
 
+VALUE sws_rb_check_type(VALUE self, VALUE obj, VALUE other) {
+  rb_check_type(obj, TYPE(other));
+  return Qtrue;
+}
+
 void Init_data_spec(void) {
   VALUE cls = rb_define_class("CApiAllocSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_func);
@@ -76,6 +81,7 @@ void Init_data_spec(void) {
   rb_define_method(cls, "get_struct_rdata", sws_get_struct_rdata, 1);
   rb_define_method(cls, "get_struct_data_ptr", sws_get_struct_data_ptr, 1);
   rb_define_method(cls, "change_struct", sws_change_struct, 2);
+  rb_define_method(cls, "rb_check_type", sws_rb_check_type, 2);
 }
 
 #ifdef __cplusplus

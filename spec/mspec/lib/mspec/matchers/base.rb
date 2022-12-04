@@ -16,15 +16,24 @@ class SpecPositiveOperatorMatcher < BasicObject
   end
 
   def ==(expected)
-    method_missing(:==, expected)
+    result = @actual == expected
+    unless result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :==, expected, result, "to be truthy")
+    end
   end
 
   def !=(expected)
-    method_missing(:!=, expected)
+    result = @actual != expected
+    unless result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :!=, expected, result, "to be truthy")
+    end
   end
 
   def equal?(expected)
-    method_missing(:equal?, expected)
+    result = @actual.equal?(expected)
+    unless result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :equal?, expected, result, "to be truthy")
+    end
   end
 
   def method_missing(name, *args, &block)
@@ -41,15 +50,24 @@ class SpecNegativeOperatorMatcher < BasicObject
   end
 
   def ==(expected)
-    method_missing(:==, expected)
+    result = @actual == expected
+    if result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :==, expected, result, "to be falsy")
+    end
   end
 
   def !=(expected)
-    method_missing(:!=, expected)
+    result = @actual != expected
+    if result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :!=, expected, result, "to be falsy")
+    end
   end
 
   def equal?(expected)
-    method_missing(:equal?, expected)
+    result = @actual.equal?(expected)
+    if result
+      ::SpecExpectation.fail_single_arg_predicate(@actual, :equal?, expected, result, "to be falsy")
+    end
   end
 
   def method_missing(name, *args, &block)

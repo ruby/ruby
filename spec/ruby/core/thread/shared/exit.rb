@@ -66,6 +66,26 @@ describe :thread_exit, shared: true do
     ScratchPad.recorded.should == nil
   end
 
+  it "does not reset $!" do
+    ScratchPad.record []
+
+    exc = RuntimeError.new("foo")
+    thread = Thread.new do
+      begin
+        raise exc
+      ensure
+        ScratchPad << $!
+        begin
+          Thread.current.send(@method)
+        ensure
+          ScratchPad << $!
+        end
+      end
+    end
+    thread.join
+    ScratchPad.recorded.should == [exc, exc]
+  end
+
   it "cannot be rescued" do
     thread = Thread.new do
       begin
@@ -73,7 +93,7 @@ describe :thread_exit, shared: true do
       rescue Exception
         ScratchPad.record :in_rescue
       end
-     ScratchPad.record :end_of_thread_block
+      ScratchPad.record :end_of_thread_block
     end
 
     thread.join

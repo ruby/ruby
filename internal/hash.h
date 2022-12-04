@@ -1,7 +1,6 @@
 #ifndef INTERNAL_HASH_H                                  /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_HASH_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -54,7 +53,7 @@ struct RHash {
     } ar_hint;
 };
 
-#define RHASH(obj) (R_CAST(RHash)(obj))
+#define RHASH(obj) ((struct RHash *)(obj))
 
 #ifdef RHASH_IFNONE
 # undef RHASH_IFNONE
@@ -83,6 +82,9 @@ VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
+extern st_table *rb_hash_st_table(VALUE hash);
+VALUE rb_ident_hash_new_with_size(st_index_t size);
+
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
 static inline size_t RHASH_SIZE(VALUE h);
@@ -116,6 +118,8 @@ st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
 MJIT_SYMBOL_EXPORT_END
 
+VALUE rb_hash_compare_by_id(VALUE hash);
+
 #if 0 /* for debug */
 
 static inline bool
@@ -135,7 +139,6 @@ RHASH_AR_TABLE(VALUE h)
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    extern st_table *rb_hash_st_table(VALUE hash);
     return rb_hash_st_table(h)
 }
 

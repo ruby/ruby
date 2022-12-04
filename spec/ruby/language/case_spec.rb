@@ -156,6 +156,15 @@ describe "The 'case'-construct" do
     end.should == "foo"
   end
 
+  it "tests an empty array" do
+    case []
+    when []
+      'foo'
+    else
+      'bar'
+    end.should == 'foo'
+  end
+
   it "expands arrays to lists of values" do
     case 'z'
     when *['a', 'b', 'c', 'd']
@@ -423,5 +432,14 @@ describe "The 'case'-construct with no target expression" do
     when (raise if 2+2 == 3; /a/)
       :called
     end.should == :called
+  end
+
+  # Homogeneous cases are often optimized to avoid === using a jump table, and should be tested separately.
+  # See https://github.com/jruby/jruby/issues/6440
+  it "handles homogeneous cases" do
+    case
+    when 1; 'foo'
+    when 2; 'bar'
+    end.should == 'foo'
   end
 end

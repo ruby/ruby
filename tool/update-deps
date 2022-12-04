@@ -20,7 +20,7 @@
 # Other usages:
 #   *  Fix makefiles using previously detected dependency problems
 #      Ex.  ruby tool/update-deps --actual-fix [file]
-#      "ruby tool/update-deps --fix" is same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
+#      "ruby tool/update-deps --fix" is the same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
 
 require 'optparse'
 require 'stringio'
@@ -88,7 +88,6 @@ result.each {|k,v|
 # They can be referenced as $(top_srcdir)/filename.
 # % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
 FILES_IN_SOURCE_DIRECTORY = %w[
-  revision.h
 ]
 
 # Files built in the build directory (except extconf.h).
@@ -120,7 +119,7 @@ FILES_NEED_VPATH = %w[
   known_errors.inc
   lex.c
   miniprelude.c
-  mjit_compile.inc
+  mjit_sp_inc.inc
   newline.c
   node_name.inc
   opt_sc.inc
@@ -129,6 +128,7 @@ FILES_NEED_VPATH = %w[
   parse.c
   parse.h
   probes.dmyh
+  revision.h
   vm.inc
   vmtc.inc
 
@@ -262,7 +262,7 @@ end
 
 def read_make_deps(cwd)
   dependencies = {}
-  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby-runner golf")
+  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby exe/ruby golf")
   File.open('update-deps.make.out.log', 'w') {|f| f.print make_p }
   File.open('update-deps.make.err.log', 'w') {|f| f.print make_p_stderr }
   if !make_p_status.success?
@@ -301,6 +301,7 @@ def read_make_deps(cwd)
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
+      next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
       dir = curdir || dirstack.last
@@ -339,7 +340,7 @@ def read_single_cc_deps(path_i, cwd)
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
-    next if /\.erb\z/ =~ dep
+    next if /\.e?rb\z/ =~ dep
     compiler_wd ||= dep
     files[dep] = true
   }
@@ -528,7 +529,20 @@ def compare_deps(make_deps, cc_deps, out=$stdout)
   }
 end
 
+def prepare_build
+  unless File.exist?("Makefile")
+    if File.exist?("autogen.sh")
+      system("./autogen.sh")
+    elsif !File.exist?("configure")
+      system("autoreconf", "-i", "-s")
+    end
+    system("./configure", "-q", "--enable-load-relative", "--prefix=/.",
+           "--disable-install-doc", "debugflags=-save-temps=obj -g")
+  end
+end
+
 def main_show(out=$stdout)
+  prepare_build
   make_deps, cc_deps = detect_dependencies(out)
   compare_deps(make_deps, cc_deps, out)
 end

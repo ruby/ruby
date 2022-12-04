@@ -7,7 +7,7 @@ describe "Class#initialize" do
 
   it "raises a TypeError when called on already initialized classes" do
     ->{
-      Fixnum.send :initialize
+      Integer.send :initialize
     }.should raise_error(TypeError)
 
     ->{

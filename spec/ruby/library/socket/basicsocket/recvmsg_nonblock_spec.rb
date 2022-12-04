@@ -114,6 +114,21 @@ describe 'BasicSocket#recvmsg_nonblock' do
     end
 
     platform_is_not :windows do
+      describe 'using a connected but not bound socket' do
+        before do
+          @server = Socket.new(family, :STREAM)
+        end
+
+        after do
+          @server.close
+        end
+
+        it "raises Errno::ENOTCONN" do
+          -> { @server.recvmsg_nonblock }.should raise_error(Errno::ENOTCONN)
+          -> { @server.recvmsg_nonblock(exception: false) }.should raise_error(Errno::ENOTCONN)
+        end
+      end
+
       describe 'using a connected socket' do
         before do
           @client = Socket.new(family, :STREAM)

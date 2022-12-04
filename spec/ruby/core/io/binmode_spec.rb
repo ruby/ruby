@@ -57,4 +57,8 @@ describe "IO#binmode?" do
     @duped = @file.dup
     @duped.binmode?.should == @file.binmode?
   end
+
+  it "raises an IOError on closed stream" do
+    -> { IOSpecs.closed_io.binmode? }.should raise_error(IOError)
+  end
 end

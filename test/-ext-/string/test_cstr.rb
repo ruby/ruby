@@ -13,13 +13,13 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   def test_long
-    s = Bug::String.new("abcdef")*100000
+    s = Bug::String.new(Bug::String.new("abcdef")*100000)
     s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
   def test_shared
-    s = Bug::String.new("abcdef")*5
+    s = Bug::String.new(Bug::String.new("abcdef")*5)
     s = s.unterminated_substring(0, 29)
     assert_equal(0, s.cstr_term, Bug4319)
   end
@@ -28,7 +28,7 @@ class Test_StringCStr < Test::Unit::TestCase
     s0 = Bug::String.new("abcdefgh"*8)
 
     [4, 4*3-1, 8*3-1, 64].each do |n|
-      s = s0[0, n]
+      s = Bug::String.new(s0[0, n])
       s.cstr_unterm('x')
       s.freeze
       assert_equal(0, s.cstr_term)
@@ -43,7 +43,11 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   def test_rb_str_new_frozen_embed
-    str = Bug::String.cstr_noembed("rbconfig.rb")
+    # "rbconfi" is the smallest "maximum embeddable string".  VWA adds
+    # a capacity field, which removes one pointer capacity for embedded objects,
+    # so if VWA is enabled, but there is only one size pool, then the
+    # maximum embeddable capacity on 32 bit machines is 8 bytes.
+    str = Bug::String.cstr_noembed("rbconfi")
     str = Bug::String.rb_str_new_frozen(str)
     assert_equal true, Bug::String.cstr_embedded?(str)
   end
@@ -67,7 +71,7 @@ class Test_StringCStr < Test::Unit::TestCase
     n = 100
     len = str.size * n
     WCHARS.each do |enc|
-      s = Bug::String.new(str.encode(enc))*n
+      s = Bug::String.new(Bug::String.new(str.encode(enc))*n)
       s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError, enc.name) {s.cstr_term}
       s.set_len(s.bytesize / 2)

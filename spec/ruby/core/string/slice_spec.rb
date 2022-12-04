@@ -94,16 +94,6 @@ describe "String#slice! with index, length" do
     a.should == "h"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.slice!(0, 0).should.tainted?
-      str.slice!(2, 1).should.tainted?
-    end
-  end
-
   it "returns nil if the given position is out of self" do
     a = "hello"
     a.slice(10, 3).should == nil
@@ -142,12 +132,21 @@ describe "String#slice! with index, length" do
     "hello".slice!(obj, obj).should == "ll"
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.slice!(0, 0).should be_an_instance_of(StringSpecs::MyString)
-    s.slice!(0, 4).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(0, 0).should be_an_instance_of(StringSpecs::MyString)
+      s.slice!(0, 4).should be_an_instance_of(StringSpecs::MyString)
+    end
   end
 
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(0, 0).should be_an_instance_of(String)
+      s.slice!(0, 4).should be_an_instance_of(String)
+    end
+  end
 
   it "returns the substring given by the character offsets" do
     "hellö there".slice!(1,0).should == ""
@@ -186,20 +185,20 @@ describe "String#slice! Range" do
     b.should == "hello"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self is tainted" do
-      str = "hello world"
-      str.taint
-
-      str.slice!(0..0).should.tainted?
-      str.slice!(2..3).should.tainted?
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(0...0).should be_an_instance_of(StringSpecs::MyString)
+      s.slice!(0..4).should be_an_instance_of(StringSpecs::MyString)
     end
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.slice!(0...0).should be_an_instance_of(StringSpecs::MyString)
-    s.slice!(0..4).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(0...0).should be_an_instance_of(String)
+      s.slice!(0..4).should be_an_instance_of(String)
+    end
   end
 
   it "calls to_int on range arguments" do
@@ -275,34 +274,20 @@ describe "String#slice! with Regexp" do
     s.should == "this is a string"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        str.slice!(//).tainted?.should == str.tainted?
-        str.slice!(/hello/).tainted?.should == str.tainted?
-
-        tainted_re = /./
-        tainted_re.taint
-
-        str.slice!(tainted_re).should.tainted?
-      end
-    end
-
-    it "doesn't taint self when regexp is tainted" do
-      s = "hello"
-      s.slice!(/./.taint)
-      s.should_not.tainted?
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(//).should be_an_instance_of(StringSpecs::MyString)
+      s.slice!(/../).should be_an_instance_of(StringSpecs::MyString)
     end
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.slice!(//).should be_an_instance_of(StringSpecs::MyString)
-    s.slice!(/../).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(//).should be_an_instance_of(String)
+      s.slice!(/../).should be_an_instance_of(String)
+    end
   end
 
   it "returns the matching portion of self with a multi byte character" do
@@ -336,30 +321,6 @@ describe "String#slice! with Regexp, index" do
     str.should == "ho here"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints resulting strings when self or regexp is tainted" do
-      strs = ["hello world"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        str.slice!(//, 0).tainted?.should == str.tainted?
-        str.slice!(/hello/, 0).tainted?.should == str.tainted?
-
-        tainted_re = /(.)(.)(.)/
-        tainted_re.taint
-
-        str.slice!(tainted_re, 1).should.tainted?
-      end
-    end
-
-    it "doesn't taint self when regexp is tainted" do
-      s = "hello"
-      s.slice!(/(.)(.)/.taint, 1)
-      s.should_not.tainted?
-    end
-  end
-
   it "returns nil if there was no match" do
     s = "this is a string"
     s.slice!(/x(zzz)/, 1).should == nil
@@ -383,10 +344,20 @@ describe "String#slice! with Regexp, index" do
     "har".slice!(/(.)(.)(.)/, obj).should == "a"
   end
 
-  it "returns subclass instances" do
-    s = StringSpecs::MyString.new("hello")
-    s.slice!(/(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
-    s.slice!(/(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(/(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
+      s.slice!(/(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances" do
+      s = StringSpecs::MyString.new("hello")
+      s.slice!(/(.)(.)/, 0).should be_an_instance_of(String)
+      s.slice!(/(.)(.)/, 1).should be_an_instance_of(String)
+    end
   end
 
   it "returns the encoding aware capture for the given index" do
@@ -424,23 +395,6 @@ describe "String#slice! with String" do
     c.should == "he hello"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when other is tainted" do
-      strs = ["", "hello world", "hello"]
-      strs += strs.map { |s| s.dup.taint }
-
-      strs.each do |str|
-        str = str.dup
-        strs.each do |other|
-          other = other.dup
-          r = str.slice!(other)
-
-          r.tainted?.should == !r.nil? & other.tainted?
-        end
-      end
-    end
-  end
-
   it "doesn't set $~" do
     $~ = nil
 
@@ -461,11 +415,22 @@ describe "String#slice! with String" do
     -> { "hello".slice!(o) }.should raise_error(TypeError)
   end
 
-  it "returns a subclass instance when given a subclass instance" do
-    s = StringSpecs::MyString.new("el")
-    r = "hello".slice!(s)
-    r.should == "el"
-    r.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns a subclass instance when given a subclass instance" do
+      s = StringSpecs::MyString.new("el")
+      r = "hello".slice!(s)
+      r.should == "el"
+      r.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns a subclass instance when given a subclass instance" do
+      s = StringSpecs::MyString.new("el")
+      r = "hello".slice!(s)
+      r.should == "el"
+      r.should be_an_instance_of(String)
+    end
   end
 
   it "raises a FrozenError if self is frozen" do

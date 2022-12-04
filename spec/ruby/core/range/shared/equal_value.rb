@@ -43,11 +43,9 @@ describe :range_eql, shared: true do
     a.send(@method, b).should == true
   end
 
-  ruby_version_is "2.6" do
-    it "works for endless Ranges" do
-      eval("(1..)").send(@method, eval("(1..)")).should == true
-      eval("(0.5...)").send(@method, eval("(0.5...)")).should == true
-      eval("(1..)").send(@method, eval("(1...)")).should == false
-    end
+  it "works for endless Ranges" do
+    eval("(1..)").send(@method, eval("(1..)")).should == true
+    eval("(0.5...)").send(@method, eval("(0.5...)")).should == true
+    eval("(1..)").send(@method, eval("(1...)")).should == false
   end
 end

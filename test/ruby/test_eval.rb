@@ -219,6 +219,12 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_exec_cvar
+    [Object.new, [], 7, :sym, true, false, nil].each do |obj|
+      assert_equal(13, obj.instance_exec{@@cvar})
+    end
+  end
+
   def test_instance_eval_method
     bug2788 = '[ruby-core:28324]'
     [Object.new, [], nil, true, false].each do |o|
@@ -251,6 +257,70 @@ class TestEval < Test::Unit::TestCase
       bar = Foo.new.instance_eval("Bar")
     end
     assert_equal(2, bar)
+  end
+
+  def test_instance_exec_block_basic
+    forall_TYPE do |o|
+      assert_equal nil,   o.instance_exec { nil }
+      assert_equal true,  o.instance_exec { true }
+      assert_equal false, o.instance_exec { false }
+      assert_equal o,     o.instance_exec { self }
+      assert_equal 1,     o.instance_exec { 1 }
+      assert_equal :sym,  o.instance_exec { :sym }
+
+      assert_equal 11,    o.instance_exec { 11 }
+      assert_equal 12,    o.instance_exec { @ivar } unless o.frozen?
+      assert_equal 13,    o.instance_exec { @@cvar }
+      assert_equal 14,    o.instance_exec { $gvar__eval }
+      assert_equal 15,    o.instance_exec { Const }
+      assert_equal 16,    o.instance_exec { 7 + 9 }
+      assert_equal 17,    o.instance_exec { 17.to_i }
+      assert_equal "18",  o.instance_exec { "18" }
+      assert_equal "19",  o.instance_exec { "1#{9}" }
+
+      1.times {
+        assert_equal 12,  o.instance_exec { @ivar } unless o.frozen?
+        assert_equal 13,  o.instance_exec { @@cvar }
+        assert_equal 14,  o.instance_exec { $gvar__eval }
+        assert_equal 15,  o.instance_exec { Const }
+      }
+    end
+  end
+
+  def test_instance_exec_method_definition
+    klass = Class.new
+    o = klass.new
+
+    o.instance_exec do
+      def foo
+        :foo_result
+      end
+    end
+
+    assert_respond_to o, :foo
+    refute_respond_to klass, :foo
+    refute_respond_to klass.new, :foo
+
+    assert_equal :foo_result, o.foo
+  end
+
+  def test_instance_exec_eval_method_definition
+    klass = Class.new
+    o = klass.new
+
+    o.instance_exec do
+      eval %{
+        def foo
+          :foo_result
+        end
+      }
+    end
+
+    assert_respond_to o, :foo
+    refute_respond_to klass, :foo
+    refute_respond_to klass.new, :foo
+
+    assert_equal :foo_result, o.foo
   end
 
   #

@@ -10,7 +10,7 @@ describe "Enumerable#each_cons" do
 
   it "passes element groups to the block" do
     acc = []
-    @enum.each_cons(3){|g| acc << g}.should be_nil
+    @enum.each_cons(3){|g| acc << g}
     acc.should == @in_threes
   end
 
@@ -27,7 +27,7 @@ describe "Enumerable#each_cons" do
 
   it "tries to convert n to an Integer using #to_int" do
     acc = []
-    @enum.each_cons(3.3){|g| acc << g}.should == nil
+    @enum.each_cons(3.3){|g| acc << g}
     acc.should == @in_threes
 
     obj = mock('to_int')
@@ -54,6 +54,12 @@ describe "Enumerable#each_cons" do
   it "gathers whole arrays as elements when each yields multiple" do
     multi = EnumerableSpecs::YieldsMulti.new
     multi.each_cons(2).to_a.should == [[[1, 2], [3, 4, 5]], [[3, 4, 5], [6, 7, 8, 9]]]
+  end
+
+  ruby_version_is "3.1" do
+    it "returns self when a block is given" do
+      @enum.each_cons(3){}.should == @enum
+    end
   end
 
   describe "when no block is given" do

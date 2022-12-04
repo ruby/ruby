@@ -20,7 +20,7 @@
 
 require_relative 'tables'
 
-
+# :stopdoc:
 module UnicodeNormalize  # :nodoc:
   ## Constant for max hash capacity to avoid DoS attack
   MAX_HASH_LENGTH = 18000 # enough for all test cases, otherwise tests get slow

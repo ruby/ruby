@@ -12,6 +12,7 @@
 require_relative 'src_encoding'
 require_relative 'magic-file'
 require_relative 'completion'
+require 'io/console'
 require 'reline'
 
 module IRB
@@ -35,6 +36,14 @@ module IRB
       fail NotImplementedError, "gets"
     end
     public :gets
+
+    def winsize
+      if instance_variable_defined?(:@stdout) && @stdout.tty?
+        @stdout.winsize
+      else
+        [24, 80]
+      end
+    end
 
     # Whether this input method is still readable when there is no more data to
     # read.
@@ -74,7 +83,14 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      @stdin.eof?
+      if @stdin.wait_readable(0.00001)
+        c = @stdin.getc
+        result = c.nil? ? true : false
+        @stdin.ungetc(c) unless c.nil?
+        result
+      else # buffer is empty
+        false
+      end
     end
 
     # Whether this input method is still readable when there is no more data to
@@ -107,10 +123,22 @@ module IRB
 
   # Use a File for IO with irb, see InputMethod
   class FileInputMethod < InputMethod
+    class << self
+      def open(file, &block)
+        begin
+          io = new(file)
+          block.call(io)
+        ensure
+          io&.close
+        end
+      end
+    end
+
     # Creates a new input method object
     def initialize(file)
       super
-      @io = IRB::MagicFile.open(file)
+      @io = file.is_a?(IO) ? file : IRB::MagicFile.open(file)
+      @external_encoding = @io.external_encoding
     end
     # The file name of this input method, usually given during initialization.
     attr_reader :file_name
@@ -120,7 +148,7 @@ module IRB
     #
     # See IO#eof? for more information.
     def eof?
-      @io.eof?
+      @io.closed? || @io.eof?
     end
 
     # Reads the next line from this input method.
@@ -133,12 +161,16 @@ module IRB
 
     # The external encoding for standard input.
     def encoding
-      @io.external_encoding
+      @external_encoding
     end
 
     # For debug message
     def inspect
       'FileInputMethod'
+    end
+
+    def close
+      @io.close
     end
   end
 
@@ -229,9 +261,10 @@ module IRB
     end
   end
 
-  class ReidlineInputMethod < InputMethod
+  class RelineInputMethod < InputMethod
     include Reline
-    # Creates a new input method object using Readline
+
+    # Creates a new input method object using Reline
     def initialize
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
       super
@@ -247,12 +280,14 @@ module IRB
         Reline.basic_word_break_characters = IRB::InputCompletor::BASIC_WORD_BREAK_CHARACTERS
       end
       Reline.completion_append_character = nil
+      Reline.completer_quote_characters = ''
       Reline.completion_proc = IRB::InputCompletor::CompletionProc
       Reline.output_modifier_proc =
         if IRB.conf[:USE_COLORIZE]
           proc do |output, complete: |
             next unless IRB::Color.colorable?
-            IRB::Color.colorize_code(output, complete: complete)
+            lvars = IRB.CurrentContext&.local_variables || []
+            IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
           end
         else
           proc do |output|
@@ -260,6 +295,15 @@ module IRB
           end
         end
       Reline.dig_perfect_match_proc = IRB::InputCompletor::PerfectMatchedProc
+      Reline.autocompletion = IRB.conf[:USE_AUTOCOMPLETE]
+
+      if IRB.conf[:USE_AUTOCOMPLETE]
+        begin
+          require 'rdoc'
+          Reline.add_dialog_proc(:show_doc, SHOW_DOC_DIALOG, Reline::DEFAULT_DIALOG_CONTEXT)
+        rescue LoadError
+        end
+      end
     end
 
     def check_termination(&block)
@@ -273,6 +317,99 @@ module IRB
     def auto_indent(&block)
       @auto_indent_proc = block
     end
+
+    SHOW_DOC_DIALOG = ->() {
+      dialog.trap_key = nil
+      alt_d = [
+        [Reline::Key.new(nil, 0xE4, true)], # Normal Alt+d.
+        [27, 100], # Normal Alt+d when convert-meta isn't used.
+        [195, 164], # The "ä" that appears when Alt+d is pressed on xterm.
+        [226, 136, 130] # The "∂" that appears when Alt+d in pressed on iTerm2.
+      ]
+
+      if just_cursor_moving and completion_journey_data.nil?
+        return nil
+      end
+      cursor_pos_to_render, result, pointer, autocomplete_dialog = context.pop(4)
+      return nil if result.nil? or pointer.nil? or pointer < 0
+      name = result[pointer]
+      name = IRB::InputCompletor.retrieve_completion_data(name, doc_namespace: true)
+
+      options = {}
+      options[:extra_doc_dirs] = IRB.conf[:EXTRA_DOC_DIRS] unless IRB.conf[:EXTRA_DOC_DIRS].empty?
+      driver = RDoc::RI::Driver.new(options)
+
+      if key.match?(dialog.name)
+        begin
+          driver.display_names([name])
+        rescue RDoc::RI::Driver::NotFoundError
+        end
+      end
+
+      begin
+        name = driver.expand_name(name)
+      rescue RDoc::RI::Driver::NotFoundError
+        return nil
+      rescue
+        return nil # unknown error
+      end
+      doc = nil
+      used_for_class = false
+      if not name =~ /#|\./
+        found, klasses, includes, extends = driver.classes_and_includes_and_extends_for(name)
+        if not found.empty?
+          doc = driver.class_document(name, found, klasses, includes, extends)
+          used_for_class = true
+        end
+      end
+      unless used_for_class
+        doc = RDoc::Markup::Document.new
+        begin
+          driver.add_method(doc, name)
+        rescue RDoc::RI::Driver::NotFoundError
+          doc = nil
+        rescue
+          return nil # unknown error
+        end
+      end
+      return nil if doc.nil?
+      width = 40
+
+      right_x = cursor_pos_to_render.x + autocomplete_dialog.width
+      if right_x + width > screen_width
+        right_width = screen_width - (right_x + 1)
+        left_x = autocomplete_dialog.column - width
+        left_x = 0 if left_x < 0
+        left_width = width > autocomplete_dialog.column ? autocomplete_dialog.column : width
+        if right_width.positive? and left_width.positive?
+          if right_width >= left_width
+            width = right_width
+            x = right_x
+          else
+            width = left_width
+            x = left_x
+          end
+        elsif right_width.positive? and left_width <= 0
+          width = right_width
+          x = right_x
+        elsif right_width <= 0 and left_width.positive?
+          width = left_width
+          x = left_x
+        else # Both are negative width.
+          return nil
+        end
+      else
+        x = right_x
+      end
+      formatter = RDoc::Markup::ToAnsi.new
+      formatter.width = width
+      dialog.trap_key = alt_d
+      message = 'Press Alt+d to read the full document'
+      contents = [message] + doc.accept(formatter).split("\n")
+
+      y = cursor_pos_to_render.y
+      DialogRenderInfo.new(pos: Reline::CursorPos.new(x, y), contents: contents, width: width, bg_color: '49')
+    }
 
     # Reads the next line from this input method.
     #
@@ -324,7 +461,7 @@ module IRB
     # For debug message
     def inspect
       config = Reline::Config.new
-      str = "ReidlineInputMethod with Reline #{Reline::VERSION}"
+      str = "RelineInputMethod with Reline #{Reline::VERSION}"
       if config.respond_to?(:inputrc_path)
         inputrc_path = File.expand_path(config.inputrc_path)
       else
@@ -332,6 +469,15 @@ module IRB
       end
       str += " and #{inputrc_path}" if File.exist?(inputrc_path)
       str
+    end
+  end
+
+  class ReidlineInputMethod < RelineInputMethod
+    def initialize
+      warn <<~MSG.strip
+        IRB::ReidlineInputMethod is deprecated, please use IRB::RelineInputMethod instead.
+      MSG
+      super
     end
   end
 end

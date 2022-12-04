@@ -19,13 +19,13 @@ describe "Hash#to_proc" do
       @proc = @hash.to_proc
     end
 
-    ruby_version_is ""..."2.8" do
+    ruby_version_is ""..."3.0" do
       it "is not a lambda" do
         @proc.should_not.lambda?
       end
     end
 
-    ruby_version_is "2.8" do
+    ruby_version_is "3.0" do
       it "is a lambda" do
         @proc.should.lambda?
       end

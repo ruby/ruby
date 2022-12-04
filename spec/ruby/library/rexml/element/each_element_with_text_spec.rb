@@ -1,6 +1,6 @@
 require_relative '../../../spec_helper'
 
-ruby_version_is ''...'2.8' do
+ruby_version_is ''...'3.0' do
   require 'rexml/document'
 
   describe "REXML::Element#each_element_with_text" do
@@ -16,10 +16,10 @@ ruby_version_is ''...'2.8' do
       @document.root << @joe
       @document.root << @fred
       @document.root << @another
-      @childs = []
+      @children = []
     end
 
-    it "returns childs with text" do
+    it "returns children with text" do
       @document.each_element_with_text("Joe"){|c| c.should == @joe}
     end
 

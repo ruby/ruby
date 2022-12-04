@@ -1,4 +1,4 @@
-/* -*- c-file-style: "ruby" -*- */
+/* -*- c-file-style: "ruby"; indent-tabs-mode: t -*- */
 /*
  * console IO module
  */
@@ -75,14 +75,25 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
+static ID id_getc, id_console, id_close;
 #if ENABLE_IO_GETPASS
-static ID id_gets;
+static ID id_gets, id_chomp_bang;
+#endif
+
+#if defined HAVE_RUBY_FIBER_SCHEDULER_H
+# include "ruby/fiber/scheduler.h"
+#elif defined HAVE_RB_SCHEDULER_TIMEOUT
+extern VALUE rb_scheduler_timeout(struct timeval *timeout);
+# define rb_fiber_scheduler_make_timeout rb_scheduler_timeout
 #endif
 
 #define sys_fail_fptr(fptr) rb_sys_fail_str((fptr)->pathv)
 
 #ifndef HAVE_RB_F_SEND
+#ifndef RB_PASS_CALLED_KEYWORDS
+# define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
+#endif
+
 static ID id___send__;
 
 static VALUE
@@ -97,9 +108,17 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     else {
 	vid = id___send__;
     }
-    return rb_funcallv(recv, vid, argc, argv);
+    return rb_funcallv_kw(recv, vid, argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
 #endif
+
+enum rawmode_opt_ids {
+    kwd_min,
+    kwd_time,
+    kwd_intr,
+    rawmode_opt_id_count
+};
+static ID rawmode_opt_ids[rawmode_opt_id_count];
 
 typedef struct {
     int vmin;
@@ -107,12 +126,20 @@ typedef struct {
     int intr;
 } rawmode_arg_t;
 
+#ifndef UNDEF_P
+# define UNDEF_P(obj) ((obj) == Qundef)
+#endif
+#ifndef NIL_OR_UNDEF_P
+# define NIL_OR_UNDEF_P(obj) (NIL_P(obj) || UNDEF_P(obj))
+#endif
+
 static rawmode_arg_t *
 rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *opts)
 {
     int argc = *argcp;
     rawmode_arg_t *optp = NULL;
     VALUE vopts = Qnil;
+    VALUE optvals[rawmode_opt_id_count];
 #ifdef RB_SCAN_ARGS_PASS_CALLED_KEYWORDS
     argc = rb_scan_args(argc, argv, "*:", NULL, &vopts);
 #else
@@ -127,19 +154,20 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
     }
 #endif
     rb_check_arity(argc, min_argc, max_argc);
-    if (!NIL_P(vopts)) {
-	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
-	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
-	VALUE intr = rb_hash_aref(vopts, ID2SYM(id_intr));
+    if (rb_get_kwargs(vopts, rawmode_opt_ids,
+		      0, rawmode_opt_id_count, optvals)) {
+	VALUE vmin = optvals[kwd_min];
+	VALUE vtime = optvals[kwd_time];
+	VALUE intr = optvals[kwd_intr];
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
 	opts->intr = 0;
-	if (!NIL_P(vmin)) {
+	if (!NIL_OR_UNDEF_P(vmin)) {
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
 	}
-	if (!NIL_P(vtime)) {
+	if (!NIL_OR_UNDEF_P(vtime)) {
 	    VALUE v10 = INT2FIX(10);
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
@@ -154,6 +182,7 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
 	    opts->intr = 0;
 	    optp = opts;
 	    break;
+	  case Qundef:
 	  case Qnil:
 	    break;
 	  default:
@@ -510,28 +539,50 @@ console_getch(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     VALUE str;
     wint_t c;
-    int w, len;
+    int len;
     char buf[8];
     wint_t wbuf[2];
+# ifndef HAVE_RB_IO_WAIT
     struct timeval *to = NULL, tv;
+# else
+    VALUE timeout = Qnil;
+# endif
 
     GetOpenFile(io, fptr);
     if (optp) {
 	if (optp->vtime) {
+# ifndef HAVE_RB_IO_WAIT
 	    to = &tv;
+# else
+	    struct timeval tv;
+# endif
 	    tv.tv_sec = optp->vtime / 10;
 	    tv.tv_usec = (optp->vtime % 10) * 100000;
+# ifdef HAVE_RB_IO_WAIT
+	    timeout = rb_fiber_scheduler_make_timeout(&tv);
+# endif
 	}
-	if (optp->vmin != 1) {
-	    rb_warning("min option ignored");
+	switch (optp->vmin) {
+	  case 1: /* default */
+	    break;
+	  case 0: /* return nil when timed out */
+	    if (optp->vtime) break;
+	    /* fallthru */
+	  default:
+	    rb_warning("min option larger than 1 ignored");
 	}
 	if (optp->intr) {
-	    w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
+# ifndef HAVE_RB_IO_WAIT
+	    int w = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, to);
 	    if (w < 0) rb_eof_error();
 	    if (!(w & RB_WAITFD_IN)) return Qnil;
+# else
+	    VALUE result = rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), timeout);
+	    if (!RTEST(result)) return Qnil;
+# endif
 	}
-	else {
-	    rb_warning("vtime option ignored if intr flag is unset");
+	else if (optp->vtime) {
+	    rb_warning("Non-zero vtime option ignored if intr flag is unset");
 	}
     }
     len = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getch, wbuf, RUBY_UBF_IO, 0);
@@ -1197,8 +1248,8 @@ console_key_pressed_p(VALUE io, VALUE k)
 }
 #else
 struct query_args {
-    const char *qstr;
-    int opt;
+    char qstr[6];
+    unsigned char opt;
 };
 
 static int
@@ -1536,7 +1587,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
+	rb_funcallv(str, id_chomp_bang, 0, 0);
     }
     return str;
 }
@@ -1547,6 +1598,10 @@ str_chomp(VALUE str)
  *
  * Reads and returns a line without echo back.
  * Prints +prompt+ unless it is +nil+.
+ *
+ * The newline character that terminates the
+ * read line is removed from the returned string,
+ * see String#chomp!.
  *
  * You must require 'io/console' to use this method.
  */
@@ -1592,12 +1647,15 @@ Init_console(void)
     id_getc = rb_intern("getc");
 #if ENABLE_IO_GETPASS
     id_gets = rb_intern("gets");
+    id_chomp_bang = rb_intern("chomp!");
 #endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
-    id_min = rb_intern("min");
-    id_time = rb_intern("time");
-    id_intr = rb_intern("intr");
+#define init_rawmode_opt_id(name) \
+    rawmode_opt_ids[kwd_##name] = rb_intern(#name)
+    init_rawmode_opt_id(min);
+    init_rawmode_opt_id(time);
+    init_rawmode_opt_id(intr);
 #ifndef HAVE_RB_F_SEND
     id___send__ = rb_intern("__send__");
 #endif

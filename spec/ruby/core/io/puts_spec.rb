@@ -25,7 +25,7 @@ describe "IO#puts" do
   end
 
   it "writes just a newline when given just a newline" do
-    -> { $stdout.puts "\n" }.should output_to_fd("\n", STDOUT)
+    -> { $stdout.puts "\n" }.should output_to_fd("\n", $stdout)
   end
 
   it "writes empty string with a newline when given nil as an arg" do

@@ -17,18 +17,25 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `pid_t` and Ruby's.
  */
 #include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
 
+/** Converts a C's `pid_t` into an instance of ::rb_cInteger. */
 #ifndef PIDT2NUM
 # define PIDT2NUM RB_LONG2NUM
 #endif
 
+/** Converts an instance of ::rb_cNumeric into C's `pid_t`. */
 #ifndef NUM2PIDT
 # define NUM2PIDT RB_NUM2LONG
+#endif
+
+/** A rb_sprintf() format prefix to be used for a `pid_t` parameter. */
+#ifndef PRI_PIDT_PREFIX
+# define PRI_PIDT_PREFIX PRI_LONG_PREFIX
 #endif
 
 #endif /* RBIMPL_ARITHMETIC_PID_T_H */

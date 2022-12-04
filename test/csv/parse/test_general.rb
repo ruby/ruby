@@ -14,7 +14,7 @@ require_relative "../helper"
 class TestCSVParseGeneral < Test::Unit::TestCase
   extend DifferentOFS
 
-  BIG_DATA = "123456789\n" * 1024
+  BIG_DATA = "123456789\n" * 512
 
   def test_mastering_regex_example
     ex = %Q{Ten Thousand,10000, 2710 ,,"10,000","It's ""10 Grand"", baby",10K}
@@ -247,6 +247,9 @@ line,5,jkl
   def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
       timeout = 0.2
+      if defined?(RubyVM::YJIT.enabled?) and RubyVM::YJIT.enabled?
+        timeout = 1  # for --yjit-call-threshold=1
+      end
       if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
         timeout = 5  # for --jit-wait
       end

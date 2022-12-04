@@ -21,7 +21,8 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     @name = name
     @version = version
     @source = source
-    @platform = platform.to_s
+    @platform = Gem::Platform.new(platform.to_s)
+    @original_platform = platform.to_s
 
     @spec = nil
   end
@@ -33,12 +34,44 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     spec.dependencies
   end
 
+  ##
+  # The required_ruby_version constraint for this specification
+  #
+  # A fallback is included because when generated, some marshalled specs have it
+  # set to +nil+.
+
+  def required_ruby_version
+    spec.required_ruby_version || Gem::Requirement.default
+  end
+
+  ##
+  # The required_rubygems_version constraint for this specification
+  #
+  # A fallback is included because the original version of the specification
+  # API didn't include that field, so some marshalled specs in the index have it
+  # set to +nil+.
+
+  def required_rubygems_version
+    spec.required_rubygems_version || Gem::Requirement.default
+  end
+
+  def ==(other)
+    self.class === other &&
+      @name == other.name &&
+      @version == other.version &&
+      @platform == other.platform
+  end
+
+  def hash
+    @name.hash ^ @version.hash ^ @platform.hash
+  end
+
   def inspect # :nodoc:
-    '#<%s %s source %s>' % [self.class, full_name, @source]
+    "#<%s %s source %s>" % [self.class, full_name, @source]
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Index specification', ']' do
+    q.group 2, "[Index specification", "]" do
       q.breakable
       q.text full_name
 
@@ -48,7 +81,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
       end
 
       q.breakable
-      q.text 'source '
+      q.text "source "
       q.pp @source
     end
   end
@@ -59,7 +92,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   def spec # :nodoc:
     @spec ||=
       begin
-        tuple = Gem::NameTuple.new @name, @version, @platform
+        tuple = Gem::NameTuple.new @name, @version, @original_platform
 
         @source.fetch_spec tuple
       end

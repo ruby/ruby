@@ -1,26 +1,161 @@
 # frozen_string_literal: true
-begin
-  gem 'minitest', '< 5.0.0' if defined? Gem
-rescue Gem::LoadError
+
+# Enable deprecation warnings for test-all, so deprecated methods/constants/functions are dealt with early.
+Warning[:deprecated] = true
+
+if ENV['BACKTRACE_FOR_DEPRECATION_WARNINGS']
+  Warning.extend Module.new {
+    def warn(message, category: nil, **kwargs)
+      if category == :deprecated and $stderr.respond_to?(:puts)
+        $stderr.puts nil, message, caller, nil
+      else
+        super
+      end
+    end
+  }
 end
-require 'minitest/unit'
-require 'test/unit/assertions'
+
 require_relative '../envutil'
 require_relative '../colorize'
-require 'test/unit/testcase'
+require_relative '../leakchecker'
+require_relative '../test/unit/testcase'
 require 'optparse'
 
 # See Test::Unit
 module Test
+
+  class << self
+    ##
+    # Filter object for backtraces.
+
+    attr_accessor :backtrace_filter
+  end
+
+  class BacktraceFilter # :nodoc:
+    def filter bt
+      return ["No backtrace"] unless bt
+
+      new_bt = []
+      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
+
+      unless $DEBUG then
+        bt.each do |line|
+          break if pattern.match?(line)
+          new_bt << line
+        end
+
+        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
+        new_bt = bt.dup if new_bt.empty?
+      else
+        new_bt = bt.dup
+      end
+
+      new_bt
+    end
+  end
+
+  self.backtrace_filter = BacktraceFilter.new
+
+  def self.filter_backtrace bt # :nodoc:
+    backtrace_filter.filter bt
+  end
+
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
-  #
-  # If you are writing new test code, please use MiniTest instead of Test::Unit.
-  #
-  # Test::Unit has been left in the standard library to support legacy test
-  # suites.
   module Unit
-    TEST_UNIT_IMPLEMENTATION = 'test/unit compatibility layer using minitest' # :nodoc:
+    ##
+    # Assertion base class
+
+    class AssertionFailedError < Exception; end
+
+    ##
+    # Assertion raised when skipping a test
+
+    class PendedError < AssertionFailedError; end
+
+    module Order
+      class NoSort
+        def initialize(seed)
+        end
+
+        def sort_by_name(list)
+          list
+        end
+
+        alias sort_by_string sort_by_name
+
+        def group(list)
+          list
+        end
+      end
+
+      module MJITFirst
+        def group(list)
+          # MJIT first
+          mjit, others = list.partition {|e| /test_mjit/ =~ e}
+          mjit + others
+        end
+      end
+
+      class Alpha < NoSort
+        include MJITFirst
+
+        def sort_by_name(list)
+          list.sort_by(&:name)
+        end
+
+        def sort_by_string(list)
+          list.sort
+        end
+
+      end
+
+      # shuffle test suites based on CRC32 of their names
+      Shuffle = Struct.new(:seed, :salt) do
+        include MJITFirst
+
+        def initialize(seed)
+          self.class::CRC_TBL ||= (0..255).map {|i|
+            (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
+          }.freeze
+
+          salt = [seed].pack("V").unpack1("H*")
+          super(seed, "\n#{salt}".freeze).freeze
+        end
+
+        def sort_by_name(list)
+          list.sort_by {|e| randomize_key(e.name)}
+        end
+
+        def sort_by_string(list)
+          list.sort_by {|e| randomize_key(e)}
+        end
+
+        private
+
+        def crc32(str, crc32 = 0xffffffff)
+          crc_tbl = self.class::CRC_TBL
+          str.each_byte do |data|
+            crc32 = crc_tbl[(crc32 ^ data) & 0xff] ^ (crc32 >> 8)
+          end
+          crc32
+        end
+
+        def randomize_key(name)
+          crc32(salt, crc32(name)) ^ 0xffffffff
+        end
+      end
+
+      Types = {
+        random: Shuffle,
+        alpha: Alpha,
+        sorted: Alpha,
+        nosort: NoSort,
+      }
+      Types.default_proc = proc {|_, order|
+        raise "Unknown test_order: #{order.inspect}"
+      }
+    end
 
     module RunCount # :nodoc: all
       @@run_count = 0
@@ -65,24 +200,27 @@ module Test
         non_options(args, options)
         @run_options = orig_args
 
+        order = options[:test_order]
         if seed = options[:seed]
-          srand(seed)
-        else
-          seed = options[:seed] = srand % 100_000
-          srand(seed)
+          order ||= :random
+        elsif (order ||= :random) == :random
+          seed = options[:seed] = rand(0x10000)
           orig_args.unshift "--seed=#{seed}"
         end
+        Test::Unit::TestCase.test_order = order if order
+        order = Test::Unit::TestCase.test_order
+        @order = Test::Unit::Order::Types[order].new(seed)
 
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
         }.join("\n")
+
         @options = options
       end
 
       private
       def setup_options(opts, options)
-        opts.separator 'minitest options:'
-        opts.version = MiniTest::Unit::VERSION
+        opts.separator 'test-unit options:'
 
         opts.on '-h', '--help', 'Display this help.' do
           puts opts
@@ -102,8 +240,9 @@ module Test
           (options[:filter] ||= []) << a
         end
 
-        opts.on '--test-order=random|alpha|sorted|nosort', [:random, :alpha, :sorted, :nosort] do |a|
-          MiniTest::Unit::TestCase.test_order = a
+        orders = Test::Unit::Order::Types.keys
+        opts.on "--test-order=#{orders.join('|')}", orders do |a|
+          options[:test_order] = a
         end
       end
 
@@ -117,18 +256,15 @@ module Test
             filter = nil
           elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
             filter = positive[0]
+            unless /\A[A-Z]\w*(?:::[A-Z]\w*)*#/ =~ filter
+              filter = /##{Regexp.quote(filter)}\z/
+            end
           else
             filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
           end
           unless negative.empty?
             negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
-          end
-          if Regexp === filter
-            # bypass conversion in minitest
-            def filter.=~(other)    # :nodoc:
-              super unless Regexp === other
-            end
           end
           options[:filter] = filter
         end
@@ -150,10 +286,16 @@ module Test
         @jobserver = nil
         makeflags = ENV.delete("MAKEFLAGS")
         if !options[:parallel] and
-          /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ makeflags
+          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ makeflags
           begin
-            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            if fifo = $3
+              fifo.gsub!(/\\(?=.)/, '')
+              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
+            else
+              r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+              w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            end
           rescue
             r.close if r
             nil
@@ -164,6 +306,7 @@ module Test
             options[:parallel] ||= 1
           end
         end
+        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
         super
       end
 
@@ -186,6 +329,10 @@ module Test
           options[:parallel] = a.to_i
         end
 
+        opts.on '--worker-timeout=N', Integer, "Timeout workers not responding in N seconds" do |a|
+          options[:worker_timeout] = a
+        end
+
         opts.on '--separate', "Restart job process after one testcase has done" do
           options[:parallel] ||= 1
           options[:separate] = true
@@ -202,21 +349,31 @@ module Test
         opts.on '--ruby VAL', "Path to ruby which is used at -j option" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
+
+        opts.on '--timetable-data=FILE', "Path to timetable data" do |a|
+          options[:timetable_data] = a
+        end
       end
 
       class Worker
         def self.launch(ruby,args=[])
           scale = EnvUtil.timeout_scale
           io = IO.popen([*ruby, "-W1",
-                        "#{File.dirname(__FILE__)}/unit/parallel.rb",
+                        "#{__dir__}/unit/parallel.rb",
                         *("--timeout-scale=#{scale}" if scale),
                         *args], "rb+")
           new(io, io.pid, :waiting)
         end
 
         attr_reader :quit_called
+        attr_accessor :start_time
+        attr_accessor :response_at
+        attr_accessor :current
+
+        @@worker_number = 0
 
         def initialize(io, pid, status)
+          @num = (@@worker_number += 1)
           @io = io
           @pid = pid
           @status = status
@@ -225,6 +382,11 @@ module Test
           @loadpath = []
           @hooks = {}
           @quit_called = false
+          @response_at = nil
+        end
+
+        def name
+          "Worker #{@num}"
         end
 
         def puts(*args)
@@ -239,6 +401,8 @@ module Test
             @loadpath = $:.dup
             puts "run #{task} #{type}"
             @status = :prepare
+            @start_time = Time.now
+            @response_at = @start_time
           rescue Errno::EPIPE
             died
           rescue IOError
@@ -255,6 +419,7 @@ module Test
 
         def read
           res = (@status == :quit) ? @io.read : @io.gets
+          @response_at = Time.now
           res && res.chomp
         end
 
@@ -327,10 +492,26 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "Some worker was crashed. It seems ruby interpreter's bug"
-        warn "or, a bug of test/unit/parallel.rb. try again without -j"
+        warn "A test worker crashed. It might be an interpreter bug or"
+        warn "a bug in test/unit/parallel.rb. Try again without the -j"
         warn "option."
         warn ""
+        if File.exist?('core')
+          require 'fileutils'
+          require 'time'
+          Dir.glob('/tmp/test-unit-core.*').each do |f|
+            if Time.now - File.mtime(f) > 7 * 24 * 60 * 60 # 7 days
+              warn "Deleting an old core file: #{f}"
+              FileUtils.rm(f)
+            end
+          end
+          core_path = "/tmp/test-unit-core.#{Time.now.utc.iso8601}"
+          warn "A core file is found. Saving it at: #{core_path.dump}"
+          FileUtils.mv('core', core_path)
+          cmd = ['gdb', RbConfig.ruby, '-c', core_path, '-ex', 'bt', '-batch']
+          p cmd # debugging why it's not working
+          system(*cmd)
+        end
         STDERR.flush
         exit c
       end
@@ -369,9 +550,11 @@ module Test
         @ios.delete worker.io
       end
 
-      def quit_workers
+      def quit_workers(&cond)
         return if @workers.empty?
+        closed = [] if cond
         @workers.reject! do |worker|
+          next unless cond&.call(worker)
           begin
             Timeout.timeout(1) do
               worker.quit
@@ -379,20 +562,33 @@ module Test
           rescue Errno::EPIPE
           rescue Timeout::Error
           end
-          worker.close
+          closed&.push worker
+          begin
+            Timeout.timeout(0.2) do
+              worker.close
+            end
+          rescue Timeout::Error
+            worker.kill
+            retry
+          end
+          @ios.delete worker.io
         end
 
-        return if @workers.empty?
+        return if (closed ||= @workers).empty?
+        pids = closed.map(&:pid)
         begin
-          Timeout.timeout(0.2 * @workers.size) do
+          Timeout.timeout(0.2 * closed.size) do
             Process.waitall
           end
         rescue Timeout::Error
-          @workers.each do |worker|
-            worker.kill
+          if pids
+            Process.kill(:KILL, *pids) rescue nil
+            pids = nil
+            retry
           end
-          @worker.clear
         end
+        @workers.clear unless cond
+        closed
       end
 
       FakeClass = Struct.new(:name)
@@ -404,6 +600,7 @@ module Test
         worker = @workers_hash[io]
         cmd = worker.read
         cmd.sub!(/\A\.+/, '') if cmd # read may return nil
+
         case cmd
         when ''
           # just only dots, ignore
@@ -425,34 +622,45 @@ module Test
           @test_count += 1
 
           jobs_status(worker)
+        when /^start (.+?)$/
+          worker.current = Marshal.load($1.unpack1("m"))
         when /^done (.+?)$/
           begin
-            r = Marshal.load($1.unpack("m")[0])
+            r = Marshal.load($1.unpack1("m"))
           rescue
-            print "unknown object: #{$1.unpack("m")[0].dump}"
+            print "unknown object: #{$1.unpack1("m").dump}"
             return true
           end
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
           jobs_status(worker) if @options[:job_status] == :replace
+
           return true
         when /^record (.+?)$/
           begin
-            r = Marshal.load($1.unpack("m")[0])
+            r = Marshal.load($1.unpack1("m"))
+
+            suite = r.first
+            key = [worker.name, suite]
+            if @records[key]
+              @records[key][1] = worker.start_time = Time.now
+            else
+              @records[key] = [worker.start_time, Time.now]
+            end
           rescue => e
-            print "unknown record: #{e.message} #{$1.unpack("m")[0].dump}"
+            print "unknown record: #{e.message} #{$1.unpack1("m").dump}"
             return true
           end
           record(fake_class(r[0]), *r[1..-1])
         when /^p (.+?)$/
           del_jobs_status
-          print $1.unpack("m")[0]
+          print $1.unpack1("m")
           jobs_status(worker) if @options[:job_status] == :replace
         when /^after (.+?)$/
-          @warnings << Marshal.load($1.unpack("m")[0])
+          @warnings << Marshal.load($1.unpack1("m"))
         when /^bye (.+?)$/
-          after_worker_down worker, Marshal.load($1.unpack("m")[0])
+          after_worker_down worker, Marshal.load($1.unpack1("m"))
         when /^bye$/, nil
           if shutting_down || worker.quit_called
             after_worker_quit worker
@@ -466,6 +674,8 @@ module Test
       end
 
       def _run_parallel suites, type, result
+        @records = {}
+
         if @options[:parallel] < 1
           warn "Error: parameter of -j option should be greater than 0."
           return
@@ -473,14 +683,7 @@ module Test
 
         # Require needed thing for parallel running
         require 'timeout'
-        @tasks = @files.dup # Array of filenames.
-
-        case MiniTest::Unit::TestCase.test_order
-        when :random
-          @tasks.shuffle!
-        else
-          # sorted
-        end
+        @tasks = @order.group(@order.sort_by_string(@files)) # Array of filenames.
 
         @need_quit = false
         @dead_workers = []  # Array of dead workers.
@@ -495,14 +698,26 @@ module Test
         begin
           [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
-          while _io = IO.select(@ios)[0]
-            break if _io.any? do |io|
+          while true
+            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0) + @worker_timeout, 1].max
+
+            if !(_io = IO.select(@ios, nil, nil, timeout))
+              timeout = Time.now - @worker_timeout
+              quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
+                rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
+              }
+            elsif _io.first.any? {|io|
               @need_quit or
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
+            }
+              break
             end
-            if @jobserver and @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
-              t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
+            break if @tasks.empty? and @workers.empty?
+            if @jobserver and @job_tokens and !@tasks.empty? and
+               ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
+                !@workers.any? {|x| x.status == :ready})
+              t = @jobserver[0].read_nonblock(newjobs, exception: false)
               if String === t
                 @job_tokens << t
                 t.size.times {launch_worker}
@@ -513,6 +728,14 @@ module Test
           @interrupt = ex
           return result
         ensure
+          if file = @options[:timetable_data]
+            File.open(file, 'w'){|f|
+              @records.each{|(worker, suite), (st, ed)|
+                f.puts '[' + [worker.dump, suite.dump, st.to_f * 1_000, ed.to_f * 1_000].join(", ") + '],'
+              }
+            }
+          end
+
           if @interrupt
             @ios.select!{|x| @workers_hash[x].status == :running }
             while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
@@ -526,13 +749,41 @@ module Test
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
             @options[:parallel] = false
-            suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
+            suites, rep = rep.partition {|r|
+              r[:testcase] && r[:file] &&
+                (!r.key?(:report) || r[:report].any? {|e| !e[2].is_a?(Test::Unit::PendedError)})
+            }
             suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
-            suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
+            error, suites = suites.partition {|r| r[:error]}
             unless suites.empty?
               puts "\n""Retrying..."
+              @verbose = options[:verbose]
+              suites.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
+            end
+            unless error.empty?
+              puts "\n""Retrying hung up testcases..."
+              error = error.map do |r|
+                begin
+                  ::Object.const_get(r[:testcase])
+                rescue NameError
+                  # testcase doesn't specify the correct case, so show `r` for information
+                  require 'pp'
+
+                  $stderr.puts "Retrying is failed because the file and testcase is not consistent:"
+                  PP.pp r, $stderr
+                  @errors += 1
+                  nil
+                end
+              end.compact
+              verbose = @verbose
+              job_status = options[:job_status]
+              options[:verbose] = @verbose = true
+              options[:job_status] = :normal
+              result.concat _run_suites(error, type)
+              options[:verbose] = @verbose = verbose
+              options[:job_status] = job_status
             end
             @options[:parallel] = parallel
           end
@@ -541,14 +792,21 @@ module Test
           end
           unless rep.empty?
             rep.each do |r|
-              r[:report].each do |f|
+              if r[:error]
+                puke(*r[:error], Timeout::Error.new)
+                next
+              end
+              r[:report]&.each do |f|
                 puke(*f) if f
               end
             end
             if @options[:retry]
-              @errors   += rep.map{|x| x[:result][0] }.inject(:+)
-              @failures += rep.map{|x| x[:result][1] }.inject(:+)
-              @skips    += rep.map{|x| x[:result][2] }.inject(:+)
+              rep.each do |x|
+                (e, f, s = x[:result]) or next
+                @errors   += e
+                @failures += f
+                @skips    += s
+              end
             end
           end
           unless @warnings.empty?
@@ -703,7 +961,7 @@ module Test
       end
 
       def jobs_status(worker)
-        return if !@options[:job_status] or @options[:verbose]
+        return if !@options[:job_status] or @verbose
         if @options[:job_status] == :replace
           status_line = @workers.map(&:to_s).join(" ")
         else
@@ -780,7 +1038,7 @@ module Test
           end
           first, msg = msg.split(/$/, 2)
           first = sprintf("%3d) %s", @report_count += 1, first)
-          $stdout.print(sep, @colorize.decorate(first, color), msg, "\n")
+          @failed_output.print(sep, @colorize.decorate(first, color), msg, "\n")
           sep = nil
         end
         report.clear
@@ -836,7 +1094,7 @@ module Test
             runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
-          when /\A[EFS]\z/
+          when /\A\.*[EFS][EFS.]*\z/
             runner.failed(s)
           else
             $stdout.print(s)
@@ -941,6 +1199,28 @@ module Test
       end
     end
 
+    module OutputOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        parser.separator "output options:"
+
+        options[:failed_output] = $stdout
+        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
+          options[:failed_output] = $stderr
+        end
+        parser.on '--stdout-on-failure', 'Use stdout to print failure messages', '(default)' do
+          options[:failed_output] = $stdout
+        end
+      end
+
+      def process_args(args = [])
+        return @options if @options
+        options = super
+        @failed_output = options[:failed_output]
+        options
+      end
+    end
+
     module GCOption # :nodoc: all
       def setup_options(parser, options)
         super
@@ -955,7 +1235,7 @@ module Test
 
       def non_options(files, options)
         if options.delete(:gc_stress)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
@@ -968,7 +1248,7 @@ module Test
           end
         end
         if options.delete(:gc_compact)
-          MiniTest::Unit::TestCase.class_eval do
+          Test::Unit::TestCase.class_eval do
             oldrun = instance_method(:run)
             define_method(:run) do |runner|
               begin
@@ -1105,29 +1385,345 @@ module Test
       end
     end
 
-    class Runner < MiniTest::Unit # :nodoc: all
-      include Test::Unit::Options
-      include Test::Unit::StatusLine
-      include Test::Unit::Parallel
-      include Test::Unit::Statistics
-      include Test::Unit::Skipping
-      include Test::Unit::GlobOption
-      include Test::Unit::RepeatOption
-      include Test::Unit::LoadPathOption
-      include Test::Unit::GCOption
-      include Test::Unit::ExcludesOption
-      include Test::Unit::TimeoutOption
-      include Test::Unit::RunCount
+    class Runner # :nodoc: all
 
-      def run(argv)
-        super
+      attr_accessor :report, :failures, :errors, :skips # :nodoc:
+      attr_accessor :assertion_count                    # :nodoc:
+      attr_writer   :test_count                         # :nodoc:
+      attr_accessor :start_time                         # :nodoc:
+      attr_accessor :help                               # :nodoc:
+      attr_accessor :verbose                            # :nodoc:
+      attr_writer   :options                            # :nodoc:
+
+      ##
+      # :attr:
+      #
+      # if true, installs an "INFO" signal handler (only available to BSD and
+      # OS X users) which prints diagnostic information about the test run.
+      #
+      # This is auto-detected by default but may be overridden by custom
+      # runners.
+
+      attr_accessor :info_signal
+
+      ##
+      # Lazy accessor for options.
+
+      def options
+        @options ||= {seed: 42}
+      end
+
+      @@installed_at_exit ||= false
+      @@out = $stdout
+      @@after_tests = []
+      @@current_repeat_count = 0
+
+      ##
+      # A simple hook allowing you to run a block of code after _all_ of
+      # the tests are done. Eg:
+      #
+      #   Test::Unit::Runner.after_tests { p $debugging_info }
+
+      def self.after_tests &block
+        @@after_tests << block
+      end
+
+      ##
+      # Returns the stream to use for output.
+
+      def self.output
+        @@out
+      end
+
+      ##
+      # Sets Test::Unit::Runner to write output to +stream+.  $stdout is the default
+      # output
+
+      def self.output= stream
+        @@out = stream
+      end
+
+      ##
+      # Tells Test::Unit::Runner to delegate to +runner+, an instance of a
+      # Test::Unit::Runner subclass, when Test::Unit::Runner#run is called.
+
+      def self.runner= runner
+        @@runner = runner
+      end
+
+      ##
+      # Returns the Test::Unit::Runner subclass instance that will be used
+      # to run the tests. A Test::Unit::Runner instance is the default
+      # runner.
+
+      def self.runner
+        @@runner ||= self.new
+      end
+
+      ##
+      # Return all plugins' run methods (methods that start with "run_").
+
+      def self.plugins
+        @@plugins ||= (["run_tests"] +
+                      public_instance_methods(false).
+                      grep(/^run_/).map { |s| s.to_s }).uniq
+      end
+
+      ##
+      # Return the IO for output.
+
+      def output
+        self.class.output
+      end
+
+      def puts *a  # :nodoc:
+        output.puts(*a)
+      end
+
+      def print *a # :nodoc:
+        output.print(*a)
+      end
+
+      def test_count # :nodoc:
+        @test_count ||= 0
+      end
+
+      ##
+      # Runner for a given +type+ (eg, test vs bench).
+
+      def self.current_repeat_count
+        @@current_repeat_count
+      end
+
+      def _run_anything type
+        suites = Test::Unit::TestCase.send "#{type}_suites"
+        return if suites.empty?
+
+        suites = @order.sort_by_name(suites)
+
+        puts
+        puts "# Running #{type}s:"
+        puts
+
+        @test_count, @assertion_count = 0, 0
+        test_count = assertion_count = 0
+        sync = output.respond_to? :"sync=" # stupid emacs
+        old_sync, output.sync = output.sync, true if sync
+
+        @@current_repeat_count = 0
+        begin
+          start = Time.now
+
+          results = _run_suites suites, type
+
+          @test_count      = results.inject(0) { |sum, (tc, _)| sum + tc }
+          @assertion_count = results.inject(0) { |sum, (_, ac)| sum + ac }
+          test_count      += @test_count
+          assertion_count += @assertion_count
+          t = Time.now - start
+          @@current_repeat_count += 1
+          unless @repeat_count
+            puts
+            puts
+          end
+          puts "Finished%s %ss in %.6fs, %.4f tests/s, %.4f assertions/s.\n" %
+              [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
+                t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
+        end while @repeat_count && @@current_repeat_count < @repeat_count &&
+                  report.empty? && failures.zero? && errors.zero?
+
+        output.sync = old_sync if sync
+
+        report.each_with_index do |msg, i|
+          puts "\n%3d) %s" % [i + 1, msg]
+        end
+
+        puts
+        @test_count      = test_count
+        @assertion_count = assertion_count
+
+        status
+      end
+
+      ##
+      # Run a single +suite+ for a given +type+.
+
+      def _run_suite suite, type
+        header = "#{type}_suite_header"
+        puts send(header, suite) if respond_to? header
+
+        filter = options[:filter]
+
+        all_test_methods = suite.send "#{type}_methods"
+        if filter
+          all_test_methods.select! {|method|
+            filter === "#{suite}##{method}"
+          }
+        end
+        all_test_methods = @order.sort_by_name(all_test_methods)
+
+        leakchecker = LeakChecker.new
+        if ENV["LEAK_CHECKER_TRACE_OBJECT_ALLOCATION"]
+          require "objspace"
+          trace = true
+        end
+
+        assertions = all_test_methods.map { |method|
+
+          inst = suite.new method
+          _start_method(inst)
+          inst._assertions = 0
+
+          print "#{suite}##{method} = " if @verbose
+
+          start_time = Time.now if @verbose
+          result =
+            if trace
+              ObjectSpace.trace_object_allocations {inst.run self}
+            else
+              inst.run self
+            end
+
+          print "%.2f s = " % (Time.now - start_time) if @verbose
+          print result
+          puts if @verbose
+          $stdout.flush
+
+          unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # compiler process is wrongly considered as leak
+            leakchecker.check("#{inst.class}\##{inst.__name__}")
+          end
+
+          _end_method(inst)
+
+          inst._assertions
+        }
+        return assertions.size, assertions.inject(0) { |sum, n| sum + n }
+      end
+
+      def _start_method(inst)
+      end
+      def _end_method(inst)
+      end
+
+      ##
+      # Record the result of a single test. Makes it very easy to gather
+      # information. Eg:
+      #
+      #   class StatisticsRecorder < Test::Unit::Runner
+      #     def record suite, method, assertions, time, error
+      #       # ... record the results somewhere ...
+      #     end
+      #   end
+      #
+      #   Test::Unit::Runner.runner = StatisticsRecorder.new
+      #
+      # NOTE: record might be sent more than once per test.  It will be
+      # sent once with the results from the test itself.  If there is a
+      # failure or error in teardown, it will be sent again with the
+      # error or failure.
+
+      def record suite, method, assertions, time, error
+      end
+
+      def location e # :nodoc:
+        last_before_assertion = ""
+
+        return '<empty>' unless e.backtrace # SystemStackError can return nil.
+
+        e.backtrace.reverse_each do |s|
+          break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
+          last_before_assertion = s
+        end
+        last_before_assertion.sub(/:in .*$/, '')
+      end
+
+      ##
+      # Writes status for failed test +meth+ in +klass+ which finished with
+      # exception +e+
+
+      def initialize # :nodoc:
+        @report = []
+        @errors = @failures = @skips = 0
+        @verbose = false
+        @mutex = Thread::Mutex.new
+        @info_signal = Signal.list['INFO']
+        @repeat_count = nil
+      end
+
+      def synchronize # :nodoc:
+        if @mutex then
+          @mutex.synchronize { yield }
+        else
+          yield
+        end
+      end
+
+      def inspect
+        "#<#{self.class.name}: " <<
+        instance_variables.filter_map do |var|
+          next if var == :@option_parser # too big
+          "#{var}=#{instance_variable_get(var).inspect}"
+        end.join(", ") << ">"
+      end
+
+      ##
+      # Top level driver, controls all output and filtering.
+
+      def _run args = []
+        args = process_args args # ARGH!! blame test/unit process_args
+        self.options.merge! args
+
+        puts "Run options: #{help}"
+
+        self.class.plugins.each do |plugin|
+          send plugin
+          break unless report.empty?
+        end
+
+        return failures + errors if self.test_count > 0 # or return nil...
+      rescue Interrupt
+        abort 'Interrupted'
+      end
+
+      ##
+      # Runs test suites matching +filter+.
+
+      def run_tests
+        _run_anything :test
+      end
+
+      ##
+      # Writes status to +io+
+
+      def status io = self.output
+        format = "%d tests, %d assertions, %d failures, %d errors, %d skips"
+        io.puts format % [test_count, assertion_count, failures, errors, skips]
+      end
+
+      prepend Test::Unit::Options
+      prepend Test::Unit::StatusLine
+      prepend Test::Unit::Parallel
+      prepend Test::Unit::Statistics
+      prepend Test::Unit::Skipping
+      prepend Test::Unit::GlobOption
+      prepend Test::Unit::OutputOption
+      prepend Test::Unit::RepeatOption
+      prepend Test::Unit::LoadPathOption
+      prepend Test::Unit::GCOption
+      prepend Test::Unit::ExcludesOption
+      prepend Test::Unit::TimeoutOption
+      prepend Test::Unit::RunCount
+
+      ##
+      # Begins the full test run. Delegates to +runner+'s #_run method.
+
+      def run(argv = [])
+        self.class.runner._run(argv)
       rescue NoMemoryError
         system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
         system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
         raise
       end
-
-      class << self; undef autorun; end
 
       @@stop_auto_run = false
       def self.autorun
@@ -1139,16 +1735,30 @@ module Test
         @@installed_at_exit = true
       end
 
-      alias mini_run_suite _run_suite
+      alias orig_run_suite _run_suite
 
-      # Overriding of MiniTest::Unit#puke
+      # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
-        # TODO:
-        #   this overriding is for minitest feature that skip messages are
-        #   hidden when not verbose (-v), note this is temporally.
         n = report.size
-        rep = super
-        if MiniTest::Skip === e and /no message given\z/ =~ e.message
+        e = case e
+            when Test::Unit::PendedError then
+              @skips += 1
+              return "S" unless @verbose
+              "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            when Test::Unit::AssertionFailedError then
+              @failures += 1
+              "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            when Timeout::Error
+              @errors += 1
+              "Timeout:\n#{klass}##{meth}\n"
+            else
+              @errors += 1
+              bt = Test::filter_backtrace(e.backtrace).join "\n    "
+              "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
+            end
+        @report << e
+        rep = e[0, 1]
+        if Test::Unit::PendedError === e and /no message given\z/ =~ e.message
           report.slice!(n..-1)
           rep = "."
         end
@@ -1206,32 +1816,6 @@ module Test
 
       attr_accessor :message, :backtrace
     end
-  end
-end
-
-module MiniTest # :nodoc: all
-  class Unit
-  end
-end
-
-class MiniTest::Unit::TestCase # :nodoc: all
-  test_order = self.test_order
-  class << self
-    attr_writer :test_order
-    undef test_order
-  end
-  def self.test_order
-    defined?(@test_order) ? @test_order : superclass.test_order
-  end
-  self.test_order = test_order
-  undef run_test
-  RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
-  def run_test(name)
-    progname, $0 = $0, "#{$0}: #{self.class}##{name}"
-    self.__send__(name)
-  ensure
-    $@.delete(RUN_TEST_TRACE) if $@
-    $0 = progname
   end
 end
 

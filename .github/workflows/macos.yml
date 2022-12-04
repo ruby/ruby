@@ -1,67 +1,108 @@
 name: macOS
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
 jobs:
   make:
-    runs-on: macos-latest
     strategy:
       matrix:
-        test_task: [ "check", "test-bundler-parallel", "test-bundled-gems", "leaked-globals" ]
+        test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
+        os:
+          - macos-11
+          - macos-12
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
-    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    runs-on: ${{ matrix.os }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
-      - name: Disable Firewall
-        run: |
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+      - run: mkdir build
+        working-directory:
       - name: git config
         run: |
           git config --global advice.detachedHead 0
-      - uses: actions/checkout@v2
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
         with:
           path: src
-      - run: ./src/tool/actions-commit-info.sh
-        id: commit_info
+      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
       - name: Install libraries
         run: |
-          export WAITS='5 60'
-          tool/travis_retry.sh brew upgrade
-          tool/travis_retry.sh brew install gdbm gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+          brew upgrade
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline bison
         working-directory: src
       - name: Set ENV
         run: |
-          echo '::set-env name=JOBS::'-j$((1 + $(sysctl -n hw.activecpu)))
-      - run: autoconf
+          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+          echo "PATH="/usr/local/opt/bison/bin:$PATH"" >> $GITHUB_ENV
+      - run: ./autogen.sh
         working-directory: src
-      - run: mkdir build
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
-        working-directory: build
-      - run: make $JOBS incs
-        working-directory: build
-      - run: make $JOBS
-        working-directory: build
+      - run: make incs
       - run: make prepare-gems
-        working-directory: build
-        if: matrix.test_task == 'check'
-      - run: make $JOBS -s ${{ matrix.test_task }}
-        timeout-minutes: 30
-        working-directory: build
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+      - run: make
+      - run: make leaked-globals
+        if: ${{ matrix.test_task == 'check' }}
+      - name: make ${{ matrix.test_task }}
+        run: |
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+        timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
-          # Remove minitest from TEST_BUNDLED_GEMS_ALLOW_FAILURES if https://github.com/seattlerb/minitest/pull/798 is resolved
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "minitest,xmlrpc,rexml"
-      - uses: k0kubun/action-slack@v2.0.0
+          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+          PRECHECK_BUNDLED_GEMS: "no"
+      - name: make skipped tests
+        run: |
+          make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
+          TESTS: ${{ matrix.skipped_tests }}
+          PRECHECK_BUNDLED_GEMS: "no"
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }}",
+              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build

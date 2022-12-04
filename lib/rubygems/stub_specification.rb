@@ -9,7 +9,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   PREFIX = "# stub: ".freeze
 
   # :nodoc:
-  OPEN_MODE = 'r:UTF-8:-'.freeze
+  OPEN_MODE = "r:UTF-8:-".freeze
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,
@@ -19,9 +19,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      'lib'  => 'lib'.freeze,
-      'test' => 'test'.freeze,
-      'ext'  => 'ext'.freeze,
+      "lib" => "lib".freeze,
+      "test" => "test".freeze,
+      "ext" => "ext".freeze,
     }.freeze
 
     # These are common require path lists.  This hash is used to optimize
@@ -29,25 +29,25 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # in their require paths, so lets take advantage of that by pre-allocating
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
-      'lib' => ['lib'].freeze
+      "lib" => ["lib"].freeze,
     }.freeze
 
     def initialize(data, extensions)
       parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
       @name          = parts[0].freeze
       @version       = if Gem::Version.correct?(parts[1])
-                         Gem::Version.new(parts[1])
-                       else
-                         Gem::Version.new(0)
-                       end
+        Gem::Version.new(parts[1])
+      else
+        Gem::Version.new(0)
+      end
 
       @platform      = Gem::Platform.new parts[2]
       @extensions    = extensions
       @full_name     = if platform == Gem::Platform::RUBY
-                         "#{name}-#{version}"
-                       else
-                         "#{name}-#{version}-#{platform}"
-                       end
+        "#{name}-#{version}"
+      else
+        "#{name}-#{version}-#{platform}"
+      end
 
       path_list = parts.last
       @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! do |x|
@@ -110,16 +110,16 @@ class Gem::StubSpecification < Gem::BasicSpecification
       begin
         saved_lineno = $.
 
-        File.open loaded_from, OPEN_MODE do |file|
+        Gem.open_file loaded_from, OPEN_MODE do |file|
           begin
             file.readline # discard encoding line
             stubline = file.readline.chomp
             if stubline.start_with?(PREFIX)
               extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
-                             $'.split "\0"
-                           else
-                             StubLine::NO_EXTENSIONS
-                           end
+                $'.split "\0"
+              else
+                StubLine::NO_EXTENSIONS
+              end
 
               @data = StubLine.new stubline, extensions
             end
@@ -185,14 +185,11 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def to_spec
     @spec ||= if @data
-                loaded = Gem.loaded_specs[name]
-                loaded if loaded && loaded.version == version
-              end
+      loaded = Gem.loaded_specs[name]
+      loaded if loaded && loaded.version == version
+    end
 
     @spec ||= Gem::Specification.load(loaded_from)
-    @spec.ignored = @ignored if @spec
-
-    @spec
   end
 
   ##

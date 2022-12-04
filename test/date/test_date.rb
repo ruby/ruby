@@ -163,4 +163,16 @@ class TestDate < Test::Unit::TestCase
     assert_equal(1, d2 <=> d1)
   end
 
+  def test_infinity_comparison
+    assert_equal(0, Float::INFINITY <=> Date::Infinity.new)
+    assert_equal(0, Date::Infinity.new <=> Float::INFINITY)
+    assert_equal(0, -Float::INFINITY <=> -Date::Infinity.new)
+    assert_equal(0, -Date::Infinity.new <=> -Float::INFINITY)
+
+    assert_equal(1, Float::INFINITY <=> -Date::Infinity.new)
+    assert_equal(1, Date::Infinity.new <=> -Float::INFINITY)
+
+    assert_equal(-1, -Float::INFINITY <=> Date::Infinity.new)
+    assert_equal(-1, -Date::Infinity.new <=> Float::INFINITY)
+  end
 end

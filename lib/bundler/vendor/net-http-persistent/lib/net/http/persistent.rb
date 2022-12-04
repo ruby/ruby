@@ -159,7 +159,14 @@ class Bundler::Persistent::Net::HTTP::Persistent
   # limits (typically windows).
 
   if Process.const_defined? :RLIMIT_NOFILE
-    DEFAULT_POOL_SIZE = Process.getrlimit(Process::RLIMIT_NOFILE).first / 4
+    open_file_limits = Process.getrlimit(Process::RLIMIT_NOFILE)
+
+    # Under JRuby on Windows Process responds to `getrlimit` but returns something that does not match docs
+    if open_file_limits.respond_to?(:first)
+      DEFAULT_POOL_SIZE = open_file_limits.first / 4
+    else
+      DEFAULT_POOL_SIZE = 256
+    end
   else
     DEFAULT_POOL_SIZE = 256
   end
@@ -167,7 +174,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   ##
   # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.0'
+  VERSION = '4.0.1'
 
   ##
   # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various

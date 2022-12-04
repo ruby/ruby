@@ -5,11 +5,13 @@ describe 'Coverage.result' do
   before :all do
     @class_file = fixture __FILE__, 'some_class.rb'
     @config_file = fixture __FILE__, 'start_coverage.rb'
+    @eval_code_file = fixture __FILE__, 'eval_code.rb'
   end
 
   after :each do
     $LOADED_FEATURES.delete(@class_file)
     $LOADED_FEATURES.delete(@config_file)
+    $LOADED_FEATURES.delete(@eval_code_file)
   end
 
   it 'gives the covered files as a hash with arrays of count or nil' do
@@ -63,16 +65,77 @@ describe 'Coverage.result' do
     result.should == {}
   end
 
-  it 'second Coverage.start does nothing' do
-    Coverage.start
-    require @config_file.chomp('.rb')
-    result = Coverage.result
+  ruby_version_is ''...'3.1' do
+    it 'second Coverage.start does nothing' do
+      Coverage.start
+      require @config_file.chomp('.rb')
+      result = Coverage.result
 
-    result.should == { @config_file => [1, 1, 1] }
+      result.should == { @config_file => [1, 1, 1] }
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it 'second Coverage.start give exception' do
+      Coverage.start
+      -> {
+        require @config_file.chomp('.rb')
+      }.should raise_error(RuntimeError, 'coverage measurement is already setup')
+    ensure
+      Coverage.result
+    end
   end
 
   it 'does not include the file starting coverage since it is not tracked' do
     require @config_file.chomp('.rb')
     Coverage.result.should_not include(@config_file)
+  end
+
+  ruby_version_is '3.1'...'3.2' do
+    it 'returns the correct results when eval is used' do
+      Coverage.start
+      require @eval_code_file.chomp('.rb')
+      result = Coverage.result
+
+      result.should == {
+          @eval_code_file => [
+              1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1
+          ]
+      }
+    end
+  end
+
+  ruby_version_is '3.2' do
+    it 'indicates support for different features' do
+      Coverage.supported?(:lines).should == true
+    end
+
+    it 'returns the correct results when eval coverage is enabled' do
+      Coverage.supported?(:eval).should == true
+
+      Coverage.start(lines: true, eval: true)
+      require @eval_code_file.chomp('.rb')
+      result = Coverage.result
+
+      result.should == {
+          @eval_code_file => {
+              lines: [1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1]
+          }
+      }
+    end
+
+    it 'returns the correct results when eval coverage is enabled' do
+      Coverage.supported?(:eval).should == true
+
+      Coverage.start(lines: true, eval: false)
+      require @eval_code_file.chomp('.rb')
+      result = Coverage.result
+
+      result.should == {
+          @eval_code_file => {
+              lines: [1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1]
+          }
+      }
+    end
   end
 end

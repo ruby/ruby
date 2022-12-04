@@ -15,9 +15,10 @@ end
 RSpec.describe "bundle cache with git" do
   it "copies repository to vendor cache and uses it" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -33,9 +34,10 @@ RSpec.describe "bundle cache with git" do
 
   it "copies repository to vendor cache and uses it even when configured with `path`" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -55,6 +57,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -69,9 +72,10 @@ RSpec.describe "bundle cache with git" do
 
   it "tracks updates" do
     git = build_git "foo"
-    old_ref = git.ref_for("master", 11)
+    old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -82,7 +86,7 @@ RSpec.describe "bundle cache with git" do
       s.write "lib/foo.rb", "puts :CACHE"
     end
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     expect(ref).not_to eq(old_ref)
 
     bundle "update", :all => true
@@ -99,9 +103,10 @@ RSpec.describe "bundle cache with git" do
 
   it "tracks updates when specifying the gem" do
     git = build_git "foo"
-    old_ref = git.ref_for("master", 11)
+    old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -112,7 +117,7 @@ RSpec.describe "bundle cache with git" do
       s.write "lib/foo.rb", "puts :CACHE"
     end
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     expect(ref).not_to eq(old_ref)
 
     bundle "update foo"
@@ -127,10 +132,11 @@ RSpec.describe "bundle cache with git" do
 
   it "uses the local repository to generate the cache" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     gemfile <<-G
-      gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :master
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :main
     G
 
     bundle %(config set local.foo #{lib_path("foo-1.0")})
@@ -150,6 +156,9 @@ RSpec.describe "bundle cache with git" do
   end
 
   it "copies repository to vendor cache, including submodules" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
     build_git "submodule", "1.0"
 
     git = build_git "has_submodule", "1.0" do |s|
@@ -160,44 +169,19 @@ RSpec.describe "bundle cache with git" do
     sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       git "#{lib_path("has_submodule-1.0")}", :submodules => true do
         gem "has_submodule"
       end
     G
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     bundle "config set cache_all true"
     bundle :cache
 
     expect(bundled_app("vendor/cache/has_submodule-1.0-#{ref}")).to exist
     expect(bundled_app("vendor/cache/has_submodule-1.0-#{ref}/submodule-1.0")).to exist
     expect(the_bundle).to include_gems "has_submodule 1.0"
-  end
-
-  it "displays warning message when detecting git repo in Gemfile", :bundler => "< 3" do
-    build_git "foo"
-
-    install_gemfile <<-G
-      gem "foo", :git => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle :cache
-
-    expect(err).to include("Your Gemfile contains path and git dependencies.")
-  end
-
-  it "does not display warning message if cache_all is set in bundle config" do
-    build_git "foo"
-
-    install_gemfile <<-G
-      gem "foo", :git => '#{lib_path("foo-1.0")}'
-    G
-
-    bundle "config set cache_all true"
-    bundle :cache
-    bundle :cache
-
-    expect(err).not_to include("Your Gemfile contains path and git dependencies.")
   end
 
   it "caches pre-evaluated gemspecs" do
@@ -209,12 +193,13 @@ RSpec.describe "bundle cache with git" do
     update_git("foo") {|s| s.write "foo.gemspec", spec_lines.join("\n") }
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
     bundle :cache
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     gemspec = bundled_app("vendor/cache/foo-1.0-#{ref}/foo.gemspec").read
     expect(gemspec).to_not match("`echo bob`")
   end
@@ -223,10 +208,11 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
-    bundle :cache, "all-platforms" => true, :install => false, :path => "./vendor/cache"
+    bundle :cache, "all-platforms" => true, :install => false
 
     simulate_new_machine
     with_path_as "" do

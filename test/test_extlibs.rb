@@ -45,7 +45,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "continuation"
   check_existence "coverage"
   check_existence "date"
-  #check_existence "dbm" # depend on libdbm
   check_existence "digest"
   check_existence "digest/bubblebabble"
   check_existence "digest/md5"
@@ -56,7 +55,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "fcntl"
   check_existence "fiber"
   check_existence "fiddle"
-  #check_existence "gdbm" # depend on libgdbm
   check_existence "io/console"
   check_existence "io/nonblock"
   check_existence "io/wait"
@@ -76,7 +74,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "strscan"
   check_existence "syslog"
   check_existence "thread"
-  check_existence "Win32API"
   check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"
 end

@@ -1,5 +1,5 @@
 class Bundler::Thor
-  Correctable = if defined?(DidYouMean::SpellChecker) && defined?(DidYouMean::Correctable)
+  Correctable = if defined?(DidYouMean::SpellChecker) && defined?(DidYouMean::Correctable) # rubocop:disable Naming/ConstantName
                   # In order to support versions of Ruby that don't have keyword
                   # arguments, we need our own spell checker class that doesn't take key
                   # words. Even though this code wouldn't be hit because of the check
@@ -102,9 +102,14 @@ class Bundler::Thor
   end
 
   if Correctable
-    DidYouMean::SPELL_CHECKERS.merge!(
-      'Bundler::Thor::UndefinedCommandError' => UndefinedCommandError::SpellChecker,
-      'Bundler::Thor::UnknownArgumentError' => UnknownArgumentError::SpellChecker
-    )
+    if DidYouMean.respond_to?(:correct_error)
+      DidYouMean.correct_error(Bundler::Thor::UndefinedCommandError, UndefinedCommandError::SpellChecker)
+      DidYouMean.correct_error(Bundler::Thor::UnknownArgumentError, UnknownArgumentError::SpellChecker)
+    else
+      DidYouMean::SPELL_CHECKERS.merge!(
+        'Bundler::Thor::UndefinedCommandError' => UndefinedCommandError::SpellChecker,
+        'Bundler::Thor::UnknownArgumentError' => UnknownArgumentError::SpellChecker
+      )
+    end
   end
 end

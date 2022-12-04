@@ -93,7 +93,9 @@ There are also faster check macros for fixnums and nil.
 The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
 The equivalent C constants are: Qnil, Qfalse, Qtrue.
-Note that Qfalse is false in C also (i.e. 0), but not Qnil.
+RTEST() will return true if a VALUE is neither Qfalse nor Qnil.
+If you need to differentiate Qfalse from Qnil,
+specifically test against Qfalse.
 
 The T_FIXNUM data is a 31bit or 63bit length fixed integer.
 This size depends on the size of long: if long is 32bit then
@@ -450,7 +452,7 @@ you may rely on:
 
 To specify whether keyword arguments are passed when calling super:
 
-  VALUE rb_call_super(int argc, const VALUE *argv, int kw_splat)
+  VALUE rb_call_super_kw(int argc, const VALUE *argv, int kw_splat)
 
 +kw_splat+ can have these possible values (used by all methods that accept
 +kw_splat+ argument):
@@ -657,13 +659,12 @@ with the next macro.
 
 TypedData_Wrap_Struct() returns a created Ruby object as a VALUE.
 
-The klass argument is the class for the object.
+The klass argument is the class for the object.  The klass should
+derive from rb_cObject, and the allocator must be set by calling
+rb_define_alloc_func or rb_undef_alloc_func.
+
 data_type is a pointer to a const rb_data_type_t which describes
 how Ruby should manage the struct.
-
-It is recommended that klass derives from a special class called
-Data (rb_cData) but not from Object or other ordinal classes.
-If it doesn't, you have to call rb_undef_alloc_func(klass).
 
 rb_data_type_t is defined like this.  Let's take a look at each
 member of the struct.
@@ -671,16 +672,17 @@ member of the struct.
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void *reserved[2];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void (*dcompact)(void*);
+          void *reserved[1];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_name is an identifier of this instance of the struct.
@@ -701,14 +703,22 @@ Note that it is recommended to avoid such a reference.
 ++
 
 dfree is a function to free the pointer allocation.
-If this is -1, the pointer will be just freed.
+If this is RUBY_DEFAULT_FREE, the pointer will be just freed.
 
 dsize calculates memory consumption in bytes by the struct.
 Its parameter is a pointer to your struct.
 You can pass 0 as dsize if it is hard to implement such a function.
 But it is still recommended to avoid 0.
 
-You have to fill reserved and parent with 0.
+dcompact is invoked when memory compaction took place.
+Referred Ruby objects that were marked by rb_gc_mark_movable()
+can here be updated per rb_gc_location().
+
+You have to fill reserved with 0.
+
+parent can point to another C type definition that the Ruby object
+is inherited from. Then TypedData_Get_Struct() does also accept
+derived objects.
 
 You can fill "data" with an arbitrary value for your use.
 Ruby does nothing with the member.
@@ -739,6 +749,14 @@ RUBY_TYPED_WB_PROTECTED ::
 
   More about write barriers can be found in "Generational GC" in
   Appendix D.
+
+RUBY_TYPED_FROZEN_SHAREABLE ::
+
+  This flag indicates that the object is shareable object
+  if the object is frozen. See Appendix F more details.
+
+  If this flag is not set, the object can not become a shareable
+  object by Ractor.make_shareable() method.
 
 You can allocate and wrap the structure in one step.
 
@@ -797,11 +815,14 @@ the library.
 
 Here's the example of an initializing function.
 
+  #include <ruby.h>
   void
   Init_dbm(void)
   {
       /* define DBM class */
       VALUE cDBM = rb_define_class("DBM", rb_cObject);
+      /* Redefine DBM.allocate
+      rb_define_alloc_func(cDBM, fdbm_alloc);
       /* DBM includes Enumerable module */
       rb_include_module(cDBM, rb_mEnumerable);
 
@@ -811,7 +832,7 @@ Here's the example of an initializing function.
       /* DBM instance method close(): no args */
       rb_define_method(cDBM, "close", fdbm_close, 0);
       /* DBM instance method []: 1 argument */
-      rb_define_method(cDBM, "[]", fdbm_fetch, 1);
+      rb_define_method(cDBM, "[]", fdbm_aref, 1);
 
       /* ... */
 
@@ -834,10 +855,19 @@ TypedData_Make_Struct.
       RUBY_TYPED_FREE_IMMEDIATELY,
   };
 
-  obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
+  static VALUE
+  fdbm_alloc(VALUE klass)
+  {
+      struct dbmdata *dbmp;
+      /* Allocate T_DATA object and C struct and fill struct with zero bytes */
+      return TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
+  }
 
 This code wraps the dbmdata structure into a Ruby object.  We avoid
 wrapping DBM* directly, because we want to cache size information.
+Since Object.allocate allocates an ordinary T_OBJECT type (instead
+of T_DATA), it's important to either use rb_define_alloc_func() to
+overwrite it or rb_undef_alloc_func() to delete it.
 
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
@@ -855,9 +885,13 @@ There are three kinds of way to receive method arguments.  First,
 methods with a fixed number of arguments receive arguments like this:
 
   static VALUE
-  fdbm_delete(VALUE obj, VALUE keystr)
+  fdbm_aref(VALUE obj, VALUE keystr)
   {
-        /* ... */
+      struct dbmdata *dbmp;
+      GetDBM(obj, dbmp);
+      /* Use dbmp to access the key */
+      dbm_fetch(dbmp->di_dbm, StringValueCStr(keystr));
+      /* ... */
   }
 
 The first argument of the C function is the self, the rest are the
@@ -922,6 +956,9 @@ need to put
 at the top of the file.  You can use the functions below to check
 various conditions.
 
+  append_cppflags(array-of-flags[, opt]): append each flag to $CPPFLAGS if usable
+  append_cflags(array-of-flags[, opt]): append each flag to $CFLAGS if usable
+  append_ldflags(array-of-flags[, opt]): append each flag to $LDFLAGS if usable
   have_macro(macro[, headers[, opt]]): check whether macro is defined
   have_library(lib[, func[, headers[, opt]]]): check whether library containing function exists
   find_library(lib[, func, *paths]): find library from paths
@@ -949,6 +986,10 @@ The value of the variables below will affect the Makefile.
   $CPPFLAGS: included in CPPFLAGS make variable (such as -I, -D)
   $LDFLAGS: included in LDFLAGS make variable (such as -L)
   $objs: list of object file names
+
+Compiler/linker flags are not portable usually, you should use
++append_cppflags+, +append_cpflags+ and +append_ldflags+ respectively
+instead of appending the above variables directly.
 
 Normally, the object files list is automatically generated by searching
 source files, but you must define them explicitly if any sources will
@@ -1003,7 +1044,24 @@ You can do anything you want with your library.  The author of Ruby
 will not claim any restrictions on your code depending on the Ruby API.
 Feel free to use, modify, distribute or sell your program.
 
-== Appendix A. Ruby Source Files Overview
+== Appendix A. Ruby Header and Source Files Overview
+
+=== Ruby Header Files
+
+Everything under <tt>$repo_root/include/ruby</tt> is installed with
+<tt>make install</tt>.
+It should be included per <tt>#include <ruby.h></tt> from C extensions.
+All symbols are public API with the exception of symbols prefixed with
++rbimpl_+ or +RBIMPL_+. They are implementation details and shouldn't
+be used by C extensions.
+
+Only <tt>$repo_root/include/ruby/*.h</tt> whose corresponding macros
+are defined in the <tt>$repo_root/include/ruby.h</tt> header are
+allowed to be <tt>#include</tt>-d by C extensions.
+
+Header files under <tt>$repo_root/internal/</tt> or directly under the
+root <tt>$repo_root/*.h</tt> are not make-installed.
+They are internal headers with only internal APIs.
 
 === Ruby Language Core
 
@@ -1047,9 +1105,8 @@ lex.c         :: automatically generated from keywords
     -> opt*.inc            : automatically generated
     -> vm.inc              : automatically generated
 
-=== Regular Expression Engine (Oniguruma)
+=== Regular Expression Engine (Onigumo)
 
-  regex.c
   regcomp.c
   regenc.c
   regerror.c
@@ -1851,13 +1908,13 @@ NORETURN_STYLE_NEW ::
 HAVE_RB_DEFINE_ALLOC_FUNC ::
 
   Means that function rb_define_alloc_func() is provided, that means the
-  allocation framework is used.  This is same as the result of
+  allocation framework is used.  This is the same as the result of
   have_func("rb_define_alloc_func", "ruby.h").
 
 HAVE_RB_REG_NEW_STR ::
 
   Means that function rb_reg_new_str() is provided, that creates Regexp
-  object from String object.  This is same as the result of
+  object from String object.  This is the same as the result of
   have_func("rb_reg_new_str", "ruby.h").
 
 HAVE_RB_IO_T ::
@@ -1874,6 +1931,9 @@ HAVE_RUBY_*_H ::
   Defined in ruby.h and means corresponding header is available.  For
   instance, when HAVE_RUBY_ST_H is defined you should use ruby/st.h not
   mere st.h.
+
+  Header files corresponding to these macros may be <tt>#include</tt>
+  directly from extension libraries.
 
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
@@ -2074,6 +2134,87 @@ keyword in C.  RB_GC_GUARD has the following advantages:
 3. "volatile" implementations may be buggy/inconsistent in some
    compilers and architectures. RB_GC_GUARD is customizable for broken
    systems/compilers without negatively affecting other systems.
+
+== Appendix F. Ractor support
+
+Ractor(s) are the parallel execution mechanism introduced in Ruby 3.0. All
+ractors can run in parallel on a different OS thread (using an underlying system
+provided thread), so the C extension should be thread-safe. A C extension that
+can run in multiple ractors is called "Ractor-safe".
+
+Ractor safety around C extensions has the following properties:
+1. By default, all C extensions are recognized as Ractor-unsafe.
+2. Ractor-unsafe C-methods may only be called from the main Ractor.  If invoked
+   by a non-main Ractor, then a Ractor::UnsafeError is raised.
+3. If an extension desires to be marked as Ractor-safe the extension should
+   call rb_ext_ractor_safe(true) at the Init_ function for the extension, and
+   all defined methods will be marked as Ractor-safe.
+
+To make a "Ractor-safe" C extension, we need to check the following points:
+
+(1) Do not share unshareable objects between ractors
+
+For example, C's global variable can lead sharing an unshareable objects
+between ractors.
+
+  VALUE g_var;
+  VALUE set(VALUE self, VALUE v){ return g_var = v; }
+  VALUE get(VALUE self){ return g_var; }
+
+set() and get() pair can share an unshareable objects using g_var, and
+it is Ractor-unsafe.
+
+Not only using global variables directly, some indirect data structure
+such as global st_table can share the objects, so please take care.
+
+Note that class and module objects are shareable objects, so you can
+keep the code "cFoo = rb_define_class(...)" with C's global variables.
+
+(2) Check the thread-safety of the extension
+
+An extension should be thread-safe. For example, the following code is
+not thread-safe:
+
+  bool g_called = false;
+  VALUE call(VALUE self) {
+    if (g_called) rb_raise("recursive call is not allowed.");
+    g_called = true;
+    VALUE ret = do_something();
+    g_called = false;
+    return ret;
+  }
+
+because g_called global variable should be synchronized by other
+ractor's threads. To avoid such data-race, some synchronization should
+be used. Check include/ruby/thread_native.h and include/ruby/atomic.h.
+
+With Ractors, all objects given as method parameters and the receiver (self)
+are guaranteed to be from the current Ractor or to be shareable. As a
+consequence, it is easier to make code ractor-safe than to make code generally
+thread-safe. For example, we don't need to lock an array object to access the
+element of it.
+
+(3) Check the thread-safety of any used library
+
+If the extension relies on an external library, such as a function foo() from
+a library libfoo, the function libfoo foo() should be thread safe.
+
+(4) Make an object shareable
+
+This is not required to make an extension Ractor-safe.
+
+If an extension provides special objects defined by rb_data_type_t,
+consider these objects can become shareable or not.
+
+RUBY_TYPED_FROZEN_SHAREABLE flag indicates that these objects can be
+shareable objects if the object is frozen. This means that if the object
+is frozen, the mutation of wrapped data is not allowed.
+
+(5) Others
+
+There are possibly other points or requirements which must be considered in the
+making of a Ractor-safe extension.  This document will be extended as they are
+discovered.
 
 :enddoc: Local variables:
 :enddoc: fill-column: 70

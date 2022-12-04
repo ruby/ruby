@@ -53,6 +53,12 @@ module UnboundMethodSpecs
 
     def discard_1(); :discard; end
     def discard_2(); :discard; end
+
+    def my_public_method; end
+    def my_protected_method; end
+    def my_private_method; end
+    protected :my_protected_method
+    private :my_private_method
   end
 
   class Parent
@@ -83,5 +89,15 @@ module UnboundMethodSpecs
 
   class C < B
     def overridden; end
+  end
+
+  module HashSpecs
+    class SuperClass
+      def foo
+      end
+    end
+
+    class SubClass < SuperClass
+    end
   end
 end

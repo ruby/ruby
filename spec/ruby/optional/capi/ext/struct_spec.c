@@ -62,12 +62,10 @@ static VALUE struct_spec_rb_struct_new(VALUE self, VALUE klass,
   return rb_struct_new(klass, a, b, c);
 }
 
-#ifdef RUBY_VERSION_IS_2_4
 static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st)
 {
   return rb_struct_size(st);
 }
-#endif
 
 void Init_struct_spec(void) {
   VALUE cls = rb_define_class("CApiStructSpecs", rb_cObject);
@@ -79,9 +77,7 @@ void Init_struct_spec(void) {
   rb_define_method(cls, "rb_struct_define", struct_spec_struct_define, 4);
   rb_define_method(cls, "rb_struct_define_under", struct_spec_struct_define_under, 5);
   rb_define_method(cls, "rb_struct_new", struct_spec_rb_struct_new, 4);
-#ifdef RUBY_VERSION_IS_2_4
   rb_define_method(cls, "rb_struct_size", struct_spec_rb_struct_size, 1);
-#endif
 }
 
 #ifdef __cplusplus

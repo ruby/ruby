@@ -1,26 +1,29 @@
 require_relative '../../../spec_helper'
-require 'set'
 
-describe "SortedSet#each" do
-  before :each do
-    @set = SortedSet[1, 2, 3]
-  end
+ruby_version_is ""..."3.0" do
+  require 'set'
 
-  it "yields each Object in self in sorted order" do
-    ret = []
-    SortedSet["one", "two", "three"].each { |x| ret << x }
-    ret.should == ["one", "two", "three"].sort
-  end
+  describe "SortedSet#each" do
+    before :each do
+      @set = SortedSet[1, 2, 3]
+    end
 
-  it "returns self" do
-    @set.each { |x| x }.should equal(@set)
-  end
+    it "yields each Object in self in sorted order" do
+      ret = []
+      SortedSet["one", "two", "three"].each { |x| ret << x }
+      ret.should == ["one", "two", "three"].sort
+    end
 
-  it "returns an Enumerator when not passed a block" do
-    enum = @set.each
+    it "returns self" do
+      @set.each { |x| x }.should equal(@set)
+    end
 
-    ret = []
-    enum.each { |x| ret << x }
-    ret.sort.should == [1, 2, 3]
+    it "returns an Enumerator when not passed a block" do
+      enum = @set.each
+
+      ret = []
+      enum.each { |x| ret << x }
+      ret.sort.should == [1, 2, 3]
+    end
   end
 end

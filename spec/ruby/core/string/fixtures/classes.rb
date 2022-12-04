@@ -46,4 +46,15 @@ module StringSpecs
       self.replace(str)
     end
   end
+
+  class SpecialVarProcessor
+    def process(match)
+      if $~ != nil
+        str = $~[0]
+      else
+        str = "unset"
+      end
+      "<#{str}>"
+    end
+  end
 end

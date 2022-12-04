@@ -47,10 +47,8 @@ if !File.exist?("#{srcdir}/depend")
   %x[#{RbConfig.ruby} #{srcdir}/mkconstants.rb -o #{srcdir}/constdefs.h]
 end
 
-decl = [
-  "void rb_deprecate_constant(VALUE, const char *);",
-]
-have_func('rb_deprecate_constant(Qnil, "None")', [decl])
+# TODO: remove when dropping 2.7 support, as exported since 3.0
+have_func('rb_deprecate_constant(Qnil, "None")')
 
 $distcleanfiles << "constdefs.h"
 

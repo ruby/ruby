@@ -323,7 +323,7 @@ class TestDRbAnyToS < Test::Unit::TestCase
   end
 
   def test_any_to_s
-    server = DRb::DRbServer.new('druby://:0')
+    server = DRb::DRbServer.new('druby://localhost:0')
     server.singleton_class.send(:public, :any_to_s)
     assert_equal("foo:String", server.any_to_s("foo"))
     assert_match(/\A#<DRbTests::TestDRbAnyToS::BO:0x[0-9a-f]+>\z/, server.any_to_s(BO.new))
@@ -335,16 +335,19 @@ end
 
 class TestDRbTCP < Test::Unit::TestCase
   def test_immediate_close
-    server = DRb::DRbServer.new('druby://:0')
+    omit 'MinGW leaks a thread in this test' if /mingw/ =~ RUBY_PLATFORM
+    server = DRb::DRbServer.new('druby://localhost:0')
     host, port, = DRb::DRbTCPSocket.send(:parse_uri, server.uri)
     socket = TCPSocket.open host, port
     socket.shutdown
     socket.close
     client = DRb::DRbTCPSocket.new(server.uri, socket)
     assert client
-    client.close
-    server.stop_service
-    server.thread.join
+  ensure
+    client&.close
+    socket&.close
+    server&.stop_service
+    server&.thread&.join
     DRb::DRbConn.stop_pool
   end
 end

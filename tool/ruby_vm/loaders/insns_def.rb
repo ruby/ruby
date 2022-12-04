@@ -25,10 +25,10 @@ grammar = %r'
     (?<ws>       \g<comment> | \s                                  ){0}
     (?<ident>    [_a-zA-Z] [0-9_a-zA-Z]*                           ){0}
     (?<type>     (?: \g<keyword> \g<ws>+ )* \g<ident>              ){0}
-    (?<arg>      \g<type> \g<ws>+ \g<ident> | \.\.\.               ){0}
+    (?<arg>      \g<type> \g<ws>+ \g<ident>                        ){0}
     (?<argv>     (?# empty ) |
                  void        |
-                 \g<arg> (?: \g<ws>* , \g<ws>* \g<arg> \g<ws>* )*  ){0}
+                 (?: \.\.\. | \g<arg>) (?: \g<ws>* , \g<ws>* \g<arg> \g<ws>* )*  ){0}
     (?<pragma>   \g<ws>* // \s* attr \g<ws>+
                  (?<pragma:type> \g<type>   )              \g<ws>+
                  (?<pragma:name> \g<ident>  )              \g<ws>*
@@ -57,6 +57,10 @@ until scanner.eos? do
   ope  = split.(scanner["insn:opes"])
   pop  = split.(scanner["insn:pops"])
   ret  = split.(scanner["insn:rets"])
+  if ope.include?("...")
+    raise sprintf("parse error at %s:%d:%s: operands cannot be variadic",
+                  scanner.__FILE__, scanner.__LINE__, name)
+  end
 
   attrs = []
   while l2 = scanner.scan(/\G#{grammar}\g<pragma>/o) do

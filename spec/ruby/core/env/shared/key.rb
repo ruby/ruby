@@ -9,15 +9,23 @@ describe :env_key, shared: true do
 
   it "returns the index associated with the passed value" do
     ENV["foo"] = "bar"
-    ENV.send(@method, "bar").should == "foo"
+    suppress_warning {
+      ENV.send(@method, "bar").should == "foo"
+    }
   end
 
   it "returns nil if the passed value is not found" do
     ENV.delete("foo")
-    ENV.send(@method, "foo").should be_nil
+    suppress_warning {
+      ENV.send(@method, "foo").should be_nil
+    }
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV.send(@method, Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> {
+      suppress_warning {
+        ENV.send(@method, Object.new)
+      }
+    }.should raise_error(TypeError, "no implicit conversion of Object into String")
   end
 end

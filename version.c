@@ -9,15 +9,40 @@
 
 **********************************************************************/
 
+#include "internal/cmdlineopt.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
 #include "mjit.h"
+#include "yjit.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
+
+#ifdef RUBY_REVISION
+# if RUBY_PATCHLEVEL == -1
+#  ifndef RUBY_BRANCH_NAME
+#   define RUBY_BRANCH_NAME "master"
+#  endif
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
+# else
+#  define RUBY_REVISION_STR " revision "RUBY_REVISION
+# endif
+#else
+# define RUBY_REVISION "HEAD"
+# define RUBY_REVISION_STR ""
+#endif
+#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
+# undef RUBY_RELEASE_DATETIME
+# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
+#endif
+
+# define RUBY_DESCRIPTION_WITH(opt) \
+    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " " \
+    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ")" opt " " \
+    "[" RUBY_PLATFORM "]"
 
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
@@ -35,15 +60,26 @@ const int ruby_api_version[] = {
 #ifndef RUBY_FULL_REVISION
 # define RUBY_FULL_REVISION RUBY_REVISION
 #endif
+#ifdef YJIT_SUPPORT
+#define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
+#else
+#define YJIT_DESCRIPTION " +YJIT"
+#endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
-const char ruby_copyright[] = RUBY_COPYRIGHT;
+static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +MJIT");
+static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(YJIT_DESCRIPTION);
+const char ruby_copyright[] = "ruby - Copyright (C) "
+    RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
+    RUBY_AUTHOR;
 const char ruby_engine[] = "ruby";
+
+// Might change after initialization
+const char *rb_dynamic_description = ruby_description;
 
 /*! Defines platform-depended Ruby-level constants */
 void
@@ -91,18 +127,29 @@ Init_version(void)
 }
 
 #if USE_MJIT
-#define MJIT_OPTS_ON mjit_opts.on
+#define MJIT_OPTS_ON opt->mjit.on
 #else
 #define MJIT_OPTS_ON 0
 #endif
 
+#if USE_YJIT
+#define YJIT_OPTS_ON opt->yjit
+#else
+#define YJIT_OPTS_ON 0
+#endif
+
 void
-Init_ruby_description(void)
+Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     VALUE description;
 
     if (MJIT_OPTS_ON) {
-        description = MKSTR(description_with_jit);
+        rb_dynamic_description = ruby_description_with_mjit;
+        description = MKSTR(description_with_mjit);
+    }
+    else if (YJIT_OPTS_ON) {
+        rb_dynamic_description = ruby_description_with_yjit;
+        description = MKSTR(description_with_yjit);
     }
     else {
         description = MKSTR(description);
@@ -114,16 +161,11 @@ Init_ruby_description(void)
     rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
 }
 
-/*! Prints the version information of the CRuby interpreter to stdout. */
 void
 ruby_show_version(void)
 {
-    if (MJIT_OPTS_ON) {
-        PRINT(description_with_jit);
-    }
-    else {
-        PRINT(description);
-    }
+    puts(rb_dynamic_description);
+
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
 #endif
@@ -133,7 +175,6 @@ ruby_show_version(void)
     fflush(stdout);
 }
 
-/*! Prints the copyright notice of the CRuby interpreter to stdout. */
 void
 ruby_show_copyright(void)
 {

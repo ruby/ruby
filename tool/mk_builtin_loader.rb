@@ -4,6 +4,9 @@ require 'ripper'
 require 'stringio'
 require_relative 'ruby_vm/helpers/c_escape'
 
+SUBLIBS = {}
+REQUIRED = {}
+
 def string_literal(lit, str = [])
   while lit
     case lit.first
@@ -52,7 +55,7 @@ def make_cfunc_name inlines, name, lineno
 end
 
 def collect_locals tree
-  type, name, (line, cols) = tree
+  _type, name, (line, _cols) = tree
   if locals = LOCALS_DB[[name, line]]
     locals
   else
@@ -65,7 +68,7 @@ end
 
 def collect_builtin base, tree, name, bs, inlines, locals = nil
   while tree
-    call = recv = sep = mid = args = nil
+    recv = sep = mid = args = nil
     case tree.first
     when :def
       locals = collect_locals(tree[1])
@@ -84,7 +87,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
       tree = tree[2]
       next
     when :method_add_arg
-      _, mid, (_, (_, args)) = tree
+      _method_add_arg, mid, (_arg_paren, args) = tree
       case mid.first
       when :call
         _, recv, sep, mid = mid
@@ -93,6 +96,11 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
       else
         mid = nil
       end
+      # w/  trailing comma: [[:method_add_arg, ...]]
+      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]], false]
+      if args && args.first == :args_add_block
+        args = args[1]
+      end
     when :vcall
       _, mid = tree
     when :command               # FCALL
@@ -100,8 +108,9 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
     when :call, :command_call   # CALL
       _, recv, sep, mid, (_, args) = tree
     end
+
     if mid
-      raise "unknown sexp: #{mid.inspect}" unless mid.first == :@ident
+      raise "unknown sexp: #{mid.inspect}" unless %i[@ident @const].include?(mid.first)
       _, mid, (lineno,) = mid
       if recv
         func_name = nil
@@ -126,7 +135,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         args.pop unless (args ||= []).last
         argc = args.size
 
-        if /(.+)\!\z/ =~ func_name
+        if /(.+)[\!\?]\z/ =~ func_name
           case $1
           when 'attr'
             text = inline_text(argc, args.first)
@@ -156,6 +165,14 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             func_name = nil # required
             inlines[inlines.size] = [lineno, text, nil, nil]
             argc -= 1
+          when 'mandatory_only'
+            func_name = nil
+          when 'arg'
+            argc == 1 or raise "unexpected argument number #{argc}"
+            (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"
+            (arg = arg[1])[0] == :symbol or raise "symbol expected #{arg}"
+            (var = arg[1] and var = var[1]) or raise "argument name expected #{arg}"
+            func_name = nil
           end
         end
 
@@ -165,6 +182,21 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         end
 
         bs[func_name] = [argc, cfunc_name] if func_name
+      elsif /\Arequire(?:_relative)\z/ =~ mid and args.size == 1 and
+           (arg1 = args[0])[0] == :string_literal and
+           (arg1 = arg1[1])[0] == :string_content and
+           (arg1 = arg1[1])[0] == :@tstring_content and
+           sublib = arg1[1]
+        if File.exist?(f = File.join(@dir, sublib)+".rb")
+          puts "- #{@base}.rb requires #{sublib}"
+          if REQUIRED[sublib]
+            warn "!!! #{sublib} is required from #{REQUIRED[sublib]} already; ignored"
+          else
+            REQUIRED[sublib] = @base
+            (SUBLIBS[@base] ||= []) << sublib
+          end
+          ARGV.push(f)
+        end
       end
       break unless tree = args
     end
@@ -233,7 +265,9 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 end
 
 def mk_builtin_header file
+  @dir = File.dirname(file)
   base = File.basename(file, '.rb')
+  @base = base
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
@@ -242,10 +276,10 @@ def mk_builtin_header file
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   begin
-    f = open(ofile, 'w')
-  rescue Errno::EACCES
+    f = File.open(ofile, 'w')
+  rescue SystemCallError # EACCES, EPERM, EROFS, etc.
     # Fall back to the current directory
-    f = open(File.basename(ofile), 'w')
+    f = File.open(File.basename(ofile), 'w')
   end
   begin
     if File::ALT_SEPARATOR
@@ -291,10 +325,10 @@ def mk_builtin_header file
            . map {|i|", argv[#{i}]"} \
            . join('')
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
       f.puts %'{'
-      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
-      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+      f.puts %'    rb_str_catf(buf, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
       if inlines.has_key? cfunc_name
         body_lineno, text, locals, func_name = inlines[cfunc_name]
         lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
@@ -302,25 +336,33 @@ def mk_builtin_header file
         str.gsub(/^(?!#)/, '    ').each_line {|i|
           j = RubyVM::CEscape.rstring2cstr(i).dup
           j.sub!(/^    return\b/ , '    val =')
-          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
+          f.printf(%'        rb_str_catf(buf, "%%s", %s);\n', j)
         }
         f.puts(%'        return;')
         f.puts(%'    }')
       end
       if argc > 0
         f.puts %'    if (index == -1) {'
-        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
         f.puts %'    }'
         f.puts %'    else {'
-        f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
-        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end
-      f.puts %'    fprintf(f, "    func f = (func)%"PRIdPTR"; /* == #{cfunc_name} */\\n", (intptr_t)#{cfunc_name});'
-      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
+      f.puts %'    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
+      f.puts %'    rb_str_catf(buf, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
     }
+
+    if SUBLIBS[base]
+      f.puts "// sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts %[#include #{(sub+".rbinc").dump}]
+      end
+      f.puts
+    end
 
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
@@ -337,13 +379,21 @@ def mk_builtin_header file
     f.puts
     f.puts "  // arity_check"
     f.puts "COMPILER_WARNING_PUSH"
-    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || __clang__"
+    f.puts "#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__"
     f.puts "COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)"
     f.puts "#endif"
     bs.each{|func, (argc, cfunc_name)|
       f.puts "  if (0) rb_builtin_function_check_arity#{argc}(#{cfunc_name});"
     }
     f.puts "COMPILER_WARNING_POP"
+
+    if SUBLIBS[base]
+      f.puts
+      f.puts "  // sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts "  Init_builtin_#{sub}();"
+      end
+    end
 
     f.puts
     f.puts "  // load"

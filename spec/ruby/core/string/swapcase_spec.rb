@@ -9,13 +9,6 @@ describe "String#swapcase" do
    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting string when self is tainted" do
-      "".taint.swapcase.should.tainted?
-      "hello".taint.swapcase.should.tainted?
-    end
-  end
-
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äÖü".swapcase.should == "ÄöÜ"
@@ -34,6 +27,10 @@ describe "String#swapcase" do
   describe "ASCII-only case mapping" do
     it "does not swapcase non-ASCII characters" do
       "aßet".swapcase(:ascii).should == "AßET"
+    end
+
+    it "works with substrings" do
+      "prefix aTé"[-3..-1].swapcase(:ascii).should == "Até"
     end
   end
 
@@ -73,9 +70,18 @@ describe "String#swapcase" do
     -> { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(String)
+      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(String)
+    end
   end
 end
 

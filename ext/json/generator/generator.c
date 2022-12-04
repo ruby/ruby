@@ -1,11 +1,6 @@
 #include "../fbuffer/fbuffer.h"
 #include "generator.h"
 
-#ifdef HAVE_RUBY_ENCODING_H
-static VALUE CEncoding_UTF_8;
-static ID i_encoding, i_encode;
-#endif
-
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
              mHash, mArray,
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -15,14 +10,13 @@ static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
 #endif
              mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError,
-             i_SAFE_STATE_PROTOTYPE;
+             eNestingError;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
           i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
           i_pack, i_unpack, i_create_id, i_extend, i_key_p,
           i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth,
-          i_buffer_initial_length, i_dup;
+          i_buffer_initial_length, i_dup, i_escape_slash;
 
 /*
  * Copyright 2001-2004 Unicode, Inc.
@@ -130,7 +124,7 @@ static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16
 
 /* Converts string to a JSON string in FBuffer buffer, where all but the ASCII
  * and control characters are JSON escaped. */
-static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string)
+static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escape_slash)
 {
     const UTF8 *source = (UTF8 *) RSTRING_PTR(string);
     const UTF8 *sourceEnd = source + RSTRING_LEN(string);
@@ -180,6 +174,11 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string)
                         case '"':
                             fbuffer_append(buffer, "\\\"", 2);
                             break;
+                        case '/':
+                            if(escape_slash) {
+                                fbuffer_append(buffer, "\\/", 2);
+                                break;
+                            }
                         default:
                             fbuffer_append_char(buffer, (char)ch);
                             break;
@@ -229,7 +228,7 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string)
  * characters required by the JSON standard are JSON escaped. The remaining
  * characters (should be UTF8) are just passed through and appended to the
  * result. */
-static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
+static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char escape_slash)
 {
     const char *ptr = RSTRING_PTR(string), *p;
     unsigned long len = RSTRING_LEN(string), start = 0, end = 0;
@@ -280,6 +279,12 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
                     escape =  "\\\"";
                     escape_len = 2;
                     break;
+                case '/':
+                    if(escape_slash) {
+                        escape = "\\/";
+                        escape_len = 2;
+                        break;
+                    }
                 default:
                     {
                         unsigned short clen = 1;
@@ -609,13 +614,18 @@ static size_t State_memsize(const void *ptr)
     return size;
 }
 
+#ifndef HAVE_RB_EXT_RACTOR_SAFE
+#   undef RUBY_TYPED_FROZEN_SHAREABLE
+#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#endif
+
 #ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
     {NULL, State_free, State_memsize,},
 #ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 #endif
 };
 #endif
@@ -716,6 +726,8 @@ static VALUE cState_configure(VALUE self, VALUE opts)
     state->allow_nan = RTEST(tmp);
     tmp = rb_hash_aref(opts, ID2SYM(i_ascii_only));
     state->ascii_only = RTEST(tmp);
+    tmp = rb_hash_aref(opts, ID2SYM(i_escape_slash));
+    state->escape_slash = RTEST(tmp);
     return self;
 }
 
@@ -750,6 +762,7 @@ static VALUE cState_to_h(VALUE self)
     rb_hash_aset(result, ID2SYM(i_allow_nan), state->allow_nan ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_ascii_only), state->ascii_only ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_max_nesting), LONG2FIX(state->max_nesting));
+    rb_hash_aset(result, ID2SYM(i_escape_slash), state->escape_slash ? Qtrue : Qfalse);
     rb_hash_aset(result, ID2SYM(i_depth), LONG2FIX(state->depth));
     rb_hash_aset(result, ID2SYM(i_buffer_initial_length), LONG2FIX(state->buffer_initial_length));
     return result;
@@ -930,13 +943,13 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
     if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
-        obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
+        obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
 #endif
     if (state->ascii_only) {
-        convert_UTF8_to_JSON_ASCII(buffer, obj);
+        convert_UTF8_to_JSON_ASCII(buffer, obj, state->escape_slash);
     } else {
-        convert_UTF8_to_JSON(buffer, obj);
+        convert_UTF8_to_JSON(buffer, obj, state->escape_slash);
     }
     fbuffer_append_char(buffer, '"');
 }
@@ -984,10 +997,10 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     if (!allow_nan) {
         if (isinf(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         } else if (isnan(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
         }
     }
     fbuffer_append_str(buffer, tmp);
@@ -1152,8 +1165,7 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
     } else if (rb_obj_is_kind_of(opts, rb_cHash)) {
         return rb_funcall(self, i_new, 1, opts);
     } else {
-        VALUE prototype = rb_const_get(mJSON, i_SAFE_STATE_PROTOTYPE);
-        return rb_funcall(prototype, i_dup, 0);
+        return rb_class_new_instance(0, NULL, cState);
     }
 }
 
@@ -1378,6 +1390,31 @@ static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
 }
 
 /*
+ * call-seq: escape_slash
+ *
+ * If this boolean is true, the forward slashes will be escaped in
+ * the json output.
+ */
+static VALUE cState_escape_slash(VALUE self)
+{
+    GET_STATE(self);
+    return state->escape_slash ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq: escape_slash=(depth)
+ *
+ * This sets whether or not the forward slashes will be escaped in
+ * the json output.
+ */
+static VALUE cState_escape_slash_set(VALUE self, VALUE enable)
+{
+    GET_STATE(self);
+    state->escape_slash = RTEST(enable);
+    return Qnil;
+}
+
+/*
  * call-seq: allow_nan?
  *
  * Returns true, if NaN, Infinity, and -Infinity should be generated, otherwise
@@ -1460,6 +1497,10 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
  */
 void Init_generator(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
 #undef rb_intern
     rb_require("json/common");
 
@@ -1489,6 +1530,9 @@ void Init_generator(void)
     rb_define_method(cState, "array_nl=", cState_array_nl_set, 1);
     rb_define_method(cState, "max_nesting", cState_max_nesting, 0);
     rb_define_method(cState, "max_nesting=", cState_max_nesting_set, 1);
+    rb_define_method(cState, "escape_slash", cState_escape_slash, 0);
+    rb_define_method(cState, "escape_slash?", cState_escape_slash, 0);
+    rb_define_method(cState, "escape_slash=", cState_escape_slash_set, 1);
     rb_define_method(cState, "check_circular?", cState_check_circular_p, 0);
     rb_define_method(cState, "allow_nan?", cState_allow_nan_p, 0);
     rb_define_method(cState, "ascii_only?", cState_ascii_only_p, 0);
@@ -1545,6 +1589,7 @@ void Init_generator(void)
     i_object_nl = rb_intern("object_nl");
     i_array_nl = rb_intern("array_nl");
     i_max_nesting = rb_intern("max_nesting");
+    i_escape_slash = rb_intern("escape_slash");
     i_allow_nan = rb_intern("allow_nan");
     i_ascii_only = rb_intern("ascii_only");
     i_depth = rb_intern("depth");
@@ -1560,10 +1605,4 @@ void Init_generator(void)
     i_match = rb_intern("match");
     i_keys = rb_intern("keys");
     i_dup = rb_intern("dup");
-#ifdef HAVE_RUBY_ENCODING_H
-    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
-    i_encoding = rb_intern("encoding");
-    i_encode = rb_intern("encode");
-#endif
-    i_SAFE_STATE_PROTOTYPE = rb_intern("SAFE_STATE_PROTOTYPE");
 }

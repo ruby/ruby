@@ -56,28 +56,6 @@ describe "Ruby character strings" do
     "#\$".should == '#$'
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result of interpolation when an interpolated value is tainted" do
-      "#{"".taint}".tainted?.should be_true
-
-      @ip.taint
-      "#@ip".tainted?.should be_true
-
-      $ip.taint
-      "#$ip".tainted?.should be_true
-    end
-
-    it "untrusts the result of interpolation when an interpolated value is untrusted" do
-      "#{"".untrust}".untrusted?.should be_true
-
-      @ip.untrust
-      "#@ip".untrusted?.should be_true
-
-      $ip.untrust
-      "#$ip".untrusted?.should be_true
-    end
-  end
-
   it "allows using non-alnum characters as string delimiters" do
     %(hey #{@ip}).should == "hey xxx"
     %[hey #{@ip}].should == "hey xxx"
@@ -290,5 +268,32 @@ describe "Ruby String interpolation" do
     b = "\xff".force_encoding "binary"
 
     -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+  end
+
+  it "creates a non-frozen String" do
+    code = <<~'RUBY'
+    "a#{6*7}c"
+    RUBY
+    eval(code).should_not.frozen?
+  end
+
+  ruby_version_is "3.0" do
+    it "creates a non-frozen String when # frozen-string-literal: true is used" do
+      code = <<~'RUBY'
+      # frozen-string-literal: true
+      "a#{6*7}c"
+      RUBY
+      eval(code).should_not.frozen?
+    end
+  end
+
+  ruby_version_is ""..."3.0" do
+    it "creates a frozen String when # frozen-string-literal: true is used" do
+      code = <<~'RUBY'
+      # frozen-string-literal: true
+      "a#{6*7}c"
+      RUBY
+      eval(code).should.frozen?
+    end
   end
 end

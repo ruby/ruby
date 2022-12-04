@@ -187,14 +187,14 @@ describe "CApiBignumSpecs" do
     it "returns a Fixnum for a Fixnum input value" do
       val = @s.rb_dbl2big(2)
 
-      val.kind_of?(Fixnum).should == true
+      val.kind_of?(Integer).should == true
       val.should == 2
     end
 
     it "returns a Fixnum for a Float input value" do
       val = @s.rb_dbl2big(2.5)
 
-      val.kind_of?(Fixnum).should == true
+      val.kind_of?(Integer).should == true
       val.should == 2
     end
 
@@ -202,7 +202,7 @@ describe "CApiBignumSpecs" do
       input = 219238102380912830988.5 # chosen by fair dice roll
       val   = @s.rb_dbl2big(input)
 
-      val.kind_of?(Bignum).should == true
+      val.kind_of?(Integer).should == true
 
       # This value is based on the output of a simple C extension that uses
       # rb_dbl2big() to convert the above input value to a Bignum.

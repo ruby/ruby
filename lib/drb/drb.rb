@@ -1382,10 +1382,6 @@ module DRb
       @@idconv = idconv
     end
 
-    def self.default_safe_level(level) # :nodoc:
-      # Remove in Ruby 3.0
-    end
-
     # Set the default value of the :verbose option.
     #
     # See #new().  The initial default value is false.
@@ -1494,11 +1490,6 @@ module DRb
 
     # The configuration of this DRbServer
     attr_reader :config
-
-    def safe_level # :nodoc:
-      # Remove in Ruby 3.0
-      0
-    end
 
     # Set whether to operate in verbose mode.
     #
@@ -1636,9 +1627,12 @@ module DRb
       end
 
       def perform
-        @result = nil
-        @succ = false
-        setup_message
+        begin
+          setup_message
+        ensure
+          @result = nil
+          @succ = false
+        end
 
         if @block
           @result = perform_with_block
@@ -1727,6 +1721,7 @@ module DRb
           client_uri = client.uri
           @exported_uri << client_uri unless @exported_uri.include?(client_uri)
         end
+        _last_invoke_method = nil
         loop do
           begin
             succ = false
@@ -1739,6 +1734,7 @@ module DRb
           rescue Exception => e
             error_print(e) if verbose
           ensure
+            _last_invoke_method = invoke_method
             client.close unless succ
             if Thread.current['DRb']['stop_service']
               shutdown

@@ -43,6 +43,17 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0000", a.to_string)
     assert_equal(Socket::AF_INET6, a.family)
     assert_equal(48, a.prefix)
+    assert_nil(a.zone_id)
+
+    a = IPAddr.new("fe80::1%ab0")
+    assert_equal("fe80::1%ab0", a.to_s)
+    assert_equal("fe80:0000:0000:0000:0000:0000:0000:0001%ab0", a.to_string)
+    assert_equal(Socket::AF_INET6, a.family)
+    assert_equal(false, a.ipv4?)
+    assert_equal(true, a.ipv6?)
+    assert_equal("#<IPAddr: IPv6:fe80:0000:0000:0000:0000:0000:0000:0001%ab0/ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>", a.inspect)
+    assert_equal(128, a.prefix)
+    assert_equal('%ab0', a.zone_id)
 
     a = IPAddr.new("0.0.0.0")
     assert_equal("0.0.0.0", a.to_s)
@@ -87,10 +98,14 @@ class TC_IPAddr < Test::Unit::TestCase
 
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.256") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.011") }
-    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%fxp0") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("fe80::1%]") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[192.168.1.2]/120") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("[2001:200:300::]\nINVALID") }
     assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32\nINVALID") }
+    assert_raise(IPAddr::InvalidAddressError) { IPAddr.new("192.168.0.1/32/20") }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/032") }
+    assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/0128") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/255.255.255.0") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("::1/129") }
     assert_raise(IPAddr::InvalidPrefixError) { IPAddr.new("192.168.0.1/33") }
@@ -114,6 +129,23 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:505:2::", IPAddr.new_ntoh(a.hton).to_s)
     a = IPAddr.new("192.168.2.1")
     assert_equal("192.168.2.1", IPAddr.new_ntoh(a.hton).to_s)
+  end
+
+  def test_ntop
+    # IPv4
+    assert_equal("192.168.1.1", IPAddr.ntop("\xC0\xA8\x01\x01"))
+    # IPv6
+    assert_equal("0000:0000:0000:0000:0000:0000:0000:0001",
+                 IPAddr.ntop("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"))
+
+    # Invalid parameters
+    assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("192.168.1.1")
+    }
+
+    assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("\xC0\xA8\x01\xFF1")
+    }
   end
 
   def test_ipv4_compat
@@ -199,6 +231,51 @@ class TC_IPAddr < Test::Unit::TestCase
   def test_to_s
     assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0001", IPAddr.new("3ffe:505:2::1").to_string)
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
+  end
+
+  def test_netmask
+    a = IPAddr.new("192.168.1.2/8")
+    assert_equal(a.netmask, "255.0.0.0")
+
+    a = IPAddr.new("192.168.1.2/16")
+    assert_equal(a.netmask, "255.255.0.0")
+
+    a = IPAddr.new("192.168.1.2/24")
+    assert_equal(a.netmask, "255.255.255.0")
+  end
+
+  def test_zone_id
+    a = IPAddr.new("192.168.1.2")
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%ab0' }
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id }
+
+    a = IPAddr.new("1:2:3:4:5:6:7:8")
+    a.zone_id = '%ab0'
+    assert_equal('%ab0', a.zone_id)
+    assert_equal("1:2:3:4:5:6:7:8%ab0", a.to_s)
+    assert_raise(IPAddr::InvalidAddressError) { a.zone_id = '%' }
+  end
+
+  def test_to_range
+    a1 = IPAddr.new("127.0.0.1")
+    range = a1..a1
+    assert_equal(range, a1.to_range)
+    assert_equal(range, a1.freeze.to_range)
+
+    a2 = IPAddr.new("192.168.0.1/16")
+    range = IPAddr.new("192.168.0.0")..IPAddr.new("192.168.255.255")
+    assert_equal(range, a2.to_range)
+    assert_equal(range, a2.freeze.to_range)
+
+    a3 = IPAddr.new("3ffe:505:2::1")
+    range = a3..a3
+    assert_equal(range, a3.to_range)
+    assert_equal(range, a3.freeze.to_range)
+
+    a4 = IPAddr.new("::ffff/127")
+    range = IPAddr.new("::fffe")..IPAddr.new("::ffff")
+    assert_equal(range, a4.to_range)
+    assert_equal(range, a4.freeze.to_range)
   end
 end
 
@@ -295,12 +372,19 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.0")))
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.255")))
     assert_equal(false, net1.include?(IPAddr.new("192.168.3.0")))
+    assert_equal(true, net1.include?(IPAddr.new("192.168.2.0/28")))
+    assert_equal(false, net1.include?(IPAddr.new("192.168.2.0/16")))
     # test with integer parameter
     int = (192 << 24) + (168 << 16) + (2 << 8) + 13
 
     assert_equal(true, net1.include?(int))
     assert_equal(false, net1.include?(int+255))
 
+  end
+
+  def test_native_coerce_mask_addr
+    assert_equal(IPAddr.new("0.0.0.2/255.255.255.255"), IPAddr.new("::2").native)
+    assert_equal(IPAddr.new("0.0.0.2/255.255.255.255").to_range, IPAddr.new("::2").native.to_range)
   end
 
   def test_loopback?

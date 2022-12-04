@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 require_relative 'helper'
+begin
+  require 'webrick'
+rescue LoadError
+end
 
 class TestRDocServlet < RDoc::TestCase
 
@@ -548,4 +552,4 @@ class TestRDocServlet < RDoc::TestCase
     store.save
   end
 
-end
+end if defined?(WEBrick)

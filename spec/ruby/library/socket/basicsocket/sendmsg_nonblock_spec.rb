@@ -18,7 +18,12 @@ describe 'BasicSocket#sendmsg_nonblock' do
 
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          -> { @client.sendmsg_nonblock('hello') }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> {
+            @client.sendmsg_nonblock('hello')
+          }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> {
+            @client.sendmsg_nonblock('hello', exception: false)
+          }.should raise_error(SocketSpecs.dest_addr_req_error)
         end
       end
 

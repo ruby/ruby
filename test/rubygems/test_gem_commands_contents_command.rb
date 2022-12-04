@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
-require 'rubygems/commands/contents_command'
+require_relative "helper"
+require "rubygems/commands/contents_command"
 
 class TestGemCommandsContentsCommand < Gem::TestCase
   def setup
@@ -20,7 +20,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute
     @cmd.options[:args] = %w[foo]
 
-    gem 'foo'
+    gem "foo"
 
     use_ui @ui do
       @cmd.execute
@@ -34,8 +34,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_all
     @cmd.options[:all] = true
 
-    gem 'foo'
-    gem 'bar'
+    gem "foo"
+    gem "bar"
 
     use_ui @ui do
       @cmd.execute
@@ -50,7 +50,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -63,8 +63,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
   def test_execute_exact_match
     @cmd.options[:args] = %w[foo]
-    gem 'foo'
-    gem 'bar'
+    gem "foo"
+    gem "bar"
 
     use_ui @ui do
       @cmd.execute
@@ -79,7 +79,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:lib_only] = true
 
-    gem 'foo'
+    gem "foo"
 
     use_ui @ui do
       @cmd.execute
@@ -94,7 +94,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_missing_single
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -106,11 +106,11 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
   def test_execute_missing_version
     @cmd.options[:args] = %w[foo]
-    @cmd.options[:version] = Gem::Requirement.new '= 2'
+    @cmd.options[:version] = Gem::Requirement.new "= 2"
 
-    gem 'foo', 1
+    gem "foo", 1
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -123,7 +123,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_missing_multiple
     @cmd.options[:args] = %w[foo bar]
 
-    gem 'foo'
+    gem "foo"
 
     use_ui @ui do
       @cmd.execute
@@ -138,8 +138,8 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_multiple
     @cmd.options[:args] = %w[foo bar]
 
-    gem 'foo'
-    gem 'bar'
+    gem "foo"
+    gem "bar"
 
     use_ui @ui do
       @cmd.execute
@@ -155,13 +155,13 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:show_install_dir] = true
 
-    gem 'foo'
+    gem "foo"
 
     use_ui @ui do
       @cmd.execute
     end
 
-    expected = File.join @gemhome, 'gems', 'foo-2'
+    expected = File.join @gemhome, "gems", "foo-2"
 
     assert_equal "#{expected}\n", @ui.output
     assert_equal "", @ui.error
@@ -171,14 +171,14 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:show_install_dir] = true
 
-    gem 'foo', 1
-    gem 'foo', 2
+    gem "foo", 1
+    gem "foo", 2
 
     use_ui @ui do
       @cmd.execute
     end
 
-    expected = File.join @gemhome, 'gems', 'foo-2'
+    expected = File.join @gemhome, "gems", "foo-2"
 
     assert_equal "#{expected}\n", @ui.output
     assert_equal "", @ui.error
@@ -187,16 +187,16 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_show_install_dir_version
     @cmd.options[:args] = %w[foo]
     @cmd.options[:show_install_dir] = true
-    @cmd.options[:version] = Gem::Requirement.new '= 1'
+    @cmd.options[:version] = Gem::Requirement.new "= 1"
 
-    gem 'foo', 1
-    gem 'foo', 2
+    gem "foo", 1
+    gem "foo", 2
 
     use_ui @ui do
       @cmd.execute
     end
 
-    expected = File.join @gemhome, 'gems', 'foo-1'
+    expected = File.join @gemhome, "gems", "foo-1"
 
     assert_equal "#{expected}\n", @ui.output
     assert_equal "", @ui.error
@@ -206,7 +206,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:prefix] = false
 
-    gem 'foo'
+    gem "foo"
 
     use_ui @ui do
       @cmd.execute
@@ -227,7 +227,7 @@ lib/foo.rb
                                         nil, "default/gem.rb")
     default_gem_spec.executables = ["default_command"]
     default_gem_spec.files += ["default_gem.so"]
-    install_default_specs(default_gem_spec)
+    install_default_gems(default_gem_spec)
 
     @cmd.options[:args] = %w[default]
 
@@ -236,10 +236,10 @@ lib/foo.rb
     end
 
     expected = [
-      [RbConfig::CONFIG['bindir'], 'default_command'],
-      [RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'],
-      [RbConfig::CONFIG['archdir'], 'default_gem.so']
-    ].sort.map{|a|File.join a }.join "\n"
+      [RbConfig::CONFIG["bindir"], "default_command"],
+      [RbConfig::CONFIG["rubylibdir"], "default/gem.rb"],
+      [RbConfig::CONFIG["archdir"], "default_gem.so"],
+    ].sort.map {|a|File.join a }.join "\n"
 
     assert_equal expected, @ui.output.chomp
     assert_equal "", @ui.error
@@ -264,7 +264,7 @@ lib/foo.rb
     assert @cmd.options[:lib_only]
     refute @cmd.options[:prefix]
     assert_equal %w[foo], @cmd.options[:specdirs]
-    assert_equal Gem::Requirement.new('0.0.2'), @cmd.options[:version]
+    assert_equal Gem::Requirement.new("0.0.2"), @cmd.options[:version]
     assert @cmd.options[:show_install_dir]
   end
 end

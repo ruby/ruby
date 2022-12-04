@@ -1,30 +1,30 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle help" do
-  it "uses mann when available" do
+  it "uses man when available" do
     with_fake_man do
       bundle "help gemfile"
     end
-    expect(out).to eq(%(["#{root}/man/gemfile.5"]))
+    expect(out).to eq(%(["#{man_dir}/gemfile.5"]))
   end
 
-  it "prefixes bundle commands with bundle- when finding the groff files" do
+  it "prefixes bundle commands with bundle- when finding the man files" do
     with_fake_man do
       bundle "help install"
     end
-    expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
-  it "simply outputs the txt file when there is no man on the path" do
+  it "simply outputs the human readable file when there is no man on the path" do
     with_path_as("") do
       bundle "help install"
     end
-    expect(out).to match(/BUNDLE-INSTALL/)
+    expect(out).to match(/bundle-install/)
   end
 
   it "still outputs the old help for commands that do not have man pages yet" do
-    bundle "help version"
-    expect(out).to include("Prints the bundler's version information")
+    bundle "help fund"
+    expect(out).to include("Lists information about gems seeking funding assistance")
   end
 
   it "looks for a binary and executes it with --help option if it's named bundler-<task>" do
@@ -45,28 +45,28 @@ RSpec.describe "bundle help" do
     with_fake_man do
       bundle "install --help"
     end
-    expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
   it "is called when the --help flag is used before the command" do
     with_fake_man do
       bundle "--help install"
     end
-    expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
   it "is called when the -h flag is used before the command" do
     with_fake_man do
       bundle "-h install"
     end
-    expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
   it "is called when the -h flag is used after the command" do
     with_fake_man do
       bundle "install -h"
     end
-    expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
   it "has helpful output when using --help flag for a non-existent command" do
@@ -80,11 +80,11 @@ RSpec.describe "bundle help" do
     with_fake_man do
       bundle "--help"
     end
-    expect(out).to eq(%(["#{root}/man/bundle.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle.1"]))
 
     with_fake_man do
       bundle "-h"
     end
-    expect(out).to eq(%(["#{root}/man/bundle.1"]))
+    expect(out).to eq(%(["#{man_dir}/bundle.1"]))
   end
 end

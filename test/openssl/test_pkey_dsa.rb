@@ -5,31 +5,45 @@ if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
 class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_private
-    key = OpenSSL::PKey::DSA.new(256)
-    assert(key.private?)
+    key = Fixtures.pkey("dsa1024")
+    assert_equal true, key.private?
     key2 = OpenSSL::PKey::DSA.new(key.to_der)
-    assert(key2.private?)
+    assert_equal true, key2.private?
     key3 = key.public_key
-    assert(!key3.private?)
+    assert_equal false, key3.private?
     key4 = OpenSSL::PKey::DSA.new(key3.to_der)
-    assert(!key4.private?)
+    assert_equal false, key4.private?
   end
 
   def test_new
-    key = OpenSSL::PKey::DSA.new 256
+    key = OpenSSL::PKey::DSA.new(2048)
     pem  = key.public_key.to_pem
     OpenSSL::PKey::DSA.new pem
-    if $0 == __FILE__
-      assert_nothing_raised {
-        key = OpenSSL::PKey::DSA.new 2048
-      }
-    end
   end
 
   def test_new_break
-    assert_nil(OpenSSL::PKey::DSA.new(512) { break })
+    assert_nil(OpenSSL::PKey::DSA.new(2048) { break })
     assert_raise(RuntimeError) do
-      OpenSSL::PKey::DSA.new(512) { raise }
+      OpenSSL::PKey::DSA.new(2048) { raise }
+    end
+  end
+
+  def test_generate
+    # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
+    # size of q according to the size of p
+    key1024 = OpenSSL::PKey::DSA.generate(1024)
+    assert_predicate key1024, :private?
+    assert_equal 1024, key1024.p.num_bits
+    assert_equal 160, key1024.q.num_bits
+
+    key2048 = OpenSSL::PKey::DSA.generate(2048)
+    assert_equal 2048, key2048.p.num_bits
+    assert_equal 256, key2048.q.num_bits
+
+    if ENV["OSSL_TEST_ALL"] == "1" # slow
+      key3072 = OpenSSL::PKey::DSA.generate(3072)
+      assert_equal 3072, key3072.p.num_bits
+      assert_equal 256, key3072.q.num_bits
     end
   end
 
@@ -53,12 +67,31 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     assert_equal false, dsa512.verify("SHA256", signature1, data)
   end
 
-  def test_sys_sign_verify
-    key = Fixtures.pkey("dsa256")
+  def test_sign_verify_raw
+    key = Fixtures.pkey("dsa512")
     data = 'Sign me!'
     digest = OpenSSL::Digest.digest('SHA1', data)
+
+    invalid_sig = key.sign_raw(nil, digest.succ)
+    malformed_sig = "*" * invalid_sig.bytesize
+
+    # Sign by #syssign
     sig = key.syssign(digest)
-    assert(key.sysverify(digest, sig))
+    assert_equal true, key.sysverify(digest, sig)
+    assert_equal false, key.sysverify(digest, invalid_sig)
+    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, digest)
+    assert_equal false, key.verify_raw(nil, invalid_sig, digest)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+
+    # Sign by #sign_raw
+    sig = key.sign_raw(nil, digest)
+    assert_equal true, key.sysverify(digest, sig)
+    assert_equal false, key.sysverify(digest, invalid_sig)
+    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_equal true, key.verify_raw(nil, sig, digest)
+    assert_equal false, key.verify_raw(nil, invalid_sig, digest)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
   end
 
   def test_DSAPrivateKey
@@ -124,6 +157,8 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
 
   def test_PUBKEY
     dsa512 = Fixtures.pkey("dsa512")
+    dsa512pub = OpenSSL::PKey::DSA.new(dsa512.public_to_der)
+
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("DSA"),
@@ -139,7 +174,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     ])
     key = OpenSSL::PKey::DSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_dsa dup_public(dsa512), key
+    assert_same_dsa dsa512pub, key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -152,10 +187,15 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::DSA.new(pem)
-    assert_same_dsa dup_public(dsa512), key
+    assert_same_dsa dsa512pub, key
 
-    assert_equal asn1.to_der, dup_public(dsa512).to_der
-    assert_equal pem, dup_public(dsa512).export
+    assert_equal asn1.to_der, key.to_der
+    assert_equal pem, key.export
+
+    assert_equal asn1.to_der, dsa512.public_to_der
+    assert_equal asn1.to_der, key.public_to_der
+    assert_equal pem, dsa512.public_to_pem
+    assert_equal pem, key.public_to_pem
   end
 
   def test_read_DSAPublicKey_pem
@@ -184,11 +224,15 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
   end
 
   def test_dup
-    key = OpenSSL::PKey::DSA.new(256)
+    key = Fixtures.pkey("dsa1024")
     key2 = key.dup
     assert_equal key.params, key2.params
-    key2.set_pqg(key2.p + 1, key2.q, key2.g)
-    assert_not_equal key.params, key2.params
+
+    # PKey is immutable in OpenSSL >= 3.0
+    if !openssl?(3, 0, 0)
+      key2.set_pqg(key2.p + 1, key2.q, key2.g)
+      assert_not_equal key.params, key2.params
+    end
   end
 
   def test_marshal

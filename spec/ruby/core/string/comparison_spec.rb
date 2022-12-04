@@ -75,6 +75,10 @@ describe "String#<=> with String" do
     (xff_1 <=> xff_2).should == -1
     (xff_2 <=> xff_1).should ==  1
   end
+
+  it "returns 0 when comparing 2 empty strings but one is not ASCII-compatible" do
+    ("" <=> "".force_encoding('iso-2022-jp')).should == 0
+  end
 end
 
 # Note: This is inconsistent with Array#<=> which calls #to_ary instead of

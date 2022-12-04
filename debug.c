@@ -14,9 +14,9 @@
 #include <stdio.h>
 
 #include "eval_intern.h"
+#include "encindex.h"
 #include "id.h"
 #include "internal/signal.h"
-#include "internal/util.h"
 #include "ruby/encoding.h"
 #include "ruby/io.h"
 #include "ruby/ruby.h"
@@ -26,6 +26,7 @@
 #include "vm_debug.h"
 #include "vm_callinfo.h"
 #include "ruby/thread_native.h"
+#include "ractor_core.h"
 
 /* This is the only place struct RIMemo is actually used */
 struct RIMemo {
@@ -50,31 +51,36 @@ const union {
     enum ruby_coderange_type    enc_coderange_types;
     enum ruby_econv_flag_type   econv_flag_types;
     rb_econv_result_t           econv_result;
+    enum ruby_preserved_encindex encoding_index;
     enum ruby_robject_flags     robject_flags;
+#if !USE_RVARGC
     enum ruby_robject_consts    robject_consts;
+#endif
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
+#if !USE_RVARGC
     enum ruby_rstring_consts    rstring_consts;
+#endif
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
     enum {
-	RUBY_FMODE_READABLE		= FMODE_READABLE,
-	RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
-	RUBY_FMODE_READWRITE		= FMODE_READWRITE,
-	RUBY_FMODE_BINMODE		= FMODE_BINMODE,
-	RUBY_FMODE_SYNC 		= FMODE_SYNC,
-	RUBY_FMODE_TTY			= FMODE_TTY,
-	RUBY_FMODE_DUPLEX		= FMODE_DUPLEX,
-	RUBY_FMODE_APPEND		= FMODE_APPEND,
-	RUBY_FMODE_CREATE		= FMODE_CREATE,
-	RUBY_FMODE_NOREVLOOKUP		= 0x00000100,
-	RUBY_FMODE_TRUNC		= FMODE_TRUNC,
-	RUBY_FMODE_TEXTMODE		= FMODE_TEXTMODE,
-	RUBY_FMODE_PREP 		= 0x00010000,
-	RUBY_FMODE_SETENC_BY_BOM	= FMODE_SETENC_BY_BOM,
-	RUBY_FMODE_UNIX 		= 0x00200000,
-	RUBY_FMODE_INET 		= 0x00400000,
-	RUBY_FMODE_INET6		= 0x00800000,
+        RUBY_FMODE_READABLE		= FMODE_READABLE,
+        RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
+        RUBY_FMODE_READWRITE		= FMODE_READWRITE,
+        RUBY_FMODE_BINMODE		= FMODE_BINMODE,
+        RUBY_FMODE_SYNC 		= FMODE_SYNC,
+        RUBY_FMODE_TTY			= FMODE_TTY,
+        RUBY_FMODE_DUPLEX		= FMODE_DUPLEX,
+        RUBY_FMODE_APPEND		= FMODE_APPEND,
+        RUBY_FMODE_CREATE		= FMODE_CREATE,
+        RUBY_FMODE_NOREVLOOKUP		= 0x00000100,
+        RUBY_FMODE_TRUNC		= FMODE_TRUNC,
+        RUBY_FMODE_TEXTMODE		= FMODE_TEXTMODE,
+        RUBY_FMODE_PREP 		= 0x00010000,
+        RUBY_FMODE_SETENC_BY_BOM	= FMODE_SETENC_BY_BOM,
+        RUBY_FMODE_UNIX 		= 0x00200000,
+        RUBY_FMODE_INET 		= 0x00400000,
+        RUBY_FMODE_INET6		= 0x00800000,
 
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
@@ -82,9 +88,9 @@ const union {
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
     union {
-	enum imemo_type                     types;
-	enum {RUBY_IMEMO_MASK = IMEMO_MASK} mask;
-	struct RIMemo                      *ptr;
+        enum imemo_type                     types;
+        enum {RUBY_IMEMO_MASK = IMEMO_MASK} mask;
+        struct RIMemo                      *ptr;
     } imemo;
     struct RSymbol *symbol_ptr;
     enum vm_call_flag_bits vm_call_flags;
@@ -96,9 +102,9 @@ int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
-	fprintf(stderr, "%*s", indent_level, "");
-	fflush(stderr);
-	return TRUE;
+        fprintf(stderr, "%*s", indent_level, "");
+        fflush(stderr);
+        return TRUE;
     }
     return FALSE;
 }
@@ -118,11 +124,11 @@ VALUE
 ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj)
 {
     if (level < debug_level) {
-	char buff[0x100];
-	rb_raw_obj_info(buff, 0x100, obj);
+        char buff[0x100];
+        rb_raw_obj_info(buff, 0x100, obj);
 
-	fprintf(stderr, "DBG> %s: %s\n", header, buff);
-	fflush(stderr);
+        fprintf(stderr, "DBG> %s: %s\n", header, buff);
+        fflush(stderr);
     }
     return obj;
 }
@@ -137,8 +143,8 @@ ID
 ruby_debug_print_id(int level, int debug_level, const char *header, ID id)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
-	fflush(stderr);
+        fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
+        fflush(stderr);
     }
     return id;
 }
@@ -147,8 +153,8 @@ NODE *
 ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s (%u)\n", header,
-		ruby_node_name(nd_type(node)), nd_line(node));
+        fprintf(stderr, "DBG> %s: %s (%u)\n", header,
+                ruby_node_name(nd_type(node)), nd_line(node));
     }
     return (NODE *)node;
 }
@@ -178,11 +184,11 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     size_t retlen;
     unsigned long n;
 #define SET_WHEN(name, var, val) do {	    \
-	if (len == sizeof(name) - 1 &&	    \
-	    strncmp(str, (name), len) == 0) { \
-	    (var) = (val);		    \
-	    return 1;			    \
-	}				    \
+        if (len == sizeof(name) - 1 &&	    \
+            strncmp(str, (name), len) == 0) { \
+            (var) = (val);		    \
+            return 1;			    \
+        }				    \
     } while (0)
 #define NAME_MATCH_VALUE(name)				\
     ((size_t)len >= sizeof(name)-1 &&			\
@@ -191,24 +197,24 @@ ruby_env_debug_option(const char *str, int len, void *arg)
       (str[sizeof(name)-1] == '=' &&			\
        (str += sizeof(name), len -= sizeof(name), 1))))
 #define SET_UINT(val) do { \
-	n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
-	if (!ov && retlen) { \
-	    val = (unsigned int)n; \
-	} \
-	str += retlen; \
-	len -= retlen; \
+        n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
+        if (!ov && retlen) { \
+            val = (unsigned int)n; \
+        } \
+        str += retlen; \
+        len -= retlen; \
     } while (0)
 #define SET_UINT_LIST(name, vals, num) do { \
-	int i; \
-	for (i = 0; i < (num); ++i) { \
-	    SET_UINT((vals)[i]); \
-	    if (!len || *str != ':') break; \
-	    ++str; \
-	    --len; \
-	} \
-	if (len > 0) { \
-	    fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
-	} \
+        int i; \
+        for (i = 0; i < (num); ++i) { \
+            SET_UINT((vals)[i]); \
+            if (!len || *str != ':') break; \
+            ++str; \
+            --len; \
+        } \
+        if (len > 0) { \
+            fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+        } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \
     if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
@@ -217,9 +223,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     SET_WHEN("core", ruby_enable_coredump, 1);
     SET_WHEN("ci", ruby_on_ci, 1);
     if (NAME_MATCH_VALUE("rgengc")) {
-	if (!len) ruby_rgengc_debug = 1;
-	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
-	return 1;
+        if (!len) ruby_rgengc_debug = 1;
+        else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
+        return 1;
     }
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
@@ -228,9 +234,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     if (NAME_MATCH_VALUE("codepage")) {
-	if (!len) fprintf(stderr, "missing codepage argument");
-	else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
-	return 1;
+        if (!len) fprintf(stderr, "missing codepage argument");
+        else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
+        return 1;
     }
 #endif
     return 0;
@@ -240,13 +246,11 @@ static void
 set_debug_option(const char *str, int len, void *arg)
 {
     if (!ruby_env_debug_option(str, len, arg)) {
-	fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
+        fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
     }
 }
 
-STATIC_ASSERT(USE_RUBY_DEBUG_LOG, USE_RUBY_DEBUG_LOG ? RUBY_DEVEL : 1);
-
-#if RUBY_DEVEL
+#if USE_RUBY_DEBUG_LOG
 static void setup_debug_log(void);
 #else
 #define setup_debug_log()
@@ -259,21 +263,38 @@ ruby_set_debug_option(const char *str)
     setup_debug_log();
 }
 
-#if RUBY_DEVEL
+#if USE_RUBY_DEBUG_LOG
 
 // RUBY_DEBUG_LOG features
 // See vm_debug.h comments for details.
 
 #define MAX_DEBUG_LOG             0x1000
 #define MAX_DEBUG_LOG_MESSAGE_LEN 0x0200
-#define MAX_DEBUG_LOG_FILTER      0x0010
+#define MAX_DEBUG_LOG_FILTER_LEN  0x0020
+#define MAX_DEBUG_LOG_FILTER_NUM  0x0010
 
 enum ruby_debug_log_mode ruby_debug_log_mode;
+
+struct debug_log_filter {
+    enum debug_log_filter_type {
+        dlf_all,
+        dlf_file, // "file:..."
+        dlf_func, // "func:..."
+    } type;
+    bool negative;
+    char str[MAX_DEBUG_LOG_FILTER_LEN];
+};
+
+static const char *dlf_type_names[] = {
+    "all",
+    "file",
+    "func",
+};
 
 static struct {
     char *mem;
     unsigned int cnt;
-    char filters[MAX_DEBUG_LOG_FILTER][MAX_DEBUG_LOG_FILTER];
+    struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
     rb_nativethread_lock_t lock;
     FILE *output;
@@ -285,15 +306,86 @@ RUBY_DEBUG_LOG_MEM_ENTRY(unsigned int index)
     return &debug_log.mem[MAX_DEBUG_LOG_MESSAGE_LEN * index];
 }
 
+static enum debug_log_filter_type
+filter_type(const char *str, int *skiplen)
+{
+    if (strncmp(str, "file:", 5) == 0) {
+        *skiplen = 5;
+        return dlf_file;
+    }
+    else if(strncmp(str, "func:", 5) == 0) {
+        *skiplen = 5;
+        return dlf_func;
+    }
+    else {
+        *skiplen = 0;
+        return dlf_all;
+    }
+}
+
+static void
+setup_debug_log_filter(void)
+{
+    const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
+
+    if (filter_config && strlen(filter_config) > 0) {
+        unsigned int i;
+        for (i=0; i<MAX_DEBUG_LOG_FILTER_NUM && filter_config; i++) {
+            size_t len;
+            const char *str = filter_config;
+            const char *p;
+
+            if ((p = strchr(str, ',')) == NULL) {
+                len = strlen(str);
+                filter_config = NULL;
+            }
+            else {
+                len = p - str - 1; // 1 is ','
+                filter_config = p + 1;
+            }
+
+            // positive/negative
+            if (*str == '-') {
+                debug_log.filters[i].negative = true;
+                str++;
+            }
+            else if (*str == '+') {
+                // negative is false on default.
+                str++;
+            }
+
+            // type
+            int skiplen;
+            debug_log.filters[i].type = filter_type(str, &skiplen);
+            len -= skiplen;
+
+            if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
+                fprintf(stderr, "too long: %s (max:%d)\n", str, MAX_DEBUG_LOG_FILTER_LEN - 1);
+                exit(1);
+            }
+
+            // body
+            strncpy(debug_log.filters[i].str, str + skiplen, len);
+            debug_log.filters[i].str[len] = 0;
+        }
+        debug_log.filters_num = i;
+
+        for (i=0; i<debug_log.filters_num; i++) {
+            fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s (%s%s)\n", i,
+                    debug_log.filters[i].str,
+                    debug_log.filters[i].negative ? "-" : "",
+                    dlf_type_names[debug_log.filters[i].type]);
+        }
+    }
+}
+
 static void
 setup_debug_log(void)
 {
     // check RUBY_DEBUG_LOG
     const char *log_config = getenv("RUBY_DEBUG_LOG");
-    if (log_config) {
-        fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
-
-        if  (strcmp(log_config, "mem") == 0) {
+    if (log_config && strlen(log_config) > 0) {
+        if (strcmp(log_config, "mem") == 0) {
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
                 fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
@@ -313,51 +405,83 @@ setup_debug_log(void)
             setvbuf(debug_log.output, NULL, _IONBF, 0);
         }
 
+        fprintf(stderr, "RUBY_DEBUG_LOG=%s %s%s%s\n", log_config,
+                (ruby_debug_log_mode & ruby_debug_log_memory) ? "[mem]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_stderr) ? "[stderr]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_file)   ? "[file]" : "");
         rb_nativethread_lock_initialize(&debug_log.lock);
-    }
 
-    // check RUBY_DEBUG_LOG_FILTER
-    const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
-    if (filter_config && strlen(filter_config) > 0) {
-        unsigned int i;
-        for (i=0; i<MAX_DEBUG_LOG_FILTER; i++) {
-            const char *p;
-            if ((p = strchr(filter_config, ',')) == NULL) {
-                if (strlen(filter_config) >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
-                    exit(1);
-                }
-                strncpy(debug_log.filters[i], filter_config, MAX_DEBUG_LOG_FILTER - 1);
-                i++;
-                break;
-            }
-            else {
-                size_t n = p - filter_config;
-                if (n >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
-                    exit(1);
-                }
-                strncpy(debug_log.filters[i], filter_config, n);
-                filter_config = p+1;
-            }
+        setup_debug_log_filter();
+    }
+}
+
+static bool
+check_filter(const char *str, const struct debug_log_filter *filter, bool *state)
+{
+    if (filter->negative) {
+        if (strstr(str, filter->str) == NULL) {
+            *state = true;
+            return false;
         }
-        debug_log.filters_num = i;
-        for (i=0; i<debug_log.filters_num; i++) {
-            fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s\n", i, debug_log.filters[i]);
+        else {
+            *state = false;
+            return true;
+        }
+    }
+    else {
+        if (strstr(str, filter->str) != NULL) {
+            *state = true;
+            return true;
+        }
+        else {
+            *state = false;
+            return false;
         }
     }
 }
 
+//
+// RUBY_DEBUG_LOG_FILTER=-foo,-bar,baz,boo
+// returns true if
+//   (func_name or file_name) doesn't contain foo
+// and
+//   (func_name or file_name) doesn't contain bar
+// and
+//   (func_name or file_name) contains baz or boo
+//
+// RUBY_DEBUG_LOG_FILTER=foo,bar,-baz,-boo
+// retunrs true if
+//   (func_name or file_name) contains foo or bar
+// or
+//   (func_name or file_name) doesn't contain baz and
+//   (func_name or file_name) doesn't contain boo and
+//
+// You can specify "file:" (ex file:foo) or "func:" (ex  func:foo)
+// prefixes to specify the filter for.
+//
 bool
-ruby_debug_log_filter(const char *func_name)
+ruby_debug_log_filter(const char *func_name, const char *file_name)
 {
     if (debug_log.filters_num > 0) {
+        bool state = false;
+
         for (unsigned int i = 0; i<debug_log.filters_num; i++) {
-            if (strstr(func_name, debug_log.filters[i]) != NULL) {
-                return true;
+            const struct debug_log_filter *filter = &debug_log.filters[i];
+
+            switch (filter->type) {
+              case dlf_all:
+                if (check_filter(func_name, filter, &state)) return state;
+                if (check_filter(file_name, filter, &state)) return state;
+                break;
+              case dlf_func:
+                if (check_filter(func_name, filter, &state)) return state;
+                break;
+              case dlf_file:
+                if (check_filter(file_name, filter, &state)) return state;
+                break;
             }
         }
-        return false;
+        return state;
     }
     else {
         return true;
@@ -375,6 +499,7 @@ pretty_filename(const char *path)
     return path;
 }
 
+#undef ruby_debug_log
 void
 ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
 {
@@ -408,38 +533,36 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-    // Ruby location
-    int ruby_line;
-    const char *ruby_file = rb_source_location_cstr(&ruby_line);
-    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        if (ruby_file) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-        }
-        else {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-        }
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-        len += r;
-    }
-
-#if 0 // not yet
-    // ractor information
-    if (GET_VM()->ractor.cnt > 1) {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
-                         (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+    if (rb_current_execution_context(false)) {
+        // Ruby location
+        int ruby_line;
+        const char *ruby_file = rb_source_location_cstr(&ruby_line);
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            if (ruby_file) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+            }
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
-    }
-#endif
 
-    // thread information
-    if (!rb_thread_alone()) {
+        // ractor information
+        if (ruby_single_main_ractor == NULL) {
+            rb_ractor_t *cr = GET_RACTOR();
+            if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
+                             (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+                if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+                len += r;
+            }
+        }
+
+        // thread information
         const rb_thread_t *th = GET_THREAD();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%p", (void *)th);
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
@@ -507,4 +630,4 @@ ruby_debug_log_dump(const char *fname, unsigned int n)
         fclose(fp);
     }
 }
-#endif // #if RUBY_DEVEL
+#endif // #if USE_RUBY_DEBUG_LOG

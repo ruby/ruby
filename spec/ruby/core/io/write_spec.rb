@@ -44,6 +44,16 @@ describe "IO#write on a file" do
     @file.write("hellø").should == 6
   end
 
+  it "does not modify the passed argument" do
+    File.open(@filename, "w") do |f|
+      f.set_encoding(Encoding::IBM437)
+      # A character whose codepoint differs between UTF-8 and IBM437
+      f.write("ƒ".freeze)
+    end
+
+    File.binread(@filename).bytes.should == [159]
+  end
+
   it "uses the encoding from the given option for non-ascii encoding" do
     File.open(@filename, "w", encoding: Encoding::UTF_32LE) do |file|
       file.write("hi").should == 8
@@ -88,6 +98,12 @@ describe "IO.write" do
 
   it "uses the given encoding and returns the number of bytes written" do
     IO.write(@filename, 'hi', mode: "w", encoding: Encoding::UTF_32LE).should == 8
+  end
+
+  it "writes the file with the permissions in the :perm parameter" do
+    rm_r @filename
+    IO.write(@filename, 'write :perm spec', mode: "w", perm: 0o755).should == 16
+    (File.stat(@filename).mode & 0o777) == 0o755
   end
 
   it "writes binary data if no encoding is given" do
@@ -159,6 +175,30 @@ platform_is :windows do
       @io.write "a\r\nb\r\nc"
       @io.close
       File.binread(@fname).should == "a\r\nb\r\nc"
+    end
+  end
+end
+
+ruby_version_is "3.0" do
+  describe "IO#write on STDOUT" do
+    # https://bugs.ruby-lang.org/issues/14413
+    platform_is_not :windows do
+      it "raises SignalException SIGPIPE if the stream is closed instead of Errno::EPIPE like other IOs" do
+        stderr_file = tmp("stderr")
+        begin
+          IO.popen([*ruby_exe, "-e", "loop { puts :ok }"], "r", err: stderr_file) do |io|
+            io.gets.should == "ok\n"
+            io.close
+          end
+          status = $?
+          status.should_not.success?
+          status.should.signaled?
+          Signal.signame(status.termsig).should == 'PIPE'
+          File.read(stderr_file).should.empty?
+        ensure
+          rm_r stderr_file
+        end
+      end
     end
   end
 end

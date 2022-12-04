@@ -1,0 +1,12 @@
+Calls the given block with each successive grapheme cluster from +self+
+(see {Unicode Grapheme Cluster Boundaries}[https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries]);
+returns +self+:
+
+  s = "\u0061\u0308-pqr-\u0062\u0308-xyz-\u0063\u0308" # => "ä-pqr-b̈-xyz-c̈"
+  s.each_grapheme_cluster {|gc| print gc, ' ' }
+
+Output:
+
+  ä - p q r - b̈ - x y z - c̈
+
+Returns an enumerator if no block is given.

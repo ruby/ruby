@@ -24,7 +24,8 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     assert_equal "file:///foo", URI("file:///foo").to_s
     assert_equal "postgres:///foo", URI("postgres:///foo").to_s
-    assert_equal "http:/foo", URI("http:///foo").to_s
+    assert_equal "http:///foo", URI("http:///foo").to_s
+    assert_equal "http:/foo", URI("http:/foo").to_s
   end
 
   def test_parse
@@ -157,6 +158,19 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+
+    # sec-156615
+    url = URI.parse('http:////example.com')
+    # must be empty string to identify as path-abempty, not path-absolute
+    assert_equal('', url.host)
+    assert_equal('http:////example.com', url.to_s)
+  end
+
+  def test_parse_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    assert_equal 'ms-search', URI.parse('ms-search://localhost').scheme
+    assert_equal 'microsoft.windows.camera', URI.parse('microsoft.windows.camera://localhost').scheme
+    assert_equal 'coaps+ws', URI.parse('coaps+ws:localhost').scheme
   end
 
   def test_merge
@@ -799,8 +813,12 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     u = URI("http://foo/bar")
     assert_equal("http://foo/bar", u.to_s)
+    u.hostname = "[::1]"
+    assert_equal("http://[::1]/bar", u.to_s)
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
+    u.hostname = ""
+    assert_equal("http:///bar", u.to_s)
   end
 
   def test_build

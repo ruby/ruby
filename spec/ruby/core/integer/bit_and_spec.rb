@@ -55,24 +55,24 @@ describe "Integer#&" do
       @bignum = bignum_value(5)
       (@bignum & 3).should == 1
       (@bignum & 52).should == 4
-      (@bignum & bignum_value(9921)).should == 9223372036854775809
+      (@bignum & bignum_value(9921)).should == 18446744073709551617
 
       ((2*bignum_value) & 1).should == 0
-      ((2*bignum_value) & (2*bignum_value)).should == 18446744073709551616
+      ((2*bignum_value) & (2*bignum_value)).should == 36893488147419103232
     end
 
     it "returns self bitwise AND other when one operand is negative" do
       ((2*bignum_value) & -1).should == (2*bignum_value)
       ((4*bignum_value) & -1).should == (4*bignum_value)
-      (@bignum & -0xffffffffffffff5).should == 9223372036854775809
+      (@bignum & -0xffffffffffffff5).should == 18446744073709551617
       (@bignum & -@bignum).should == 1
-      (@bignum & -0x8000000000000000).should == 9223372036854775808
+      (@bignum & -0x8000000000000000).should == 18446744073709551616
     end
 
     it "returns self bitwise AND other when both operands are negative" do
-      (-@bignum & -0x4000000000000005).should == -13835058055282163717
-      (-@bignum & -@bignum).should == -9223372036854775813
-      (-@bignum & -0x4000000000000000).should == -13835058055282163712
+      (-@bignum & -0x4000000000000005).should == -23058430092136939525
+      (-@bignum & -@bignum).should == -18446744073709551621
+      (-@bignum & -0x4000000000000000).should == -23058430092136939520
     end
 
     it "returns self bitwise AND other when both are negative and a multiple in bitsize of Fixnum::MIN" do

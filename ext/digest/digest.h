@@ -38,7 +38,7 @@ rb_digest_##name##_update(void *ctx, unsigned char *ptr, size_t size) \
     const unsigned int stride = 16384; \
  \
     for (; size > stride; size -= stride, ptr += stride) { \
-	name##_Update(ctx, ptr, stride); \
+        name##_Update(ctx, ptr, stride); \
     } \
     if (size > 0) name##_Update(ctx, ptr, size); \
 }
@@ -61,4 +61,12 @@ static inline ID
 rb_id_metadata(void)
 {
     return rb_intern_const("metadata");
+}
+
+static inline VALUE
+rb_digest_make_metadata(const rb_digest_metadata_t *meta)
+{
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+    return rb_obj_freeze(Data_Wrap_Struct(0, 0, 0, (void *)meta));
 }

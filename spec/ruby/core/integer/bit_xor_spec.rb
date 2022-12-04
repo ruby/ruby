@@ -5,11 +5,32 @@ describe "Integer#^" do
     it "returns self bitwise EXCLUSIVE OR other" do
       (3 ^ 5).should == 6
       (-2 ^ -255).should == 255
-      (5 ^ bignum_value + 0xffff_ffff).should == 0x8000_0000_ffff_fffa
+      (5 ^ bignum_value + 0xffff_ffff).should == 0x1_0000_0000_ffff_fffa
+    end
+
+    it "returns self bitwise XOR other when one operand is negative" do
+      ((1 << 33) ^ -1).should == -8589934593
+      (-1 ^ (1 << 33)).should == -8589934593
+
+      ((-(1<<33)-1) ^ 5).should == -8589934598
+      (5 ^ (-(1<<33)-1)).should == -8589934598
+    end
+
+    it "returns self bitwise XOR other when both operands are negative" do
+      (-5 ^ -1).should == 4
+      (-3 ^ -4).should == 1
+      (-12 ^ -13).should == 7
+      (-13 ^ -12).should == 7
     end
 
     it "returns self bitwise EXCLUSIVE OR a bignum" do
       (-1 ^ 2**64).should == -18446744073709551617
+    end
+
+    it "coerces the rhs and calls #coerce" do
+      obj = mock("fixnum bit and")
+      obj.should_receive(:coerce).with(6).and_return([3, 6])
+      (6 ^ obj).should == 5
     end
 
     it "raises a TypeError when passed a Float" do
@@ -30,21 +51,21 @@ describe "Integer#^" do
     end
 
     it "returns self bitwise EXCLUSIVE OR other" do
-      (@bignum ^ 2).should == 9223372036854775824
+      (@bignum ^ 2).should == 18446744073709551632
       (@bignum ^ @bignum).should == 0
-      (@bignum ^ 14).should == 9223372036854775836
+      (@bignum ^ 14).should == 18446744073709551644
     end
 
     it "returns self bitwise EXCLUSIVE OR other when one operand is negative" do
-      (@bignum ^ -0x40000000000000000).should == -64563604257983430638
+      (@bignum ^ -0x40000000000000000).should == -55340232221128654830
       (@bignum ^ -@bignum).should == -4
-      (@bignum ^ -0x8000000000000000).should == -18446744073709551598
+      (@bignum ^ -0x8000000000000000).should == -27670116110564327406
     end
 
     it "returns self bitwise EXCLUSIVE OR other when both operands are negative" do
-      (-@bignum ^ -0x40000000000000000).should == 64563604257983430638
+      (-@bignum ^ -0x40000000000000000).should == 55340232221128654830
       (-@bignum ^ -@bignum).should == 0
-      (-@bignum ^ -0x4000000000000000).should == 13835058055282163694
+      (-@bignum ^ -0x4000000000000000).should == 23058430092136939502
     end
 
     it "returns self bitwise EXCLUSIVE OR other when all bits are 1 and other value is negative" do

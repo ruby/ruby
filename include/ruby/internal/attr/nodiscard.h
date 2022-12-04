@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_NODISCARD.
  */
 #include "ruby/internal/has/attribute.h"
@@ -26,7 +26,7 @@
 
 /**
  * Wraps  (or simulates)  `[[nodiscard]]`.  In  C++  (at least  since C++20)  a
- * nodiscard attribute can  have a message why the result  shall not be ignoed.
+ * nodiscard attribute can  have a message why the result shall not be ignored.
  * However GCC attribute and SAL annotation cannot take them.
  */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(nodiscard)

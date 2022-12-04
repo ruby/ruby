@@ -33,13 +33,13 @@ describe "Integer#gcd" do
 
   it "accepts a Bignum argument" do
     bignum = 9999**99
-    bignum.should be_kind_of(Bignum)
+    bignum.should be_kind_of(Integer)
     99.gcd(bignum).should == 99
   end
 
   it "works if self is a Bignum" do
     bignum = 9999**99
-    bignum.should be_kind_of(Bignum)
+    bignum.should be_kind_of(Integer)
     bignum.gcd(99).should == 99
   end
 

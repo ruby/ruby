@@ -21,4 +21,10 @@ describe "StringScanner#exist?" do
     @s.scan(/This is/)
     @s.exist?(/i/).should == nil
   end
+
+  it "raises TypeError if given a String" do
+    -> {
+      @s.exist?('T')
+    }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+  end
 end

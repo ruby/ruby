@@ -69,16 +69,6 @@ describe :io_write, shared: true do
     -> { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
   end
 
-  it "does not modify the passed argument" do
-    File.open(@filename, "w") do |f|
-      f.set_encoding(Encoding::IBM437)
-      # A character whose codepoint differs between UTF-8 and IBM437
-      f.write "ƒ".freeze
-    end
-
-    File.binread(@filename).bytes.should == [159]
-  end
-
   describe "on a pipe" do
     before :each do
       @r, @w = IO.pipe

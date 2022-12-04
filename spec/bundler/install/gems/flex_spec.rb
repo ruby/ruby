@@ -156,7 +156,7 @@ RSpec.describe "bundle flex_install" do
     end
   end
 
-  describe "when Gemfile conflicts with lockfile" do
+  describe "when running bundle install and Gemfile conflicts with lockfile" do
     before(:each) do
       build_repo2
       install_gemfile <<-G
@@ -166,8 +166,7 @@ RSpec.describe "bundle flex_install" do
 
       expect(the_bundle).to include_gems "rack_middleware 1.0", "rack 0.9.1"
 
-      build_repo2
-      update_repo2 do
+      build_repo2 do
         build_gem "rack-obama", "2.0" do |s|
           s.add_dependency "rack", "=1.2"
         end
@@ -191,27 +190,63 @@ RSpec.describe "bundle flex_install" do
       expect(err).to match(/could not find gem 'rack-obama/i)
     end
 
-    it "suggests bundle update when the Gemfile requires different versions than the lock" do
+    it "discards the locked gems when the Gemfile requires different versions than the lock" do
       bundle "config set force_ruby_platform true"
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "rack":
-          In snapshot (Gemfile.lock):
-            rack (= 0.9.1)
+        Could not find compatible versions
 
-          In Gemfile:
-            rack-obama (= 2.0) was resolved to 2.0, which depends on
-              rack (= 1.2)
-
-            rack_middleware was resolved to 1.0, which depends on
-              rack (= 0.9.1)
-
-        Running `bundle update` will rebuild your snapshot from scratch, using only
-        the gems in your Gemfile, which may resolve the conflict.
+        Because rack-obama >= 2.0 depends on rack = 1.2
+          and rack = 1.2 could not be found in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally,
+          rack-obama >= 2.0 is forbidden.
+        So, because Gemfile depends on rack-obama = 2.0,
+          version solving has failed.
       E
 
       bundle :install, :retry => 0, :raise_on_error => false
       expect(err).to end_with(nice_error)
+    end
+
+    it "does not include conflicts with a single requirement tree, because that can't possibly be a conflict" do
+      bundle "config set force_ruby_platform true"
+
+      bad_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "rack-obama":
+          In Gemfile:
+            rack-obama (= 2.0)
+      E
+
+      bundle "update rack_middleware", :retry => 0, :raise_on_error => false
+      expect(err).not_to end_with(bad_error)
+    end
+  end
+
+  describe "when running bundle update and Gemfile conflicts with lockfile" do
+    before(:each) do
+      build_repo4 do
+        build_gem "jekyll-feed", "0.16.0"
+        build_gem "jekyll-feed", "0.15.1"
+
+        build_gem "github-pages", "226" do |s|
+          s.add_dependency "jekyll-feed", "0.15.1"
+        end
+      end
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "jekyll-feed", "~> 0.12"
+      G
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "github-pages", "~> 226"
+        gem "jekyll-feed", "~> 0.12"
+      G
+    end
+
+    it "discards the conflicting lockfile information and resolves properly" do
+      bundle :update, :raise_on_error => false, :all => true
+      expect(err).to be_empty
     end
   end
 
@@ -230,14 +265,27 @@ RSpec.describe "bundle flex_install" do
       G
     end
 
-    it "does something" do
-      expect do
-        bundle "install", :raise_on_error => false
-      end.not_to change { File.read(bundled_app_lock) }
+    it "should work when you install" do
+      bundle "install"
 
-      expect(err).to include("rack = 0.9.1")
-      expect(err).to include("locked at 1.0.0")
-      expect(err).to include("bundle update rack")
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+            rack-obama (1.0)
+              rack
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rack (= 0.9.1)
+          rack-obama
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
 
     it "should work when you update" do
@@ -246,37 +294,7 @@ RSpec.describe "bundle flex_install" do
   end
 
   describe "when adding a new source" do
-    it "updates the lockfile", :bundler => "< 3" do
-      build_repo2
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-      G
-      install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        source "#{file_uri_for(gem_repo2)}"
-        gem "rack"
-      G
-
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
-          rack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        rack
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-      L
-    end
-
-    it "updates the lockfile", :bundler => "3" do
+    it "updates the lockfile" do
       build_repo2
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -290,24 +308,24 @@ RSpec.describe "bundle flex_install" do
         gem "rack"
       G
 
-      lockfile_should_be <<-L
-      GEM
-        remote: #{file_uri_for(gem_repo1)}/
-        specs:
-          rack (1.0.0)
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (1.0.0)
 
-      GEM
-        remote: #{file_uri_for(gem_repo2)}/
-        specs:
+        GEM
+          remote: #{file_uri_for(gem_repo2)}/
+          specs:
 
-      PLATFORMS
-        #{lockfile_platforms}
+        PLATFORMS
+          #{lockfile_platforms}
 
-      DEPENDENCIES
-        rack
+        DEPENDENCIES
+          rack
 
-      BUNDLED WITH
-         #{Bundler::VERSION}
+        BUNDLED WITH
+           #{Bundler::VERSION}
       L
     end
   end
@@ -332,7 +350,7 @@ RSpec.describe "bundle flex_install" do
       end
     end
 
-    it "prints the correct error message" do
+    it "resolves them" do
       # install Rails 3.0.0.rc
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -341,13 +359,12 @@ RSpec.describe "bundle flex_install" do
       G
 
       # upgrade Rails to 3.0.0 and then install again
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0.0"
         gem "capybara", "0.3.9"
       G
-
-      expect(err).to include("Gemfile.lock")
+      expect(err).to be_empty
     end
   end
 end

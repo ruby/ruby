@@ -44,7 +44,7 @@ module Bundler
       end
     end
 
-  private
+    private
 
     def last_version_number
       definition = Bundler.definition(true)

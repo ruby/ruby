@@ -59,6 +59,12 @@ HERE
     s.encoding.should == Encoding::US_ASCII
   end
 
+  it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
+    -> {
+      eval %{<<"HERE\n"\nraises syntax error\nHERE}
+    }.should raise_error(SyntaxError)
+  end
+
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do
     require_relative 'fixtures/squiggly_heredoc'
     SquigglyHeredocSpecs.message.should == "character density, n.:\n  The number of very weird people in the office.\n"
@@ -82,6 +88,11 @@ HERE
   it "allows HEREDOC with <<~'identifier', no interpolation" do
     require_relative 'fixtures/squiggly_heredoc'
     SquigglyHeredocSpecs.singlequoted.should == "singlequoted \#{\"interpolated\"}\n"
+  end
+
+  it "allows HEREDOC with <<~'identifier', no interpolation, with backslash" do
+    require_relative 'fixtures/squiggly_heredoc'
+    SquigglyHeredocSpecs.backslash.should == "a\nbc\n"
   end
 
   it "selects the least-indented line and removes its indentation from all the lines" do

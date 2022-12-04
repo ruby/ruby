@@ -76,7 +76,7 @@ if defined?(WIN32OLE_RECORD)
   class TestWIN32OLE_RECORD_BY_RBCOMTEST < Test::Unit::TestCase
     unless rbcomtest_exist?
       def test_dummy_for_skip_message
-        skip "#{PROGID_RBCOMTEST} for WIN32OLE_RECORD test is not installed"
+        omit "#{PROGID_RBCOMTEST} for WIN32OLE_RECORD test is not installed"
       end
     else
       def setup

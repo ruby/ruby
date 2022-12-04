@@ -41,11 +41,11 @@
 
 module RDoc::Generator
 
-  autoload :Markup,   'rdoc/generator/markup'
+  autoload :Markup,   "#{__dir__}/generator/markup"
 
-  autoload :Darkfish,  'rdoc/generator/darkfish'
-  autoload :JsonIndex, 'rdoc/generator/json_index'
-  autoload :RI,        'rdoc/generator/ri'
-  autoload :POT,       'rdoc/generator/pot'
+  autoload :Darkfish,  "#{__dir__}/generator/darkfish"
+  autoload :JsonIndex, "#{__dir__}/generator/json_index"
+  autoload :RI,        "#{__dir__}/generator/ri"
+  autoload :POT,       "#{__dir__}/generator/pot"
 
 end

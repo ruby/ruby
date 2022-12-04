@@ -43,26 +43,4 @@ describe "Array#delete" do
   it "raises a FrozenError on a frozen array" do
     -> { [1, 2, 3].freeze.delete(1) }.should raise_error(FrozenError)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "keeps tainted status" do
-      a = [1, 2]
-      a.taint
-      a.tainted?.should be_true
-      a.delete(2)
-      a.tainted?.should be_true
-      a.delete(1) # now empty
-      a.tainted?.should be_true
-    end
-
-    it "keeps untrusted status" do
-      a = [1, 2]
-      a.untrust
-      a.untrusted?.should be_true
-      a.delete(2)
-      a.untrusted?.should be_true
-      a.delete(1) # now empty
-      a.untrusted?.should be_true
-    end
-  end
 end

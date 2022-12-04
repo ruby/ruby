@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "parallel", :realworld => true, :sometimes => true do
+RSpec.describe "parallel", :realworld => true do
   it "installs" do
     gemfile <<-G
       source "https://rubygems.org"
@@ -46,7 +46,7 @@ RSpec.describe "parallel", :realworld => true, :sometimes => true do
   end
 
   it "works with --standalone" do
-    gemfile <<-G, :standalone => true
+    gemfile <<-G
       source "https://rubygems.org"
       gem "diff-lcs"
     G

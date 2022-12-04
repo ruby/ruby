@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-load File.expand_path("../bundle", __FILE__)
+load File.expand_path("bundle", __dir__)

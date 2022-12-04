@@ -51,7 +51,7 @@ end
 
 describe "Random#rand with Fixnum" do
   it "returns an Integer" do
-    Random.new.rand(20).should be_an_instance_of(Fixnum)
+    Random.new.rand(20).should be_an_instance_of(Integer)
   end
 
   it "returns a Fixnum greater than or equal to 0" do
@@ -95,7 +95,7 @@ end
 describe "Random#rand with Bignum" do
   it "typically returns a Bignum" do
     rnd = Random.new(1)
-    10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Bignum)
+    10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Integer)
   end
 
   it "returns a Bignum greater than or equal to 0" do
@@ -159,7 +159,7 @@ end
 
 describe "Random#rand with Range" do
   it "returns an element from the Range" do
-    Random.new.rand(20..43).should be_an_instance_of(Fixnum)
+    Random.new.rand(20..43).should be_an_instance_of(Integer)
   end
 
   it "supports custom object types" do
@@ -203,6 +203,11 @@ describe "Random#rand with Range" do
   it "considers Integers as Floats if one end point is a float" do
     Random.new(42).rand(0.0..1).should be_kind_of(Float)
     Random.new(42).rand(0..1.0).should be_kind_of(Float)
+  end
+
+  it "returns a float within a given float range" do
+    Random.new(42).rand(0.0...100.0).should == 37.454011884736246
+    Random.new(42).rand(-100.0...0.0).should == -62.545988115263754
   end
 
   it "raises an ArgumentError when the startpoint lacks #+ and #- methods" do

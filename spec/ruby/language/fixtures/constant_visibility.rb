@@ -65,7 +65,7 @@ module ConstantVisibility
     end
   end
 
-  class PrivConstModuleChild
+  class ClassIncludingPrivConstModule
     include PrivConstModule
 
     def private_constant_from_include
@@ -74,6 +74,22 @@ module ConstantVisibility
 
     def defined_from_include
       defined? PRIVATE_CONSTANT_MODULE
+    end
+  end
+
+  module ModuleIncludingPrivConstModule
+    include PrivConstModule
+
+    def self.private_constant_from_include
+      PRIVATE_CONSTANT_MODULE
+    end
+
+    def self.private_constant_self_from_include
+      self::PRIVATE_CONSTANT_MODULE
+    end
+
+    def self.private_constant_named_from_include
+      PrivConstModule::PRIVATE_CONSTANT_MODULE
     end
   end
 

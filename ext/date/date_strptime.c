@@ -581,6 +581,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (NIL_P(pat)) {
 			pat = rb_reg_new(pat_source, sizeof pat_source - 1,
 					 ONIG_OPTION_IGNORECASE);
+			rb_obj_freeze(pat);
 			rb_gc_register_mark_object(pat);
 		    }
 

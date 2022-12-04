@@ -9,15 +9,22 @@
 #
 #
 #
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Nop
 
-
-      def self.execute(conf, *opts)
-        command = new(conf)
-        command.execute(*opts)
+      if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
+        def self.execute(conf, *opts, **kwargs, &block)
+          command = new(conf)
+          command.execute(*opts, **kwargs, &block)
+        end
+      else
+        def self.execute(conf, *opts, &block)
+          command = new(conf)
+          command.execute(*opts, &block)
+        end
       end
 
       def initialize(conf)
@@ -35,5 +42,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

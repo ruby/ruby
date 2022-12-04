@@ -2,7 +2,7 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
     build_lib "baz", :path => bundled_app do |s|
       s.version = "1.0.0"
@@ -22,7 +22,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       source "#{file_uri_for(gem_repo2)}"
       gem "weakling"
       gem "very_simple_binary"
-      gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
+      gem "foo", :git => "#{lib_path("foo")}", :branch => "main"
       gem "git_with_ext", :git => "#{lib_path("git_with_ext")}"
       gem "bar", :path => "#{lib_path("bar")}"
 
@@ -93,7 +93,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
 
       bundle "pristine"
       expect(changes_txt).to be_file
-      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overriden.")
+      expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overridden.")
     end
   end
 
@@ -200,6 +200,16 @@ RSpec.describe "bundle pristine", :ruby_repo do
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
       expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
       expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+    end
+  end
+
+  context "when BUNDLE_GEMFILE doesn't exist" do
+    before do
+      bundle "pristine", :env => { "BUNDLE_GEMFILE" => "does/not/exist" }, :raise_on_error => false
+    end
+
+    it "shows a meaningful error" do
+      expect(err).to eq("#{bundled_app("does/not/exist")} not found")
     end
   end
 

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "<%= config[:namespaced_path] %>/version"
+require_relative "<%= File.basename(config[:namespaced_path]) %>/version"
 <%- if config[:ext] -%>
-require "<%= config[:namespaced_path] %>/<%= config[:underscored_name] %>"
+require_relative "<%= File.basename(config[:namespaced_path]) %>/<%= config[:underscored_name] %>"
 <%- end -%>
 
 <%- config[:constant_array].each_with_index do |c, i| -%>

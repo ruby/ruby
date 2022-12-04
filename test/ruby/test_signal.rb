@@ -291,7 +291,8 @@ class TestSignal < Test::Unit::TestCase
 
     if trap = Signal.list['TRAP']
       bug9820 = '[ruby-dev:48592] [Bug #9820]'
-      status = assert_in_out_err(['-e', 'Process.kill(:TRAP, $$)'])
+      no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
+      status = assert_in_out_err(['-e', "#{no_core}Process.kill(:TRAP, $$)"])
       assert_predicate(status, :signaled?, bug9820)
       assert_equal(trap, status.termsig, bug9820)
     end
@@ -323,7 +324,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_sigchld_ignore
-    skip 'no SIGCHLD' unless Signal.list['CHLD']
+    omit 'no SIGCHLD' unless Signal.list['CHLD']
     old = trap(:CHLD, 'IGNORE')
     cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
     assert(system(*cmd, 'exit!(0)'), 'no ECHILD')

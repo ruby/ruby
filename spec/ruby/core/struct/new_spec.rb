@@ -62,8 +62,20 @@ describe "Struct.new" do
     -> { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
   end
 
-  it "raises a ArgumentError if passed a Hash with an unknown key" do
-    -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+  ruby_version_is ""..."3.2" do
+    it "raises a TypeError or ArgumentError if passed a Hash with an unknown key" do
+      # CRuby < 3.2 raises ArgumentError: unknown keyword: :name, but that seems a bug:
+      # https://bugs.ruby-lang.org/issues/18632
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(StandardError) { |e|
+        [ArgumentError, TypeError].should.include?(e.class)
+      }
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "raises a TypeError if passed a Hash with an unknown key" do
+      -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+    end
   end
 
   it "raises ArgumentError when there is a duplicate member" do
@@ -127,15 +139,30 @@ describe "Struct.new" do
       -> { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
     end
 
-    it "passes a hash as a normal argument" do
-      type = Struct.new(:args)
+    ruby_version_is ''...'3.1' do
+      it "passes a hash as a normal argument" do
+        type = Struct.new(:args)
 
-      obj = type.new(keyword: :arg)
-      obj2 = type.new(*[{keyword: :arg}])
+        obj = suppress_warning {type.new(keyword: :arg)}
+        obj2 = type.new(*[{keyword: :arg}])
 
-      obj.should == obj2
-      obj.args.should == {keyword: :arg}
-      obj2.args.should == {keyword: :arg}
+        obj.should == obj2
+        obj.args.should == {keyword: :arg}
+        obj2.args.should == {keyword: :arg}
+      end
+    end
+
+    ruby_version_is '3.2' do
+      it "accepts keyword arguments to initialize" do
+        type = Struct.new(:args)
+
+        obj = type.new(args: 42)
+        obj2 = type.new(42)
+
+        obj.should == obj2
+        obj.args.should == 42
+        obj2.args.should == 42
+      end
     end
   end
 

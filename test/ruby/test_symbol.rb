@@ -36,6 +36,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_eval_inspected(:"@@1", false)
     assert_eval_inspected(:"@", false)
     assert_eval_inspected(:"@@", false)
+    assert_eval_inspected(:"[]=")
+    assert_eval_inspected(:"[][]", false)
+    assert_eval_inspected(:"[][]=", false)
+    assert_eval_inspected(:"@=", false)
+    assert_eval_inspected(:"@@=", false)
+    assert_eval_inspected(:"@x=", false)
+    assert_eval_inspected(:"@@x=", false)
+    assert_eval_inspected(:"$$=", false)
+    assert_eval_inspected(:"$==", false)
+    assert_eval_inspected(:"$x=", false)
+    assert_eval_inspected(:"$$$=", false)
+    assert_eval_inspected(:"foo?=", false)
+    assert_eval_inspected(:"foo!=", false)
   end
 
   def assert_inspect_evaled(n)
@@ -103,6 +116,12 @@ class TestSymbol < Test::Unit::TestCase
     invalid.each do |sym|
       assert_equal(':"' + sym + '"', sym.intern.inspect)
     end
+  end
+
+  def test_name
+    assert_equal("foo", :foo.name)
+    assert_same(:foo.name, :foo.name)
+    assert_predicate(:foo.name, :frozen?)
   end
 
   def test_to_proc

@@ -78,6 +78,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     @notownedfile
   end
 
+  def grpownedfile
+    return nil unless POSIX
+    return @grpownedfile if defined? @grpownedfile
+    if group = (Process.groups - [Process.egid]).last
+      grpownedfile = make_tmp_filename("grpownedfile")
+      make_file("grpowned", grpownedfile)
+      File.chown(nil, group, grpownedfile)
+      return @grpownedfile = grpownedfile
+    end
+  rescue
+    @grpownedfile = nil
+  end
+
   def suidfile
     return @suidfile if defined? @suidfile
     if POSIX
@@ -130,7 +143,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @hardlinkfile = make_tmp_filename("hardlinkfile")
     begin
       File.link(regular_file, @hardlinkfile)
-    rescue NotImplementedError, Errno::EINVAL	# EINVAL for Windows Vista
+    rescue NotImplementedError, Errno::EINVAL, Errno::EACCES   # EINVAL for Windows Vista, EACCES for Android Termux
       @hardlinkfile = nil
     end
     @hardlinkfile
@@ -160,9 +173,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def chardev
-    return @chardev if defined? @chardev
-    @chardev = File::NULL == "/dev/null" ? "/dev/null" : nil
-    @chardev
+    File::NULL
   end
 
   def blockdev
@@ -319,7 +330,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_chardev?(regular_file)
     assert_file.not_chardev?(utf8_file)
     assert_file.not_chardev?(nofile)
-    assert_file.chardev?(chardev) if chardev
+    assert_file.chardev?(chardev)
   end
 
   def test_exist_p
@@ -493,6 +504,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_grpowned_p ## xxx
     assert_file.grpowned?(regular_file)
     assert_file.grpowned?(utf8_file)
+    if file = grpownedfile
+      assert_file.grpowned?(file)
+    end
   end if POSIX
 
   def io_open(file_name)
@@ -624,7 +638,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_birthtime
-    skip if RUBY_PLATFORM =~ /android/
+    omit if RUBY_PLATFORM =~ /android/
     [regular_file, utf8_file].each do |file|
       t1 = File.birthtime(file)
       t2 = File.open(file) {|f| f.birthtime}
@@ -635,7 +649,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
-      skip("statx(2) is prohibited by seccomp")
+      omit("statx(2) is prohibited by seccomp")
     end
     assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
   end if File.respond_to?(:birthtime)
@@ -679,6 +693,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.utime(t + 1, t + 2, zerofile)
     assert_equal(t + 1, File.atime(zerofile))
     assert_equal(t + 2, File.mtime(zerofile))
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        path = "foo\u{30b3 30d4 30fc}"
+        File.write(path, "") rescue next
+        assert_equal(1, File.utime(nil, nil, path))
+      end
+    end
   end
 
   def test_utime_symlinkfile
@@ -750,7 +771,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     def test_readlink_junction
       base = File.basename(nofile)
       err = IO.popen(%W"cmd.exe /c mklink /j #{base} .", chdir: @dir, err: %i[child out], &:read)
-      skip err unless $?.success?
+      omit err unless $?.success?
       assert_equal(@dir, File.readlink(nofile))
     end
 
@@ -849,9 +870,10 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug9934 = '[ruby-core:63114] [Bug #9934]'
     require "objspace"
     path = File.expand_path("/foo")
-    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], bug9934)
+    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], bug9934)
     path = File.expand_path("/a"*25)
-    assert_equal(path.bytesize+1 + GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], ObjectSpace.memsize_of(path), bug9934)
+    assert_operator(ObjectSpace.memsize_of(path), :<=,
+                    (path.bytesize + 1) * 2 + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], bug9934)
   end
 
   def test_expand_path_encoding
@@ -880,6 +902,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("#{Dir.pwd}/#{path}", File.expand_path(path))
 
     assert_incompatible_encoding {|d| File.expand_path(d)}
+
+    assert_equal(Encoding::UTF_8, File.expand_path("foo", "#{drive}/").encoding)
   end
 
   def test_expand_path_encoding_filesystem
@@ -1094,7 +1118,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path_for_existent_username
     user = ENV['USER']
-    skip "ENV['USER'] is not set" unless user
+    omit "ENV['USER'] is not set" unless user
     assert_equal(ENV['HOME'], File.expand_path("~#{user}"))
   end unless DRIVE
 
@@ -1245,6 +1269,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(@dir, File.dirname(regular_file))
     assert_equal(@dir, File.dirname(utf8_file))
     assert_equal(".", File.dirname(""))
+    assert_equal(regular_file, File.dirname(regular_file, 0))
+    assert_equal(@dir, File.dirname(regular_file, 1))
+    assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
+    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # rootdir and tmpdir are in different drives
+    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
+    assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
   end
 
   def test_dirname_encoding
@@ -1377,21 +1407,26 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_exclusive
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_EX)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(!f.flock(File::LOCK_SH|File::LOCK_NB))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_SH)
             end
           end
@@ -1403,21 +1438,26 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock_shared
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
+    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_SH)
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r") do |f|
-          Timeout.timeout(0.1) do
+          Timeout.timeout(timeout) do
             assert(f.flock(File::LOCK_SH))
           end
         end
       end;
-      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
-      begin
+      assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        timeout = ARGV[1].to_f
         open(ARGV[0], "r+") do |f|
           assert_raise(Timeout::Error) do
-            Timeout.timeout(0.1) do
+            Timeout.timeout(timeout) do
               f.flock(File::LOCK_EX)
             end
           end
@@ -1439,6 +1479,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       fn1,
       zerofile,
       notownedfile,
+      grpownedfile,
       suidfile,
       sgidfile,
       stickyfile,
@@ -1449,31 +1490,56 @@ class TestFileExhaustive < Test::Unit::TestCase
       fifo,
       socket
     ].compact.each do |f|
-      assert_equal(File.atime(f), test(?A, f))
-      assert_equal(File.ctime(f), test(?C, f))
-      assert_equal(File.mtime(f), test(?M, f))
-      assert_equal(File.blockdev?(f), test(?b, f))
-      assert_equal(File.chardev?(f), test(?c, f))
-      assert_equal(File.directory?(f), test(?d, f))
-      assert_equal(File.exist?(f), test(?e, f))
-      assert_equal(File.file?(f), test(?f, f))
-      assert_equal(File.setgid?(f), test(?g, f))
-      assert_equal(File.grpowned?(f), test(?G, f))
-      assert_equal(File.sticky?(f), test(?k, f))
-      assert_equal(File.symlink?(f), test(?l, f))
-      assert_equal(File.owned?(f), test(?o, f))
-      assert_nothing_raised { test(?O, f) }
-      assert_equal(File.pipe?(f), test(?p, f))
-      assert_equal(File.readable?(f), test(?r, f))
-      assert_equal(File.readable_real?(f), test(?R, f))
-      assert_equal(File.size?(f), test(?s, f))
-      assert_equal(File.socket?(f), test(?S, f))
-      assert_equal(File.setuid?(f), test(?u, f))
-      assert_equal(File.writable?(f), test(?w, f))
-      assert_equal(File.writable_real?(f), test(?W, f))
-      assert_equal(File.executable?(f), test(?x, f))
-      assert_equal(File.executable_real?(f), test(?X, f))
-      assert_equal(File.zero?(f), test(?z, f))
+      assert_equal(File.atime(f), test(?A, f), f)
+      assert_equal(File.ctime(f), test(?C, f), f)
+      assert_equal(File.mtime(f), test(?M, f), f)
+      assert_equal(File.blockdev?(f), test(?b, f), f)
+      assert_equal(File.chardev?(f), test(?c, f), f)
+      assert_equal(File.directory?(f), test(?d, f), f)
+      assert_equal(File.exist?(f), test(?e, f), f)
+      assert_equal(File.file?(f), test(?f, f), f)
+      assert_equal(File.setgid?(f), test(?g, f), f)
+      assert_equal(File.grpowned?(f), test(?G, f), f)
+      assert_equal(File.sticky?(f), test(?k, f), f)
+      assert_equal(File.symlink?(f), test(?l, f), f)
+      assert_equal(File.owned?(f), test(?o, f), f)
+      assert_nothing_raised(f) { test(?O, f) }
+      assert_equal(File.pipe?(f), test(?p, f), f)
+      assert_equal(File.readable?(f), test(?r, f), f)
+      assert_equal(File.readable_real?(f), test(?R, f), f)
+      assert_equal(File.size?(f), test(?s, f), f)
+      assert_equal(File.socket?(f), test(?S, f), f)
+      assert_equal(File.setuid?(f), test(?u, f), f)
+      assert_equal(File.writable?(f), test(?w, f), f)
+      assert_equal(File.writable_real?(f), test(?W, f), f)
+      assert_equal(File.executable?(f), test(?x, f), f)
+      assert_equal(File.executable_real?(f), test(?X, f), f)
+      assert_equal(File.zero?(f), test(?z, f), f)
+
+      stat = File.stat(f)
+      assert_equal(stat.atime, File.atime(f), f)
+      assert_equal(stat.ctime, File.ctime(f), f)
+      assert_equal(stat.mtime, File.mtime(f), f)
+      assert_bool_equal(stat.blockdev?, File.blockdev?(f), f)
+      assert_bool_equal(stat.chardev?, File.chardev?(f), f)
+      assert_bool_equal(stat.directory?, File.directory?(f), f)
+      assert_bool_equal(stat.file?, File.file?(f), f)
+      assert_bool_equal(stat.setgid?, File.setgid?(f), f)
+      assert_bool_equal(stat.grpowned?, File.grpowned?(f), f)
+      assert_bool_equal(stat.sticky?, File.sticky?(f), f)
+      assert_bool_equal(File.lstat(f).symlink?, File.symlink?(f), f)
+      assert_bool_equal(stat.owned?, File.owned?(f), f)
+      assert_bool_equal(stat.pipe?, File.pipe?(f), f)
+      assert_bool_equal(stat.readable?, File.readable?(f), f)
+      assert_bool_equal(stat.readable_real?, File.readable_real?(f), f)
+      assert_equal(stat.size?, File.size?(f), f)
+      assert_bool_equal(stat.socket?, File.socket?(f), f)
+      assert_bool_equal(stat.setuid?, File.setuid?(f), f)
+      assert_bool_equal(stat.writable?, File.writable?(f), f)
+      assert_bool_equal(stat.writable_real?, File.writable_real?(f), f)
+      assert_bool_equal(stat.executable?, File.executable?(f), f)
+      assert_bool_equal(stat.executable_real?, File.executable_real?(f), f)
+      assert_bool_equal(stat.zero?, File.zero?(f), f)
     end
     assert_equal(false, test(?-, @dir, fn1))
     assert_equal(true, test(?-, fn1, fn1))
@@ -1583,7 +1649,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_chardev_p
     assert_not_predicate(File::Stat.new(@dir), :chardev?)
     assert_not_predicate(File::Stat.new(regular_file), :chardev?)
-    assert_predicate(File::Stat.new(chardev), :chardev?) if chardev
+    assert_predicate(File::Stat.new(chardev), :chardev?)
   end
 
   def test_stat_readable_p
@@ -1674,6 +1740,9 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_stat_grpowned_p ## xxx
     assert_predicate(File::Stat.new(regular_file), :grpowned?)
+    if file = grpownedfile
+      assert_predicate(File::Stat.new(file), :grpowned?)
+    end
   end if POSIX
 
   def test_stat_suid
@@ -1722,5 +1791,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(File.join(Dir.pwd, "~foo"), File.absolute_path("~foo"))
     dir = File.expand_path("/bar")
     assert_equal(File.join(dir, "~foo"), File.absolute_path("~foo", dir))
+  end
+
+  def assert_bool_equal(expected, result, *messages)
+    assert_equal(expected, true & result, *messages)
   end
 end

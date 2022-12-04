@@ -42,10 +42,22 @@ describe "Fiber.current" do
     fiber3 = Fiber.new do
       states << :fiber3
       fiber2.transfer
-      flunk
+      ruby_version_is '3.0' do
+        states << :fiber3_terminated
+      end
+      ruby_version_is '' ... '3.0' do
+        flunk
+      end
     end
 
     fiber3.resume
-    states.should == [:fiber3, :fiber2, :fiber]
+
+    ruby_version_is "" ... "3.0" do
+      states.should == [:fiber3, :fiber2, :fiber]
+    end
+
+    ruby_version_is "3.0" do
+      states.should == [:fiber3, :fiber2, :fiber, :fiber3_terminated]
+    end
   end
 end

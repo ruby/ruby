@@ -14,17 +14,24 @@ require 'ripper/core'
 class Ripper
 
   # Tokenizes the Ruby program and returns an array of strings.
+  # The +filename+ and +lineno+ arguments are mostly ignored, since the
+  # return value is just the tokenized input.
+  # By default, this method does not handle syntax errors in +src+,
+  # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
   #
   #   p Ripper.tokenize("def m(a) nil end")
   #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
   #
-  def Ripper.tokenize(src, filename = '-', lineno = 1)
-    Lexer.new(src, filename, lineno).tokenize
+  def Ripper.tokenize(src, filename = '-', lineno = 1, **kw)
+    Lexer.new(src, filename, lineno).tokenize(**kw)
   end
 
   # Tokenizes the Ruby program and returns an array of an array,
   # which is formatted like
   # <code>[[lineno, column], type, token, state]</code>.
+  # The +filename+ argument is mostly ignored.
+  # By default, this method does not handle syntax errors in +src+,
+  # use the +raise_errors+ keyword to raise a SyntaxError for an error in +src+.
   #
   #   require 'ripper'
   #   require 'pp'
@@ -41,15 +48,32 @@ class Ripper
   #        [[1, 12], :on_sp,     " ",   END      ],
   #        [[1, 13], :on_kw,     "end", END      ]]
   #
-  def Ripper.lex(src, filename = '-', lineno = 1)
-    Lexer.new(src, filename, lineno).lex
+  def Ripper.lex(src, filename = '-', lineno = 1, **kw)
+    Lexer.new(src, filename, lineno).lex(**kw)
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
-    State = Struct.new(:to_int, :to_s) do
+    class State
+      attr_reader :to_int, :to_s
+
+      def initialize(i)
+        @to_int = i
+        @to_s = Ripper.lex_state_name(i)
+        freeze
+      end
+
+      def [](index)
+        case index
+        when 0, :to_int
+          @to_int
+        when 1, :to_s
+          @event
+        else
+          nil
+        end
+      end
+
       alias to_i to_int
-      def initialize(i) super(i, Ripper.lex_state_name(i)).freeze end
-      # def inspect; "#<#{self.class}: #{self}>" end
       alias inspect to_s
       def pretty_print(q) q.text(to_s) end
       def ==(i) super or to_int == i end
@@ -60,21 +84,46 @@ class Ripper
       def nobits?(i) to_int.nobits?(i) end
     end
 
-    Elem = Struct.new(:pos, :event, :tok, :state, :message) do
+    class Elem
+      attr_accessor :pos, :event, :tok, :state, :message
+
       def initialize(pos, event, tok, state, message = nil)
-        super(pos, event, tok, State.new(state), message)
+        @pos = pos
+        @event = event
+        @tok = tok
+        @state = State.new(state)
+        @message = message
+      end
+
+      def [](index)
+        case index
+        when 0, :pos
+          @pos
+        when 1, :event
+          @event
+        when 2, :tok
+          @tok
+        when 3, :state
+          @state
+        when 4, :message
+          @message
+        else
+          nil
+        end
       end
 
       def inspect
         "#<#{self.class}: #{event}@#{pos[0]}:#{pos[1]}:#{state}: #{tok.inspect}#{": " if message}#{message}>"
       end
 
+      alias to_s inspect
+
       def pretty_print(q)
         q.group(2, "#<#{self.class}:", ">") {
           q.breakable
           q.text("#{event}@#{pos[0]}:#{pos[1]}")
           q.breakable
-          q.text(state)
+          state.pretty_print(q)
           q.breakable
           q.text("token: ")
           tok.pretty_print(q)
@@ -87,25 +136,27 @@ class Ripper
       end
 
       def to_a
-        a = super
-        a.pop unless a.last
-        a
+        if @message
+          [@pos, @event, @tok, @state, @message]
+        else
+          [@pos, @event, @tok, @state]
+        end
       end
     end
 
     attr_reader :errors
 
-    def tokenize
-      parse().sort_by(&:pos).map(&:tok)
+    def tokenize(**kw)
+      parse(**kw).sort_by(&:pos).map(&:tok)
     end
 
-    def lex
-      parse().sort_by(&:pos).map(&:to_a)
+    def lex(**kw)
+      parse(**kw).sort_by(&:pos).map(&:to_a)
     end
 
     # parse the code and returns elements including errors.
-    def scan
-      result = (parse() + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
+    def scan(**kw)
+      result = (parse(**kw) + errors + @stack.flatten).uniq.sort_by {|e| [*e.pos, (e.message ? -1 : 0)]}
       result.each_with_index do |e, i|
         if e.event == :on_parse_error and e.tok.empty? and (pre = result[i-1]) and
           pre.pos[0] == e.pos[0] and (pre.pos[1] + pre.tok.size) == e.pos[1]
@@ -118,13 +169,20 @@ class Ripper
       result
     end
 
-    def parse
+    def parse(raise_errors: false)
       @errors = []
       @buf = []
       @stack = []
-      super
+      super()
+      @buf = @stack.pop unless @stack.empty?
+      if raise_errors and !@errors.empty?
+        raise SyntaxError, @errors.map(&:message).join(' ;')
+      end
       @buf.flatten!
-      @buf
+      unless (result = @buf).empty?
+        result.concat(@buf) until (@buf = []; super(); @buf.flatten!; @buf.empty?)
+      end
+      result
     end
 
     private
@@ -138,17 +196,19 @@ class Ripper
     def on_heredoc_dedent(v, w)
       ignored_sp = []
       heredoc = @buf.last
-      heredoc.each_with_index do |e, i|
-        if Elem === e and e.event == :on_tstring_content and e.pos[1].zero?
-          tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
-          if (n = dedent_string(e.tok, w)) > 0
-            if e.tok.empty?
-              e.tok = tok[0, n]
-              e.event = :on_ignored_sp
-              next
+      if Array === heredoc
+        heredoc.each_with_index do |e, i|
+          if Elem === e and e.event == :on_tstring_content and e.pos[1].zero?
+            tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
+            if (n = dedent_string(e.tok, w)) > 0
+              if e.tok.empty?
+                e.tok = tok[0, n]
+                e.event = :on_ignored_sp
+                next
+              end
+              ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n], e.state)]
+              e.pos[1] += n
             end
-            ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n], e.state)]
-            e.pos[1] += n
           end
         end
       end
@@ -172,14 +232,23 @@ class Ripper
     end
 
     def _push_token(tok)
-      @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
+      e = Elem.new([lineno(), column()], __callee__, tok, state())
+      @buf.push(e)
+      e
     end
 
-    def on_error(mesg)
+    def on_error1(mesg)
       @errors.push Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
     end
-    alias on_parse_error on_error
-    alias compile_error on_error
+
+    def on_error2(mesg, elem)
+      @errors.push Elem.new(elem.pos, __callee__, elem.tok, elem.state, mesg)
+    end
+    PARSER_EVENTS.grep(/_error\z/) do |e|
+      arity = PARSER_EVENT_TABLE.fetch(e)
+      alias_method "on_#{e}", "on_error#{arity}"
+    end
+    alias compile_error on_error1
 
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token

@@ -1,17 +1,17 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative "helper"
 
-unless defined?(OpenSSL::SSL)
-  warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
+unless Gem::HAVE_OPENSSL
+  warn "Skipping Gem::Security::TrustDir tests.  openssl not found."
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-  CHILD_CERT = load_cert 'child'
+  CHILD_CERT = load_cert "child"
 
   def setup
     super
 
-    @dest_dir = File.join @tempdir, 'trust'
+    @dest_dir = File.join @tempdir, "trust"
 
     @trust_dir = Gem::Security::TrustDir.new @dest_dir
   end
@@ -53,7 +53,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
 
     trusted = @trust_dir.cert_path PUBLIC_CERT
 
-    assert_path_exists trusted
+    assert_path_exist trusted
 
     mask = 0100600 & (~File.umask)
 
@@ -63,14 +63,14 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_verify
-    refute_path_exists @dest_dir
+    assert_path_not_exist @dest_dir
 
     @trust_dir.verify
 
-    assert_path_exists @dest_dir
+    assert_path_exist @dest_dir
 
     mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
@@ -78,7 +78,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   def test_verify_file
     FileUtils.touch @dest_dir
 
-    e = assert_raises Gem::Security::Exception do
+    e = assert_raise Gem::Security::Exception do
       @trust_dir.verify
     end
 
@@ -91,8 +91,8 @@ class TestGemSecurityTrustDir < Gem::TestCase
     @trust_dir.verify
 
     mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
-end if defined?(OpenSSL::SSL)
+end if Gem::HAVE_OPENSSL

@@ -1,33 +1,36 @@
 require_relative '../../../spec_helper'
-require 'set'
 
-describe "SortedSet#superset?" do
-  before :each do
-    @set = SortedSet[1, 2, 3, 4]
-  end
+ruby_version_is ""..."3.0" do
+  require 'set'
 
-  it "returns true if passed a SortedSet that equals self or self is a proper superset of" do
-    @set.superset?(@set).should be_true
-    SortedSet[].superset?(SortedSet[]).should be_true
+  describe "SortedSet#superset?" do
+    before :each do
+      @set = SortedSet[1, 2, 3, 4]
+    end
 
-    @set.superset?(SortedSet[]).should be_true
-    SortedSet[1, 2, 3].superset?(SortedSet[]).should be_true
-    SortedSet["a", "b", "c"].superset?(SortedSet[]).should be_true
+    it "returns true if passed a SortedSet that equals self or self is a proper superset of" do
+      @set.superset?(@set).should be_true
+      SortedSet[].superset?(SortedSet[]).should be_true
 
-    @set.superset?(SortedSet[1, 2, 3]).should be_true
-    @set.superset?(SortedSet[1, 3]).should be_true
-    @set.superset?(SortedSet[1, 2]).should be_true
-    @set.superset?(SortedSet[1]).should be_true
+      @set.superset?(SortedSet[]).should be_true
+      SortedSet[1, 2, 3].superset?(SortedSet[]).should be_true
+      SortedSet["a", "b", "c"].superset?(SortedSet[]).should be_true
 
-    @set.superset?(SortedSet[5]).should be_false
-    @set.superset?(SortedSet[1, 5]).should be_false
-    @set.superset?(SortedSet["test"]).should be_false
-  end
+      @set.superset?(SortedSet[1, 2, 3]).should be_true
+      @set.superset?(SortedSet[1, 3]).should be_true
+      @set.superset?(SortedSet[1, 2]).should be_true
+      @set.superset?(SortedSet[1]).should be_true
 
-  it "raises an ArgumentError when passed a non-SortedSet" do
-    -> { SortedSet[].superset?([]) }.should raise_error(ArgumentError)
-    -> { SortedSet[].superset?(1) }.should raise_error(ArgumentError)
-    -> { SortedSet[].superset?("test") }.should raise_error(ArgumentError)
-    -> { SortedSet[].superset?(Object.new) }.should raise_error(ArgumentError)
+      @set.superset?(SortedSet[5]).should be_false
+      @set.superset?(SortedSet[1, 5]).should be_false
+      @set.superset?(SortedSet["test"]).should be_false
+    end
+
+    it "raises an ArgumentError when passed a non-SortedSet" do
+      -> { SortedSet[].superset?([]) }.should raise_error(ArgumentError)
+      -> { SortedSet[].superset?(1) }.should raise_error(ArgumentError)
+      -> { SortedSet[].superset?("test") }.should raise_error(ArgumentError)
+      -> { SortedSet[].superset?(Object.new) }.should raise_error(ArgumentError)
+    end
   end
 end

@@ -6,6 +6,7 @@ module DidYouMean
 
     NAMES_TO_EXCLUDE = { NilClass => nil.methods }
     NAMES_TO_EXCLUDE.default = []
+    Ractor.make_shareable(NAMES_TO_EXCLUDE) if defined?(Ractor)
 
     # +MethodNameChecker::RB_RESERVED_WORDS+ is the list of reserved words in
     # Ruby that take an argument. Unlike
@@ -35,6 +36,8 @@ module DidYouMean
       while
       yield
     )
+
+    Ractor.make_shareable(RB_RESERVED_WORDS) if defined?(Ractor)
 
     def initialize(exception)
       @method_name  = exception.name

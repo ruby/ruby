@@ -7,6 +7,17 @@
 
 class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   ##
+  # We assume that all instances of this class are immutable;
+  # so avoid duplicated generation for performance.
+  @@cache = {}
+  def self.new(set, api_data)
+    cache_key = [set, api_data]
+    cache = @@cache[cache_key]
+    return cache if cache
+    @@cache[cache_key] = super
+  end
+
+  ##
   # Creates an APISpecification for the given +set+ from the rubygems.org
   # +api_data+.
   #
@@ -18,21 +29,26 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
 
     @set = set
     @name = api_data[:name]
-    @version = Gem::Version.new api_data[:number]
-    @platform = Gem::Platform.new api_data[:platform]
-    @original_platform = api_data[:platform]
+    @version = Gem::Version.new(api_data[:number]).freeze
+    @platform = Gem::Platform.new(api_data[:platform]).freeze
+    @original_platform = api_data[:platform].freeze
     @dependencies = api_data[:dependencies].map do |name, ver|
-      Gem::Dependency.new name, ver.split(/\s*,\s*/)
-    end
+      Gem::Dependency.new(name, ver.split(/\s*,\s*/)).freeze
+    end.freeze
+    @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
+    @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @set          == other.set and
-      @name         == other.name and
-      @version      == other.version and
-      @platform     == other.platform and
-      @dependencies == other.dependencies
+    self.class === other &&
+      @set          == other.set &&
+      @name         == other.name &&
+      @version      == other.version &&
+      @platform     == other.platform
+  end
+
+  def hash
+    @set.hash ^ @name.hash ^ @version.hash ^ @platform.hash
   end
 
   def fetch_development_dependencies # :nodoc:
@@ -42,11 +58,11 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def installable_platform? # :nodoc:
-    Gem::Platform.match @platform
+    Gem::Platform.match_gem? @platform, @name
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[APISpecification', ']' do
+    q.group 2, "[APISpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -57,7 +73,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       q.text "platform: #{platform}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp @dependencies
 

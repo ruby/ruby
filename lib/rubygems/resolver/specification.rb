@@ -44,6 +44,16 @@ class Gem::Resolver::Specification
   attr_reader :version
 
   ##
+  # The required_ruby_version constraint for this specification.
+
+  attr_reader :required_ruby_version
+
+  ##
+  # The required_ruby_version constraint for this specification.
+
+  attr_reader :required_rubygems_version
+
+  ##
   # Sets default instance variables for the specification.
 
   def initialize
@@ -53,6 +63,8 @@ class Gem::Resolver::Specification
     @set          = nil
     @source       = nil
     @version      = nil
+    @required_ruby_version = Gem::Requirement.default
+    @required_rubygems_version = Gem::Requirement.default
   end
 
   ##
@@ -81,7 +93,7 @@ class Gem::Resolver::Specification
   # specification.
 
   def install(options = {})
-    require 'rubygems/installer'
+    require_relative "../installer"
 
     gem = download options
 
@@ -104,7 +116,7 @@ class Gem::Resolver::Specification
   # Returns true if this specification is installable on this platform.
 
   def installable_platform?
-    Gem::Platform.match spec.platform
+    Gem::Platform.match_spec? spec
   end
 
   def local? # :nodoc:

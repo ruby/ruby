@@ -1,6 +1,7 @@
 require 'mspec/expectations/expectations'
 require 'mspec/runner/actions/timer'
 require 'mspec/runner/actions/tally'
+require 'mspec/utils/options'
 
 if ENV['CHECK_LEAKS']
   require 'mspec/runner/actions/leakchecker'
@@ -18,10 +19,17 @@ class BaseFormatter
 
     @count = 0 # For subclasses
 
-    if out.nil?
-      @out = $stdout
-    else
+    if out
       @out = File.open out, "w"
+    else
+      @out = $stdout
+    end
+
+    err = MSpecOptions.latest && MSpecOptions.latest.config[:error_output]
+    if err
+      @err = (err == 'stderr') ? $stderr : File.open(err, "w")
+    else
+      @err = @out
     end
   end
 
@@ -105,6 +113,14 @@ class BaseFormatter
   # evaluating the examples.
   def finish
     print "\n"
+
+    if MSpecOptions.latest && MSpecOptions.latest.config[:print_skips]
+      print "\nSkips:\n" unless MSpec.skips.empty?
+      MSpec.skips.each do |skip, block|
+        print "#{skip.message} in #{(block.source_location || ['?']).join(':')}\n"
+      end
+    end
+
     count = 0
     @exceptions.each do |exc|
       count += 1
@@ -115,9 +131,9 @@ class BaseFormatter
 
   def print_exception(exc, count)
     outcome = exc.failure? ? "FAILED" : "ERROR"
-    print "\n#{count})\n#{exc.description} #{outcome}\n"
-    print exc.message, "\n"
-    print exc.backtrace, "\n"
+    @err.print "\n#{count})\n#{exc.description} #{outcome}\n"
+    @err.print exc.message, "\n"
+    @err.print exc.backtrace, "\n"
   end
 
   # A convenience method to allow printing to different outputs.

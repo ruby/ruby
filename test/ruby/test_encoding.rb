@@ -57,11 +57,12 @@ class TestEncoding < Test::Unit::TestCase
 
   def test_replicate
     assert_separately([], "#{<<~'END;'}")
+    Warning[:deprecated] = false
     assert_instance_of(Encoding, Encoding::UTF_8.replicate("UTF-8-ANOTHER#{Time.now.to_f}"))
     assert_instance_of(Encoding, Encoding::ISO_2022_JP.replicate("ISO-2022-JP-ANOTHER#{Time.now.to_f}"))
     bug3127 = '[ruby-dev:40954]'
     assert_raise(TypeError, bug3127) {Encoding::UTF_8.replicate(0)}
-    assert_raise(ArgumentError, bug3127) {Encoding::UTF_8.replicate("\0")}
+    assert_raise_with_message(ArgumentError, /\bNUL\b/, bug3127) {Encoding::UTF_8.replicate("\0")}
     END;
   end
 
@@ -69,7 +70,7 @@ class TestEncoding < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       200.times {|i|
-        Encoding::UTF_8.replicate("dummy#{i}")
+        EnvUtil.suppress_warning { Encoding::UTF_8.replicate("dummy#{i}") }
       }
       e = Encoding.list.last
       format = "%d".force_encoding(e)
@@ -79,6 +80,12 @@ class TestEncoding < Test::Unit::TestCase
 
       assert_equal(e, (("x"*30).force_encoding(e)*1).encoding)
       GC.start
+
+      name = "A" * 64
+      Encoding.list.each do |enc|
+        assert_raise(ArgumentError) { EnvUtil.suppress_warning { enc.replicate(name) } }
+        name.succ!
+      end
     end;
   end
 
@@ -149,7 +156,7 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(Encoding::US_ASCII, __ENCODING__)
       $:.unshift("/\x80")
       assert_raise_with_message(LoadError, /\[Bug #16382\]/) do
-        $:.resolve_feature_path "[Bug #16382]"
+        require "[Bug #16382]"
       end
     end;
   end

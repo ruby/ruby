@@ -53,7 +53,7 @@ end
   [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
 ].each do |base, ext, type, desc, icon|
   next if $output and $output != base
-  open(base + '.rc', "w") { |f|
+  File.open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
     f.print <<EOF
@@ -61,6 +61,7 @@ end
 #include <winver.h>
 
 #{icon || ''}
+#{type == 'VFT_APP' ? "1 RT_MANIFEST ruby.manifest" : ""}
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{nversion}
  PRODUCTVERSION #{nversion}
@@ -93,4 +94,3 @@ END
 EOF
   }
 end
-

@@ -1,7 +1,6 @@
 #ifndef INTERNAL_BITS_H                                  /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_BITS_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -284,7 +283,7 @@ nlz_int64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else
@@ -419,7 +418,7 @@ rb_popcount64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else
@@ -492,7 +491,7 @@ ntz_int64(uint64_t x)
     }
     else {
         /* :FIXME: Is there a way to make this branch a compile-time error? */
-        __builtin_unreachable();
+        UNREACHABLE_RETURN(~0);
     }
 
 #else

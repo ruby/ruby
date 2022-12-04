@@ -289,21 +289,80 @@ describe :kernel_sprintf, shared: true do
         @method.call("%c", "a").should == "a"
       end
 
-      it "raises ArgumentError if argument is a string of several characters" do
-        -> {
-          @method.call("%c", "abc")
-        }.should raise_error(ArgumentError)
+      ruby_version_is ""..."3.2" do
+        it "raises ArgumentError if argument is a string of several characters" do
+          -> {
+            @method.call("%c", "abc")
+          }.should raise_error(ArgumentError, /%c requires a character/)
+        end
+
+        it "raises ArgumentError if argument is an empty string" do
+          -> {
+            @method.call("%c", "")
+          }.should raise_error(ArgumentError, /%c requires a character/)
+        end
       end
 
-      it "raises ArgumentError if argument is an empty string" do
-        -> {
-          @method.call("%c", "")
-        }.should raise_error(ArgumentError)
+      ruby_version_is "3.2" do
+        it "displays only the first character if argument is a string of several characters" do
+          @method.call("%c", "abc").should == "a"
+        end
+
+        it "displays no characters if argument is an empty string" do
+          @method.call("%c", "").should == ""
+        end
       end
 
-      it "supports Unicode characters" do
-        @method.call("%c", 1286).should == "Ԇ"
-        @method.call("%c", "ش").should == "ش"
+      it "raises TypeError if argument is not String or Integer and cannot be converted to them" do
+        -> {
+          @method.call("%c", [])
+        }.should raise_error(TypeError, /no implicit conversion of Array into Integer/)
+      end
+
+      it "raises TypeError if argument is nil" do
+        -> {
+          @method.call("%c", nil)
+        }.should raise_error(TypeError, /no implicit conversion from nil to integer/)
+      end
+
+      it "tries to convert argument to String with to_str" do
+        obj = BasicObject.new
+        def obj.to_str
+          "a"
+        end
+
+        @method.call("%c", obj).should == "a"
+      end
+
+      it "tries to convert argument to Integer with to_int" do
+        obj = BasicObject.new
+        def obj.to_int
+          90
+        end
+
+        @method.call("%c", obj).should == "Z"
+      end
+
+      it "raises TypeError if converting to String with to_str returns non-String" do
+        obj = BasicObject.new
+        def obj.to_str
+          :foo
+        end
+
+        -> {
+          @method.call("%c", obj)
+        }.should raise_error(TypeError, /can't convert BasicObject to String/)
+      end
+
+      it "raises TypeError if converting to Integer with to_int returns non-Integer" do
+        obj = BasicObject.new
+        def obj.to_str
+          :foo
+        end
+
+        -> {
+          @method.call("%c", obj)
+        }.should raise_error(TypeError, /can't convert BasicObject to String/)
       end
     end
 
@@ -318,6 +377,10 @@ describe :kernel_sprintf, shared: true do
     describe "s" do
       it "substitute argument passes as a string" do
         @method.call("%s", "abc").should == "abc"
+      end
+
+      it "substitutes '' for nil" do
+        @method.call("%s", nil).should == ""
       end
 
       it "converts argument to string with to_s" do
@@ -341,6 +404,45 @@ describe :kernel_sprintf, shared: true do
         long_string = "aabbccddhelloddccbbaa"
         sub_string = long_string[8, 5]
         sprintf("%.#{1 * 3}s", sub_string).should == "hel"
+      end
+
+      it "formats string with precision" do
+        Kernel.format("%.3s", "hello").should == "hel"
+        Kernel.format("%-3.3s", "hello").should == "hel"
+      end
+
+      it "formats string with width" do
+        @method.call("%6s", "abc").should == "   abc"
+        @method.call("%6s", "abcdefg").should == "abcdefg"
+      end
+
+      it "formats string with width and precision" do
+        @method.call("%4.6s", "abc").should == " abc"
+        @method.call("%4.6s", "abcdefg").should == "abcdef"
+      end
+
+      it "formats nil with width" do
+        @method.call("%6s", nil).should == "      "
+      end
+
+      it "formats nil with precision" do
+        @method.call("%.6s", nil).should == ""
+      end
+
+      it "formats nil with width and precision" do
+        @method.call("%4.6s", nil).should == "    "
+      end
+
+      it "formats multibyte string with precision" do
+        Kernel.format("%.2s", "été").should == "ét"
+      end
+
+      it "preserves encoding of the format string" do
+        str = format('%s'.encode(Encoding::UTF_8), 'foobar')
+        str.encoding.should == Encoding::UTF_8
+
+        str = format('%s'.encode(Encoding::US_ASCII), 'foobar')
+        str.encoding.should == Encoding::US_ASCII
       end
     end
 
@@ -883,5 +985,9 @@ describe :kernel_sprintf, shared: true do
         err.key.to_s.should == 'foo'
       }
     end
+  end
+
+  it "does not raise error when passed more arguments than needed" do
+    sprintf("%s %d %c", "string", 2, "c", []).should == "string 2 c"
   end
 end

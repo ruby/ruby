@@ -69,18 +69,17 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
-    _, err = capture_io do
-      assert_equal([1, 2, 3], Enumerator.new(@obj, :foo, 1, 2, 3).to_a)
-    end
-    assert_match 'Enumerator.new without a block is deprecated', err
+    assert_raise(ArgumentError) {
+      Enumerator.new(@obj, :foo, 1, 2, 3)
+    }
     assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
 
     enum = @obj.to_enum
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
-    assert_raise(FrozenError) {
-      capture_io do
+    assert_raise(ArgumentError) {
+      capture_output do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
       end
@@ -697,6 +696,11 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([0, 1], u.force)
   end
 
+  def test_compact
+    u = [0, 1, nil, 2, 3, nil].to_enum.lazy.compact
+    assert_equal([0, 1, 2, 3], u.force)
+  end
+
   def test_enum_chain_and_plus
     r = 1..5
 
@@ -812,6 +816,28 @@ class TestEnumerator < Test::Unit::TestCase
     )
   end
 
+  def test_chain_with_index
+    assert_equal([[3, 0], [4, 1]], [3].chain([4]).with_index.to_a)
+  end
+
+  def test_lazy_chain
+    ea = (10..).lazy.select(&:even?).take(10)
+    ed = (20..).lazy.select(&:odd?)
+    chain = (ea + ed).select{|x| x % 3 == 0}
+    assert_equal(12, chain.next)
+    assert_equal(18, chain.next)
+    assert_equal(24, chain.next)
+    assert_equal(21, chain.next)
+    assert_equal(27, chain.next)
+    assert_equal(33, chain.next)
+  end
+
+  def test_chain_undef_methods
+    chain = [1].to_enum + [2].to_enum
+    meths = (chain.methods & [:feed, :next, :next_values, :peek, :peek_values])
+    assert_equal(0, meths.size)
+  end
+
   def test_produce
     assert_raise(ArgumentError) { Enumerator.produce }
 
@@ -879,5 +905,43 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(false, e.is_lambda)
     e.chain.each(&->{})
     assert_equal(true, e.is_lambda)
+  end
+
+  def test_product
+    e = Enumerator::Product.new
+    assert_instance_of(Enumerator::Product, e)
+    assert_kind_of(Enumerator, e)
+    assert_equal(1, e.size)
+    elts = []
+    e.each { |*x| elts << x }
+    assert_equal [[]], elts
+
+    e = Enumerator::Product.new(1..3, %w[a b])
+    assert_instance_of(Enumerator::Product, e)
+    assert_kind_of(Enumerator, e)
+    assert_equal(3 * 2, e.size)
+    elts = []
+    e.each { |*x| elts << x }
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"], [3, "a"], [3, "b"]], elts
+
+    e = Enumerator.product(1..3, %w[a b])
+    assert_instance_of(Enumerator::Product, e)
+
+    elts = []
+    ret = Enumerator.product(1..3, %w[a b]) { |*x| elts << x }
+    assert_instance_of(Enumerator::Product, ret)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"], [3, "a"], [3, "b"]], elts
+
+    e = Enumerator.product(1.., 'a'..'c')
+    assert_equal(Float::INFINITY, e.size)
+    assert_equal [[1, "a"], [1, "b"], [1, "c"], [2, "a"]], e.take(4)
+
+    e = Enumerator.product(1.., Enumerator.new { |y| y << 'a' << 'b' })
+    assert_equal(Float::INFINITY, e.size)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
+
+    e = Enumerator.product(1..3, Enumerator.new { |y| y << 'a' << 'b' })
+    assert_equal(nil, e.size)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
   end
 end

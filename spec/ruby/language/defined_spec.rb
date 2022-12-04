@@ -5,21 +5,25 @@ describe "The defined? keyword for literals" do
   it "returns 'self' for self" do
     ret = defined?(self)
     ret.should == "self"
+    ret.frozen?.should == true
   end
 
   it "returns 'nil' for nil" do
     ret = defined?(nil)
     ret.should == "nil"
+    ret.frozen?.should == true
   end
 
   it "returns 'true' for true" do
     ret = defined?(true)
     ret.should == "true"
+    ret.frozen?.should == true
   end
 
   it "returns 'false' for false" do
     ret = defined?(false)
     ret.should == "false"
+    ret.frozen?.should == true
   end
 
   describe "for a literal Array" do
@@ -27,6 +31,7 @@ describe "The defined? keyword for literals" do
     it "returns 'expression' if each element is defined" do
       ret = defined?([Object, Array])
       ret.should == "expression"
+      ret.frozen?.should == true
     end
 
     it "returns nil if one element is not defined" do
@@ -43,9 +48,25 @@ describe "The defined? keyword for literals" do
 end
 
 describe "The defined? keyword when called with a method name" do
+  before :each do
+    ScratchPad.clear
+  end
+
+  it "does not call the method" do
+    defined?(DefinedSpecs.side_effects).should == "method"
+    ScratchPad.recorded.should != :defined_specs_side_effects
+  end
+
+  it "does not execute the arguments" do
+    defined?(DefinedSpecs.any_args(DefinedSpecs.side_effects)).should == "method"
+    ScratchPad.recorded.should != :defined_specs_side_effects
+  end
+
   describe "without a receiver" do
     it "returns 'method' if the method is defined" do
-      defined?(puts).should == "method"
+      ret = defined?(puts)
+      ret.should == "method"
+      ret.frozen?.should == true
     end
 
     it "returns nil if the method is not defined" do
@@ -167,7 +188,9 @@ describe "The defined? keyword for an expression" do
   end
 
   it "returns 'assignment' for assigning a local variable" do
-    defined?(x = 2).should == "assignment"
+    ret = defined?(x = 2)
+    ret.should == "assignment"
+    ret.frozen?.should == true
   end
 
   it "returns 'assignment' for assigning an instance variable" do
@@ -470,7 +493,9 @@ end
 
 describe "The defined? keyword for variables" do
   it "returns 'local-variable' when called with the name of a local variable" do
-    DefinedSpecs::Basic.new.local_variable_defined.should == "local-variable"
+    ret = DefinedSpecs::Basic.new.local_variable_defined
+    ret.should == "local-variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'local-variable' when called with the name of a local variable assigned to nil" do
@@ -486,7 +511,9 @@ describe "The defined? keyword for variables" do
   end
 
   it "returns 'instance-variable' for an instance variable that has been assigned" do
-    DefinedSpecs::Basic.new.instance_variable_defined.should == "instance-variable"
+    ret = DefinedSpecs::Basic.new.instance_variable_defined
+    ret.should == "instance-variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'instance-variable' for an instance variable that has been assigned to nil" do
@@ -502,7 +529,9 @@ describe "The defined? keyword for variables" do
   end
 
   it "returns 'global-variable' for a global variable that has been assigned nil" do
-    DefinedSpecs::Basic.new.global_variable_defined_as_nil.should == "global-variable"
+    ret = DefinedSpecs::Basic.new.global_variable_defined_as_nil
+    ret.should == "global-variable"
+    ret.frozen?.should == true
   end
 
   # MRI appears to special case defined? for $! and $~ in that it returns
@@ -674,7 +703,9 @@ describe "The defined? keyword for variables" do
   # get to the defined? call so it really has nothing to do with 'defined?'.
 
   it "returns 'class variable' when called with the name of a class variable" do
-    DefinedSpecs::Basic.new.class_variable_defined.should == "class variable"
+    ret = DefinedSpecs::Basic.new.class_variable_defined
+    ret.should == "class variable"
+    ret.frozen?.should == true
   end
 
   it "returns 'local-variable' when called with the name of a block local" do
@@ -685,7 +716,9 @@ end
 
 describe "The defined? keyword for a simple constant" do
   it "returns 'constant' when the constant is defined" do
-    defined?(DefinedSpecs).should == "constant"
+    ret = defined?(DefinedSpecs)
+    ret.should == "constant"
+    ret.frozen?.should == true
   end
 
   it "returns nil when the constant is not defined" do
@@ -941,11 +974,25 @@ describe "The defined? keyword for yield" do
   end
 
   it "returns 'yield' if a block is passed to a method not taking a block parameter" do
-    DefinedSpecs::Basic.new.yield_block.should == "yield"
+    ret = DefinedSpecs::Basic.new.yield_block
+    ret.should == "yield"
+    ret.frozen?.should == true
   end
 
   it "returns 'yield' if a block is passed to a method taking a block parameter" do
     DefinedSpecs::Basic.new.yield_block_parameter.should == "yield"
+  end
+
+  it "returns 'yield' when called within a block" do
+    def yielder
+      yield
+    end
+
+    def call_defined
+      yielder { defined?(yield) }
+    end
+
+    call_defined() { }.should == "yield"
   end
 end
 
@@ -972,7 +1019,9 @@ describe "The defined? keyword for super" do
     end
 
     it "returns 'super' when a superclass method exists" do
-      DefinedSpecs::Super.new.method_no_args.should == "super"
+      ret = DefinedSpecs::Super.new.method_no_args
+      ret.should == "super"
+      ret.frozen?.should == true
     end
 
     it "returns 'super' from a block when a superclass method exists" do

@@ -170,4 +170,12 @@ describe :strftime_time, shared: true do
     time.strftime("%-k%p").should == "8AM"
     time.strftime("%-l%p").should == "8AM"
   end
+
+  it "should be able to show default Logger format" do
+    default_logger_format = "%Y-%m-%dT%H:%M:%S.%6N "
+    @new_time[2001, 2, 3, 4, 5, 6].strftime(default_logger_format).should == "2001-02-03T04:05:06.000000 "
+    @new_time[2001, 12, 3, 4, 5, 6 + 1/10r].strftime(default_logger_format).should == "2001-12-03T04:05:06.100000 "
+    @new_time[2001, 2, 13, 4, 5, 6 + 1/100r].strftime(default_logger_format).should == "2001-02-13T04:05:06.010000 "
+    @new_time[2001, 2, 3, 14, 5, 6 + 1/1000r].strftime(default_logger_format).should == "2001-02-03T14:05:06.001000 "
+  end
 end

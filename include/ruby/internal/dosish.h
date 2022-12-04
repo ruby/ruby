@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Support for so-called dosish systems.
  */
 #ifdef __CYGWIN__
@@ -38,20 +38,46 @@
 #include "ruby/win32.h"
 #endif
 
+/** The delimiter of `PATH` environment variable. */
 #if defined(DOSISH)
 #define PATH_SEP ";"
 #else
 #define PATH_SEP ":"
 #endif
 
+/** Identical to #PATH_SEP, except it is of type `char`. */
 #define PATH_SEP_CHAR PATH_SEP[0]
 
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ *
+ * @internal
+ *
+ * For  historical interests:  there was  an operating  system called  Human68k
+ * which used an environment variable called `"path"` for this purpose.
+ */
 #define PATH_ENV "PATH"
 
 #if defined(DOSISH)
 #define ENV_IGNORECASE
 #endif
 
+/**
+ * Stone age  assumption was that  an operating  system supports only  one file
+ * system at a  moment.  This macro was  to detect if such (one  and only) file
+ * system  has case  sensitivity.   This  assumption is  largely  not true  any
+ * longer; most operating systems can mount  many kinds of file systems side by
+ * side.  Also there are file systems that  do or do not ignore cases depending
+ * on configuration (e.g.  EXT4's `casefold` feature).
+ *
+ * This  macro is  still  used  internally (for  instance  Ruby level  constant
+ * `File::FNM_SYSCASE` depends on it), but it is basically a wrong idea for you
+ * to use it today.  Please just find another way.
+ */
 #ifndef CASEFOLD_FILESYSTEM
 # if defined DOSISH
 #   define CASEFOLD_FILESYSTEM 1

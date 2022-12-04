@@ -19,18 +19,18 @@ class Gem::RequestSet::Lockfile::Parser
         @tokens.skip :newline
 
         case token.value
-        when 'DEPENDENCIES' then
+        when "DEPENDENCIES" then
           parse_DEPENDENCIES
-        when 'GIT' then
+        when "GIT" then
           parse_GIT
-        when 'GEM' then
+        when "GEM" then
           parse_GEM
-        when 'PATH' then
+        when "PATH" then
           parse_PATH
-        when 'PLATFORMS' then
+        when "PLATFORMS" then
           parse_PLATFORMS
         else
-          token = get until @tokens.empty? or peek.first == :section
+          token = get until @tokens.empty? || peek.first == :section
         end
       else
         raise "BUG: unhandled token #{token.type} (#{token.value.inspect}) at line #{token.line} column #{token.column}"
@@ -44,7 +44,7 @@ class Gem::RequestSet::Lockfile::Parser
   def get(expected_types = nil, expected_value = nil) # :nodoc:
     token = @tokens.shift
 
-    if expected_types and not Array(expected_types).include? token.type
+    if expected_types && !Array(expected_types).include?(token.type)
       unget token
 
       message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
@@ -53,7 +53,7 @@ class Gem::RequestSet::Lockfile::Parser
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename
     end
 
-    if expected_value and expected_value != token.value
+    if expected_value && expected_value != token.value
       unget token
 
       message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
@@ -67,7 +67,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_DEPENDENCIES # :nodoc:
-    while not @tokens.empty? and :text == peek.type do
+    while !@tokens.empty? && :text == peek.type do
       token = get :text
 
       requirements = []
@@ -110,8 +110,8 @@ class Gem::RequestSet::Lockfile::Parser
   def parse_GEM # :nodoc:
     sources = []
 
-    while [:entry, 'remote'] == peek.first(2) do
-      get :entry, 'remote'
+    while [:entry, "remote"] == peek.first(2) do
+      get :entry, "remote"
       data = get(:text).value
       skip :newline
 
@@ -120,14 +120,14 @@ class Gem::RequestSet::Lockfile::Parser
 
     sources << Gem::Source.new(Gem::DEFAULT_HOST) if sources.empty?
 
-    get :entry, 'specs'
+    get :entry, "specs"
 
     skip :newline
 
     set = Gem::Resolver::LockSet.new sources
     last_specs = nil
 
-    while not @tokens.empty? and :text == peek.type do
+    while !@tokens.empty? && :text == peek.type do
       token = get :text
       name = token.value
       column = token.column
@@ -144,8 +144,8 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4
-          version, platform = data.split '-', 2
+        if type == :text && column == 4
+          version, platform = data.split "-", 2
 
           platform =
             platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
@@ -171,26 +171,26 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_GIT # :nodoc:
-    get :entry, 'remote'
+    get :entry, "remote"
     repository = get(:text).value
 
     skip :newline
 
-    get :entry, 'revision'
+    get :entry, "revision"
     revision = get(:text).value
 
     skip :newline
 
     type = peek.type
     value = peek.value
-    if type == :entry and %w[branch ref tag].include? value
+    if type == :entry && %w[branch ref tag].include?(value)
       get
       get :text
 
       skip :newline
     end
 
-    get :entry, 'specs'
+    get :entry, "specs"
 
     skip :newline
 
@@ -199,7 +199,7 @@ class Gem::RequestSet::Lockfile::Parser
 
     last_spec = nil
 
-    while not @tokens.empty? and :text == peek.type do
+    while !@tokens.empty? && :text == peek.type do
       token = get :text
       name = token.value
       column = token.column
@@ -214,7 +214,7 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4
+        if type == :text && column == 4
           last_spec = set.add_git_spec name, data, repository, revision, true
         else
           dependency = parse_dependency name, data
@@ -234,19 +234,19 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_PATH # :nodoc:
-    get :entry, 'remote'
+    get :entry, "remote"
     directory = get(:text).value
 
     skip :newline
 
-    get :entry, 'specs'
+    get :entry, "specs"
 
     skip :newline
 
     set = Gem::Resolver::VendorSet.new
     last_spec = nil
 
-    while not @tokens.empty? and :text == peek.first do
+    while !@tokens.empty? && :text == peek.first do
       token = get :text
       name = token.value
       column = token.column
@@ -261,7 +261,7 @@ class Gem::RequestSet::Lockfile::Parser
         type = token.type
         data = token.value
 
-        if type == :text and column == 4
+        if type == :text && column == 4
           last_spec = set.add_vendor_gem name, directory
         else
           dependency = parse_dependency name, data
@@ -281,7 +281,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_PLATFORMS # :nodoc:
-    while not @tokens.empty? and :text == peek.first do
+    while !@tokens.empty? && :text == peek.first do
       name = get(:text).value
 
       @platforms << name

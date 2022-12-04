@@ -30,23 +30,45 @@ describe "Hash#shift" do
     h.should == {}
   end
 
-  it "calls #default with nil if the Hash is empty" do
-    h = {}
-    def h.default(key)
-      key.should == nil
-      :foo
+  ruby_version_is '3.2' do
+    it "returns nil if the Hash is empty" do
+      h = {}
+      def h.default(key)
+        raise
+      end
+      h.shift.should == nil
     end
-    h.shift.should == :foo
+  end
+
+  ruby_version_is ''...'3.2' do
+    it "calls #default with nil if the Hash is empty" do
+      h = {}
+      def h.default(key)
+        key.should == nil
+        :foo
+      end
+      h.shift.should == :foo
+    end
   end
 
   it "returns nil from an empty hash" do
     {}.shift.should == nil
   end
 
-  it "returns (computed) default for empty hashes" do
-    Hash.new(5).shift.should == 5
-    h = Hash.new { |*args| args }
-    h.shift.should == [h, nil]
+  ruby_version_is '3.2' do
+    it "returns nil for empty hashes with defaults and default procs" do
+      Hash.new(5).shift.should == nil
+      h = Hash.new { |*args| args }
+      h.shift.should == nil
+    end
+  end
+
+  ruby_version_is ''...'3.2' do
+    it "returns (computed) default for empty hashes" do
+      Hash.new(5).shift.should == 5
+      h = Hash.new { |*args| args }
+      h.shift.should == [h, nil]
+    end
   end
 
   it "preserves Hash invariants when removing the last item" do

@@ -30,7 +30,7 @@ RSpec.describe "fetching dependencies with a mirrored source", :realworld => tru
     expect(the_bundle).to include_gems "weakling 0.0.3"
   end
 
-private
+  private
 
   def setup_server
     require_rack
@@ -40,12 +40,12 @@ private
     require_relative "../support/artifice/endpoint_mirror_source"
 
     @t = Thread.new do
-      Rack::Server.start(:app       => EndpointMirrorSource,
-                         :Host      => "0.0.0.0",
-                         :Port      => @port,
-                         :server    => "webrick",
+      Rack::Server.start(:app => EndpointMirrorSource,
+                         :Host => "0.0.0.0",
+                         :Port => @port,
+                         :server => "webrick",
                          :AccessLog => [],
-                         :Logger    => Spec::SilentLogger.new)
+                         :Logger => Spec::SilentLogger.new)
     end.run
 
     wait_for_server("127.0.0.1", @port)

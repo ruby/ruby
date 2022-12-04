@@ -1,4 +1,4 @@
-require 'rubygems/user_interaction'
+require_relative "user_interaction"
 
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
@@ -120,29 +120,30 @@ class Gem::SpecificationPolicy
     metadata = @specification.metadata
 
     unless Hash === metadata
-      error 'metadata must be a hash'
+      error "metadata must be a hash"
     end
 
     metadata.each do |key, value|
+      entry = "metadata['#{key}']"
       if !key.kind_of?(String)
         error "metadata keys must be a String"
       end
 
       if key.size > 128
-        error "metadata key too large (#{key.size} > 128)"
+        error "metadata key is too large (#{key.size} > 128)"
       end
 
       if !value.kind_of?(String)
-        error "metadata values must be a String"
+        error "#{entry} value must be a String"
       end
 
       if value.size > 1024
-        error "metadata value too large (#{value.size} > 1024)"
+        error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
       if METADATA_LINK_KEYS.include? key
         if value !~ VALID_URI_PATTERN
-          error "metadata['#{key}'] has invalid link: #{value.inspect}"
+          error "#{entry} has invalid link: #{value.inspect}"
         end
       end
     end
@@ -153,7 +154,7 @@ class Gem::SpecificationPolicy
 
   def validate_duplicate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {}}) }
+    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {} }) }
 
     error_messages = []
     @specification.dependencies.each do |dep|
@@ -187,7 +188,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        not version.prerelease? and (op == '>' or op == '>=')
+        !version.prerelease? && (op == ">" || op == ">=")
       end
 
       if open_ended
@@ -197,18 +198,18 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
         base = segments.first 2
 
-        recommendation = if (op == '>' || op == '>=') && segments == [0]
-                           "  use a bounded requirement, such as '~> x.y'"
-                         else
-                           bugfix = if op == '>'
-                                      ", '> #{dep_version}'"
-                                    elsif op == '>=' and base != segments
-                                      ", '>= #{dep_version}'"
-                                    end
+        recommendation = if (op == ">" || op == ">=") && segments == [0]
+          "  use a bounded requirement, such as '~> x.y'"
+        else
+          bugfix = if op == ">"
+            ", '> #{dep_version}'"
+          elsif op == ">=" && base != segments
+            ", '>= #{dep_version}'"
+          end
 
-                           "  if #{dep.name} is semantically versioned, use:\n" \
-                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
-                         end
+          "  if #{dep.name} is semantically versioned, use:\n" \
+          "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+        end
 
         warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
       end
@@ -285,7 +286,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_require_paths
     return unless @specification.raw_require_paths.empty?
 
-    error 'specification must have at least one require_path'
+    error "specification must have at least one require_path"
   end
 
   def validate_non_files
@@ -309,7 +310,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_specification_version
     return if @specification.specification_version.is_a?(Integer)
 
-    error 'specification_version must be an Integer (did you mean version?)'
+    error "specification_version must be an Integer (did you mean version?)"
   end
 
   def validate_platform
@@ -331,13 +332,13 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_array_attribute(field)
     val = @specification.send(field)
     klass = case field
-            when :dependencies then
-              Gem::Dependency
-            else
-              String
-            end
+    when :dependencies then
+      Gem::Dependency
+    else
+      String
+    end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.kind_of?(klass) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -379,8 +380,8 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     WARNING
   end
 
-  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-  LAZY_PATTERN = /FI XME|TO DO/x.freeze
+  LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
   HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
 
   def validate_lazy_metadata
@@ -403,8 +404,8 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     homepage = @specification.homepage
 
     # Make sure a homepage is valid HTTP/HTTPS URI
-    if homepage and not homepage.empty?
-      require 'uri'
+    if homepage && !homepage.empty?
+      require "uri"
       begin
         homepage_uri = URI.parse(homepage)
         unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
@@ -444,7 +445,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
   def validate_shebang_line_in(executable)
     executable_path = File.join(@specification.bindir, executable)
-    return if File.read(executable_path, 2) == '#!'
+    return if File.read(executable_path, 2) == "#!"
 
     warning "#{executable_path} is missing #! line"
   end
@@ -456,11 +457,11 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   end
 
   def validate_extensions # :nodoc:
-    require_relative 'ext'
+    require_relative "ext"
     builder = Gem::Ext::Builder.new(@specification)
 
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == 'rake' }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" }
 
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.

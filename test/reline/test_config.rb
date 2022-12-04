@@ -11,12 +11,14 @@ class Reline::Config::Test < Reline::TestCase
       Dir.mkdir(@tmpdir)
     end
     Dir.chdir(@tmpdir)
+    Reline.test_mode
     @config = Reline::Config.new
   end
 
   def teardown
     Dir.chdir(@pwd)
     FileUtils.rm_rf(@tmpdir)
+    Reline.test_reset
     @config.reset
   end
 
@@ -79,6 +81,22 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+  end
+
+  def test_encoding_is_ascii
+    @config.reset
+    Reline::IOGate.reset(encoding: Encoding::US_ASCII)
+    @config = Reline::Config.new
+
+    assert_equal true, @config.convert_meta
+  end
+
+  def test_encoding_is_not_ascii
+    @config.reset
+    Reline::IOGate.reset(encoding: Encoding::UTF_8)
+    @config = Reline::Config.new
+
+    assert_equal nil, @config.convert_meta
   end
 
   def test_comment_line
@@ -241,6 +259,43 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.key_bindings
   end
 
+  def test_additional_key_bindings_for_other_keymap
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap vi-command
+      "ab": "AB"
+      set keymap vi-insert
+      "cd": "CD"
+      set keymap emacs
+      "ef": "EF"
+      set editing-mode vi # keymap changes to be vi-insert
+    LINES
+
+    expected = { 'cd'.bytes => 'CD'.bytes }
+    assert_equal expected, @config.key_bindings
+  end
+
+  def test_additional_key_bindings_for_auxiliary_emacs_keymaps
+    @config.read_lines(<<~'LINES'.lines)
+      set keymap emacs
+      "ab": "AB"
+      set keymap emacs-standard
+      "cd": "CD"
+      set keymap emacs-ctlx
+      "ef": "EF"
+      set keymap emacs-meta
+      "gh": "GH"
+      set editing-mode emacs # keymap changes to be emacs
+    LINES
+
+    expected = {
+      'ab'.bytes => 'AB'.bytes,
+      'cd'.bytes => 'CD'.bytes,
+      "\C-xef".bytes => 'EF'.bytes,
+      "\egh".bytes => 'GH'.bytes,
+    }
+    assert_equal expected, @config.key_bindings
+  end
+
   def test_history_size
     @config.read_lines(<<~LINES.lines)
       set history-size 5000
@@ -269,6 +324,37 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.inputrc_path
   ensure
     ENV['INPUTRC'] = inputrc_backup
+  end
+
+  def test_inputrc_with_utf8
+    # This file is encoded by UTF-8 so this heredoc string is also UTF-8.
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi
+      set vi-cmd-mode-string 🍸
+      set vi-ins-mode-string 🍶
+    LINES
+    assert_equal '🍸', @config.vi_cmd_mode_string
+    assert_equal '🍶', @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_inputrc_with_eucjp
+    @config.read_lines(<<~"LINES".encode(Encoding::EUC_JP).lines)
+      set editing-mode vi
+      set vi-cmd-mode-string ｫｬｯ
+      set vi-ins-mode-string 能
+    LINES
+    assert_equal 'ｫｬｯ'.encode(Reline.encoding_system_needs), @config.vi_cmd_mode_string
+    assert_equal '能'.encode(Reline.encoding_system_needs), @config.vi_ins_mode_string
+  rescue Reline::ConfigEncodingConversionError
+    # do nothing
+  end
+
+  def test_empty_inputrc
+    assert_nothing_raised do
+      @config.read_lines([])
+    end
   end
 
   def test_xdg_config_home
@@ -322,4 +408,19 @@ class Reline::Config::Test < Reline::TestCase
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
   end
+
+  def test_dialog_configurations
+    @config.read_lines(<<~LINES.lines)
+      set dialog-default-bg-color white
+      set dialog-highlight-bg-color black
+      set dialog-default-fg-color cyan
+      set dialog-highlight-fg-color magenta
+    LINES
+
+    assert_equal :white, @config.dialog_default_bg_color
+    assert_equal :black, @config.dialog_highlight_bg_color
+    assert_equal :cyan, @config.dialog_default_fg_color
+    assert_equal :magenta, @config.dialog_highlight_fg_color
+  end
 end
+

@@ -29,7 +29,7 @@ describe "Zlib.crc32" do
     -> { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
   end
 
-  it "calculates the CRC checksum for string and initial CRC value for Bignums" do
+  it "calculates the CRC checksum for string and initial CRC value for Integers" do
     test_string = "This is a test string! How exciting!%?"
     # Zlib.crc32(test_string, -2**30).should == 277228695
     Zlib.crc32(test_string, 2**30).should == 46597132

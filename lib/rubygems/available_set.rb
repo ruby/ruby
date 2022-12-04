@@ -26,7 +26,7 @@ class Gem::AvailableSet
       s = o.set
     when Array
       s = o.map do |sp,so|
-        if !sp.kind_of?(Gem::Specification) or !so.kind_of?(Gem::Source)
+        if !sp.kind_of?(Gem::Specification) || !so.kind_of?(Gem::Source)
           raise TypeError, "Array must be in [[spec, source], ...] form"
         end
 
@@ -73,7 +73,7 @@ class Gem::AvailableSet
   end
 
   def match_platform!
-    @set.reject! {|t| !Gem::Platform.match(t.spec.platform) }
+    @set.reject! {|t| !Gem::Platform.match_spec?(t.spec) }
     @sorted = nil
     self
   end
@@ -149,8 +149,8 @@ class Gem::AvailableSet
     @set.reject! do |t|
       # already locally installed
       Gem::Specification.any? do |installed_spec|
-        dep.name == installed_spec.name and
-          dep.requirement.satisfied_by? installed_spec.version
+        dep.name == installed_spec.name &&
+          dep.requirement.satisfied_by?(installed_spec.version)
       end
     end
 

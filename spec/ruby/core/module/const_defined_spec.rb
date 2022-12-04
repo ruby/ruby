@@ -17,9 +17,14 @@ describe "Module#const_defined?" do
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4).should be_true
   end
 
-  it "returns true if the constant is defined in a mixed-in module of the receiver" do
+  it "returns true if the constant is defined in a mixed-in module of the receiver's parent" do
     # CS_CONST10 is defined in a module included by ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST10).should be_true
+  end
+
+  it "returns true if the constant is defined in a mixed-in module (with prepends) of the receiver" do
+    # CS_CONST11 is defined in the module included by ContainerPrepend
+    ConstantSpecs::ContainerPrepend.const_defined?(:CS_CONST11).should be_true
   end
 
   it "returns true if the constant is defined in Object and the receiver is a module" do
@@ -38,6 +43,11 @@ describe "Module#const_defined?" do
 
   it "returns true if the constant is defined in the receiver's superclass and the inherit flag is true" do
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, true).should be_true
+  end
+
+  it "coerces the inherit flag to a boolean" do
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, nil).should be_false
+    ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4, :true).should be_true
   end
 
   it "returns true if the given String names a constant defined in the receiver" do

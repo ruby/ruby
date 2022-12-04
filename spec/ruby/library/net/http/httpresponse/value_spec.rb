@@ -16,12 +16,7 @@ describe "Net::HTTPResponse#value" do
     -> { res.value }.should raise_error(Net::HTTPRetriableError)
 
     res = Net::HTTPClientError.new("1.0", "4xx", "test response")
-    ruby_version_is ""..."2.6" do
-      -> { res.value }.should raise_error(Net::HTTPServerException)
-    end
-    ruby_version_is "2.6" do
-      -> { res.value }.should raise_error(Net::HTTPClientException)
-    end
+    -> { res.value }.should raise_error(Net::HTTPClientException)
 
     res = Net::HTTPServerError.new("1.0", "5xx", "test response")
     -> { res.value }.should raise_error(Net::HTTPFatalError)

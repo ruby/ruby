@@ -19,7 +19,7 @@ module Psych
 - *id001
 - *id001
 EOYAML
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each {|el| assert_same(result[0], el) }
    end
 
@@ -33,7 +33,7 @@ EOYAML
 - *id001
 EOYAML
 
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each do |el|
       assert_same(result[0], el)
       assert_equal('test1', el.var1)
@@ -50,7 +50,7 @@ EOYAML
 - *id001
 - *id001
 EOYAML
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each do |el|
       assert_same(result[0], el)
       assert_equal('test', el.var1)
@@ -62,7 +62,7 @@ EOYAML
      original = [o,o,o]
 
      yaml = Psych.dump original
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each {|el| assert_same(result[0], el) }
    end
 
@@ -73,7 +73,7 @@ EOYAML
      original = [o,o,o]
 
      yaml = Psych.dump original
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each do |el|
       assert_same(result[0], el)
       assert_equal('test1', el.var1)
@@ -87,7 +87,7 @@ EOYAML
      original = [o,o,o]
 
      yaml = Psych.dump original
-     result = Psych.load yaml
+     result = Psych.unsafe_load yaml
      result.each do |el|
       assert_same(result[0], el)
       assert_equal('test', el.var1)

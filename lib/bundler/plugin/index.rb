@@ -74,7 +74,10 @@ module Bundler
       def unregister_plugin(name)
         @commands.delete_if {|_, v| v == name }
         @sources.delete_if {|_, v| v == name }
-        @hooks.each {|_, plugin_names| plugin_names.delete(name) }
+        @hooks.each do |hook, names|
+          names.delete(name)
+          @hooks.delete(hook) if names.empty?
+        end
         @plugin_paths.delete(name)
         @load_paths.delete(name)
         save_index
@@ -133,7 +136,7 @@ module Bundler
         @hooks[event] || []
       end
 
-    private
+      private
 
       # Reads the index file from the directory and initializes the instance
       # variables.
@@ -164,11 +167,11 @@ module Bundler
       # to be only String key value pairs)
       def save_index
         index = {
-          "commands"     => @commands,
-          "hooks"        => @hooks,
-          "load_paths"   => @load_paths,
+          "commands" => @commands,
+          "hooks" => @hooks,
+          "load_paths" => @load_paths,
           "plugin_paths" => @plugin_paths,
-          "sources"      => @sources,
+          "sources" => @sources,
         }
 
         require_relative "../yaml_serializer"

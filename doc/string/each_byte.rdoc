@@ -1,0 +1,17 @@
+Calls the given block with each successive byte from +self+;
+returns +self+:
+
+  'hello'.each_byte {|byte| print byte, ' ' }
+  print "\n"
+  'тест'.each_byte {|byte| print byte, ' ' }
+  print "\n"
+  'こんにちは'.each_byte {|byte| print byte, ' ' }
+  print "\n"
+
+Output:
+
+  104 101 108 108 111
+  209 130 208 181 209 129 209 130
+  227 129 147 227 130 147 227 129 171 227 129 161 227 129 175
+
+Returns an enumerator if no block is given.

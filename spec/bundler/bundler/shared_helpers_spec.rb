@@ -246,6 +246,13 @@ RSpec.describe Bundler::SharedHelpers do
       end
     end
 
+    shared_examples_for "ENV['BUNDLER_SETUP'] gets set correctly" do
+      it "ensures bundler/setup is set in ENV['BUNDLER_SETUP']" do
+        subject.set_bundle_environment
+        expect(ENV["BUNDLER_SETUP"]).to eq("#{source_lib_dir}/bundler/setup")
+      end
+    end
+
     shared_examples_for "ENV['RUBYLIB'] gets set correctly" do
       let(:ruby_lib_path) { "stubbed_ruby_lib_dir" }
 
@@ -491,30 +498,6 @@ RSpec.describe Bundler::SharedHelpers do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
           Bundler::GenericSystemCallError, /error accessing.+underlying.+Shields down/m
         )
-      end
-    end
-  end
-
-  describe "#const_get_safely" do
-    module TargetNamespace
-      VALID_CONSTANT = 1
-    end
-
-    context "when the namespace does have the requested constant" do
-      it "returns the value of the requested constant" do
-        expect(subject.const_get_safely(:VALID_CONSTANT, TargetNamespace)).to eq(1)
-      end
-    end
-
-    context "when the requested constant is passed as a string" do
-      it "returns the value of the requested constant" do
-        expect(subject.const_get_safely("VALID_CONSTANT", TargetNamespace)).to eq(1)
-      end
-    end
-
-    context "when the namespace does not have the requested constant" do
-      it "returns nil" do
-        expect(subject.const_get_safely("INVALID_CONSTANT", TargetNamespace)).to be_nil
       end
     end
   end

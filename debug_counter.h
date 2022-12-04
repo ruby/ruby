@@ -18,6 +18,18 @@
 RB_DEBUG_COUNTER(mc_inline_hit)              // IMC hit
 RB_DEBUG_COUNTER(mc_inline_miss_klass)       // IMC miss by different class
 RB_DEBUG_COUNTER(mc_inline_miss_invalidated) // IMC miss by invalidated ME
+RB_DEBUG_COUNTER(mc_inline_miss_empty)       // IMC miss because prev is empty slot
+RB_DEBUG_COUNTER(mc_inline_miss_same_cc)     // IMC miss, but same CC
+RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
+RB_DEBUG_COUNTER(mc_inline_miss_same_def)    // IMC miss, but same definition
+RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
+
+RB_DEBUG_COUNTER(cvar_write_inline_hit)      // cvar cache hit on write
+RB_DEBUG_COUNTER(cvar_read_inline_hit)       // cvar cache hit on read
+RB_DEBUG_COUNTER(cvar_inline_miss)           // miss inline cache
+RB_DEBUG_COUNTER(cvar_class_invalidate)      // invalidate cvar cache when define a cvar that's defined on a subclass
+RB_DEBUG_COUNTER(cvar_include_invalidate)    // invalidate cvar cache on module include or prepend
+
 RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
 RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
 
@@ -34,21 +46,31 @@ RB_DEBUG_COUNTER(ci_runtime) //           creating temporary CI
 // callcache
 RB_DEBUG_COUNTER(cc_new)        // number of CC
 RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
-RB_DEBUG_COUNTER(cc_found_ccs)  // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
 
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
 
-RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if klass has no-subclasses
 RB_DEBUG_COUNTER(cc_invalidate_leaf_ccs)      //                        corresponding CCS
 RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complimented cache (no-subclasses)
-RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has sublcasses
+RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has subclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
+RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache
 
 RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
 RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
-RB_DEBUG_COUNTER(ccs_found)  // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_found)      // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on method lookup
+
+// vm_eval.c
+RB_DEBUG_COUNTER(call0_public)
+RB_DEBUG_COUNTER(call0_other)
+RB_DEBUG_COUNTER(gccct_hit)
+RB_DEBUG_COUNTER(gccct_miss)
+RB_DEBUG_COUNTER(gccct_null)
 
 // iseq
 RB_DEBUG_COUNTER(iseq_num)    // number of total created iseq
@@ -75,6 +97,8 @@ RB_DEBUG_COUNTER(ccf_bmethod)
 RB_DEBUG_COUNTER(ccf_opt_send)
 RB_DEBUG_COUNTER(ccf_opt_call)
 RB_DEBUG_COUNTER(ccf_opt_block_call)
+RB_DEBUG_COUNTER(ccf_opt_struct_aref)
+RB_DEBUG_COUNTER(ccf_opt_struct_aset)
 RB_DEBUG_COUNTER(ccf_super_method)
 
 /*
@@ -106,7 +130,6 @@ RB_DEBUG_COUNTER(frame_C2R)
 /* instance variable counts
  *
  * * ivar_get_ic_hit/miss: ivar_get inline cache (ic) hit/miss counts (VM insn)
- * * ivar_get_ic_miss_serial: ivar_get ic miss reason by serial (VM insn)
  * * ivar_get_ic_miss_unset:                      ... by unset (VM insn)
  * * ivar_get_ic_miss_noobject:                   ... by "not T_OBJECT" (VM insn)
  * * ivar_set_...: same counts with ivar_set (VM insn)
@@ -116,17 +139,17 @@ RB_DEBUG_COUNTER(frame_C2R)
  */
 RB_DEBUG_COUNTER(ivar_get_ic_hit)
 RB_DEBUG_COUNTER(ivar_get_ic_miss)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_serial)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_unset)
 RB_DEBUG_COUNTER(ivar_get_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_set_ic_hit)
 RB_DEBUG_COUNTER(ivar_set_ic_miss)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_serial)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_unset)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_oorange)
+RB_DEBUG_COUNTER(ivar_set_ic_miss_iv_hit)
 RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_get_base)
 RB_DEBUG_COUNTER(ivar_set_base)
+RB_DEBUG_COUNTER(ivar_get_ic_miss_set)
+RB_DEBUG_COUNTER(ivar_get_cc_miss_set)
+RB_DEBUG_COUNTER(ivar_get_ic_miss_unset)
+RB_DEBUG_COUNTER(ivar_get_cc_miss_unset)
 
 /* local variable counts
  *
@@ -160,6 +183,12 @@ RB_DEBUG_COUNTER(gc_major_oldgen)
 RB_DEBUG_COUNTER(gc_major_shady)
 RB_DEBUG_COUNTER(gc_major_force)
 RB_DEBUG_COUNTER(gc_major_oldmalloc)
+
+RB_DEBUG_COUNTER(gc_enter_start)
+RB_DEBUG_COUNTER(gc_enter_mark_continue)
+RB_DEBUG_COUNTER(gc_enter_sweep_continue)
+RB_DEBUG_COUNTER(gc_enter_rest)
+RB_DEBUG_COUNTER(gc_enter_finalizer)
 
 RB_DEBUG_COUNTER(gc_isptr_trial)
 RB_DEBUG_COUNTER(gc_isptr_range)
@@ -290,6 +319,7 @@ RB_DEBUG_COUNTER(obj_imemo_memo)
 RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
 RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
+RB_DEBUG_COUNTER(obj_imemo_constcache)
 
 /* ar_table */
 RB_DEBUG_COUNTER(artable_hint_hit)
@@ -309,12 +339,12 @@ RB_DEBUG_COUNTER(theap_alloc)
 RB_DEBUG_COUNTER(theap_alloc_fail)
 RB_DEBUG_COUNTER(theap_evacuate)
 
-/* mjit_exec() counts */
-RB_DEBUG_COUNTER(mjit_exec)
-RB_DEBUG_COUNTER(mjit_exec_not_added)
-RB_DEBUG_COUNTER(mjit_exec_not_ready)
-RB_DEBUG_COUNTER(mjit_exec_not_compiled)
-RB_DEBUG_COUNTER(mjit_exec_call_func)
+// VM sync
+RB_DEBUG_COUNTER(vm_sync_lock)
+RB_DEBUG_COUNTER(vm_sync_lock_enter)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
+RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
+RB_DEBUG_COUNTER(vm_sync_barrier)
 
 /* MJIT enqueue / unload */
 RB_DEBUG_COUNTER(mjit_add_iseq_to_process)
@@ -371,12 +401,19 @@ enum rb_debug_counter_type {
 
 #if USE_DEBUG_COUNTER
 extern size_t rb_debug_counter[];
+RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor;
+RUBY_EXTERN void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
 
 inline static int
 rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 {
     if (cond) {
-	rb_debug_counter[(int)type] += add;
+        if (ruby_single_main_ractor != NULL) {
+            rb_debug_counter[(int)type] += add;
+        }
+        else {
+            rb_debug_counter_add_atomic(type, add);
+        }
     }
     return cond;
 }
@@ -384,6 +421,7 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 inline static int
 rb_debug_counter_max(enum rb_debug_counter_type type, unsigned int num)
 {
+    // TODO: sync
     if (rb_debug_counter[(int)type] < num) {
         rb_debug_counter[(int)type] = num;
         return 1;

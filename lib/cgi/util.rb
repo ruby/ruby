@@ -5,24 +5,57 @@ class CGI
   extend Util
 end
 module CGI::Util
-  @@accept_charset="UTF-8" unless defined?(@@accept_charset)
-  # URL-encode a string.
+  @@accept_charset = Encoding::UTF_8 unless defined?(@@accept_charset)
+
+  # URL-encode a string into application/x-www-form-urlencoded.
+  # Space characters (+" "+) are encoded with plus signs (+"+"+)
   #   url_encoded_string = CGI.escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def escape(string)
     encoding = string.encoding
-    string.b.gsub(/([^ a-zA-Z0-9_.\-~]+)/) do |m|
+    buffer = string.b
+    buffer.gsub!(/([^ a-zA-Z0-9_.\-~]+)/) do |m|
       '%' + m.unpack('H2' * m.bytesize).join('%').upcase
-    end.tr(' ', '+').force_encoding(encoding)
+    end
+    buffer.tr!(' ', '+')
+    buffer.force_encoding(encoding)
   end
 
-  # URL-decode a string with encoding(optional).
+  # URL-decode an application/x-www-form-urlencoded string with encoding(optional).
   #   string = CGI.unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
-  def unescape(string,encoding=@@accept_charset)
-    str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
+  def unescape(string, encoding = @@accept_charset)
+    str = string.tr('+', ' ')
+    str = str.b
+    str.gsub!(/((?:%[0-9a-fA-F]{2})+)/) do |m|
       [m.delete('%')].pack('H*')
-    end.force_encoding(encoding)
+    end
+    str.force_encoding(encoding)
+    str.valid_encoding? ? str : str.force_encoding(string.encoding)
+  end
+
+  # URL-encode a string following RFC 3986
+  # Space characters (+" "+) are encoded with (+"%20"+)
+  #   url_encoded_string = CGI.escape("'Stop!' said Fred")
+  #      # => "%27Stop%21%27%20said%20Fred"
+  def escapeURIComponent(string)
+    encoding = string.encoding
+    buffer = string.b
+    buffer.gsub!(/([^a-zA-Z0-9_.\-~]+)/) do |m|
+      '%' + m.unpack('H2' * m.bytesize).join('%').upcase
+    end
+    buffer.force_encoding(encoding)
+  end
+
+  # URL-decode a string following RFC 3986 with encoding(optional).
+  #   string = CGI.unescape("%27Stop%21%27+said%20Fred")
+  #      # => "'Stop!'+said Fred"
+  def unescapeURIComponent(string, encoding = @@accept_charset)
+    str = string.b
+    str.gsub!(/((?:%[0-9a-fA-F]{2})+)/) do |m|
+      [m.delete('%')].pack('H*')
+    end
+    str.force_encoding(encoding)
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
 
@@ -49,9 +82,12 @@ module CGI::Util
       table = Hash[TABLE_FOR_ESCAPE_HTML__.map {|pair|pair.map {|s|s.encode(enc)}}]
       string = string.gsub(/#{"['&\"<>]".encode(enc)}/, table)
       string.encode!(origenc) if origenc
-      return string
+      string
+    else
+      string = string.b
+      string.gsub!(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
+      string.force_encoding(enc)
     end
-    string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
   begin
@@ -90,7 +126,8 @@ module CGI::Util
                 when Encoding::ISO_8859_1; 256
                 else 128
                 end
-    string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
+    string = string.b
+    string.gsub!(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
       when 'apos'                then "'"
@@ -116,6 +153,7 @@ module CGI::Util
         "&#{match};"
       end
     end
+    string.force_encoding enc
   end
 
   # Synonym for CGI.escapeHTML(str)
@@ -174,21 +212,12 @@ module CGI::Util
   # Synonym for CGI.unescapeElement(str)
   alias unescape_element unescapeElement
 
-  # Abbreviated day-of-week names specified by RFC 822
-  RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]
-
-  # Abbreviated month names specified by RFC 822
-  RFC822_MONTHS = %w[ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ]
-
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #
   #   CGI.rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
   def rfc1123_date(time)
-    t = time.clone.gmtime
-    return format("%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
-                  RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
-                  t.hour, t.min, t.sec)
+    time.getgm.strftime("%a, %d %b %Y %T GMT")
   end
 
   # Prettify (indent) an HTML string.

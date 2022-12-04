@@ -18,7 +18,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  */
 #include "ruby/internal/assume.h"
 #include "ruby/internal/attr/cold.h"
@@ -103,7 +103,7 @@
 # /* keep NDEBUG undefined */
 
 #elif (RBIMPL_NDEBUG == 0) && (RBIMPL_RUBY_DEBUG == 0)
-# /* The (*1) situation in avobe diagram. */
+# /* The (*1) situation in above diagram. */
 # define RUBY_DEBUG 0
 # define RUBY_NDEBUG 1
 # define NDEBUG
@@ -167,7 +167,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG((expr), #expr)
 
 /**
- * Asserts that the given expression is truthy iff #RUBY_DEBUG is truthy.
+ * Asserts that the given expression is truthy if and only if #RUBY_DEBUG is truthy.
  *
  * @param  expr  What supposedly evaluates to true.
  */

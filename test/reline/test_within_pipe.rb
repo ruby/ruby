@@ -3,11 +3,13 @@ require_relative 'helper'
 class Reline::WithinPipeTest < Reline::TestCase
   def setup
     Reline.send(:test_mode)
-    @input_reader, @writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @encoding = Reline::IOGate.encoding
+    @input_reader, @writer = IO.pipe(@encoding)
     Reline.input = @input_reader
-    @reader, @output_writer = IO.pipe((RELINE_TEST_ENCODING rescue Encoding.default_external))
+    @reader, @output_writer = IO.pipe(@encoding)
     @output = Reline.output = @output_writer
     @config = Reline.send(:core).config
+    @config.keyseq_timeout *= 600 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait CI
     @line_editor = Reline.send(:core).line_editor
   end
 
@@ -21,6 +23,8 @@ class Reline::WithinPipeTest < Reline::TestCase
     @reader.close
     @output_writer.close
     @config.reset
+    @config.reset_default_key_bindings
+    Reline.test_reset
   end
 
   def test_simple_input
@@ -57,5 +61,18 @@ class Reline::WithinPipeTest < Reline::TestCase
     @config.add_default_key_binding("\C-x\M-c".bytes, :capitalize_word)
     @writer.write("abcde\C-b\C-b\C-b\C-x\C-d\C-x\C-h\C-x\C-v\C-a\C-f\C-f EF\C-x\C-t gh\C-x\M-t\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-b\C-x\M-u\C-x\M-l\C-x\M-c\n")
     assert_equal "a\C-aDE gh Fe", Reline.readmultiline(&proc{ true })
+  end
+
+  def test_delete_text_in_multiline
+    @writer.write("abc\ndef\nxyz\n")
+    result = Reline.readmultiline(&proc{ |str|
+      if str.include?('xyz')
+        Reline.delete_text
+        true
+      else
+        false
+      end
+    })
+    assert_equal "abc\ndef", result
   end
 end

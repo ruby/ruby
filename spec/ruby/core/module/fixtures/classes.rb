@@ -42,6 +42,14 @@ module ModuleSpecs
   class LookupChild < Lookup
   end
 
+  module ModuleWithPrepend
+    prepend LookupMod
+  end
+
+  class WithPrependedModule
+    include ModuleWithPrepend
+  end
+
   class Parent
     # For private_class_method spec
     def self.private_method; end
@@ -350,6 +358,10 @@ module ModuleSpecs
     def meta
       @@meta
     end
+  end
+
+  class SubCVars < CVars
+    @@sub = :sub
   end
 
   module MVars

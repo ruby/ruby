@@ -57,20 +57,15 @@ describe "String#tr" do
     "bla".tr(from_str, to_str).should == "BlA"
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(StringSpecs::MyString)
+    end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      ["h", "hello"].each do |str|
-        tainted_str = str.dup.taint
-
-        tainted_str.tr("e", "a").should.tainted?
-
-        str.tr("e".taint, "a").should_not.tainted?
-        str.tr("e", "a".taint).should_not.tainted?
-      end
+  ruby_version_is '3.0' do
+    it "returns Stringinstances when called on a subclass" do
+      StringSpecs::MyString.new("hello").tr("e", "a").should be_an_instance_of(String)
     end
   end
 

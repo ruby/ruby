@@ -33,7 +33,7 @@ RSpec.describe "bundle install" do
       end
     end
 
-    context "when a dependecy includes a post install message" do
+    context "when a dependency includes a post install message" do
       it "should display the post install message" do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"

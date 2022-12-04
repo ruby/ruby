@@ -10,7 +10,7 @@ if defined?(WIN32OLE_METHOD)
   class TestWIN32OLE_METHOD_EVENT < Test::Unit::TestCase
     unless AvailableOLE.sysmon_available?
       def test_dummy_for_skip_message
-        skip 'System Monitor Control is not available'
+        omit 'System Monitor Control is not available'
       end
     else
       def setup

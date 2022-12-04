@@ -29,22 +29,4 @@ describe "File.lchmod" do
       File.stat(@lname).should.writable?
     end
   end
-
-  platform_is :openbsd, :aix do
-    it "returns false from #respond_to?" do
-      File.respond_to?(:lchmod).should be_false
-    end
-
-    it "raises a NotImplementedError when called" do
-      -> { File.lchmod 0, "foo" }.should raise_error(NotImplementedError)
-    end
-  end
-
-  platform_is :linux do
-    it "raises a NotImplementedError or Errno::ENOTSUP when called" do
-      -> { File.lchmod 0, "foo" }.should raise_error(Exception) { |e|
-        [NotImplementedError, Errno::ENOTSUP].should include(e.class)
-      }
-    end
-  end
 end

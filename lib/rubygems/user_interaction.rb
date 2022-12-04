@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems/deprecate'
-require 'rubygems/text'
+require_relative "deprecate"
+require_relative "text"
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
@@ -148,7 +148,7 @@ module Gem::UserInteraction
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say(statement = '')
+  def say(statement = "")
     ui.say statement
   end
 
@@ -258,23 +258,23 @@ class Gem::StreamUI
     end
 
     default_answer = case default
-                     when nil
-                       'yn'
-                     when true
-                       'Yn'
-                     else
-                       'yN'
-                     end
+    when nil
+      "yn"
+    when true
+      "Yn"
+    else
+      "yN"
+    end
 
     result = nil
 
     while result.nil? do
       result = case ask "#{question} [#{default_answer}]"
-               when /^y/i then true
-               when /^n/i then false
-               when /^$/  then default
-               else            nil
-               end
+      when /^y/i then true
+      when /^n/i then false
+      when /^$/  then default
+      else            nil
+      end
     end
 
     return result
@@ -284,7 +284,7 @@ class Gem::StreamUI
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if not tty?
+    return nil if !tty?
 
     @outs.print(question + "  ")
     @outs.flush
@@ -298,7 +298,7 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if not tty?
+    return nil if !tty?
 
     @outs.print(question, "  ")
     @outs.flush
@@ -312,7 +312,7 @@ class Gem::StreamUI
   def require_io_console
     @require_io_console ||= begin
       begin
-        require 'io/console'
+        require "io/console"
       rescue LoadError
       end
       true
@@ -472,7 +472,7 @@ class Gem::StreamUI
     # and the +terminal_message+ when it is complete.
 
     def initialize(out_stream, size, initial_message,
-                   terminal_message = 'complete')
+                   terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -543,7 +543,7 @@ class Gem::StreamUI
   # A progress reporter that behaves nicely with threaded downloading.
 
   class ThreadedDownloadReporter
-    MUTEX = Mutex.new
+    MUTEX = Thread::Mutex.new
 
     ##
     # The current file name being displayed
@@ -616,18 +616,11 @@ class Gem::SilentUI < Gem::StreamUI
   # The SilentUI has no arguments as it does not use any stream.
 
   def initialize
-    reader, writer = nil, nil
-
-    reader = File.open(IO::NULL, 'r')
-    writer = File.open(IO::NULL, 'w')
-
-    super reader, writer, writer, false
+    io = NullIO.new
+    super io, io, io, false
   end
 
   def close
-    super
-    @ins.close
-    @outs.close
   end
 
   def download_reporter(*args) # :nodoc:
@@ -636,5 +629,26 @@ class Gem::SilentUI < Gem::StreamUI
 
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
+  end
+
+  ##
+  # An absolutely silent IO.
+
+  class NullIO
+    def puts(*args)
+    end
+
+    def print(*args)
+    end
+
+    def flush
+    end
+
+    def gets(*args)
+    end
+
+    def tty?
+      false
+    end
   end
 end

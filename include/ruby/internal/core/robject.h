@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RObject.
  */
 #include "ruby/internal/config.h"
@@ -34,54 +34,130 @@
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
 
+/**
+ * Convenient casting macro.
+ *
+ * @param   obj  An object, which is in fact an ::RRegexp.
+ * @return  The passed object casted to ::RRegexp.
+ */
 #define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
+/** @cond INTERNAL_MACRO */
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
 #define ROBJECT_EMBED         ROBJECT_EMBED
-/** @cond INTERNAL_MACRO */
-#define ROBJECT_NUMIV         ROBJECT_NUMIV
+#define ROBJECT_IV_CAPACITY   ROBJECT_IV_CAPACITY
 #define ROBJECT_IVPTR         ROBJECT_IVPTR
-#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
-enum ruby_robject_flags { ROBJECT_EMBED = RUBY_FL_USER1 };
+/**
+ * @private
+ *
+ * Bits that you can set to ::RBasic::flags.
+ */
+enum ruby_robject_flags {
+    /**
+     * This flag has  something to do with memory footprint.   If the object is
+     * "small"  enough, ruby  tries to  be creative  to abuse  padding bits  of
+     * struct ::RObject for storing instance variables.  This flag denotes that
+     * situation.
+     *
+     * @warning  This  bit has  to be  considered read-only.   Setting/clearing
+     *           this  bit without  corresponding fix  up must  cause immediate
+     *           SEGV.   Also,   internal  structures   of  an   object  change
+     *           dynamically  and  transparently  throughout of  its  lifetime.
+     *           Don't assume it being persistent.
+     *
+     * @internal
+     *
+     * 3rd parties must  not be aware that  there even is more than  one way to
+     * store instance variables.  Might better be hidden.
+     */
+    ROBJECT_EMBED = RUBY_FL_USER1
+};
 
-enum ruby_robject_consts { ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE) };
+#if !USE_RVARGC
+/**
+ * This is an enum because GDB wants it (rather than a macro).  People need not
+ * bother.
+ */
+enum ruby_robject_consts {
+    /** Max possible number of instance variables that can be embedded. */
+    ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE)
+};
+#endif
 
 struct st_table;
 
+/**
+ * Ruby's ordinal objects.  Unless otherwise  special cased, all predefined and
+ * user-defined classes share this struct to hold their instances.
+ */
 struct RObject {
+
+    /** Basic part, including flags and class. */
     struct RBasic basic;
+
+    /** Object's specific fields. */
     union {
+
+        /**
+         * Object that use  separated memory region for  instance variables use
+         * this pattern.
+         */
         struct {
-            uint32_t numiv;
+            /** Pointer to a C array that holds instance variables. */
             VALUE *ivptr;
-            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
+
+            /**
+             * This  is a  table that  holds  instance variable  name to  index
+             * mapping.  Used when accessing instance variables using names.
+             *
+             * @internal
+             *
+             * This is a shortcut for `RCLASS_IV_INDEX_TBL(rb_obj_class(obj))`.
+             */
+            struct rb_id_table *iv_index_tbl;
         } heap;
+
+#if USE_RVARGC
+        /* Embedded instance variables. When an object is small enough, it
+         * uses this area to store the instance variables.
+         *
+         * This is a length 1 array because:
+         *   1. GCC has a bug that does not optimize C flexible array members
+         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+         *   2. Zero length arrays are not supported by all compilers
+         */
+        VALUE ary[1];
+#else
+        /**
+        * Embedded instance  variables.  When  an object  is small  enough, it
+        * uses this area to store the instance variables.
+        */
         VALUE ary[ROBJECT_EMBED_LEN_MAX];
+#endif
     } as;
 };
 
-RBIMPL_SYMBOL_EXPORT_BEGIN()
-struct st_table *rb_obj_iv_index_tbl(const struct RObject *obj);
-RBIMPL_SYMBOL_EXPORT_END()
+/* Offsets for YJIT */
+#ifndef __cplusplus
+static const int32_t ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr);
+static const int32_t ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl);
+static const int32_t ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary);
+#endif
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
-static inline uint32_t
-ROBJECT_NUMIV(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    if (RB_FL_ANY_RAW(obj, ROBJECT_EMBED)) {
-        return ROBJECT_EMBED_LEN_MAX;
-    }
-    else {
-        return ROBJECT(obj)->as.heap.numiv;
-    }
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries the instance variables.
+ *
+ * @param[in]  obj  Object in question.
+ * @return     Its instance variables, in C array.
+ * @pre        `obj` must be an instance of ::RObject.
+ *
+ * @internal
+ *
+ * @shyouhei finds no reason for this to be visible from extension libraries.
+ */
 static inline VALUE *
 ROBJECT_IVPTR(VALUE obj)
 {
@@ -95,19 +171,6 @@ ROBJECT_IVPTR(VALUE obj)
     else {
         return ptr->as.heap.ivptr;
     }
-}
-
-RBIMPL_ATTR_DEPRECATED(("Whoever have used it before?  Just tell us so.  We can stop deleting it."))
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-static inline struct st_table *
-ROBJECT_IV_INDEX_TBL(VALUE obj)
-{
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-
-    struct RObject *const ptr = ROBJECT(obj);
-
-    return rb_obj_iv_index_tbl(ptr);
 }
 
 #endif /* RBIMPL_ROBJECT_H */

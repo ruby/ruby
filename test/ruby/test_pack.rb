@@ -4,22 +4,36 @@ require 'test/unit'
 
 class TestPack < Test::Unit::TestCase
   def test_pack
-    $format = "c2x5CCxsdils_l_a6";
+    format = "c2x5CCxsdils_l_a6";
     # Need the expression in here to force ary[5] to be numeric.  This avoids
     # test2 failing because ary2 goes str->numeric->str and ary does not.
     ary = [1,-100,127,128,32767,987.654321098 / 100.0,12345,123456,-32767,-123456,"abcdef"]
-    $x = ary.pack($format)
-    ary2 = $x.unpack($format)
+    x = ary.pack(format)
+    ary2 = x.unpack(format)
 
     assert_equal(ary.length, ary2.length)
     assert_equal(ary.join(':'), ary2.join(':'))
-    assert_match(/def/, $x)
+    assert_match(/def/, x)
 
-    $x = [-1073741825]
-    assert_equal($x, $x.pack("q").unpack("q"))
+    x = [-1073741825]
+    assert_equal(x, x.pack("q").unpack("q"))
 
-    $x = [-1]
-    assert_equal($x, $x.pack("l").unpack("l"))
+    x = [-1]
+    assert_equal(x, x.pack("l").unpack("l"))
+  end
+
+  def test_ascii_incompatible
+    assert_raise(Encoding::CompatibilityError) do
+      ["foo"].pack("u".encode("UTF-32BE"))
+    end
+
+    assert_raise(Encoding::CompatibilityError) do
+      "foo".unpack("C".encode("UTF-32BE"))
+    end
+
+    assert_raise(Encoding::CompatibilityError) do
+      "foo".unpack1("C".encode("UTF-32BE"))
+    end
   end
 
   def test_pack_n
@@ -638,6 +652,14 @@ EXPECTED
     end;
   end
 
+  def test_bug_18343
+    bug18343 = '[ruby-core:106096] [Bug #18343]'
+    assert_separately(%W[- #{bug18343}], <<-'end;')
+      bug = ARGV.shift
+      assert_raise(ArgumentError, bug){[0].pack('c', {})}
+    end;
+  end
+
   def test_pack_unpack_m0
     assert_equal("", [""].pack("m0"))
     assert_equal("AA==", ["\0"].pack("m0"))
@@ -755,41 +777,23 @@ EXPECTED
   end
 
   def test_pack_garbage
-    verbose = $VERBOSE
-    $VERBOSE = false
-
-    assert_silent do
+    assert_warn("") do
       assert_equal "\000", [0].pack("*U")
     end
 
-    $VERBOSE = true
-
-    _, err = capture_io do
+    assert_warning(%r%unknown pack directive '\*' in '\*U'$%) do
       assert_equal "\000", [0].pack("*U")
     end
-
-    assert_match %r%unknown pack directive '\*' in '\*U'$%, err
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_unpack_garbage
-    verbose = $VERBOSE
-    $VERBOSE = false
-
-    assert_silent do
+    assert_warn("") do
       assert_equal [0], "\000".unpack("*U")
     end
 
-    $VERBOSE = true
-
-    _, err = capture_io do
+    assert_warning(%r%unknown unpack directive '\*' in '\*U'$%) do
       assert_equal [0], "\000".unpack("*U")
     end
-
-    assert_match %r%unknown unpack directive '\*' in '\*U'$%, err
-  ensure
-    $VERBOSE = verbose
   end
 
   def test_invalid_warning
@@ -868,5 +872,31 @@ EXPECTED
     assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
     assert_equal "01000001", "A".unpack1("B*")
+  end
+
+  def test_unpack1_offset
+    assert_equal 65, "ZA".unpack1("C", offset: 1)
+    assert_equal "01000001", "YZA".unpack1("B*", offset: 2)
+    assert_nil "abc".unpack1("C", offset: 3)
+    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
+      "a".unpack1("C", offset: -1)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack1("C", offset: 2)
+    }
+    assert_nil "a".unpack1("C", offset: 1)
+  end
+
+  def test_unpack_offset
+    assert_equal [65], "ZA".unpack("C", offset: 1)
+    assert_equal ["01000001"], "YZA".unpack("B*", offset: 2)
+    assert_equal [nil, nil, nil], "abc".unpack("CCC", offset: 3)
+    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
+      "a".unpack("C", offset: -1)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack("C", offset: 2)
+    }
+    assert_equal [nil], "a".unpack("C", offset: 1)
   end
 end

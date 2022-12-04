@@ -7,7 +7,8 @@ rb_call_super_kw_m(int argc, VALUE *argv, VALUE self)
 }
 
 void
-Init_rb_call_super_kw(void) {
+Init_rb_call_super_kw(void)
+{
     VALUE module = rb_define_module("Bug");
     module = rb_define_module_under(module, "RbCallSuperKw");
     rb_define_method(module, "m", rb_call_super_kw_m, -1);

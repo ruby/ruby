@@ -6,7 +6,6 @@ require 'stringio'
 class TestParse < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
-    $VERBOSE = nil
   end
 
   def teardown
@@ -399,7 +398,6 @@ class TestParse < Test::Unit::TestCase
 
   def test_arg2
     o = Object.new
-
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(a=42,*r,z,&b); b.call(r.inject(a*1000+z*100, :+)); end
@@ -411,6 +409,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal(-42100, o.foo(1) {|x| -x })
     assert_raise(ArgumentError) { o.foo() }
 
+    o = Object.new
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(a=42,z,&b); b.call(a*1000+z*100); end
@@ -420,6 +419,7 @@ class TestParse < Test::Unit::TestCase
     assert_equal(-42100, o.foo(1) {|x| -x } )
     assert_raise(ArgumentError) { o.foo() }
 
+    o = Object.new
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         def o.foo(*r,z,&b); b.call(r.inject(z*100, :+)); end
@@ -562,6 +562,21 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("\"\\M-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\M-\\C-\x01\"", 'Invalid escape character syntax')
     assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
+
+    e = assert_syntax_error('"\c\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\c\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\C-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\C-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error('"\M-\u0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
+    assert_equal(' ^~~~~'"\n", e.message.lines.last)
   end
 
   def test_question
@@ -599,6 +614,9 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error('%s', /unterminated quoted string/)
     assert_syntax_error('%ss', /unknown type/)
     assert_syntax_error('%z()', /unknown type/)
+    assert_syntax_error("%\u3042", /unknown type/)
+    assert_syntax_error("%q\u3042", /unknown type/)
+    assert_syntax_error("%", /unterminated quoted string/)
   end
 
   def test_symbol
@@ -666,6 +684,15 @@ FOO
 
   def test_magic_comment
     x = nil
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: utf-8
+x = __ENCODING__
+      END
+    end
+    assert_equal(Encoding.find("UTF-8"), x)
+
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = utf-8
@@ -680,6 +707,14 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    assert_nothing_raised do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# xxxx : coding sjis
+x = __ENCODING__
+      END
+    end
+    assert_equal(__ENCODING__, x)
   end
 
   def test_utf8_bom
@@ -722,13 +757,13 @@ x = __ENCODING__
   end
 
   def test_float
-    assert_equal(1.0/0, eval("1e10000"))
+    assert_predicate(assert_warning(/out of range/) {eval("1e10000")}, :infinite?)
     assert_syntax_error('1_E', /trailing `_'/)
     assert_syntax_error('1E1E1', /unexpected constant/)
   end
 
   def test_global_variable
-    assert_equal(nil, eval('$-x'))
+    assert_equal(nil, assert_warning(/not initialized/) {eval('$-x')})
     assert_equal(nil, eval('alias $preserve_last_match $&'))
     assert_equal(nil, eval('alias $& $test_parse_foobarbazqux'))
     $test_parse_foobarbazqux = nil
@@ -821,13 +856,13 @@ x = __ENCODING__
   end
 
   def test_assign_in_conditional
-    assert_nothing_raised do
+    assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/`= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         if @x = true
           1
@@ -839,13 +874,13 @@ x = __ENCODING__
   end
 
   def test_literal_in_conditional
-    assert_nothing_raised do
+    assert_warning(/string literal in condition/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         "foo" ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/regex literal in condition/) do
       x = "bar"
       eval <<-END, nil, __FILE__, __LINE__+1
         /foo#{x}baz/ ? 1 : 2
@@ -858,13 +893,13 @@ x = __ENCODING__
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/string literal in flip-flop/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         ("foo".."bar") ? 1 : 2
       END
     end
 
-    assert_nothing_raised do
+    assert_warning(/literal in condition/) do
       x = "bar"
       eval <<-END, nil, __FILE__, __LINE__+1
         :"foo#{"x"}baz" ? 1 : 2
@@ -893,6 +928,10 @@ x = __ENCODING__
 
   def test_no_shadowing_variable_warning
     assert_no_warning(/shadowing outer local variable/) {eval("a=1; tap {|a|}")}
+  end
+
+  def test_shadowing_private_local_variable
+    assert_equal 1, eval("_ = 1; [[2]].each{ |(_)| }; _")
   end
 
   def test_unused_variable
@@ -1009,7 +1048,7 @@ x = __ENCODING__
     end;
 
     assert_syntax_error("def\nf(000)end", /^  \^~~/)
-    assert_syntax_error("def\nf(&)end", /^   \^/)
+    assert_syntax_error("def\nf(&0)end", /^   \^/)
   end
 
   def test_method_location_in_rescue
@@ -1044,6 +1083,32 @@ x = __ENCODING__
       HEREDOC
     end;
   end
+
+    def test_heredoc_interpolation
+      var = 1
+
+      v1 = <<~HEREDOC
+        something
+        #{"/#{var}"}
+      HEREDOC
+
+      v2 = <<~HEREDOC
+        something
+        #{_other = "/#{var}"}
+      HEREDOC
+
+      v3 = <<~HEREDOC
+        something
+        #{("/#{var}")}
+      HEREDOC
+
+      assert_equal "something\n/1\n", v1
+      assert_equal "something\n/1\n", v2
+      assert_equal "something\n/1\n", v3
+      assert_equal v1, v2
+      assert_equal v2, v3
+      assert_equal v1, v3
+    end
 
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
@@ -1099,6 +1164,10 @@ x = __ENCODING__
     assert_syntax_error("def m\n\0""end", /unexpected/)
     assert_syntax_error("def m\n\C-d""end", /unexpected/)
     assert_syntax_error("def m\n\C-z""end", /unexpected/)
+  end
+
+  def test_unexpected_eof
+    assert_syntax_error('unless', /^      \^\Z/)
   end
 
   def test_location_of_invalid_token
@@ -1166,10 +1235,174 @@ x = __ENCODING__
     assert_valid_syntax('let () { m(a) do; end }')
   end
 
-  def test_void_value_in_command_rhs
+  def test_void_value_in_rhs
     w = "void value expression"
-    ex = assert_syntax_error("x = return 1", w)
-    assert_equal(1, ex.message.scan(w).size, "same #{w.inspect} warning should be just once")
+    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+      ex = assert_syntax_error(code, w)
+      assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
+    end
+  end
+
+  def eval_separately(code)
+    Class.new.class_eval(code)
+  end
+
+  def assert_raise_separately(error, message, code)
+    assert_raise_with_message(error, message) do
+      eval_separately(code)
+    end
+  end
+
+  def assert_ractor_shareable(obj)
+    assert Ractor.shareable?(obj), ->{"Expected #{mu_pp(obj)} to be ractor shareable"}
+  end
+
+  def assert_not_ractor_shareable(obj)
+    assert !Ractor.shareable?(obj), ->{"Expected #{mu_pp(obj)} not to be ractor shareable"}
+  end
+
+  def test_shareable_constant_value_invalid
+    assert_warning(/invalid value/) do
+      assert_valid_syntax("# shareable_constant_value: invalid-option", verbose: true)
+    end
+  end
+
+  def test_shareable_constant_value_ignored
+    assert_warning(/ignored/) do
+      assert_valid_syntax("nil # shareable_constant_value: true", verbose: true)
+    end
+  end
+
+  def test_shareable_constant_value_simple
+    obj = [['unsharable_value']]
+    a, b, c = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A = [[1]]
+      # shareable_constant_value: none
+      B = [[2]]
+      # shareable_constant_value: literal
+      C = [["shareable", "constant#{nil}"]]
+      D = A
+
+      [A, B, C]
+    end;
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(b)
+    assert_ractor_shareable(c)
+    assert_equal([1], a[0])
+    assert_ractor_shareable(a[0])
+
+    a, obj = eval_separately(<<~'end;')
+      # shareable_constant_value: experimental_copy
+      obj = [["unshareable"]]
+      A = obj
+      [A, obj]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(obj)
+    assert_equal obj, a
+    assert !obj.equal?(a)
+  end
+
+  def test_shareable_constant_value_nested
+    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: none
+      class X
+        # shareable_constant_value: experimental_everything
+        var = [[1]]
+        A = var
+      end
+      B = []
+      [X::A, B]
+    end;
+    assert_ractor_shareable(a)
+    assert_not_ractor_shareable(b)
+    assert_equal([1], a[0])
+    assert_ractor_shareable(a[0])
+  end
+
+  def test_shareable_constant_value_unshareable_literal
+    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      C = ["Not " + "shareable"]
+    end;
+  end
+
+  def test_shareable_constant_value_nonliteral
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      var = [:not_frozen]
+      C = var
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable/, "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      D = begin [] end
+    end;
+  end
+
+  def test_shareable_constant_value_unfrozen
+    assert_raise_separately(Ractor::Error, /does not freeze object correctly/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      o = Object.new
+      def o.freeze; self; end
+      C = [o]
+    end;
+  end
+
+  def test_if_after_class
+    assert_valid_syntax('module if true; Object end::Kernel; end')
+    assert_valid_syntax('module while true; break Object end::Kernel; end')
+    assert_valid_syntax('class if true; Object end::Kernel; end')
+    assert_valid_syntax('class while true; break Object end::Kernel; end')
+  end
+
+  def test_escaped_space
+    assert_syntax_error('x = \ 42', /escaped space/)
+  end
+
+  def test_label
+    expected = {:foo => 1}
+
+    code = '{"foo": 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    code = '{foo: 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    class << (obj = Object.new)
+      attr_reader :arg
+      def set(arg)
+        @arg = arg
+      end
+    end
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set foo:
+                1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set "foo":
+                  1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
   end
 
 =begin

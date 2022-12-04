@@ -26,6 +26,7 @@ module MSpec
   @unload  = nil
   @tagged  = nil
   @current = nil
+  @passed = nil
   @example = nil
   @modes   = []
   @shared  = {}
@@ -36,9 +37,10 @@ module MSpec
   @repeat       = 1
   @expectation  = nil
   @expectations = false
+  @skips = []
 
   class << self
-    attr_reader :file, :include, :exclude
+    attr_reader :file, :include, :exclude, :skips
     attr_writer :repeat, :randomize
     attr_accessor :formatter
   end
@@ -116,8 +118,9 @@ module MSpec
     rescue SystemExit => e
       raise e
     rescue SkippedSpecError => e
+      @skips << [e, block]
       return false
-    rescue Exception => exc
+    rescue Object => exc
       register_exit 1
       actions :exception, ExceptionState.new(current && current.state, location, exc)
       return false
@@ -155,7 +158,9 @@ module MSpec
 
   # Stores the shared ContextState keyed by description.
   def self.register_shared(state)
-    @shared[state.to_s] = state
+    name = state.to_s
+    raise "duplicated shared #describe: #{name}" if @shared.key?(name)
+    @shared[name] = state
   end
 
   # Returns the shared ContextState matching description.
@@ -239,6 +244,7 @@ module MSpec
   #   :before       before a single spec is run
   #   :add          while a describe block is adding examples to run later
   #   :expectation  before a 'should', 'should_receive', etc.
+  #   :passed       after an example block is run and passes, passed the block, run before :example action
   #   :example      after an example block is run, passed the block
   #   :exception    after an exception is rescued
   #   :after        after a single spec is run

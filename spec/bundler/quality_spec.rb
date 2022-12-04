@@ -3,25 +3,6 @@
 require "set"
 
 RSpec.describe "The library itself" do
-  def check_for_debugging_mechanisms(filename)
-    debugging_mechanisms_regex = /
-      (binding\.pry)|
-      (debugger)|
-      (sleep\s*\(?\d+)|
-      (fit\s*\(?("|\w))
-    /x
-
-    failing_lines = []
-    each_line(filename) do |line, number|
-      if line =~ debugging_mechanisms_regex && !line.end_with?("# ignore quality_spec\n")
-        failing_lines << number + 1
-      end
-    end
-
-    return if failing_lines.empty?
-    "#{filename} has debugging mechanisms (like binding.pry, sleep, debugger, rspec focusing, etc.) on lines #{failing_lines.join(", ")}"
-  end
-
   def check_for_git_merge_conflicts(filename)
     merge_conflicts_regex = /
       <<<<<<<|
@@ -41,7 +22,7 @@ RSpec.describe "The library itself" do
   def check_for_tab_characters(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /\t/
+      failing_lines << number + 1 if line.include?("\t")
     end
 
     return if failing_lines.empty?
@@ -105,7 +86,7 @@ RSpec.describe "The library itself" do
   end
 
   it "has no malformed whitespace" do
-    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|\.txt$/
+    exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|index\.txt$/
     error_messages = []
     tracked_files.each do |filename|
       next if filename =~ exempt
@@ -121,16 +102,6 @@ RSpec.describe "The library itself" do
     tracked_files.each do |filename|
       next if filename =~ exempt
       error_messages << check_for_straneous_quotes(filename)
-    end
-    expect(error_messages.compact).to be_well_formed
-  end
-
-  it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|\.txt|\.5|\.1}
-    error_messages = []
-    tracked_files.each do |filename|
-      next if filename =~ exempt
-      error_messages << check_for_debugging_mechanisms(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -169,12 +140,17 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings" do
     exemptions = %w[
-      deployment_means_frozen
       forget_cli_options
+      gem.changelog
+      gem.ci
       gem.coc
+      gem.linter
       gem.mit
+      gem.rubocop
+      gem.test
+      git.allow_insecure
       inline
-      use_gem_version_promoter_for_major_updates
+      trust-policy
     ]
 
     all_settings = Hash.new {|h, k| h[k] = [] }
@@ -183,6 +159,7 @@ RSpec.describe "The library itself" do
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
     Bundler::Settings::ARRAY_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::ARRAY_KEYS" }
+    Bundler::Settings::STRING_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::STRING_KEYS" }
 
     key_pattern = /([a-z\._-]+)/i
     lib_tracked_files.each do |filename|
@@ -190,7 +167,7 @@ RSpec.describe "The library itself" do
         line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
       end
     end
-    documented_settings = File.read("man/bundle-config.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
+    documented_settings = File.read("lib/bundler/man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
 
     documented_settings.each do |s|
       all_settings.delete(s)
@@ -216,11 +193,11 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
+    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb libexec/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
 
     gem_list = loaded_gemspec.files
 
-    expect(git_list.to_set).to eq(gem_list.to_set)
+    expect(git_list.sort).to eq(gem_list.sort)
   end
 
   it "does not contain any warnings" do
@@ -249,7 +226,7 @@ RSpec.describe "The library itself" do
   end
 
   it "does not use require internally, but require_relative" do
-    exempt = %r{templates/|vendor/}
+    exempt = %r{templates/|\.5|\.1|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
       next if filename =~ exempt
@@ -261,7 +238,7 @@ RSpec.describe "The library itself" do
     expect(all_bad_requires).to be_empty, "#{all_bad_requires.size} internal requires that should use `require_relative`: #{all_bad_requires}"
   end
 
-private
+  private
 
   def each_line(filename, &block)
     File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)

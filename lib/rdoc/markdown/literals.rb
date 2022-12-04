@@ -29,6 +29,7 @@ class RDoc::Markdown::Literals
       @result = nil
       @failed_rule = nil
       @failing_rule_offset = -1
+      @line_offsets = nil
 
       setup_foreign_grammar
     end
@@ -45,17 +46,32 @@ class RDoc::Markdown::Literals
       target + 1
     end
 
-    def current_line(target=pos)
-      cur_offset = 0
-      cur_line = 0
+    if [].respond_to? :bsearch_index
+      def current_line(target=pos)
+        unless @line_offsets
+          @line_offsets = []
+          total = 0
+          string.each_line do |line|
+            total += line.size
+            @line_offsets << total
+          end
+        end
 
-      string.each_line do |line|
-        cur_line += 1
-        cur_offset += line.size
-        return cur_line if cur_offset >= target
+        @line_offsets.bsearch_index {|x| x >= target } + 1 || -1
       end
+    else
+      def current_line(target=pos)
+        cur_offset = 0
+        cur_line = 0
 
-      -1
+        string.each_line do |line|
+          cur_line += 1
+          cur_offset += line.size
+          return cur_line if cur_offset >= target
+        end
+
+        -1
+      end
     end
 
     def lines
@@ -174,9 +190,8 @@ class RDoc::Markdown::Literals
     end
 
     def scan(reg)
-      if m = reg.match(@string[@pos..-1])
-        width = m.end(0)
-        @pos += width
+      if m = reg.match(@string, @pos)
+        @pos = m.end(0)
         return true
       end
 
@@ -366,14 +381,14 @@ class RDoc::Markdown::Literals
 
   # Alphanumeric = /\p{Word}/
   def _Alphanumeric
-    _tmp = scan(/\A(?-mix:\p{Word})/)
+    _tmp = scan(/\G(?-mix:\p{Word})/)
     set_failed_rule :_Alphanumeric unless _tmp
     return _tmp
   end
 
   # AlphanumericAscii = /[A-Za-z0-9]/
   def _AlphanumericAscii
-    _tmp = scan(/\A(?-mix:[A-Za-z0-9])/)
+    _tmp = scan(/\G(?-mix:[A-Za-z0-9])/)
     set_failed_rule :_AlphanumericAscii unless _tmp
     return _tmp
   end
@@ -387,21 +402,21 @@ class RDoc::Markdown::Literals
 
   # Newline = /\n|\r\n?|\p{Zl}|\p{Zp}/
   def _Newline
-    _tmp = scan(/\A(?-mix:\n|\r\n?|\p{Zl}|\p{Zp})/)
+    _tmp = scan(/\G(?-mix:\n|\r\n?|\p{Zl}|\p{Zp})/)
     set_failed_rule :_Newline unless _tmp
     return _tmp
   end
 
   # NonAlphanumeric = /\p{^Word}/
   def _NonAlphanumeric
-    _tmp = scan(/\A(?-mix:\p{^Word})/)
+    _tmp = scan(/\G(?-mix:\p{^Word})/)
     set_failed_rule :_NonAlphanumeric unless _tmp
     return _tmp
   end
 
   # Spacechar = /\t|\p{Zs}/
   def _Spacechar
-    _tmp = scan(/\A(?-mix:\t|\p{Zs})/)
+    _tmp = scan(/\G(?-mix:\t|\p{Zs})/)
     set_failed_rule :_Spacechar unless _tmp
     return _tmp
   end

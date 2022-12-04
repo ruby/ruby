@@ -1,14 +1,17 @@
 require_relative '../../../spec_helper'
-require 'matrix'
 
-describe "Vector#cross_product" do
-  it "returns the cross product of a vector" do
-    Vector[1, 2, 3].cross_product(Vector[0, -4, 5]).should == Vector[22, -5, -4]
-  end
+ruby_version_is ""..."3.1" do
+  require 'matrix'
 
-  it "raises an error unless both vectors have dimension 3" do
-    -> {
-      Vector[1, 2, 3].cross_product(Vector[0, -4])
-    }.should raise_error(Vector::ErrDimensionMismatch)
+  describe "Vector#cross_product" do
+    it "returns the cross product of a vector" do
+      Vector[1, 2, 3].cross_product(Vector[0, -4, 5]).should == Vector[22, -5, -4]
+    end
+
+    it "raises an error unless both vectors have dimension 3" do
+      -> {
+        Vector[1, 2, 3].cross_product(Vector[0, -4])
+      }.should raise_error(Vector::ErrDimensionMismatch)
+    end
   end
 end

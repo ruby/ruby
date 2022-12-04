@@ -71,7 +71,7 @@ module Bundler
     def self.ruby_version
       str = String.new(RUBY_VERSION)
       str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{RUBY_PLATFORM}]"
+      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
     end
 
     def self.git_version
@@ -105,7 +105,7 @@ module Bundler
       out << ["  User Home", Gem.user_home]
       out << ["  User Path", Gem.user_dir]
       out << ["  Bin Dir", Gem.bindir]
-      if defined?(OpenSSL)
+      if defined?(OpenSSL::SSL)
         out << ["OpenSSL"]
         out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
         out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)

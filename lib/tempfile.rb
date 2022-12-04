@@ -36,9 +36,9 @@ require 'tmpdir'
 #
 # When a Tempfile object is garbage collected, or when the Ruby interpreter
 # exits, its associated temporary file is automatically deleted. This means
-# that's it's unnecessary to explicitly delete a Tempfile after use, though
-# it's good practice to do so: not explicitly deleting unused Tempfiles can
-# potentially leave behind large amounts of tempfiles on the filesystem
+# that it's unnecessary to explicitly delete a Tempfile after use, though
+# it's a good practice to do so: not explicitly deleting unused Tempfiles can
+# potentially leave behind a large number of temp files on the filesystem
 # until they're garbage collected. The existence of these temp files can make
 # it harder to determine a new Tempfile filename.
 #
@@ -51,6 +51,14 @@ require 'tmpdir'
 #   ensure
 #      file.close
 #      file.unlink   # deletes the temp file
+#   end
+#
+# Tempfile.create { ... } exists for this purpose and is more convenient to use.
+# Note that Tempfile.create returns a File instance instead of a Tempfile, which
+# also avoids the overhead and complications of delegation.
+#
+#   Tempfile.open('foo') do |file|
+#      # ...do something with file...
 #   end
 #
 # === Unlink after creation
@@ -79,46 +87,64 @@ require 'tmpdir'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  # Creates a temporary file with permissions 0600 (= only readable and
-  # writable by the owner) and opens it with mode "w+".
+
+  # Creates a file in the underlying file system;
+  # returns a new \Tempfile object based on that file.
   #
-  # The +basename+ parameter is used to determine the name of the
-  # temporary file. You can either pass a String or an Array with
-  # 2 String elements. In the former form, the temporary file's base
-  # name will begin with the given string. In the latter form,
-  # the temporary file's base name will begin with the array's first
-  # element, and end with the second element. For example:
+  # If possible, consider instead using Tempfile.create, which:
   #
-  #   file = Tempfile.new('hello')
-  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0"
+  # - Avoids the performance cost of delegation,
+  #   incurred when Tempfile.new calls its superclass <tt>DelegateClass(File)</tt>.
+  # - Does not rely on a finalizer to close and unlink the file,
+  #   which can be unreliable.
   #
-  #   # Use the Array form to enforce an extension in the filename:
-  #   file = Tempfile.new(['hello', '.jpg'])
-  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0.jpg"
+  # Creates and returns file whose:
   #
-  # The temporary file will be placed in the directory as specified
-  # by the +tmpdir+ parameter. By default, this is +Dir.tmpdir+.
+  # - Class is \Tempfile (not \File, as in Tempfile.create).
+  # - Directory is the system temporary directory (system-dependent).
+  # - Generated filename is unique in that directory.
+  # - Permissions are <tt>0600</tt>;
+  #   see {File Permissions}[rdoc-ref:File@File+Permissions].
+  # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
   #
-  #   file = Tempfile.new('hello', '/home/aisaka')
-  #   file.path  # => something like: "/home/aisaka/hello2843-8392-92849382--0"
+  # The underlying file is removed when the \Tempfile object dies
+  # and is reclaimed by the garbage collector.
   #
-  # You can also pass an options hash. Under the hood, Tempfile creates
-  # the temporary file using +File.open+. These options will be passed to
-  # +File.open+. This is mostly useful for specifying encoding
-  # options, e.g.:
+  # Example:
   #
-  #   Tempfile.new('hello', '/home/aisaka', encoding: 'ascii-8bit')
+  #   f = Tempfile.new # => #<Tempfile:/tmp/20220505-17839-1s0kt30>
+  #   f.class               # => Tempfile
+  #   f.path                # => "/tmp/20220505-17839-1s0kt30"
+  #   f.stat.mode.to_s(8)   # => "100600"
+  #   File.exist?(f.path)   # => true
+  #   File.unlink(f.path)   #
+  #   File.exist?(f.path)   # => false
   #
-  #   # You can also omit the 'tmpdir' parameter:
-  #   Tempfile.new('hello', encoding: 'ascii-8bit')
+  # Argument +basename+, if given, may be one of:
   #
-  # Note: +mode+ keyword argument, as accepted by Tempfile, can only be
-  # numeric, combination of the modes defined in File::Constants.
+  # - A string: the generated filename begins with +basename+:
   #
-  # === Exceptions
+  #     Tempfile.new('foo') # => #<Tempfile:/tmp/foo20220505-17839-1whk2f>
   #
-  # If Tempfile.new cannot find a unique filename within a limited
-  # number of tries, then it will raise an exception.
+  # - An array of two strings <tt>[prefix, suffix]</tt>:
+  #   the generated filename begins with +prefix+ and ends with +suffix+:
+  #
+  #     Tempfile.new(%w/foo .jpg/) # => #<Tempfile:/tmp/foo20220505-17839-58xtfi.jpg>
+  #
+  # With arguments +basename+ and +tmpdir+, the file is created in directory +tmpdir+:
+  #
+  #   Tempfile.new('foo', '.') # => #<Tempfile:./foo20220505-17839-xfstr8>
+  #
+  # Keyword arguments +mode+ and +options+ are passed directly to method
+  # {File.open}[rdoc-ref:File.open]:
+  #
+  # - The value given with +mode+ must be an integer,
+  #   and may be expressed as the logical OR of constants defined in
+  #   {File::Constants}[rdoc-ref:File::Constants].
+  # - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
+  #
+  # Related: Tempfile.create.
+  #
   def initialize(basename="", tmpdir=nil, mode: 0, **options)
     warn "Tempfile.new doesn't call the given block.", uplevel: 1 if block_given?
 
@@ -263,11 +289,25 @@ class Tempfile < DelegateClass(File)
 
     # Creates a new Tempfile.
     #
+    # This method is not recommended and exists mostly for backward compatibility.
+    # Please use Tempfile.create instead, which avoids the cost of delegation,
+    # does not rely on a finalizer, and also unlinks the file when given a block.
+    #
+    # Tempfile.open is still appropriate if you need the Tempfile to be unlinked
+    # by a finalizer and you cannot explicitly know where in the program the
+    # Tempfile can be unlinked safely.
+    #
     # If no block is given, this is a synonym for Tempfile.new.
     #
     # If a block is given, then a Tempfile object will be constructed,
-    # and the block is run with said object as argument. The Tempfile
+    # and the block is run with the Tempfile object as argument. The Tempfile
     # object will be automatically closed after the block terminates.
+    # However, the file will *not* be unlinked and needs to be manually unlinked
+    # with Tempfile#close! or Tempfile#unlink. The finalizer will try to unlink
+    # but should not be relied upon as it can keep the file on the disk much
+    # longer than intended. For instance, on CRuby, finalizers can be delayed
+    # due to conservative stack scanning and references left in unused memory.
+    #
     # The call returns the value of the block.
     #
     # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
@@ -299,26 +339,61 @@ class Tempfile < DelegateClass(File)
   end
 end
 
-# Creates a temporary file as usual File object (not Tempfile).
-# It doesn't use finalizer and delegation.
+# Creates a file in the underlying file system;
+# returns a new \File object based on that file.
 #
-# If no block is given, this is similar to Tempfile.new except
-# creating File instead of Tempfile.
-# The created file is not removed automatically.
-# You should use File.unlink to remove it.
+# With no block given and no arguments, creates and returns file whose:
 #
-# If a block is given, then a File object will be constructed,
-# and the block is invoked with the object as the argument.
-# The File object will be automatically closed and
-# the temporary file is removed after the block terminates.
-# The call returns the value of the block.
+# - Class is {File}[rdoc-ref:File] (not \Tempfile).
+# - Directory is the system temporary directory (system-dependent).
+# - Generated filename is unique in that directory.
+# - Permissions are <tt>0600</tt>;
+#   see {File Permissions}[rdoc-ref:File@File+Permissions].
+# - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
 #
-# In any case, all arguments (+basename+, +tmpdir+, +mode+, and
-# <code>**options</code>) will be treated as Tempfile.new.
+# With no block, the file is not removed automatically,
+# and so should be explicitly removed.
 #
-#   Tempfile.create('foo', '/home/temp') do |f|
-#      # ... do something with f ...
-#   end
+# Example:
+#
+#   f = Tempfile.create     # => #<File:/tmp/20220505-9795-17ky6f6>
+#   f.class                 # => File
+#   f.path                  # => "/tmp/20220505-9795-17ky6f6"
+#   f.stat.mode.to_s(8)     # => "100600"
+#   File.exist?(f.path)     # => true
+#   File.unlink(f.path)
+#   File.exist?(f.path)     # => false
+#
+# Argument +basename+, if given, may be one of:
+#
+# - A string: the generated filename begins with +basename+:
+#
+#     Tempfile.create('foo') # => #<File:/tmp/foo20220505-9795-1gok8l9>
+#
+# - An array of two strings <tt>[prefix, suffix]</tt>:
+#   the generated filename begins with +prefix+ and ends with +suffix+:
+#
+#     Tempfile.create(%w/foo .jpg/) # => #<File:/tmp/foo20220505-17839-tnjchh.jpg>
+#
+# With arguments +basename+ and +tmpdir+, the file is created in directory +tmpdir+:
+#
+#   Tempfile.create('foo', '.') # => #<File:./foo20220505-9795-1emu6g8>
+#
+# Keyword arguments +mode+ and +options+ are passed directly to method
+# {File.open}[rdoc-ref:File.open]:
+#
+# - The value given with +mode+ must be an integer,
+#   and may be expressed as the logical OR of constants defined in
+#   {File::Constants}[rdoc-ref:File::Constants].
+# - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
+#
+# With a block given, creates the file as above, passes it to the block,
+# and returns the block's value;
+# before the return, the file object is closed and the underlying file is removed:
+#
+#   Tempfile.create {|file| file.path } # => "/tmp/20220505-9795-rkists"
+#
+# Related: Tempfile.new.
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil

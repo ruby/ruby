@@ -27,6 +27,10 @@ describe "Math.sqrt" do
   it "accepts any argument that can be coerced with Float()" do
     Math.sqrt(MathSpecs::Float.new).should be_close(1.0, TOLERANCE)
   end
+
+  it "raises a Math::DomainError when given a negative number" do
+    -> { Math.sqrt(-1) }.should raise_error(Math::DomainError)
+  end
 end
 
 describe "Math#sqrt" do

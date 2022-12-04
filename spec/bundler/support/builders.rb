@@ -30,7 +30,16 @@ module Spec
     end
 
     def build_repo1
+      rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
+
       build_repo gem_repo1 do
+        FileUtils.cp rake_path, "#{gem_repo1}/gems/"
+
+        build_gem "coffee-script-source"
+        build_gem "git"
+        build_gem "puma"
+        build_gem "minitest"
+
         build_gem "rack", %w[0.9.1 1.0.0] do |s|
           s.executables = "rackup"
           s.post_install_message = "Rack's post install message"
@@ -76,14 +85,6 @@ module Spec
           s.add_dependency "activesupport", ">= 2.0.0"
         end
 
-        build_gem "rails_pinned_to_old_activesupport" do |s|
-          s.add_dependency "activesupport", "= 1.2.3"
-        end
-
-        build_gem "missing_dep" do |s|
-          s.add_dependency "not_here"
-        end
-
         build_gem "rspec", "1.2.7", :no_default => true do |s|
           s.write "lib/spec.rb", "SPEC = '1.2.7'"
         end
@@ -93,8 +94,8 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
+          s.platform = Gem::Platform.local
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Gem::Platform.local}'"
         end
 
         build_gem "platform_specific" do |s|
@@ -109,15 +110,27 @@ module Spec
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mswin32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 MSWIN'"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mswin32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mswin64"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mswin64'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mingw32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mingw-ucrt"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw-ucrt'"
         end
 
         build_gem "platform_specific" do |s|
@@ -158,49 +171,6 @@ module Spec
 
         build_gem "duradura", "7.0"
 
-        build_gem "multiple_versioned_deps" do |s|
-          s.add_dependency "weakling", ">= 0.0.1", "< 0.1"
-        end
-
-        build_gem "not_released", "1.0.pre"
-
-        build_gem "has_prerelease", "1.0"
-        build_gem "has_prerelease", "1.1.pre"
-
-        build_gem "with_development_dependency" do |s|
-          s.add_development_dependency "activesupport", "= 2.3.5"
-        end
-
-        build_gem "with_license" do |s|
-          s.license = "MIT"
-        end
-
-        build_gem "with_implicit_rake_dep" do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/implicit_rake_dep.rb", "w") do |f|
-                f.puts "IMPLICIT_RAKE_DEP = 'YES'"
-              end
-            end
-          RUBY
-        end
-
-        build_gem "another_implicit_rake_dep" do |s|
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
-                f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
-              end
-            end
-          RUBY
-        end
-
         build_gem "very_simple_binary", &:add_c_extension
         build_gem "simple_binary", &:add_c_extension
 
@@ -215,10 +185,6 @@ module Spec
           s.write "lib/rubygems_plugin.rb", "require 'bundler/omg' ; puts 'FAIL'"
         end
 
-        build_gem "bundler_dep" do |s|
-          s.add_dependency "bundler"
-        end
-
         # The yard gem iterates over Gem.source_index looking for plugins
         build_gem "yard" do |s|
           s.write "lib/yard.rb", <<-Y
@@ -228,104 +194,12 @@ module Spec
           Y
         end
 
-        # The rcov gem is platform mswin32, but has no arch
-        build_gem "rcov" do |s|
-          s.platform = Gem::Platform.new([nil, "mswin32", nil])
-          s.write "lib/rcov.rb", "RCOV = '1.0.0'"
-        end
-
         build_gem "net-ssh"
         build_gem "net-sftp", "1.1.1" do |s|
           s.add_dependency "net-ssh", ">= 1.0.0", "< 1.99.0"
         end
 
-        # Test complicated gem dependencies for install
-        build_gem "net_a" do |s|
-          s.add_dependency "net_b"
-          s.add_dependency "net_build_extensions"
-        end
-
-        build_gem "net_b"
-
-        build_gem "net_build_extensions" do |s|
-          s.add_dependency "rake"
-          s.extensions << "Rakefile"
-          s.write "Rakefile", <<-RUBY
-            task :default do
-              path = File.expand_path("../lib", __FILE__)
-              FileUtils.mkdir_p(path)
-              File.open("\#{path}/net_build_extensions.rb", "w") do |f|
-                f.puts "NET_BUILD_EXTENSIONS = 'YES'"
-              end
-            end
-          RUBY
-        end
-
-        build_gem "net_c" do |s|
-          s.add_dependency "net_a"
-          s.add_dependency "net_d"
-        end
-
-        build_gem "net_d"
-
-        build_gem "net_e" do |s|
-          s.add_dependency "net_d"
-        end
-
-        # Capistrano did this (at least until version 2.5.10)
-        # RubyGems 2.2 doesn't allow the specifying of a dependency twice
-        # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
-        build_gem "double_deps", "1.0", :skip_validation => true do |s|
-          s.add_dependency "net-ssh", ">= 1.0.0"
-          s.add_dependency "net-ssh"
-        end
-
         build_gem "foo"
-
-        # A minimal fake pry console
-        build_gem "pry" do |s|
-          s.write "lib/pry.rb", <<-RUBY
-            class Pry
-              class << self
-                def toplevel_binding
-                  unless defined?(@toplevel_binding) && @toplevel_binding
-                    TOPLEVEL_BINDING.eval %{
-                      def self.__pry__; binding; end
-                      Pry.instance_variable_set(:@toplevel_binding, __pry__)
-                      class << self; undef __pry__; end
-                    }
-                  end
-                  @toplevel_binding.eval('private')
-                  @toplevel_binding
-                end
-
-                def __pry__
-                  while line = gets
-                    begin
-                      puts eval(line, toplevel_binding).inspect.sub(/^"(.*)"$/, '=> \\1')
-                    rescue Exception => e
-                      puts "\#{e.class}: \#{e.message}"
-                      puts e.backtrace.first
-                    end
-                  end
-                end
-                alias start __pry__
-              end
-            end
-          RUBY
-        end
-
-        build_gem "has_metadata" do |s|
-          s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
-            "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
-          }
-        end
       end
     end
 
@@ -333,13 +207,6 @@ module Spec
       FileUtils.rm_rf gem_repo2
       FileUtils.cp_r gem_repo1, gem_repo2
       update_repo2(&blk) if block_given?
-    end
-
-    def build_repo3
-      build_repo gem_repo3 do
-        build_gem "rack"
-      end
-      FileUtils.rm_rf Dir[gem_repo3("prerelease*")]
     end
 
     # A repo that has no pre-installed gems included. (The caller completely
@@ -355,9 +222,6 @@ module Spec
 
     def update_repo2
       update_repo gem_repo2 do
-        build_gem "rack", "1.2" do |s|
-          s.executables = "rackup"
-        end
         yield if block_given?
       end
     end
@@ -379,6 +243,13 @@ module Spec
 
     def build_repo(path, &blk)
       return if File.directory?(path)
+
+      FileUtils.mkdir_p("#{path}/gems")
+
+      update_repo(path, &blk)
+    end
+
+    def check_test_gems!
       rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
 
       if rake_path.nil?
@@ -387,14 +258,9 @@ module Spec
         rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
       end
 
-      if rake_path
-        FileUtils.mkdir_p("#{path}/gems")
-        FileUtils.cp rake_path, "#{path}/gems/"
-      else
+      if rake_path.nil?
         abort "Your test gems are missing! Run `rm -rf #{tmp}` and try again."
       end
-
-      update_repo(path, &blk)
     end
 
     def update_repo(path)
@@ -405,7 +271,7 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as Path.base_system_gems do
+      with_gem_path_as Path.base_system_gem_path do
         gem_command :generate_index, :dir => path
       end
     ensure
@@ -461,7 +327,7 @@ module Spec
       build_with(PluginBuilder, name, args, &blk)
     end
 
-  private
+    private
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -590,8 +456,7 @@ module Spec
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"
 
-
-          # exit 1 unless with_config("simple")
+          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"] unless RUBY_VERSION < "2.4"
 
           extension_name = "#{name}_c"
           if extra_lib_dir = with_config("ext-lib")
@@ -630,7 +495,7 @@ module Spec
         end
 
         @spec.authors = ["no one"]
-        @spec.files = @files.keys
+        @spec.files += @files.keys
 
         case options[:gemspec]
         when false
@@ -647,6 +512,7 @@ module Spec
           file = Pathname.new(path).join(file)
           FileUtils.mkdir_p(file.dirname)
           File.open(file, "w") {|f| f.puts source }
+          File.chmod("+x", file) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
         end
         path
       end
@@ -670,9 +536,11 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
+        default_branch = options[:default_branch] || "main"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))
+        @context.git("config --global init.defaultBranch #{default_branch}", path)
         @context.git("init", path)
         @context.git("add *", path)
         @context.git("config user.email lol@wut.com", path)
@@ -696,17 +564,8 @@ module Spec
         update_gemspec = options[:gemspec] || false
         source = options[:source] || "git@#{libpath}"
 
-        @context.git "checkout master", libpath
-
         if branch = options[:branch]
-          raise "You can't specify `master` as the branch" if branch == "master"
-          escaped_branch = Shellwords.shellescape(branch)
-
-          if @context.git("branch -l #{escaped_branch}", libpath).empty?
-            @context.git("branch #{escaped_branch}", libpath)
-          end
-
-          @context.git("checkout #{escaped_branch}", libpath)
+          @context.git("checkout -b #{Shellwords.shellescape(branch)}", libpath)
         elsif tag = options[:tag]
           @context.git("tag #{Shellwords.shellescape(tag)}", libpath)
         elsif options[:remote]
@@ -720,8 +579,7 @@ module Spec
           _default_files[path] += "\n#{Builders.constantize(name)}_PREV_REF = '#{current_ref}'"
         end
         super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
-        @context.git("add *", libpath)
-        @context.git("commit -m BUMP", libpath, :raise_on_error => false)
+        @context.git("commit -am BUMP", libpath)
       end
     end
 
@@ -742,7 +600,8 @@ module Spec
 
     class GemBuilder < LibBuilder
       def _build(opts)
-        lib_path = super(opts.merge(:path => @context.tmp(".tmp/#{@spec.full_name}"), :no_default => opts[:no_default]))
+        lib_path = opts[:lib_path] || @context.tmp(".tmp/#{@spec.full_name}")
+        lib_path = super(opts.merge(:path => lib_path, :no_default => opts[:no_default]))
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
@@ -758,7 +617,7 @@ module Spec
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
         if opts[:to_system]
-          @context.system_gems gem_path
+          @context.system_gems gem_path, :default => opts[:default]
         elsif opts[:to_bundle]
           @context.system_gems gem_path, :path => @context.default_bundle_path
         else

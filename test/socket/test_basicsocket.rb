@@ -32,10 +32,10 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
 
         n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
         assert_equal([0].pack("i"), n.data)
-      rescue Minitest::Assertion
+      rescue Test::Unit::AssertionFailedError
         s.close
         if /aix/ =~ RUBY_PLATFORM
-          skip "Known bug in getsockopt(2) on AIX"
+          omit "Known bug in getsockopt(2) on AIX"
         end
         raise $!
       end

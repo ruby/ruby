@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Bundler
   class Index
     include Enumerable
@@ -58,42 +56,21 @@ module Bundler
 
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
-    def search(query, base = nil)
-      sort_specs(unsorted_search(query, base))
-    end
-
-    def unsorted_search(query, base)
-      results = local_search(query, base)
-
-      seen = results.map(&:full_name).to_set unless @sources.empty?
+    def search(query)
+      results = local_search(query)
+      return results unless @sources.any?
 
       @sources.each do |source|
-        source.unsorted_search(query, base).each do |spec|
-          results << spec if seen.add?(spec.full_name)
-        end
+        results.concat(source.search(query))
       end
-
-      results
-    end
-    protected :unsorted_search
-
-    def self.sort_specs(specs)
-      specs.sort_by do |s|
-        platform_string = s.platform.to_s
-        [s.version, platform_string == RUBY ? NULL : platform_string]
-      end
+      results.uniq(&:full_name)
     end
 
-    def sort_specs(specs)
-      self.class.sort_specs(specs)
-    end
-
-    def local_search(query, base = nil)
+    def local_search(query)
       case query
       when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
       when String then specs_by_name(query)
-      when Gem::Dependency then search_by_dependency(query, base)
-      when DepProxy then search_by_dependency(query.dep, base)
+      when Array then specs_by_name_and_version(*query)
       else
         raise "You can't search for a #{query.inspect}."
       end
@@ -121,10 +98,9 @@ module Bundler
       names
     end
 
-    # returns a list of the dependencies
     def unmet_dependency_names
       dependency_names.select do |name|
-        name != "bundler" && search(name).empty?
+        search(name).empty?
       end
     end
 
@@ -170,7 +146,7 @@ module Bundler
     def dependencies_eql?(spec, other_spec)
       deps       = spec.dependencies.select {|d| d.type != :development }
       other_deps = other_spec.dependencies.select {|d| d.type != :development }
-      Set.new(deps) == Set.new(other_deps)
+      deps.sort == other_deps.sort
     end
 
     def add_source(index)
@@ -179,28 +155,14 @@ module Bundler
       @sources.uniq! # need to use uniq! here instead of checking for the item before adding
     end
 
-  private
+    private
+
+    def specs_by_name_and_version(name, version)
+      specs_by_name(name).select {|spec| spec.version == version }
+    end
 
     def specs_by_name(name)
       @specs[name].values
-    end
-
-    def search_by_dependency(dependency, base = nil)
-      @cache[base || false] ||= {}
-      @cache[base || false][dependency] ||= begin
-        specs = specs_by_name(dependency.name)
-        specs += base if base
-        found = specs.select do |spec|
-          next true if spec.source.is_a?(Source::Gemspec)
-          if base # allow all platforms when searching from a lockfile
-            dependency.matches_spec?(spec)
-          else
-            dependency.matches_spec?(spec) && Gem::Platform.match(spec.platform)
-          end
-        end
-
-        found
-      end
     end
 
     EMPTY_SEARCH = [].freeze

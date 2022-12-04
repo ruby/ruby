@@ -27,28 +27,29 @@ module Fiddle
   # * WORD
   module Win32Types
     def included(m) # :nodoc:
+      # https://docs.microsoft.com/en-us/windows/win32/winprog/windows-data-types
       m.module_eval{
-        typealias "DWORD", "unsigned long"
-        typealias "PDWORD", "unsigned long *"
-        typealias "DWORD32", "unsigned long"
-        typealias "DWORD64", "unsigned long long"
-        typealias "WORD", "unsigned short"
-        typealias "PWORD", "unsigned short *"
+        typealias "ATOM", "WORD"
         typealias "BOOL", "int"
-        typealias "ATOM", "int"
         typealias "BYTE", "unsigned char"
-        typealias "PBYTE", "unsigned char *"
+        typealias "DWORD", "unsigned long"
+        typealias "DWORD32", "uint32_t"
+        typealias "DWORD64", "uint64_t"
+        typealias "HANDLE", "PVOID"
+        typealias "HDC", "HANDLE"
+        typealias "HINSTANCE", "HANDLE"
+        typealias "HWND", "HANDLE"
+        typealias "LPCSTR", "const char *"
+        typealias "LPSTR", "char *"
+        typealias "PBYTE", "BYTE *"
+        typealias "PDWORD", "DWORD *"
+        typealias "PHANDLE", "HANDLE *"
+        typealias "PVOID", "void *"
+        typealias "PWORD", "WORD *"
+        typealias "UCHAR", "unsigned char"
         typealias "UINT", "unsigned int"
         typealias "ULONG", "unsigned long"
-        typealias "UCHAR", "unsigned char"
-        typealias "HANDLE", "uintptr_t"
-        typealias "PHANDLE", "void*"
-        typealias "PVOID", "void*"
-        typealias "LPCSTR", "char*"
-        typealias "LPSTR", "char*"
-        typealias "HINSTANCE", "unsigned int"
-        typealias "HDC", "unsigned int"
-        typealias "HWND", "unsigned int"
+        typealias "WORD", "unsigned short"
       }
     end
     module_function :included

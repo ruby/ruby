@@ -23,7 +23,6 @@ class CGIUtilTest < Test::Unit::TestCase
     ENV.update(@environ)
   end
 
-
   def test_cgi_escape
     assert_equal('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93', CGI.escape(@str1))
     assert_equal('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93'.ascii_only?, CGI.escape(@str1).ascii_only?) if defined?(::Encoding)
@@ -36,9 +35,7 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escape_with_invalid_byte_sequence
-    assert_nothing_raised(ArgumentError) do
-      assert_equal('%C0%3C%3C', CGI.escape("\xC0\<\<".dup.force_encoding("UTF-8")))
-    end
+    assert_equal('%C0%3C%3C', CGI.escape("\xC0\<\<".dup.force_encoding("UTF-8")))
   end
 
   def test_cgi_escape_preserve_encoding
@@ -69,6 +66,54 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       assert_equal("", CGI.unescape(''))
+    end;
+  end
+
+  def test_cgi_escapeURIComponent
+    assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93', CGI.escapeURIComponent(@str1))
+    assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93'.ascii_only?, CGI.escapeURIComponent(@str1).ascii_only?) if defined?(::Encoding)
+  end
+
+  def test_cgi_escapeURIComponent_with_unreserved_characters
+    assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+                 CGI.escapeURIComponent("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
+                 "should not encode any unreserved characters, as per RFC3986 Section 2.3")
+  end
+
+  def test_cgi_escapeURIComponent_with_invalid_byte_sequence
+    assert_equal('%C0%3C%3C', CGI.escapeURIComponent("\xC0\<\<".dup.force_encoding("UTF-8")))
+  end
+
+  def test_cgi_escapeURIComponent_preserve_encoding
+    assert_equal(Encoding::US_ASCII, CGI.escapeURIComponent("\xC0\<\<".dup.force_encoding("US-ASCII")).encoding)
+    assert_equal(Encoding::ASCII_8BIT, CGI.escapeURIComponent("\xC0\<\<".dup.force_encoding("ASCII-8BIT")).encoding)
+    assert_equal(Encoding::UTF_8, CGI.escapeURIComponent("\xC0\<\<".dup.force_encoding("UTF-8")).encoding)
+  end
+
+  def test_cgi_unescapeURIComponent
+    str = CGI.unescapeURIComponent('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93')
+    assert_equal(@str1, str)
+    return unless defined?(::Encoding)
+
+    assert_equal("foo+bar", CGI.unescapeURIComponent("foo+bar"))
+
+    assert_equal(@str1.encoding, str.encoding)
+    assert_equal("\u{30E1 30E2 30EA 691C 7D22}", CGI.unescapeURIComponent("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
+  end
+
+  def test_cgi_unescapeURIComponent_preserve_encoding
+    assert_equal(Encoding::US_ASCII, CGI.unescapeURIComponent("%C0%3C%3C".dup.force_encoding("US-ASCII")).encoding)
+    assert_equal(Encoding::ASCII_8BIT, CGI.unescapeURIComponent("%C0%3C%3C".dup.force_encoding("ASCII-8BIT")).encoding)
+    assert_equal(Encoding::UTF_8, CGI.unescapeURIComponent("%C0%3C%3C".dup.force_encoding("UTF-8")).encoding)
+  end
+
+  def test_cgi_unescapeURIComponent_accept_charset
+    return unless defined?(::Encoding)
+
+    assert_raise(TypeError) {CGI.unescapeURIComponent('', nil)}
+    assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_equal("", CGI.unescapeURIComponent(''))
     end;
   end
 
@@ -104,6 +149,24 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_not_predicate CGI.escapeHTML("'&\"><".freeze), :frozen?
     assert_not_predicate CGI.escapeHTML("Ruby".dup),      :frozen?
     assert_not_predicate CGI.escapeHTML("Ruby".freeze),   :frozen?
+  end
+
+  def test_cgi_escape_html_large
+    return if RUBY_ENGINE == 'jruby'
+    ulong_max, size_max = RbConfig::LIMITS.values_at("ULONG_MAX", "SIZE_MAX")
+    return unless ulong_max < size_max # Platforms not concerned
+
+    size = (ulong_max / 6 + 1)
+    begin
+      str = '"' * size
+      escaped = CGI.escapeHTML(str)
+    rescue NoMemoryError
+      omit "Not enough memory"
+    rescue => e
+    end
+    assert_raise_with_message(ArgumentError, /overflow/, ->{"length = #{escaped.length}"}) do
+      raise e if e
+    end
   end
 
   def test_cgi_unescapeHTML
@@ -189,5 +252,34 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescapeElement(escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"]))
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG"))
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"]))
+  end
+end
+
+class CGIUtilPureRubyTest < Test::Unit::TestCase
+  def setup
+    CGI::Escape.module_eval do
+      alias _escapeHTML escapeHTML
+      remove_method :escapeHTML
+      alias _unescapeHTML unescapeHTML
+      remove_method :unescapeHTML
+    end
+  end
+
+  def teardown
+    CGI::Escape.module_eval do
+      alias escapeHTML _escapeHTML
+      remove_method :_escapeHTML
+      alias unescapeHTML _unescapeHTML
+      remove_method :_unescapeHTML
+    end
+  end
+
+  def test_cgi_escapeHTML_with_invalid_byte_sequence
+    assert_equal("&lt;\xA4??&gt;", CGI.escapeHTML(%[<\xA4??>]))
+  end
+
+  def test_cgi_unescapeHTML_with_invalid_byte_sequence
+    input = "\xFF&"
+    assert_equal(input, CGI.unescapeHTML(input))
   end
 end

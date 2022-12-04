@@ -2,7 +2,7 @@
 require 'test/unit'
 
 class TestArity < Test::Unit::TestCase
-  def err_mess(method_proc = nil, argc = 0)
+  def assert_arity(expected, method_proc = nil, argc = 0)
     args = (1..argc).to_a
     assert_raise_with_message(ArgumentError, /wrong number of arguments \(.*\b(\d+)\b.* (\d\S*?)\)/) do
       case method_proc
@@ -14,7 +14,7 @@ class TestArity < Test::Unit::TestCase
         method_proc.call(*args)
       end
     end
-    [$1, $2]
+    assert_equal expected, [$1, $2]
   end
 
   def a
@@ -36,22 +36,22 @@ class TestArity < Test::Unit::TestCase
   end
 
   def test_method_err_mess
-    assert_equal %w[1 0],     err_mess(:a, 1)
-    assert_equal %w[10 7..9], err_mess(:b, 10)
-    assert_equal %w[2 3+],    err_mess(:c, 2)
-    assert_equal %w[2 1],     err_mess(:d, 2)
-    assert_equal %w[0 1],     err_mess(:d, 0)
-    assert_equal %w[2 1],     err_mess(:e, 2)
-    assert_equal %w[0 1],     err_mess(:e, 0)
-    assert_equal %w[1 2+],    err_mess(:f, 1)
+    assert_arity(%w[1 0],     :a, 1)
+    assert_arity(%w[10 7..9], :b, 10)
+    assert_arity(%w[2 3+],    :c, 2)
+    assert_arity(%w[2 1],     :d, 2)
+    assert_arity(%w[0 1],     :d, 0)
+    assert_arity(%w[2 1],     :e, 2)
+    assert_arity(%w[0 1],     :e, 0)
+    assert_arity(%w[1 2+],    :f, 1)
   end
 
   def test_proc_err_mess
-    assert_equal %w[0 1..2],  err_mess(->(b, c=42){}, 0)
-    assert_equal %w[1 2+],    err_mess(->(a, b, c=42, *d){}, 1)
-    assert_equal %w[3 4+],    err_mess(->(a, b, *c, d, e){}, 3)
-    assert_equal %w[3 1..2],  err_mess(->(b, c=42){}, 3)
-    assert_equal %w[1 0],     err_mess(->(&block){}, 1)
+    assert_arity(%w[0 1..2],  ->(b, c=42){}, 0)
+    assert_arity(%w[1 2+],    ->(a, b, c=42, *d){}, 1)
+    assert_arity(%w[3 4+],    ->(a, b, *c, d, e){}, 3)
+    assert_arity(%w[3 1..2],  ->(b, c=42){}, 3)
+    assert_arity(%w[1 0],     ->(&block){}, 1)
     # Double checking:
     p = Proc.new{|b, c=42| :ok}
     assert_equal :ok,  p.call(1, 2, 3)
@@ -59,12 +59,12 @@ class TestArity < Test::Unit::TestCase
   end
 
   def test_message_change_issue_6085
-    assert_equal %w[3 1..2],  err_mess{ SignalException.new(1, "", nil) }
-    assert_equal %w[1 0],     err_mess{ Hash.new(1){} }
-    assert_equal %w[3 1..2],  err_mess{ Module.send :define_method, 1, 2, 3 }
-    assert_equal %w[1 2],     err_mess{ "".sub!(//) }
-    assert_equal %w[0 1..2],  err_mess{ "".sub!{} }
-    assert_equal %w[0 1+],    err_mess{ exec }
-    assert_equal %w[0 1+],    err_mess{ Struct.new }
+    assert_arity(%w[3 1..2])  { SignalException.new(1, "", nil) }
+    assert_arity(%w[1 0])     { Hash.new(1){} }
+    assert_arity(%w[3 1..2])  { Module.send :define_method, 1, 2, 3 }
+    assert_arity(%w[1 2])     { "".sub!(//) }
+    assert_arity(%w[0 1..2])  { "".sub!{} }
+    assert_arity(%w[0 1+])    { exec }
+    assert_arity(%w[0 1+])    { Struct.new }
   end
 end

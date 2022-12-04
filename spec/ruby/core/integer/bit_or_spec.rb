@@ -7,11 +7,32 @@ describe "Integer#|" do
       (5 | 4).should == 5
       (5 | 6).should == 7
       (248 | 4096).should == 4344
-      (0xffff | bignum_value + 0xf0f0).should == 0x8000_0000_0000_ffff
+      (0xffff | bignum_value + 0xf0f0).should == 0x1_0000_0000_0000_ffff
+    end
+
+    it "returns self bitwise OR other when one operand is negative" do
+      ((1 << 33) | -1).should == -1
+      (-1 | (1 << 33)).should == -1
+
+      ((-(1<<33)-1) | 5).should == -8589934593
+      (5 | (-(1<<33)-1)).should == -8589934593
+    end
+
+    it "returns self bitwise OR other when both operands are negative" do
+      (-5 | -1).should == -1
+      (-3 | -4).should == -3
+      (-12 | -13).should == -9
+      (-13 | -12).should == -9
     end
 
     it "returns self bitwise OR a bignum" do
       (-1 | 2**64).should == -1
+    end
+
+    it "coerces the rhs and calls #coerce" do
+      obj = mock("fixnum bit and")
+      obj.should_receive(:coerce).with(6).and_return([3, 6])
+      (6 & obj).should == 2
     end
 
     it "raises a TypeError when passed a Float" do
@@ -32,20 +53,20 @@ describe "Integer#|" do
     end
 
     it "returns self bitwise OR other" do
-      (@bignum | 2).should == 9223372036854775819
-      (@bignum | 9).should == 9223372036854775819
-      (@bignum | bignum_value).should == 9223372036854775819
+      (@bignum | 2).should == 18446744073709551627
+      (@bignum | 9).should == 18446744073709551627
+      (@bignum | bignum_value).should == 18446744073709551627
     end
 
     it "returns self bitwise OR other when one operand is negative" do
-      (@bignum | -0x40000000000000000).should == -64563604257983430645
+      (@bignum | -0x40000000000000000).should == -55340232221128654837
       (@bignum | -@bignum).should == -1
       (@bignum | -0x8000000000000000).should == -9223372036854775797
     end
 
     it "returns self bitwise OR other when both operands are negative" do
       (-@bignum | -0x4000000000000005).should == -1
-      (-@bignum | -@bignum).should == -9223372036854775819
+      (-@bignum | -@bignum).should == -18446744073709551627
       (-@bignum | -0x4000000000000000).should == -11
     end
 

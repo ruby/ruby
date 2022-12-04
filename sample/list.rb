@@ -5,7 +5,6 @@ class MyElem
     # @variables are instance variable, no declaration needed
     @data = item
     @succ = nil
-    @head = nil
   end
 
   def data
@@ -23,6 +22,10 @@ class MyElem
 end
 
 class MyList
+  def initialize
+    @head = nil
+  end
+
   def add_to_list(obj)
     elt = MyElem.new(obj)
     if @head

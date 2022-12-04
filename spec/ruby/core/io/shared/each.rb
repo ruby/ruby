@@ -113,6 +113,13 @@ describe :io_each, shared: true do
       @io.send(@method, "") { |s| ScratchPad << s }
       ScratchPad.recorded.should == IOSpecs.paragraphs
     end
+
+    it "discards leading newlines" do
+      @io.readline
+      @io.readline
+      @io.send(@method, "") { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.paragraphs[1..-1]
+    end
   end
 
   describe "with both separator and limit" do
@@ -152,6 +159,13 @@ describe :io_each, shared: true do
           @io.send(@method, "", 1024) { |s| ScratchPad << s }
           ScratchPad.recorded.should == IOSpecs.paragraphs
         end
+
+        it "discards leading newlines" do
+          @io.readline
+          @io.readline
+          @io.send(@method, "", 1024) { |s| ScratchPad << s }
+          ScratchPad.recorded.should == IOSpecs.paragraphs[1..-1]
+        end
       end
     end
   end
@@ -160,6 +174,72 @@ describe :io_each, shared: true do
     it "yields each line without trailing newline characters to the passed block" do
       @io.send(@method, chomp: true) { |s| ScratchPad << s }
       ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
+    end
+
+    ruby_version_is "3.0" do
+      it "raises exception when options passed as Hash" do
+        -> {
+          @io.send(@method, { chomp: true }) { |s| }
+        }.should raise_error(TypeError)
+
+        -> {
+          @io.send(@method, "\n", 1, { chomp: true }) { |s| }
+        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      end
+    end
+  end
+
+  describe "when passed chomp and a separator" do
+    it "yields each line without separator to the passed block" do
+      @io.send(@method, " ", chomp: true) { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.lines_space_separator_without_trailing_spaces
+    end
+  end
+
+  describe "when passed chomp and empty line as a separator" do
+    it "yields each paragraph without trailing new line characters" do
+      @io.send(@method, "", 1024, chomp: true) { |s| ScratchPad << s }
+      ScratchPad.recorded.should == IOSpecs.paragraphs_without_trailing_new_line_characters
+    end
+  end
+
+  describe "when passed chomp and nil as a separator" do
+    ruby_version_is "3.2" do
+      it "yields self's content" do
+        @io.pos = 100
+        @io.send(@method, nil, chomp: true) { |s| ScratchPad << s }
+        ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six.\n"]
+      end
+    end
+
+    ruby_version_is ""..."3.2" do
+      it "yields self's content without trailing new line character" do
+        @io.pos = 100
+        @io.send(@method, nil, chomp: true) { |s| ScratchPad << s }
+        ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six."]
+      end
+    end
+  end
+
+  describe "when passed chomp, nil as a separator, and a limit" do
+    it "yields each line of limit size without truncating trailing new line character" do
+      # 43 - is a size of the 1st paragraph in the file
+      @io.send(@method, nil, 43, chomp: true) { |s| ScratchPad << s }
+
+      ScratchPad.recorded.should == [
+        "Voici la ligne une.\nQui è la linea due.\n\n\n",
+        "Aquí está la línea tres.\n" + "Hier ist Zeile ",
+        "vier.\n\nEstá aqui a linha cinco.\nHere is li",
+        "ne six.\n"
+      ]
+    end
+  end
+
+  describe "when passed too many arguments" do
+    it "raises ArgumentError" do
+      -> {
+        @io.send(@method, "", 1, "excess argument", chomp: true) {}
+      }.should raise_error(ArgumentError)
     end
   end
 end

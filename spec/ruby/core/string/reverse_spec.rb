@@ -10,10 +10,19 @@ describe "String#reverse" do
     "".reverse.should == ""
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "".taint.reverse.should.tainted?
-      "m".taint.reverse.should.tainted?
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(String)
+      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(String)
+      StringSpecs::MyString.new("").reverse.should be_an_instance_of(String)
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("").reverse.should be_an_instance_of(StringSpecs::MyString)
     end
   end
 
@@ -21,6 +30,13 @@ describe "String#reverse" do
     "微軟正黑體".reverse.should == "體黑正軟微"
   end
 
+  it "works with a broken string" do
+    str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
+
+    str.valid_encoding?.should be_false
+
+    str.reverse.should == "體黑正\xDE\xDF軟微"
+  end
 end
 
 describe "String#reverse!" do
@@ -46,5 +62,14 @@ describe "String#reverse!" do
     str = "微軟正黑體"
     str.reverse!
     str.should == "體黑正軟微"
+  end
+
+  it "works with a broken string" do
+    str = "微軟\xDF\xDE正黑體".force_encoding(Encoding::UTF_8)
+
+    str.valid_encoding?.should be_false
+    str.reverse!
+
+    str.should == "體黑正\xDE\xDF軟微"
   end
 end

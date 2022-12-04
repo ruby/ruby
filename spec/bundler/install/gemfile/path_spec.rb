@@ -16,6 +16,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path("foo-1.0")}" do
         gem 'foo'
       end
@@ -28,6 +29,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -40,6 +42,7 @@ RSpec.describe "bundle install with explicit source paths" do
     relative_path = lib_path("foo-1.0").relative_path_from(bundled_app)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "#{relative_path}"
     G
 
@@ -52,6 +55,7 @@ RSpec.describe "bundle install with explicit source paths" do
     relative_path = lib_path("foo-1.0").relative_path_from(Pathname.new("~").expand_path)
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "~/#{relative_path}"
     G
 
@@ -66,6 +70,7 @@ RSpec.describe "bundle install with explicit source paths" do
     relative_path = lib_path("foo-1.0").relative_path_from(Pathname.new("/home/#{username}").expand_path)
 
     install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "~#{username}/#{relative_path}"
     G
     expect(err).to match("There was an error while trying to use the path `~#{username}/#{relative_path}`.")
@@ -76,6 +81,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo", :path => bundled_app("foo-1.0")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "./foo-1.0"
     G
 
@@ -87,6 +93,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "aaa", :path => lib_path("demo/aaa")
 
     gemfile = <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec
       gem "aaa", :path => "./aaa"
     G
@@ -105,6 +112,7 @@ RSpec.describe "bundle install with explicit source paths" do
           aaa (1.0)
 
       GEM
+        remote: #{file_uri_for(gem_repo1)}/
         specs:
 
       PLATFORMS
@@ -119,25 +127,24 @@ RSpec.describe "bundle install with explicit source paths" do
     L
 
     bundle :install, :dir => lib_path("demo")
-    expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+    expect(lib_path("demo/Gemfile.lock")).to read_as(lockfile)
     bundle :update, :all => true, :dir => lib_path("demo")
-    expect(lib_path("demo/Gemfile.lock")).to have_lockfile(lockfile)
+    expect(lib_path("demo/Gemfile.lock")).to read_as(lockfile)
   end
 
   it "expands paths when comparing locked paths to Gemfile paths" do
     build_lib "foo", :path => bundled_app("foo-1.0")
 
     install_gemfile <<-G
-      gem 'foo', :path => File.expand_path("../foo-1.0", __FILE__)
+      source "#{file_uri_for(gem_repo1)}"
+      gem 'foo', :path => File.expand_path("foo-1.0", __dir__)
     G
 
-    bundle "config --local frozen true"
+    bundle "config set --local frozen true"
     bundle :install
   end
 
   it "installs dependencies from the path even if a newer gem is available elsewhere" do
-    skip "override is not winning" if Gem.win_platform?
-
     system_gems "rack-1.0.0"
 
     build_lib "rack", "1.0", :path => lib_path("nested/bar") do |s|
@@ -169,22 +176,90 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo", "1.0.0", :path => lib_path("omg/foo")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "omg", :path => "#{lib_path("omg")}"
     G
 
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "works with only_update_to_newer_versions" do
+  it "works when using prereleases of 0.0.0" do
+    build_lib "foo", "0.0.0.dev", :path => lib_path("foo")
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :path => "#{lib_path("foo")}"
+    G
+
+    lockfile <<~L
+      PATH
+        remote: #{lib_path("foo")}
+        specs:
+          foo (0.0.0.dev)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle :install
+
+    expect(the_bundle).to include_gems "foo 0.0.0.dev"
+  end
+
+  it "works when using uppercase prereleases of 0.0.0" do
+    build_lib "foo", "0.0.0.SNAPSHOT", :path => lib_path("foo")
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :path => "#{lib_path("foo")}"
+    G
+
+    lockfile <<~L
+      PATH
+        remote: #{lib_path("foo")}
+        specs:
+          foo (0.0.0.SNAPSHOT)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle :install
+
+    expect(the_bundle).to include_gems "foo 0.0.0.SNAPSHOT"
+  end
+
+  it "handles downgrades" do
     build_lib "omg", "2.0", :path => lib_path("omg")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "omg", :path => "#{lib_path("omg")}"
     G
 
     build_lib "omg", "1.0", :path => lib_path("omg")
 
-    bundle :install, :env => { "BUNDLE_BUNDLE_ONLY_UPDATE_TO_NEWER_VERSIONS" => "true" }
+    bundle :install
 
     expect(the_bundle).to include_gems "omg 1.0"
   end
@@ -202,6 +277,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "premailer", :path => "#{lib_path("premailer")}"
     G
 
@@ -223,6 +299,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -306,6 +383,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G, :raise_on_error => false
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => "#{lib_path("foo")}"
     G
 
@@ -319,6 +397,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gemspec :path => "#{lib_path("foo")}", :name => "foo"
     G
 
@@ -330,11 +409,13 @@ RSpec.describe "bundle install with explicit source paths" do
       s.executables = "foobar"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :verbose => true
+      source "#{file_uri_for(gem_repo1)}"
       path "#{lib_path("foo-1.0")}" do
         gem 'foo'
       end
     G
+    expect(out).to include("Using foo 1.0 from source at `#{lib_path("foo-1.0")}` and installing its executables")
     expect(the_bundle).to include_gems "foo 1.0"
 
     bundle "exec foobar"
@@ -347,6 +428,7 @@ RSpec.describe "bundle install with explicit source paths" do
     lib_path("foo-1.0").join("bin/performance").mkpath
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', '1.0', :path => "#{lib_path("foo-1.0")}"
     G
     expect(err).to be_empty
@@ -356,6 +438,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem 'foo', :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -368,6 +451,7 @@ RSpec.describe "bundle install with explicit source paths" do
       build_lib "hi2u"
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "omg"
           gem "hi2u"
@@ -386,6 +470,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo")}"
       gem "omg", :path => "#{lib_path("omg")}"
     G
@@ -397,6 +482,7 @@ RSpec.describe "bundle install with explicit source paths" do
     build_lib "foo", :gemspec => false
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -412,12 +498,13 @@ RSpec.describe "bundle install with explicit source paths" do
         specs:
 
       GEM
-        remote: http://rubygems.org
+        remote: http://rubygems.org/
     L
 
     FileUtils.mkdir_p(bundled_app("vendor/bar"))
 
     install_gemfile <<-G
+      source "http://rubygems.org"
       gem "bar", "1.0.0", path: "vendor/bar", require: "bar/nyard"
     G
   end
@@ -462,6 +549,7 @@ RSpec.describe "bundle install with explicit source paths" do
     end
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
@@ -477,6 +565,7 @@ RSpec.describe "bundle install with explicit source paths" do
       build_lib "bar", "1.0", :path => lib_path("foo/bar")
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
     end
@@ -529,7 +618,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
       expect(the_bundle).to include_gems "rack 0.9.1"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -557,7 +646,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
       bundle "install"
 
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -568,6 +657,71 @@ RSpec.describe "bundle install with explicit source paths" do
           remote: #{file_uri_for(gem_repo1)}/
           specs:
             rack (0.9.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+
+      expect(the_bundle).to include_gems "rack 0.9.1"
+    end
+
+    it "keeps using the same version even when another dependency is added" do
+      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+        s.add_dependency "rack", "0.9.1"
+      end
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "rack 0.9.1"
+
+      expect(lockfile).to eq <<~G
+        PATH
+          remote: #{lib_path("foo")}
+          specs:
+            foo (1.0)
+              rack (= 0.9.1)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+
+      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+        s.add_dependency "rack"
+        s.add_dependency "rake", "13.0.1"
+      end
+
+      bundle "install"
+
+      expect(lockfile).to eq <<~G
+        PATH
+          remote: #{lib_path("foo")}
+          specs:
+            foo (1.0)
+              rack
+              rake (= 13.0.1)
+
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+            rack (0.9.1)
+            rake (13.0.1)
 
         PLATFORMS
           #{lockfile_platforms}
@@ -636,8 +790,6 @@ RSpec.describe "bundle install with explicit source paths" do
 
   describe "when there are both a gemspec and remote gems" do
     it "doesn't query rubygems for local gemspec name" do
-      skip "platform issues" if Gem.win_platform?
-
       build_lib "private_lib", "2.2", :path => lib_path("private_lib")
       gemfile = <<-G
         source "http://localgemserver.test"
@@ -658,6 +810,7 @@ RSpec.describe "bundle install with explicit source paths" do
     it "runs pre-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -677,6 +830,7 @@ RSpec.describe "bundle install with explicit source paths" do
     it "runs post-install hooks" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -696,6 +850,7 @@ RSpec.describe "bundle install with explicit source paths" do
     it "complains if the install hook fails" do
       build_git "foo"
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
 
@@ -718,14 +873,15 @@ RSpec.describe "bundle install with explicit source paths" do
       expect(bar_file).not_to be_file
 
       build_lib "foo" do |s|
-        s.write("lib/rubygems_plugin.rb", "FileUtils.touch('#{foo_file}')")
+        s.write("lib/rubygems_plugin.rb", "require 'fileutils'; FileUtils.touch('#{foo_file}')")
       end
 
       build_git "bar" do |s|
-        s.write("lib/rubygems_plugin.rb", "FileUtils.touch('#{bar_file}')")
+        s.write("lib/rubygems_plugin.rb", "require 'fileutils'; FileUtils.touch('#{bar_file}')")
       end
 
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo-1.0")}"
         gem "bar", :path => "#{lib_path("bar-1.0")}"
       G

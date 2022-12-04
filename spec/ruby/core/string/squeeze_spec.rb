@@ -54,16 +54,6 @@ describe "String#squeeze" do
     -> { s.squeeze("^e-b") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "hello".taint.squeeze("e").should.tainted?
-      "hello".taint.squeeze("a-z").should.tainted?
-
-      "hello".squeeze("e".taint).should_not.tainted?
-      "hello".squeeze("l".taint).should_not.tainted?
-    end
-  end
-
   it "tries to convert each set arg to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
@@ -80,8 +70,16 @@ describe "String#squeeze" do
     -> { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(StringSpecs::MyString)
+    end
+  end
+
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
+    end
   end
 end
 

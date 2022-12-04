@@ -47,8 +47,17 @@ VALUE symbol_spec_rb_id2name(VALUE self, VALUE symbol) {
   return rb_str_new(c_str, strlen(c_str));
 }
 
+VALUE symbol_spec_rb_id2name_id_zero(VALUE self) {
+  const char* c_str = rb_id2name((ID) 0);
+  return c_str ? rb_str_new(c_str, strlen(c_str)) : Qnil;
+}
+
 VALUE symbol_spec_rb_id2str(VALUE self, VALUE symbol) {
   return rb_id2str(SYM2ID(symbol));
+}
+
+VALUE symbol_spec_rb_id2str_id_zero(VALUE self) {
+  return rb_id2str((ID) 0);
 }
 
 VALUE symbol_spec_rb_intern_str(VALUE self, VALUE str) {
@@ -90,7 +99,9 @@ void Init_symbol_spec(void) {
   rb_define_method(cls, "rb_intern3", symbol_spec_rb_intern3, 3);
   rb_define_method(cls, "rb_intern3_c_compare", symbol_spec_rb_intern3_c_compare, 4);
   rb_define_method(cls, "rb_id2name", symbol_spec_rb_id2name, 1);
+  rb_define_method(cls, "rb_id2name_id_zero", symbol_spec_rb_id2name_id_zero, 0);
   rb_define_method(cls, "rb_id2str", symbol_spec_rb_id2str, 1);
+  rb_define_method(cls, "rb_id2str_id_zero", symbol_spec_rb_id2str_id_zero, 0);
   rb_define_method(cls, "rb_intern_str", symbol_spec_rb_intern_str, 1);
   rb_define_method(cls, "rb_check_symbol_cstr", symbol_spec_rb_check_symbol_cstr, 1);
   rb_define_method(cls, "rb_is_class_id", symbol_spec_rb_is_class_id, 1);

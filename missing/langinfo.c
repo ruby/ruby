@@ -140,7 +140,7 @@ char *nl_langinfo(nl_item item)
 
 #ifdef TEST
 #include <stdio.h>
-int main()
+int main(void)
 {
   printf("%s\n", nl_langinfo(CODESET));
   return 0;

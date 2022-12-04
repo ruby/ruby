@@ -91,8 +91,8 @@ class RDoc::Generator::POT
     extractor.extract
   end
 
-  require 'rdoc/generator/pot/message_extractor'
-  require 'rdoc/generator/pot/po'
-  require 'rdoc/generator/pot/po_entry'
+  require_relative 'pot/message_extractor'
+  require_relative 'pot/po'
+  require_relative 'pot/po_entry'
 
 end

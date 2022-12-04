@@ -28,7 +28,7 @@ describe "Dir.home" do
       end
     end
 
-    platform_is_not :windows, :solaris, :android do
+    platform_is_not :windows, :solaris, :android, :wasi do
       it "returns the named user's home directory, from the user database" do
         Dir.home(ENV['USER']).should == `echo ~#{ENV['USER']}`.chomp
       end

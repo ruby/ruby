@@ -89,6 +89,26 @@ describe "An instance method" do
     def foo(a); end
     -> { foo 1, 2 }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
   end
+
+  it "raises FrozenError with the correct class name" do
+    -> {
+      Module.new do
+        self.freeze
+        def foo; end
+      end
+    }.should raise_error(FrozenError) { |e|
+      e.message.should.start_with? "can't modify frozen module"
+    }
+
+    -> {
+      Class.new do
+        self.freeze
+        def foo; end
+      end
+    }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen class"
+    }
+  end
 end
 
 describe "An instance method definition with a splat" do
@@ -177,32 +197,15 @@ describe "An instance method with a default argument" do
     foo(2,3,3).should == [2,3,[3]]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "warns and uses a nil value when there is an existing local method with same name" do
-      def bar
-        1
-      end
-      -> {
-        eval "def foo(bar = bar)
-          bar
-        end"
-      }.should complain(/circular argument reference/)
-      foo.should == nil
-      foo(2).should == 2
+  it "raises a SyntaxError when there is an existing method with the same name as the local variable" do
+    def bar
+      1
     end
-  end
-
-  ruby_version_is '2.7' do
-    it "raises a syntaxError an existing method with the same name as the local variable" do
-      def bar
-        1
-      end
-      -> {
-        eval "def foo(bar = bar)
-          bar
-        end"
-      }.should raise_error(SyntaxError)
-    end
+    -> {
+      eval "def foo(bar = bar)
+        bar
+      end"
+    }.should raise_error(SyntaxError)
   end
 
   it "calls a method with the same name as the local when explicitly using ()" do
@@ -265,6 +268,25 @@ describe "A singleton method definition" do
     obj = Object.new
     obj.freeze
     -> { def obj.foo; end }.should raise_error(FrozenError)
+  end
+
+  it "raises FrozenError with the correct class name" do
+    obj = Object.new
+    obj.freeze
+    -> { def obj.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen object"
+    }
+
+    c = obj.singleton_class
+    -> { def c.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen Class"
+    }
+
+    m = Module.new
+    m.freeze
+    -> { def m.foo; end }.should raise_error(FrozenError){ |e|
+      e.message.should.start_with? "can't modify frozen Module"
+    }
   end
 end
 

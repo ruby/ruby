@@ -2,19 +2,19 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require 'mspec/runner/formatters/specdoc'
 require 'mspec/runner/example'
 
-describe SpecdocFormatter do
+RSpec.describe SpecdocFormatter do
   before :each do
     @formatter = SpecdocFormatter.new
   end
 
   it "responds to #register by registering itself with MSpec for appropriate actions" do
-    MSpec.stub(:register)
-    MSpec.should_receive(:register).with(:enter, @formatter)
+    allow(MSpec).to receive(:register)
+    expect(MSpec).to receive(:register).with(:enter, @formatter)
     @formatter.register
   end
 end
 
-describe SpecdocFormatter, "#enter" do
+RSpec.describe SpecdocFormatter, "#enter" do
   before :each do
     $stdout = @out = IOStub.new
     @formatter = SpecdocFormatter.new
@@ -26,11 +26,11 @@ describe SpecdocFormatter, "#enter" do
 
   it "prints the #describe string" do
     @formatter.enter("describe")
-    @out.should == "\ndescribe\n"
+    expect(@out).to eq("\ndescribe\n")
   end
 end
 
-describe SpecdocFormatter, "#before" do
+RSpec.describe SpecdocFormatter, "#before" do
   before :each do
     $stdout = @out = IOStub.new
     @formatter = SpecdocFormatter.new
@@ -43,19 +43,19 @@ describe SpecdocFormatter, "#before" do
 
   it "prints the #it string" do
     @formatter.before @state
-    @out.should == "- it"
+    expect(@out).to eq("- it")
   end
 
   it "resets the #exception? flag" do
     exc = ExceptionState.new @state, nil, SpecExpectationNotMetError.new("disappointing")
     @formatter.exception exc
-    @formatter.exception?.should be_true
+    expect(@formatter.exception?).to be_truthy
     @formatter.before @state
-    @formatter.exception?.should be_false
+    expect(@formatter.exception?).to be_falsey
   end
 end
 
-describe SpecdocFormatter, "#exception" do
+RSpec.describe SpecdocFormatter, "#exception" do
   before :each do
     $stdout = @out = IOStub.new
     @formatter = SpecdocFormatter.new
@@ -70,13 +70,13 @@ describe SpecdocFormatter, "#exception" do
   it "prints 'ERROR' if an exception is not an SpecExpectationNotMetError" do
     exc = ExceptionState.new @state, nil, MSpecExampleError.new("painful")
     @formatter.exception exc
-    @out.should == " (ERROR - 1)"
+    expect(@out).to eq(" (ERROR - 1)")
   end
 
   it "prints 'FAILED' if an exception is an SpecExpectationNotMetError" do
     exc = ExceptionState.new @state, nil, SpecExpectationNotMetError.new("disappointing")
     @formatter.exception exc
-    @out.should == " (FAILED - 1)"
+    expect(@out).to eq(" (FAILED - 1)")
   end
 
   it "prints the #it string if an exception has already been raised" do
@@ -84,11 +84,11 @@ describe SpecdocFormatter, "#exception" do
     @formatter.exception exc
     exc = ExceptionState.new @state, nil, MSpecExampleError.new("painful")
     @formatter.exception exc
-    @out.should == " (FAILED - 1)\n- it (ERROR - 2)"
+    expect(@out).to eq(" (FAILED - 1)\n- it (ERROR - 2)")
   end
 end
 
-describe SpecdocFormatter, "#after" do
+RSpec.describe SpecdocFormatter, "#after" do
   before :each do
     $stdout = @out = IOStub.new
     @formatter = SpecdocFormatter.new
@@ -101,6 +101,6 @@ describe SpecdocFormatter, "#after" do
 
   it "prints a newline character" do
     @formatter.after @state
-    @out.should == "\n"
+    expect(@out).to eq("\n")
   end
 end

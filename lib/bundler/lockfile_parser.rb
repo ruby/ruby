@@ -1,16 +1,5 @@
 # frozen_string_literal: true
 
-#--
-# Some versions of the Bundler 1.1 RC series introduced corrupted
-# lockfiles. There were two major problems:
-#
-# * multiple copies of the same GIT section appeared in the lockfile
-# * when this happened, those sections got multiple copies of gems
-#   in those sections.
-#
-# As a result, Bundler 1.1 contains code that fixes the earlier
-# corruption. We will remove this fix-up code in Bundler 1.2.
-
 module Bundler
   class LockfileParser
     attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version
@@ -57,14 +46,22 @@ module Bundler
       attributes
     end
 
+    def self.bundled_with
+      lockfile = Bundler.default_lockfile
+      return unless lockfile.file?
+
+      lockfile_contents = Bundler.read_file(lockfile)
+      return unless lockfile_contents.include?(BUNDLED)
+
+      lockfile_contents.split(BUNDLED).last.strip
+    end
+
     def initialize(lockfile)
       @platforms    = []
       @sources      = []
       @dependencies = {}
       @state        = nil
       @specs        = {}
-
-      @rubygems_aggregate = Source::Rubygems.new
 
       if lockfile.match(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} contains merge conflicts.\n" \
@@ -89,32 +86,23 @@ module Bundler
           send("parse_#{@state}", line)
         end
       end
-      @sources << @rubygems_aggregate unless Bundler.feature_flag.disable_multisource?
       @specs = @specs.values.sort_by(&:identifier)
-      warn_for_outdated_bundler_version
     rescue ArgumentError => e
       Bundler.ui.debug(e)
       raise LockfileError, "Your lockfile is unreadable. Run `rm #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` " \
         "and then `bundle install` to generate a new lockfile."
     end
 
-    def warn_for_outdated_bundler_version
-      return unless bundler_version
-      prerelease_text = bundler_version.prerelease? ? " --pre" : ""
-      current_version = Gem::Version.create(Bundler::VERSION)
-      return unless current_version < bundler_version
-      Bundler.ui.warn "Warning: the running version of Bundler (#{current_version}) is older " \
-           "than the version that created the lockfile (#{bundler_version}). We suggest you to " \
-           "upgrade to the version that created the lockfile by running `gem install " \
-           "bundler:#{bundler_version}#{prerelease_text}`.\n"
+    def may_include_redundant_platform_specific_gems?
+      bundler_version.nil? || bundler_version < Gem::Version.new("1.16.2")
     end
 
-  private
+    private
 
     TYPES = {
-      GIT    => Bundler::Source::Git,
-      GEM    => Bundler::Source::Rubygems,
-      PATH   => Bundler::Source::Path,
+      GIT => Bundler::Source::Git,
+      GEM => Bundler::Source::Rubygems,
+      PATH => Bundler::Source::Path,
       PLUGIN => Bundler::Plugin,
     }.freeze
 
@@ -127,23 +115,11 @@ module Bundler
           @sources << @current_source
         when GIT
           @current_source = TYPES[@type].from_lock(@opts)
-          # Strip out duplicate GIT sections
-          if @sources.include?(@current_source)
-            @current_source = @sources.find {|s| s == @current_source }
-          else
-            @sources << @current_source
-          end
+          @sources << @current_source
         when GEM
-          if Bundler.feature_flag.disable_multisource?
-            @opts["remotes"] = @opts.delete("remote")
-            @current_source = TYPES[@type].from_lock(@opts)
-            @sources << @current_source
-          else
-            Array(@opts["remote"]).each do |url|
-              @rubygems_aggregate.add_remote(url)
-            end
-            @current_source = @rubygems_aggregate
-          end
+          @opts["remotes"] = Array(@opts.delete("remote")).reverse
+          @current_source = TYPES[@type].from_lock(@opts)
+          @sources << @current_source
         when PLUGIN
           @current_source = Plugin.source_from_lock(@opts)
           @sources << @current_source
@@ -221,10 +197,9 @@ module Bundler
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform)
         @current_spec.source = @current_source
+        @current_source.add_dependency_names(name)
 
-        # Avoid introducing multiple copies of the same spec (caused by
-        # duplicate GIT sections)
-        @specs[@current_spec.identifier] ||= @current_spec
+        @specs[@current_spec.identifier] = @current_spec
       elsif spaces.size == 6
         version = version.split(",").map(&:strip) if version
         dep = Gem::Dependency.new(name, version)

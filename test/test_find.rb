@@ -60,7 +60,7 @@ class TestFind < Test::Unit::TestCase
       begin
         File.symlink("#{d}/b", "#{d}/c")
       rescue NotImplementedError, Errno::EACCES
-        skip "symlink is not supported."
+        omit "symlink is not supported."
       end
       a = []
       Find.find(d) {|f| a << f }
@@ -103,8 +103,8 @@ class TestFind < Test::Unit::TestCase
   end
 
   def test_unreadable_dir
-    skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-    skip "because root can read anything" if Process.uid == 0
+    omit "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "because root can read anything" if Process.uid == 0
 
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
@@ -158,8 +158,8 @@ class TestFind < Test::Unit::TestCase
         Find.find(d, ignore_error: true).each {|f| a << f }
         assert_equal([d, dir, file], a)
 
-        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-        skip "skipped because root can read anything" if Process.uid == 0
+        omit "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        omit "skipped because root can read anything" if Process.uid == 0
 
         a = []
         assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
@@ -185,7 +185,7 @@ class TestFind < Test::Unit::TestCase
       begin
         File.symlink("foo", "#{d}/bar")
       rescue NotImplementedError, Errno::EACCES
-        skip "symlink is not supported."
+        omit "symlink is not supported."
       end
       a = []
       Find.find(d) {|f| a << f }
@@ -199,7 +199,7 @@ class TestFind < Test::Unit::TestCase
       begin
         File.symlink("foo", "#{d}/bar")
       rescue NotImplementedError, Errno::EACCES
-        skip "symlink is not supported."
+        omit "symlink is not supported."
       end
       assert_raise(Errno::ENOENT) {
         Find.find(d) {|f| File.stat(f) }
@@ -245,7 +245,7 @@ class TestFind < Test::Unit::TestCase
           begin
             File.symlink("d1", dir_1)
           rescue NotImplementedError, Errno::EACCES
-            skip "symlink is not supported."
+            omit "symlink is not supported."
           end
         end
       }

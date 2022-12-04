@@ -156,7 +156,7 @@ class RDoc::Markup::Formatter
       method_name = "handle_regexp_#{name}"
 
       if respond_to? method_name then
-        target.text = send method_name, target
+        target.text = public_send method_name, target
         handled = true
       end
     end

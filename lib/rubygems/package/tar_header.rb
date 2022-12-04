@@ -53,42 +53,42 @@ class Gem::Package::TarHeader
   ##
   # Pack format for a tar header
 
-  PACK_FORMAT = 'a100' + # name
-                'a8'   + # mode
-                'a8'   + # uid
-                'a8'   + # gid
-                'a12'  + # size
-                'a12'  + # mtime
-                'a7a'  + # chksum
-                'a'    + # typeflag
-                'a100' + # linkname
-                'a6'   + # magic
-                'a2'   + # version
-                'a32'  + # uname
-                'a32'  + # gname
-                'a8'   + # devmajor
-                'a8'   + # devminor
-                'a155'   # prefix
+  PACK_FORMAT = "a100" + # name
+                "a8"   + # mode
+                "a8"   + # uid
+                "a8"   + # gid
+                "a12"  + # size
+                "a12"  + # mtime
+                "a7a"  + # chksum
+                "a"    + # typeflag
+                "a100" + # linkname
+                "a6"   + # magic
+                "a2"   + # version
+                "a32"  + # uname
+                "a32"  + # gname
+                "a8"   + # devmajor
+                "a8"   + # devminor
+                "a155"   # prefix
 
   ##
   # Unpack format for a tar header
 
-  UNPACK_FORMAT = 'A100' + # name
-                  'A8'   + # mode
-                  'A8'   + # uid
-                  'A8'   + # gid
-                  'A12'  + # size
-                  'A12'  + # mtime
-                  'A8'   + # checksum
-                  'A'    + # typeflag
-                  'A100' + # linkname
-                  'A6'   + # magic
-                  'A2'   + # version
-                  'A32'  + # uname
-                  'A32'  + # gname
-                  'A8'   + # devmajor
-                  'A8'   + # devminor
-                  'A155'   # prefix
+  UNPACK_FORMAT = "A100" + # name
+                  "A8"   + # mode
+                  "A8"   + # uid
+                  "A8"   + # gid
+                  "A12"  + # size
+                  "A12"  + # mtime
+                  "A8"   + # checksum
+                  "A"    + # typeflag
+                  "A100" + # linkname
+                  "A6"   + # magic
+                  "A2"   + # version
+                  "A32"  + # uname
+                  "A32"  + # gname
+                  "A8"   + # devmajor
+                  "A8"   + # devminor
+                  "A155"   # prefix
 
   attr_reader(*FIELDS)
 
@@ -103,22 +103,22 @@ class Gem::Package::TarHeader
 
     fields = header.unpack UNPACK_FORMAT
 
-    new :name     => fields.shift,
-        :mode     => strict_oct(fields.shift),
-        :uid      => oct_or_256based(fields.shift),
-        :gid      => oct_or_256based(fields.shift),
-        :size     => strict_oct(fields.shift),
-        :mtime    => strict_oct(fields.shift),
+    new :name => fields.shift,
+        :mode => strict_oct(fields.shift),
+        :uid => oct_or_256based(fields.shift),
+        :gid => oct_or_256based(fields.shift),
+        :size => strict_oct(fields.shift),
+        :mtime => strict_oct(fields.shift),
         :checksum => strict_oct(fields.shift),
         :typeflag => fields.shift,
         :linkname => fields.shift,
-        :magic    => fields.shift,
-        :version  => strict_oct(fields.shift),
-        :uname    => fields.shift,
-        :gname    => fields.shift,
+        :magic => fields.shift,
+        :version => strict_oct(fields.shift),
+        :uname => fields.shift,
+        :gname => fields.shift,
         :devmajor => strict_oct(fields.shift),
         :devminor => strict_oct(fields.shift),
-        :prefix   => fields.shift,
+        :prefix => fields.shift,
 
         :empty => empty
   end
@@ -134,7 +134,7 @@ class Gem::Package::TarHeader
     # \ff flags a negative 256-based number
     # In case we have a match, parse it as a signed binary value
     # in big-endian order, except that the high-order bit is ignored.
-    return str.unpack('N2').last if str =~ /\A[\x80\xff]/n
+    return str.unpack("N2").last if str =~ /\A[\x80\xff]/n
     strict_oct(str)
   end
 
@@ -173,23 +173,23 @@ class Gem::Package::TarHeader
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-    @checksum == other.checksum and
-    @devmajor == other.devmajor and
-    @devminor == other.devminor and
-    @gid      == other.gid      and
-    @gname    == other.gname    and
-    @linkname == other.linkname and
-    @magic    == other.magic    and
-    @mode     == other.mode     and
-    @mtime    == other.mtime    and
-    @name     == other.name     and
-    @prefix   == other.prefix   and
-    @size     == other.size     and
-    @typeflag == other.typeflag and
-    @uid      == other.uid      and
-    @uname    == other.uname    and
-    @version  == other.version
+    self.class === other &&
+      @checksum == other.checksum &&
+      @devmajor == other.devmajor &&
+      @devminor == other.devminor &&
+      @gid      == other.gid      &&
+      @gname    == other.gname    &&
+      @linkname == other.linkname &&
+      @magic    == other.magic    &&
+      @mode     == other.mode     &&
+      @mtime    == other.mtime    &&
+      @name     == other.name     &&
+      @prefix   == other.prefix   &&
+      @size     == other.size     &&
+      @typeflag == other.typeflag &&
+      @uid      == other.uid      &&
+      @uname    == other.uname    &&
+      @version  == other.version
   end
 
   def to_s # :nodoc:
@@ -229,7 +229,7 @@ class Gem::Package::TarHeader
       gname,
       oct(devmajor, 7),
       oct(devminor, 7),
-      prefix
+      prefix,
     ]
 
     header = header.pack PACK_FORMAT

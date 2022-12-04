@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../rubygems_gem_installer"
+
 module Bundler
   class Source
     class Path
@@ -16,13 +18,7 @@ module Bundler
           @build_args         = options[:build_args] || Bundler.rubygems.build_args
           @gem_bin_dir        = "#{Bundler.rubygems.gem_dir}/bin"
           @disable_extensions = options[:disable_extensions]
-
-          if Bundler.requires_sudo?
-            @tmp_dir = Bundler.tmp(spec.full_name).to_s
-            @bin_dir = "#{@tmp_dir}/bin"
-          else
-            @bin_dir = @gem_bin_dir
-          end
+          @bin_dir = @gem_bin_dir
         end
 
         def post_install
@@ -33,27 +29,12 @@ module Bundler
             run_hooks(:post_build)
           end
 
-          generate_bin unless spec.executables.nil? || spec.executables.empty?
+          generate_bin unless spec.executables.empty?
 
           run_hooks(:post_install)
-        ensure
-          Bundler.rm_rf(@tmp_dir) if Bundler.requires_sudo?
         end
 
-      private
-
-        def generate_bin
-          super
-
-          if Bundler.requires_sudo?
-            SharedHelpers.filesystem_access(@gem_bin_dir) do |p|
-              Bundler.mkdir_p(p)
-            end
-            spec.executables.each do |exe|
-              Bundler.sudo "cp -R #{@bin_dir}/#{exe} #{@gem_bin_dir}"
-            end
-          end
-        end
+        private
 
         def run_hooks(type)
           hooks_meth = "#{type}_hooks"

@@ -26,6 +26,9 @@ class RDoc::AnyMethod < RDoc::MethodAttr
 
   attr_accessor :c_function
 
+  # The section title of the method (if defined in a C file via +:category:+)
+  attr_accessor :section_title
+
   # Parameters for this method
 
   attr_accessor :params
@@ -347,15 +350,15 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       ignore << is_alias_for.name
       ignore.concat is_alias_for.aliases.map(&:name)
     end
-    ignore.map! { |n| n =~ /\A\[/ ? n[0, 1] : n}
+    ignore.map! { |n| n =~ /\A\[/ ? /\[.*\]/ : n}
     ignore.delete(method_name)
     ignore = Regexp.union(ignore)
 
     matching = entries.reject do |entry|
-      entry =~ /^\w*\.?#{ignore}/ or
+      entry =~ /^\w*\.?#{ignore}[$\(\s]/ or
         entry =~ /\s#{ignore}\s/
     end
 
-    matching.join "\n"
+    matching.empty? ? nil : matching.join("\n")
   end
 end

@@ -47,7 +47,7 @@ def prelude(f, out)
     when /\A%%/
       out << "%%\n"
       return
-    when /\A%token/
+    when /\A%token/, /\A} <node>/
       out << line.sub(/<\w+>/, '<val>')
     when /\A%type/
       out << line.sub(/<\w+>/, '<val>')

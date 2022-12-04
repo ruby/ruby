@@ -106,6 +106,7 @@ class RDoc::Options
     generator_options
     generators
     op_dir
+    page_dir
     option_parser
     pipe
     rdoc_include
@@ -338,8 +339,13 @@ class RDoc::Options
 
   attr_reader :visibility
 
-  def initialize # :nodoc:
+  ##
+  # Indicates if files of test suites should be skipped
+  attr_accessor :skip_tests
+
+  def initialize loaded_options = nil # :nodoc:
     init_ivars
+    override loaded_options if loaded_options
   end
 
   def init_ivars # :nodoc:
@@ -384,6 +390,7 @@ class RDoc::Options
     @write_options = false
     @encoding = Encoding::UTF_8
     @charset = @encoding.name
+    @skip_tests = true
   end
 
   def init_with map # :nodoc:
@@ -415,6 +422,38 @@ class RDoc::Options
 
   def yaml_initialize tag, map # :nodoc:
     init_with map
+  end
+
+  def override map # :nodoc:
+    if map.has_key?('encoding')
+      encoding = map['encoding']
+      @encoding = encoding ? Encoding.find(encoding) : encoding
+    end
+
+    @charset        = map['charset']        if map.has_key?('charset')
+    @exclude        = map['exclude']        if map.has_key?('exclude')
+    @generator_name = map['generator_name'] if map.has_key?('generator_name')
+    @hyperlink_all  = map['hyperlink_all']  if map.has_key?('hyperlink_all')
+    @line_numbers   = map['line_numbers']   if map.has_key?('line_numbers')
+    @locale_name    = map['locale_name']    if map.has_key?('locale_name')
+    @locale_dir     = map['locale_dir']     if map.has_key?('locale_dir')
+    @main_page      = map['main_page']      if map.has_key?('main_page')
+    @markup         = map['markup']         if map.has_key?('markup')
+    @op_dir         = map['op_dir']         if map.has_key?('op_dir')
+    @page_dir       = map['page_dir']       if map.has_key?('page_dir')
+    @show_hash      = map['show_hash']      if map.has_key?('show_hash')
+    @tab_width      = map['tab_width']      if map.has_key?('tab_width')
+    @template_dir   = map['template_dir']   if map.has_key?('template_dir')
+    @title          = map['title']          if map.has_key?('title')
+    @visibility     = map['visibility']     if map.has_key?('visibility')
+    @webcvs         = map['webcvs']         if map.has_key?('webcvs')
+
+    if map.has_key?('rdoc_include')
+      @rdoc_include = sanitize_path map['rdoc_include']
+    end
+    if map.has_key?('static_path')
+      @static_path  = sanitize_path map['static_path']
+    end
   end
 
   def == other # :nodoc:
@@ -481,19 +520,22 @@ class RDoc::Options
   ##
   # For dumping YAML
 
-  def encode_with coder # :nodoc:
+  def to_yaml(*options) # :nodoc:
     encoding = @encoding ? @encoding.name : nil
 
-    coder.add 'encoding', encoding
-    coder.add 'static_path',  sanitize_path(@static_path)
-    coder.add 'rdoc_include', sanitize_path(@rdoc_include)
+    yaml = {}
+    yaml['encoding'] = encoding
+    yaml['static_path'] = sanitize_path(@static_path)
+    yaml['rdoc_include'] = sanitize_path(@rdoc_include)
+    yaml['page_dir'] = (sanitize_path([@page_dir]).first if @page_dir)
 
     ivars = instance_variables.map { |ivar| ivar.to_s[1..-1] }
     ivars -= SPECIAL
 
     ivars.sort.each do |ivar|
-      coder.add ivar, instance_variable_get("@#{ivar}")
+      yaml[ivar] = instance_variable_get("@#{ivar}")
     end
+    yaml.to_yaml
   end
 
   ##
@@ -516,6 +558,11 @@ class RDoc::Options
   # #template.
 
   def finish
+    if @write_options then
+      write_options
+      exit
+    end
+
     @op_dir ||= 'doc'
 
     @rdoc_include << "." if @rdoc_include.empty?
@@ -553,14 +600,14 @@ class RDoc::Options
   def finish_page_dir
     return unless @page_dir
 
-    @files << @page_dir.to_s
+    @files << @page_dir
 
-    page_dir = nil
+    page_dir = Pathname(@page_dir)
     begin
-      page_dir = @page_dir.expand_path.relative_path_from @root
+      page_dir = page_dir.expand_path.relative_path_from @root
     rescue ArgumentError
       # On Windows, sometimes crosses different drive letters.
-      page_dir = @page_dir.expand_path
+      page_dir = page_dir.expand_path
     end
 
     @page_dir = page_dir
@@ -736,6 +783,13 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.separator nil
 
+      opt.on("--no-skipping-tests", nil,
+             "Don't skip generating documentation for test and spec files") do |value|
+        @skip_tests = false
+      end
+
+      opt.separator nil
+
       opt.on("--extension=NEW=OLD", "-E",
              "Treat files ending with .new as if they",
              "ended with .old. Using '-E cgi=rb' will",
@@ -755,7 +809,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--[no-]force-update", "-U",
              "Forces rdoc to scan all sources even if",
-             "newer than the flag file.") do |value|
+             "no files are newer than the flag file.") do |value|
         @force_update = value
       end
 
@@ -815,7 +869,7 @@ Usage: #{opt.program_name} [options] [names...]
              "such files at your project root.",
              "NOTE: Do not use the same file name in",
              "the page dir and the root of your project") do |page_dir|
-        @page_dir = Pathname(page_dir)
+        @page_dir = page_dir
       end
 
       opt.separator nil
@@ -939,7 +993,7 @@ Usage: #{opt.program_name} [options] [names...]
       opt.on("--template-stylesheets=FILES", PathArray,
              "Set (or add to) the list of files to",
              "include with the html template.") do |value|
-        @template_stylesheets << value
+        @template_stylesheets.concat value
       end
 
       opt.separator nil
@@ -1127,13 +1181,6 @@ Usage: #{opt.program_name} [options] [names...]
 
     @files = argv.dup
 
-    finish
-
-    if @write_options then
-      write_options
-      exit
-    end
-
     self
   end
 
@@ -1246,8 +1293,37 @@ Usage: #{opt.program_name} [options] [names...]
     File.open '.rdoc_options', 'w' do |io|
       io.set_encoding Encoding::UTF_8
 
-      YAML.dump self, io
+      io.print to_yaml
     end
+  end
+
+  ##
+  # Loads options from .rdoc_options if the file exists, otherwise creates a
+  # new RDoc::Options instance.
+
+  def self.load_options
+    options_file = File.expand_path '.rdoc_options'
+    return RDoc::Options.new unless File.exist? options_file
+
+    RDoc.load_yaml
+
+    begin
+      options = YAML.safe_load File.read('.rdoc_options'), permitted_classes: [RDoc::Options, Symbol]
+    rescue Psych::SyntaxError
+      raise RDoc::Error, "#{options_file} is not a valid rdoc options file"
+    end
+
+    return RDoc::Options.new unless options # Allow empty file.
+
+    raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
+      RDoc::Options === options or Hash === options
+
+    if Hash === options
+      # Override the default values with the contents of YAML file.
+      options = RDoc::Options.new options
+    end
+
+    options
   end
 
 end

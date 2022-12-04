@@ -33,11 +33,11 @@ udp_init(int argc, VALUE *argv, VALUE sock)
     int fd;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
-	family = rsock_family_arg(arg);
+        family = rsock_family_arg(arg);
     }
     fd = rsock_socket(family, SOCK_DGRAM, 0);
     if (fd < 0) {
-	rb_sys_fail("socket(2) - udp");
+        rb_sys_fail("socket(2) - udp");
     }
 
     return rsock_init_sock(sock, fd);
@@ -60,9 +60,9 @@ udp_connect_internal(VALUE v)
     rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
-	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
-	    return Qtrue;
-	}
+        if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0, NULL) >= 0) {
+            return Qtrue;
+        }
     }
     return Qfalse;
 }
@@ -92,7 +92,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     GetOpenFile(sock, arg.fptr);
     arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
-		    rsock_freeaddrinfo, (VALUE)arg.res);
+                    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
     return INT2FIX(0);
 }
@@ -108,10 +108,10 @@ udp_bind_internal(VALUE v)
     rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
-	if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
-	    continue;
-	}
-	return Qtrue;
+        if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
+            continue;
+        }
+        return Qtrue;
     }
     return Qfalse;
 }
@@ -137,7 +137,7 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     GetOpenFile(sock, arg.fptr);
     arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_bind_internal, (VALUE)&arg,
-		    rsock_freeaddrinfo, (VALUE)arg.res);
+                    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("bind(2)", host, port);
     return INT2FIX(0);
 }
@@ -153,23 +153,26 @@ udp_send_internal(VALUE v)
 {
     struct udp_send_arg *arg = (void *)v;
     rb_io_t *fptr;
-    int n;
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
     for (res = arg->res->ai; res; res = res->ai_next) {
       retry:
-	arg->sarg.fd = fptr->fd;
-	arg->sarg.to = res->ai_addr;
-	arg->sarg.tolen = res->ai_addrlen;
-	rsock_maybe_fd_writable(arg->sarg.fd);
-	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
-	if (n >= 0) {
-	    return INT2FIX(n);
-	}
-	if (rb_io_wait_writable(fptr->fd)) {
-	    goto retry;
-	}
+        arg->sarg.fd = fptr->fd;
+        arg->sarg.to = res->ai_addr;
+        arg->sarg.tolen = res->ai_addrlen;
+
+#ifdef RSOCK_WAIT_BEFORE_BLOCKING
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
+#endif
+
+        ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+
+        if (n >= 0) return RB_SSIZE2NUM(n);
+
+        if (rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
+            goto retry;
+        }
     }
     return Qfalse;
 }
@@ -204,7 +207,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     VALUE ret;
 
     if (argc == 2 || argc == 3) {
-	return rsock_bsock_send(argc, argv, sock);
+        return rsock_bsock_send(argc, argv, sock);
     }
     rb_scan_args(argc, argv, "4", &arg.sarg.mesg, &flags, &host, &port);
 
@@ -214,7 +217,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     arg.sarg.flags = NUM2INT(flags);
     arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_send_internal, (VALUE)&arg,
-		    rsock_freeaddrinfo, (VALUE)arg.res);
+                    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("sendto(2)", host, port);
     return ret;
 }
@@ -243,5 +246,5 @@ rsock_init_udpsocket(void)
 
     /* for ext/socket/lib/socket.rb use only: */
     rb_define_private_method(rb_cUDPSocket,
-			     "__recvfrom_nonblock", udp_recvfrom_nonblock, 4);
+                             "__recvfrom_nonblock", udp_recvfrom_nonblock, 4);
 }

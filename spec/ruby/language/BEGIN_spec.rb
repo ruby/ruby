@@ -18,6 +18,11 @@ describe "The BEGIN keyword" do
     -> { eval "1.times { BEGIN { 1 } }" }.should raise_error(SyntaxError)
   end
 
+  it "uses top-level for self" do
+    eval("BEGIN { ScratchPad << self.to_s }", TOPLEVEL_BINDING)
+    ScratchPad.recorded.should == ['main']
+  end
+
   it "runs first in a given code unit" do
     eval "ScratchPad << 'foo'; BEGIN { ScratchPad << 'bar' }"
 

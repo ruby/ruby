@@ -3,7 +3,7 @@
 module Bundler
   # A stub yaml serializer that can handle only hashes and strings (as of now).
   module YAMLSerializer
-  module_function
+    module_function
 
     def dump(hash)
       yaml = String.new("---")

@@ -244,6 +244,11 @@ def find_git_log(pattern)
   `git #{RUBY_REPO_PATH ? "-C #{RUBY_REPO_PATH.shellescape}" : ""} log --grep="#{pattern}"`
 end
 
+def has_commit(commit, branch)
+  base = RUBY_REPO_PATH ? ["-C", RUBY_REPO_PATH.shellescape] : nil
+  system("git", *base, "merge-base", "--is-ancestor", commit, branch)
+end
+
 def show_last_journal(http, uri)
   res = http.get("#{uri.path}?include=journals")
   res.value
@@ -269,14 +274,8 @@ def backport_command_string
     @changesets = @changesets.select do |c|
       next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
 
-      # check if the Git revision is included in trunk
-      begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-master/repository/git/revisions/#{c}")
-        uri.read($openuri_options)
-        true
-      rescue
-        false
-      end
+      # check if the Git revision is included in master
+      has_commit(c, "master")
     end
     @changesets.define_singleton_method(:validated){true}
   end
@@ -423,9 +422,10 @@ eom
   },
 
   "done" => proc{|args|
-    raise CommandSyntaxError unless /\A(\d+)?(?:\s*-- +(.*))?\z/ =~ args
-    notes = $2
+    raise CommandSyntaxError unless /\A(\d+)?(?: by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
+    notes = $3
     notes.strip! if notes
+    rev = $2
     if $1
       i = $1.to_i
       i = @issues[i]["id"] if @issues && i < @issues.size
@@ -436,7 +436,8 @@ eom
       next
     end
 
-    if system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
+    if rev
+    elsif system("svn info #{RUBY_REPO_PATH&.shellescape}", %i(out err) => IO::NULL) # SVN
       if (log = find_svn_log("##@issue]")) && (/revision="(?<rev>\d+)/ =~ log)
         rev = "r#{rev}"
       end
@@ -458,6 +459,10 @@ eom
         str << notes
       end
       notes = str
+    elsif rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
+      # Backport commit's log doesn't have the issue number.
+      # Instead of that manually it's provided.
+      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     else
       puts "no commit is found whose log include ##@issue"
       next

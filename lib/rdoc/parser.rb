@@ -78,7 +78,7 @@ class RDoc::Parser
 
     return true if s[0, 2] == Marshal.dump('')[0, 2] or s.index("\x00")
 
-    mode = 'r:utf-8' # default source encoding has been chagened to utf-8
+    mode = 'r:utf-8' # default source encoding has been changed to utf-8
     s.sub!(/\A#!.*\n/, '')     # assume shebang line isn't longer than 1024.
     encoding = s[/^\s*\#\s*(?:-\*-\s*)?(?:en)?coding:\s*([^\s;]+?)(?:-\*-|[\s;])/, 1]
     mode = "rb:#{encoding}" if encoding
@@ -263,15 +263,32 @@ class RDoc::Parser
     @preprocess.options = @options
   end
 
-  autoload :RubyTools, 'rdoc/parser/ruby_tools'
-  autoload :Text,      'rdoc/parser/text'
+  autoload :RubyTools, "#{__dir__}/parser/ruby_tools"
+  autoload :Text,      "#{__dir__}/parser/text"
 
+  ##
+  # Normalizes tabs in +body+
+
+  def handle_tab_width(body)
+    if /\t/ =~ body
+      tab_width = @options.tab_width
+      body.split(/\n/).map do |line|
+        1 while line.gsub!(/\t+/) do
+          b, e = $~.offset(0)
+          ' ' * (tab_width * (e-b) - b % tab_width)
+        end
+        line
+      end.join "\n"
+    else
+      body
+    end
+  end
 end
 
 # simple must come first in order to show up last in the parsers list
-require 'rdoc/parser/simple'
-require 'rdoc/parser/c'
-require 'rdoc/parser/changelog'
-require 'rdoc/parser/markdown'
-require 'rdoc/parser/rd'
-require 'rdoc/parser/ruby'
+require_relative 'parser/simple'
+require_relative 'parser/c'
+require_relative 'parser/changelog'
+require_relative 'parser/markdown'
+require_relative 'parser/rd'
+require_relative 'parser/ruby'

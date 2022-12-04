@@ -1,0 +1,27 @@
+prelude: |
+  class SimpleClass; end
+  class MediumClass
+    10.times { include Module.new }
+  end
+  class LargeClass
+    100.times { include Module.new }
+  end
+  class HugeClass
+    300.times { include Module.new }
+  end
+  SimpleObj = SimpleClass.new
+  MediumObj = MediumClass.new
+  LargeObj = LargeClass.new
+  HugeObj = HugeClass.new
+benchmark:
+  simple_class_eqq_simple_obj: |
+    SimpleClass === SimpleObj
+  medium_class_eqq_simple_obj: |
+    MediumClass === SimpleObj
+  simple_class_eqq_medium_obj: |
+    SimpleClass === MediumObj
+  simple_class_eqq_large_obj: |
+    SimpleClass === LargeObj
+  simple_class_eqq_huge_obj: |
+    SimpleClass === HugeObj
+loop_count: 20000000

@@ -75,7 +75,7 @@ class PStoreTest < Test::Unit::TestCase
   end
 
   def test_thread_safe
-    q1 = Queue.new
+    q1 = Thread::Queue.new
     assert_raise(PStore::Error) do
       th = Thread.new do
         @pstore.transaction do
@@ -92,7 +92,7 @@ class PStoreTest < Test::Unit::TestCase
         th.join
       end
     end
-    q2 = Queue.new
+    q2 = Thread::Queue.new
     begin
       pstore = PStore.new(second_file, true)
       cur = Thread.current
@@ -142,6 +142,38 @@ class PStoreTest < Test::Unit::TestCase
       puts @pstore.transaction {@pstore["Bug5311"]}
     SRC
     assert_equal(bug5311, @pstore.transaction {@pstore["Bug5311"]}, bug5311)
+  end
+
+  def test_key_p
+    [:key?, :root?].each do |method|
+      clear_store
+      @pstore.transaction do
+        @pstore[:foo] = 0
+        assert_equal(true, @pstore.send(method, :foo))
+        assert_equal(false, @pstore.send(method, :bar))
+      end
+    end
+  end
+
+  def test_keys
+    [:keys, :roots].each do |method|
+      clear_store
+      @pstore.transaction do
+        assert_equal([], @pstore.send(method))
+      end
+      @pstore.transaction do
+        @pstore[:foo] = 0
+        assert_equal([:foo], @pstore.send(method))
+      end
+    end
+  end
+
+  def clear_store
+    @pstore.transaction do
+      @pstore.keys.each do |key|
+        @pstore.delete(key)
+      end
+    end
   end
 
   def second_file

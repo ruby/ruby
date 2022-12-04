@@ -12,56 +12,13 @@
 
 #include "ruby/config.h"
 
-/* added in 1.0.2 */
-#if !defined(OPENSSL_NO_EC)
-#if !defined(HAVE_EC_CURVE_NIST2NID)
-int ossl_EC_curve_nist2nid(const char *);
-#  define EC_curve_nist2nid ossl_EC_curve_nist2nid
-#endif
-#endif
-
-#if !defined(HAVE_X509_REVOKED_DUP)
-# define X509_REVOKED_dup(rev) (X509_REVOKED *)ASN1_dup((i2d_of_void *)i2d_X509_REVOKED, \
-	(d2i_of_void *)d2i_X509_REVOKED, (char *)(rev))
-#endif
-
-#if !defined(HAVE_X509_STORE_CTX_GET0_STORE)
-#  define X509_STORE_CTX_get0_store(x) ((x)->ctx)
-#endif
-
-#if !defined(HAVE_SSL_IS_SERVER)
-#  define SSL_is_server(s) ((s)->server)
-#endif
-
 /* added in 1.1.0 */
-#if !defined(HAVE_BN_GENCB_NEW)
-#  define BN_GENCB_new() ((BN_GENCB *)OPENSSL_malloc(sizeof(BN_GENCB)))
-#endif
-
-#if !defined(HAVE_BN_GENCB_FREE)
-#  define BN_GENCB_free(cb) OPENSSL_free(cb)
-#endif
-
-#if !defined(HAVE_BN_GENCB_GET_ARG)
-#  define BN_GENCB_get_arg(cb) (cb)->arg
-#endif
-
 #if !defined(HAVE_EVP_MD_CTX_NEW)
 #  define EVP_MD_CTX_new EVP_MD_CTX_create
 #endif
 
 #if !defined(HAVE_EVP_MD_CTX_FREE)
 #  define EVP_MD_CTX_free EVP_MD_CTX_destroy
-#endif
-
-#if !defined(HAVE_HMAC_CTX_NEW)
-HMAC_CTX *ossl_HMAC_CTX_new(void);
-#  define HMAC_CTX_new ossl_HMAC_CTX_new
-#endif
-
-#if !defined(HAVE_HMAC_CTX_FREE)
-void ossl_HMAC_CTX_free(HMAC_CTX *);
-#  define HMAC_CTX_free ossl_HMAC_CTX_free
 #endif
 
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)
@@ -147,8 +104,7 @@ void ossl_X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, co
 	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_EVP_PKEY);
 #endif
 
-#if !defined(HAVE_OPAQUE_OPENSSL) && \
-    (!defined(LIBRESSL_VERSION_NUMBER) || LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+#if !defined(HAVE_OPAQUE_OPENSSL)
 #define IMPL_PKEY_GETTER(_type, _name) \
 static inline _type *EVP_PKEY_get0_##_type(EVP_PKEY *pkey) { \
 	return pkey->pkey._name; }
@@ -252,6 +208,31 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
         (ctx)->time_cb = (callback); \
         (ctx)->time_cb_data = (dta); \
     } while (0)
+#endif
+
+/* added in 3.0.0 */
+#if !defined(HAVE_TS_VERIFY_CTX_SET_CERTS)
+#  define TS_VERIFY_CTX_set_certs(ctx, crts) TS_VERIFY_CTS_set_certs(ctx, crts)
+#endif
+
+#ifndef HAVE_EVP_MD_CTX_GET0_MD
+#  define EVP_MD_CTX_get0_md(ctx) EVP_MD_CTX_md(ctx)
+#endif
+
+/*
+ * OpenSSL 1.1.0 added EVP_MD_CTX_pkey_ctx(), and then it was renamed to
+ * EVP_MD_CTX_get_pkey_ctx(x) in OpenSSL 3.0.
+ */
+#ifndef HAVE_EVP_MD_CTX_GET_PKEY_CTX
+# ifdef HAVE_EVP_MD_CTX_PKEY_CTX
+#  define EVP_MD_CTX_get_pkey_ctx(x) EVP_MD_CTX_pkey_ctx(x)
+# else
+#  define EVP_MD_CTX_get_pkey_ctx(x) (x)->pctx
+# endif
+#endif
+
+#ifndef HAVE_EVP_PKEY_EQ
+#  define EVP_PKEY_eq(a, b) EVP_PKEY_cmp(a, b)
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

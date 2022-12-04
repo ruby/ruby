@@ -44,11 +44,27 @@ describe 'Kernel#caller' do
     ]
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      locations1 = KernelSpecs::CallerTest.locations(0)
-      locations2 = KernelSpecs::CallerTest.locations(eval("(2..)"))
-      locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
+  it "works with endless ranges" do
+    locations1 = KernelSpecs::CallerTest.locations(0)
+    locations2 = KernelSpecs::CallerTest.locations(eval("(2..)"))
+    locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
+  end
+
+  it "works with beginless ranges" do
+    locations1 = KernelSpecs::CallerTest.locations(0)
+    locations2 = KernelSpecs::CallerTest.locations((..5))
+    locations2.map(&:to_s)[eval("(2..)")].should == locations1[(..5)].map(&:to_s)[eval("(2..)")]
+  end
+
+  guard -> { Kernel.instance_method(:tap).source_location } do
+    it "includes core library methods defined in Ruby" do
+      file, line = Kernel.instance_method(:tap).source_location
+      file.should.start_with?('<internal:')
+
+      loc = nil
+      tap { loc = caller(1, 1)[0] }
+      loc.should.end_with? "in `tap'"
+      loc.should.start_with? "<internal:"
     end
   end
 end

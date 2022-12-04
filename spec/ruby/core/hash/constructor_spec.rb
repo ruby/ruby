@@ -42,26 +42,13 @@ describe "Hash.[]" do
     Hash[ary].should == { a: :b }
   end
 
-  ruby_version_is "" ... "2.7" do
-    it "ignores elements that are not arrays" do
-      -> {
-        Hash[[:a]].should == {}
-      }.should complain(/ignoring wrong elements/)
-      -> {
-        Hash[[:nil]].should == {}
-      }.should complain(/ignoring wrong elements/)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "raises for elements that are not arrays" do
-      -> {
-        Hash[[:a]].should == {}
-      }.should raise_error(ArgumentError)
-      -> {
-        Hash[[:nil]].should == {}
-      }.should raise_error(ArgumentError)
-    end
+  it "raises for elements that are not arrays" do
+    -> {
+      Hash[[:a]].should == {}
+    }.should raise_error(ArgumentError)
+    -> {
+      Hash[[:nil]].should == {}
+    }.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError for arrays of more than 2 elements" do

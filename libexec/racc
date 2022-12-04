@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# $Id$
+#
 #
 # Copyright (c) 1999-2006 Minero Aoki
 #
@@ -51,7 +51,7 @@ def main
     logfilename = path
   }
   parser.on('-e', '--executable [RUBYPATH]', 'Makes executable parser.') {|path|
-    executable = true
+    make_executable = true
     rubypath = (path == 'ruby' ? nil : path)
   }
   parser.on('-E', '--embedded', "Embeds Racc runtime in output.") {
@@ -70,10 +70,6 @@ def main
   parser.on('--superclass=CLASSNAME',
             'Uses CLASSNAME instead of Racc::Parser.') {|name|
     superclass = name
-  }
-  parser.on('--runtime=FEATURE',
-            "Uses FEATURE instead of 'racc/parser'") {|feat|
-    runtime = feature
   }
   parser.on('-C', '--check-only', 'Checks syntax and quit immediately.') {|fl|
     check_only = fl
@@ -95,17 +91,14 @@ def main
     exit 0
   }
   parser.on('--runtime-version', 'Prints runtime version and quit.') {
-    printf "racc runtime version %s (rev. %s); %s\n",
+    printf "racc runtime version %s; %s\n",
            Racc::Parser::Racc_Runtime_Version,
-           Racc::Parser::Racc_Runtime_Revision,
            if Racc::Parser.racc_runtime_type == 'ruby'
-             sprintf('ruby core version %s (rev. %s)',
-                     Racc::Parser::Racc_Runtime_Core_Version_R,
-                     Racc::Parser::Racc_Runtime_Core_Revision_R)
+             sprintf('ruby core version %s',
+                     Racc::Parser::Racc_Runtime_Core_Version_R)
            else
-             sprintf('c core version %s (rev. %s)',
-                     Racc::Parser::Racc_Runtime_Core_Version_C,
-                     Racc::Parser::Racc_Runtime_Core_Revision_C)
+             sprintf('c core version %s',
+                     Racc::Parser::Racc_Runtime_Core_Version_C)
            end
     exit 0
   }
@@ -187,8 +180,12 @@ def main
       log_useless states.grammar
       log_conflict states
     else
-      report_useless states.grammar
-      report_conflict states
+      has_useless = report_useless states.grammar
+      has_conflicts = report_conflict states
+      if has_useless || has_conflicts
+        preamble = make_logfile ? 'C' : 'Turn on logging with "-v" and c'
+        $stderr.puts %Q{#{preamble}heck ".output" file for details}
+      end
     end
 
     profiler.report
@@ -204,13 +201,29 @@ def make_filename(path, suffix)
   path.sub(/(?:\..*?)?\z/, suffix)
 end
 
+LIST_LIMIT = 10
+def report_list(enum, label)
+  c = enum.count
+  if c > 0
+    $stderr.puts "#{c} #{label}:"
+    enum.first(LIST_LIMIT).each do |item|
+      $stderr.puts "  #{yield item}"
+    end
+    $stderr.puts "  ..." if c > LIST_LIMIT
+  end
+end
+
+# @return [Boolean] if anything was reported
 def report_conflict(states)
   if states.should_report_srconflict?
+    reported = true
     $stderr.puts "#{states.n_srconflicts} shift/reduce conflicts"
   end
   if states.rrconflict_exist?
+    reported = true
     $stderr.puts "#{states.n_rrconflicts} reduce/reduce conflicts"
   end
+  reported
 end
 
 def log_conflict(states)
@@ -225,16 +238,17 @@ def log_conflict(states)
   }
 end
 
+# @return [Boolean] if anything was reported
 def report_useless(grammar)
-  if grammar.useless_nonterminal_exist?
-    $stderr.puts "#{grammar.n_useless_nonterminals} useless nonterminals"
-  end
-  if grammar.useless_rule_exist?
-    $stderr.puts "#{grammar.n_useless_rules} useless rules"
-  end
+  reported = report_list(grammar.each_useless_nonterminal, 'useless nonterminals', &:to_s)
+
+  reported ||= report_list(grammar.each_useless_rule, 'useless rules') { |r| "##{r.ident} (#{r.target})" }
+
   if grammar.start.useless?
     $stderr.puts 'fatal: start symbol does not derive any sentence'
+    reported = true
   end
+  reported
 end
 
 def log_useless(grammar)

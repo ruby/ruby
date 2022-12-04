@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'optparse'
-require_relative 'requirement'
-require_relative 'user_interaction'
+require_relative "optparse"
+require_relative "requirement"
+require_relative "user_interaction"
 
 ##
 # Base class for all Gem commands.  When creating a new gem command, define
@@ -19,7 +19,7 @@ require_relative 'user_interaction'
 class Gem::Command
   include Gem::UserInteraction
 
-  OptionParser.accept Symbol do |value|
+  Gem::OptionParser.accept Symbol do |value|
     value.to_sym
   end
 
@@ -76,7 +76,7 @@ class Gem::Command
     when Array
       @extra_args = value
     when String
-      @extra_args = value.split(' ')
+      @extra_args = value.split(" ")
     end
   end
 
@@ -159,11 +159,11 @@ class Gem::Command
     gem = "'#{gem_name}' (#{version})"
     msg = String.new "Could not find a valid gem #{gem}"
 
-    if errors and !errors.empty?
+    if errors && !errors.empty?
       msg << ", here is why:\n"
       errors.each {|x| msg << "          #{x.wordy}\n" }
     else
-      if required_by and gem != required_by
+      if required_by && gem != required_by
         msg << " (required by #{required_by}) in any repository"
       else
         msg << " in any repository"
@@ -186,7 +186,7 @@ class Gem::Command
   def get_all_gem_names
     args = options[:args]
 
-    if args.nil? or args.empty?
+    if args.nil? || args.empty?
       raise Gem::CommandLineError,
             "Please specify at least one gem name (e.g. gem build GEMNAME)"
     end
@@ -216,7 +216,7 @@ class Gem::Command
   def get_one_gem_name
     args = options[:args]
 
-    if args.nil? or args.empty?
+    if args.nil? || args.empty?
       raise Gem::CommandLineError,
             "Please specify a gem name on the command line (e.g. gem build GEMNAME)"
     end
@@ -344,7 +344,7 @@ class Gem::Command
   ##
   # Add a command-line option and handler to the command.
   #
-  # See OptionParser#make_switch for an explanation of +opts+.
+  # See Gem::OptionParser#make_switch for an explanation of +opts+.
   #
   # +handler+ will be called with two values, the value of the argument and
   # the options hash.
@@ -354,6 +354,8 @@ class Gem::Command
 
   def add_option(*opts, &handler) # :yields: value, options
     group_name = Symbol === opts.first ? opts.shift : :options
+
+    raise "Do not pass an empty string in opts" if opts.include?("")
 
     @option_groups[group_name] << [opts, handler]
   end
@@ -396,10 +398,10 @@ class Gem::Command
         version_to_expire = deprecation["rg_version_to_expire"]
 
         deprecate_option_msg = if version_to_expire
-                                 "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
-                               else
-                                 "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
-                               end
+          "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
+        else
+          "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
+        end
 
         extra_msg = deprecation["extra_msg"]
 
@@ -538,7 +540,7 @@ class Gem::Command
   # command.
 
   def create_option_parser
-    @parser = OptionParser.new
+    @parser = Gem::OptionParser.new
 
     add_parser_options
 
@@ -552,9 +554,9 @@ class Gem::Command
   end
 
   def configure_options(header, option_list)
-    return if option_list.nil? or option_list.empty?
+    return if option_list.nil? || option_list.empty?
 
-    header = header.to_s.empty? ? '' : "#{header} "
+    header = header.to_s.empty? ? "" : "#{header} "
     @parser.separator "  #{header}Options:"
 
     option_list.each do |args, handler|
@@ -563,7 +565,7 @@ class Gem::Command
       end
     end
 
-    @parser.separator ''
+    @parser.separator ""
   end
 
   ##
@@ -576,22 +578,22 @@ class Gem::Command
   # ----------------------------------------------------------------
   # Add the options common to all commands.
 
-  add_common_option('-h', '--help',
-                    'Get help on this command') do |value, options|
+  add_common_option("-h", "--help",
+                    "Get help on this command") do |value, options|
     options[:help] = true
   end
 
-  add_common_option('-V', '--[no-]verbose',
-                    'Set the verbose level of output') do |value, options|
+  add_common_option("-V", "--[no-]verbose",
+                    "Set the verbose level of output") do |value, options|
     # Set us to "really verbose" so the progress meter works
-    if Gem.configuration.verbose and value
+    if Gem.configuration.verbose && value
       Gem.configuration.verbose = 1
     else
       Gem.configuration.verbose = value
     end
   end
 
-  add_common_option('-q', '--quiet', 'Silence command progress meter') do |value, options|
+  add_common_option("-q", "--quiet", "Silence command progress meter") do |value, options|
     Gem.configuration.verbose = false
   end
 
@@ -604,20 +606,20 @@ class Gem::Command
   # commands.  Both options are actually handled before the other
   # options get parsed.
 
-  add_common_option('--config-file FILE',
-                    'Use this config file instead of default') do
+  add_common_option("--config-file FILE",
+                    "Use this config file instead of default") do
   end
 
-  add_common_option('--backtrace',
-                    'Show stack backtrace on errors') do
+  add_common_option("--backtrace",
+                    "Show stack backtrace on errors") do
   end
 
-  add_common_option('--debug',
-                    'Turn on Ruby debugging') do
+  add_common_option("--debug",
+                    "Turn on Ruby debugging") do
   end
 
-  add_common_option('--norc',
-                    'Avoid loading any .gemrc file') do
+  add_common_option("--norc",
+                    "Avoid loading any .gemrc file") do
   end
 
   # :stopdoc:
@@ -634,6 +636,7 @@ RubyGems is a package manager for Ruby.
     gem install rake
     gem list --local
     gem build package.gemspec
+    gem push package-0.0.1.gem
     gem help install
 
   Further help:

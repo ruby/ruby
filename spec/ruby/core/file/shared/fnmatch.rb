@@ -75,6 +75,14 @@ describe :file_fnmatch, shared: true do
     File.send(@method, 'c*t', 'c/a/b/t').should == true
   end
 
+  it "does not match unterminated range of characters" do
+    File.send(@method, 'abc[de', 'abcd').should == false
+  end
+
+  it "does not match unterminated range of characters as a literal" do
+    File.send(@method, 'abc[de', 'abc[de').should == false
+  end
+
   it "matches ranges of characters using bracket expression (e.g. [a-z])" do
     File.send(@method, 'ca[a-z]', 'cat').should == true
   end
@@ -151,10 +159,10 @@ describe :file_fnmatch, shared: true do
   end
 
   it "does not match leading periods in filenames with wildcards by default" do
-    File.send(@method, '*', '.profile').should == false
-    File.send(@method, '*', 'home/.profile').should == true
-    File.send(@method, '*/*', 'home/.profile').should == true
-    File.send(@method, '*/*', 'dave/.profile', File::FNM_PATHNAME).should == false
+    File.should_not.send(@method, '*', '.profile')
+    File.should.send(@method, '*', 'home/.profile')
+    File.should.send(@method, '*/*', 'home/.profile')
+    File.should_not.send(@method, '*/*', 'dave/.profile', File::FNM_PATHNAME)
   end
 
   it "matches patterns with leading periods to dotfiles by default" do

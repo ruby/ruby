@@ -16,7 +16,7 @@ class CSV
       @empty_value = options[:empty_value]
       @empty_value_is_empty_string = (@empty_value == "")
       @accept_nil = options[:accept_nil]
-      @builtin_converters = options[:builtin_converters]
+      @builtin_converters_name = options[:builtin_converters_name]
       @need_static_convert = need_static_convert?
     end
 
@@ -24,7 +24,7 @@ class CSV
       if name.nil?  # custom converter
         @converters << converter
       else          # named converter
-        combo = @builtin_converters[name]
+        combo = builtin_converters[name]
         case combo
         when Array  # combo converter
           combo.each do |sub_name|
@@ -79,6 +79,10 @@ class CSV
     def need_convert?
       @need_static_convert or
         (not @converters.empty?)
+    end
+
+    def builtin_converters
+      @builtin_converters ||= ::CSV.const_get(@builtin_converters_name)
     end
   end
 end

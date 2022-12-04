@@ -20,6 +20,8 @@ module Bundler
       2.5
       2.6
       2.7
+      3.0
+      3.1
     ].freeze
 
     KNOWN_MAJOR_VERSIONS = KNOWN_MINOR_VERSIONS.map {|v| v.split(".", 2).first }.uniq.freeze
@@ -34,17 +36,18 @@ module Bundler
       rbx
       ruby
       truffleruby
+      windows
       x64_mingw
     ].freeze
 
     def ruby?
       return true if Bundler::GemHelpers.generic_local_platform == Gem::Platform::RUBY
 
-      !mswin? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
+      !windows? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
     def mri?
-      !mswin? && RUBY_ENGINE == "ruby"
+      !windows? && RUBY_ENGINE == "ruby"
     end
 
     def rbx?
@@ -63,20 +66,28 @@ module Bundler
       RUBY_ENGINE == "truffleruby"
     end
 
+    def windows?
+      Gem.win_platform?
+    end
+
     def mswin?
-      Bundler::WINDOWS
+      # For backwards compatibility
+      windows?
+
+      # TODO: This should correctly be:
+      # windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin32" && Bundler.local_platform.cpu == "x86"
     end
 
     def mswin64?
-      Bundler::WINDOWS && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin64" && Bundler.local_platform.cpu == "x64"
+      windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin64" && Bundler.local_platform.cpu == "x64"
     end
 
     def mingw?
-      Bundler::WINDOWS && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu != "x64"
+      windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu != "x64"
     end
 
     def x64_mingw?
-      Bundler::WINDOWS && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu == "x64"
+      Gem.win_platform? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os.start_with?("mingw") && Bundler.local_platform.cpu == "x64"
     end
 
     (KNOWN_MINOR_VERSIONS + KNOWN_MAJOR_VERSIONS).each do |version|

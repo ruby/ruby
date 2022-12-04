@@ -73,5 +73,3 @@ module IRB
     end
   end
 end
-
-

@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_YJIT_STATS']
+  use_yjit_stat = true
 end
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
@@ -120,6 +122,12 @@ if e = ENV["RUBYLIB"]
 end
 env["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
+gem_path = [abs_archdir, srcdir].map {|d| File.realdirpath(".bundle", d)}
+if e = ENV["GEM_PATH"]
+ gem_path |= e.split(File::PATH_SEPARATOR)
+end
+env["GEM_PATH"] = gem_path.join(File::PATH_SEPARATOR)
+
 libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
 if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
@@ -164,6 +172,9 @@ if debugger
 end
 
 cmd = [runner || ruby]
+if use_yjit_stat
+  cmd << '--yjit-stats'
+end
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
 

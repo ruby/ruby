@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "find"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ['Kazuki Tsujimoto']
   spec.email         = ['kazuki@callcc.net']
 

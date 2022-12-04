@@ -3,6 +3,8 @@
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
+require 'securerandom'
 
 begin
   require 'zlib'
@@ -363,6 +365,65 @@ if defined? Zlib
       }
     end
 
+    def test_inflate_buffer
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      buf = String.new
+      s = z.inflate(s, buffer: buf)
+      assert_same(buf, s)
+      buf = String.new
+      s << z.inflate(nil, buffer: buf)
+      assert_equal("foo", s)
+      z.inflate("foo", buffer: buf) # ???
+      z << "foo" # ???
+    end
+
+    def test_inflate_buffer_partial_input
+      deflated = Zlib::Deflate.deflate "\0"
+
+      z = Zlib::Inflate.new
+
+      inflated = "".dup
+
+      buf = String.new
+      deflated.each_char do |byte|
+        inflated << z.inflate(byte, buffer: buf)
+      end
+
+      inflated << z.finish
+
+      assert_equal "\0", inflated
+    end
+
+    def test_inflate_buffer_chunked
+      # s = Zlib::Deflate.deflate("0" * 100_000)
+      zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
+              "\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" \
+              "\000\000\000\000\000\000\000\257\006\351\247BH"
+
+      chunks = []
+
+      z = Zlib::Inflate.new
+
+      buf = String.new
+      z.inflate(zeros, buffer: buf) do |chunk|
+        assert_same(buf, chunk)
+        chunks << chunk.dup
+      end
+
+      assert_equal [16384, 16384, 16384, 16384, 16384, 16384, 1696],
+                   chunks.map { |chunk| chunk.size }
+
+      assert chunks.all? { |chunk|
+        chunk =~ /\A0+\z/
+      }
+    end
+
     def test_inflate_chunked_break
       # zeros = Zlib::Deflate.deflate("0" * 100_000)
       zeros = "x\234\355\3011\001\000\000\000\302\240J\353\237\316\032\036@" \
@@ -443,9 +504,102 @@ if defined? Zlib
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
       z.close
     end
+
+    def test_multithread_deflate
+      zd = Zlib::Deflate.new
+
+      s = "x" * 10000
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zd.deflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_multithread_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate("x" * 10000)
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zi.inflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zi&.finish
+      zi&.close
+    end
+
+    def test_recursive_deflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zd = Zlib::Deflate.new
+
+      s = SecureRandom.random_bytes(1024**2)
+      assert_raise(Zlib::InProgressError) do
+        zd.deflate(s) do
+          zd.deflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zd&.finish
+      zd&.close
+    end
+
+    def test_recursive_inflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
+
+      assert_raise(Zlib::InProgressError) do
+        zi.inflate(s) do
+          zi.inflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zi&.close
+    end
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
+    def test_gzip_reader_zcat
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        t.binmode
+        gz = Zlib::GzipWriter.new(t)
+        gz.print("foo")
+        gz.close
+        File.open(t.path, 'ab') do |f|
+          gz = Zlib::GzipWriter.new(f)
+          gz.print("bar")
+          gz.close
+        end
+
+        results = []
+        File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f) do |str|
+            results << str
+          end
+        end
+        assert_equal(["foo", "bar"], results)
+
+        results = File.open(t.path, 'rb') do |f|
+          Zlib::GzipReader.zcat(f)
+        end
+        assert_equal("foobar", results)
+      }
+    end
+
     def test_to_io
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         t.close
@@ -636,6 +790,34 @@ if defined? Zlib
         assert_raise(NoMethodError) { gz.path }
         gz.close
       }
+    end
+
+    if defined? File::TMPFILE
+      def test_path_tmpfile
+        sio = StringIO.new("".dup, 'w')
+        gz = Zlib::GzipWriter.new(sio)
+        gz.write "hi"
+        gz.close
+
+        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+          io.write sio.string
+          io.rewind
+
+          gz0 = Zlib::GzipWriter.new(io)
+          assert_raise(NoMethodError) { gz0.path }
+
+          gz1 = Zlib::GzipReader.new(io)
+          assert_raise(NoMethodError) { gz1.path }
+          gz0.close
+          gz1.close
+        end
+      rescue Errno::EINVAL
+        omit 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EISDIR
+        omit 'O_TMPFILE not supported (EISDIR)'
+      rescue Errno::EOPNOTSUPP
+        omit 'O_TMPFILE not supported (EOPNOTSUPP)'
+      end
     end
   end
 
@@ -1121,6 +1303,20 @@ if defined? Zlib
       assert_equal(0x02820145, Zlib.adler32("foo"))
       assert_equal(0x02820145, Zlib.adler32("o", Zlib.adler32("fo")))
       assert_equal(0x8a62c964, Zlib.adler32("abc\x01\x02\x03" * 10000))
+      assert_equal(0x97d1a9f7, Zlib.adler32("p", -305419897))
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        File.binwrite(t.path, "foo")
+        t.rewind
+        assert_equal(0x02820145, Zlib.adler32(t))
+
+        t.rewind
+        crc = Zlib.adler32(t.read(2))
+        assert_equal(0x02820145, Zlib.adler32(t, crc))
+
+        File.binwrite(t.path, "abc\x01\x02\x03" * 10000)
+        t.rewind
+        assert_equal(0x8a62c964, Zlib.adler32(t))
+      }
     end
 
     def test_adler32_combine
@@ -1129,10 +1325,10 @@ if defined? Zlib
       begin
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "adler32_combine is not implemented"
-      rescue Minitest::Assertion
+        omit "adler32_combine is not implemented"
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1143,6 +1339,20 @@ if defined? Zlib
       assert_equal(0x8c736521, Zlib.crc32("foo"))
       assert_equal(0x8c736521, Zlib.crc32("o", Zlib.crc32("fo")))
       assert_equal(0x07f0d68f, Zlib.crc32("abc\x01\x02\x03" * 10000))
+      assert_equal(0xf136439b, Zlib.crc32("p", -305419897))
+      Tempfile.create("test_zlib_gzip_file_to_io") {|t|
+        File.binwrite(t.path, "foo")
+        t.rewind
+        assert_equal(0x8c736521, Zlib.crc32(t))
+
+        t.rewind
+        crc = Zlib.crc32(t.read(2))
+        assert_equal(0x8c736521, Zlib.crc32(t, crc))
+
+        File.binwrite(t.path, "abc\x01\x02\x03" * 10000)
+        t.rewind
+        assert_equal(0x07f0d68f, Zlib.crc32(t))
+      }
     end
 
     def test_crc32_combine
@@ -1151,10 +1361,10 @@ if defined? Zlib
       begin
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "crc32_combine is not implemented"
-      rescue Minitest::Assertion
+        omit "crc32_combine is not implemented"
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1167,11 +1377,20 @@ if defined? Zlib
     end
 
     def test_inflate
-      TestZlibInflate.new(__name__).test_inflate
+      s = Zlib::Deflate.deflate("foo")
+      z = Zlib::Inflate.new
+      s = z.inflate(s)
+      s << z.inflate(nil)
+      assert_equal("foo", s)
+      z.inflate("foo") # ???
+      z << "foo" # ???
     end
 
     def test_deflate
-      TestZlibDeflate.new(__name__).test_deflate
+      s = Zlib::Deflate.deflate("foo")
+      assert_equal("foo", Zlib::Inflate.inflate(s))
+
+      assert_raise(Zlib::StreamError) { Zlib::Deflate.deflate("foo", 10000) }
     end
 
     def test_deflate_stream

@@ -11,8 +11,8 @@ platform_is :aix do
   Process.getrlimit(:DATA)
 end
 
-platform_is_not :windows do
-  describe "Process.getrlimit" do
+describe "Process.getrlimit" do
+  platform_is_not :windows do
     it "returns a two-element Array of Integers" do
       result = Process.getrlimit Process::RLIMIT_CORE
       result.size.should == 2
@@ -86,6 +86,15 @@ platform_is_not :windows do
 
         Process.getrlimit(obj).should == Process.getrlimit(@resource)
       end
+    end
+  end
+
+  platform_is :windows do
+    it "is not implemented" do
+      Process.respond_to?(:getrlimit).should be_false
+      -> do
+        Process.getrlimit(nil)
+      end.should raise_error NotImplementedError
     end
   end
 end

@@ -12,8 +12,9 @@
 require_relative "nop"
 require_relative "../ext/multi-irb"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class IrbCommand < Nop
       def execute(*obj)
@@ -39,5 +40,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

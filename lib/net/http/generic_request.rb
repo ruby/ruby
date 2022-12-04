@@ -15,7 +15,8 @@ class Net::HTTPGenericRequest
 
     if URI === uri_or_path then
       raise ArgumentError, "not an HTTP URI" unless URI::HTTP === uri_or_path
-      raise ArgumentError, "no host component for URI" unless uri_or_path.hostname
+      hostname = uri_or_path.hostname
+      raise ArgumentError, "no host component for URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
       host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
@@ -31,12 +32,12 @@ class Net::HTTPGenericRequest
 
     @decode_content = false
 
-    if @response_has_body and Net::HTTP::HAVE_ZLIB then
+    if Net::HTTP::HAVE_ZLIB then
       if !initheader ||
          !initheader.keys.any? { |k|
            %w[accept-encoding range].include? k.downcase
          } then
-        @decode_content = true
+        @decode_content = true if @response_has_body
         initheader = initheader ? initheader.dup : {}
         initheader["accept-encoding"] =
           "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
@@ -143,7 +144,7 @@ class Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/s, ''.freeze)
+      host.sub!(/:.*/m, ''.freeze)
     elsif host = @uri.host
     else
      host = addr
@@ -202,9 +203,7 @@ class Net::HTTPGenericRequest
       IO.copy_stream(f, chunker)
       chunker.finish
     else
-      # copy_stream can sendfile() to sock.io unless we use SSL.
-      # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
-      IO.copy_stream(f, sock.io)
+      IO.copy_stream(f, sock)
     end
   end
 

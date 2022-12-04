@@ -715,6 +715,18 @@ describe "Multiple assignment" do
       x.should == [1, 2, 3, 4, 5]
     end
 
+    it "can be used to swap array elements" do
+      a = [1, 2]
+      a[0], a[1] = a[1], a[0]
+      a.should == [2, 1]
+    end
+
+    it "can be used to swap range of array elements" do
+      a = [1, 2, 3, 4]
+      a[0, 2], a[2, 2] = a[2, 2], a[0, 2]
+      a.should == [3, 4, 1, 2]
+    end
+
     it "assigns RHS values to LHS constants" do
       module VariableSpecs
         MRHS_VALUES_1, MRHS_VALUES_2 = 1, 2
@@ -770,29 +782,89 @@ describe "A local variable assigned only within a conditional block" do
 end
 
 describe 'Local variable shadowing' do
-  ruby_version_is ""..."2.6" do
-    it "leads to warning in verbose mode" do
-      -> do
-        eval <<-CODE
-          a = [1, 2, 3]
-          a.each { |a| a = 3 }
-        CODE
-      end.should complain(/shadowing outer local variable/, verbose: true)
+  it "does not warn in verbose mode" do
+    result = nil
+
+    -> do
+      eval <<-CODE
+        a = [1, 2, 3]
+        result = a.map { |a| a = 3 }
+      CODE
+    end.should_not complain(verbose: true)
+
+    result.should == [3, 3, 3]
+  end
+end
+
+describe 'Allowed characters' do
+  it 'allows non-ASCII lowercased characters at the beginning' do
+    result = nil
+
+    eval <<-CODE
+      def test
+        μ = 1
+      end
+
+      result = test
+    CODE
+
+    result.should == 1
+  end
+
+  it 'parses a non-ASCII upcased character as a constant identifier' do
+    -> do
+      eval <<-CODE
+        def test
+          ἍBB = 1
+        end
+      CODE
+    end.should raise_error(SyntaxError, /dynamic constant assignment/)
+  end
+end
+
+describe "Instance variables" do
+  context "when instance variable is uninitialized" do
+    ruby_version_is ""..."3.0" do
+      it "warns about accessing uninitialized instance variable" do
+        obj = Object.new
+        def obj.foobar; a = @a; end
+
+        -> { obj.foobar }.should complain(/warning: instance variable @a not initialized/, verbose: true)
+      end
+    end
+
+    ruby_version_is "3.0" do
+      it "doesn't warn about accessing uninitialized instance variable" do
+        obj = Object.new
+        def obj.foobar; a = @a; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
+    end
+
+    it "doesn't warn at lazy initialization" do
+      obj = Object.new
+      def obj.foobar; @a ||= 42; end
+
+      -> { obj.foobar }.should_not complain(verbose: true)
     end
   end
 
-  ruby_version_is "2.6" do
-    it "does not warn in verbose mode" do
-      result = nil
+  describe "global variable" do
+    context "when global variable is uninitialized" do
+      it "warns about accessing uninitialized global variable in verbose mode" do
+        obj = Object.new
+        def obj.foobar; a = $specs_uninitialized_global_variable; end
 
-      -> do
-        eval <<-CODE
-          a = [1, 2, 3]
-          result = a.map { |a| a = 3 }
-        CODE
-      end.should_not complain(verbose: true)
+        -> { obj.foobar }.should complain(/warning: global variable `\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+      end
 
-      result.should == [3, 3, 3]
+      it "doesn't warn at lazy initialization" do
+        obj = Object.new
+        def obj.foobar; $specs_uninitialized_global_variable_lazy ||= 42; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
     end
   end
 end

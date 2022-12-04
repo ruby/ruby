@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "rubygems/deprecate"
+require_relative "version"
 
 ##
 # A Requirement is a set of one or more version restrictions. It supports a
@@ -10,13 +10,13 @@ require "rubygems/deprecate"
 
 class Gem::Requirement
   OPS = { #:nodoc:
-    "="  =>  lambda {|v, r| v == r },
-    "!=" =>  lambda {|v, r| v != r },
-    ">"  =>  lambda {|v, r| v >  r },
-    "<"  =>  lambda {|v, r| v <  r },
-    ">=" =>  lambda {|v, r| v >= r },
-    "<=" =>  lambda {|v, r| v <= r },
-    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump }
+    "=" => lambda {|v, r| v == r },
+    "!=" => lambda {|v, r| v != r },
+    ">" => lambda {|v, r| v >  r },
+    "<" => lambda {|v, r| v <  r },
+    ">=" => lambda {|v, r| v >= r },
+    "<=" => lambda {|v, r| v <= r },
+    "~>" => lambda {|v, r| v >= r && v.release < r.bump },
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
@@ -61,7 +61,7 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
-    when '!' then
+    when "!" then
       source_set
     else
       if input.respond_to? :to_str
@@ -73,11 +73,11 @@ class Gem::Requirement
   end
 
   def self.default
-    new '>= 0'
+    new ">= 0"
   end
 
   def self.default_prerelease
-    new '>= 0.a'
+    new ">= 0.a"
   end
 
   ###
@@ -190,28 +190,23 @@ class Gem::Requirement
   end
 
   def hash # :nodoc:
-    requirements.sort.hash
+    requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
   end
 
   def marshal_dump # :nodoc:
-    fix_syck_default_key_in_requirements
-
     [@requirements]
   end
 
   def marshal_load(array) # :nodoc:
     @requirements = array[0]
 
-    fix_syck_default_key_in_requirements
+    raise TypeError, "wrong @requirements" unless Array === @requirements
   end
 
   def yaml_initialize(tag, vals) # :nodoc:
     vals.each do |ivar, val|
       instance_variable_set "@#{ivar}", val
     end
-
-    Gem.load_yaml
-    fix_syck_default_key_in_requirements
   end
 
   def init_with(coder) # :nodoc:
@@ -223,7 +218,7 @@ class Gem::Requirement
   end
 
   def encode_with(coder) # :nodoc:
-    coder.add 'requirements', @requirements
+    coder.add "requirements", @requirements
   end
 
   ##
@@ -235,7 +230,7 @@ class Gem::Requirement
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 1, 'Gem::Requirement.new(', ')' do
+    q.group 1, "Gem::Requirement.new(", ")" do
       q.pp as_list
     end
   end
@@ -246,8 +241,7 @@ class Gem::Requirement
   def satisfied_by?(version)
     raise ArgumentError, "Need a Gem::Version: #{version.inspect}" unless
       Gem::Version === version
-    # #28965: syck has a bug with unquoted '=' YAML.loading as YAML::DefaultKey
-    requirements.all? {|op, rv| (OPS[op] || OPS["="]).call version, rv }
+    requirements.all? {|op, rv| OPS[op].call version, rv }
   end
 
   alias :=== :satisfied_by?
@@ -259,7 +253,7 @@ class Gem::Requirement
   def specific?
     return true if @requirements.length > 1 # GIGO, > 1, > 2 is silly
 
-    not %w[> >=].include? @requirements.first.first # grab the operator
+    !%w[> >=].include? @requirements.first.first # grab the operator
   end
 
   def to_s # :nodoc:
@@ -270,7 +264,7 @@ class Gem::Requirement
     return unless Gem::Requirement === other
 
     # An == check is always necessary
-    return false unless requirements == other.requirements
+    return false unless _sorted_requirements == other._sorted_requirements
 
     # An == check is sufficient unless any requirements use ~>
     return true unless _tilde_requirements.any?
@@ -282,21 +276,12 @@ class Gem::Requirement
 
   protected
 
-  def _tilde_requirements
-    requirements.select {|r| r.first == "~>" }
+  def _sorted_requirements
+    @_sorted_requirements ||= requirements.sort_by(&:to_s)
   end
 
-  private
-
-  def fix_syck_default_key_in_requirements # :nodoc:
-    Gem.load_yaml
-
-    # Fixup the Syck DefaultKey bug
-    @requirements.each do |r|
-      if r[0].kind_of? Gem::SyckDefaultKey
-        r[0] = "="
-      end
-    end
+  def _tilde_requirements
+    @_tilde_requirements ||= _sorted_requirements.select {|r| r.first == "~>" }
   end
 end
 

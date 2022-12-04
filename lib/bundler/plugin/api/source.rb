@@ -140,6 +140,13 @@ module Bundler
           end
         end
 
+        # Set internal representation to fetch the gems/specs locally.
+        #
+        # When this is called, the source should try to fetch the specs and
+        # install from the local system.
+        def local!
+        end
+
         # Set internal representation to fetch the gems/specs from remote.
         #
         # When this is called, the source should try to fetch the specs and
@@ -237,7 +244,21 @@ module Bundler
           specs.unmet_dependency_names
         end
 
+        # Used by definition.
+        #
         # Note: Do not override if you don't know what you are doing.
+        def spec_names
+          specs.spec_names
+        end
+
+        # Used by definition.
+        #
+        # Note: Do not override if you don't know what you are doing.
+        def add_dependency_names(names)
+          @dependencies |= Array(names)
+        end
+
+        # NOTE: Do not override if you don't know what you are doing.
         def can_lock?(spec)
           spec.source == self
         end
@@ -260,10 +281,11 @@ module Bundler
         end
 
         def to_s
-          "plugin source for #{options[:type]} with uri #{uri}"
+          "plugin source for #{@type} with uri #{@uri}"
         end
+        alias_method :identifier, :to_s
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def include?(other)
           other == self
         end
@@ -272,7 +294,7 @@ module Bundler
           SharedHelpers.digest(:SHA1).hexdigest(uri)
         end
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def gem_install_dir
           Bundler.install_path
         end
@@ -284,12 +306,6 @@ module Bundler
         # Note: Do not override if you don't know what you are doing.
         def root
           Bundler.root
-        end
-
-        # @private
-        # Returns true
-        def bundler_plugin_api_source?
-          true
         end
 
         # @private

@@ -1,3 +1,5 @@
+require 'stringio'
+
 describe :net_httpresponse_body, shared: true do
   before :each do
     @res = Net::HTTPUnknownResponse.new("1.0", "???", "test response")

@@ -45,5 +45,6 @@ class MSpecScript
   set :toplevel_constants_excludes, [
     /\wSpecs?$/,
     /^CS_CONST/,
+    /^CSL_CONST/,
   ]
 end

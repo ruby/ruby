@@ -5,6 +5,9 @@ if defined?(OpenSSL)
 
 module OpenSSL
   class TestPKCS12 < OpenSSL::TestCase
+    DEFAULT_PBE_PKEYS = "PBE-SHA1-3DES"
+    DEFAULT_PBE_CERTS = "PBE-SHA1-3DES"
+
     def setup
       super
       ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
@@ -14,47 +17,41 @@ module OpenSSL
         ["subjectKeyIdentifier","hash",false],
         ["authorityKeyIdentifier","keyid:always",false],
       ]
-      @cacert = issue_cert(ca, Fixtures.pkey("rsa2048"), 1, ca_exts, nil, nil)
+      ca_key = Fixtures.pkey("rsa-1")
+      @cacert = issue_cert(ca, ca_key, 1, ca_exts, nil, nil)
 
       inter_ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Intermediate CA")
-      inter_ca_key = OpenSSL::PKey.read <<-_EOS_
------BEGIN RSA PRIVATE KEY-----
-MIICXAIBAAKBgQDp7hIG0SFMG/VWv1dBUWziAPrNmkMXJgTCAoB7jffzRtyyN04K
-oq/89HAszTMStZoMigQURfokzKsjpUp8OYCAEsBtt9d5zPndWMz/gHN73GrXk3LT
-ZsxEn7Xv5Da+Y9F/Hx2QZUHarV5cdZixq2NbzWGwrToogOQMh2pxN3Z/0wIDAQAB
-AoGBAJysUyx3olpsGzv3OMRJeahASbmsSKTXVLZvoIefxOINosBFpCIhZccAG6UV
-5c/xCvS89xBw8aD15uUfziw3AuT8QPEtHCgfSjeT7aWzBfYswEgOW4XPuWr7EeI9
-iNHGD6z+hCN/IQr7FiEBgTp6A+i/hffcSdR83fHWKyb4M7TRAkEA+y4BNd668HmC
-G5MPRx25n6LixuBxrNp1umfjEI6UZgEFVpYOg4agNuimN6NqM253kcTR94QNTUs5
-Kj3EhG1YWwJBAO5rUjiOyCNVX2WUQrOMYK/c1lU7fvrkdygXkvIGkhsPoNRzLPeA
-HGJszKtrKD8bNihWpWNIyqKRHfKVD7yXT+kCQGCAhVCIGTRoypcDghwljHqLnysf
-ci0h5ZdPcIqc7ODfxYhFsJ/Rql5ONgYsT5Ig/+lOQAkjf+TRYM4c2xKx2/8CQBvG
-jv6dy70qDgIUgqzONtlmHeYyFzn9cdBO5sShdVYHvRHjFSMEXsosqK9zvW2UqvuK
-FJx7d3f29gkzynCLJDkCQGQZlEZJC4vWmWJGRKJ24P6MyQn3VsPfErSKOg4lvyM3
-Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
------END RSA PRIVATE KEY-----
-      _EOS_
-      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, ca_exts, @cacert, Fixtures.pkey("rsa2048"))
+      inter_ca_key = Fixtures.pkey("rsa-2")
+      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, ca_exts, @cacert, ca_key)
 
       exts = [
         ["keyUsage","digitalSignature",true],
         ["subjectKeyIdentifier","hash",false],
       ]
       ee = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Ruby PKCS12 Test Certificate")
-      @mykey = Fixtures.pkey("rsa1024")
+      @mykey = Fixtures.pkey("rsa-3")
       @mycert = issue_cert(ee, @mykey, 3, exts, @inter_cacert, inter_ca_key)
     end
 
-    def test_create
+    def test_create_single_key_single_cert
       pkcs12 = OpenSSL::PKCS12.create(
         "omg",
         "hello",
         @mykey,
-        @mycert
+        @mycert,
+        nil,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
       )
-      assert_equal @mycert.to_der, pkcs12.certificate.to_der
+      assert_equal @mycert, pkcs12.certificate
       assert_equal @mykey.to_der, pkcs12.key.to_der
       assert_nil pkcs12.ca_certs
+
+      der = pkcs12.to_der
+      decoded = OpenSSL::PKCS12.new(der, "omg")
+      assert_equal @mykey.to_der, decoded.key.to_der
+      assert_equal @mycert, decoded.certificate
+      assert_equal [], Array(decoded.ca_certs)
     end
 
     def test_create_no_pass
@@ -62,14 +59,17 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         nil,
         "hello",
         @mykey,
-        @mycert
+        @mycert,
+        nil,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
       )
-      assert_equal @mycert.to_der, pkcs12.certificate.to_der
+      assert_equal @mycert, pkcs12.certificate
       assert_equal @mykey.to_der, pkcs12.key.to_der
       assert_nil pkcs12.ca_certs
 
       decoded = OpenSSL::PKCS12.new(pkcs12.to_der)
-      assert_cert @mycert, decoded.certificate
+      assert_equal @mycert, decoded.certificate
     end
 
     def test_create_with_chain
@@ -80,7 +80,9 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         "hello",
         @mykey,
         @mycert,
-        chain
+        chain,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
       )
       assert_equal chain, pkcs12.ca_certs
     end
@@ -95,14 +97,16 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         "hello",
         @mykey,
         @mycert,
-        chain
+        chain,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
       )
 
       decoded = OpenSSL::PKCS12.new(pkcs12.to_der, passwd)
       assert_equal chain.size, decoded.ca_certs.size
-      assert_include_cert @cacert, decoded.ca_certs
-      assert_include_cert @inter_cacert, decoded.ca_certs
-      assert_cert @mycert, decoded.certificate
+      assert_include decoded.ca_certs, @cacert
+      assert_include decoded.ca_certs, @inter_cacert
+      assert_equal @mycert, decoded.certificate
       assert_equal @mykey.to_der, decoded.key.to_der
     end
 
@@ -126,8 +130,8 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         @mykey,
         @mycert,
         [],
-        nil,
-        nil,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
         2048
       )
 
@@ -138,8 +142,8 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
           @mykey,
           @mycert,
           [],
-          nil,
-          nil,
+          DEFAULT_PBE_PKEYS,
+          DEFAULT_PBE_CERTS,
           "omg"
         )
       end
@@ -152,7 +156,8 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         @mykey,
         @mycert,
         [],
-        nil,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
         nil,
         nil,
         2048
@@ -165,147 +170,143 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
           @mykey,
           @mycert,
           [],
-          nil,
-          nil,
+          DEFAULT_PBE_PKEYS,
+          DEFAULT_PBE_CERTS,
           nil,
           "omg"
         )
       end
     end
 
-    def test_new_with_one_key_and_one_cert
-      # generated with:
-      #   openssl version #=> OpenSSL 1.0.2h  3 May 2016
-      #   openssl pkcs12 -in <@mycert> -inkey <RSA1024> -export -out <out>
-      str = <<~EOF.unpack("m").first
-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
-vyl2WuMdEwQIMWFFphPkIUICAggA
-      EOF
-      p12 = OpenSSL::PKCS12.new(str, "abc123")
-
-      assert_equal @mykey.to_der, p12.key.to_der
-      assert_equal @mycert.subject.to_der, p12.certificate.subject.to_der
-      assert_equal [], Array(p12.ca_certs)
-    end
-
     def test_new_with_no_keys
       # generated with:
-      #   openssl pkcs12 -in <@mycert> -nokeys -export -out <out>
+      #   openssl pkcs12 -certpbe PBE-SHA1-3DES -in <@mycert> -nokeys -export
       str = <<~EOF.unpack("m").first
-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
+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
+AA==
       EOF
       p12 = OpenSSL::PKCS12.new(str, "abc123")
 
       assert_equal nil, p12.key
       assert_equal nil, p12.certificate
       assert_equal 1, p12.ca_certs.size
-      assert_equal @mycert.subject.to_der, p12.ca_certs[0].subject.to_der
+      assert_equal @mycert.subject, p12.ca_certs[0].subject
     end
 
     def test_new_with_no_certs
       # generated with:
-      #   openssl pkcs12 -inkey <RSA1024> -nocerts -export -out <out>
+      #   openssl pkcs12 -inkey fixtures/openssl/pkey/rsa-1.pem -nocerts -export
       str = <<~EOF.unpack("m").first
-MIIDJwIBAzCCAu0GCSqGSIb3DQEHAaCCAt4EggLaMIIC1jCCAtIGCSqGSIb3DQEH
-AaCCAsMEggK/MIICuzCCArcGCyqGSIb3DQEMCgECoIICpjCCAqIwHAYKKoZIhvcN
-AQwBAzAOBAg6AaYnJs84SwICCAAEggKAQzZH+fWSpcQYD1J7PsGSune85A++fLCQ
-V7tacp2iv95GJkxwYmfTP176pJdgs00mceB9UJ/u9EX5nD0djdjjQjwo6sgKjY0q
-cpVhZw8CMxw7kBD2dhtui0zT8z5hy03LePxsjEKsGiSbeVeeGbSfw/I6AAYbv+Uh
-O/YPBGumeHj/D2WKnfsHJLQ9GAV3H6dv5VKYNxjciK7f/JEyZCuUQGIN64QFHDhJ
-7fzLqd/ul3FZzJZO6a+dwvcgux09SKVXDRSeFmRCEX4b486iWhJJVspCo9P2KNne
-ORrpybr3ZSwxyoICmjyo8gj0OSnEfdx9790Ej1takPqSA1wIdSdBLekbZqB0RBQg
-DEuPOsXNo3QFi8ji1vu0WBRJZZSNC2hr5NL6lNR+DKxG8yzDll2j4W4BBIp22mAE
-7QRX7kVxu17QJXQhOUac4Dd1qXmzebP8t6xkAxD9L7BWEN5OdiXWwSWGjVjMBneX
-nYObi/3UT/aVc5WHMHK2BhCI1bwH51E6yZh06d5m0TQpYGUTWDJdWGBSrp3A+8jN
-N2PMQkWBFrXP3smHoTEN4oZC4FWiPsIEyAkQsfKRhcV9lGKl2Xgq54ROTFLnwKoj
-Z3zJScnq9qmNzvVZSMmDLkjLyDq0pxRxGKBvgouKkWY7VFFIwwBIJM39iDJ5NbBY
-i1AQFTRsRSsZrNVPasCXrIq7bhMoJZb/YZOGBLNyJVqKUoYXhtwsajzSq54VlWft
-JxsPayEd4Vi6O9EU1ahnj6qFEZiKFzsicgK2J1Rb8cYagrp0XWjHW0SBn5GVUWCg
-GUokSFG/0JTdeYTo/sQuG4qNgJkOolRjpeI48Fciq5VUWLvVdKioXzAxMCEwCQYF
-Kw4DAhoFAAQUYAuwVtGD1TdgbFK4Yal2XBgwUR4ECEawsN3rNaa6AgIIAA==
+MIIJ7wIBAzCCCbUGCSqGSIb3DQEHAaCCCaYEggmiMIIJnjCCCZoGCSqGSIb3
+DQEHAaCCCYsEggmHMIIJgzCCCX8GCyqGSIb3DQEMCgECoIIJbjCCCWowHAYK
+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
+BC8fv38mue8LZVcbHQQIUNrWKEnskCoCAggA
       EOF
       p12 = OpenSSL::PKCS12.new(str, "abc123")
 
-      assert_equal @mykey.to_der, p12.key.to_der
+      assert_equal Fixtures.pkey("rsa-1").to_der, p12.key.to_der
       assert_equal nil, p12.certificate
       assert_equal [], Array(p12.ca_certs)
     end
 
     def test_dup
-      p12 = OpenSSL::PKCS12.create("pass", "name", @mykey, @mycert)
+      p12 = OpenSSL::PKCS12.create(
+        "pass",
+        "name",
+        @mykey,
+        @mycert,
+        nil,
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
+      )
       assert_equal p12.to_der, p12.dup.to_der
-    end
-
-    private
-    def assert_cert expected, actual
-      [
-        :subject,
-        :issuer,
-        :serial,
-        :not_before,
-        :not_after,
-      ].each do |attribute|
-        assert_equal expected.send(attribute), actual.send(attribute)
-      end
-      assert_equal expected.to_der, actual.to_der
-    end
-
-    def assert_include_cert cert, ary
-      der = cert.to_der
-      ary.each do |candidate|
-        if candidate.to_der == der
-          return true
-        end
-      end
-      false
     end
   end
 end

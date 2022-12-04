@@ -1,12 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/request'
-require 'rubygems/request/connection_pools'
-require 'rubygems/s3_uri_signer'
-require 'rubygems/uri_formatter'
-require 'rubygems/uri_parsing'
-require 'rubygems/user_interaction'
-require 'resolv'
+require_relative "../rubygems"
+require_relative "request"
+require_relative "request/connection_pools"
+require_relative "s3_uri_signer"
+require_relative "uri_formatter"
+require_relative "uri"
+require_relative "user_interaction"
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -14,28 +13,24 @@ require 'resolv'
 
 class Gem::RemoteFetcher
   include Gem::UserInteraction
-  include Gem::UriParsing
 
   ##
   # A FetchError exception wraps up the various possible IO and HTTP failures
   # that could happen while downloading from the internet.
 
   class FetchError < Gem::Exception
-    include Gem::UriParsing
-
     ##
     # The URI which was being accessed when the exception happened.
 
-    attr_accessor :uri
+    attr_accessor :uri, :original_uri
 
     def initialize(message, uri)
-      super message
+      uri = Gem::Uri.new(uri)
 
-      uri = parse_uri(uri)
+      super uri.redact_credentials_from(message)
 
-      uri.password = 'REDACTED' if uri.respond_to?(:password) && uri.password
-
-      @uri = uri.to_s
+      @original_uri = uri.to_s
+      @uri = uri.redacted.to_s
     end
 
     def to_s # :nodoc:
@@ -49,6 +44,7 @@ class Gem::RemoteFetcher
 
   class UnknownHostError < FetchError
   end
+  deprecate_constant(:UnknownHostError)
 
   @fetcher = nil
 
@@ -76,16 +72,16 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
-    require 'net/http'
-    require 'stringio'
-    require 'time'
-    require 'uri'
+    require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
+    require "net/http"
+    require "stringio"
+    require "uri"
 
     Socket.do_not_reverse_lookup = true
 
     @proxy = proxy
     @pools = {}
-    @pool_lock = Mutex.new
+    @pool_lock = Thread::Mutex.new
     @cert_files = Gem::Request.get_cert_files
 
     @headers = headers
@@ -114,11 +110,12 @@ class Gem::RemoteFetcher
   # always replaced.
 
   def download(spec, source_uri, install_dir = Gem.dir)
+    install_cache_dir = File.join install_dir, "cache"
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
         install_dir
-      elsif File.writable? install_dir
-        File.join install_dir, "cache"
+      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && (!File.exist?(install_cache_dir)))
+        install_cache_dir
       else
         File.join Gem.user_dir, "cache"
       end
@@ -129,7 +126,7 @@ class Gem::RemoteFetcher
     require "fileutils"
     FileUtils.mkdir_p cache_dir rescue nil unless File.exist? cache_dir
 
-    source_uri = parse_uri(source_uri)
+    source_uri = Gem::Uri.new(source_uri)
 
     scheme = source_uri.scheme
 
@@ -139,7 +136,7 @@ class Gem::RemoteFetcher
     # REFACTOR: split this up and dispatch on scheme (eg download_http)
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
-    when 'http', 'https', 's3' then
+    when "http", "https", "s3" then
       unless File.exist? local_gem_path
         begin
           verbose "Downloading gem #{gem_file_name}"
@@ -159,12 +156,12 @@ class Gem::RemoteFetcher
           self.cache_update_path remote_gem_path, local_gem_path
         end
       end
-    when 'file' then
+    when "file" then
       begin
         path = source_uri.path
-        path = File.dirname(path) if File.extname(path) == '.gem'
+        path = File.dirname(path) if File.extname(path) == ".gem"
 
-        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, 'gems', gem_file_name))
+        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, "gems", gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -174,11 +171,11 @@ class Gem::RemoteFetcher
       verbose "Using local gem #{local_gem_path}"
     when nil then # TODO test for local overriding cache
       source_path = if Gem.win_platform? && source_uri.scheme &&
-                       !source_uri.path.include?(':')
-                      "#{source_uri.scheme}:#{source_uri.path}"
-                    else
-                      source_uri.path
-                    end
+                       !source_uri.path.include?(":")
+        "#{source_uri.scheme}:#{source_uri.path}"
+      else
+        source_uri.path
+      end
 
       source_path = Gem::UriFormatter.new(source_path).unescape
 
@@ -215,16 +212,16 @@ class Gem::RemoteFetcher
 
     case response
     when Net::HTTPOK, Net::HTTPNotModified then
-      response.uri = uri if response.respond_to? :uri
+      response.uri = uri
       head ? response : response.body
     when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
          Net::HTTPTemporaryRedirect then
-      raise FetchError.new('too many redirects', uri) if depth > 10
+      raise FetchError.new("too many redirects", uri) if depth > 10
 
-      unless location = response['Location']
+      unless location = response["Location"]
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = parse_uri location
+      location = Gem::Uri.new location
 
       if https?(uri) && !https?(location)
         raise FetchError.new("redirecting to non-https resource: #{location}", uri)
@@ -242,7 +239,7 @@ class Gem::RemoteFetcher
   # Downloads +uri+ and returns it as a String.
 
   def fetch_path(uri, mtime = nil, head = false)
-    uri = parse_uri uri
+    uri = Gem::Uri.new uri
 
     unless uri.scheme
       raise ArgumentError, "uri scheme is invalid: #{uri.scheme.inspect}"
@@ -250,7 +247,7 @@ class Gem::RemoteFetcher
 
     data = send "fetch_#{uri.scheme}", uri, mtime, head
 
-    if data and !head and uri.to_s.end_with?(".gz")
+    if data && !head && uri.to_s.end_with?(".gz")
       begin
         data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
@@ -259,15 +256,9 @@ class Gem::RemoteFetcher
     end
 
     data
-  rescue Timeout::Error
-    raise UnknownHostError.new('timed out', uri)
-  rescue IOError, SocketError, SystemCallError,
-         *(OpenSSL::SSL::SSLError if defined?(OpenSSL)) => e
-    if e.message =~ /getaddrinfo/
-      raise UnknownHostError.new('no such name', uri)
-    else
-      raise FetchError.new("#{e.class}: #{e}", uri)
-    end
+  rescue Timeout::Error, IOError, SocketError, SystemCallError,
+         *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+    raise FetchError.new("#{e.class}: #{e}", uri)
   end
 
   def fetch_s3(uri, mtime = nil, head = false)
@@ -293,11 +284,11 @@ class Gem::RemoteFetcher
 
     data = fetch_path(uri, mtime)
 
-    if data == nil # indicates the server returned 304 Not Modified
+    if data.nil? # indicates the server returned 304 Not Modified
       return Gem.read_binary(path)
     end
 
-    if update and path
+    if update && path
       Gem.write_binary(path, data)
     end
 
@@ -321,7 +312,7 @@ class Gem::RemoteFetcher
   end
 
   def https?(uri)
-    uri.scheme.downcase == 'https'
+    uri.scheme.downcase == "https"
   end
 
   def close_all

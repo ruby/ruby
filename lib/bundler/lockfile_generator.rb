@@ -25,7 +25,7 @@ module Bundler
       out
     end
 
-  private
+    private
 
     def add_sources
       definition.send(:sources).lock_sources.each_with_index do |source, idx|
@@ -60,7 +60,7 @@ module Bundler
       handled = []
       definition.dependencies.sort_by(&:to_s).each do |dep|
         next if handled.include?(dep.name)
-        out << dep.to_lock
+        out << dep.to_lock << "\n"
         handled << dep.name
       end
     end
@@ -71,7 +71,7 @@ module Bundler
     end
 
     def add_bundled_with
-      add_section("BUNDLED WITH", definition.locked_bundler_version.to_s)
+      add_section("BUNDLED WITH", Bundler::VERSION)
     end
 
     def add_section(name, value)

@@ -75,6 +75,15 @@ class TestRipper::Ripper < Test::Unit::TestCase
     assert_include out.string[/.*"local variable or method".*/], 'test_xxxx'
   end
 
+  def test_yydebug_string
+    out = StringIO.new
+    ripper = Ripper.new '"woot"'
+    ripper.yydebug = true
+    ripper.debug_output = out
+    ripper.parse
+    assert_include out.string[/.*"literal content".*/], 'woot'
+  end
+
   def test_regexp_with_option
     bug11932 = '[ruby-core:72638] [Bug #11932]'
     src = '/[\xC0-\xF0]/u'.dup.force_encoding(Encoding::UTF_8)

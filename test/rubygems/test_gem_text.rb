@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative "helper"
 require "rubygems/text"
 
 class TestGemText < Gem::TestCase
@@ -81,6 +81,12 @@ Without the wrapping, the text might not look good in the RSS feed.
     assert_equal 2, levenshtein_distance("zentest", "ZenTest")
     assert_equal 7, levenshtein_distance("xxxxxxx", "ZenTest")
     assert_equal 7, levenshtein_distance("zentest", "xxxxxxx")
+  end
+
+  def test_levenshtein_distance_all
+    assert_equal 6, levenshtein_distance("algorithm", "altruistic")
+    assert_equal 3, levenshtein_distance("saturday", "sunday")
+    assert_equal 3, levenshtein_distance("kitten", "sitting")
   end
 
   def test_truncate_text

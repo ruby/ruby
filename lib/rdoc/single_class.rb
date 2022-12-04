@@ -22,5 +22,10 @@ class RDoc::SingleClass < RDoc::ClassModule
     "class << #{full_name}"
   end
 
+  def pretty_print q # :nodoc:
+    q.group 2, "[class << #{full_name}", "]" do
+      next
+    end
+  end
 end
 

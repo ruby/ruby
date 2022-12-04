@@ -243,7 +243,7 @@ assert_equal 'true', %{
 }
 
 assert_equal 'ok', %{
-  open("zzz.rb", "w") do |f|
+  open("zzz_t1.rb", "w") do |f|
     f.puts <<-END
       begin
         Thread.new { fork { GC.start } }.join
@@ -254,7 +254,7 @@ assert_equal 'ok', %{
       end
     END
   end
-  require "./zzz.rb"
+  require "./zzz_t1.rb"
   $result
 }
 
@@ -408,7 +408,7 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %{
-  open("zzz.rb", "w") do |f|
+  open("zzz_t2.rb", "w") do |f|
     f.puts <<-'end;' # do
       begin
         m = Thread::Mutex.new
@@ -432,7 +432,7 @@ assert_equal 'ok', %{
       end
     end;
   end
-  require "./zzz.rb"
+  require "./zzz_t2.rb"
   $result
 }
 

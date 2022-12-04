@@ -21,7 +21,7 @@ describe "C-API Hash function" do
 
       # The actual conversion is an implementation detail.
       # We only care that ultimately we get a Fixnum instance.
-      @s.rb_hash(obj).should be_an_instance_of(Fixnum)
+      @s.rb_hash(obj).should.between?(fixnum_min, fixnum_max)
     end
 
     it "calls #to_int to converts a value returned by #hash to a Fixnum" do

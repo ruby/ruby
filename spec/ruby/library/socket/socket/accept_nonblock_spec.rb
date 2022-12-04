@@ -46,6 +46,7 @@ describe 'Socket#accept_nonblock' do
     describe 'using an unbound socket' do
       it 'raises Errno::EINVAL' do
         -> { @server.accept_nonblock }.should raise_error(Errno::EINVAL)
+        -> { @server.accept_nonblock(exception: false) }.should raise_error(Errno::EINVAL)
       end
     end
 
@@ -56,6 +57,7 @@ describe 'Socket#accept_nonblock' do
 
       it 'raises Errno::EINVAL' do
         -> { @server.accept_nonblock }.should raise_error(Errno::EINVAL)
+        -> { @server.accept_nonblock(exception: false) }.should raise_error(Errno::EINVAL)
       end
     end
 
@@ -64,6 +66,7 @@ describe 'Socket#accept_nonblock' do
         @server.close
 
         -> { @server.accept_nonblock }.should raise_error(IOError)
+        -> { @server.accept_nonblock(exception: false) }.should raise_error(IOError)
       end
     end
 

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc'
+require_relative '../rdoc'
 
 require 'find'
 require 'fileutils'
@@ -14,7 +14,7 @@ require 'time'
 # is:
 #
 #   rdoc = RDoc::RDoc.new
-#   options = rdoc.load_options # returns an RDoc::Options instance
+#   options = RDoc::Options.load_options # returns an RDoc::Options instance
 #   # set extra options
 #   rdoc.document options
 #
@@ -34,6 +34,17 @@ class RDoc::RDoc
   # This is the list of supported output generators
 
   GENERATORS = {}
+
+  ##
+  # List of directory names always skipped
+
+  UNCONDITIONALLY_SKIPPED_DIRECTORIES = %w[CVS .svn .git].freeze
+
+  ##
+  # List of directory names skipped if test suites should be skipped
+
+  TEST_SUITE_DIRECTORY_NAMES = %w[spec test].freeze
+
 
   ##
   # Generator instance used for creating output
@@ -112,11 +123,17 @@ class RDoc::RDoc
 
     file_list = normalized_file_list files, true, @options.exclude
 
-    file_list = file_list.uniq
+    file_list = remove_unparseable(file_list)
 
-    file_list = remove_unparseable file_list
-
-    file_list.sort
+    if file_list.count {|name, mtime|
+         file_list[name] = @last_modified[name] unless mtime
+         mtime
+       } > 0
+      @last_modified.replace file_list
+      file_list.keys.sort
+    else
+      []
+    end
   end
 
   ##
@@ -143,27 +160,6 @@ class RDoc::RDoc
     @old_siginfo = trap 'INFO' do
       puts @current if @current
     end
-  end
-
-  ##
-  # Loads options from .rdoc_options if the file exists, otherwise creates a
-  # new RDoc::Options instance.
-
-  def load_options
-    options_file = File.expand_path '.rdoc_options'
-    return RDoc::Options.new unless File.exist? options_file
-
-    RDoc.load_yaml
-
-    begin
-      options = YAML.load_file '.rdoc_options'
-    rescue Psych::SyntaxError
-    end
-
-    raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
-      RDoc::Options === options
-
-    options
   end
 
   ##
@@ -254,11 +250,11 @@ option)
     # read and strip comments
     patterns = File.read(filename).gsub(/#.*/, '')
 
-    result = []
+    result = {}
 
     patterns.split(' ').each do |patt|
       candidates = Dir.glob(File.join(in_dir, patt))
-      result.concat normalized_file_list(candidates, false, @options.exclude)
+      result.update normalized_file_list(candidates, false, @options.exclude)
     end
 
     result
@@ -278,24 +274,27 @@ option)
 
   def normalized_file_list(relative_files, force_doc = false,
                            exclude_pattern = nil)
-    file_list = []
+    file_list = {}
 
     relative_files.each do |rel_file_name|
+      rel_file_name = rel_file_name.sub(/^\.\//, '')
       next if rel_file_name.end_with? 'created.rid'
       next if exclude_pattern && exclude_pattern =~ rel_file_name
       stat = File.stat rel_file_name rescue next
 
       case type = stat.ftype
       when "file" then
-        next if last_modified = @last_modified[rel_file_name] and
-                stat.mtime.to_i <= last_modified.to_i
+        mtime = (stat.mtime unless (last_modified = @last_modified[rel_file_name] and
+                                    stat.mtime.to_i <= last_modified.to_i))
 
         if force_doc or RDoc::Parser.can_parse(rel_file_name) then
-          file_list << rel_file_name.sub(/^\.\//, '')
-          @last_modified[rel_file_name] = stat.mtime
+          file_list[rel_file_name] = mtime
         end
       when "directory" then
-        next if rel_file_name == "CVS" || rel_file_name == ".svn"
+        next if UNCONDITIONALLY_SKIPPED_DIRECTORIES.include?(rel_file_name)
+
+        basename = File.basename(rel_file_name)
+        next if options.skip_tests && TEST_SUITE_DIRECTORY_NAMES.include?(basename)
 
         created_rid = File.join rel_file_name, "created.rid"
         next if File.file? created_rid
@@ -303,16 +302,16 @@ option)
         dot_doc = File.join rel_file_name, RDoc::DOT_DOC_FILENAME
 
         if File.file? dot_doc then
-          file_list << parse_dot_doc_file(rel_file_name, dot_doc)
+          file_list.update(parse_dot_doc_file(rel_file_name, dot_doc))
         else
-          file_list << list_files_in_directory(rel_file_name)
+          file_list.update(list_files_in_directory(rel_file_name))
         end
       else
         warn "rdoc can't parse the #{type} #{rel_file_name}"
       end
     end
 
-    file_list.flatten
+    file_list
   end
 
   ##
@@ -427,10 +426,10 @@ The internal error was:
   # files for emacs and vim.
 
   def remove_unparseable files
-    files.reject do |file|
+    files.reject do |file, *|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         open(file, 'rb') { |io|
+         File.open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
          })
     end
@@ -455,11 +454,11 @@ The internal error was:
 
     if RDoc::Options === options then
       @options = options
-      @options.finish
     else
-      @options = load_options
+      @options = RDoc::Options.load_options
       @options.parse options
     end
+    @options.finish
 
     if @options.pipe then
       handle_pipe
@@ -561,6 +560,6 @@ rescue LoadError
 end
 
 # require built-in generators after discovery in case they've been replaced
-require 'rdoc/generator/darkfish'
-require 'rdoc/generator/ri'
-require 'rdoc/generator/pot'
+require_relative 'generator/darkfish'
+require_relative 'generator/ri'
+require_relative 'generator/pot'

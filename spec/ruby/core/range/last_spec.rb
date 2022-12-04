@@ -8,6 +8,12 @@ describe "Range#last" do
     (1..5).last(3).should == [3, 4, 5]
   end
 
+  ruby_bug '#18994', '2.7'...'3.2' do
+    it "returns the specified number if elements for single element inclusive range" do
+      (1..1).last(1).should == [1]
+    end
+  end
+
   it "returns an empty array for an empty Range" do
     (0...0).last(2).should == []
   end
@@ -47,9 +53,7 @@ describe "Range#last" do
     -> { (2..3).last("1") }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.6" do
-    it "raises a RangeError when called on an endless range" do
-      -> { eval("(1..)").last }.should raise_error(RangeError)
-    end
+  it "raises a RangeError when called on an endless range" do
+    -> { eval("(1..)").last }.should raise_error(RangeError)
   end
 end

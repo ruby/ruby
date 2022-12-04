@@ -36,7 +36,7 @@ specs in a manner compatible with multiple Ruby implementations.
 
 ## Requirements
 
-MSpec requires Ruby 2.5 or more recent.
+MSpec requires Ruby 2.6 or more recent.
 
 ## Bundler
 
@@ -53,7 +53,7 @@ To install the gem dependencies with Bundler, run the following:
 ruby -S bundle install
 ```
 
-## Running Specs
+## Development
 
 Use RSpec to run the MSpec specs. There are no plans currently to make the
 MSpec specs runnable by MSpec: https://github.com/ruby/mspec/issues/19.

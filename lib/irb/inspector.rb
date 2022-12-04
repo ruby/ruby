@@ -100,28 +100,18 @@ module IRB # :nodoc:
     # Proc to call when the input is evaluated and output in irb.
     def inspect_value(v)
       @inspect.call(v)
+    rescue
+      puts "(Object doesn't support #inspect)"
+      ''
     end
   end
 
   Inspector.def_inspector([false, :to_s, :raw]){|v| v.to_s}
-  Inspector.def_inspector([true, :p, :inspect]){|v|
-    begin
-      result = v.inspect
-      if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
-        result = Color.colorize_code(result)
-      end
-      result
-    rescue NoMethodError
-      puts "(Object doesn't support #inspect)"
-      ''
-    end
+  Inspector.def_inspector([:p, :inspect]){|v|
+    Color.colorize_code(v.inspect, colorable: Color.colorable? && Color.inspect_colorable?(v))
   }
-  Inspector.def_inspector([:pp, :pretty_inspect], proc{require "pp"}){|v|
-    result = v.pretty_inspect.chomp
-    if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
-      result = Color.colorize_code(result)
-    end
-    result
+  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require_relative "color_printer"}){|v|
+    IRB::ColorPrinter.pp(v, '').chomp
   }
   Inspector.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin
@@ -136,8 +126,3 @@ module IRB # :nodoc:
     Marshal.dump(v)
   }
 end
-
-
-
-
-

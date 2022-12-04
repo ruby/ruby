@@ -24,7 +24,7 @@ INSN_ENTRY(<%= insn.name %>)
     <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
 % end
 #   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
-    bool leaf = INSN_ATTR(leaf);
+    const bool leaf = INSN_ATTR(leaf);
 % insn.pops.reverse_each.with_index.reverse_each do |pop, i|
     <%= pop[:decl] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
 % end

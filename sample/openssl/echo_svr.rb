@@ -13,9 +13,9 @@ ca_path   = options["C"]
 
 if cert_file && key_file
   cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
-  key  = OpenSSL::PKey::RSA.new(File::read(key_file))
+  key  = OpenSSL::PKey.read(File::read(key_file))
 else
-  key = OpenSSL::PKey::RSA.new(512){ print "." }
+  key = OpenSSL::PKey::RSA.new(2048){ print "." }
   puts
   cert = OpenSSL::X509::Certificate.new
   cert.version = 2
@@ -25,7 +25,7 @@ else
   cert.issuer = name
   cert.not_before = Time.now
   cert.not_after = Time.now + 3600
-  cert.public_key = key.public_key
+  cert.public_key = key
   ef = OpenSSL::X509::ExtensionFactory.new(nil,cert)
   cert.extensions = [
     ef.create_extension("basicConstraints","CA:FALSE"),
@@ -37,7 +37,7 @@ else
   ef.issuer_certificate = cert
   cert.add_extension ef.create_extension("authorityKeyIdentifier",
                                          "keyid:always,issuer:always")
-  cert.sign(key, OpenSSL::Digest.new('SHA1'))
+  cert.sign(key, "SHA1")
 end
 
 ctx = OpenSSL::SSL::SSLContext.new()

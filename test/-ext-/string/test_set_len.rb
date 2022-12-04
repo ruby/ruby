@@ -4,23 +4,25 @@ require "-test-/string"
 
 class Test_StrSetLen < Test::Unit::TestCase
   def setup
-    @s0 = [*"a".."z"].join("").freeze
+    # Make string long enough so that it is not embedded
+    @range_end = ("0".ord + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).chr
+    @s0 = [*"0"..@range_end].join("").freeze
     @s1 = Bug::String.new(@s0)
   end
 
   def teardown
-    orig = [*"a".."z"].join("")
+    orig = [*"0"..@range_end].join("")
     assert_equal(orig, @s0)
   end
 
   def test_non_shared
     @s1.modify!
-    assert_equal("abc", @s1.set_len(3))
+    assert_equal("012", @s1.set_len(3))
   end
 
   def test_shared
     assert_raise(RuntimeError) {
-      assert_equal("abc", @s1.set_len(3))
+      @s1.set_len(3)
     }
   end
 

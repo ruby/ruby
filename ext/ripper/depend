@@ -17,12 +17,9 @@ ripper.o: ripper.c
 all: check
 static: check
 
-ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y {$(VPATH)}id.h
+ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y $(top_srcdir)/defs/id.def
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ \
-		--vpath=$(VPATH)$(PATH_SEPARATOR)$(top_srcdir) id.h $(top_srcdir)/parse.y > ripper.tmp.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/pure_parser.rb ripper.tmp.y $(BISON)
-	$(Q) $(RM) ripper.tmp.y.bak
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb $(top_srcdir)/parse.y > ripper.tmp.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
@@ -52,6 +49,21 @@ ripper.E: ripper.c
 ripper.o: $(RUBY_EXTCONF_H)
 ripper.o: $(arch_hdrdir)/ruby/config.h
 ripper.o: $(hdrdir)/ruby.h
+ripper.o: $(hdrdir)/ruby/assert.h
+ripper.o: $(hdrdir)/ruby/backward.h
+ripper.o: $(hdrdir)/ruby/backward/2/assume.h
+ripper.o: $(hdrdir)/ruby/backward/2/attributes.h
+ripper.o: $(hdrdir)/ruby/backward/2/bool.h
+ripper.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
+ripper.o: $(hdrdir)/ruby/backward/2/inttypes.h
+ripper.o: $(hdrdir)/ruby/backward/2/limits.h
+ripper.o: $(hdrdir)/ruby/backward/2/long_long.h
+ripper.o: $(hdrdir)/ruby/backward/2/stdalign.h
+ripper.o: $(hdrdir)/ruby/backward/2/stdarg.h
+ripper.o: $(hdrdir)/ruby/defines.h
+ripper.o: $(hdrdir)/ruby/encoding.h
+ripper.o: $(hdrdir)/ruby/intern.h
+ripper.o: $(hdrdir)/ruby/internal/abi.h
 ripper.o: $(hdrdir)/ruby/internal/anyargs.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -121,6 +133,15 @@ ripper.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ripper.o: $(hdrdir)/ruby/internal/ctype.h
 ripper.o: $(hdrdir)/ruby/internal/dllexport.h
 ripper.o: $(hdrdir)/ruby/internal/dosish.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/re.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/string.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ripper.o: $(hdrdir)/ruby/internal/error.h
 ripper.o: $(hdrdir)/ruby/internal/eval.h
 ripper.o: $(hdrdir)/ruby/internal/event.h
@@ -186,33 +207,16 @@ ripper.o: $(hdrdir)/ruby/internal/static_assert.h
 ripper.o: $(hdrdir)/ruby/internal/stdalign.h
 ripper.o: $(hdrdir)/ruby/internal/stdbool.h
 ripper.o: $(hdrdir)/ruby/internal/symbol.h
-ripper.o: $(hdrdir)/ruby/internal/token_paste.h
 ripper.o: $(hdrdir)/ruby/internal/value.h
 ripper.o: $(hdrdir)/ruby/internal/value_type.h
 ripper.o: $(hdrdir)/ruby/internal/variable.h
 ripper.o: $(hdrdir)/ruby/internal/warning_push.h
 ripper.o: $(hdrdir)/ruby/internal/xmalloc.h
-ripper.o: $(hdrdir)/ruby/assert.h
-ripper.o: $(hdrdir)/ruby/backward.h
-ripper.o: $(hdrdir)/ruby/backward/2/assume.h
-ripper.o: $(hdrdir)/ruby/backward/2/attributes.h
-ripper.o: $(hdrdir)/ruby/backward/2/bool.h
-ripper.o: $(hdrdir)/ruby/backward/2/extern.h
-ripper.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
-ripper.o: $(hdrdir)/ruby/backward/2/inttypes.h
-ripper.o: $(hdrdir)/ruby/backward/2/limits.h
-ripper.o: $(hdrdir)/ruby/backward/2/long_long.h
-ripper.o: $(hdrdir)/ruby/backward/2/r_cast.h
-ripper.o: $(hdrdir)/ruby/backward/2/rmodule.h
-ripper.o: $(hdrdir)/ruby/backward/2/stdalign.h
-ripper.o: $(hdrdir)/ruby/backward/2/stdarg.h
-ripper.o: $(hdrdir)/ruby/defines.h
-ripper.o: $(hdrdir)/ruby/encoding.h
-ripper.o: $(hdrdir)/ruby/intern.h
 ripper.o: $(hdrdir)/ruby/io.h
 ripper.o: $(hdrdir)/ruby/missing.h
 ripper.o: $(hdrdir)/ruby/onigmo.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h
+ripper.o: $(hdrdir)/ruby/ractor.h
 ripper.o: $(hdrdir)/ruby/regex.h
 ripper.o: $(hdrdir)/ruby/ruby.h
 ripper.o: $(hdrdir)/ruby/st.h
@@ -227,6 +231,7 @@ ripper.o: $(top_srcdir)/internal/bits.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
+ripper.o: $(top_srcdir)/internal/encoding.h
 ripper.o: $(top_srcdir)/internal/error.h
 ripper.o: $(top_srcdir)/internal/fixnum.h
 ripper.o: $(top_srcdir)/internal/gc.h
@@ -242,13 +247,13 @@ ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
 ripper.o: $(top_srcdir)/internal/symbol.h
 ripper.o: $(top_srcdir)/internal/thread.h
-ripper.o: $(top_srcdir)/internal/util.h
 ripper.o: $(top_srcdir)/internal/variable.h
 ripper.o: $(top_srcdir)/internal/vm.h
 ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/ruby_assert.h
+ripper.o: $(top_srcdir)/shape.h
 ripper.o: $(top_srcdir)/symbol.h
 ripper.o: ../../probes.h
 ripper.o: eventids2.c

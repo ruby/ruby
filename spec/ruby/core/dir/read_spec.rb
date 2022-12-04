@@ -39,5 +39,38 @@ describe "Dir#read" do
     entries.sort.should == DirSpecs.expected_paths
   end
 
+  platform_is_not :windows do
+    it "returns all directory entries even when encoding conversion will fail" do
+      dir = Dir.open(File.join(DirSpecs.mock_dir, 'special'))
+      utf8_entries = []
+      begin
+        while entry = dir.read
+          utf8_entries << entry
+        end
+      ensure
+        dir.close
+      end
+      old_internal_encoding = Encoding::default_internal
+      old_external_encoding = Encoding::default_external
+      Encoding.default_internal = Encoding::UTF_8
+      Encoding.default_external = Encoding::SHIFT_JIS
+      shift_jis_entries = []
+      begin
+        Dir.open(File.join(DirSpecs.mock_dir, 'special')) do |d|
+          -> {
+            while entry = d.read
+              shift_jis_entries << entry
+            end
+          }.should_not raise_error
+        end
+      ensure
+        Encoding.default_internal = old_internal_encoding
+        Encoding.default_external = old_external_encoding
+      end
+      shift_jis_entries.size.should == utf8_entries.size
+      shift_jis_entries.filter { |f| f.encoding == Encoding::SHIFT_JIS }.size.should == 1
+    end
+  end
+
   it_behaves_like :dir_closed, :read
 end

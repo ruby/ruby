@@ -49,4 +49,13 @@ describe "String#dup" do
     orig.should == "xtring"
     dup.should == "string"
   end
+
+  it "does not modify the original setbyte-mutated string when changing dupped string" do
+    orig = "a"
+    orig.setbyte 0, "b".ord
+    copy = orig.dup
+    orig.setbyte 0, "c".ord
+    orig.should == "c"
+    copy.should == "b"
+  end
 end

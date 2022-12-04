@@ -149,6 +149,24 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
     return obj;
 }
 
+static VALUE
+ossl_pkey_new_i(VALUE arg)
+{
+    return ossl_pkey_new((EVP_PKEY *)arg);
+}
+
+static VALUE
+ossl_x509_new_i(VALUE arg)
+{
+    return ossl_x509_new((X509 *)arg);
+}
+
+static VALUE
+ossl_x509_sk2ary_i(VALUE arg)
+{
+    return ossl_x509_sk2ary((STACK_OF(X509) *)arg);
+}
+
 /*
  * call-seq:
  *    PKCS12.new -> pkcs12
@@ -186,15 +204,15 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 	ossl_raise(ePKCS12Error, "PKCS12_parse");
     ERR_pop_to_mark();
     if (key) {
-	pkey = rb_protect((VALUE (*)(VALUE))ossl_pkey_new, (VALUE)key, &st);
+	pkey = rb_protect(ossl_pkey_new_i, (VALUE)key, &st);
 	if (st) goto err;
     }
     if (x509) {
-	cert = rb_protect((VALUE (*)(VALUE))ossl_x509_new, (VALUE)x509, &st);
+	cert = rb_protect(ossl_x509_new_i, (VALUE)x509, &st);
 	if (st) goto err;
     }
     if (x509s) {
-	ca = rb_protect((VALUE (*)(VALUE))ossl_x509_sk2ary, (VALUE)x509s, &st);
+	ca = rb_protect(ossl_x509_sk2ary_i, (VALUE)x509s, &st);
 	if (st) goto err;
     }
 

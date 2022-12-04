@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_COLD.
  */
 #include "ruby/internal/compiler_is.h"
@@ -25,7 +25,7 @@
 
 /** Wraps (or simulates) `__attribute__((cold))` */
 #if RBIMPL_COMPILER_IS(SunPro)
-# /* Recent SunPro has __has_attribute, and is borken. */
+# /* Recent SunPro has __has_attribute, and is broken. */
 # /* It reports it has attribute cold, reality isn't (warnings issued). */
 # define RBIMPL_ATTR_COLD() /* void */
 #elif RBIMPL_HAS_ATTRIBUTE(cold)

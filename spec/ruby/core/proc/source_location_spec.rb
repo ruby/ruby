@@ -34,21 +34,21 @@ describe "Proc#source_location" do
     file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
   end
 
-  it "sets the last value to a Fixnum representing the line on which the proc was defined" do
+  it "sets the last value to an Integer representing the line on which the proc was defined" do
     line = @proc.source_location.last
-    line.should be_an_instance_of(Fixnum)
+    line.should be_an_instance_of(Integer)
     line.should == 4
 
     line = @proc_new.source_location.last
-    line.should be_an_instance_of(Fixnum)
+    line.should be_an_instance_of(Integer)
     line.should == 12
 
     line = @lambda.source_location.last
-    line.should be_an_instance_of(Fixnum)
+    line.should be_an_instance_of(Integer)
     line.should == 8
 
     line = @method.source_location.last
-    line.should be_an_instance_of(Fixnum)
+    line.should be_an_instance_of(Integer)
     line.should == 15
   end
 

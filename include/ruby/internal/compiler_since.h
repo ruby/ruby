@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_COMPILER_SINCE.
  */
 #include "ruby/internal/compiler_is.h"
@@ -30,7 +30,7 @@
  * @param   y      Minor version.
  * @param   z      Patchlevel.
  * @retval  true   cc >= x.y.z.
- * @retval  false  oherwise.
+ * @retval  false  otherwise.
  */
 #define RBIMPL_COMPILER_SINCE(cc, x, y, z)     \
      (RBIMPL_COMPILER_IS(cc)                && \
@@ -48,7 +48,7 @@
  * @param   y      Minor version.
  * @param   z      Patchlevel.
  * @retval  true   cc < x.y.z.
- * @retval  false  oherwise.
+ * @retval  false  otherwise.
  */
 #define RBIMPL_COMPILER_BEFORE(cc, x, y, z)    \
      (RBIMPL_COMPILER_IS(cc)                && \

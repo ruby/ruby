@@ -25,7 +25,7 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
           assert_match(/AF_INET6\b/, sock.inspect)
         }
       rescue Errno::EAFNOSUPPORT
-        skip 'AF_INET6 not supported by kernel'
+        omit 'AF_INET6 not supported by kernel'
       end
     end
   end

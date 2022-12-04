@@ -8,14 +8,14 @@
 <ul>
 <%- simple_files.sort.each do |file| -%>
   <li class="file">
-    <a href="<%= file.path %>"><%= h file.page_name %></a>
+    <a href="<%= h file.path %>"><%= h file.page_name %></a>
 <%
    # HACK table_of_contents should not exist on Document
    table = file.parse(file.comment).table_of_contents
    unless table.empty? then %>
     <ul>
 <%- table.each do |heading| -%>
-      <li><a href="<%= file.path %>#<%= heading.aref %>"><%= heading.plain_html %></a>
+      <li><a href="<%= h file.path %>#<%= heading.aref %>"><%= heading.plain_html %></a>
 <%-   end -%>
     </ul>
 <%- end -%>

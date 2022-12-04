@@ -212,6 +212,8 @@ Mon Dec  3 20:28:02 2012  Koichi Sasada  <ko1@atdot.net>
 	  change condition of using `opt_send_simple'.
 	  More method invocations can be simple.
 
+commit\ 8187228de0142d3ac7950b7d977c2849e934c637
+
 Other note that will be ignored
 
     ChangeLog
@@ -270,6 +272,24 @@ Other note that will be ignored
     assert_equal expected, parser.parse_entries
   end
 
+  def test_parse_entries_git
+    parser = util_parser <<-ChangeLog
+commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-21 01:03:52 +0900
+
+    * 2021-01-21 [ci skip]
+ChangeLog
+
+    expected = [
+      [ "709bed2afaee50e2ce80",
+       [ "git", "svn-admin@ruby-lang.org",
+         "2021-01-21 01:03:52 +0900",
+         "* 2021-01-21 [ci skip]\n"]]]
+
+    assert_equal expected, parser.parse_entries
+  end
+
   def test_scan
     parser = util_parser <<-ChangeLog
 Tue Dec  4 08:32:10 2012  Eric Hodel  <drbrain@segment7.net>
@@ -309,10 +329,157 @@ Mon Dec  3 20:37:22 2012  Koichi Sasada  <ko1@atdot.net>
     assert_equal expected, @top_level.comment
   end
 
+  def test_scan_git
+    parser = util_parser <<-ChangeLog
+commit\ 38816887962ec167ee46acf500f68df5c3013163
+Author: git <svn-admin@ruby-lang.org>
+Date:   Sun Jan 24 14:35:51 2021 +0900
+
+    * 2021-01-24 [ci skip]
+
+commit\ db7d0b89f6eca66cc7eb155c95f9123133da1ffc
+Author: git <svn-admin@ruby-lang.org>
+Date:   Sat, 23 Jan 2021 06:01:39 +0900
+
+    * 2021-01-23 [ci skip]
+
+commit\ a3efbda7128ef20b55505b32d1608ea48f80af4a
+Author: git <svn-admin@ruby-lang.org>
+Date:   2021-01-22T02:49:39+09:00
+
+    * 2021-01-22 [ci skip]
+
+commit\ 709bed2afaee50e2ce803f87bf1ee8291bea41e3
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-21 01:03:52 +0900
+
+    * 2021-01-21 [ci skip]
+
+commit\ a8dc5156e183489c5121fb1759bda5d9406d9175
+  Author: git <svn-admin@ruby-lang.org>
+  Date:   2021-01-20 01:58:26 +0900
+
+    * 2021-01-20 [ci skip]
+
+commit\ de5f8a92d5001799bedb3b1a271a2d9b23c6c8fb
+  Author: Masataka Pocke Kuwabara <kuwabara@pocke.me>
+  Date:   2021-01-01 14:25:08 +0900
+
+    Make args info for RubyVM::AST to available on endless method without parens
+
+    Problem
+    ===
+
+    Arguments information is missing for endless method without parens.
+    For example:
+
+    ```ruby
+    # ok
+    ```
+
+    It causes an error if a program expects `args` node exists.
+
+    Solution
+    ===
+
+    Call `new_args` on this case.
+ChangeLog
+
+    parser.scan
+
+    expected = doc(
+      head(1, File.basename(@tempfile.path)),
+      blank_line,
+      head(2, '2021-01-24'),
+      blank_line,
+      log_entry(nil, '38816887962ec167ee46',
+                'git', 'svn-admin@ruby-lang.org', 'Sun Jan 24 14:35:51 2021 +0900',
+                [list(:BULLET, item(nil, para('2021-01-24 [ci skip]')))]),
+      head(2, '2021-01-23'),
+      blank_line,
+      log_entry(nil, 'db7d0b89f6eca66cc7eb',
+                'git', 'svn-admin@ruby-lang.org', 'Sat, 23 Jan 2021 06:01:39 +0900',
+                [list(:BULLET, item(nil, para('2021-01-23 [ci skip]')))]),
+      head(2, '2021-01-22'),
+      blank_line,
+      log_entry(nil, 'a3efbda7128ef20b5550',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-22T02:49:39+09:00',
+                [list(:BULLET, item(nil, para('2021-01-22 [ci skip]')))]),
+      head(2, '2021-01-21'),
+      blank_line,
+      log_entry(nil, '709bed2afaee50e2ce80',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-21 01:03:52 +0900',
+                [list(:BULLET, item(nil, para('2021-01-21 [ci skip]')))]),
+      head(2, '2021-01-20'),
+      blank_line,
+      log_entry(nil, 'a8dc5156e183489c5121',
+                'git', 'svn-admin@ruby-lang.org', '2021-01-20 01:58:26 +0900',
+                [list(:BULLET, item(nil, para('2021-01-20 [ci skip]')))]),
+      head(2, '2021-01-01'),
+      blank_line,
+      log_entry(nil, 'de5f8a92d5001799bedb',
+                'Masataka Pocke Kuwabara', 'kuwabara@pocke.me', '2021-01-01 14:25:08 +0900',
+                [head(4, 'Make args info for RubyVM::AST to available on endless method without parens'),
+                 head(5, 'Problem'),
+                 para("Arguments information is missing for endless method without parens.\n" +
+                      "For example:"),
+                 verb("# ok\n").tap {|v| v.format = :ruby},
+                 para('It causes an error if a program expects <code>args</code> node exists.'),
+                 head(5, 'Solution'),
+                 para('Call <code>new_args</code> on this case.')]))
+
+    expected.file = @top_level
+
+    assert_equal expected, @top_level.comment
+  end
+
+  def test_scan_git_commit_date
+    parser = util_parser <<-ChangeLog
+commit\ ee1e690a2df901adb279d7a63fbd92c64e0a5ae6
+  Author:     Igor Zubkov <igor.zubkov@gmail.com>
+  AuthorDate: 2016-10-25 03:56:11 +0900
+  Commit:     Nobuyoshi Nakada <nobu@ruby-lang.org>
+  CommitDate: 2021-01-07 13:40:42 +0900
+
+    We don't need "require 'uri'" after "require 'net/http'".
+
+commit\ 4d0985a7bd8f591dff4b430e288bfd83af782e51
+  Author:     git <svn-admin@ruby-lang.org>
+  AuthorDate: 2021-01-07 10:21:34 +0900
+  Commit:     git <svn-admin@ruby-lang.org>
+  CommitDate: 2021-01-07 10:21:34 +0900
+
+    * 2021-01-07 [ci skip]
+ChangeLog
+
+    parser.scan
+
+    expected = doc(
+      head(1, File.basename(@tempfile.path)),
+      blank_line,
+      head(2, "2021-01-07"),
+      blank_line,
+      log_entry(nil, 'ee1e690a2df901adb279',
+                'Igor Zubkov', 'igor.zubkov@gmail.com',
+                '2016-10-25 03:56:11 +0900',
+                [head(4, %[We don't need "require 'uri'" after "require 'net/http'".])]),
+      log_entry(nil, '4d0985a7bd8f591dff4b',
+                'git', 'svn-admin@ruby-lang.org',
+                '2021-01-07 10:21:34 +0900',
+                [list(:BULLET, item(nil, para("2021-01-07 [ci skip]")))]))
+
+    expected.file = @top_level
+
+    assert_equal expected, @top_level.comment
+  end
+
   def util_parser content = ''
     RDoc::Parser::ChangeLog.new \
       @top_level, @tempfile.path, content, @options, @stats
   end
 
+  def log_entry(*a)
+    RDoc::Parser::ChangeLog::Git::LogEntry.new(*a)
+  end
 end
 

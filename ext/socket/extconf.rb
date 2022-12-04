@@ -316,6 +316,7 @@ end
   netpacket/packet.h
   net/ethernet.h
   sys/un.h
+  afunix.h
   ifaddrs.h
   sys/ioctl.h
   sys/sockio.h
@@ -444,7 +445,6 @@ else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
   have_library("socket", "socket(0,0,0)", headers) # SunOS
-  have_library("anl", 'getaddrinfo_a', headers)
 end
 
 if have_func(test_func, headers)
@@ -485,6 +485,9 @@ EOF
   have_func("getpeerucred(0, (ucred_t **)NULL)", headers) # SunOS
 
   have_func_decl = proc do |name, headers|
+    # check if there is a declaration of <name> by trying to declare
+    # both "int <name>(void)" and "void <name>(void)"
+    # (at least one attempt should fail if there is a declaration)
     if !checking_for("declaration of #{name}()") {!%w[int void].all? {|ret| try_compile(<<EOF)}}
 #{cpp_include(headers)}
 #{ret} #{name}(void);
@@ -493,10 +496,10 @@ EOF
     end
   end
   if have_func('if_indextoname(0, "")', headers)
-    have_func_decl["if_indextoname"]
+    have_func_decl["if_indextoname", headers]
   end
   if have_func('if_nametoindex("")', headers)
-    have_func_decl["if_nametoindex"]
+    have_func_decl["if_nametoindex", headers]
   end
 
   have_func("hsterror", headers)
@@ -506,7 +509,6 @@ EOF
   unless have_func("gethostname((char *)0, 0)", headers)
     have_func("uname((struct utsname *)NULL)", headers)
   end
-  have_func("getaddrinfo_a", headers)
 
   ipv6 = false
   default_ipv6 = /haiku/ !~ RUBY_PLATFORM
@@ -550,7 +552,7 @@ EOS
   end
 
   if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
-    IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
+    File.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
       have_const(name, headers) unless $defs.include?("-DHAVE_CONST_#{name.upcase}")
     }
   end
@@ -654,12 +656,20 @@ EOS
   end
 
   hdr = "netinet6/in6.h"
-  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+  /darwin/ =~ RUBY_PLATFORM and
+  checking_for("if apple's #{hdr} needs s6_addr patch") {!try_compile(<<"SRC", nil, :werror=>true)} and
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
-    in6 = File.read("/usr/include/#{hdr}")
+  checking_for("fixing apple's #{hdr}", "%s") do
+    file = xpopen(%w"clang -include netinet/in.h -E -xc -", in: IO::NULL) do |f|
+      re = %r[^# *\d+ *"(.*/netinet/in\.h)"]
+      Logging.message "  grep(#{re})\n"
+      f.read[re, 1]
+    end
+    Logging.message "Substitute from #{file}\n"
+
+    in6 = File.read(file)
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)
         if r.zero?
@@ -669,12 +679,12 @@ SRC
         end
       end
       FileUtils.mkdir_p(File.dirname(hdr))
-      open(hdr, "w") {|f| f.write(in6)}
+      File.write(hdr, in6)
       $distcleanfiles << hdr
       $distcleandirs << File.dirname(hdr)
-      puts "done"
+      "done"
     else
-      puts "not needed"
+      "not needed"
     end
   end
   create_makefile("socket")

@@ -12,11 +12,14 @@ RSpec.describe "bundle gem" do
 
   def bundle_exec_rubocop
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    rubocop_version = RUBY_VERSION > "2.4" ? "0.85.1" : "0.80.1"
-    gems = ["minitest", "rake", "rake-compiler", "rspec", "rubocop -v #{rubocop_version}", "test-unit"]
-    path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(:base => bundled_app(gem_name)) : system_gem_path
-    realworld_system_gems gems, :path => path
-    bundle "exec rubocop --config .rubocop.yml", :dir => bundled_app(gem_name)
+    bundle "config set path #{rubocop_gems}", :dir => bundled_app(gem_name)
+    bundle "exec rubocop --debug --config .rubocop.yml", :dir => bundled_app(gem_name)
+  end
+
+  def bundle_exec_standardrb
+    prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
+    bundle "config set path #{standard_gems}", :dir => bundled_app(gem_name)
+    bundle "exec standardrb --debug", :dir => bundled_app(gem_name)
   end
 
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
@@ -25,78 +28,43 @@ RSpec.describe "bundle gem" do
 
   let(:require_path) { "mygem" }
 
+  let(:minitest_test_file_path) { "test/test_mygem.rb" }
+
+  let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
+
   before do
-    git_config_content = <<-EOF
-    [user]
-      name = "Bundler User"
-      email = user@example.com
-    [github]
-      user = bundleuser
-    EOF
-    @git_config_location = ENV["GIT_CONFIG"]
-    path = "#{tmp}/test_git_config.txt"
-    File.open(path, "w") {|f| f.write(git_config_content) }
-    ENV["GIT_CONFIG"] = path
-  end
-
-  after do
-    FileUtils.rm(ENV["GIT_CONFIG"]) if File.exist?(ENV["GIT_CONFIG"])
-    ENV["GIT_CONFIG"] = @git_config_location
-  end
-
-  shared_examples_for "git config is present" do
-    context "git config user.{name,email} present" do
-      it "sets gemspec author to git user.name if available" do
-        expect(generated_gemspec.authors.first).to eq("Bundler User")
-      end
-
-      it "sets gemspec email to git user.email if available" do
-        expect(generated_gemspec.email.first).to eq("user@example.com")
-      end
-    end
-  end
-
-  shared_examples_for "git config is absent" do
-    it "sets gemspec author to default message if git user.name is not set or empty" do
-      expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
-    end
-
-    it "sets gemspec email to default message if git user.email is not set or empty" do
-      expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
-    end
+    sys_exec("git config --global user.name 'Bundler User'")
+    sys_exec("git config --global user.email user@example.com")
+    sys_exec("git config --global github.user bundleuser")
   end
 
   describe "git repo initialization" do
-    shared_examples_for "a gem with an initial git repo" do
+    it "generates a gem skeleton with a .git folder", :readline do
+      bundle "gem #{gem_name}"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
+    end
+
+    it "generates a gem skeleton with a .git folder when passing --git", :readline do
+      bundle "gem #{gem_name} --git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
+    end
+
+    it "generates a gem skeleton without a .git folder when passing --no-git", :readline do
+      bundle "gem #{gem_name} --no-git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).not_to exist
+    end
+
+    context "on a path with spaces" do
       before do
-        bundle "gem #{gem_name} #{flags}"
+        Dir.mkdir(bundled_app("path with spaces"))
       end
 
-      it "generates a gem skeleton with a .git folder", :readline do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).to exist
-      end
-    end
-
-    context "when using the default" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "" }
-      end
-    end
-
-    context "when explicitly passing --git" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "--git" }
-      end
-    end
-
-    context "when passing --no-git", :readline do
-      before do
-        bundle "gem #{gem_name} --no-git"
-      end
-      it "generates a gem skeleton without a .git folder" do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).not_to exist
+      it "properly initializes git repo", :readline do
+        bundle "gem #{gem_name}", :dir => bundled_app("path with spaces")
+        expect(bundled_app("path with spaces/#{gem_name}/.git")).to exist
       end
     end
   end
@@ -123,19 +91,24 @@ RSpec.describe "bundle gem" do
   end
 
   shared_examples_for "--coc flag" do
-    before do
-      bundle "gem #{gem_name} --coc"
-    end
     it "generates a gem skeleton with MIT license" do
+      bundle "gem #{gem_name} --coc"
       gem_skeleton_assertions
       expect(bundled_app("#{gem_name}/CODE_OF_CONDUCT.md")).to exist
     end
 
-    describe "README additions" do
-      it "generates the README with a section for the Code of Conduct" do
-        expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
-        expect(bundled_app("#{gem_name}/README.md").read).to include("https://github.com/bundleuser/#{gem_name}/blob/master/CODE_OF_CONDUCT.md")
-      end
+    it "generates the README with a section for the Code of Conduct" do
+      bundle "gem #{gem_name} --coc"
+      expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).to match(%r{https://github\.com/bundleuser/#{gem_name}/blob/.*/CODE_OF_CONDUCT.md})
+    end
+
+    it "generates the README with a section for the Code of Conduct, respecting the configured git default branch", :git => ">= 2.28.0" do
+      sys_exec("git config --global init.defaultBranch main")
+      bundle "gem #{gem_name} --coc"
+
+      expect(bundled_app("#{gem_name}/README.md").read).to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).to include("https://github.com/bundleuser/#{gem_name}/blob/main/CODE_OF_CONDUCT.md")
     end
   end
 
@@ -148,17 +121,95 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/CODE_OF_CONDUCT.md")).to_not exist
     end
 
-    describe "README additions" do
-      it "generates the README without a section for the Code of Conduct" do
-        expect(bundled_app("#{gem_name}/README.md").read).not_to include("## Code of Conduct")
-        expect(bundled_app("#{gem_name}/README.md").read).not_to include("https://github.com/bundleuser/#{gem_name}/blob/master/CODE_OF_CONDUCT.md")
-      end
+    it "generates the README without a section for the Code of Conduct" do
+      expect(bundled_app("#{gem_name}/README.md").read).not_to include("## Code of Conduct")
+      expect(bundled_app("#{gem_name}/README.md").read).not_to match(%r{https://github\.com/bundleuser/#{gem_name}/blob/.*/CODE_OF_CONDUCT.md})
+    end
+  end
+
+  shared_examples_for "--changelog flag" do
+    before do
+      bundle "gem #{gem_name} --changelog"
+    end
+    it "generates a gem skeleton with a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to exist
+    end
+  end
+
+  shared_examples_for "--no-changelog flag" do
+    before do
+      bundle "gem #{gem_name} --no-changelog"
+    end
+    it "generates a gem skeleton without a CHANGELOG", :readline do
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/CHANGELOG.md")).to_not exist
     end
   end
 
   shared_examples_for "--rubocop flag" do
+    context "is deprecated", :bundler => "< 3" do
+      before do
+        bundle "gem #{gem_name} --rubocop"
+      end
+
+      it "generates a gem skeleton with rubocop" do
+        gem_skeleton_assertions
+        expect(bundled_app("test-gem/Rakefile")).to read_as(
+          include("# frozen_string_literal: true").
+          and(include('require "rubocop/rake_task"').
+          and(include("RuboCop::RakeTask.new").
+          and(match(/default:.+:rubocop/))))
+        )
+      end
+
+      it "includes rubocop in generated Gemfile" do
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+        builder = Bundler::Dsl.new
+        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+        builder.dependencies
+        rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
+        expect(rubocop_dep).not_to be_nil
+      end
+
+      it "generates a default .rubocop.yml" do
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+      end
+    end
+  end
+
+  shared_examples_for "--no-rubocop flag" do
+    context "is deprecated", :bundler => "< 3" do
+      define_negated_matcher :exclude, :include
+
+      before do
+        bundle "gem #{gem_name} --no-rubocop"
+      end
+
+      it "generates a gem skeleton without rubocop" do
+        gem_skeleton_assertions
+        expect(bundled_app("test-gem/Rakefile")).to read_as(exclude("rubocop"))
+        expect(bundled_app("test-gem/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
+      end
+
+      it "does not include rubocop in generated Gemfile" do
+        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+        builder = Bundler::Dsl.new
+        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+        builder.dependencies
+        rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
+        expect(rubocop_dep).to be_nil
+      end
+
+      it "doesn't generate a default .rubocop.yml" do
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+      end
+    end
+  end
+
+  shared_examples_for "--linter=rubocop flag" do
     before do
-      bundle "gem #{gem_name} --rubocop"
+      bundle "gem #{gem_name} --linter=rubocop"
     end
 
     it "generates a gem skeleton with rubocop" do
@@ -185,11 +236,38 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  shared_examples_for "--no-rubocop flag" do
+  shared_examples_for "--linter=standard flag" do
+    before do
+      bundle "gem #{gem_name} --linter=standard"
+    end
+
+    it "generates a gem skeleton with standard" do
+      gem_skeleton_assertions
+      expect(bundled_app("test-gem/Rakefile")).to read_as(
+        include('require "standard/rake"').
+        and(match(/default:.+:standard/))
+      )
+    end
+
+    it "includes standard in generated Gemfile" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      builder = Bundler::Dsl.new
+      builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+      builder.dependencies
+      standard_dep = builder.dependencies.find {|d| d.name == "standard" }
+      expect(standard_dep).not_to be_nil
+    end
+
+    it "generates a default .standard.yml" do
+      expect(bundled_app("#{gem_name}/.standard.yml")).to exist
+    end
+  end
+
+  shared_examples_for "--linter=none flag" do
     define_negated_matcher :exclude, :include
 
     before do
-      bundle "gem #{gem_name} --no-rubocop"
+      bundle "gem #{gem_name} --linter=none"
     end
 
     it "generates a gem skeleton without rubocop" do
@@ -207,44 +285,64 @@ RSpec.describe "bundle gem" do
       expect(rubocop_dep).to be_nil
     end
 
+    it "does not include standard in generated Gemfile" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      builder = Bundler::Dsl.new
+      builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+      builder.dependencies
+      standard_dep = builder.dependencies.find {|d| d.name == "standard" }
+      expect(standard_dep).to be_nil
+    end
+
     it "doesn't generate a default .rubocop.yml" do
       expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
     end
+
+    it "doesn't generate a default .standard.yml" do
+      expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+    end
   end
 
-  it "has no rubocop offenses when using --rubocop flag", :readline do
+  it "has no rubocop offenses when using --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --rubocop"
+    bundle "gem #{gem_name} --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext and --rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --rubocop"
+    bundle "gem #{gem_name} --ext --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --test=minitest, and --rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext, --test=minitest, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=minitest --rubocop"
+    bundle "gem #{gem_name} --ext --test=minitest --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --test=rspec, and --rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext, --test=rspec, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=rspec --rubocop"
+    bundle "gem #{gem_name} --ext --test=rspec --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --ext=test-unit, and --rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext, --ext=test-unit, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=test-unit --rubocop"
+    bundle "gem #{gem_name} --ext --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
+  end
+
+  it "has no standard offenses when using --linter=standard flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    bundle "gem #{gem_name} --linter=standard"
+    bundle_exec_standardrb
+    expect(last_command).to be_success
   end
 
   shared_examples_for "CI config is absent" do
@@ -280,7 +378,7 @@ RSpec.describe "bundle gem" do
 
     context "git config github.user is absent" do
       before do
-        sys_exec("git config --unset github.user")
+        sys_exec("git config --global --unset github.user")
         bundle "gem #{gem_name}"
       end
 
@@ -361,6 +459,55 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  shared_examples_for "--github-username option" do |github_username|
+    before do
+      bundle "gem #{gem_name} --github-username=#{github_username}"
+    end
+
+    it "generates a gem skeleton" do
+      gem_skeleton_assertions
+    end
+
+    it "contribute URL set to given github username" do
+      expect(bundled_app("#{gem_name}/README.md").read).not_to include("[USERNAME]")
+      expect(bundled_app("#{gem_name}/README.md").read).to include("github.com/#{github_username}")
+    end
+  end
+
+  shared_examples_for "github_username configuration" do
+    context "with github_username setting set to some value" do
+      before do
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates a gem skeleton" do
+        gem_skeleton_assertions
+      end
+
+      it "contribute URL set to bundle config setting" do
+        expect(bundled_app("#{gem_name}/README.md").read).not_to include("[USERNAME]")
+        expect(bundled_app("#{gem_name}/README.md").read).to include("github.com/different_username")
+      end
+    end
+
+    context "with github_username setting set to false" do
+      before do
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates a gem skeleton" do
+        gem_skeleton_assertions
+      end
+
+      it "contribute URL set to [USERNAME]" do
+        expect(bundled_app("#{gem_name}/README.md").read).to include("[USERNAME]")
+        expect(bundled_app("#{gem_name}/README.md").read).not_to include("github.com/bundleuser")
+      end
+    end
+  end
+
   shared_examples_for "generating a gem" do
     it "generates a gem skeleton" do
       bundle "gem #{gem_name}"
@@ -370,12 +517,15 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/Rakefile")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs")).to exist
       expect(bundled_app("#{gem_name}/.gitignore")).to exist
 
       expect(bundled_app("#{gem_name}/bin/setup")).to exist
       expect(bundled_app("#{gem_name}/bin/console")).to exist
       expect(bundled_app("#{gem_name}/bin/setup")).to be_executable
       expect(bundled_app("#{gem_name}/bin/console")).to be_executable
+      expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
+      expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
     end
 
     it "starts with version 0.1.0" do
@@ -384,49 +534,73 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb").read).to match(/VERSION = "0.1.0"/)
     end
 
+    it "declare String type for VERSION constant" do
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs").read).to match(/VERSION: String/)
+    end
+
     context "git config user.{name,email} is set" do
       before do
         bundle "gem #{gem_name}"
       end
 
-      it_should_behave_like "git config is present"
+      it "sets gemspec author to git user.name if available" do
+        expect(generated_gemspec.authors.first).to eq("Bundler User")
+      end
+
+      it "sets gemspec email to git user.email if available" do
+        expect(generated_gemspec.email.first).to eq("user@example.com")
+      end
     end
 
     context "git config user.{name,email} is not set" do
       before do
-        sys_exec("git config --unset user.name", :dir => bundled_app)
-        sys_exec("git config --unset user.email", :dir => bundled_app)
+        sys_exec("git config --global --unset user.name")
+        sys_exec("git config --global --unset user.email")
         bundle "gem #{gem_name}"
       end
 
-      it_should_behave_like "git config is absent"
+      it "sets gemspec author to default message if git user.name is not set or empty" do
+        expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
+      end
+
+      it "sets gemspec email to default message if git user.email is not set or empty" do
+        expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
+      end
     end
 
     it "sets gemspec metadata['allowed_push_host']" do
       bundle "gem #{gem_name}"
 
       expect(generated_gemspec.metadata["allowed_push_host"]).
-        to match(/mygemserver\.com/)
+        to match(/example\.com/)
     end
 
     it "sets a minimum ruby version" do
       bundle "gem #{gem_name}"
 
-      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
-
-      expect(bundler_gemspec.required_ruby_version).to eq(generated_gemspec.required_ruby_version)
+      expect(generated_gemspec.required_ruby_version.to_s).to start_with(">=")
     end
 
     it "requires the version file" do
       bundle "gem #{gem_name}"
 
-      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require "#{require_path}/version"})
+      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require_relative "#{require_relative_path}/version"})
     end
 
     it "creates a base error class" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
+    end
+
+    it "does not include the gemspec file in files" do
+      bundle "gem #{gem_name}"
+
+      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
+
+      expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
     end
 
     it "runs rake without problems" do
@@ -532,7 +706,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
     end
@@ -552,7 +726,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
 
@@ -561,11 +735,15 @@ RSpec.describe "bundle gem" do
       end
 
       it "requires 'test_helper'" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include(%(require "test_helper"))
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(%(require "test_helper"))
+      end
+
+      it "defines valid test class name" do
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(minitest_test_class_name)
       end
 
       it "creates a default test which fails" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert false")
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include("assert false")
       end
     end
 
@@ -585,7 +763,7 @@ RSpec.describe "bundle gem" do
           Rake::TestTask.new(:test) do |t|
             t.libs << "test"
             t.libs << "lib"
-            t.test_files = FileList["test/**/*_test.rb"]
+            t.test_files = FileList["test/**/test_*.rb"]
           end
 
           task default: :test
@@ -839,6 +1017,127 @@ RSpec.describe "bundle gem" do
       end
     end
 
+    context "--linter with no argument" do
+      it "does not generate any linter config" do
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+      end
+    end
+
+    context "--linter set to rubocop" do
+      it "generates a RuboCop config" do
+        bundle "gem #{gem_name} --linter=rubocop"
+
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+      end
+    end
+
+    context "--linter set to standard" do
+      it "generates a Standard config" do
+        bundle "gem #{gem_name} --linter=standard"
+
+        expect(bundled_app("#{gem_name}/.standard.yml")).to exist
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+      end
+    end
+
+    context "gem.linter setting set to none" do
+      it "doesn't generate any linter config" do
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+      end
+    end
+
+    context "gem.linter setting set to rubocop" do
+      it "generates a RuboCop config file" do
+        bundle "config set gem.linter rubocop"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+      end
+    end
+
+    context "gem.linter setting set to standard" do
+      it "generates a Standard config file" do
+        bundle "config set gem.linter standard"
+        bundle "gem #{gem_name}"
+
+        expect(bundled_app("#{gem_name}/.standard.yml")).to exist
+      end
+    end
+
+    context "gem.rubocop setting set to true", :bundler => "< 3" do
+      before do
+        bundle "config set gem.rubocop true"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates rubocop config" do
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+      end
+
+      it "unsets gem.rubocop" do
+        bundle "config gem.rubocop"
+        expect(out).to include("You have not configured a value for `gem.rubocop`")
+      end
+
+      it "sets gem.linter=rubocop instead" do
+        bundle "config gem.linter"
+        expect(out).to match(/Set for the current user .*: "rubocop"/)
+      end
+    end
+
+    context "gem.linter set to rubocop and --linter with no arguments", :hint_text do
+      before do
+        bundle "config set gem.linter rubocop"
+        bundle "gem #{gem_name} --linter"
+      end
+
+      it "generates a RuboCop config file" do
+        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+      end
+
+      it "hints that --linter is already configured" do
+        expect(out).to match("rubocop is already configured, ignoring --linter flag.")
+      end
+    end
+
+    context "gem.linter setting set to false and --linter with no arguments", :hint_text do
+      before do
+        bundle "config set gem.linter false"
+        bundle "gem #{gem_name} --linter"
+      end
+
+      it "asks to setup a linter" do
+        expect(out).to match("Do you want to add a code linter and formatter to your gem?")
+      end
+
+      it "hints that the choice will only be applied to the current gem" do
+        expect(out).to match("Your choice will only be applied to this gem.")
+      end
+    end
+
+    context "gem.linter setting not set and --linter with no arguments", :hint_text do
+      before do
+        bundle "gem #{gem_name} --linter"
+      end
+
+      it "asks to setup a linter" do
+        expect(out).to match("Do you want to add a code linter and formatter to your gem?")
+      end
+
+      it "hints that the choice will be applied to future bundle gem calls" do
+        hint = "Future `bundle gem` calls will use your choice. " \
+               "This setting can be changed anytime with `bundle config gem.linter`."
+        expect(out).to match(hint)
+      end
+    end
+
     context "--edit option" do
       it "opens the generated gemspec in the user's text editor" do
         output = bundle "gem #{gem_name} --edit=echo"
@@ -889,6 +1188,9 @@ RSpec.describe "bundle gem" do
       before do
         global_config "BUNDLE_GEM__RUBOCOP" => "true"
       end
+      it_behaves_like "--linter=rubocop flag"
+      it_behaves_like "--linter=standard flag"
+      it_behaves_like "--linter=none flag"
       it_behaves_like "--rubocop flag"
       it_behaves_like "--no-rubocop flag"
     end
@@ -897,8 +1199,105 @@ RSpec.describe "bundle gem" do
       before do
         global_config "BUNDLE_GEM__RUBOCOP" => "false"
       end
+      it_behaves_like "--linter=rubocop flag"
+      it_behaves_like "--linter=standard flag"
+      it_behaves_like "--linter=none flag"
       it_behaves_like "--rubocop flag"
       it_behaves_like "--no-rubocop flag"
+    end
+
+    context "with linter option in bundle config settings set to rubocop" do
+      before do
+        global_config "BUNDLE_GEM__LINTER" => "rubocop"
+      end
+      it_behaves_like "--linter=rubocop flag"
+      it_behaves_like "--linter=standard flag"
+      it_behaves_like "--linter=none flag"
+    end
+
+    context "with linter option in bundle config settings set to standard" do
+      before do
+        global_config "BUNDLE_GEM__LINTER" => "standard"
+      end
+      it_behaves_like "--linter=rubocop flag"
+      it_behaves_like "--linter=standard flag"
+      it_behaves_like "--linter=none flag"
+    end
+
+    context "with linter option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__LINTER" => "false"
+      end
+      it_behaves_like "--linter=rubocop flag"
+      it_behaves_like "--linter=standard flag"
+      it_behaves_like "--linter=none flag"
+    end
+
+    context "with changelog option in bundle config settings set to true" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "true"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
+
+    context "with changelog option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__CHANGELOG" => "false"
+      end
+      it_behaves_like "--changelog flag"
+      it_behaves_like "--no-changelog flag"
+    end
+  end
+
+  context "testing --github-username option against git and bundle config settings", :readline do
+    context "without git config set" do
+      before do
+        sys_exec("git config --global --unset github.user")
+      end
+      context "with github-username option in bundle config settings set to some value" do
+        before do
+          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        end
+        it_behaves_like "--github-username option", "gh_user"
+      end
+
+      context "with github-username option in bundle config settings set to false" do
+        before do
+          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        end
+        it_behaves_like "--github-username option", "gh_user"
+      end
+    end
+
+    context "with git config set" do
+      context "with github-username option in bundle config settings set to some value" do
+        before do
+          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        end
+        it_behaves_like "--github-username option", "gh_user"
+      end
+
+      context "with github-username option in bundle config settings set to false" do
+        before do
+          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        end
+        it_behaves_like "--github-username option", "gh_user"
+      end
+    end
+  end
+
+  context "testing github_username bundle config against git config settings", :readline do
+    context "without git config set" do
+      before do
+        sys_exec("git config --global --unset github.user")
+      end
+
+      it_behaves_like "github_username configuration"
+    end
+
+    context "with git config set" do
+      it_behaves_like "github_username configuration"
     end
   end
 
@@ -906,6 +1305,12 @@ RSpec.describe "bundle gem" do
     let(:gem_name) { "test_gem" }
 
     let(:require_path) { "test_gem" }
+
+    let(:require_relative_path) { "test_gem" }
+
+    let(:minitest_test_file_path) { "test/test_test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class TestTestGem < Minitest::Test" }
 
     let(:flags) { nil }
 
@@ -959,6 +1364,12 @@ RSpec.describe "bundle gem" do
     let(:gem_name) { "test-gem" }
 
     let(:require_path) { "test/gem" }
+
+    let(:require_relative_path) { "gem" }
+
+    let(:minitest_test_file_path) { "test/test/test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class Test::TestGem < Minitest::Test" }
 
     it "nests constants so they work" do
       bundle "gem #{gem_name}"
@@ -1051,7 +1462,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CI service" do
-      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
+      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false"
 
       bundle "gem foobar" do |input, _, _|
         input.puts "github"
@@ -1061,7 +1472,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about MIT license" do
-      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
+      global_config "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__LINTER" => "false"
 
       bundle "config list"
 
@@ -1073,7 +1484,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CoC" do
-      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__RUBOCOP" => "false"
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__LINTER" => "false"
 
       bundle "gem foobar" do |input, _, _|
         input.puts "yes"
@@ -1081,13 +1492,24 @@ Usage: "bundle gem NAME [OPTIONS]"
 
       expect(bundled_app("foobar/CODE_OF_CONDUCT.md")).to exist
     end
+
+    it "asks about CHANGELOG" do
+      global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__LINTER" => "false",
+                    "BUNDLE_GEM__COC" => "false"
+
+      bundle "gem foobar" do |input, _, _|
+        input.puts "yes"
+      end
+
+      expect(bundled_app("foobar/CHANGELOG.md")).to exist
+    end
   end
 
   context "on conflicts with a previously created file", :readline do
     it "should fail gracefully" do
       FileUtils.touch(bundled_app("conflict-foobar"))
       bundle "gem conflict-foobar", :raise_on_error => false
-      expect(err).to include("Errno::ENOTDIR")
+      expect(err).to eq("Couldn't create a new gem named `conflict-foobar` because there's an existing file named `conflict-foobar`.")
       expect(exitstatus).to eql(32)
     end
   end

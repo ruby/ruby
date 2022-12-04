@@ -493,7 +493,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : remove some line break
 
-	* yarvcore.c : reoder initialize sequence to mark main thread
+	* yarvcore.c : reorder initialize sequence to mark main thread
 
 
 2006-08-18(Fri) 16:51:34 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -1481,7 +1481,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : ditto
 
-	* yarvtest/test_thread.rb : separete assersions to tests
+	* yarvtest/test_thread.rb : separate assertions to tests
 
 
 2006-02-21(Tue) 02:13:33 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1503,7 +1503,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : support Proc#dup/clone, Binding#dup/clone
 
-	* sample/test.rb : remove unsupport features (Proc as Binding)
+	* sample/test.rb : remove unsupported features (Proc as Binding)
 
 
 2006-02-20(Mon) 16:28:59 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -1560,7 +1560,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvtest/test_thread.rb : add a test for above
 
 	* vm.h, vm.c, vm_dump.c, insns.def : add FRAME_MAGIC_LAMBDA and
-	support return from lambda (especially retrun from method defined
+	support return from lambda (especially return from method defined
 	by "define_method")
 
 	* yarvtest/test_method.rb : add a test for above
@@ -1606,7 +1606,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : "return" from lambda{} break block
 
-	* eval.c : Unsupport Proc as Binding
+	* eval.c : Unsupported Proc as Binding
 
 	* test/ruby/test_eval.rb : apply above changes
 
@@ -3816,7 +3816,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2005-12-29(Thu) 12:27:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h :
-	remvoe needless yarv_iseq_t#rewind_frame_size
+	remove needless yarv_iseq_t#rewind_frame_size
 
 
 2005-12-29(Thu) 11:17:58 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -4530,7 +4530,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix return process
 
-	* vm_macro.def : fix option prameters
+	* vm_macro.def : fix option parameters
 
 	* yarvtest/test_method.rb : add tests for above
 
@@ -4555,7 +4555,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h : fix PASS_PASSED_BLOCK()
 
-	* eval_load.c : fix re-enter require (temporalily)
+	* eval_load.c : fix re-enter require (temporarily)
 
 	* insns.def : permit re-open class when superclass is same
 
@@ -4729,7 +4729,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* eval.c, eval_intern.h, vm.c, eval_jump.h, yarvcore.h :
 	re-define PUSH/POP/EXEC/JUMP_TAG to use thread local tag
 
-	* inits.c, yarvcore.c : fix boostrap
+	* inits.c, yarvcore.c : fix bootstrap
 
 
 2005-10-03(Mon) 22:28:24 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -4909,7 +4909,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2005-09-14(Wed) 06:11:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, vm_evalbody.h, vm.h, vm_dump.c,
-	compile.c, yarvcore.c : use #ifdef insted of #if for recognize
+	compile.c, yarvcore.c : use #ifdef instead of #if for recognize
 	vm options
 
 	* vm_opts.h : fix default options
@@ -4973,13 +4973,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : rule test -> test2, test1 -> test
 
-	* compile.c : fix when clause bug and splat arugment
+	* compile.c : fix when clause bug and splat argument
 
 
 2005-08-17(Wed) 05:22:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix block local parameter setting routine and support
-	massign in block parameter initialze
+	massign in block parameter initialize
 
 	* yarvtest/test_yield.rb : add tests for above
 
@@ -5394,7 +5394,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* tmpl/vmtc.inc.tmpl : add const prefix
 
-	* /rb/asm_parse.rb, extconf.rb : added and make assembler analised output
+	* /rb/asm_parse.rb, extconf.rb : added and make assembler analysed output
 
 	* opt_operand.def : add send operands unification
 
@@ -5654,7 +5654,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2005-03-01(Tue) 13:50:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c (yarvcore_eval_parsed) : added
-	(separeted from yarvcore_eval)
+	(separated from yarvcore_eval)
 
 	* yarvcore.c, compile.c : iseq_translate_direct_threaded_code
 	is moved to compile.c
@@ -5806,7 +5806,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compiled.c : add constant pool
 
-	* vm_evalbody.inc, call_cfunc.inc, vm.c : separeted from vm.c
+	* vm_evalbody.inc, call_cfunc.inc, vm.c : separated from vm.c
 
 	* insns.def : fix return val
 
@@ -5840,7 +5840,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : fixed for above
 
-	* extconf.rb : add option --(enable|disalbe)-opt-insns-unification
+	* extconf.rb : add option --(enable|disable)-opt-insns-unification
 
 
 2005-02-11(Fri) 12:14:39 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -5957,7 +5957,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* evalc.patch : fix for above
 
-	* benchmark/bm_lists.rb : fix (unsupport block passing)
+	* benchmark/bm_lists.rb : fix (unsupported block passing)
 
 	* benchmark/run.rb : use full path to ruby
 
@@ -6014,7 +6014,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_block.rb (test_ifunc) : test for above
 
-	* vm.c (get_block_objec, thread_make_env_object) : fixed bugs
+	* vm.c (get_block_object, thread_make_env_object) : fixed bugs
 
 	* test/test_bin.rb (test_xstr) : remove `ls` test
 
@@ -6067,7 +6067,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2005-01-04(Tue) 06:25:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* compile.h : COMPILE_ERROR break contol (instead of return)
+	* compile.h : COMPILE_ERROR break control (instead of return)
 
 	* compile.c : support NODE_MASGN
 
@@ -6108,7 +6108,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* insns.def : support super, zsuper (currently, super can't
 	handle with block)
 
-	* test/test_bin.rb : add test for op_asgin2, op_assgin_and/or
+	* test/test_bin.rb : add test for op_assign2, op_assign_and/or
 
 	* test/test_class.rb : add test for super, zsuper
 
@@ -6272,7 +6272,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* opt_operand.def : add unification insn send
 
 	* rb/insns2vm.rb : define symbol instead of declare const
-	variable (for more optmize on VC)
+	variable (for more optimize on VC)
 
 	* insns.def : move enter point in send
 
@@ -6322,7 +6322,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2004-12-02(Thu) 13:20:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, vm.h, vm.c, insns.def, insnhelper.h, yarvutil.rb :
-	add usage analisys framework
+	add usage analysis framework
 
 	* disasm.c : insn_operand_intern to separate function
 
@@ -6489,7 +6489,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2004-11-01(Mon) 04:45:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, compile.c, debug.c, version.h :
-	redesgin gc debug scheme (GC_CHECK())
+	redesign gc debug scheme (GC_CHECK())
 
 	* yarvcore.c : mark iseqobj->current_block on GC
 
@@ -6820,7 +6820,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : add tbench rule
 
-	* yarvcore.h : add 'exten ID idBackquote'
+	* yarvcore.h : add 'extern ID idBackquote'
 
 
 2004-05-18(Tue) 00:09:48 +0900  Koichi Sasada  <ko1@atdot.net>

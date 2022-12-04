@@ -28,12 +28,16 @@ describe 'Kernel#caller_locations' do
     locations1[2..4].map(&:to_s).should == locations2.map(&:to_s)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      locations1 = caller_locations(0)
-      locations2 = caller_locations(eval("(2..)"))
-      locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
-    end
+  it "works with endless ranges" do
+    locations1 = caller_locations(0)
+    locations2 = caller_locations(eval("(2..)"))
+    locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
+  end
+
+  it "works with beginless ranges" do
+    locations1 = caller_locations(0)
+    locations2 = caller_locations((...5))
+    locations2.map(&:to_s)[eval("(2..)")].should == locations1[(...5)].map(&:to_s)[eval("(2..)")]
   end
 
   it "can be called with a range whose end is negative" do
@@ -64,5 +68,17 @@ describe 'Kernel#caller_locations' do
 
   it "must return the same locations when called with 1..-1 and when called with no arguments" do
     caller_locations.map(&:to_s).should == caller_locations(1..-1).map(&:to_s)
+  end
+
+  guard -> { Kernel.instance_method(:tap).source_location } do
+    it "includes core library methods defined in Ruby" do
+      file, line = Kernel.instance_method(:tap).source_location
+      file.should.start_with?('<internal:')
+
+      loc = nil
+      tap { loc = caller_locations(1, 1)[0] }
+      loc.label.should == "tap"
+      loc.path.should.start_with? "<internal:"
+    end
   end
 end

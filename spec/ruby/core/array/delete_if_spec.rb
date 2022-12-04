@@ -47,22 +47,6 @@ describe "Array#delete_if" do
     -> { ArraySpecs.empty_frozen_array.delete_if {} }.should raise_error(FrozenError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "keeps tainted status" do
-      @a.taint
-      @a.tainted?.should be_true
-      @a.delete_if{ true }
-      @a.tainted?.should be_true
-    end
-
-    it "keeps untrusted status" do
-      @a.untrust
-      @a.untrusted?.should be_true
-      @a.delete_if{ true }
-      @a.untrusted?.should be_true
-    end
-  end
-
   it_behaves_like :enumeratorized_with_origin_size, :delete_if, [1,2,3]
   it_behaves_like :delete_if, :delete_if
 end

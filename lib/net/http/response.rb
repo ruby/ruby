@@ -1,20 +1,136 @@
 # frozen_string_literal: false
-# HTTP response class.
+
+# This class is the base class for \Net::HTTP request classes.
 #
-# This class wraps together the response header and the response body (the
-# entity requested).
+# == About the Examples
 #
-# It mixes in the HTTPHeader module, which provides access to response
-# header values both via hash-like methods and via individual readers.
+# :include: doc/net-http/examples.rdoc
 #
-# Note that each possible HTTP response code defines its own
-# HTTPResponse subclass. All classes are defined under the Net module.
-# Indentation indicates inheritance.  For a list of the classes see Net::HTTP.
+# == Returned Responses
 #
-# Correspondence <code>HTTP code => class</code> is stored in CODE_TO_OBJ
-# constant:
+# \Method Net::HTTP.get_response returns
+# an instance of one of the subclasses of \Net::HTTPResponse:
 #
-#    Net::HTTPResponse::CODE_TO_OBJ['404'] #=> Net::HTTPNotFound
+#   Net::HTTP.get_response(uri)
+#   # => #<Net::HTTPOK 200 OK readbody=true>
+#   Net::HTTP.get_response(hostname, '/nosuch')
+#   # => #<Net::HTTPNotFound 404 Not Found readbody=true>
+#
+# As does method Net::HTTP#request:
+#
+#   req = Net::HTTP::Get.new(uri)
+#   Net::HTTP.start(hostname) do |http|
+#     http.request(req)
+#   end # => #<Net::HTTPOK 200 OK readbody=true>
+#
+# \Class \Net::HTTPResponse includes module Net::HTTPHeader,
+# which provides access to response header values via (among others):
+#
+# - \Hash-like method <tt>[]</tt>.
+# - Specific reader methods, such as +content_type+.
+#
+# Examples:
+#
+#   res = Net::HTTP.get_response(uri) # => #<Net::HTTPOK 200 OK readbody=true>
+#   res['Content-Type']               # => "text/html; charset=UTF-8"
+#   res.content_type                  # => "text/html"
+#
+# == Response Subclasses
+#
+# \Class \Net::HTTPResponse has a subclass for each
+# {HTTP status code}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes].
+# You can look up the response class for a given code:
+#
+#   Net::HTTPResponse::CODE_TO_OBJ['200'] # => Net::HTTPOK
+#   Net::HTTPResponse::CODE_TO_OBJ['400'] # => Net::HTTPBadRequest
+#   Net::HTTPResponse::CODE_TO_OBJ['404'] # => Net::HTTPNotFound
+#
+# And you can retrieve the status code for a response object:
+#
+#   Net::HTTP.get_response(uri).code                 # => "200"
+#   Net::HTTP.get_response(hostname, '/nosuch').code # => "404"
+#
+# The response subclasses (indentation shows class hierarchy):
+#
+# - Net::HTTPUnknownResponse (for unhandled \HTTP extensions).
+#
+# - Net::HTTPInformation:
+#
+#   - Net::HTTPContinue (100)
+#   - Net::HTTPSwitchProtocol (101)
+#   - Net::HTTPProcessing (102)
+#   - Net::HTTPEarlyHints (103)
+#
+# - Net::HTTPSuccess:
+#
+#   - Net::HTTPOK (200)
+#   - Net::HTTPCreated (201)
+#   - Net::HTTPAccepted (202)
+#   - Net::HTTPNonAuthoritativeInformation (203)
+#   - Net::HTTPNoContent (204)
+#   - Net::HTTPResetContent (205)
+#   - Net::HTTPPartialContent (206)
+#   - Net::HTTPMultiStatus (207)
+#   - Net::HTTPAlreadyReported (208)
+#   - Net::HTTPIMUsed (226)
+#
+# - Net::HTTPRedirection:
+#
+#   - Net::HTTPMultipleChoices (300)
+#   - Net::HTTPMovedPermanently (301)
+#   - Net::HTTPFound (302)
+#   - Net::HTTPSeeOther (303)
+#   - Net::HTTPNotModified (304)
+#   - Net::HTTPUseProxy (305)
+#   - Net::HTTPTemporaryRedirect (307)
+#   - Net::HTTPPermanentRedirect (308)
+#
+# - Net::HTTPClientError:
+#
+#   - Net::HTTPBadRequest (400)
+#   - Net::HTTPUnauthorized (401)
+#   - Net::HTTPPaymentRequired (402)
+#   - Net::HTTPForbidden (403)
+#   - Net::HTTPNotFound (404)
+#   - Net::HTTPMethodNotAllowed (405)
+#   - Net::HTTPNotAcceptable (406)
+#   - Net::HTTPProxyAuthenticationRequired (407)
+#   - Net::HTTPRequestTimeOut (408)
+#   - Net::HTTPConflict (409)
+#   - Net::HTTPGone (410)
+#   - Net::HTTPLengthRequired (411)
+#   - Net::HTTPPreconditionFailed (412)
+#   - Net::HTTPRequestEntityTooLarge (413)
+#   - Net::HTTPRequestURITooLong (414)
+#   - Net::HTTPUnsupportedMediaType (415)
+#   - Net::HTTPRequestedRangeNotSatisfiable (416)
+#   - Net::HTTPExpectationFailed (417)
+#   - Net::HTTPMisdirectedRequest (421)
+#   - Net::HTTPUnprocessableEntity (422)
+#   - Net::HTTPLocked (423)
+#   - Net::HTTPFailedDependency (424)
+#   - Net::HTTPUpgradeRequired (426)
+#   - Net::HTTPPreconditionRequired (428)
+#   - Net::HTTPTooManyRequests (429)
+#   - Net::HTTPRequestHeaderFieldsTooLarge (431)
+#   - Net::HTTPUnavailableForLegalReasons (451)
+#
+# - Net::HTTPServerError:
+#
+#   - Net::HTTPInternalServerError (500)
+#   - Net::HTTPNotImplemented (501)
+#   - Net::HTTPBadGateway (502)
+#   - Net::HTTPServiceUnavailable (503)
+#   - Net::HTTPGatewayTimeOut (504)
+#   - Net::HTTPVersionNotSupported (505)
+#   - Net::HTTPVariantAlsoNegotiates (506)
+#   - Net::HTTPInsufficientStorage (507)
+#   - Net::HTTPLoopDetected (508)
+#   - Net::HTTPNotExtended (510)
+#   - Net::HTTPNetworkAuthenticationRequired (511)
+#
+# There is also the Net::HTTPBadResponse exception which is raised when
+# there is a protocol error.
 #
 class Net::HTTPResponse
   class << self
@@ -84,6 +200,8 @@ class Net::HTTPResponse
     @read = false
     @uri  = nil
     @decode_content = false
+    @body_encoding = false
+    @ignore_eof = true
   end
 
   # The HTTP version supported by the server.
@@ -105,6 +223,22 @@ class Net::HTTPResponse
   # Set to true automatically when the request did not contain an
   # Accept-Encoding header from the user.
   attr_accessor :decode_content
+
+  # The encoding to use for the response body. If Encoding, use that encoding.
+  # If other true value, attempt to detect the appropriate encoding, and use
+  # that.
+  attr_reader :body_encoding
+
+  # Set the encoding to use for the response body.  If given a String, find
+  # the related Encoding.
+  def body_encoding=(value)
+    value = Encoding.find(value) if value.is_a?(String)
+    @body_encoding = value
+  end
+
+  # Whether to ignore EOF when reading bodies with a specified Content-Length
+  # header.
+  attr_accessor :ignore_eof
 
   def inspect
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
@@ -214,6 +348,17 @@ class Net::HTTPResponse
     end
     @read = true
 
+    case enc = @body_encoding
+    when Encoding, false, nil
+      # Encoding: force given encoding
+      # false/nil: do not force encoding
+    else
+      # other value: detect encoding from body
+      enc = detect_encoding(@body)
+    end
+
+    @body.force_encoding(enc) if enc
+
     @body
   end
 
@@ -245,6 +390,141 @@ class Net::HTTPResponse
 
   private
 
+  # :nodoc:
+  def detect_encoding(str, encoding=nil)
+    if encoding
+    elsif encoding = type_params['charset']
+    elsif encoding = check_bom(str)
+    else
+      encoding = case content_type&.downcase
+      when %r{text/x(?:ht)?ml|application/(?:[^+]+\+)?xml}
+        /\A<xml[ \t\r\n]+
+          version[ \t\r\n]*=[ \t\r\n]*(?:"[0-9.]+"|'[0-9.]*')[ \t\r\n]+
+          encoding[ \t\r\n]*=[ \t\r\n]*
+          (?:"([A-Za-z][\-A-Za-z0-9._]*)"|'([A-Za-z][\-A-Za-z0-9._]*)')/x =~ str
+        encoding = $1 || $2 || Encoding::UTF_8
+      when %r{text/html.*}
+        sniff_encoding(str)
+      end
+    end
+    return encoding
+  end
+
+  # :nodoc:
+  def sniff_encoding(str, encoding=nil)
+    # the encoding sniffing algorithm
+    # http://www.w3.org/TR/html5/parsing.html#determining-the-character-encoding
+    if enc = scanning_meta(str)
+      enc
+    # 6. last visited page or something
+    # 7. frequency
+    elsif str.ascii_only?
+      Encoding::US_ASCII
+    elsif str.dup.force_encoding(Encoding::UTF_8).valid_encoding?
+      Encoding::UTF_8
+    end
+    # 8. implementation-defined or user-specified
+  end
+
+  # :nodoc:
+  def check_bom(str)
+    case str.byteslice(0, 2)
+    when "\xFE\xFF"
+      return Encoding::UTF_16BE
+    when "\xFF\xFE"
+      return Encoding::UTF_16LE
+    end
+    if "\xEF\xBB\xBF" == str.byteslice(0, 3)
+      return Encoding::UTF_8
+    end
+    nil
+  end
+
+  # :nodoc:
+  def scanning_meta(str)
+    require 'strscan'
+    ss = StringScanner.new(str)
+    if ss.scan_until(/<meta[\t\n\f\r ]*/)
+      attrs = {} # attribute_list
+      got_pragma = false
+      need_pragma = nil
+      charset = nil
+
+      # step: Attributes
+      while attr = get_attribute(ss)
+        name, value = *attr
+        next if attrs[name]
+        attrs[name] = true
+        case name
+        when 'http-equiv'
+          got_pragma = true if value == 'content-type'
+        when 'content'
+          encoding = extracting_encodings_from_meta_elements(value)
+          unless charset
+            charset = encoding
+          end
+          need_pragma = true
+        when 'charset'
+          need_pragma = false
+          charset = value
+        end
+      end
+
+      # step: Processing
+      return if need_pragma.nil?
+      return if need_pragma && !got_pragma
+
+      charset = Encoding.find(charset) rescue nil
+      return unless charset
+      charset = Encoding::UTF_8 if charset == Encoding::UTF_16
+      return charset # tentative
+    end
+    nil
+  end
+
+  def get_attribute(ss)
+    ss.scan(/[\t\n\f\r \/]*/)
+    if ss.peek(1) == '>'
+      ss.getch
+      return nil
+    end
+    name = ss.scan(/[^=\t\n\f\r \/>]*/)
+    name.downcase!
+    raise if name.empty?
+    ss.skip(/[\t\n\f\r ]*/)
+    if ss.getch != '='
+      value = ''
+      return [name, value]
+    end
+    ss.skip(/[\t\n\f\r ]*/)
+    case ss.peek(1)
+    when '"'
+      ss.getch
+      value = ss.scan(/[^"]+/)
+      value.downcase!
+      ss.getch
+    when "'"
+      ss.getch
+      value = ss.scan(/[^']+/)
+      value.downcase!
+      ss.getch
+    when '>'
+      value = ''
+    else
+      value = ss.scan(/[^\t\n\f\r >]+/)
+      value.downcase!
+    end
+    [name, value]
+  end
+
+  def extracting_encodings_from_meta_elements(value)
+    # http://dev.w3.org/html5/spec/fetching-resources.html#algorithm-for-extracting-an-encoding-from-a-meta-element
+    if /charset[\t\n\f\r ]*=(?:"([^"]*)"|'([^']*)'|["']|\z|([^\t\n\f\r ;]+))/i =~ value
+      return $1 || $2 || $3
+    end
+    return nil
+  end
+
   ##
   # Checks for a supported Content-Encoding header and yields an Inflate
   # wrapper for this response's socket when zlib is present.  If the
@@ -272,6 +552,9 @@ class Net::HTTPResponse
       ensure
         begin
           inflate_body_io.finish
+          if self['content-length']
+            self['content-length'] = inflate_body_io.bytes_inflated.to_s
+          end
         rescue => err
           # Ignore #finish's error if there is an exception from yield
           raise err if success
@@ -297,7 +580,7 @@ class Net::HTTPResponse
 
       clen = content_length()
       if clen
-        @socket.read clen, dest, true   # ignore EOF
+        @socket.read clen, dest, @ignore_eof
         return
       end
       clen = range_length()
@@ -371,6 +654,14 @@ class Net::HTTPResponse
     def finish
       return if @inflate.total_in == 0
       @inflate.finish
+    end
+
+    ##
+    # The number of bytes inflated, used to update the Content-Length of
+    # the response.
+
+    def bytes_inflated
+      @inflate.total_out
     end
 
     ##

@@ -64,32 +64,6 @@ describe :array_inspect, shared: true do
     ArraySpecs.empty_recursive_array.send(@method).should == "[[...]]"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if the Array is non-empty and tainted" do
-      [1, 2].taint.send(@method).tainted?.should be_true
-    end
-
-    it "does not taint the result if the Array is tainted but empty" do
-      [].taint.send(@method).tainted?.should be_false
-    end
-
-    it "taints the result if an element is tainted" do
-      ["str".taint].send(@method).tainted?.should be_true
-    end
-
-    it "untrusts the result if the Array is untrusted" do
-      [1, 2].untrust.send(@method).untrusted?.should be_true
-    end
-
-    it "does not untrust the result if the Array is untrusted but empty" do
-      [].untrust.send(@method).untrusted?.should be_false
-    end
-
-    it "untrusts the result if an element is untrusted" do
-      ["str".untrust].send(@method).untrusted?.should be_true
-    end
-  end
-
   describe "with encoding" do
     before :each do
       @default_external_encoding = Encoding.default_external

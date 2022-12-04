@@ -39,7 +39,7 @@ module Kernel
   #   GEM_SKIP=libA:libB ruby -I../libA -I../libB ./mycode.rb
 
   def gem(gem_name, *requirements) # :doc:
-    skip_list = (ENV['GEM_SKIP'] || "").split(/:/)
+    skip_list = (ENV["GEM_SKIP"] || "").split(/:/)
     raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
 
     if gem_name.kind_of? Gem::Dependency

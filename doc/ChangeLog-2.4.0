@@ -792,7 +792,7 @@ Wed Oct  5 12:57:21 2016  Richard Schneeman  <richard.schneeman+foo@gmail.com>
 
 Wed Oct  5 11:47:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* io.c: Fixed equivalent ruby code with core implemention.
+	* io.c: Fixed equivalent ruby code with core implementation.
 	  [fix GH-1429][ci skip] Patch by @sos4nt
 
 Wed Oct  5 11:36:21 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
@@ -888,7 +888,7 @@ Sun Oct  2 02:03:06 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Sat Oct  1 23:08:47 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/date/date_parse.c (date_zone_to_diff): it's nonsence and really
+	* ext/date/date_parse.c (date_zone_to_diff): it's nonsense and really
 	  harm that to use unary minus operator with unsigned value.
 	  get rid of test failures introduced at r56312.
 

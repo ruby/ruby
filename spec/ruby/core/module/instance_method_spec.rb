@@ -45,20 +45,46 @@ describe "Module#instance_method" do
     @parent_um.inspect.should =~ /\bModuleSpecs::InstanceMeth\b/
     @child_um.inspect.should =~ /\bfoo\b/
     @child_um.inspect.should =~ /\bModuleSpecs::InstanceMeth\b/
-    @child_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+
     @mod_um.inspect.should =~ /\bbar\b/
     @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethMod\b/
-    @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+
+    ruby_version_is ""..."3.2" do
+      @child_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+      @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+    end
   end
 
-  it "raises a TypeError if not passed a symbol" do
-    -> { Object.instance_method([]) }.should raise_error(TypeError)
-    -> { Object.instance_method(0)  }.should raise_error(TypeError)
+  it "raises a TypeError if the given name is not a String/Symbol" do
+    -> { Object.instance_method([]) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(0) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(nil) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { Object.instance_method(mock('x')) }.should raise_error(TypeError, /is not a symbol nor a string/)
   end
 
-  it "raises a TypeError if the given name is not a string/symbol" do
-    -> { Object.instance_method(nil)       }.should raise_error(TypeError)
-    -> { Object.instance_method(mock('x')) }.should raise_error(TypeError)
+  it "accepts String name argument" do
+    method = ModuleSpecs::InstanceMeth.instance_method(:foo)
+    method.should be_kind_of(UnboundMethod)
+  end
+
+  it "accepts Symbol name argument"  do
+    method = ModuleSpecs::InstanceMeth.instance_method("foo")
+    method.should be_kind_of(UnboundMethod)
+  end
+
+  it "converts non-String name by calling #to_str method" do
+    obj = Object.new
+    def obj.to_str() "foo" end
+
+    method = ModuleSpecs::InstanceMeth.instance_method(obj)
+    method.should be_kind_of(UnboundMethod)
+  end
+
+  it "raises TypeError when passed non-String name and #to_str returns non-String value" do
+    obj = Object.new
+    def obj.to_str() [] end
+
+    -> { ModuleSpecs::InstanceMeth.instance_method(obj) }.should raise_error(TypeError, /can't convert Object to String/)
   end
 
   it "raises a NameError if the method has been undefined" do

@@ -16,7 +16,7 @@ class BenchmarkDriver::Runner::Mjit < BenchmarkDriver::Runner::Ips
         job.prelude = "#{job.prelude}\n#{<<~EOS}"
           if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
             __bmdv_ruby_i = 0
-            while __bmdv_ruby_i < 10000 # jit_min_calls
+            while __bmdv_ruby_i < 10000 # MJIT call threshold
               #{job.script}
               __bmdv_ruby_i += 1
             end

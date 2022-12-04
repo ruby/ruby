@@ -19,18 +19,23 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def self.tmpdir
-    tmp = nil
-    [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
-      next if !dir
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name]) or dir.empty?
+      end
       dir = File.expand_path(dir)
-      if stat = File.stat(dir) and stat.directory? and stat.writable? and
-          (!stat.world_writable? or stat.sticky?)
-        tmp = dir
-        break
-      end rescue nil
-    end
-    raise ArgumentError, "could not find a temporary directory" unless tmp
-    tmp
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !stat.writable?
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
+        break dir
+      end
+    end or raise ArgumentError, "could not find a temporary directory"
   end
 
   # Dir.mktmpdir creates a temporary directory.
@@ -62,7 +67,7 @@ class Dir
   #
   #  Dir.mktmpdir {|dir|
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  }
   #
   # If a block is not given,
@@ -72,7 +77,7 @@ class Dir
   #  dir = Dir.mktmpdir
   #  begin
   #    # use the directory...
-  #    open("#{dir}/foo", "w") { ... }
+  #    open("#{dir}/foo", "w") { something using the file }
   #  ensure
   #    # remove the directory.
   #    FileUtils.remove_entry dir
@@ -101,6 +106,7 @@ class Dir
     end
   end
 
+  # Temporary name generator
   module Tmpname # :nodoc:
     module_function
 
@@ -108,16 +114,23 @@ class Dir
       Dir.tmpdir
     end
 
-    UNUSABLE_CHARS = [File::SEPARATOR, File::ALT_SEPARATOR, File::PATH_SEPARATOR, ":"].uniq.join("").freeze
+    # Unusable characters as path name
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
 
-    class << (RANDOM = Random.new)
+    # Dedicated random number generator
+    RANDOM = Random.new
+    class << RANDOM # :nodoc:
+      # Maximum random number
       MAX = 36**6 # < 0x100000000
+
+      # Returns new random string upto 6 bytes
       def next
         rand(MAX).to_s(36)
       end
     end
     private_constant :RANDOM
 
+    # Generates and yields random names to create a temporary name
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir
       tmpdir ||= tmpdir()

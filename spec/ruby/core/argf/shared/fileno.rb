@@ -11,7 +11,7 @@ describe :argf_fileno, shared: true do
       # returns first current file even when not yet open
       result << @argf.send(@method) while @argf.gets
       # returns last current file even when closed
-      result.map { |d| d.class }.should == [Fixnum, Fixnum, Fixnum, Fixnum]
+      result.map { |d| d.class }.should == [Integer, Integer, Integer, Integer]
     end
   end
 

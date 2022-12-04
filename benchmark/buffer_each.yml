@@ -1,0 +1,27 @@
+prelude: |
+  # frozen_string_literal: true
+  Warning[:experimental] = false
+  string = "The quick brown fox jumped over the lazy dog."
+  array = string.bytes
+  buffer = IO::Buffer.for(string)
+benchmark:
+  string.each_byte: |
+    upcased = String.new
+    string.each_byte do |byte|
+      upcased << (byte ^ 32)
+    end
+  array.each: |
+    upcased = String.new
+    array.each do |byte|
+      upcased << (byte ^ 32)
+    end
+  buffer.each: |
+    upcased = String.new
+    buffer.each(:U8) do |offset, byte|
+      upcased << (byte ^ 32)
+    end
+  buffer.each_byte: |
+    upcased = String.new
+    buffer.each_byte do |byte|
+      upcased << (byte ^ 32)
+    end

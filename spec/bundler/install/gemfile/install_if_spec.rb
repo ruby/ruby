@@ -18,7 +18,7 @@ RSpec.describe "bundle install with install_if conditionals" do
     expect(the_bundle).not_to include_gems("thin")
     expect(the_bundle).not_to include_gems("foo")
 
-    lockfile_should_be <<-L
+    expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:

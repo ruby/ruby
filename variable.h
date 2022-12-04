@@ -1,7 +1,6 @@
 #ifndef RUBY_TOPLEVEL_VARIABLE_H                         /*-*-C-*-vi:se ft=c:*/
 #define RUBY_TOPLEVEL_VARIABLE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -12,10 +11,19 @@
 /* per-object */
 
 struct gen_ivtbl {
+#if !SHAPE_IN_BASIC_FLAGS
+    uint16_t shape_id;
+#endif
     uint32_t numiv;
     VALUE ivptr[FLEX_ARY_LEN];
 };
 
-struct st_table *rb_ivar_generic_ivtbl(void);
+int rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **);
+
+#include "shape.h"
+#if !SHAPE_IN_BASIC_FLAGS
+shape_id_t rb_generic_shape_id(VALUE obj);
+#endif
+
 
 #endif /* RUBY_TOPLEVEL_VARIABLE_H */

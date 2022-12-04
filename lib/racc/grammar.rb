@@ -86,14 +86,15 @@ module Racc
     end
 
     def n_useless_nonterminals
-      @n_useless_nonterminals ||=
-          begin
-            n = 0
-            @symboltable.each_nonterminal do |sym|
-              n += 1 if sym.useless?
-            end
-            n
-          end
+      @n_useless_nonterminals ||= each_useless_nonterminal.count
+    end
+
+    def each_useless_nonterminal
+      return to_enum __method__ unless block_given?
+
+      @symboltable.each_nonterminal do |sym|
+        yield sym if sym.useless?
+      end
     end
 
     def useless_rule_exist?
@@ -101,14 +102,15 @@ module Racc
     end
 
     def n_useless_rules
-      @n_useless_rules ||=
-          begin
-            n = 0
-            each do |r|
-              n += 1 if r.useless?
-            end
-            n
-          end
+      @n_useless_rules ||= each_useless_rule.count
+    end
+
+    def each_useless_rule
+      return to_enum __method__ unless block_given?
+
+      each do |r|
+        yield r if r.useless?
+      end
     end
 
     def nfa
@@ -333,14 +335,14 @@ module Racc
         if action
           idbase = "#{type}@#{id}-#{@seqs[type] += 1}"
           target = _wrap(idbase, "#{idbase}-core", action)
-          _regist("#{idbase}-core", &block)
+          _register("#{idbase}-core", &block)
         else
-          target = _regist("#{type}@#{id}", &block)
+          target = _register("#{type}@#{id}", &block)
         end
         @grammar.intern(target)
       end
 
-      def _regist(target_name)
+      def _register(target_name)
         target = target_name.intern
         unless _added?(@grammar.intern(target))
           yield(target).each_rule do |rule|

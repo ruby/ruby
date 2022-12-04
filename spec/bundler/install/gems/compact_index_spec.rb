@@ -80,8 +80,8 @@ RSpec.describe "compact index api" do
     G
     bundle :install, :artifice => "compact_index"
 
-    bundle "config --local deployment true"
-    bundle "config --local path vendor/bundle"
+    bundle "config set --local deployment true"
+    bundle "config set --local path vendor/bundle"
     bundle :install, :artifice => "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "rack 1.0.0"
@@ -118,7 +118,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, :artifice => "compact_index"
 
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -132,23 +132,10 @@ RSpec.describe "compact index api" do
     G
 
     bundle "install", :artifice => "compact_index"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index"
 
     expect(the_bundle).to include_gems("foo 1.0")
-  end
-
-  it "falls back when the API errors out" do
-    simulate_platform mswin
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rcov"
-    G
-
-    bundle :install, :artifice => "windows"
-    expect(out).to include("Fetching source index from #{source_uri}")
-    expect(the_bundle).to include_gems "rcov 1.0.0"
   end
 
   it "falls back when the API URL returns 403 Forbidden" do
@@ -174,6 +161,25 @@ RSpec.describe "compact index api" do
 The checksum of /versions does not match the checksum provided by the server! Something is wrong (local checksum is "\"d41d8cd98f00b204e9800998ecf8427e\"", was expecting "\"123\"").
     WARN
     expect(the_bundle).to include_gems "rack 1.0.0"
+  end
+
+  it "shows proper path when permission errors happen", :permissions do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem "rack"
+    G
+
+    versions = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
+    FileUtils.mkdir_p(File.dirname(versions))
+    FileUtils.touch(versions)
+    FileUtils.chmod("-r", versions)
+
+    bundle :install, :artifice => "compact_index", :raise_on_error => false
+
+    expect(err).to include(
+      "There was an error while trying to read from `#{versions}`. It is likely that you need to grant read permissions for that path."
+    )
   end
 
   it "falls back when the user's home directory does not exist or is not writable" do
@@ -258,14 +264,37 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "does not double check for gems that are only installed locally" do
-    system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0]
+    build_repo2 do
+      build_gem "net_a" do |s|
+        s.add_dependency "net_b"
+        s.add_dependency "net_build_extensions"
+      end
+
+      build_gem "net_b"
+
+      build_gem "net_build_extensions" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("lib", __dir__)
+            FileUtils.mkdir_p(path)
+            File.open("\#{path}/net_build_extensions.rb", "w") do |f|
+              f.puts "NET_BUILD_EXTENSIONS = 'YES'"
+            end
+          end
+        RUBY
+      end
+    end
+
+    system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0], :gem_repo => gem_repo2
     bundle "config set --local path.system true"
     ENV["BUNDLER_SPEC_ALL_REQUESTS"] = strip_whitespace(<<-EOS).strip
       #{source_uri}/versions
       #{source_uri}/info/rack
     EOS
 
-    install_gemfile <<-G, :artifice => "compact_index", :verbose => true
+    install_gemfile <<-G, :artifice => "compact_index", :verbose => true, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       source "#{source_uri}"
       gem "rack"
     G
@@ -356,31 +385,6 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(the_bundle).to include_gems "activesupport 1.2.3"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources when using blocks", :bundler => "< 3" do
-    # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
-    # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
-    # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
-    # repo and installs it.
-    build_repo4 do
-      build_gem "activesupport", "1.2.0"
-      build_gem "somegem", "1.0.0" do |s|
-        s.add_dependency "activesupport", "1.2.3" # This version exists only in repo1
-      end
-    end
-
-    gemfile <<-G
-      source "#{source_uri}"
-      source "#{source_uri}/extra" do
-        gem 'somegem', '1.0.0'
-      end
-    G
-
-    bundle :install, :artifice => "compact_index_extra_api"
-
-    expect(the_bundle).to include_gems "somegem 1.0.0"
-    expect(the_bundle).to include_gems "activesupport 1.2.3"
-  end
-
   it "prints API output properly with back deps" do
     build_repo2 do
       build_gem "back_deps" do |s|
@@ -414,7 +418,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo2)
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -436,7 +440,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     api_request_limit = low_api_request_limit_for(gem_repo4)
 
-    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
+    install_gemfile <<-G, :artifice => "compact_index_extra_api_missing", :requires => [api_request_limit_hack_file], :env => { "BUNDLER_SPEC_API_REQUEST_LIMIT" => api_request_limit.to_s }.merge(env_for_missing_prerelease_default_gem_activation)
       source "#{source_uri}"
       source "#{source_uri}/extra" do
         gem "back_deps"
@@ -457,7 +461,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using --deployment", :bundler => "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using deployment mode", :bundler => "< 3" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -472,8 +476,8 @@ The checksum of /versions does not match the checksum provided by the server! So
     G
 
     bundle :install, :artifice => "compact_index_extra"
-
-    bundle "install --deployment", :artifice => "compact_index_extra"
+    bundle "config --set local deployment true"
+    bundle :install, :artifice => "compact_index_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
@@ -493,32 +497,26 @@ The checksum of /versions does not match the checksum provided by the server! So
     G
 
     bundle :install, :artifice => "compact_index_extra"
-    bundle "config --local deployment true"
+    bundle "config set --local deployment true"
     bundle :install, :artifice => "compact_index_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
   it "does not refetch if the only unmet dependency is bundler" do
+    build_repo2 do
+      build_gem "bundler_dep" do |s|
+        s.add_dependency "bundler"
+      end
+    end
+
     gemfile <<-G
       source "#{source_uri}"
 
       gem "bundler_dep"
     G
 
-    bundle :install, :artifice => "compact_index"
+    bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-  end
-
-  it "should install when EndpointSpecification has a bin dir owned by root", :sudo => true do
-    sudo "mkdir -p #{system_gem_path("bin")}"
-    sudo "chown -R root #{system_gem_path("bin")}"
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rails"
-    G
-    bundle :install, :artifice => "compact_index"
-    expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
   it "installs the binstubs", :bundler => "< 3" do
@@ -598,25 +596,15 @@ The checksum of /versions does not match the checksum provided by the server! So
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "strips http basic authentication creds for modern index" do
+    it "passes basic authentication details and strips out creds also in verbose mode" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
         gem "rack"
       G
 
-      bundle :install, :artifice => "endopint_marshal_fail_basic_authentication"
+      bundle :install, :verbose => true, :artifice => "compact_index_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
       expect(the_bundle).to include_gems "rack 1.0.0"
-    end
-
-    it "strips http basic auth creds when it can't reach the server" do
-      gemfile <<-G
-        source "#{basic_auth_source_uri}"
-        gem "rack"
-      G
-
-      bundle :install, :artifice => "endpoint_500", :raise_on_error => false
-      expect(out).not_to include("#{user}:#{password}")
     end
 
     it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
@@ -690,7 +678,7 @@ The checksum of /versions does not match the checksum provided by the server! So
 
       it "shows instructions if auth is not provided for the source" do
         bundle :install, :artifice => "compact_index_strict_basic_authentication", :raise_on_error => false
-        expect(err).to include("bundle config set #{source_hostname} username:password")
+        expect(err).to include("bundle config set --global #{source_hostname} username:password")
       end
 
       it "fails if authentication has already been provided, but failed" do
@@ -780,8 +768,6 @@ The checksum of /versions does not match the checksum provided by the server! So
   end
 
   it "performs partial update with a non-empty range" do
-    skip "HTTP_RANGE not set" if Gem.win_platform?
-
     gemfile <<-G
       source "#{source_uri}"
       gem 'rack', '0.9.1'
@@ -817,6 +803,28 @@ The checksum of /versions does not match the checksum provided by the server! So
     bundle :install, :artifice => "compact_index_concurrent_download"
 
     expect(File.read(versions)).to start_with("created_at")
+    expect(the_bundle).to include_gems "rack 1.0.0"
+  end
+
+  it "performs full update if server endpoints serve partial content responses but don't have incremental content and provide no Etag" do
+    build_repo4 do
+      build_gem "rack", "0.9.1"
+    end
+
+    install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "#{source_uri}"
+      gem 'rack', '0.9.1'
+    G
+
+    update_repo4 do
+      build_gem "rack", "1.0.0"
+    end
+
+    install_gemfile <<-G, :artifice => "compact_index_partial_update_no_etag_not_incremental", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "#{source_uri}"
+      gem 'rack', '1.0.0'
+    G
+
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
@@ -878,7 +886,7 @@ The checksum of /versions does not match the checksum provided by the server! So
         and include("1. delete the downloaded gem located at: `#{default_bundle_path}/gems/rack-1.0.0/rack-1.0.0.gem`").
         and include("2. run `bundle install`").
         and include("If you wish to continue installing the downloaded gem, and are certain it does not pose a security issue despite the mismatching checksum, do the following:").
-        and include("1. run `bundle config set disable_checksum_validation true` to turn off checksum verification").
+        and include("1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification").
         and include("2. run `bundle install`").
         and match(/\(More info: The expected SHA256 checksum was "#{"ab" * 22}", but the checksum for the downloaded gem was ".+?"\.\)/)
     end
@@ -919,7 +927,8 @@ The checksum of /versions does not match the checksum provided by the server! So
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),
             Gem::Dependency.new("activeresource", "= 2.3.2")]
-    expect(out).to include(<<-E.strip).and include("rails-2.3.2 from rubygems remote at #{source_uri}/ has either corrupted API or lockfile dependencies")
+    expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has either corrupted API or lockfile dependencies")
+    expect(err).to include(<<-E.strip)
 Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API or the lockfile (#{deps.map(&:to_s).join(", ")}).
 Either installing with `--full-index` or running `bundle update rails` should fix the problem.
     E
@@ -927,6 +936,7 @@ Either installing with `--full-index` or running `bundle update rails` should fi
 
   it "does not duplicate specs in the lockfile when updating and a dependency is not installed" do
     install_gemfile <<-G, :artifice => "compact_index"
+      source "#{file_uri_for(gem_repo1)}"
       source "#{source_uri}" do
         gem "rails"
         gem "activemerchant"

@@ -25,7 +25,7 @@ describe "Kernel#respond_to?" do
   end
 
   it "throws a type error if argument can't be coerced into a Symbol" do
-    -> { @a.respond_to?(Object.new) }.should raise_error(TypeError)
+    -> { @a.respond_to?(Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
   end
 
   it "returns false if obj responds to the given protected method" do
@@ -69,5 +69,4 @@ describe "Kernel#respond_to?" do
     KernelSpecs::Foo.new.respond_to?(:bar).should == true
     KernelSpecs::Foo.new.respond_to?(:invalid_and_silly_method_name).should == false
   end
-
 end

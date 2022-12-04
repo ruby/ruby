@@ -20,7 +20,7 @@ module Racc
   class ParseError < StandardError; end
 end
 unless defined?(::ParseError)
-  ParseError = Racc::ParseError
+  ParseError = Racc::ParseError # :nodoc:
 end
 
 # Racc is a LALR(1) parser generator.
@@ -324,7 +324,7 @@ module Racc
     # It must 'yield' the token, which format is [TOKEN-SYMBOL, VALUE].
     class_eval %{
     def yyparse(recv, mid)
-      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), true)
+      #{Racc_YY_Parse_Method}(recv, mid, _racc_setup(), false)
     end
     }
 
@@ -546,7 +546,7 @@ module Racc
     end
 
     # Exit parser.
-    # Return value is Symbol_Value_Stack[0].
+    # Return value is +Symbol_Value_Stack[0]+.
     def yyaccept
       throw :racc_jump, 2
     end

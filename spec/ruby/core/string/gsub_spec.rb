@@ -160,54 +160,10 @@ describe "String#gsub with pattern and replacement" do
 
   it_behaves_like :string_gsub_named_capture, :gsub
 
-  ruby_version_is ''...'2.7' do
-    it "taints the result if the original string or replacement is tainted" do
-      hello = "hello"
-      hello_t = "hello"
-      a = "a"
-      a_t = "a"
-      empty = ""
-      empty_t = ""
-
-      hello_t.taint; a_t.taint; empty_t.taint
-
-      hello_t.gsub(/./, a).should.tainted?
-      hello_t.gsub(/./, empty).should.tainted?
-
-      hello.gsub(/./, a_t).should.tainted?
-      hello.gsub(/./, empty_t).should.tainted?
-      hello.gsub(//, empty_t).should.tainted?
-
-      hello.gsub(//.taint, "foo").should_not.tainted?
-    end
-  end
-
   it "handles pattern collapse" do
     str = "こにちわ"
     reg = %r!!
     str.gsub(reg, ".").should == ".こ.に.ち.わ."
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "untrusts the result if the original string or replacement is untrusted" do
-      hello = "hello"
-      hello_t = "hello"
-      a = "a"
-      a_t = "a"
-      empty = ""
-      empty_t = ""
-
-      hello_t.untrust; a_t.untrust; empty_t.untrust
-
-      hello_t.gsub(/./, a).should.untrusted?
-      hello_t.gsub(/./, empty).should.untrusted?
-
-      hello.gsub(/./, a_t).should.untrusted?
-      hello.gsub(/./, empty_t).should.untrusted?
-      hello.gsub(//, empty_t).should.untrusted?
-
-      hello.gsub(//.untrust, "foo").should_not.untrusted?
-    end
   end
 
   it "tries to convert pattern to a string using to_str" do
@@ -236,14 +192,23 @@ describe "String#gsub with pattern and replacement" do
     -> { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
   end
 
-  it "returns subclass instances when called on a subclass" do
-    StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-    StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+  ruby_version_is ''...'3.0' do
+    it "returns subclass instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(StringSpecs::MyString)
+    end
   end
 
-  # Note: $~ cannot be tested because mspec messes with it
+  ruby_version_is '3.0' do
+    it "returns String instances when called on a subclass" do
+      StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(String)
+      StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(String)
+    end
+  end
 
   it "sets $~ to MatchData of last match and nil when there's none" do
     'hello.'.gsub('hello', 'x')
@@ -257,6 +222,18 @@ describe "String#gsub with pattern and replacement" do
 
     'hello.'.gsub(/not/, 'x')
     $~.should == nil
+  end
+
+  it "handles a pattern in a superset encoding" do
+    result = 'abc'.force_encoding(Encoding::US_ASCII).gsub('é', 'è')
+    result.should == 'abc'
+    result.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    result = 'été'.gsub('t'.force_encoding(Encoding::US_ASCII), 'u')
+    result.should == 'éué'
+    result.encoding.should == Encoding::UTF_8
   end
 end
 
@@ -324,28 +301,6 @@ describe "String#gsub with pattern and Hash" do
   it "doesn't interpolate special sequences like \\1 for the block's return value" do
     repl = '\& \0 \1 \` \\\' \+ \\\\ foo'
     "hello".gsub(/(.+)/, 'hello' => repl ).should == repl
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "untrusts the result if the original string is untrusted" do
-      str = "Ghana".untrust
-      str.gsub(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-    end
-
-    it "untrusts the result if a hash value is untrusted" do
-      str = "Ghana"
-      str.gsub(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-    end
-
-    it "taints the result if the original string is tainted" do
-      str = "Ghana".taint
-      str.gsub(/[Aa]na/, 'ana' => '').tainted?.should be_true
-    end
-
-    it "taints the result if a hash value is tainted" do
-      str = "Ghana"
-      str.gsub(/a$/, 'a' => 'di'.taint).tainted?.should be_true
-    end
   end
 end
 
@@ -415,28 +370,6 @@ describe "String#gsub! with pattern and Hash" do
     repl = '\& \0 \1 \` \\\' \+ \\\\ foo'
     "hello".gsub!(/(.+)/, 'hello' => repl ).should == repl
   end
-
-  ruby_version_is ''...'2.7' do
-    it "keeps untrusted state" do
-      str = "Ghana".untrust
-      str.gsub!(/[Aa]na/, 'ana' => '').untrusted?.should be_true
-    end
-
-    it "untrusts self if a hash value is untrusted" do
-      str = "Ghana"
-      str.gsub!(/a$/, 'a' => 'di'.untrust).untrusted?.should be_true
-    end
-
-    it "keeps tainted state" do
-      str = "Ghana".taint
-      str.gsub!(/[Aa]na/, 'ana' => '').tainted?.should be_true
-    end
-
-    it "taints self if a hash value is tainted" do
-      str = "Ghana"
-      str.gsub!(/a$/, 'a' => 'di'.taint).tainted?.should be_true
-    end
-  end
 end
 
 describe "String#gsub with pattern and block" do
@@ -462,6 +395,11 @@ describe "String#gsub with pattern and block" do
     end.should == "hhellollhello"
 
     offsets.should == [[1, 2], [4, 5]]
+  end
+
+  it "does not set $~ for procs created from methods" do
+    str = "hello"
+    str.gsub("l", &StringSpecs::SpecialVarProcessor.new.method(:process)).should == "he<unset><unset>o"
   end
 
   it "restores $~ after leaving the block" do
@@ -510,28 +448,6 @@ describe "String#gsub with pattern and block" do
     "hello".gsub(/.+/) { obj }.should == "ok"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "untrusts the result if the original string or replacement is untrusted" do
-      hello = "hello"
-      hello_t = "hello"
-      a = "a"
-      a_t = "a"
-      empty = ""
-      empty_t = ""
-
-      hello_t.untrust; a_t.untrust; empty_t.untrust
-
-      hello_t.gsub(/./) { a }.should.untrusted?
-      hello_t.gsub(/./) { empty }.should.untrusted?
-
-      hello.gsub(/./) { a_t }.should.untrusted?
-      hello.gsub(/./) { empty_t }.should.untrusted?
-      hello.gsub(//) { empty_t }.should.untrusted?
-
-      hello.gsub(//.untrust) { "foo" }.should_not.untrusted?
-    end
-  end
-
   it "uses the compatible encoding if they are compatible" do
     s  = "hello"
     s2 = "#{195.chr}#{192.chr}#{195.chr}"
@@ -578,6 +494,14 @@ describe "String#gsub with pattern and without replacement and block" do
   end
 end
 
+describe "String#gsub with a string pattern" do
+  it "handles multibyte characters" do
+    "é".gsub("é", "â").should == "â"
+    "aé".gsub("é", "â").should == "aâ"
+    "éa".gsub("é", "â").should == "âa"
+  end
+end
+
 describe "String#gsub! with pattern and replacement" do
   it "modifies self in place and returns self" do
     a = "hello"
@@ -589,20 +513,6 @@ describe "String#gsub! with pattern and replacement" do
     a = "¿por qué?"
     a.gsub!(/([a-z\d]*)/, "*").should equal(a)
     a.should == "*¿** **é*?*"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if replacement is tainted" do
-      a = "hello"
-      a.gsub!(/./.taint, "foo").should_not.tainted?
-      a.gsub!(/./, "foo".taint).should.tainted?
-    end
-
-    it "untrusts self if replacement is untrusted" do
-      a = "hello"
-      a.gsub!(/./.untrust, "foo").should_not.untrusted?
-      a.gsub!(/./, "foo".untrust).should.untrusted?
-    end
   end
 
   it "returns nil if no modifications were made" do
@@ -621,6 +531,27 @@ describe "String#gsub! with pattern and replacement" do
     -> { s.gsub!(/e/, "e")       }.should raise_error(FrozenError)
     -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
   end
+
+  it "handles a pattern in a superset encoding" do
+    string = 'abc'.force_encoding(Encoding::US_ASCII)
+
+    result = string.gsub!('é', 'è')
+
+    result.should == nil
+    string.should == 'abc'
+    string.encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    string = 'été'
+    pattern = 't'.force_encoding(Encoding::US_ASCII)
+
+    result = string.gsub!(pattern, 'u')
+
+    result.should == string
+    string.should == 'éué'
+    string.encoding.should == Encoding::UTF_8
+  end
 end
 
 describe "String#gsub! with pattern and block" do
@@ -628,20 +559,6 @@ describe "String#gsub! with pattern and block" do
     a = "hello"
     a.gsub!(/[aeiou]/) { '*' }.should equal(a)
     a.should == "h*ll*"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if block's result is tainted" do
-      a = "hello"
-      a.gsub!(/./.taint) { "foo" }.should_not.tainted?
-      a.gsub!(/./) { "foo".taint }.should.tainted?
-    end
-
-    it "untrusts self if block's result is untrusted" do
-      a = "hello"
-      a.gsub!(/./.untrust) { "foo" }.should_not.untrusted?
-      a.gsub!(/./) { "foo".untrust }.should.untrusted?
-    end
   end
 
   it "returns nil if no modifications were made" do

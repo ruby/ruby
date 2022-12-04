@@ -1,11 +1,23 @@
 # frozen_string_literal: true
 # coding: utf-8
-lib = File.expand_path("../lib", __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+if File.exist?(File.expand_path("ipaddr.gemspec"))
+  lib = File.expand_path("../lib", __FILE__)
+  $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+  file = File.expand_path("ipaddr.rb", lib)
+else
+  # for ruby-core
+  file = File.expand_path("../ipaddr.rb", __FILE__)
+end
+
+version = File.foreach(file).find do |line|
+  /^\s*VERSION\s*=\s*["'](.*)["']/ =~ line and break $1
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "ipaddr"
-  spec.version       = "1.2.2"
+  spec.version       = version
   spec.authors       = ["Akinori MUSHA", "Hajimu UMEMOTO"]
   spec.email         = ["knu@idaemons.org", "ume@mahoroba.org"]
 
@@ -17,12 +29,8 @@ Both IPv4 and IPv6 are supported.
   spec.homepage      = "https://github.com/ruby/ipaddr"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
-  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ipaddr.gemspec", "lib/ipaddr.rb"]
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.files         = ["LICENSE.txt", "README.md", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.require_paths = ["lib"]
 
-  spec.add_development_dependency "bundler", "~> 1.15"
-  spec.add_development_dependency "rake", ">= 12.3.3"
-  spec.add_development_dependency "test-unit"
+  spec.required_ruby_version = ">= 2.3"
 end

@@ -1,29 +1,32 @@
 require_relative '../../spec_helper'
-require 'matrix'
 
-describe "Matrix.symmetric?" do
-  it "returns true for a symmetric Matrix" do
-    Matrix[[1, 2, Complex(0, 3)], [2, 4, 5], [Complex(0, 3), 5, 6]].symmetric?.should be_true
-  end
+ruby_version_is ""..."3.1" do
+  require 'matrix'
 
-  it "returns true for a 0x0 empty matrix" do
-    Matrix.empty.symmetric?.should be_true
-  end
+  describe "Matrix.symmetric?" do
+    it "returns true for a symmetric Matrix" do
+      Matrix[[1, 2, Complex(0, 3)], [2, 4, 5], [Complex(0, 3), 5, 6]].symmetric?.should be_true
+    end
 
-  it "returns false for an asymmetric Matrix" do
-    Matrix[[1, 2],[-2, 1]].symmetric?.should be_false
-  end
+    it "returns true for a 0x0 empty matrix" do
+      Matrix.empty.symmetric?.should be_true
+    end
 
-  it "raises an error for rectangular matrices" do
-    [
-      Matrix[[0], [0]],
-      Matrix[[0, 0]],
-      Matrix.empty(0, 2),
-      Matrix.empty(2, 0),
-    ].each do |rectangular_matrix|
-      -> {
-        rectangular_matrix.symmetric?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+    it "returns false for an asymmetric Matrix" do
+      Matrix[[1, 2],[-2, 1]].symmetric?.should be_false
+    end
+
+    it "raises an error for rectangular matrices" do
+      [
+        Matrix[[0], [0]],
+        Matrix[[0, 0]],
+        Matrix.empty(0, 2),
+        Matrix.empty(2, 0),
+      ].each do |rectangular_matrix|
+        -> {
+          rectangular_matrix.symmetric?
+        }.should raise_error(Matrix::ErrDimensionMismatch)
+      end
     end
   end
 end

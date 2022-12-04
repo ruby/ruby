@@ -111,10 +111,10 @@ describe "Array#sort" do
     [1, 2, 3].sort{ break :a }.should == :a
   end
 
-  it "uses the sign of Bignum block results as the sort result" do
+  it "uses the sign of Integer block results as the sort result" do
     a = [1, 2, 5, 10, 7, -4, 12]
     begin
-      class Bignum;
+      class Integer
         alias old_spaceship <=>
         def <=>(other)
           raise
@@ -122,7 +122,7 @@ describe "Array#sort" do
       end
       a.sort {|n, m| (n - m) * (2 ** 200)}.should == [-4, 1, 2, 5, 7, 10, 12]
     ensure
-      class Bignum
+      class Integer
         alias <=> old_spaceship
       end
     end
@@ -132,7 +132,7 @@ describe "Array#sort" do
     a = [1, 2, 5, 10, 7, -4, 12]
     a.sort { |n, m| n - m }.should == [-4, 1, 2, 5, 7, 10, 12]
     a.sort { |n, m|
-      ArraySpecs::ComparableWithFixnum.new(n-m)
+      ArraySpecs::ComparableWithInteger.new(n-m)
     }.should == [-4, 1, 2, 5, 7, 10, 12]
     -> {
       a.sort { |n, m| (n - m).to_s }

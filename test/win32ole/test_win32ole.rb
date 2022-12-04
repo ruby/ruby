@@ -101,7 +101,7 @@ if defined?(WIN32OLE)
       assert_include(mnames, 'Count')
     end
 
-    def test_ole_mehtod_help
+    def test_ole_method_help
       minfo = @dict1.ole_method_help("Add")
       assert_equal(2, minfo.size_params)
     end

@@ -12,6 +12,16 @@ describe "File.extname" do
     File.extname(".app.conf").should == ".conf"
   end
 
+  it "returns unfrozen strings" do
+    File.extname("foo.rb").frozen?.should == false
+    File.extname("/foo/bar.rb").frozen?.should == false
+    File.extname("/foo.rb/bar.c").frozen?.should == false
+    File.extname("bar").frozen?.should == false
+    File.extname(".bashrc").frozen?.should == false
+    File.extname("/foo.bar/baz").frozen?.should == false
+    File.extname(".app.conf").frozen?.should == false
+  end
+
   it "returns the extension for edge cases" do
     File.extname("").should ==  ""
     File.extname(".").should ==  ""
@@ -23,14 +33,14 @@ describe "File.extname" do
   end
 
   describe "for a filename ending with a dot" do
-    guard -> { platform_is :windows or ruby_version_is ""..."2.7" } do
+    platform_is :windows do
       it "returns ''" do
         File.extname(".foo.").should == ""
         File.extname("foo.").should == ""
       end
     end
 
-    guard -> { platform_is_not :windows and ruby_version_is "2.7" } do
+    platform_is_not :windows do
       it "returns '.'" do
         File.extname(".foo.").should == "."
         File.extname("foo.").should == "."

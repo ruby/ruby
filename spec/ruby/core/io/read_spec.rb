@@ -104,6 +104,14 @@ describe "IO.read" do
     str = IO.read(@fname, encoding: Encoding::ISO_8859_1)
     str.encoding.should == Encoding::ISO_8859_1
   end
+
+  platform_is :windows do
+    it "reads the file in text mode" do
+      # 0x1A is CTRL+Z and is EOF in Windows text mode.
+      File.binwrite(@fname, "\x1Abbb")
+      IO.read(@fname).should.empty?
+    end
+  end
 end
 
 describe "IO.read from a pipe" do
@@ -262,6 +270,13 @@ describe "IO#read" do
     @io.read(nil, buf).should equal buf
   end
 
+  it "returns the given buffer when there is nothing to read" do
+    buf = ""
+
+    @io.read
+    @io.read(nil, buf).should equal buf
+  end
+
   it "coerces the second argument to string and uses it as a buffer" do
     buf = "ABCDE"
     obj = mock("buff")
@@ -304,6 +319,9 @@ describe "IO#read" do
     -> { IOSpecs.closed_io.read }.should raise_error(IOError)
   end
 
+  it "raises ArgumentError when length is less than 0" do
+    -> { @io.read(-1) }.should raise_error(ArgumentError)
+  end
 
   platform_is_not :windows do
     it "raises IOError when stream is closed by another thread" do
@@ -380,13 +398,6 @@ describe "IO#read in binary mode" do
 
     result = File.open(@name, "rb") { |f| f.read }.chomp
 
-    result.encoding.should == Encoding::BINARY
-    xE2 = [226].pack('C*')
-    result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)
-  end
-
-  it "does not transcode file contents when an internal encoding is specified" do
-    result = File.open(@name, "r:binary:utf-8") { |f| f.read }.chomp
     result.encoding.should == Encoding::BINARY
     xE2 = [226].pack('C*')
     result.should == ("abc" + xE2 + "def").force_encoding(Encoding::BINARY)

@@ -2,7 +2,7 @@
 require 'nokogiri'
 require 'open-uri'
 
-doc = Nokogiri::HTML(URI.open('https://www.timeanddate.com/time/zones/'))
+doc = Nokogiri::HTML(URI.open(ARGV[0] || 'https://www.timeanddate.com/time/zones/'))
 
 h = {}
 
@@ -26,9 +26,26 @@ end
 h.delete_if{|_,v| !v}
 
 lines = File.readlines('zonetab.list')
-lines.select{|l| l.include?(',')}.
-  map{|l| l.split(',', 2)[0]}.
-  each{|a| h.delete(a)}
+lines.map! do |l|
+  if (sep = /^%%/ =~ l)...(sep = /^%%/ =~ l) and !sep
+    z, o = l.split(/,\s*/, 2)
+    o.strip!
+    if ho = h.delete(z) and ho != eval(o)
+      warn "offset of #{z}: #{o} -> #{ho}"
+      l = l.sub(/,\s*\K.*/) {
+        if o.include?("*")
+          o1, o2 = ho.abs.divmod(3600)
+          o1 = "#{o1}*3600"
+          o1 = "(#{o1}+#{o2})" if o2 != 0
+          ho < 0 ? "-#{o1}" : o1
+        else
+          ho.to_s
+        end
+      }
+    end
+  end
+  l
+end
 
 lines.insert(-2, h.sort.map{|k,v| "#{k},#{v}\n"})
 lines.flatten!

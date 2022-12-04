@@ -5283,7 +5283,7 @@ Sat Aug  1 06:54:36 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): OpenSSL declares these
 	  constants as longs, so we should follow that and use LONG2NUM.
-	  http://git.io/vOqxD
+	  https://github.com/openssl/openssl/blob/34750dc25d74e3db4c1ba43cd219d3f4825e4c65/include/openssl/ssl.h#L391
 
 Sat Aug  1 04:06:29 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
@@ -6754,7 +6754,8 @@ Thu Jul  2 09:51:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 Thu Jul  2 06:49:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems HEAD(c202db2).
-	  this version contains many enhancements see http://git.io/vtNwF
+	  this version contains many enhancements see
+	  https://github.com/rubygems/rubygems/blob/c202db2d681eb3c3a02f187d346fbb2e8d733b26/History.txt#L3
 	* test/rubygems: ditto.
 
 Wed Jul  1 23:50:34 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>

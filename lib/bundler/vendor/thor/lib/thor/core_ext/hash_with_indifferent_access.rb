@@ -28,6 +28,12 @@ class Bundler::Thor
         super(convert_key(key))
       end
 
+      def except(*keys)
+        dup.tap do |hash|
+          keys.each { |key| hash.delete(convert_key(key)) }
+        end
+      end
+
       def fetch(key, *args)
         super(convert_key(key), *args)
       end

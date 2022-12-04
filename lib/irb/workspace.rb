@@ -12,6 +12,7 @@
 
 require "delegate"
 
+IRB::TOPLEVEL_BINDING = binding
 module IRB # :nodoc:
   class WorkSpace
     # Creates a new workspace.
@@ -51,11 +52,15 @@ EOF
           end
           @binding = BINDING_QUEUE.pop
 
-        when 3	# binding in function on TOPLEVEL_BINDING(default)
-          @binding = eval("self.class.send(:remove_method, :irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
+        when 3	# binding in function on TOPLEVEL_BINDING
+          @binding = eval("self.class.remove_method(:irb_binding) if defined?(irb_binding); private; def irb_binding; binding; end; irb_binding",
                           TOPLEVEL_BINDING,
                           __FILE__,
                           __LINE__ - 3)
+        when 4  # binding is a copy of TOPLEVEL_BINDING (default)
+          # Note that this will typically be IRB::TOPLEVEL_BINDING
+          # This is to avoid RubyGems' local variables (see issue #17623)
+          @binding = TOPLEVEL_BINDING.dup
         end
       end
 
@@ -126,6 +131,7 @@ EOF
     def filter_backtrace(bt)
       return nil if bt =~ /\/irb\/.*\.rb/
       return nil if bt =~ /\/irb\.rb/
+      return nil if bt =~ /tool\/lib\/.*\.rb|runner\.rb/ # for tests in Ruby repository
       case IRB.conf[:CONTEXT_MODE]
       when 1
         return nil if bt =~ %r!/tmp/irb-binding!
@@ -152,26 +158,19 @@ EOF
         end
       end
 
-      # NOT using #use_colorize? of IRB.conf[:MAIN_CONTEXT] because this method may be called before IRB::Irb#run
-      use_colorize = IRB.conf.fetch(:USE_COLORIZE, true)
-      if use_colorize
-        lines = Color.colorize_code(code).lines
-      else
-        lines = code.lines
-      end
+      lines = Color.colorize_code(code).lines
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      if use_colorize
-        fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
-      else
-        fmt = " %2s %#{end_pos.to_s.length}d: %s"
-      end
+      line_number_fmt = Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])
+      fmt = " %2s #{line_number_fmt}: %s"
+
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
+
       "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
 

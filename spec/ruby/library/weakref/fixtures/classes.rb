@@ -13,9 +13,11 @@ class WeakRefSpec
   def self.make_dead_weakref
     weaks = []
     weak = nil
-    10_000.times do
+    1000.times do
       weaks << make_weakref
-      GC.start
+    end
+
+    1000.times do
       GC.start
       break if weak = weaks.find { |w| !w.weakref_alive? }
     end

@@ -144,7 +144,7 @@ static void w_oconv(nkf_char c2, nkf_char c1);
 static void w_oconv16(nkf_char c2, nkf_char c1);
 static void w_oconv32(nkf_char c2, nkf_char c1);
 
-typedef struct {
+typedef const struct {
     const char *name;
     nkf_char (*iconv)(nkf_char c2, nkf_char c1, nkf_char c0);
     void (*oconv)(nkf_char c2, nkf_char c1);
@@ -158,10 +158,10 @@ nkf_native_encoding NkfEncodingUTF_8 =		{ "UTF-8", w_iconv, w_oconv };
 nkf_native_encoding NkfEncodingUTF_16 =		{ "UTF-16", w_iconv16, w_oconv16 };
 nkf_native_encoding NkfEncodingUTF_32 =		{ "UTF-32", w_iconv32, w_oconv32 };
 
-typedef struct {
-    const int id;
+typedef const struct {
+    int id;
     const char *name;
-    const nkf_native_encoding *base_encoding;
+    nkf_native_encoding *base_encoding;
 } nkf_encoding;
 
 nkf_encoding nkf_encoding_table[] = {
@@ -204,9 +204,9 @@ nkf_encoding nkf_encoding_table[] = {
     {-1,		NULL,			NULL}
 };
 
-struct {
+static const struct {
     const char *name;
-    const int id;
+    int id;
 } encoding_name_to_id_table[] = {
     {"US-ASCII",		ASCII},
     {"ASCII",			ASCII},
@@ -581,7 +581,7 @@ static const unsigned char cv[]= {
     0x00,0x00};
 
 
-/* X0201 kana conversion table for daguten */
+/* X0201 kana conversion table for dakuten */
 /* 90-9F A0-DF */
 static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -602,7 +602,7 @@ static const unsigned char dv[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana conversion table for han-daguten */
+/* X0201 kana conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -623,7 +623,7 @@ static const unsigned char ev[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-/* X0201 kana to X0213 conversion table for han-daguten */
+/* X0201 kana to X0213 conversion table for han-dakuten */
 /* 90-9F A0-DF */
 static const unsigned char ev_x0213[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -3817,7 +3817,7 @@ oconv_newline(void (*func)(nkf_char, nkf_char))
    LF    new line
    SP    space
 
-   This fold algorthm does not preserve heading space in a line.
+   This fold algorithm does not preserve heading space in a line.
    This is the main difference from fmt.
  */
 
@@ -4286,7 +4286,7 @@ static const unsigned char *mime_pattern[] = {
 
 
 /* 該当するコードの優先度を上げるための目印 */
-nkf_char (*mime_priority_func[])(nkf_char c2, nkf_char c1, nkf_char c0) = {
+static nkf_char (*const mime_priority_func[])(nkf_char c2, nkf_char c1, nkf_char c0) = {
     e_iconv, s_iconv, 0, 0, 0, 0, 0,
 #if defined(UTF8_INPUT_ENABLE)
     w_iconv, w_iconv,
@@ -6787,7 +6787,7 @@ options(unsigned char *cp)
 	case 'S':   /* Shift_JIS input */
 	    input_encoding = nkf_enc_from_index(SHIFT_JIS);
 	    continue;
-	case 'Z':   /* Convert X0208 alphabet to asii */
+	case 'Z':   /* Convert X0208 alphabet to ascii */
 	    /* alpha_f
 	       bit:0   Convert JIS X 0208 Alphabet to ASCII
 	       bit:1   Convert Kankaku to one space

@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle cache" do
+  it "doesn't update the cache multiple times, even if it already exists" do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    bundle :cache
+    expect(out).to include("Updating files in vendor/cache").once
+
+    bundle :cache
+    expect(out).to include("Updating files in vendor/cache").once
+  end
+
   context "with --gemfile" do
     it "finds the gemfile" do
       gemfile bundled_app("NotGemfile"), <<-G
@@ -198,14 +211,10 @@ RSpec.describe "bundle cache" do
   end
 
   context "with --all-platforms" do
-    before do
-      skip "doesn't put gems where it should" if Gem.win_platform?
-    end
-
     it "puts the gems in vendor/cache even for other rubies" do
       gemfile <<-D
         source "#{file_uri_for(gem_repo1)}"
-        gem 'rack', :platforms => :ruby_19
+        gem 'rack', :platforms => [:ruby_20, :x64_mingw_20]
       D
 
       bundle "cache --all-platforms"
@@ -221,13 +230,13 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      bundle "config --local without wo"
+      bundle "config set --local without wo"
       install_gemfile <<-G
-        source "file:#{gem_repo1}"
+        source "#{file_uri_for(gem_repo1)}"
         gem "rack"
         group :wo do
           gem "weakling"
-          gem "uninstallable", :source => "file:#{gem_repo4}"
+          gem "uninstallable", :source => "#{file_uri_for(gem_repo4)}"
         end
       G
 
@@ -237,10 +246,25 @@ RSpec.describe "bundle cache" do
       expect(the_bundle).to include_gem "rack 1.0"
       expect(the_bundle).not_to include_gems "weakling", "uninstallable"
 
-      bundle "config --local without wo"
+      bundle "config set --local without wo"
       bundle :install
       expect(the_bundle).to include_gem "rack 1.0"
       expect(the_bundle).not_to include_gems "weakling", "uninstallable"
+    end
+
+    it "does not fail to cache gems in excluded groups when there's a lockfile but gems not previously installed" do
+      bundle "config set --local without wo"
+      gemfile <<-G
+        source "https://my.gem.repo.1"
+        gem "rack"
+        group :wo do
+          gem "weakling"
+        end
+      G
+
+      bundle :lock, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      bundle :cache, "all-platforms" => true, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      expect(bundled_app("vendor/cache/weakling-0.0.3.gem")).to exist
     end
   end
 
@@ -254,7 +278,7 @@ RSpec.describe "bundle cache" do
     end
 
     subject do
-      bundle "config --local frozen true"
+      bundle "config set --local frozen true"
       bundle :cache, :raise_on_error => false
     end
 
@@ -272,6 +296,30 @@ RSpec.describe "bundle cache" do
       expect(err).to include("* rack-obama")
       bundle "env"
       expect(out).to include("frozen").or include("deployment")
+    end
+  end
+
+  context "with gems with extensions" do
+    before do
+      build_repo2 do
+        build_gem "racc", "2.0" do |s|
+          s.add_dependency "rake"
+          s.extensions << "Rakefile"
+          s.write "Rakefile", "task(:default) { puts 'INSTALLING rack' }"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo2)}"
+
+        gem "racc"
+      G
+    end
+
+    it "installs them properly from cache to a different path" do
+      bundle "cache"
+      bundle "config set --local path vendor/bundle"
+      bundle "install --local"
     end
   end
 end
@@ -293,7 +341,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "does not hit the remote at all" do
+    it "does not hit the remote at all in frozen mode" do
       build_repo2
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -304,9 +352,27 @@ RSpec.describe "bundle install with gem sources" do
       simulate_new_machine
       FileUtils.rm_rf gem_repo2
 
-      bundle "config --local deployment true"
-      bundle "config --local path vendor/bundle"
+      bundle "config set --local deployment true"
+      bundle "config set --local path vendor/bundle"
       bundle :install
+      expect(the_bundle).to include_gems "rack 1.0.0"
+    end
+
+    it "does not hit the remote at all when cache_all_platforms configured" do
+      build_repo2
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack"
+      G
+
+      bundle :cache
+      simulate_new_machine
+      FileUtils.rm_rf gem_repo2
+
+      bundle "config set --local cache_all_platforms true"
+      bundle "config set --local path vendor/bundle"
+      bundle "install --local"
+      expect(out).not_to include("Fetching gem metadata")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
@@ -337,14 +403,14 @@ RSpec.describe "bundle install with gem sources" do
 
       simulate_new_machine
 
-      simulate_platform "ruby" do
-        install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "platform_specific"
-        G
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 RUBY")
-      end
+      bundle "config set --local force_ruby_platform true"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "platform_specific"
+      G
+      run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
+      expect(out).to eq("1.0.0 RUBY")
     end
 
     it "does not update the cache if --no-cache is passed" do

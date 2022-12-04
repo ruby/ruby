@@ -665,6 +665,26 @@ EXPECTED
     assert_equal "\n<p>C</p>\n", result
   end
 
+  def test_convert_RDOCLINK_escape_image
+    assert_escaped '<script>', 'rdoc-image:"><script>alert(`rdoc-image`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_label_id
+    assert_escaped '<script>', 'rdoc-label::path::"><script>alert(`rdoc-label_id`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_label_path
+    assert_escaped '<script>', 'rdoc-label::"><script>alert(`rdoc-label_path`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_ref
+    assert_escaped '<script>', 'rdoc-ref:"><script>alert(`rdoc-ref`)</script>"'
+  end
+
+  def test_convert_RDOCLINK_escape_xxx
+    assert_escaped '<script>', 'rdoc-xxx:"><script>alert(`rdoc-xxx`)</script>"'
+  end
+
   def test_convert_TIDYLINK_footnote
     result = @to.convert 'text{*1}[rdoc-label:foottext-1:footmark-1]'
 
@@ -690,6 +710,11 @@ EXPECTED
       "\n<p><a href=\"http://example.com\"><img src=\"path/to/image.jpg\"></a></p>\n"
 
     assert_equal expected, result
+
+    result =
+      @to.convert '{rdoc-image:<script>alert`link text`</script>}[http://example.com]'
+
+    assert_not_include result, "<script>"
   end
 
   def test_convert_TIDYLINK_rdoc_label
@@ -702,6 +727,35 @@ EXPECTED
     result = @to.convert '{ruby-lang}[irc://irc.freenode.net/#ruby-lang]'
 
     assert_equal "\n<p><a href=\"irc://irc.freenode.net/#ruby-lang\">ruby-lang</a></p>\n", result
+  end
+
+  def test_convert_TIDYLINK_escape_text
+    assert_escaped '<script>', '{<script>alert`link text`</script>}[a]'
+    assert_escaped '<script>', 'x:/<script>alert(1);</script>[[]'
+  end
+
+  def test_convert_TIDYLINK_escape_javascript
+    assert_not_include '{click}[javascript:alert`javascript_scheme`]', '<a href="javascript:'
+  end
+
+  def test_convert_TIDYLINK_escape_onmouseover
+    assert_escaped '"/onmouseover="', '{onmouseover}[http://"/onmouseover="alert`on_mouse_link`"]'
+  end
+
+  def test_convert_TIDYLINK_escape_onerror
+    assert_escaped '"onerror="', '{link_image}[http://"onerror="alert`link_image`".png]'
+  end
+
+  def test_convert_with_exclude_tag
+    assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
+    assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
+    assert_equal "\n<p><code>https:</code>-foobar</p>\n", @to.convert('<tt>https:</tt>-foobar')
+    assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
+  end
+
+  def test_convert_underscore_adjacent_to_code
+    assert_equal "\n<p><code>aaa</code>_</p>\n", @to.convert(%q{+aaa+_})
+    assert_equal "\n<p>\u{2018}<code>i386-mswin32_</code><em>MSRTVERSION</em>\u{2019}</p>\n", @to.convert(%q{`+i386-mswin32_+_MSRTVERSION_'})
   end
 
   def test_gen_url
@@ -727,6 +781,45 @@ EXPECTED
     assert_equal '<img src="https://example.com/image.png" />', @to.gen_url('https://example.com/image.png', 'ignored')
   end
 
+  def test_gen_url_rdoc_file
+    assert_equal '<a href="example_rdoc.html">example</a>',
+                 @to.gen_url('example.rdoc', 'example')
+    assert_equal '<a href="doc/example_rdoc.html">example</a>',
+                 @to.gen_url('doc/example.rdoc', 'example')
+    assert_equal '<a href="../ex.doc/example_rdoc.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc', 'example')
+    assert_equal '<a href="doc/example_rdoc.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rdoc#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_rdoc.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc#label-two', 'example')
+  end
+
+  def test_gen_url_md_file
+    assert_equal '<a href="example_md.html">example</a>',
+                 @to.gen_url('example.md', 'example')
+    assert_equal '<a href="doc/example_md.html">example</a>',
+                 @to.gen_url('doc/example.md', 'example')
+    assert_equal '<a href="../ex.doc/example_md.html">example</a>',
+                 @to.gen_url('../ex.doc/example.md', 'example')
+    assert_equal '<a href="doc/example_md.html#label-one">example</a>',
+                 @to.gen_url('doc/example.md#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_md.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.md#label-two', 'example')
+  end
+
+  def test_gen_url_rb_file
+    assert_equal '<a href="example_rb.html">example</a>',
+                 @to.gen_url('example.rb', 'example')
+    assert_equal '<a href="doc/example_rb.html">example</a>',
+                 @to.gen_url('doc/example.rb', 'example')
+    assert_equal '<a href="../ex.doc/example_rb.html">example</a>',
+                 @to.gen_url('../ex.doc/example.rb', 'example')
+    assert_equal '<a href="doc/example_rb.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rb#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_rb.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rb#label-two', 'example')
+  end
+
   def test_handle_regexp_HYPERLINK_link
     target = RDoc::Markup::RegexpHandling.new 0, 'link:README.txt'
 
@@ -741,6 +834,11 @@ EXPECTED
     link = @to.handle_regexp_HYPERLINK target
 
     assert_equal '<a href="irc://irc.freenode.net/#ruby-lang">irc.freenode.net/#ruby-lang</a>', link
+  end
+
+  def test_handle_regexp_HYPERLINK_escape
+    code = 'irc://irc.freenode.net/"><script>alert(`irc`)</script><a"'
+    assert_escaped '<script>', code
   end
 
   def test_list_verbatim_2
@@ -759,6 +857,26 @@ EXPECTED
     EXPECTED
 
     assert_equal expected, @m.convert(str, @to)
+  end
+
+  def test_block_quote_in_verbatim
+    str = "BlockQuote\n  >>>\n"
+
+    expected = <<-EXPECTED
+<p>BlockQuote</p>
+<pre>&gt;&gt;&gt;</pre>
+    EXPECTED
+
+    assert_equal expected, @m.convert(str, @to).gsub(/^\n/, "")
+
+    str = "BlockQuote\n  >>>  word\n"
+
+    expected = <<-EXPECTED
+<p>BlockQuote</p>
+<pre>&gt;&gt;&gt;  word</pre>
+    EXPECTED
+
+    assert_equal expected, @m.convert(str, @to).gsub(/^\n/, "")
   end
 
   def test_parseable_eh
@@ -805,5 +923,38 @@ EXPECTED
     @to.end_accepting
   end
 
+  def test_accept_table
+    header = %w[Col1 Col2 Col3]
+    body = [
+      %w[cell1_1 cell1_2 cell1_3],
+      %w[cell2_1 cell2_2 cell2_3],
+      ['<script>alert("foo");</script>',],
+      %w[+code+ _em_ **strong**],
+    ]
+    aligns = [:left, :right, nil]
+    @to.start_accepting
+    @to.accept_table(header, body, aligns)
+    res = @to.end_accepting
+    assert_include(res[%r<<th[^<>]*>Col1</th>>], 'align="left"')
+    assert_include(res[%r<<th[^<>]*>Col2</th>>], 'align="right"')
+    assert_not_include(res[%r<<th[^<>]*>Col3</th>>], 'align=')
+    assert_include(res[%r<<td[^<>]*>cell1_1</td>>], 'align="left"')
+    assert_include(res[%r<<td[^<>]*>cell1_2</td>>], 'align="right"')
+    assert_not_include(res[%r<<td[^<>]*>cell1_3</td>>], 'align=')
+    assert_include(res[%r<<td[^<>]*>cell2_1</td>>], 'align="left"')
+    assert_include(res[%r<<td[^<>]*>cell2_2</td>>], 'align="right"')
+    assert_not_include(res[%r<<td[^<>]*>cell2_3</td>>], 'align=')
+    assert_not_include(res, '<script>')
+    assert_include(res[%r<<td[^<>]*>.*script.*</td>>], '&lt;script&gt;')
+    assert_include(res[%r<<td[^<>]*>.*code.*</td>>], '<code>code</code>')
+    assert_include(res[%r<<td[^<>]*>.*em.*</td>>], '<em>em</em>')
+    assert_include(res[%r<<td[^<>]*>.*strong.*</td>>], '<strong>strong</strong>')
+  end
+
+  def assert_escaped(unexpected, code)
+    result = @to.convert(code)
+    assert_not_include result, unexpected
+    assert_include result, CGI.escapeHTML(unexpected)
+  end
 end
 

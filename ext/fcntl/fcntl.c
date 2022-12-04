@@ -256,4 +256,21 @@ Init_fcntl(void)
      */
     rb_define_const(mFcntl, "O_ACCMODE", INT2FIX(O_RDONLY | O_WRONLY | O_RDWR));
 #endif
+#ifdef F_DUP2FD
+    /* Document-const: F_DUP2FD
+     *
+     * It is a FreeBSD specific constant and equivalent
+     * to dup2 call.
+     */
+    rb_define_const(mFcntl, "F_DUP2FD", INT2NUM(F_DUP2FD));
+#endif
+#ifdef F_DUP2FD_CLOEXEC
+    /* Document-const: F_DUP2FD_CLOEXEC
+     *
+     * It is a FreeBSD specific constant and acts
+     * similarly as F_DUP2FD but set the FD_CLOEXEC
+     * flag in addition.
+     */
+    rb_define_const(mFcntl, "F_DUP2FD_CLOEXEC", INT2NUM(F_DUP2FD_CLOEXEC));
+#endif
 }

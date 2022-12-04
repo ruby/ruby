@@ -143,6 +143,17 @@ class TestArgf < Test::Unit::TestCase
     };
   end
 
+  def test_lineno_after_shebang
+    expected = %w"1 1 1 2 2 2 3 3 1 4 4 2"
+    assert_in_out_err(["--enable=gems", "-", @t1.path, @t2.path], "#{<<~"{#"}\n#{<<~'};'}", expected)
+    #!/usr/bin/env ruby
+    {#
+      ARGF.each do |line|
+        puts [$., ARGF.lineno, ARGF.file.lineno]
+      end
+    };
+  end
+
   def test_new_lineno_each
     f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
     result = []
@@ -257,13 +268,13 @@ class TestArgf < Test::Unit::TestCase
 
   def test_inplace_nonascii
     ext = Encoding.default_external or
-      skip "no default external encoding"
+      omit "no default external encoding"
     t = nil
     ["\u{3042}", "\u{e9}"].any? do |n|
       t = make_tempfile(n.encode(ext))
     rescue Encoding::UndefinedConversionError
     end
-    t or skip "no name to test"
+    t or omit "no name to test"
     assert_in_out_err(["-i.bak", "-", t.path],
                       "#{<<~"{#"}\n#{<<~'};'}")
     {#
@@ -745,6 +756,18 @@ class TestArgf < Test::Unit::TestCase
                       ["\"a\\n\"", "\"b\\n\""], [])
     assert_in_out_err(['-e', 'ARGF.each_line(chomp: true) {|para| p para}'], "a\nb\n",
                       ["\"a\"", "\"b\""], [])
+
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    lines = []
+    begin
+      argf.each_line(chomp: true) do |line|
+        lines << line
+      end
+    ensure
+      argf.close
+    end
+    assert_equal(%w[foo bar baz], lines)
   end
 
   def test_each_byte
@@ -993,53 +1016,55 @@ class TestArgf < Test::Unit::TestCase
     assert_nil(argf.gets, bug4274)
   end
 
+  def test_readlines_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal(%w[foo bar baz], argf.readlines(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readlines(chomp: true)'], "a\nb\n",
+                      ["[\"a\", \"b\"]"], [])
+  end
+
+  def test_readline_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.readline(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p readline(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
+  def test_gets_chomp
+    t = make_tempfile
+    argf = ARGF.class.new(t.path)
+    begin
+      assert_equal("foo", argf.gets(chomp: true))
+    ensure
+      argf.close
+    end
+
+    assert_in_out_err(['-e', 'p gets(chomp: true)'], "a\nb\n",
+                      ["\"a\""], [])
+  end
+
   def test_readlines_twice
     bug5952 = '[ruby-dev:45160]'
     assert_ruby_status(["-e", "2.times {STDIN.tty?; readlines}"], "", bug5952)
   end
 
-  def test_lines
+  def test_each_codepoint
     ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#
-        $stderr = $stdout
-        s = []
-        ARGF.lines {|l| s << l }
-        p s
+        print Marshal.dump(ARGF.each_codepoint.to_a)
       };
-      assert_match(/deprecated/, f.gets)
-      assert_equal("[\"1\\n\", \"2\\n\", \"3\\n\", \"4\\n\", \"5\\n\", \"6\\n\"]\n", f.read)
-    end
-  end
-
-  def test_bytes
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.bytes.to_a)
-      };
-      assert_match(/deprecated/, f.gets)
-      assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
-    end
-  end
-
-  def test_chars
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print [Marshal.dump(ARGF.chars.to_a)].pack('m')
-      };
-      assert_match(/deprecated/, f.gets)
-      assert_equal(["1", "\n", "2", "\n", "3", "\n", "4", "\n", "5", "\n", "6", "\n"], Marshal.load(f.read.unpack('m').first))
-    end
-  end
-
-  def test_codepoints
-    ruby('-W1', '-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
-      {#
-        $stderr = $stdout
-        print Marshal.dump(ARGF.codepoints.to_a)
-      };
-      assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
@@ -1095,5 +1120,24 @@ class TestArgf < Test::Unit::TestCase
       ARGV[0] = nil
       assert_raise(TypeError, bug11610) {gets}
     };
+  end
+
+  def test_sized_read
+    s = "a"
+    [@t1, @t2, @t3].each { |t|
+      File.binwrite(t.path, s)
+      s = s.succ
+    }
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
+    end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
   end
 end

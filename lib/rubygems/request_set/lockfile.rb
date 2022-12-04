@@ -56,10 +56,10 @@ class Gem::RequestSet::Lockfile
 
       deps[name] = if [Gem::Resolver::VendorSpecification,
                        Gem::Resolver::GitSpecification].include? spec.class
-                     Gem::Requirement.source_set
-                   else
-                     requirement
-                   end
+        Gem::Requirement.source_set
+      else
+        requirement
+      end
     end
 
     deps
@@ -76,7 +76,7 @@ class Gem::RequestSet::Lockfile
     @gem_deps_file = File.expand_path(gem_deps_file)
     @gem_deps_dir  = File.dirname(@gem_deps_file)
 
-    if RUBY_VERSION < '2.7'
+    if RUBY_VERSION < "2.7"
       @gem_deps_file.untaint unless gem_deps_file.tainted?
     end
 
@@ -106,7 +106,7 @@ class Gem::RequestSet::Lockfile
       out << "  specs:"
 
       requests.sort_by {|request| request.name }.each do |request|
-        next if request.spec.name == 'bundler'
+        next if request.spec.name == "bundler"
         platform = "-#{request.spec.platform}" unless
           Gem::Platform::RUBY == request.spec.platform
 
@@ -156,7 +156,7 @@ class Gem::RequestSet::Lockfile
     if dest.index(base) == 0
       offset = dest[base.size + 1..-1]
 
-      return '.' unless offset
+      return "." unless offset
 
       offset
     else
@@ -224,7 +224,7 @@ class Gem::RequestSet::Lockfile
   def write
     content = to_s
 
-    File.open "#{@gem_deps_file}.lock", 'w' do |io|
+    File.open "#{@gem_deps_file}.lock", "w" do |io|
       io.write content
     end
   end
@@ -236,4 +236,4 @@ class Gem::RequestSet::Lockfile
   end
 end
 
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative "lockfile/tokenizer"

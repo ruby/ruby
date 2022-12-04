@@ -287,6 +287,12 @@ class RDoc::Markup::Parser
         line << ' ' * indent
       when :BREAK, :TEXT then
         line << data
+      when :BLOCKQUOTE then
+        line << '>>>'
+        peek_type, _, peek_column = peek_token
+        if peek_type != :NEWLINE and peek_column
+          line << ' ' * (peek_column - column - 3)
+        end
       else # *LIST_TOKENS
         list_marker = case type
                       when :BULLET then data
@@ -372,11 +378,8 @@ class RDoc::Markup::Parser
         unget
         parse_text parent, indent
       when :BLOCKQUOTE then
-        type, _, column = get
-        if type == :NEWLINE
-          type, _, column = get
-        end
-        unget if type
+        nil while (type, = get; type) and type != :NEWLINE
+        _, _, column, = peek_token
         bq = RDoc::Markup::BlockQuote.new
         p :blockquote_start => [data, column] if @debug
         parse bq, column
@@ -544,7 +547,10 @@ class RDoc::Markup::Parser
                    [:NOTE, @s[1], *pos]
                  # >>> followed by end of line => :BLOCKQUOTE
                  when @s.scan(/>>> *(\w+)?$/) then
-                   [:BLOCKQUOTE, @s[1], *pos]
+                   if word = @s[1]
+                     @s.unscan(word)
+                   end
+                   [:BLOCKQUOTE, word, *pos]
                  # anything else: :TEXT
                  else
                    @s.scan(/(.*?)(  )?\r?$/)

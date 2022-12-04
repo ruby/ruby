@@ -402,7 +402,7 @@ module TupleSpaceTestModule
   end
 
   def test_cancel_02
-    skip 'this test is unstable with --jit-wait' if RubyVM::MJIT.enabled?
+    omit 'this test is unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     entry = @ts.write([:removeme, 1])
     assert_equal([[:removeme, 1]], @ts.read_all([nil, nil]))
     entry.cancel
@@ -496,6 +496,10 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    if RUBY_PLATFORM.match?(/mingw/)
+      @omitted = true
+      omit 'This test seems to randomly hang on GitHub Actions MinGW'
+    end
     super
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
@@ -503,6 +507,9 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    return if @omitted
+    @omitted = false
+
     # implementation-dependent
     @ts_base.instance_eval{
       if th = @keeper
@@ -528,7 +535,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    skip "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
+    omit "this test randomly fails on mswin" if /mswin/ =~ RUBY_PLATFORM
     service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
@@ -576,6 +583,22 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 end
 
+module RingIPv4
+  def ipv4_mc(rf)
+    begin
+      v4mc = rf.make_socket('239.0.0.1')
+    rescue Errno::ENETUNREACH, Errno::ENOBUFS, Errno::ENODEV
+      omit 'IPv4 multicast not available'
+    end
+
+    begin
+      yield v4mc
+    ensure
+      v4mc.close
+    end
+  end
+end
+
 module RingIPv6
   def prepare_ipv6(r)
     begin
@@ -591,7 +614,7 @@ module RingIPv6
       return if
         Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
     end
-    skip 'IPv6 not available'
+    omit 'IPv6 not available'
   end
 
   def ipv6_mc(rf, hops = nil)
@@ -618,6 +641,7 @@ module RingIPv6
 end
 
 class TestRingServer < Test::Unit::TestCase
+  include RingIPv4
 
   def setup
     @port = Rinda::Ring_PORT
@@ -646,11 +670,11 @@ class TestRingServer < Test::Unit::TestCase
   def _test_do_reply
     called = nil
 
-    callback = proc { |ts|
+    callback_orig = proc { |ts|
       called = ts
     }
 
-    callback = DRb::DRbObject.new callback
+    callback = DRb::DRbObject.new callback_orig
 
     @ts.write [:lookup_ring, callback]
 
@@ -662,7 +686,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_do_reply_local
-    skip 'timeout-based test becomes unstable with --jit-wait' if RubyVM::MJIT.enabled?
+    omit 'timeout-based test becomes unstable with --jit-wait' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
     with_timeout(30) {_test_do_reply_local}
   end
 
@@ -690,31 +714,27 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv4_multicast
-    begin
-      v4mc = @rs.make_socket('239.0.0.1')
-    rescue Errno::ENOBUFS => e
-      skip "Missing multicast support in OS: #{e.message}"
-    end
-
-    begin
-      if Socket.const_defined?(:SO_REUSEPORT) then
-        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-      else
-        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    ipv4_mc(@rs) do |v4mc|
+      begin
+        if Socket.const_defined?(:SO_REUSEPORT) then
+          assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+        else
+          assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+        end
+      rescue TypeError
+        if /aix/ =~ RUBY_PLATFORM
+          omit "Known bug in getsockopt(2) on AIX"
+        end
+        raise $!
       end
-    rescue TypeError
-      if /aix/ =~ RUBY_PLATFORM
-        skip "Known bug in getsockopt(2) on AIX"
-      end
-      raise $!
-    end
 
-    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
-    assert_equal(@port,     v4mc.local_address.ip_port)
+      assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+      assert_equal(@port,     v4mc.local_address.ip_port)
+    end
   end
 
   def test_make_socket_ipv6_multicast
-    skip 'IPv6 not available' unless
+    omit 'IPv6 not available' unless
       Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
 
     begin
@@ -722,7 +742,7 @@ class TestRingServer < Test::Unit::TestCase
     rescue Errno::EADDRNOTAVAIL
       return # IPv6 address for multicast not available
     rescue Errno::ENOBUFS => e
-      skip "Missing multicast support in OS: #{e.message}"
+      omit "Missing multicast support in OS: #{e.message}"
     end
 
     if Socket.const_defined?(:SO_REUSEPORT) then
@@ -739,8 +759,8 @@ class TestRingServer < Test::Unit::TestCase
     @rs.shutdown
     begin
       @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
-    rescue Errno::ENOBUFS => e
-      skip "Missing multicast support in OS: #{e.message}"
+    rescue Errno::ENOBUFS, Errno::ENODEV => e
+      omit "Missing multicast support in OS: #{e.message}"
     end
 
     v4mc = @rs.instance_variable_get('@sockets').first
@@ -753,7 +773,7 @@ class TestRingServer < Test::Unit::TestCase
       end
     rescue TypeError
       if /aix/ =~ RUBY_PLATFORM
-        skip "Known bug in getsockopt(2) on AIX"
+        omit "Known bug in getsockopt(2) on AIX"
       end
       raise $!
     end
@@ -763,7 +783,7 @@ class TestRingServer < Test::Unit::TestCase
   end
 
   def test_ring_server_ipv6_multicast
-    skip 'IPv6 not available' unless
+    omit 'IPv6 not available' unless
       Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
 
     @rs.shutdown
@@ -841,6 +861,7 @@ end
 
 class TestRingFinger < Test::Unit::TestCase
   include RingIPv6
+  include RingIPv4
 
   def setup
     @rf = Rinda::RingFinger.new
@@ -852,7 +873,7 @@ class TestRingFinger < Test::Unit::TestCase
     assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
   rescue TypeError
     if /aix/ =~ RUBY_PLATFORM
-      skip "Known bug in getsockopt(2) on AIX"
+      omit "Known bug in getsockopt(2) on AIX"
     end
     raise $!
   ensure
@@ -860,12 +881,10 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv4_multicast
-    v4mc = @rf.make_socket('239.0.0.1')
-
-    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ipv4_multicast_loop)
-    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
-  ensure
-    v4mc.close if v4mc
+    ipv4_mc(@rf) do |v4mc|
+      assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ipv4_multicast_loop)
+      assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+    end
   end
 
   def test_make_socket_ipv6_multicast
@@ -877,10 +896,9 @@ class TestRingFinger < Test::Unit::TestCase
 
   def test_make_socket_ipv4_multicast_hops
     @rf.multicast_hops = 2
-    v4mc = @rf.make_socket('239.0.0.1')
-    assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
-  ensure
-    v4mc.close if v4mc
+    ipv4_mc(@rf) do |v4mc|
+      assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+    end
   end
 
   def test_make_socket_ipv6_multicast_hops

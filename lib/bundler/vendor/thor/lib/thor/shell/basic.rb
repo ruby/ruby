@@ -94,11 +94,30 @@ class Bundler::Thor
       # say("I know you knew that.")
       #
       def say(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
+        return if quiet?
+
         buffer = prepare_message(message, *color)
         buffer << "\n" if force_new_line && !message.to_s.end_with?("\n")
 
         stdout.print(buffer)
         stdout.flush
+      end
+
+      # Say (print) an error to the user. If the sentence ends with a whitespace
+      # or tab character, a new line is not appended (print + flush). Otherwise
+      # are passed straight to puts (behavior got from Highline).
+      #
+      # ==== Example
+      # say_error("error: something went wrong")
+      #
+      def say_error(message = "", color = nil, force_new_line = (message.to_s !~ /( |\t)\Z/))
+        return if quiet?
+
+        buffer = prepare_message(message, *color)
+        buffer << "\n" if force_new_line && !message.to_s.end_with?("\n")
+
+        stderr.print(buffer)
+        stderr.flush
       end
 
       # Say a status with the given color and appends the message. Since this
@@ -109,13 +128,14 @@ class Bundler::Thor
       def say_status(status, message, log_status = true)
         return if quiet? || log_status == false
         spaces = "  " * (padding + 1)
-        color  = log_status.is_a?(Symbol) ? log_status : :green
-
         status = status.to_s.rjust(12)
+        margin = " " * status.length + spaces
+
+        color  = log_status.is_a?(Symbol) ? log_status : :green
         status = set_color status, color, true if color
 
-        buffer = "#{status}#{spaces}#{message}"
-        buffer = "#{buffer}\n" unless buffer.end_with?("\n")
+        message = message.to_s.chomp.gsub(/(?<!\A)^/, margin)
+        buffer = "#{status}#{spaces}#{message}\n"
 
         stdout.print(buffer)
         stdout.flush
@@ -230,8 +250,9 @@ class Bundler::Thor
         paras = message.split("\n\n")
 
         paras.map! do |unwrapped|
-          counter = 0
-          unwrapped.split(" ").inject do |memo, word|
+          words = unwrapped.split(" ")
+          counter = words.first.length
+          words.inject do |memo, word|
             word = word.gsub(/\n\005/, "\n").gsub(/\005/, "\n")
             counter = 0 if word.include? "\n"
             if (counter + word.length + 1) < width
@@ -404,7 +425,7 @@ class Bundler::Thor
       end
 
       def unix?
-        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris|irix|hpux)/i
+        RUBY_PLATFORM =~ /(aix|darwin|linux|(net|free|open)bsd|cygwin|solaris)/i
       end
 
       def truncate(string, width)
