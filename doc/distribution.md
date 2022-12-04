@@ -27,7 +27,7 @@ Most distributions have a tool to build packages from a tarball. For example, De
 
 ```bash
 $ pkgver=3.1.3
-$ curl https://cache.ruby-lang.org/pub/ruby/${pkgver:0:3}/ruby-${pkgver}.tar.xz --output ruby-${pkgver}.tar.xz
+$ curl https://cache.ruby-lang.org/pub/ruby/${pkgver%.*}/ruby-${pkgver}.tar.xz --output ruby-${pkgver}.tar.xz
 $ tar xpvf ruby-${pkgver}.tar.xz
 $ cd ruby-${pkgver}
 $ ./configure
