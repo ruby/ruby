@@ -26,7 +26,7 @@ Downstream distributors should use the official release tarballs as part of thei
 Most distributions have a tool to build packages from a tarball. For example, Debian has `dpkg-buildpackage` and Fedora has `rpmbuild`. These tools will take the tarball and build a package for the distribution.
 
 ```bash
-$ export pkgver=3.1.3
+$ pkgver=3.1.3
 $ curl https://cache.ruby-lang.org/pub/ruby/${pkgver:0:3}/ruby-${pkgver}.tar.xz --output ruby-${pkgver}.tar.xz
 $ tar xvf ruby-${pkgver}.tar.xz
 $ cd ruby-${pkgver}
