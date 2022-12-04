@@ -4,23 +4,28 @@
 # it wraps together the request path and the request headers.
 #
 # The class should not be used directly;
-# instead you should use its subclasses:
+# instead you should use its subclasses.
 #
-# - \Net::HTTP::Get
-# - \Net::HTTP::Head
-# - \Net::HTTP::Post
-# - \Net::HTTP::Delete
-# - \Net::HTTP::Options
-# - \Net::HTTP::Trace
-# - \Net::HTTP::Patch
-# - \Net::HTTP::Put
-# - \Net::HTTP::Copy
-# - \Net::HTTP::Lock
-# - \Net::HTTP::Mkcol
-# - \Net::HTTP::Move
-# - \Net::HTTP::Propfind
-# - \Net::HTTP::Proppatch
-# - \Net::HTTP::Unlock
+# Subclasses for HTTP requests:
+#
+# - Net::HTTP::Get
+# - Net::HTTP::Head
+# - Net::HTTP::Post
+# - Net::HTTP::Put
+# - Net::HTTP::Delete
+# - Net::HTTP::Options
+# - Net::HTTP::Trace
+# - Net::HTTP::Patch
+#
+# Subclasses for WebDAV requests:
+#
+# - Net::HTTP::Propfind
+# - Net::HTTP::Proppatch
+# - Net::HTTP::Mkcol
+# - Net::HTTP::Copy
+# - Net::HTTP::Move
+# - Net::HTTP::Lock
+# - Net::HTTP::Unlock
 #
 class Net::HTTPRequest < Net::HTTPGenericRequest
   # Creates an HTTP request object for +path+.
@@ -36,4 +41,3 @@ class Net::HTTPRequest < Net::HTTPGenericRequest
           path, initheader
   end
 end
-
