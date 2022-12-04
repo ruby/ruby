@@ -6,7 +6,8 @@ This document outlines the expected way to distribute Ruby, with a specific focu
 
 The standard way to build a package for distribution is to build a tarball. This tarball includes all the related files need to build and install Ruby correctly. This includes the Ruby source code, the Ruby standard library, and the Ruby documentation.
 
-```bash
+At Ruby source tree cloned using git:
+```sh-session
 $ ./autogen.sh
 $ ./configure -C
 $ make
