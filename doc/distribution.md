@@ -13,7 +13,7 @@ $ make
 $ make dist
 ```
 
-This will create several tarball in the `dist` directory. The tarball will be named e.g. `ruby-<version>.tar.gz` (several different compression formats will be generated).
+This will create several tarball in the `tmp` directory. The tarball will be named e.g. `ruby-<version>.tar.gz` (several different compression formats will be generated).
 
 ### Official Releases
 
