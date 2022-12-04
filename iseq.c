@@ -515,15 +515,17 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
-        /* IC entries constant segments */
-        for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
-            IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-            const ID *ids = ic->segments;
-            if (!ids) continue;
-            while (*ids++) {
-                size += sizeof(ID);
+        if (ISEQ_BODY(iseq)->is_entries) {
+            /* IC entries constant segments */
+            for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
+                IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
+                const ID *ids = ic->segments;
+                if (!ids) continue;
+                while (*ids++) {
+                    size += sizeof(ID);
+                }
+                size += sizeof(ID); // null terminator
             }
-            size += sizeof(ID); // null terminator
         }
 
         /* body->call_data */
