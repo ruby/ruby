@@ -150,7 +150,7 @@ enum lex_state_bits {
     EXPR_CMDARG_bit,		/* newline significant, +/- is an operator. */
     EXPR_MID_bit,		/* newline significant, +/- is an operator. */
     EXPR_FNAME_bit,		/* ignore newline, no reserved words. */
-    EXPR_DOT_bit,		/* right after `.' or `::', no reserved words. */
+    EXPR_DOT_bit,		/* right after `.', `&.' or `::', no reserved words. */
     EXPR_CLASS_bit,		/* immediate after `class', no here document. */
     EXPR_LABEL_bit,		/* flag bit, label is allowed. */
     EXPR_LABELED_bit,		/* flag bit, just after a label. */
