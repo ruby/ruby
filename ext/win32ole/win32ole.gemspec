@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "win32ole"
-  spec.version       = "1.8.8"
+  spec.version       = "1.8.9"
   spec.authors       = ["Masaki Suketa"]
   spec.email         = ["suke@ruby-lang.org"]
 
