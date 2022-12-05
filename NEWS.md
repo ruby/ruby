@@ -405,7 +405,7 @@ Note: We're only listing outstanding class updates.
     * pathname 0.2.1
     * pp 0.4.0
     * pstore 0.1.2
-    * psych 5.0.0.dev
+    * psych 5.0.0
     * racc 1.6.1
     * rdoc 6.5.0
     * reline 0.3.1
