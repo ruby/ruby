@@ -300,16 +300,10 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
 
-uint8_t
-rb_shape_id_num_bits(void)
-{
-    return SHAPE_ID_NUM_BITS;
-}
-
 int32_t
 rb_shape_id_offset(void)
 {
-    return 8 - rb_shape_id_num_bits() / 8;
+    return sizeof(uintptr_t) - SHAPE_ID_NUM_BITS / sizeof(uintptr_t);
 }
 
 rb_shape_t *
