@@ -402,6 +402,7 @@ Note: We're only listing outstanding class updates.
     * openssl 3.1.0.pre
     * optparse 0.3.0
     * ostruct 0.5.5
+    * pathname 0.2.1
     * psych 5.0.0.dev
     * racc 1.6.1
     * rdoc 6.5.0
