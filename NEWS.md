@@ -377,6 +377,7 @@ Note: We're only listing outstanding class updates.
     * cgi 0.3.6
     * date 3.3.0
     * delegate 0.3.0
+    * did_you_mean 1.6.2
     * digest 3.1.1
     * drb 2.1.1
     * erb 4.0.2
@@ -419,6 +420,8 @@ Note: We're only listing outstanding class updates.
     * tsort 0.1.1
     * un 0.2.1
     * uri 0.12.0
+    * win32ole 1.8.9
+    * zlib 3.0.0
 
 *   The following bundled gems are updated.
 
