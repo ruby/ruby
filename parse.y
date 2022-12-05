@@ -13279,7 +13279,7 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
     NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
-    args = arg_append(p, args, new_hash(p, kwrest, loc), argsloc);
+    args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
     return arg_blk_pass(args, block);
 }
 #endif
