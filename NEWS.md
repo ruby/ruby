@@ -394,8 +394,9 @@ Note: We're only listing outstanding class updates.
     * irb 1.5.1
     * json 2.6.2
     * logger 1.5.2
-    * net-http 0.3.0
-    * net-protocol 0.1.3
+    * mutex_m 0.1.2
+    * net-http 0.3.1
+    * net-protocol 0.2.0
     * openssl 3.1.0.pre
     * ostruct 0.5.5
     * psych 5.0.0.dev
