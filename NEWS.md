@@ -384,6 +384,7 @@ Note: We're only listing outstanding class updates.
     * etc 1.4.1
     * fcntl 1.0.2
     * fiddle 1.1.1
+    * fileutils 1.7.0
     * io-console 0.5.11
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
