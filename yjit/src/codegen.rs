@@ -7067,8 +7067,6 @@ impl CodegenGlobals {
             use std::cell::RefCell;
             use std::rc::Rc;
 
-            let code_page_size = get_option!(code_page_size);
-
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
@@ -7083,7 +7081,6 @@ impl CodegenGlobals {
                 virt_block as usize % page_size.as_usize(), 0,
                 "Start of virtual address block should be page-aligned",
             );
-            assert_eq!(code_page_size % page_size.as_usize(), 0, "code_page_size was not page-aligned");
 
             use crate::virtualmem::*;
             use std::ptr::NonNull;
@@ -7096,8 +7093,10 @@ impl CodegenGlobals {
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 
-            let cb = CodeBlock::new(mem_block.clone(), code_page_size, false);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, code_page_size, true));
+            let cb = CodeBlock::new(mem_block.clone(), false);
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true));
+
+            assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
 
             (cb, ocb)
         };
