@@ -415,6 +415,7 @@ Note: We're only listing outstanding class updates.
     * stringio 3.0.3
     * syntax_suggest 1.0.1
     * timeout 0.3.1
+    * tmpdir 0.1.3
 
 *   The following bundled gems are updated.
 
