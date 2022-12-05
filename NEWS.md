@@ -392,6 +392,7 @@ Note: We're only listing outstanding class updates.
     * ostruct 0.5.5
     * psych 5.0.0.dev
     * racc 1.6.1
+    * rdoc 6.5.0
     * reline 0.3.1
     * securerandom 0.2.0
     * set 1.0.3
