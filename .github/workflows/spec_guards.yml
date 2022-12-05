@@ -14,6 +14,9 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   rubyspec:
     name: Rubyspec
@@ -28,8 +31,8 @@ jobs:
           - ruby-3.1
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - uses: ruby/setup-ruby@de6f5b9c340068d049670c6b6ae8dc94cff4667a # v1.125.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
@@ -38,7 +41,7 @@ jobs:
         working-directory: spec/ruby
         env:
           CHECK_LEAKS: true
-      - uses: ruby/action-slack@v3.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {

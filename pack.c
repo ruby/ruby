@@ -208,6 +208,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     int integer_size, bigendian_p;
 
     StringValue(fmt);
+    rb_must_asciicompat(fmt);
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
 
@@ -477,40 +478,24 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             goto pack_integer;
 
           case 's':		/* s for int16_t, s! for signed short */
-            integer_size = NATINT_LEN(short, 2);
-            bigendian_p = BIGENDIAN_P();
-            goto pack_integer;
-
           case 'S':		/* S for uint16_t, S! for unsigned short */
             integer_size = NATINT_LEN(short, 2);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
           case 'i':		/* i and i! for signed int */
-            integer_size = (int)sizeof(int);
-            bigendian_p = BIGENDIAN_P();
-            goto pack_integer;
-
           case 'I':		/* I and I! for unsigned int */
             integer_size = (int)sizeof(int);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
           case 'l':		/* l for int32_t, l! for signed long */
-            integer_size = NATINT_LEN(long, 4);
-            bigendian_p = BIGENDIAN_P();
-            goto pack_integer;
-
           case 'L':		/* L for uint32_t, L! for unsigned long */
             integer_size = NATINT_LEN(long, 4);
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
 
           case 'q':		/* q for int64_t, q! for signed long long */
-            integer_size = NATINT_LEN_Q;
-            bigendian_p = BIGENDIAN_P();
-            goto pack_integer;
-
           case 'Q':		/* Q for uint64_t, Q! for unsigned long long */
             integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
@@ -975,6 +960,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     StringValue(str);
     StringValue(fmt);
+    rb_must_asciicompat(fmt);
 
     if (offset < 0) rb_raise(rb_eArgError, "offset can't be negative");
     len = RSTRING_LEN(str);

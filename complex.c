@@ -1751,9 +1751,9 @@ read_digits(const char **s, int strict,
 
     while (isdecimal(**s) || **s == '_') {
         if (**s == '_') {
-            if (strict) {
-                if (us)
-                    return 0;
+            if (us) {
+                if (strict) return 0;
+                break;
             }
             us = 1;
         }

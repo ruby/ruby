@@ -2932,7 +2932,7 @@ dir_globs(VALUE args, VALUE base, int flags)
 static VALUE
 dir_glob_option_base(VALUE base)
 {
-    if (UNDEF_P(base) || NIL_P(base)) {
+    if (NIL_OR_UNDEF_P(base)) {
         return Qnil;
     }
 #if USE_OPENDIR_AT

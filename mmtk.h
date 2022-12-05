@@ -30,6 +30,11 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
+typedef struct RubyBindingOptions {
+    bool ractor_check_mode;
+    size_t suffix_size;
+} RubyBindingOptions;
+
 typedef MMTk_ObjectReference (*ObjectClosureFunction)(void*, void*, MMTk_ObjectReference);
 
 typedef struct MMTk_ObjectClosure {
@@ -97,7 +102,9 @@ void mmtk_builder_set_plan(MMTk_Builder *builder, const char *plan_name);
  *     the MMTk instance.
  * -   `upcalls` points to the struct that contains upcalls.  It is allocated in C as static.
  */
-void mmtk_init_binding(MMTk_Builder *builder, const struct MMTk_RubyUpcalls *upcalls);
+void mmtk_init_binding(MMTk_Builder *builder,
+                       const struct RubyBindingOptions *binding_options,
+                       const struct MMTk_RubyUpcalls *upcalls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
 

@@ -1640,7 +1640,7 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(expected_timeout, t, expected_timeout / 2)
+      assert_in_delta(expected_timeout, t, expected_timeout * 3 / 4)
     end;
   end
 
@@ -1686,7 +1686,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_cache_optimization_square
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-      timeout = #{ EnvUtil.apply_timeout_scale(2).inspect }
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
       Regexp.timeout = timeout
 

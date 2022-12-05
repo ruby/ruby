@@ -22,6 +22,9 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   baseruby:
     name: BASERUBY
@@ -40,12 +43,12 @@ jobs:
           - ruby-3.1
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
         with:
           path: .downloaded-cache
           key: downloaded-cache
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@de6f5b9c340068d049670c6b6ae8dc94cff4667a # v1.125.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
@@ -57,7 +60,7 @@ jobs:
       - run: make incs
       - run: make all
       - run: make test
-      - uses: ruby/action-slack@v3.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {

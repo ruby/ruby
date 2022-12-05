@@ -809,4 +809,13 @@ PREP
 3_000_000.times(&code)
 CODE
   end
+
+  def test_instance_freeze_dont_freeze_the_class_bug_19164
+    klass = Class.new
+    klass.prepend(Module.new)
+
+    klass.new.freeze
+    klass.define_method(:bar) {}
+    assert_equal klass, klass.remove_method(:bar), '[Bug #19164]'
+  end
 end

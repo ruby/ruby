@@ -357,7 +357,13 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
             // Remove tracking for cme validity
             if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
                 blockset.remove(blockref);
+                if blockset.is_empty() {
+                    invariants.cme_validity.remove(dep);
+                }
             }
+        }
+        if invariants.cme_validity.is_empty() {
+            invariants.cme_validity.shrink_to_fit();
         }
     }
 
@@ -369,19 +375,41 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         for key in &bops {
             if let Some(blocks) = invariants.basic_operator_blocks.get_mut(key) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.basic_operator_blocks.remove(key);
+                }
             }
         }
     }
+    if invariants.block_basic_operators.is_empty() {
+        invariants.block_basic_operators.shrink_to_fit();
+    }
+    if invariants.basic_operator_blocks.is_empty() {
+        invariants.basic_operator_blocks.shrink_to_fit();
+    }
 
+    // Remove tracking for blocks assuming single ractor mode
     invariants.single_ractor.remove(&blockref);
+    if invariants.single_ractor.is_empty() {
+        invariants.single_ractor.shrink_to_fit();
+    }
 
     // Remove tracking for constant state for a given ID.
     if let Some(ids) = invariants.block_constant_states.remove(&blockref) {
         for id in ids {
             if let Some(blocks) = invariants.constant_state_blocks.get_mut(&id) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.constant_state_blocks.remove(&id);
+                }
             }
         }
+    }
+    if invariants.block_constant_states.is_empty() {
+        invariants.block_constant_states.shrink_to_fit();
+    }
+    if invariants.constant_state_blocks.is_empty() {
+        invariants.constant_state_blocks.shrink_to_fit();
     }
 }
 
@@ -469,21 +497,28 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
+        let mut on_stack_iseqs = HashSet::new();
+        for_each_on_stack_iseq(|iseq| {
+            on_stack_iseqs.insert(iseq);
+        });
         for_each_iseq(|iseq| {
             if let Some(payload) = get_iseq_payload(iseq) {
-                // C comment:
-                //   Leaking the blocks for now since we might have situations where
-                //   a different ractor is waiting for the VM lock in branch_stub_hit().
-                //   If we free the block that ractor can wake up with a dangling block.
-                //
-                // Deviation: since we ref count the the blocks now, we might be deallocating and
-                //   not leak the block.
-                //
-                // Empty all blocks on the iseq so we don't compile new blocks that jump to the
-                // invalidated region.
                 let blocks = payload.take_all_blocks();
-                for blockref in blocks {
-                    block_assumptions_free(&blockref);
+
+                if on_stack_iseqs.contains(&iseq) {
+                    // This ISEQ is running, so we can't free blocks immediately
+                    for block in blocks {
+                        delayed_deallocation(&block);
+                    }
+                    payload.dead_blocks.shrink_to_fit();
+                } else {
+                    // Safe to free dead blocks since the ISEQ isn't running
+                    for block in blocks {
+                        free_block(&block);
+                    }
+                    mem::take(&mut payload.dead_blocks)
+                        .iter()
+                        .for_each(free_block);
                 }
             }
 

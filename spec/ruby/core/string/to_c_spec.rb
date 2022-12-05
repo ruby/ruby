@@ -13,6 +13,9 @@ describe "String#to_c" do
 
   it "ignores trailing garbage" do
     '79+4iruby'.to_c.should == Complex(79, 4)
+    ruby_bug "[Bug #19087]", ""..."3.2" do
+      '7__9+4__0i'.to_c.should == Complex(7, 0)
+    end
   end
 
   it "understands Float::INFINITY" do
@@ -22,10 +25,6 @@ describe "String#to_c" do
 
   it "understands Float::NAN" do
     'NaN'.to_c.should == Complex(0, 0)
-  end
-
-  it "understands a sequence of _" do
-    '7__9+4__0i'.to_c.should == Complex(79, 40)
   end
 
   it "allows null-byte" do

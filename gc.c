@@ -41,6 +41,7 @@
 #include "mmtk.h"
 #include "internal/cmdlineopt.h"
 
+RubyBindingOptions ruby_binding_options;
 MMTk_RubyUpcalls ruby_upcalls;
 #endif
 
@@ -1952,7 +1953,15 @@ rb_objspace_alloc(void)
         size_t heap_size = rb_mmtk_heap_limit();
         mmtk_builder_set_heap_size(mmtk_builder, heap_size);
 
-        mmtk_init_binding(mmtk_builder, &ruby_upcalls);
+#if RACTOR_CHECK_MODE
+        ruby_binding_options.ractor_check_mode = true;
+        ruby_binding_options.suffix_size = sizeof(uint32_t);
+#else
+        ruby_binding_options.ractor_check_mode = false;
+        ruby_binding_options.suffix_size = 0;
+#endif
+
+        mmtk_init_binding(mmtk_builder, &ruby_binding_options, &ruby_upcalls);
     }
 #endif
 
@@ -3050,9 +3059,12 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
         size_t size_pool_size = size_pool_slot_size(size_pool_idx);
         RUBY_ASSERT(size_pool_size % MMTK_MIN_OBJ_ALIGN == 0);
 
+        size_t prefix_size = MMTK_OBJREF_OFFSET;
+        // In RACTOR_CHECK_MODE, an additional hidden field is added to hold the Ractor ID.
+        size_t suffix_size = ruby_binding_options.suffix_size;
+
         // We prepend a size field before the object.
-        size_t mmtk_alloc_size = size_pool_size + MMTK_OBJREF_OFFSET;
-        RUBY_ASSERT(mmtk_alloc_size % MMTK_MIN_OBJ_ALIGN == 0);
+        size_t mmtk_alloc_size = size_pool_size + prefix_size + suffix_size;
 
         // Allocate the object.  The last 0 is the Default allocation semantics
         void *addr = mmtk_alloc(GET_THREAD()->mutator, mmtk_alloc_size, MMTK_MIN_OBJ_ALIGN, 0, 0);
@@ -3062,7 +3074,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 
         // The Ruby-level object reference (i.e. VALUE) is at an offset from the MMTk-level
         // allocation unit.
-        obj = (VALUE)addr + MMTK_OBJREF_OFFSET;
+        obj = (VALUE)addr + prefix_size;
 
         // Call post_alloc.  This will initialize GC-specific metadata.
         mmtk_post_alloc(GET_THREAD()->mutator, (void*)obj, mmtk_alloc_size, 0);

@@ -1832,7 +1832,6 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
         EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
-        body->param.flags.ruby2_keywords = args->ruby2_keywords;
         body->param.lead_num = arg_size = (int)args->pre_args_num;
         if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
         debugs("  - argc: %d\n", body->param.lead_num);

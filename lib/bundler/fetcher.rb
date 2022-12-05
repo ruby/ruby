@@ -40,8 +40,7 @@ module Bundler
       def initialize(msg = nil)
         super msg || "Could not load OpenSSL.\n" \
             "You must recompile Ruby with OpenSSL support or change the sources in your " \
-            "Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL " \
-            "using RVM are available at rvm.io/packages/openssl."
+            "Gemfile from 'https' to 'http'."
       end
     end
 

@@ -2,6 +2,10 @@ on:
   check_suite:
     type: ['completed']
 name: Cirrus CI failure notification
+
+permissions:
+  contents: read
+
 jobs:
   cirrus-notify:
     name: After Cirrus CI Failure
@@ -13,7 +17,7 @@ jobs:
       && github.event.check_suite.head_branch == 'master'
     runs-on: ubuntu-latest
     steps:
-      - uses: octokit/request-action@v2.x
+      - uses: octokit/request-action@4579f9e1e690974421f9f6928a30fb448e967c60 # v2.x
         id: get_failed_check_run
         with:
           route: GET /repos/${{ github.repository }}/check-suites/${{ github.event.check_suite.id }}/check-runs?status=completed
@@ -28,7 +32,7 @@ jobs:
         env:
           CHECK_RUNS: ${{ steps.get_failed_check_run.outputs.data }}
         run: echo "$CHECK_RUNS"
-      - uses: ruby/action-slack@v3.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {

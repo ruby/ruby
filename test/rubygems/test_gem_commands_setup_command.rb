@@ -15,6 +15,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     super
 
     @cmd = Gem::Commands::SetupCommand.new
+    @cmd.options[:document] = []
 
     filelist = %w[
       bin/gem
@@ -66,7 +67,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts "I changed it!"
     end
 
-    @cmd.options[:document] = []
     @cmd.execute
 
     assert_match %r{\A#!}, File.read(gem_bin_path)
@@ -78,7 +78,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts "I changed it!"
     end
 
-    @cmd.options[:document] = []
     @cmd.options[:regenerate_binstubs] = false
     @cmd.execute
 
@@ -91,7 +90,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts "I changed it!"
     end
 
-    @cmd.options[:document] = []
     @cmd.execute
 
     assert_match %r{\Arequire}, File.read(gem_plugin_path)
@@ -103,7 +101,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts "I changed it!"
     end
 
-    @cmd.options[:document] = []
     @cmd.options[:regenerate_plugins] = false
     @cmd.execute
 
@@ -116,15 +113,12 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     # Simulate gem installed with an older rubygems without a plugins layout
     FileUtils.rm_rf Gem.plugindir
 
-    @cmd.options[:document] = []
     @cmd.execute
 
     assert_match %r{\Arequire}, File.read(gem_plugin_path)
   end
 
   def test_execute_informs_about_installed_executables
-    @cmd.options[:document] = []
-
     use_ui @ui do
       @cmd.execute
     end
@@ -143,7 +137,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       io.puts "I changed it!"
     end
 
-    @cmd.options[:document] = []
     @cmd.options[:env_shebang] = true
     @cmd.execute
 

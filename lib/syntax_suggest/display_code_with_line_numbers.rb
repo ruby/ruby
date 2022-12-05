@@ -14,8 +14,8 @@ module SyntaxSuggest
   #   # =>
   #       1
   #       2  def cat
-  #     ❯ 3    Dir.chdir
-  #     ❯ 4    end
+  #     > 3    Dir.chdir
+  #     > 4    end
   #       5  end
   #       6
   class DisplayCodeWithLineNumbers
@@ -50,7 +50,7 @@ module SyntaxSuggest
     private def format(contents:, number:, empty:, highlight: false)
       string = +""
       string << if highlight
-        "❯ "
+        "> "
       else
         "  "
       end
