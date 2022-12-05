@@ -223,6 +223,9 @@ module TestIRB
             end
           end
         end
+      ensure
+        read.close
+        write.close
       end
 
       lines.join
