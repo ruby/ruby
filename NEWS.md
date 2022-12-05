@@ -390,10 +390,10 @@ Note: We're only listing outstanding class updates.
     * io-console 0.5.11
     * io-nonblock 0.2.0
     * io-wait 0.3.0.pre
-    * ipaddr 1.2.4
+    * ipaddr 1.2.5
     * irb 1.5.1
     * json 2.6.2
-    * logger 1.5.1
+    * logger 1.5.2
     * net-http 0.3.0
     * net-protocol 0.1.3
     * openssl 3.1.0.pre
