@@ -385,8 +385,10 @@ Note: We're only listing outstanding class updates.
     * fcntl 1.0.2
     * fiddle 1.1.1
     * fileutils 1.7.0
+    * forwardable 1.3.3
+    * getoptlong 0.2.0
     * io-console 0.5.11
-    * io-nonblock 0.1.1
+    * io-nonblock 0.2.0
     * io-wait 0.3.0.pre
     * ipaddr 1.2.4
     * irb 1.5.1
