@@ -240,6 +240,7 @@ lcov*.info
 
 # YJIT
 /yjit-bench
+/yjit_exit_locations.dump
 
 # /wasm/
 /wasm/tests/*.wasm
