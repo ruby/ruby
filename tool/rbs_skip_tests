@@ -1,0 +1,9 @@
+test_collection_install(RBS::CliTest) running tests without Bundler
+test_collection_install_frozen(RBS::CliTest) running tests without Bundler
+test_collection_update(RBS::CliTest) running tests without Bundler
+
+NetSingletonTest depending on external resources
+NetInstanceTest depending on external resources
+TestHTTPRequest depending on external resources
+TestSingletonNetHTTPResponse depending on external resources
+TestInstanceNetHTTPResponse depending on external resources
