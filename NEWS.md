@@ -391,6 +391,7 @@ Note: We're only listing outstanding class updates.
     * openssl 3.1.0.pre
     * ostruct 0.5.5
     * psych 5.0.0.dev
+    * racc 1.6.1
     * reline 0.3.1
     * securerandom 0.2.0
     * set 1.0.3
