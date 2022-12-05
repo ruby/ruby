@@ -378,6 +378,9 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, "{\"address\":");
     dump_append_ref(dc, obj);
 
+    dump_append(dc, ", \"shape_id\":");
+    dump_append_sizet(dc, rb_shape_get_shape_id(obj));
+
     dump_append(dc, ", \"type\":\"");
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
