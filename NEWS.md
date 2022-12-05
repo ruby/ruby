@@ -410,7 +410,7 @@ Note: We're only listing outstanding class updates.
     * rdoc 6.5.0
     * reline 0.3.1
     * resolv 0.2.2
-    * securerandom 0.2.0
+    * securerandom 0.2.1
     * set 1.0.3
     * stringio 3.0.3
     * syntax_suggest 1.0.1
