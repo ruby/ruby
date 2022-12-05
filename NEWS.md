@@ -397,6 +397,7 @@ Note: We're only listing outstanding class updates.
     * mutex_m 0.1.2
     * net-http 0.3.1
     * net-protocol 0.2.0
+    * nkf 0.1.2
     * openssl 3.1.0.pre
     * ostruct 0.5.5
     * psych 5.0.0.dev
