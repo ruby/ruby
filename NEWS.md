@@ -400,6 +400,7 @@ Note: We're only listing outstanding class updates.
     * nkf 0.1.2
     * open-uri 0.3.0
     * openssl 3.1.0.pre
+    * optparse 0.3.0
     * ostruct 0.5.5
     * psych 5.0.0.dev
     * racc 1.6.1
