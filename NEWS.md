@@ -414,7 +414,7 @@ Note: We're only listing outstanding class updates.
     * set 1.0.3
     * stringio 3.0.3
     * syntax_suggest 1.0.1
-    * timeout 0.3.0
+    * timeout 0.3.1
 
 *   The following bundled gems are updated.
 
