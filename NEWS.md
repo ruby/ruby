@@ -378,6 +378,7 @@ Note: We're only listing outstanding class updates.
     * date 3.3.0
     * delegate 0.3.0
     * digest 3.1.1
+    * drb 2.1.1
     * erb 4.0.2
     * error_highlight 0.5.1
     * etc 1.4.0
