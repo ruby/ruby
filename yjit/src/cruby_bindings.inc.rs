@@ -123,6 +123,7 @@ impl<T> ::std::cmp::PartialEq for __BindgenUnionField<T> {
     }
 }
 impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -443,9 +444,6 @@ pub struct rb_shape {
     pub parent_id: shape_id_t,
 }
 pub type rb_shape_t = rb_shape;
-extern "C" {
-    pub fn rb_shape_id_num_bits() -> u8;
-}
 extern "C" {
     pub fn rb_shape_id_offset() -> i32;
 }
