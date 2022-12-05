@@ -382,6 +382,7 @@ Note: We're only listing outstanding class updates.
     * erb 4.0.2
     * error_highlight 0.5.1
     * etc 1.4.1
+    * fcntl 1.0.2
     * fiddle 1.1.1
     * io-console 0.5.11
     * io-nonblock 0.1.1
