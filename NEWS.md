@@ -376,6 +376,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * cgi 0.3.6
     * date 3.3.0
+    * delegate 0.3.0
     * erb 4.0.2
     * error_highlight 0.5.1
     * etc 1.4.0
