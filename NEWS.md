@@ -556,20 +556,6 @@ The following deprecated APIs are removed.
 * Rename `--mjit-min-calls` to `--mjit-call-threshold`.
 * Change default `--mjit-max-cache` back from 10000 to 100.
 
-## Static analysis
-
-### RBS
-
-### TypeProf
-
-## Debugger
-
-## error_highlight
-
-## IRB Autocomplete and Document Display
-
-## Miscellaneous changes
-
 [Feature #12005]: https://bugs.ruby-lang.org/issues/12005
 [Feature #12084]: https://bugs.ruby-lang.org/issues/12084
 [Feature #12655]: https://bugs.ruby-lang.org/issues/12655
