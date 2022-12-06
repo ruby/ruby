@@ -52,7 +52,9 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
 
       context "when OpenSSL is FIPS-enabled" do
         def remove_cached_md5_availability
+          require "objspace"
           return unless Bundler::SharedHelpers.instance_variable_defined?(:@md5_available)
+          puts ObjectSpace.dump(Bundler::SharedHelpers)
           Bundler::SharedHelpers.remove_instance_variable(:@md5_available)
         end
 

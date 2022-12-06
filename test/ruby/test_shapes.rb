@@ -28,7 +28,7 @@ class TestShapes < Test::Unit::TestCase
       @foo = 1
     end
 
-    def remove
+    def remove_foo
       remove_instance_variable(:@foo)
     end
 
@@ -64,26 +64,36 @@ class TestShapes < Test::Unit::TestCase
 
   def test_iv_index
     example = RemoveAndAdd.new
-    shape = RubyVM::Shape.of(example)
-    assert_equal 0, shape.next_iv_index
+    initial_shape = RubyVM::Shape.of(example)
+    assert_equal 0, initial_shape.next_iv_index
 
     example.add_foo # makes a transition
-    new_shape = RubyVM::Shape.of(example)
+    add_foo_shape = RubyVM::Shape.of(example)
     assert_equal([:@foo], example.instance_variables)
-    assert_equal(shape.id, new_shape.parent.id)
-    assert_equal(1, new_shape.next_iv_index)
+    assert_equal(initial_shape.id, add_foo_shape.parent.id)
+    assert_equal(1, add_foo_shape.next_iv_index)
 
-    example.remove # makes a transition
-    remove_shape = RubyVM::Shape.of(example)
+    example.remove_foo # makes a transition
+    remove_foo_shape = RubyVM::Shape.of(example)
     assert_equal([], example.instance_variables)
-    assert_equal(new_shape.id, remove_shape.parent.id)
-    assert_equal(1, remove_shape.next_iv_index)
+    assert_shape_equal(initial_shape, remove_foo_shape)
 
     example.add_bar # makes a transition
     bar_shape = RubyVM::Shape.of(example)
     assert_equal([:@bar], example.instance_variables)
-    assert_equal(remove_shape.id, bar_shape.parent.id)
-    assert_equal(2, bar_shape.next_iv_index)
+    assert_equal(initial_shape.id, bar_shape.parent_id)
+    assert_equal(1, bar_shape.next_iv_index)
+  end
+
+  def test_remove_then_add_again
+    example = RemoveAndAdd.new
+    initial_shape = RubyVM::Shape.of(example)
+
+    example.add_foo # makes a transition
+    add_foo_shape = RubyVM::Shape.of(example)
+    example.remove_foo # makes a transition
+    example.add_foo # makes a transition
+    assert_shape_equal(add_foo_shape, RubyVM::Shape.of(example))
   end
 
   class TestObject; end
