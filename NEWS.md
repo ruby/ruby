@@ -352,6 +352,17 @@ Note: We're only listing outstanding class updates.
       current thread if `target` and `target_line` keyword arguments are not
       passed. [[Bug #16889]]
 
+* UnboundMethod
+
+    * `UnboundMethod#==` returns `true` if the actual method is same. For example,
+      `String.instance_method(:object_id) == Array.instance_method(:object_id)`
+      returns `true`. [Feature #18798]
+
+    * `UnboundMethod#inspect` does not show the receiver of `instance_method`.
+      For example `String.instance_method(:object_id).inspect` returns
+      `"#<UnboundMethod: Kernel#object_id()>"`
+      (was `"#<UnboundMethod: String(Kernel)#object_id()>"`).
+
 ## Stdlib updates
 
 * ERB
@@ -594,6 +605,7 @@ The following deprecated APIs are removed.
 [Feature #18776]: https://bugs.ruby-lang.org/issues/18776
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
+[Feature #18798]: https://bugs.ruby-lang.org/issues/18798
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18821]: https://bugs.ruby-lang.org/issues/18821
 [Feature #18824]: https://bugs.ruby-lang.org/issues/18824
