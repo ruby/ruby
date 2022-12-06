@@ -550,6 +550,7 @@ module Net   #:nodoc:
     # :call-seq:
     #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass) {|http| ... }
     #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt) {|http| ... }
+    #
     # Creates a new \Net::HTTP object,
     # opens a TCP connection and \HTTP session.
     #
