@@ -14217,6 +14217,7 @@ shape.$(OBJEXT): {$(VPATH)}shape.c
 shape.$(OBJEXT): {$(VPATH)}shape.h
 shape.$(OBJEXT): {$(VPATH)}st.h
 shape.$(OBJEXT): {$(VPATH)}subst.h
+shape.$(OBJEXT): {$(VPATH)}symbol.h
 shape.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 shape.$(OBJEXT): {$(VPATH)}thread_native.h
 shape.$(OBJEXT): {$(VPATH)}variable.h
