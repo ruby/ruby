@@ -9397,7 +9397,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
             path = rb_str_new_frozen(path);
         }
     }
-    
+
     MakeOpenFile(io, fp);
     fp->self = io;
     fp->fd = fd;
