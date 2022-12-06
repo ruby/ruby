@@ -383,6 +383,11 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
+.SECONDARY: update-unicode-files
+.SECONDARY: update-unicode-auxiliary-files
+.SECONDARY: update-unicode-ucd-emoji-files
+.SECONDARY: update-unicode-emoji-files
+
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
 else
