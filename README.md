@@ -54,6 +54,15 @@ see [Building Ruby](doc/contributing/building_ruby.md)
 
 https://www.ruby-lang.org/
 
+## Configuration
+
+### Environment Variables
+
+- `NO_COLOR`: Assigning a value to it disables IRB's colorization.
+- `IRB_USE_AUTOCOMPLETE`: Setting it to `false` disables IRB's autocompletion.
+- `EDITOR`: Its value would be used to open files by the `edit` command.
+- `IRBRC`: The file specified would be evaluated as IRB's rc-file.
+
 ## Documentation
 
 - [English](https://docs.ruby-lang.org/en/master/index.html)

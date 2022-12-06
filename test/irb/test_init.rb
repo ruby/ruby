@@ -96,6 +96,30 @@ module TestIRB
       IRB.conf[:USE_COLORIZE] = orig_use_colorize
     end
 
+    def test_use_autocomplete_environment_variable
+      orig_use_autocomplete_env = ENV['IRB_USE_AUTOCOMPLETE']
+      orig_use_autocomplete_conf = IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = nil
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = ''
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = 'false'
+      IRB.setup(__FILE__)
+      refute IRB.conf[:USE_AUTOCOMPLETE]
+
+      ENV['IRB_USE_AUTOCOMPLETE'] = 'true'
+      IRB.setup(__FILE__)
+      assert IRB.conf[:USE_AUTOCOMPLETE]
+    ensure
+      ENV["IRB_USE_AUTOCOMPLETE"] = orig_use_autocomplete_env
+      IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
+    end
+
     def test_noscript
       argv = %w[--noscript -- -f]
       IRB.setup(eval("__FILE__"), argv: argv)
