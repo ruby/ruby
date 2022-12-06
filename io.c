@@ -2908,6 +2908,29 @@ rb_io_pid(VALUE io)
     return PIDT2NUM(fptr->pid);
 }
 
+/*
+ *  call-seq:
+ *    path -> string or nil
+ *
+ *  Returns the path associated with the IO, or +nil+ if there is no path
+ *  associated with the IO. It is not guaranteed that the path exists on
+ *  the filesystem.
+ *
+ *    $stdin.path # => "<STDIN>"
+ *
+ *    File.open("testfile") {|f| f.path} # => "testfile"
+ */
+
+static VALUE
+rb_io_path(VALUE io)
+{
+    rb_io_t *fptr = RFILE(io)->fptr;
+
+    if (!fptr)
+        return Qnil;
+
+    return rb_obj_dup(fptr->pathv);
+}
 
 /*
  *  call-seq:
@@ -9361,14 +9384,26 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
         rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
     }
 #endif
-    if (!NIL_P(opt) && rb_hash_aref(opt, sym_autoclose) == Qfalse) {
-        fmode |= FMODE_PREP;
+    VALUE path = Qnil;
+
+    if (!NIL_P(opt)) {
+        if (rb_hash_aref(opt, sym_autoclose) == Qfalse) {
+            fmode |= FMODE_PREP;
+        }
+
+        path = rb_hash_aref(opt, RB_ID2SYM(idPath));
+        if (!NIL_P(path)) {
+            StringValue(path);
+            path = rb_str_new_frozen(path);
+        }
     }
+    
     MakeOpenFile(io, fp);
     fp->self = io;
     fp->fd = fd;
     fp->mode = fmode;
     fp->encs = convconfig;
+    fp->pathv = path;
     fp->timeout = Qnil;
     clear_codeconv(fp);
     io_check_tty(fp);
@@ -15436,6 +15471,10 @@ Init_IO(void)
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
     rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
+
+    rb_define_method(rb_cIO, "path", rb_io_path, 0);
+    rb_define_method(rb_cIO, "to_path", rb_io_path, 0);
+
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
     rb_define_method(rb_cIO, "external_encoding", rb_io_external_encoding, 0);
