@@ -1580,31 +1580,31 @@ UNICODE_EMOJI_DOWNLOAD = \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
 	    -p emoji/$(UNICODE_EMOJI_VERSION)
 
-$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES): update-unicode-files
-update-unicode-files:
+update-unicode-files: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 
-$(UNICODE_AUXILIARY_FILES): update-unicode-auxiliary-files
-update-unicode-auxiliary-files:
+update-unicode-auxiliary-files: $(UNICODE_AUXILIARY_FILES)
+$(UNICODE_AUXILIARY_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
 
-$(UNICODE_UCD_EMOJI_FILES): update-unicode-ucd-emoji-files
-update-unicode-ucd-emoji-files:
+update-unicode-ucd-emoji-files: $(UNICODE_UCD_EMOJI_FILES)
+$(UNICODE_UCD_EMOJI_FILES):
 	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
 	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $(UNICODE_UCD_EMOJI_FILES)
 
-$(UNICODE_EMOJI_FILES): update-unicode-emoji-files
-update-unicode-emoji-files:
+update-unicode-emoji-files: $(UNICODE_EMOJI_FILES)
+$(UNICODE_EMOJI_FILES):
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
 
-$(srcdir)/lib/unicode_normalize/$(ALWAYS_UPDATE_UNICODE:yes=tables.rb): \
+$(srcdir)/lib/unicode_normalize/tables.rb: \
 	$(UNICODE_SRC_DATA_DIR)/$(HAVE_BASERUBY:yes=.unicode-tables.time)
 
 $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
@@ -1615,11 +1615,23 @@ touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
 	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
 
+UNICODE_TABLES_DATA_FILES = \
+	$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
+	$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
+	$(empty)
+
+UNICODE_TABLES_DEPENDENTS_1 = none$(ALWAYS_UPDATE_UNICODE)
+UNICODE_TABLES_DEPENDENTS = $(UNICODE_TABLES_DEPENDENTS_1:noneyes=force)
 UNICODE_TABLES_TIMESTAMP = yes
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(tooldir)/generic_erb.rb \
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:none=time):
+	$(Q) $(MAKEDIRS) $(@D)
+	touch $(@) || $(NULLCMD)
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:force=time): \
+		$(tooldir)/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
-		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
-	$(Q) $(MAKE) $(@D)
+		$(UNICODE_TABLES_DATA_FILES) \
+	$(order_only) \
+		$(UNICODE_SRC_DATA_DIR)
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb \
 		-c $(UNICODE_TABLES_TIMESTAMP:yes=-t$@) \
 		-o $(srcdir)/lib/unicode_normalize/tables.rb \
