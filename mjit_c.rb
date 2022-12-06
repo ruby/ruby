@@ -194,10 +194,6 @@ module RubyVM::MJIT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR) }
   end
 
-  def C.SHAPE_IVAR_UNDEF
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR_UNDEF) }
-  end
-
   def C.SHAPE_ROOT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
   end

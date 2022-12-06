@@ -359,7 +359,6 @@ generator = BindingGenerator.new(
       SHAPE_FROZEN
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
-      SHAPE_IVAR_UNDEF
       SHAPE_ROOT
     ],
     ULONG: %w[
