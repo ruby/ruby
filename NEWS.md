@@ -479,6 +479,11 @@ The following deprecated methods are removed.
 * Extension libraries provide PRNG, subclasses of Random, need updates.
   See [PRNG update] below for more information.
 
+### Error printer
+
+* Ruby do no longer escape control characters and bachslashes in
+  an error message. [[Feature #18367]]
+
 ## Stdlib compatibility issues
 
 * Psych no longer bundles libyaml sources.
@@ -590,6 +595,7 @@ The following deprecated APIs are removed.
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
+[Feature #18367]: https://bugs.ruby-lang.org/issues/18367
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18564]: https://bugs.ruby-lang.org/issues/18564
