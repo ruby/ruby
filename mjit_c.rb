@@ -310,6 +310,7 @@ module RubyVM::MJIT
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
       "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
       value: [CType::Immediate.parse("uintptr_t"), Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), value)")],
+      iv_set_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), iv_set_name)")],
     )
   end
 
