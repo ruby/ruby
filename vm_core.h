@@ -275,6 +275,7 @@ struct iseq_inline_constant_cache {
 
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
+    ID iv_set_name;
 };
 
 struct iseq_inline_cvar_cache_entry {

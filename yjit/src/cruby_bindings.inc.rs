@@ -853,6 +853,7 @@ pub struct iseq_inline_constant_cache {
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
     pub value: usize,
+    pub iv_set_name: ID,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
