@@ -25,6 +25,7 @@
 *.sav
 *.sl
 *.so
+*.so.*
 *.swp
 *.yarb
 *~
@@ -145,6 +146,8 @@ lcov*.info
 
 /bin/*.exe
 /bin/*.dll
+/bin/goruby
+/bin/ruby
 
 # /benchmark/
 /benchmark/bm_require.data
