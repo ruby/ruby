@@ -124,7 +124,6 @@ bool rb_shape_root_shape_p(rb_shape_t* shape);
 rb_shape_t * rb_shape_get_root_shape(void);
 uint8_t rb_shape_id_num_bits(void);
 int32_t rb_shape_id_offset(void);
-unsigned int rb_shape_depth(rb_shape_t * shape);
 
 rb_shape_t* rb_shape_get_shape_by_id_without_assertion(shape_id_t shape_id);
 rb_shape_t * rb_shape_get_parent(rb_shape_t * shape);
@@ -183,5 +182,13 @@ bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
 VALUE rb_shape_flags_mask(void);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+typedef void each_shape_callback(rb_shape_t * shape, void *data);
+void rb_shape_each_shape(each_shape_callback callback, void *data);
+size_t rb_shape_memsize(rb_shape_t *shape);
+size_t rb_shape_edges_count(rb_shape_t *shape);
+size_t rb_shape_depth(rb_shape_t *shape);
+RUBY_SYMBOL_EXPORT_END
 
 #endif
