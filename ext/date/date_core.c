@@ -27,6 +27,10 @@ static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
+// used by deconstruct_keys
+static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
+static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
+
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
 #define f_abs(x) rb_funcall(x, rb_intern("abs"), 0)
@@ -7432,6 +7436,94 @@ d_lite_jisx0301(VALUE self)
     return strftimev(fmt, self, set_tmx);
 }
 
+static VALUE
+deconstruct_keys(VALUE self, VALUE keys, int is_datetime) {
+    VALUE h = rb_hash_new();
+    long i;
+
+    get_d1(self);
+
+    if (NIL_P(keys)) {
+        rb_hash_aset(h, sym_year, m_real_year(dat));
+        rb_hash_aset(h, sym_month, INT2FIX(m_mon(dat)));
+        rb_hash_aset(h, sym_day, INT2FIX(m_mday(dat)));
+        rb_hash_aset(h, sym_yday, INT2FIX(m_yday(dat)));
+        rb_hash_aset(h, sym_wday, INT2FIX(m_wday(dat)));
+        if (is_datetime) {
+            rb_hash_aset(h, sym_hour, INT2FIX(m_hour(dat)));
+            rb_hash_aset(h, sym_min, INT2FIX(m_min(dat)));
+            rb_hash_aset(h, sym_sec, INT2FIX(m_sec(dat)));
+            rb_hash_aset(h, sym_sec_fraction, m_sf_in_sec(dat));
+            rb_hash_aset(h, sym_zone, m_zone(dat));
+        }
+
+        return h;
+    }
+    if (!RB_TYPE_P(keys, T_ARRAY)) {
+        rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+
+        if (sym_year == key) rb_hash_aset(h, key, m_real_year(dat));
+        if (sym_month == key) rb_hash_aset(h, key, INT2FIX(m_mon(dat)));
+        if (sym_day == key) rb_hash_aset(h, key, INT2FIX(m_mday(dat)));
+        if (sym_yday == key) rb_hash_aset(h, key, INT2FIX(m_yday(dat)));
+        if (sym_wday == key) rb_hash_aset(h, key, INT2FIX(m_wday(dat)));
+        if (is_datetime) {
+            if (sym_hour == key) rb_hash_aset(h, key, INT2FIX(m_hour(dat)));
+            if (sym_min == key) rb_hash_aset(h, key, INT2FIX(m_min(dat)));
+            if (sym_sec == key) rb_hash_aset(h, key, INT2FIX(m_sec(dat)));
+            if (sym_sec_fraction == key) rb_hash_aset(h, key, m_sf_in_sec(dat));
+            if (sym_zone == key) rb_hash_aset(h, key, m_zone(dat));
+        }
+    }
+    return h;
+}
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:wday</tt>, <tt>:yday</tt>.
+ *
+ *  Possible usages:
+ *
+ *    d = Date.new(2022, 10, 5)
+ *
+ *    if d in wday: 3, day: ..7  # uses deconstruct_keys underneath
+ *      puts "first Wednesday of the month"
+ *    end
+ *    #=> prints "first Wednesday of the month"
+ *
+ *    case d
+ *    in year: ...2022
+ *      puts "too old"
+ *    in month: ..9
+ *      puts "quarter 1-3"
+ *    in wday: 1..5, month:
+ *      puts "working day in month #{month}"
+ *    end
+ *    #=> prints "working day in month 10"
+ *
+ *  Note that deconstruction by pattern can also be combined with class check:
+ *
+ *    if d in Date(wday: 3, day: ..7)
+ *      puts "first Wednesday of the month"
+ *    end
+ *
+ */
+static VALUE
+d_lite_deconstruct_keys(VALUE self, VALUE keys) {
+    return deconstruct_keys(self, keys, /* is_datetime=false */ 0);
+}
+
 #ifndef NDEBUG
 /* :nodoc: */
 static VALUE
@@ -8740,6 +8832,46 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 			 iso8601_timediv(self, n));
 }
 
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:wday</tt>, <tt>:yday</tt>, <tt>:hour</tt>, <tt>:min</tt>,
+ *  <tt>:sec</tt>, <tt>:sec_fraction</tt>, <tt>:zone</tt>.
+ *
+ *  Possible usages:
+ *
+ *    dt = DateTime.new(2022, 10, 5, 13, 30)
+ *
+ *    if d in wday: 1..5, hour: 10..18  # uses deconstruct_keys underneath
+ *      puts "Working time"
+ *    end
+ *    #=> prints "Working time"
+ *
+ *    case dt
+ *    in year: ...2022
+ *      puts "too old"
+ *    in month: ..9
+ *      puts "quarter 1-3"
+ *    in wday: 1..5, month:
+ *      puts "working day in month #{month}"
+ *    end
+ *    #=> prints "working day in month 10"
+ *
+ *  Note that deconstruction by pattern can also be combined with class check:
+ *
+ *    if d in DateTime(wday: 1..5, hour: 10..18, day: ..7)
+ *      puts "Working time, first week of the month"
+ *    end
+ *
+ */
+static VALUE
+dt_lite_deconstruct_keys(VALUE self, VALUE keys) {
+    return deconstruct_keys(self, keys, /* is_datetime=true */ 1);
+}
+
 /* conversions */
 
 #define f_subsec(x) rb_funcall(x, rb_intern("subsec"), 0)
@@ -9370,6 +9502,17 @@ Init_date_core(void)
     id_ge_p = rb_intern_const(">=");
     id_eqeq_p = rb_intern_const("==");
 
+    sym_year = ID2SYM(rb_intern_const("year"));
+    sym_month = ID2SYM(rb_intern_const("month"));
+    sym_yday = ID2SYM(rb_intern_const("yday"));
+    sym_wday = ID2SYM(rb_intern_const("wday"));
+    sym_day = ID2SYM(rb_intern_const("day"));
+    sym_hour = ID2SYM(rb_intern_const("hour"));
+    sym_min = ID2SYM(rb_intern_const("min"));
+    sym_sec = ID2SYM(rb_intern_const("sec"));
+    sym_sec_fraction = ID2SYM(rb_intern_const("sec_fraction"));
+    sym_zone = ID2SYM(rb_intern_const("zone"));
+
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
 
 #if (LONG_MAX / DAY_IN_SECONDS) > SECOND_IN_NANOSECONDS
@@ -9691,6 +9834,8 @@ Init_date_core(void)
     rb_define_method(cDate, "httpdate", d_lite_httpdate, 0);
     rb_define_method(cDate, "jisx0301", d_lite_jisx0301, 0);
 
+    rb_define_method(cDate, "deconstruct_keys", d_lite_deconstruct_keys, 1);
+
 #ifndef NDEBUG
     rb_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
 #endif
@@ -9900,6 +10045,8 @@ Init_date_core(void)
     rb_define_method(cDateTime, "xmlschema", dt_lite_iso8601, -1);
     rb_define_method(cDateTime, "rfc3339", dt_lite_rfc3339, -1);
     rb_define_method(cDateTime, "jisx0301", dt_lite_jisx0301, -1);
+
+    rb_define_method(cDateTime, "deconstruct_keys", dt_lite_deconstruct_keys, 1);
 
     /* conversions */
 
