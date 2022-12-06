@@ -1437,7 +1437,16 @@ int rb_vm_ep_in_heap_p(const VALUE *ep);
 static inline int
 VM_ENV_ESCAPED_P(const VALUE *ep)
 {
+#if USE_MMTK
+    // This function is called in `obj_free`.
+    // When using MMTk, `obj_free` is  executed in a GC worker thread,
+    // and it cannot get execution context via GET_EC().
+    if (!rb_mmtk_enabled_p()) {
+#endif
     VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+#if USE_MMTK
+    }
+#endif
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
