@@ -1186,11 +1186,7 @@ check_unit_queue(void)
 static struct rb_mjit_unit*
 create_unit(const rb_iseq_t *iseq)
 {
-    // To prevent GC, don't use ZALLOC // TODO: just use ZALLOC
-    struct rb_mjit_unit *unit = calloc(1, sizeof(struct rb_mjit_unit));
-    if (unit == NULL)
-        return NULL;
-
+    struct rb_mjit_unit *unit = ZALLOC_N(struct rb_mjit_unit, 1);
     unit->id = current_unit_num++;
     if (iseq == NULL) { // Compact unit
         unit->compact_p = true;
@@ -1219,7 +1215,6 @@ check_compaction(void)
         && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
             || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
         struct rb_mjit_unit *unit = create_unit(NULL);
-        if (unit == NULL) return;
 
         // Run the MJIT compiler synchronously
         current_cc_ms = real_ms_time();
@@ -1359,9 +1354,6 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 
     ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
     create_unit(iseq);
-    if (ISEQ_BODY(iseq)->jit_unit == NULL)
-        // Failure in creating the unit.
-        return;
     if (compile_info != NULL)
         ISEQ_BODY(iseq)->jit_unit->compile_info = *compile_info;
     add_to_list(ISEQ_BODY(iseq)->jit_unit, &unit_queue);
