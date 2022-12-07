@@ -1119,7 +1119,7 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list->length = 0;
 }
 
-static void mjit_wait(struct rb_iseq_constant_body *body);
+static void mjit_wait(struct rb_mjit_unit *unit);
 
 // Check the unit queue and start mjit_compile if nothing is in progress.
 static void
@@ -1136,7 +1136,7 @@ check_unit_queue(void)
         unload_units();
         unload_requests = 0;
         if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
-            mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
+            mjit_opts.max_cache_size++; // avoid infinite loop on `mjit_wait`. Note that --jit-wait is just for testing.
             verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
         }
     }
@@ -1229,7 +1229,7 @@ check_compaction(void)
 void
 mjit_notify_waitpid(int exit_code)
 {
-    // TODO: check current_cc_pid?
+    VM_ASSERT(current_cc_pid != 0);
     current_cc_pid = 0;
 
     // Delete .c file
@@ -1363,23 +1363,22 @@ rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 #define MJIT_WAIT_TIMEOUT_SECONDS 5
 
 static void
-mjit_wait(struct rb_iseq_constant_body *body)
+mjit_wait(struct rb_mjit_unit *unit)
 {
     pid_t initial_pid = current_cc_pid;
     if (initial_pid == 0) {
         mjit_warning("initial_pid was 0 on mjit_wait");
         return;
     }
+    if (pch_status == PCH_FAILED) return;
 
     int tries = 0;
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 1000;
-    while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (jit_func_t)MJIT_FUNC_COMPILING) { // TODO: refactor this
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 1000 };
+    while (current_cc_pid == initial_pid) {
         tries++;
-        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
-            if (body != NULL) {
-                body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // JIT worker seems dead. Give up.
+        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS) {
+            if (!unit->compact_p) {
+                unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // C compiler was too slow. Give up.
             }
             mjit_warning("timed out to wait for JIT finish");
             break;
@@ -1387,32 +1386,6 @@ mjit_wait(struct rb_iseq_constant_body *body)
 
         rb_thread_wait_for(tv);
     }
-}
-
-static void
-mjit_wait_unit(struct rb_mjit_unit *unit)
-{
-    if (unit->compact_p) {
-        mjit_wait(NULL);
-    }
-    else {
-        mjit_wait(current_cc_unit->iseq->body);
-    }
-}
-
-// Wait for JIT compilation finish for --jit-wait, and call the function pointer
-// if the compiled result is not MJIT_FUNC_FAILED.
-VALUE
-rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
-{
-    if (worker_stopped)
-        return Qundef;
-
-    mjit_wait(body);
-    if (MJIT_FUNC_STATE_P(body->jit_func)) {
-        return Qundef;
-    }
-    return body->jit_func(ec, ec->cfp);
 }
 
 struct rb_mjit_compile_info*
@@ -1812,7 +1785,7 @@ stop_worker(void)
 {
     stop_worker_p = true;
     if (current_cc_unit != NULL) {
-        mjit_wait_unit(current_cc_unit);
+        mjit_wait(current_cc_unit);
     }
     worker_stopped = true;
 }
@@ -1831,7 +1804,7 @@ mjit_pause(bool wait_p)
     // Flush all queued units with no option or `wait: true`
     if (wait_p) {
         while (current_cc_unit != NULL) {
-            mjit_wait_unit(current_cc_unit);
+            mjit_wait(current_cc_unit);
         }
     }
 
