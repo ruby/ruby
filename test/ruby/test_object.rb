@@ -853,6 +853,15 @@ class TestObject < Test::Unit::TestCase
     x.instance_variable_set(:@bar, 42)
     assert_match(/\A#<Object:0x\h+ (?:@foo="value", @bar=42|@bar=42, @foo="value")>\z/, x.inspect)
 
+    # Bug: [ruby-core:19167]
+    x = Object.new
+    x.instance_variable_set(:@foo, NilClass)
+    assert_match(/\A#<Object:0x\h+ @foo=NilClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, TrueClass)
+    assert_match(/\A#<Object:0x\h+ @foo=TrueClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, FalseClass)
+    assert_match(/\A#<Object:0x\h+ @foo=FalseClass>\z/, x.inspect)
+
     # #inspect does not call #to_s anymore
     feature6130 = '[ruby-core:43238]'
     x = Object.new
