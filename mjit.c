@@ -1015,7 +1015,7 @@ unload_units(void)
     }
 }
 
-static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p);
+static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info);
 
 // Return an unique file name in /tmp with PREFIX and SUFFIX and
 // number ID.  Use getpid if ID == 0.  The return file name exists
@@ -1343,10 +1343,8 @@ mjit_hook_custom_compile(const rb_iseq_t *iseq)
     mjit_call_p = original_call_p;
 }
 
-// If recompile_p is true, the call is initiated by mjit_recompile.
-// This assumes the caller holds CRITICAL_SECTION when recompile_p is true.
 static void
-mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
+mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
     if (!mjit_enabled || pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
@@ -1359,7 +1357,6 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     }
 
-    RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
     create_unit(iseq);
     if (ISEQ_BODY(iseq)->jit_unit == NULL)
@@ -1378,7 +1375,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
-    mjit_add_iseq_to_process(iseq, NULL, false);
+    mjit_add_iseq_to_process(iseq, NULL);
     check_unit_queue();
 }
 
@@ -1455,7 +1452,7 @@ mjit_recompile(const rb_iseq_t *iseq)
             RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
     VM_ASSERT(ISEQ_BODY(iseq)->jit_unit != NULL);
 
-    mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info, true);
+    mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info);
     check_unit_queue();
 }
 

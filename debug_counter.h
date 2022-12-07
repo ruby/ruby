@@ -346,10 +346,6 @@ RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
 RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
 RB_DEBUG_COUNTER(vm_sync_barrier)
 
-/* MJIT enqueue / unload */
-RB_DEBUG_COUNTER(mjit_add_iseq_to_process)
-RB_DEBUG_COUNTER(mjit_unload_units)
-
 /* MJIT <-> VM frame push counts */
 RB_DEBUG_COUNTER(mjit_frame_VM2VM)
 RB_DEBUG_COUNTER(mjit_frame_VM2JT)
