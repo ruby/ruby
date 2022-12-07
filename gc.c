@@ -3683,8 +3683,14 @@ static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
 #if USE_MMTK
-    // When using MMTk, we don't create ordinary zombies. We create MMTk_FinalJob instead.
-    RUBY_ASSERT(!rb_mmtk_enabled_p());
+    // When using MMTk, we assume `make_zombie` is called for creating dfree jobs, only.
+    // We removed the code path in `obj_free` that calls `make_zombie` for finalizable objects,
+    // in which case `dfree` is null.
+    if (rb_mmtk_enabled_p()) {
+        RUBY_ASSERT(dfree != NULL);
+        rb_mmtk_make_dfree_job(dfree, data);
+        return;
+    }
 #endif
 
     struct RZombie *zombie = RZOMBIE(obj);
@@ -3707,15 +3713,7 @@ static inline void
 make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 {
     rb_io_t *fptr = RANY(obj)->as.file.fptr;
-#if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
-        rb_mmtk_make_dfree_job(rb_io_fptr_finalize_internal, fptr);
-    } else {
-#endif
     make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
-#if USE_MMTK
-    }
-#endif
 }
 
 static void
@@ -3928,15 +3926,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
                     RB_DEBUG_COUNTER_INC(obj_data_imm_free);
                 }
                 else {
-#if USE_MMTK
-                    if (rb_mmtk_enabled_p()) {
-                        rb_mmtk_make_dfree_job(dfree, data);
-                    } else {
-#endif
                     make_zombie(objspace, obj, dfree, data);
-#if USE_MMTK
-                    }
-#endif
                     RB_DEBUG_COUNTER_INC(obj_data_zombie);
                     return FALSE;
                 }
@@ -4879,7 +4869,7 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 bool rb_obj_is_main_ractor(VALUE gv);
 
 #if USE_MMTK
-void
+static void
 rb_mmtk_call_obj_free_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
     if (on_exit) {
         if (rb_obj_is_thread(obj)) {
@@ -4911,7 +4901,7 @@ rb_mmtk_call_obj_free_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
     v->as.free.next = NULL;
 }
 
-void
+static void
 rb_mmtk_call_obj_free_on_exit(rb_objspace_t *objspace)
 {
     struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_obj_free_candidates();
@@ -4925,6 +4915,22 @@ rb_mmtk_call_obj_free_on_exit(rb_objspace_t *objspace)
 
     mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
 }
+
+static int
+rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE obj = (VALUE)key;
+    VALUE finalizer_array = (VALUE)value;
+    rb_objspace_t *objspace = &rb_objspace;
+
+    VALUE observed_id = rb_obj_id(obj);
+
+    RUBY_DEBUG_LOG("Running finalizer on exits for %p", (void*)obj);
+    run_finalizer(objspace, observed_id, finalizer_array);
+
+    return ST_CONTINUE;
+}
+
 #endif
 
 void
@@ -4932,10 +4938,18 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
     size_t i;
 
+#if USE_MMTK
+    // The following lines are related to Ruby's own GC.
+    // They should not be executedn when using MMTk.
+    if (!rb_mmtk_enabled_p()) {
+#endif
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
     gc_rest(objspace);
+#if USE_MMTK
+    }
+#endif
 
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
@@ -4943,14 +4957,33 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     finalize_deferred(objspace);
     GC_ASSERT(heap_pages_deferred_final == 0);
 
+#if USE_MMTK
+    // The following lines are related to Ruby's own GC.
+    // They should not be executedn when using MMTk.
+    if (!rb_mmtk_enabled_p()) {
+#endif
     gc_rest(objspace);
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
+#if USE_MMTK
+    }
+#endif
 
 #if USE_MMTK
-    // FIXME: Enable finalizer later.  Objects in finalizer_table are already dead.
-    // We need mmtk-core to support PhantomReference.
-    if (!rb_mmtk_enabled_p()) {
+    if (rb_mmtk_enabled_p()) {
+        // Force to run finalizers, the MMTk style.
+        // When using MMTk, we simply iterate through all elements and call run_finalizer immediately.
+        // The finalizer_table will be freed soon, so we don't need to remove elements.
+        st_foreach(finalizer_table, rb_mmtk_run_finalizers_immediately, 0);
+
+        // TODO: Should we disable GC, too?
+
+        // Running data/file finalizers on exit, the MMTk style.
+        // When using MMTk, we maintain a list of obj_free candidates in the Rust code,
+        // similar to the FinalizerProcessor for JVM which maintains a list of finalizable objects.
+        // But since we are on exit, we call obj_free immediately on those objects instead of in GC.
+        rb_mmtk_call_obj_free_on_exit(objspace);
+    } else {
 #endif
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
@@ -4965,9 +4998,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
             xfree(curr);
         }
     }
-#if USE_MMTK
-    }
-#endif
 
     /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
     dont_gc_on();
@@ -5022,8 +5052,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
 #if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
-        rb_mmtk_call_obj_free_on_exit(objspace);
     }
 #endif
 
@@ -15654,13 +15682,13 @@ rb_mmtk_on_finalizer_table_delete(st_data_t key, st_data_t value, void *arg)
 static void
 rb_mmtk_on_obj_to_id_tbl_delete(st_data_t key, st_data_t value, void *arg)
 {
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, __FILE__)) {
-        if (RB_FIXNUM_P((VALUE)value)) {
-            RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=%lu)", (void*)key, rb_fix2ulong((VALUE)value));
-        } else {
-            RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=BigNum@%p)", (void*)key, (void*)value);
-        }
+#if USE_RUBY_DEBUG_LOG
+    if (RB_FIXNUM_P((VALUE)value)) {
+        RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=%lu)", (void*)key, rb_fix2ulong((VALUE)value));
+    } else {
+        RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=BigNum@%p)", (void*)key, (void*)value);
     }
+#endif
     int result = rb_st_delete(rb_objspace.id_to_obj_tbl, &value, NULL);
     RUBY_ASSERT_ALWAYS(result != 0);
 }
