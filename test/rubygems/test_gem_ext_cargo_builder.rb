@@ -57,7 +57,8 @@ class TestGemExtCargoBuilder < Gem::TestCase
     output = output.join "\n"
     bundle = File.join(@dest_path, "release/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
 
-    assert_match "Finished\e[0m release [optimized] target(s)", output
+    assert_match(/Finished/, output)
+    assert_match(/release/, output)
     assert_ffi_handle bundle, "Init_rust_ruby_example"
   rescue Exception => e
     pp output if output
