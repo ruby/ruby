@@ -1229,7 +1229,7 @@ check_compaction(void)
 void
 mjit_notify_waitpid(int exit_code)
 {
-    VM_ASSERT(current_cc_pid != 0);
+    VM_ASSERT(mjit_opts.wait || current_cc_pid != 0);
     current_cc_pid = 0;
 
     // Delete .c file
