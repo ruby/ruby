@@ -576,10 +576,10 @@ The following deprecated APIs are removed.
 ### YJIT
 
 * YJIT now supports both x86-64 and arm64/aarch64 CPUs on Linux, MacOS, BSD and other UNIX platforms.
-    * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4 ARM64 processors.
-* Building YJIT requires Rust 1.58.0+. [[Feature #18481]]
-    * In order to ensure that CRuby is built with YJIT, please install rustc >= 1.58.0 and
-      run `./configure` with `--enable-yjit`.
+    * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4.
+* Building YJIT now requires Rust 1.58.0+. [[Feature #18481]]
+    * In order to ensure that CRuby is built with YJIT, please install `rustc` >= 1.58.0
+      before running `./configure`
     * Please reach out to the YJIT team should you run into any issues.
 * Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
   the RSS of a Ruby process is minimized because virtual memory pages
@@ -587,11 +587,11 @@ The following deprecated APIs are removed.
   memory pages until actually utilized by JIT code.
 * Introduce Code GC that frees all code pages when the memory consumption
   by JIT code reaches `--yjit-exec-mem-size`.
-    * RubyVM::YJIT.runtime_stats returns Code GC metrics in addition to
+    * `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
       existing `inline_code_size` and `outlined_code_size` keys:
       `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
-* Most of the statistics produced by RubyVM::YJIT.runtime_stats are now available in release builds.
-    * Simply run ruby with `--yjit-stats` to compute stats (incurs some run-time overhead).
+* Most of the statistics produced by `RubyVM::YJIT.runtime_stats` are now available in release builds.
+    * Simply run ruby with `--yjit-stats` to compute and dump stats (incurs some run-time overhead).
 * YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
 * Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
 * The default `--yjit-exec-mem-size` is changed to 128 (MiB).
