@@ -306,11 +306,6 @@ mjit_warning(const char *format, ...)
 static void
 add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 {
-    (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_unit_queue, list == &unit_queue);
-    (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_active_units, list == &active_units);
-    (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_compact_units, list == &compact_units);
-    (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_stale_units, list == &stale_units);
-
     ccan_list_add_tail(&list->head, &unit->unode);
     list->length++;
 }
@@ -318,13 +313,6 @@ add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 static void
 remove_from_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
 {
-#if USE_DEBUG_COUNTER
-    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_unit_queue, -1, list == &unit_queue);
-    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_active_units, -1, list == &active_units);
-    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_compact_units, -1, list == &compact_units);
-    rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_stale_units, -1, list == &stale_units);
-#endif
-
     ccan_list_del(&unit->unode);
     list->length--;
 }
@@ -1906,22 +1894,6 @@ mjit_child_after_fork(void)
     start_worker();
 }
 
-// Edit 0 to 1 to enable this feature for investigating hot methods
-#define MJIT_COUNTER 0
-#if MJIT_COUNTER
-static void
-mjit_dump_total_calls(void)
-{
-    struct rb_mjit_unit *unit;
-    fprintf(stderr, "[MJIT_COUNTER] total_calls of active_units:\n");
-    ccan_list_for_each(&active_units.head, unit, unode) {
-        const rb_iseq_t *iseq = unit->iseq;
-        fprintf(stderr, "%8ld: %s@%s:%d\n", ISEQ_BODY(iseq)->total_calls, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
-    }
-}
-#endif
-
 // Finish the threads processing units and creating PCH, finalize
 // and free MJIT data.  It should be called last during MJIT
 // life.
@@ -1943,10 +1915,6 @@ mjit_finish(bool close_handle_p)
     rb_native_cond_destroy(&mjit_client_wakeup);
     rb_native_cond_destroy(&mjit_worker_wakeup);
     rb_native_cond_destroy(&mjit_gc_wakeup);
-
-#if MJIT_COUNTER
-    mjit_dump_total_calls();
-#endif
 
     if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status == PCH_SUCCESS && !mjit_opts.custom)
         remove_file(pch_file);

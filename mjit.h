@@ -14,7 +14,6 @@
 
 # if USE_MJIT
 
-#include "debug_counter.h"
 #include "ruby.h"
 #include "vm_core.h"
 
