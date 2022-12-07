@@ -65,31 +65,6 @@ class TestGemExtCargoBuilder < Gem::TestCase
     raise(e)
   end
 
-  def test_build_dev_profile
-    skip_unsupported_platforms!
-    setup_rust_gem "rust_ruby_example"
-
-    output = []
-
-    Dir.chdir @ext do
-      ENV.update(@rust_envs)
-      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-      builder = Gem::Ext::CargoBuilder.new(spec)
-      builder.profile = :dev
-      builder.build nil, @dest_path, output
-    end
-
-    output = output.join "\n"
-    bundle = File.join(@dest_path, "debug/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
-
-    assert_match "Finished dev [unoptimized + debuginfo] target(s)", output
-    assert_ffi_handle bundle, "Init_rust_ruby_example"
-  rescue Exception => e
-    pp output if output
-
-    raise(e)
-  end
-
   def test_build_fail
     skip_unsupported_platforms!
     setup_rust_gem "rust_ruby_example"
