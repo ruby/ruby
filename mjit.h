@@ -20,18 +20,18 @@
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
-enum rb_mjit_iseq_func {
+enum rb_mjit_func_state {
     // ISEQ has never been enqueued to unit_queue yet
-    NOT_ADDED_JIT_ISEQ_FUNC = 0,
+    MJIT_FUNC_NOT_QUEUED = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
-    NOT_READY_JIT_ISEQ_FUNC = 1,
+    MJIT_FUNC_COMPILING = 1,
     // ISEQ included not compilable insn, some internal assertion failed
     // or the unit is unloaded
-    NOT_COMPILED_JIT_ISEQ_FUNC = 2,
-    // End mark
-    LAST_JIT_ISEQ_FUNC = 3
+    MJIT_FUNC_FAILED = 2,
 };
+// Return true if jit_func is part of enum rb_mjit_func_state
+#define MJIT_FUNC_STATE_P(jit_func) ((uintptr_t)(jit_func) <= (uintptr_t)MJIT_FUNC_FAILED)
 
 // MJIT options which can be defined on the MRI command line.
 struct mjit_options {

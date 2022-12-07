@@ -388,19 +388,18 @@ static VALUE
 mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
     uintptr_t func_i = (uintptr_t)(body->jit_func);
-    ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
-    switch ((enum rb_mjit_iseq_func)func_i) {
-      case NOT_ADDED_JIT_ISEQ_FUNC:
+    ASSUME(MJIT_FUNC_STATE_P(func_i));
+    switch ((enum rb_mjit_func_state)func_i) {
+      case MJIT_FUNC_NOT_QUEUED:
         if (body->total_calls == mjit_opts.call_threshold) {
             rb_mjit_add_iseq_to_process(iseq);
-            if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
+            if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
                 return body->jit_func(ec, ec->cfp);
             }
         }
         break;
-      case NOT_READY_JIT_ISEQ_FUNC:
-      case NOT_COMPILED_JIT_ISEQ_FUNC:
-      default: // to avoid warning with LAST_JIT_ISEQ_FUNC
+      case MJIT_FUNC_COMPILING:
+      case MJIT_FUNC_FAILED:
         break;
     }
     return Qundef;
@@ -439,7 +438,7 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else if (UNLIKELY((uintptr_t)(func = body->jit_func) <= LAST_JIT_ISEQ_FUNC)) {
+    else if (UNLIKELY(MJIT_FUNC_STATE_P(func = body->jit_func))) {
         return mjit_check_iseq(ec, iseq, body);
     }
 

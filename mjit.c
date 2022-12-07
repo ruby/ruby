@@ -343,13 +343,13 @@ remove_file(const char *filename)
 // 3) Freeing lists on `mjit_finish()`.
 //
 // `jit_func` value does not matter for 1 and 3 since the unit won't be used anymore.
-// For the situation 2, this sets the ISeq's JIT state to NOT_COMPILED_JIT_ISEQ_FUNC
+// For the situation 2, this sets the ISeq's JIT state to MJIT_FUNC_FAILED
 // to prevent the situation that the same methods are continuously compiled.
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) { // ISeq is not GCed
-        ISEQ_BODY(unit->iseq)->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        ISEQ_BODY(unit->iseq)->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
         ISEQ_BODY(unit->iseq)->jit_unit = NULL;
     }
     if (unit->cc_entries) {
@@ -794,7 +794,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
         mjit_warning("failure in loading code from '%s': %s", so_file, dlerror());
-        return (void *)NOT_COMPILED_JIT_ISEQ_FUNC;
+        return (void *)MJIT_FUNC_FAILED;
     }
 
     func = dlsym(handle, funcname);
@@ -841,7 +841,7 @@ compile_prelude(FILE *f)
 }
 
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
-// It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
+// It may return MJIT_FUNC_FAILED if something went wrong.
 static bool
 mjit_compile_unit(struct rb_mjit_unit *unit)
 {
@@ -1176,7 +1176,7 @@ check_unit_queue(void)
         current_cc_pid = start_c_compile_unit(unit);
         if (current_cc_pid == -1) { // JIT failure
             current_cc_pid = 0;
-            current_cc_unit->iseq->body->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // TODO: consider unit->compact_p
             current_cc_unit = NULL;
         }
     }
@@ -1257,7 +1257,7 @@ mjit_notify_waitpid(int exit_code)
     if (exit_code != 0) {
         verbose(2, "Failed to generate so");
         if (!current_cc_unit->compact_p) {
-            current_cc_unit->iseq->body->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
         }
         free_unit(current_cc_unit);
         current_cc_unit = NULL;
@@ -1284,7 +1284,7 @@ mjit_notify_waitpid(int exit_code)
         // Set the jit_func if successful
         if (current_cc_unit->iseq != NULL) { // mjit_free_iseq could nullify this
             rb_iseq_t *iseq = current_cc_unit->iseq;
-            if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+            if (!MJIT_FUNC_STATE_P(func)) {
                 double end_time = real_ms_time();
                 verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s",
                         end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
@@ -1355,12 +1355,12 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     }
     if (!mjit_target_iseq_p(iseq)) {
-        ISEQ_BODY(iseq)->jit_func = (jit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+        ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // skip mjit_wait
         return;
     }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
-    ISEQ_BODY(iseq)->jit_func = (jit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+    ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
     create_unit(iseq);
     if (ISEQ_BODY(iseq)->jit_unit == NULL)
         // Failure in creating the unit.
@@ -1398,11 +1398,11 @@ mjit_wait(struct rb_iseq_constant_body *body)
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
-    while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (jit_func_t)NOT_READY_JIT_ISEQ_FUNC) { // TODO: refactor this
+    while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (jit_func_t)MJIT_FUNC_COMPILING) { // TODO: refactor this
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             if (body != NULL) {
-                body->jit_func = (jit_func_t) NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
+                body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // JIT worker seems dead. Give up.
             }
             mjit_warning("timed out to wait for JIT finish");
             break;
@@ -1424,7 +1424,7 @@ mjit_wait_unit(struct rb_mjit_unit *unit)
 }
 
 // Wait for JIT compilation finish for --jit-wait, and call the function pointer
-// if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC.
+// if the compiled result is not MJIT_FUNC_FAILED.
 VALUE
 rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
@@ -1432,7 +1432,7 @@ rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body
         return Qundef;
 
     mjit_wait(body);
-    if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+    if (MJIT_FUNC_STATE_P(body->jit_func)) {
         return Qundef;
     }
     return body->jit_func(ec, ec->cfp);
@@ -1448,7 +1448,7 @@ rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 static void
 mjit_recompile(const rb_iseq_t *iseq)
 {
-    if ((uintptr_t)ISEQ_BODY(iseq)->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)
+    if (MJIT_FUNC_STATE_P(ISEQ_BODY(iseq)->jit_func))
         return;
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
