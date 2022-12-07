@@ -498,7 +498,7 @@ The following deprecated methods are removed.
 
 ### Error printer
 
-* Ruby no longer escapes control characters and bachslashes in an
+* Ruby no longer escapes control characters and backslashes in an
   error message. [[Feature #18367]]
 
 ### Constant lookup when defining a class/module
