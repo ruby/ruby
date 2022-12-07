@@ -359,7 +359,7 @@ free_unit(struct rb_mjit_unit *unit)
     if (unit->handle && dlclose(unit->handle)) { // handle is NULL if it's in queue
         mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
     }
-    free(unit);
+    xfree(unit);
 }
 
 // Start a critical section. Use message `msg` to print debug info at `level`.
@@ -757,7 +757,7 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
     void *handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
         mjit_warning("failure in loading code from compacted '%s': %s", so_file, dlerror());
-        free(unit);
+        xfree(unit);
         return;
     }
     unit->handle = handle;
@@ -1122,7 +1122,7 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
             if (unit->handle && dlclose(unit->handle)) {
                 mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
             }
-            free(unit);
+            xfree(unit);
         }
         else {
             free_unit(unit);
