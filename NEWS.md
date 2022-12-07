@@ -542,6 +542,18 @@ The following APIs are updated.
     Extension libraries which use this interface and built for older versions.
     Also `init_int32` function needs to be defined.
 
+### Added C APIs
+
+* `VALUE rb_hash_new_capa(long capa)` was added to created hashes with the desired capacity.
+* `rb_internal_thread_add_event_hook` and `rb_internal_thread_add_event_hook` were added to instrument threads scheduling.
+  The following events are available:
+    * `RUBY_INTERNAL_THREAD_EVENT_STARTED`
+    * `RUBY_INTERNAL_THREAD_EVENT_READY`
+    * `RUBY_INTERNAL_THREAD_EVENT_RESUMED`
+    * `RUBY_INTERNAL_THREAD_EVENT_SUSPENDED`
+    * `RUBY_INTERNAL_THREAD_EVENT_EXITED`
+  
+
 ### Removed C APIs
 
 The following deprecated APIs are removed.
