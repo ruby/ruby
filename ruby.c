@@ -1508,7 +1508,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
                 setup_yjit_options(s);
 #else
-                rb_warn("Ruby was built without YJIT support");
+                rb_warn("Ruby was built without YJIT support."
+                        " You may need to install rustc to build Ruby with YJIT.");
 #endif
             }
             else if (strcmp("yydebug", s) == 0) {
