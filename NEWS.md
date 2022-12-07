@@ -330,11 +330,25 @@ Note: We're only listing outstanding class updates.
     * Update Unicode to Version 15.0.0 and Emoji Version 15.0. [[Feature #18639]]
       (also applies to Regexp)
     * String#bytesplice has been added.  [[Feature #18598]]
+    * String#dedup has been added as an alias to String#-@.  [[Feature #18595]]
 
 * Struct
 
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on Struct.new [[Feature #16806]]
+
+* Thread
+
+    * Thread#each_caller_location is added. [[Feature #16663]]
+
+* Thread::Queue
+
+    * Thread::Queue.pop(timeout: sec) is added. [[Feature #18774]]
+
+* Thread::SizedQueue
+
+    * Thread::SizedQueue.pop(timeout: sec) is added. [[Feature #18774]]
+    * Thread::SizedQueue.push(timeout: sec) is added. [[Feature #18944]]
 
 * Time
 
@@ -356,7 +370,7 @@ Note: We're only listing outstanding class updates.
 
     * `UnboundMethod#==` returns `true` if the actual method is same. For example,
       `String.instance_method(:object_id) == Array.instance_method(:object_id)`
-      returns `true`. [Feature #18798]
+      returns `true`. [[Feature #18798]]
 
     * `UnboundMethod#inspect` does not show the receiver of `instance_method`.
       For example `String.instance_method(:object_id).inspect` returns
@@ -473,6 +487,9 @@ The following deprecated methods are removed.
   [[Feature #16131]]
 * `Kernel#trust`, `Kernel#untrust`, `Kernel#untrusted?`
   [[Feature #16131]]
+* `Method#public?`, `Method#private?`, `Method#protected?`,
+  `UnboundMethod#public?`, `UnboundMethod#private?`, `UnboundMethod#protected?`
+  [[Bug #18729]] [[Bug #18751]] [[Bug #18435]]
 
 ### Source code incompatiblity of extension libraries [[Bug #19100]]
 
@@ -483,6 +500,13 @@ The following deprecated methods are removed.
 
 * Ruby do no longer escape control characters and bachslashes in
   an error message. [[Feature #18367]]
+
+### Constant lookup when defining a class/module
+
+* When defining a class/module directly under the Object class by class/module
+  statement, if there is already a class/module with the same name, the statement
+  was handled as "open class" in Ruby 3.1 or before. Since Ruby 3.2, a new class
+  is defined instead. [[Feature #18832]]
 
 ## Stdlib compatibility issues
 
@@ -584,6 +608,7 @@ The following deprecated APIs are removed.
 [Feature #16122]: https://bugs.ruby-lang.org/issues/16122
 [Feature #16131]: https://bugs.ruby-lang.org/issues/16131
 [Bug #16466]:     https://bugs.ruby-lang.org/issues/16466
+[Feature #16663]: https://bugs.ruby-lang.org/issues/#16663
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Bug #16889]:     https://bugs.ruby-lang.org/issues/16889
 [Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
@@ -596,18 +621,23 @@ The following deprecated APIs are removed.
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Feature #18367]: https://bugs.ruby-lang.org/issues/18367
+[Bug #18435]:    https://bugs.ruby-lang.org/issues/#18435
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18564]: https://bugs.ruby-lang.org/issues/18564
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
 [Feature #18585]: https://bugs.ruby-lang.org/issues/18585
 [Feature #18589]: https://bugs.ruby-lang.org/issues/18589
+[Feature #18595]: https://bugs.ruby-lang.org/issues/#18595
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Feature #18630]: https://bugs.ruby-lang.org/issues/18630
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
 [Feature #18639]: https://bugs.ruby-lang.org/issues/18639
 [Feature #18685]: https://bugs.ruby-lang.org/issues/18685
+[Bug #18729]:    https://bugs.ruby-lang.org/issues/#18729
+[Bug #18751]:    https://bugs.ruby-lang.org/issues/#18751
+[Feature #18774]: https://bugs.ruby-lang.org/issues/#18774
 [Feature #18776]: https://bugs.ruby-lang.org/issues/18776
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
@@ -615,7 +645,9 @@ The following deprecated APIs are removed.
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18821]: https://bugs.ruby-lang.org/issues/18821
 [Feature #18824]: https://bugs.ruby-lang.org/issues/18824
+[Feature #18832]: https://bugs.ruby-lang.org/issues/#18832
 [Feature #18925]: https://bugs.ruby-lang.org/issues/18925
+[Feature #18944]: https://bugs.ruby-lang.org/issues/#18944
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Feature #18968]: https://bugs.ruby-lang.org/issues/18968
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
