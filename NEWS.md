@@ -498,8 +498,8 @@ The following deprecated methods are removed.
 
 ### Error printer
 
-* Ruby do no longer escape control characters and bachslashes in
-  an error message. [[Feature #18367]]
+* Ruby no longer escapes control characters and bachslashes in an
+  error message. [[Feature #18367]]
 
 ### Constant lookup when defining a class/module
 
