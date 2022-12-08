@@ -48,6 +48,7 @@ jobs:
       matrix:
         include:
           - test_task: "check-yjit-bindings"
+            hint: "To fix: use patch in logs"
             configure: "--with-gcc=clang-12 --enable-yjit=dev"
 
           - test_task: "check"
