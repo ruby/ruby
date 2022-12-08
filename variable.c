@@ -1713,11 +1713,7 @@ class_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
 
-    rb_shape_t* shape = rb_shape_get_shape(obj);
-    struct iv_itr_data itr_data;
-    itr_data.obj = obj;
-    itr_data.arg = arg;
-    iterate_over_shapes_with_callback(shape, func, &itr_data);
+    obj_ivar_each(obj, func, arg);
 }
 
 void
