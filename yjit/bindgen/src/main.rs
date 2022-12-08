@@ -50,6 +50,9 @@ fn main() {
         // Don't want to copy over C comment
         .generate_comments(false)
 
+        // Makes the output more compact
+        .merge_extern_blocks(true)
+
         // Don't want layout tests as they are platform dependent
         .layout_tests(false)
 
