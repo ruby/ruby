@@ -22,10 +22,6 @@ struct rb_mjit_unit {
     // Dlopen handle of the loaded object file.
     void *handle;
     rb_iseq_t *iseq;
-#if defined(_WIN32)
-    // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
-    char *so_file;
-#endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
     // True if it's a unit for JIT compaction
