@@ -6561,7 +6561,7 @@ fn gen_getconstant(
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
 
-    let id: *const ID = jit_get_arg(jit, 0).as_ptr();
+    let id = jit_get_arg(jit, 0).as_usize();
 
     let allow_nil_opnd = ctx.stack_pop(1);
     let klass_opnd = ctx.stack_pop(1);
@@ -6578,7 +6578,7 @@ fn gen_getconstant(
         vec![
             EC,
             klass_opnd,
-            Opnd::const_ptr(id as *const u8),
+            id.into(),
             allow_nil_opnd
         ],
     );
