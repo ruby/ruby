@@ -162,6 +162,7 @@ module IRB # :nodoc:
 
       [
         :irb_help, :Help, "cmd/help",
+        [:show_doc, NO_OVERRIDE],
         [:help, NO_OVERRIDE],
       ],
 
