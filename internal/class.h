@@ -53,6 +53,7 @@ struct rb_classext_struct {
     rb_alloc_func_t allocator;
     const VALUE includer;
     uint32_t max_iv_count;
+    uint32_t variation_count;
 #if !SHAPE_IN_BASIC_FLAGS
     shape_id_t shape_id;
 #endif
