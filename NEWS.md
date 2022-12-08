@@ -422,7 +422,7 @@ Note: We're only listing outstanding class updates.
     * logger 1.5.2
     * mutex_m 0.1.2
     * net-http 0.3.1
-    * net-protocol 0.2.0
+    * net-protocol 0.2.1
     * nkf 0.1.2
     * open-uri 0.3.0
     * openssl 3.1.0.pre
