@@ -243,6 +243,7 @@ RB_DEBUG_COUNTER(obj_wb_unprotect)
 RB_DEBUG_COUNTER(obj_obj_embed)
 RB_DEBUG_COUNTER(obj_obj_transient)
 RB_DEBUG_COUNTER(obj_obj_ptr)
+RB_DEBUG_COUNTER(obj_obj_too_complex)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)

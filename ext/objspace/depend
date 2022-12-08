@@ -540,6 +540,7 @@ objspace_dump.o: $(top_srcdir)/id_table.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h
 objspace_dump.o: $(top_srcdir)/internal/basic_operators.h
+objspace_dump.o: $(top_srcdir)/internal/class.h
 objspace_dump.o: $(top_srcdir)/internal/compilers.h
 objspace_dump.o: $(top_srcdir)/internal/gc.h
 objspace_dump.o: $(top_srcdir)/internal/hash.h

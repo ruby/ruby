@@ -1213,6 +1213,8 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 
     if (LIKELY(cached_id == shape_id)) {
+        RUBY_ASSERT(cached_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+
         if (index == ATTR_INDEX_NOT_SET) {
             return Qnil;
         }
@@ -1242,24 +1244,31 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            // This fills in the cache with the shared cache object.
-            // "ent" is the shared cache object
-            fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
-
-            // We fetched the ivar list above
-            val = ivar_list[index];
-            RUBY_ASSERT(!UNDEF_P(val));
+        if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
+            if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+                val = Qnil;
+            }
         }
         else {
-            if (is_attr) {
-                vm_cc_attr_index_initialize(cc, shape_id);
+            if (rb_shape_get_iv_index(shape, id, &index)) {
+                // This fills in the cache with the shared cache object.
+                // "ent" is the shared cache object
+                fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
+
+                // We fetched the ivar list above
+                val = ivar_list[index];
+                RUBY_ASSERT(!UNDEF_P(val));
             }
             else {
-                vm_ic_attr_index_initialize(ic, shape_id);
-            }
+                if (is_attr) {
+                    vm_cc_attr_index_initialize(cc, shape_id);
+                }
+                else {
+                    vm_ic_attr_index_initialize(ic, shape_id);
+                }
 
-            val = Qnil;
+                val = Qnil;
+            }
         }
 
     }
@@ -1283,6 +1292,8 @@ general_path:
 static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
+    RUBY_ASSERT(next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+
     // Cache population code
     if (is_attr) {
         vm_cc_attr_index_set(cc, index, next_shape_id);
@@ -1309,7 +1320,9 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
             shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+            }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
             return val;
@@ -1413,6 +1426,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = ROBJECT_SHAPE_ID(obj);
+            RUBY_ASSERT(dest_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
 
             if (LIKELY(shape_id == dest_shape_id)) {
                 RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
@@ -1440,6 +1454,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
             VALUE *ptr = ROBJECT_IVPTR(obj);
 
+            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);

@@ -27,12 +27,22 @@ typedef uint16_t shape_id_t;
 
 # define SHAPE_BITMAP_SIZE 16384
 
+# define SHAPE_MAX_VARIATIONS 8
+
 # define MAX_SHAPE_ID (SHAPE_MASK - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
+
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
+#if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+# define SIZE_POOL_COUNT 5
+#else
+# define SIZE_POOL_COUNT 1
+#endif
+
 # define SPECIAL_CONST_SHAPE_ID (SIZE_POOL_COUNT * 2)
+# define OBJ_TOO_COMPLEX_SHAPE_ID (SPECIAL_CONST_SHAPE_ID + 1)
 
 struct rb_shape {
     struct rb_id_table * edges; // id_table from ID (ivar) to next shape
@@ -53,6 +63,7 @@ enum shape_type {
     SHAPE_CAPACITY_CHANGE,
     SHAPE_INITIAL_CAPACITY,
     SHAPE_T_OBJECT,
+    SHAPE_OBJ_TOO_COMPLEX,
 };
 
 #if SHAPE_IN_BASIC_FLAGS
@@ -141,6 +152,7 @@ rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
 bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
 shape_id_t rb_shape_id(rb_shape_t * shape);
+bool rb_shape_obj_too_complex(VALUE obj);
 MJIT_SYMBOL_EXPORT_END
 
 rb_shape_t * rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape);
@@ -149,15 +161,41 @@ static inline uint32_t
 ROBJECT_IV_CAPACITY(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    // Asking for capacity doesn't make sense when the object is using
+    // a hash table for storing instance variables
+    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
     return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
 }
+
+static inline struct rb_id_table *
+ROBJECT_IV_HASH(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    return (struct rb_id_table *)ROBJECT(obj)->as.heap.ivptr;
+}
+
+static inline void
+ROBJECT_SET_IV_HASH(VALUE obj, const struct rb_id_table *tbl)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID);
+    ROBJECT(obj)->as.heap.ivptr = (VALUE *)tbl;
+}
+
+size_t rb_id_table_size(const struct rb_id_table *tbl);
 
 static inline uint32_t
 ROBJECT_IV_COUNT(VALUE obj)
 {
-    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    uint32_t ivc = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->next_iv_index;
-    return ivc;
+    if (ROBJECT_SHAPE_ID(obj) == OBJ_TOO_COMPLEX_SHAPE_ID) {
+        return (uint32_t)rb_id_table_size(ROBJECT_IV_HASH(obj));
+    }
+    else {
+        RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+        RUBY_ASSERT(ROBJECT_SHAPE_ID(obj) != OBJ_TOO_COMPLEX_SHAPE_ID);
+        return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->next_iv_index;
+    }
 }
 
 static inline uint32_t
@@ -182,6 +220,7 @@ bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
 VALUE rb_shape_flags_mask(void);
+void rb_shape_set_too_complex(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 typedef void each_shape_callback(rb_shape_t * shape, void *data);

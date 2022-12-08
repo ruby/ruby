@@ -124,6 +124,7 @@ impl<T> ::std::cmp::PartialEq for __BindgenUnionField<T> {
 }
 impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 11;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -1112,6 +1113,7 @@ extern "C" {
     pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
+    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,

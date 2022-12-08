@@ -2248,6 +2248,19 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+obj_hash_iv_traverse_i(VALUE val, void *ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i(val, d->data)) {
+        d->stop = true;
+        return ID_TABLE_STOP;
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
@@ -2306,12 +2319,22 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_OBJECT:
         {
-            uint32_t len = ROBJECT_IV_COUNT(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            if (rb_shape_obj_too_complex(obj)) {
+                struct obj_traverse_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                };
+                rb_id_table_foreach_values(ROBJECT_IV_HASH(obj), obj_hash_iv_traverse_i, &d);
+                if (d.stop) return 1;
+            }
+            else {
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                VALUE val = ptr[i];
-                if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
+                for (uint32_t i=0; i<len; i++) {
+                    VALUE val = ptr[i];
+                    if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
+                }
             }
         }
         break;
@@ -2656,6 +2679,30 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
     return ST_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+obj_iv_hash_traverse_replace_foreach_i(VALUE val, void *data)
+{
+    return ID_TABLE_REPLACE;
+}
+
+static enum rb_id_table_iterator_result
+obj_iv_hash_traverse_replace_i(VALUE *val, void *ptr, int exists)
+{
+    struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
+    struct obj_traverse_replace_data *data = d->data;
+
+    if (obj_traverse_replace_i(*val, data)) {
+        d->stop = true;
+        return ID_TABLE_STOP;
+    }
+    else if (*val != data->replacement) {
+        VALUE v = *val = data->replacement;
+        RB_OBJ_WRITTEN(d->src, Qundef, v);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static struct st_table *
 obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 {
@@ -2756,16 +2803,30 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
+            if (rb_shape_obj_too_complex(obj)) {
+                struct rb_id_table * table = ROBJECT_IV_HASH(obj);
+                struct obj_traverse_replace_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                    .src = obj,
+                };
+                rb_id_table_foreach_values_with_replace(table,
+                                                        obj_iv_hash_traverse_replace_foreach_i,
+                                                        obj_iv_hash_traverse_replace_i,
+                                                        (void *)&d);
+            }
+            else {
 #if USE_TRANSIENT_HEAP
-            if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
+                if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
 #endif
 
-            uint32_t len = ROBJECT_IV_COUNT(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                if (!UNDEF_P(ptr[i])) {
-                    CHECK_AND_REPLACE(ptr[i]);
+                for (uint32_t i=0; i<len; i++) {
+                    if (!UNDEF_P(ptr[i])) {
+                        CHECK_AND_REPLACE(ptr[i]);
+                    }
                 }
             }
         }
