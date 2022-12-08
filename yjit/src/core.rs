@@ -276,7 +276,7 @@ pub enum YARVOpnd {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Copy, Clone, Default, PartialEq, Debug)]
+#[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u16,
@@ -854,7 +854,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
     if ctx.chain_depth > 0 {
-        return *ctx;
+        return ctx.clone();
     }
 
     // If this block version we're about to add will hit the version limit
@@ -875,7 +875,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return generic_ctx;
     }
 
-    return *ctx;
+    return ctx.clone();
 }
 
 /// Keep track of a block version. Block should be fully constructed.
@@ -939,7 +939,7 @@ impl Block {
         let block = Block {
             blockid,
             end_idx: 0,
-            ctx: *ctx,
+            ctx: ctx.clone(),
             start_addr: None,
             end_addr: None,
             incoming: Vec::new(),
@@ -963,7 +963,7 @@ impl Block {
     }
 
     pub fn get_ctx(&self) -> Context {
-        self.ctx
+        self.ctx.clone()
     }
 
     #[allow(unused)]
@@ -1720,7 +1720,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let target_idx: usize = target_idx.as_usize();
     let target = branch.targets[target_idx].as_ref().unwrap();
     let target_id = target.id;
-    let target_ctx = target.ctx;
+    let target_ctx = target.ctx.clone();
 
     let target_branch_shape = match target_idx {
         0 => BranchShape::Next0,
@@ -1889,7 +1889,7 @@ fn set_branch_target(
             block: Some(blockref.clone()),
             address: block.start_addr,
             id: target,
-            ctx: *ctx,
+            ctx: ctx.clone(),
         }));
 
         return;
@@ -1934,7 +1934,7 @@ fn set_branch_target(
             block: None, // no block yet
             address: Some(stub_addr),
             id: target,
-            ctx: *ctx,
+            ctx: ctx.clone(),
         }));
     }
 }
@@ -2020,7 +2020,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     let mut new_target = BranchTarget {
         block: None,
         address: None,
-        ctx: *ctx,
+        ctx: ctx.clone(),
         id: target0,
     };
 
@@ -2067,7 +2067,7 @@ pub fn defer_compilation(
         panic!("Double defer!");
     }
 
-    let mut next_ctx = *cur_ctx;
+    let mut next_ctx = cur_ctx.clone();
 
     if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");
@@ -2262,7 +2262,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
                 block: None,
                 address: block.entry_exit,
                 id: block.blockid,
-                ctx: block.ctx,
+                ctx: block.ctx.clone(),
             }));
         }
 
