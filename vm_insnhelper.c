@@ -5216,6 +5216,12 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
     }
 }
 
+VALUE
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    return vm_opt_newarray_min(ec, num, ptr);
+}
+
 #undef id_cmp
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
