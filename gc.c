@@ -945,7 +945,6 @@ struct heap_page {
     short slot_size;
     short total_slots;
     short free_slots;
-    short pinned_slots;
     short final_slots;
     struct {
         unsigned int before_sweep : 1;
