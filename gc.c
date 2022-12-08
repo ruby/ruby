@@ -2965,6 +2965,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
 
 #if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     VALUE *ptr = ROBJECT_IVPTR(obj);
     for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
@@ -3451,7 +3452,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
+        if (rb_shape_obj_too_complex(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+            rb_id_table_free(ROBJECT_IV_HASH(obj));
+        }
+        else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         else if (ROBJ_TRANSIENT_P(obj)) {
@@ -4875,7 +4880,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            size += rb_id_table_memsize(ROBJECT_IV_HASH(obj));
+        }
+        else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
         }
         break;
@@ -7297,14 +7305,23 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            const VALUE * const ptr = ROBJECT_IVPTR(obj);
-
-            uint32_t i, len = ROBJECT_IV_COUNT(obj);
-            for (i  = 0; i < len; i++) {
-                gc_mark(objspace, ptr[i]);
-            }
-
             rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+            if (rb_shape_obj_too_complex(obj)) {
+                mark_m_tbl(objspace, ROBJECT_IV_HASH(obj));
+            }
+            else {
+                const VALUE * const ptr = ROBJECT_IVPTR(obj);
+
+                uint32_t i, len = ROBJECT_IV_COUNT(obj);
+                for (i  = 0; i < len; i++) {
+                    gc_mark(objspace, ptr[i]);
+                }
+
+                if (LIKELY(during_gc) &&
+                        ROBJ_TRANSIENT_P(obj)) {
+                    rb_transient_heap_mark(obj, ptr);
+                }
+            }
             if (shape) {
                 VALUE klass = RBASIC_CLASS(obj);
 
@@ -7313,11 +7330,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
                     RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
                 }
-            }
-
-            if (LIKELY(during_gc) &&
-                    ROBJ_TRANSIENT_P(obj)) {
-                rb_transient_heap_mark(obj, ptr);
             }
         }
         break;
@@ -8426,7 +8438,12 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
         break;
 
       case T_OBJECT:
-        obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
+        if (rb_shape_obj_too_complex(src)) {
+            return &size_pools[0];
+        }
+        else {
+            obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
+        }
         break;
 
       case T_STRING:
@@ -10038,10 +10055,17 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
+static void update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl);
+
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
+
+    if (rb_shape_obj_too_complex(v)) {
+        update_m_tbl(objspace, ROBJECT_IV_HASH(v));
+        return;
+    }
 
 #if USE_RVARGC
     uint32_t numiv = ROBJECT_IV_CAPACITY(v);
