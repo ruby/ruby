@@ -51,7 +51,8 @@ module IRB
       category "IRB"
       description "Switches to the session of the given number."
 
-      def execute(key)
+      def execute(key = nil)
+        raise CommandArgumentError.new("Please specify the id of target IRB job (listed in the `jobs` command).") unless key
         IRB.JobManager.switch(key)
       end
     end

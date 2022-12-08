@@ -368,6 +368,14 @@ module TestIRB
       ], out)
     end
 
+    def test_irb_source_without_argument
+      out, err = execute_lines(
+        "irb_source\n",
+      )
+      assert_empty err
+      assert_match(/Please specify the file name./, out)
+    end
+
     def test_help
       out, _ = execute_lines(
         "help 'String#gsub'\n",
@@ -414,6 +422,15 @@ module TestIRB
           /   => nil\n/,
           /=> "bug17564"\n/,
         ], out)
+    end
+
+    def test_irb_load_without_argument
+      out, err = execute_lines(
+        "irb_load\n",
+      )
+
+      assert_empty err
+      assert_match(/Please specify the file name./, out)
     end
 
     def test_ls

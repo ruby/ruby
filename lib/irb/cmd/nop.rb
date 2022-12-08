@@ -13,6 +13,8 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
+    class CommandArgumentError < StandardError; end
+
     class Nop
       class << self
         def category(category = nil)
@@ -30,11 +32,15 @@ module IRB
         def self.execute(conf, *opts, **kwargs, &block)
           command = new(conf)
           command.execute(*opts, **kwargs, &block)
+        rescue CommandArgumentError => e
+          puts e.message
         end
       else
         def self.execute(conf, *opts, &block)
           command = new(conf)
           command.execute(*opts, &block)
+        rescue CommandArgumentError => e
+          puts e.message
         end
       end
 
