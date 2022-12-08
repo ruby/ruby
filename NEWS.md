@@ -438,7 +438,7 @@ Note: We're only listing outstanding class updates.
     * resolv 0.2.2
     * securerandom 0.2.1
     * set 1.0.3
-    * stringio 3.0.4
+    * stringio 3.0.5
     * syntax_suggest 1.0.1
     * timeout 0.3.1
     * tmpdir 0.1.3
