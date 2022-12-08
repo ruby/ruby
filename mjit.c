@@ -124,12 +124,6 @@
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
 
-// Linked list of struct rb_mjit_unit.
-struct rb_mjit_unit_list {
-    struct ccan_list_head head;
-    int length; // the list length
-};
-
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
@@ -148,6 +142,11 @@ bool mjit_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
+// There's an ISEQ in unit_queue whose total_calls reached 2 * call_threshold.
+// If this is true, check_unit_queue will start compiling ISEQs in unit_queue.
+static bool mjit_compile_p = false;
+// The actual number of units in active_units
+static int active_units_length = 0;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
@@ -162,10 +161,6 @@ static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.
 static int current_unit_num;
 // A mutex for conitionals and critical sections.
 static rb_nativethread_lock_t mjit_engine_mutex;
-// The times when unload_units is requested. unload_units is called after some requests.
-static int unload_requests = 0;
-// The total number of unloaded units.
-static int total_unloads = 0;
 // Set to true to stop worker.
 static bool stop_worker_p;
 // Set to true if worker is stopped.
@@ -662,10 +657,17 @@ c_compile_unit(struct rb_mjit_unit *unit)
 
 static void compile_prelude(FILE *f);
 
-// Compile all JIT code into a single .c file
 static bool
-mjit_compact(char* c_file)
+mjit_batch(struct rb_mjit_unit *unit)
 {
+    VM_ASSERT(unit->type == MJIT_UNIT_BATCH);
+    static const char c_ext[] = ".c";
+    static const char so_ext[] = DLEXT;
+    char c_file[MAXPATHLEN], so_file[MAXPATHLEN];
+
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
+
     FILE *f;
     int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
     if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
@@ -677,18 +679,11 @@ mjit_compact(char* c_file)
 
     compile_prelude(f);
 
-    // This entire loop lock GC so that we do not need to consider a case that
-    // ISeq is GC-ed in a middle of re-compilation. It takes 3~4ms with 100 methods
-    // on my machine. It's not too bad compared to compilation time of C (7200~8000ms),
-    // but it might be larger if we use a larger --jit-max-cache.
-    //
-    // TODO: Consider using a more granular lock after we implement inlining across
-    // compacted functions (not done yet).
     bool success = true;
     struct rb_mjit_unit *child_unit = 0;
-    ccan_list_for_each(&active_units.head, child_unit, unode) {
+    ccan_list_for_each(&unit->units.head, child_unit, unode) {
         if (!success) continue;
-        if (ISEQ_BODY(child_unit->iseq)->mjit_unit == NULL) continue; // Sometimes such units are created. TODO: Investigate why
+        if (child_unit->iseq == NULL) continue; // ISEQ is GCed
 
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, sizeof(funcname), child_unit);
@@ -709,8 +704,9 @@ mjit_compact(char* c_file)
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
 static bool
-mjit_compact_unit(struct rb_mjit_unit *unit)
+mjit_compact(struct rb_mjit_unit *unit)
 {
+    VM_ASSERT(unit->type == MJIT_UNIT_COMPACT);
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
     char c_file[MAXPATHLEN], so_file[MAXPATHLEN];
@@ -718,13 +714,91 @@ mjit_compact_unit(struct rb_mjit_unit *unit)
     sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
-    return mjit_compact(c_file);
+    FILE *f;
+    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
+    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
+        int e = errno;
+        if (fd >= 0) (void)close(fd);
+        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
+        return false;
+    }
+
+    compile_prelude(f);
+
+    bool success = true;
+    struct rb_mjit_unit *batch_unit = 0, *child_unit = 0;
+    ccan_list_for_each(&active_units.head, batch_unit, unode) {
+        ccan_list_for_each(&batch_unit->units.head, child_unit, unode) {
+            if (!success) continue;
+            if (child_unit->iseq == NULL) continue; // ISEQ is GCed
+
+            char funcname[MAXPATHLEN];
+            sprint_funcname(funcname, sizeof(funcname), child_unit);
+
+            int iseq_lineno = ISEQ_BODY(child_unit->iseq)->location.first_lineno;
+            const char *sep = "@";
+            const char *iseq_label = RSTRING_PTR(ISEQ_BODY(child_unit->iseq)->location.label);
+            const char *iseq_path = RSTRING_PTR(rb_iseq_path(child_unit->iseq));
+            if (!iseq_label) iseq_label = sep = "";
+            fprintf(f, "\n/* %s%s%s:%d */\n", iseq_label, sep, iseq_path, iseq_lineno);
+            success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
+        }
+    }
+
+    fclose(f);
+    return success;
+}
+
+static void
+load_batch_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_file)
+{
+    double end_time = real_ms_time();
+
+    void *handle = dlopen(so_file, RTLD_NOW);
+    if (handle == NULL) {
+        mjit_warning("failure in loading code from batched '%s': %s", so_file, dlerror());
+        xfree(unit);
+        return;
+    }
+    unit->handle = handle;
+
+    // lazily dlclose handle on `mjit_finish()`.
+    add_to_list(unit, &active_units);
+    active_units_length += unit->units.length;
+
+    if (!mjit_opts.save_temps)
+        remove_so_file(so_file, unit);
+
+    struct rb_mjit_unit *child_unit = 0;
+    ccan_list_for_each(&unit->units.head, child_unit, unode) {
+        char funcname[MAXPATHLEN];
+        sprint_funcname(funcname, sizeof(funcname), child_unit);
+
+        void *func;
+        if ((func = dlsym(handle, funcname)) == NULL) {
+            mjit_warning("skipping to load '%s' from '%s': %s", funcname, so_file, dlerror());
+            continue;
+        }
+
+        if (child_unit->iseq) { // Check whether GCed or not
+            // Usage of jit_code might be not in a critical section.
+            const rb_iseq_t *iseq = child_unit->iseq;
+            MJIT_ATOMIC_SET(ISEQ_BODY(iseq)->jit_func, (jit_func_t)func);
+
+            verbose(1, "JIT success: %s@%s:%d",
+                    RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+                    RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
+        }
+        else {
+            verbose(1, "JIT skip: A compiled method has been GCed");
+        }
+    }
+    verbose(1, "JIT batch (%.1fms): Batched %d methods %s -> %s", end_time - current_cc_ms, unit->units.length, c_file, so_file);
 }
 
 static void
 load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_file)
 {
-    struct rb_mjit_unit *cur = 0;
     double end_time = real_ms_time();
 
     void *handle = dlopen(so_file, RTLD_NOW);
@@ -735,44 +809,33 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
     }
     unit->handle = handle;
 
-    // lazily dlclose handle (and .so file for win32) on `mjit_finish()`.
+    // lazily dlclose handle on `mjit_finish()`.
     add_to_list(unit, &compact_units);
 
     if (!mjit_opts.save_temps)
         remove_so_file(so_file, unit);
 
-    ccan_list_for_each(&active_units.head, cur, unode) {
-        void *func;
-        char funcname[MAXPATHLEN];
-        sprint_funcname(funcname, sizeof(funcname), cur);
+    struct rb_mjit_unit *batch_unit = 0, *child_unit = 0;
+    ccan_list_for_each(&active_units.head, batch_unit, unode) {
+        ccan_list_for_each(&batch_unit->units.head, child_unit, unode) {
+            if (child_unit->iseq == NULL) continue; // ISEQ is GCed
 
-        if ((func = dlsym(handle, funcname)) == NULL) {
-            mjit_warning("skipping to reload '%s' from '%s': %s", funcname, so_file, dlerror());
-            continue;
-        }
+            char funcname[MAXPATHLEN];
+            sprint_funcname(funcname, sizeof(funcname), child_unit);
 
-        if (cur->iseq) { // Check whether GCed or not
-            // Usage of jit_code might be not in a critical section.
-            MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (jit_func_t)func);
+            void *func;
+            if ((func = dlsym(handle, funcname)) == NULL) {
+                mjit_warning("skipping to reload '%s' from '%s': %s", funcname, so_file, dlerror());
+                continue;
+            }
+
+            if (child_unit->iseq) { // Check whether GCed or not
+                // Usage of jit_code might be not in a critical section.
+                MJIT_ATOMIC_SET(ISEQ_BODY(child_unit->iseq)->jit_func, (jit_func_t)func);
+            }
         }
     }
-    verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units.length, c_file, so_file);
-}
-
-static void *
-load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
-{
-    void *handle, *func;
-
-    handle = dlopen(so_file, RTLD_NOW);
-    if (handle == NULL) {
-        mjit_warning("failure in loading code from '%s': %s", so_file, dlerror());
-        return (void *)MJIT_FUNC_FAILED;
-    }
-
-    func = dlsym(handle, funcname);
-    unit->handle = handle;
-    return func;
+    verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units_length, c_file, so_file);
 }
 
 #ifndef __clang__
@@ -811,51 +874,6 @@ compile_prelude(FILE *f)
     }
     fprintf(f, "\"\n");
 #endif
-}
-
-// Compile ISeq in UNIT and return function pointer of JIT-ed code.
-// It may return MJIT_FUNC_FAILED if something went wrong.
-static bool
-mjit_compile_unit(struct rb_mjit_unit *unit)
-{
-    static const char c_ext[] = ".c";
-    static const char so_ext[] = DLEXT;
-    char c_file[MAXPATHLEN], so_file[MAXPATHLEN], funcname[MAXPATHLEN];
-
-    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
-    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
-    sprint_funcname(funcname, sizeof(funcname), unit);
-
-    FILE *f;
-    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
-    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
-        int e = errno;
-        if (fd >= 0) (void)close(fd);
-        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return false;
-    }
-
-    // print #include of MJIT header, etc.
-    compile_prelude(f);
-
-    // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
-    int iseq_lineno = ISEQ_BODY(unit->iseq)->location.first_lineno;
-    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
-    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
-    strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
-
-    verbose(2, "start compilation: %s@%s:%d -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-    fprintf(f, "/* %s@%s:%d */\n\n", iseq_label, iseq_path, iseq_lineno);
-    bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
-
-    fclose(f);
-    if (!success) {
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
-        verbose(1, "JIT failure: %s@%s:%d -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-    }
-    return success;
 }
 
 static pid_t
@@ -913,79 +931,6 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
     }
 
     return cc_entries_index;
-}
-
-// Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
-static void
-mark_iseq_units(const rb_iseq_t *iseq, void *data)
-{
-    if (ISEQ_BODY(iseq)->mjit_unit != NULL) {
-        ISEQ_BODY(iseq)->mjit_unit->used_code_p = true;
-    }
-}
-
-// Unload JIT code of some units to satisfy the maximum permitted
-// number of units with a loaded code.
-static void
-unload_units(void)
-{
-    struct rb_mjit_unit *unit = 0, *next;
-    int units_num = active_units.length;
-
-    // For now, we don't unload units when ISeq is GCed. We should
-    // unload such ISeqs first here.
-    ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
-        if (unit->iseq == NULL) { // ISeq is GCed.
-            remove_from_list(unit, &active_units);
-            free_unit(unit);
-        }
-    }
-
-    // Detect units which are in use and can't be unloaded.
-    ccan_list_for_each(&active_units.head, unit, unode) {
-        VM_ASSERT(unit->iseq != NULL && unit->handle != NULL);
-        unit->used_code_p = false;
-    }
-    // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
-    // have a mjit_cont. Thus we can check ISeqs in use by scanning ec of mjit_conts.
-    rb_jit_cont_each_iseq(mark_iseq_units, NULL);
-    // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
-
-    // Unload units whose total_calls is smaller than any total_calls in unit_queue.
-    // TODO: make the algorithm more efficient
-    long unsigned prev_queue_calls = -1;
-    while (true) {
-        // Calculate the next max total_calls in unit_queue
-        long unsigned max_queue_calls = 0;
-        ccan_list_for_each(&unit_queue.head, unit, unode) {
-            if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls
-                    && ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
-                max_queue_calls = ISEQ_BODY(unit->iseq)->total_calls;
-            }
-        }
-        prev_queue_calls = max_queue_calls;
-
-        bool unloaded_p = false;
-        ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
-            if (unit->used_code_p) // We can't unload code on stack.
-                continue;
-
-            if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
-                verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
-                        unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
-                VM_ASSERT(unit->handle != NULL);
-                remove_from_list(unit, &active_units);
-                free_unit(unit);
-                unloaded_p = true;
-            }
-        }
-        if (!unloaded_p) break;
-    }
-
-    if (units_num > active_units.length) {
-        verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
-        total_unloads += units_num - active_units.length;
-    }
 }
 
 static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info);
@@ -1110,6 +1055,9 @@ create_unit(enum rb_mjit_unit_type type)
     struct rb_mjit_unit *unit = ZALLOC_N(struct rb_mjit_unit, 1);
     unit->id = current_unit_num++;
     unit->type = type;
+    if (type == MJIT_UNIT_BATCH) {
+        ccan_list_head_init(&unit->units.head);
+    }
     return unit;
 }
 
@@ -1132,28 +1080,26 @@ check_unit_queue(void)
     if (worker_stopped) return;
     if (current_cc_pid != 0) return; // still compiling
 
-    // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
-    // This throttles the call to mitigate locking in unload_units. It also throttles JIT compaction.
-    int throttle_threshold = mjit_opts.max_cache_size / 10;
-    if (unload_requests >= throttle_threshold) {
-        unload_units();
-        unload_requests = 0;
-        if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
-            mjit_opts.max_cache_size++; // avoid infinite loop on `mjit_wait`. Note that --jit-wait is just for testing.
-            verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
-        }
-    }
-    if (active_units.length >= mjit_opts.max_cache_size) return; // wait until unload_units makes a progress
+    // TODO: resurrect unload_units
+    if (active_units_length >= mjit_opts.max_cache_size) return; // wait until unload_units makes a progress
 
-    // Dequeue a unit
-    struct rb_mjit_unit *unit = get_from_list(&unit_queue);
-    if (unit == NULL) return;
-    VM_ASSERT(unit->type == MJIT_UNIT_ISEQ);
+    // No ISEQ in unit_queue has enough calls to trigger JIT
+    if (!mjit_compile_p) return;
+    mjit_compile_p = false;
+
+    // Compile all ISEQs in unit_queue together
+    struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_BATCH);
+    struct rb_mjit_unit *child_unit = NULL;
+    VM_ASSERT(unit_queue.length > 0);
+    while ((child_unit = get_from_list(&unit_queue)) != NULL && (active_units_length + unit->units.length) < mjit_opts.max_cache_size) {
+        add_to_list(child_unit, &unit->units);
+        ISEQ_BODY(child_unit->iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
+    }
 
     // Run the MJIT compiler synchronously
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
-    bool success = mjit_compile_unit(unit);
+    bool success = mjit_batch(unit);
     if (!success) {
         mjit_notify_waitpid(1);
         return;
@@ -1181,19 +1127,13 @@ check_compaction(void)
     int max_compact_size = mjit_opts.max_cache_size / 100;
     if (max_compact_size < 10) max_compact_size = 10;
 
-    // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
-    // This throttles the call to mitigate locking in unload_units. It also throttles JIT compaction.
-    int throttle_threshold = mjit_opts.max_cache_size / 10;
-
-    if (compact_units.length < max_compact_size
-        && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
-            || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
+    if (active_units_length == mjit_opts.max_cache_size) {
         struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_COMPACT);
 
         // Run the MJIT compiler synchronously
         current_cc_ms = real_ms_time();
         current_cc_unit = unit;
-        bool success = mjit_compact_unit(unit);
+        bool success = mjit_compact(unit);
         if (!success) {
             mjit_notify_waitpid(1);
             return;
@@ -1227,9 +1167,8 @@ mjit_notify_waitpid(int exit_code)
     // Check the result
     if (exit_code != 0) {
         verbose(2, "Failed to generate so");
-        if (current_cc_unit->type == MJIT_UNIT_ISEQ) {
-            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
-        }
+        // TODO: set MJIT_FUNC_FAILED to unit->units
+        // TODO: free list of unit->units
         free_unit(current_cc_unit);
         current_cc_unit = NULL;
         return;
@@ -1238,39 +1177,22 @@ mjit_notify_waitpid(int exit_code)
     // Load .so file
     char so_file[MAXPATHLEN];
     sprint_uniq_filename(so_file, (int)sizeof(so_file), current_cc_unit->id, MJIT_TMP_PREFIX, DLEXT);
-    if (current_cc_unit->type == MJIT_UNIT_COMPACT) {
-        load_compact_funcs_from_so(current_cc_unit, c_file, so_file);
-        current_cc_unit = NULL;
-    }
-    else { // MJIT_UNIT_ISEQ
-        // Load the function from so
-        char funcname[MAXPATHLEN];
-        sprint_funcname(funcname, sizeof(funcname), current_cc_unit);
-        void *func = load_func_from_so(so_file, funcname, current_cc_unit);
-
-        // Delete .so file
-        if (!mjit_opts.save_temps)
-            remove_file(so_file);
-
-        // Set the jit_func if successful
-        if (current_cc_unit->iseq != NULL) { // mjit_free_iseq could nullify this
-            rb_iseq_t *iseq = current_cc_unit->iseq;
-            if (!MJIT_FUNC_STATE_P(func)) {
-                double end_time = real_ms_time();
-                verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s",
-                        end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                        RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno, c_file);
-
-                add_to_list(current_cc_unit, &active_units);
-            }
-            MJIT_ATOMIC_SET(ISEQ_BODY(iseq)->jit_func, func);
-        } // TODO: free unit on else?
+    switch (current_cc_unit->type) {
+      case MJIT_UNIT_ISEQ:
+        rb_bug("unreachable: current_cc_unit->type must not be MJIT_UNIT_ISEQ");
+      case MJIT_UNIT_BATCH:
+        load_batch_funcs_from_so(current_cc_unit, c_file, so_file);
         current_cc_unit = NULL;
 
         // Run compaction if it should
         if (!stop_worker_p) {
             check_compaction();
         }
+        break;
+      case MJIT_UNIT_COMPACT:
+        load_compact_funcs_from_so(current_cc_unit, c_file, so_file);
+        current_cc_unit = NULL;
+        break;
     }
 
     // Skip further compilation if mjit_finish is trying to stop it
@@ -1328,13 +1250,29 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     }
 
-    ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
-    create_iseq_unit(iseq);
-    if (compile_info != NULL)
-        ISEQ_BODY(iseq)->mjit_unit->compile_info = *compile_info;
-    add_to_list(ISEQ_BODY(iseq)->mjit_unit, &unit_queue);
-    if (active_units.length >= mjit_opts.max_cache_size) {
-        unload_requests++;
+    // For batching multiple ISEQs, we only enqueue ISEQs when total_calls reaches call_threshold,
+    // and compile all enqueued ISEQs when any ISEQ reaches call_threshold * 2.
+    bool recompile_p = !MJIT_FUNC_STATE_P(ISEQ_BODY(iseq)->jit_func);
+    if (!ISEQ_BODY(iseq)->mjit_unit || recompile_p) { // call_threshold, or recompile
+        // Discard an old unit with recompile_p
+        if (recompile_p) {
+            ISEQ_BODY(iseq)->mjit_unit->iseq = NULL; // Ignore this from compaction
+            ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_NOT_COMPILED;
+            active_units_length--;
+        }
+
+        // Create a new unit and enqueue it
+        struct rb_mjit_unit *unit = create_iseq_unit(iseq);
+        if (recompile_p) {
+            VM_ASSERT(compile_info != NULL);
+            unit->compile_info = *compile_info;
+        }
+        add_to_list(unit, &unit_queue);
+        ISEQ_BODY(iseq)->total_calls = 0; // come here again :)
+    }
+    else { // call_threshold * 2
+        VM_ASSERT(compile_info == NULL);
+        mjit_compile_p = true; // compile all ISEQs in unit_queue
     }
 }
 
@@ -1715,6 +1653,11 @@ mjit_init(const struct mjit_options *opts)
     // Normalize options
     if (mjit_opts.call_threshold == 0)
         mjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
+    if (mjit_opts.call_threshold % 2 == 1) {
+        mjit_opts.call_threshold += 1;
+        mjit_warning("--mjit-call-threshold must be an even number. Using %d instead.", mjit_opts.call_threshold);
+    }
+    mjit_opts.call_threshold /= 2; // Half for enqueue, half for trigger
     if (mjit_opts.max_cache_size <= 0)
         mjit_opts.max_cache_size = DEFAULT_MAX_CACHE_SIZE;
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
