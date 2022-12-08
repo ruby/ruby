@@ -394,11 +394,12 @@ rb_hash_ar_table_size(void)
 size_t
 rb_hash_size_as_embedded(VALUE hash)
 {
+#if RHASH_INLINE_AR_TABLE
     if (RHASH_AR_TABLE_P(hash)) {
         return sizeof(struct RHash) + rb_hash_ar_table_size();
-    } else{
-        return sizeof(struct RHash);
-    }
+    } 
+#endif
+    return sizeof(struct RHash);
 }
 
 static ar_table * ar_alloc_table(VALUE  hash);
