@@ -1721,8 +1721,6 @@ mjit_init(const struct mjit_options *opts)
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
     rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
-    rb_gc_register_mark_object(rb_cMJITCompiler);
-    rb_gc_register_mark_object(rb_cMJITIseqPtr);
 
     mjit_call_p = true;
     mjit_pid = getpid();
@@ -1922,6 +1920,11 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
+    // Mark objects used by the MJIT compiler
+    rb_gc_mark(rb_cMJITCompiler);
+    rb_gc_mark(rb_cMJITIseqPtr);
+
+    // Mark JIT-compiled ISEQs
     struct rb_mjit_unit *unit = NULL;
     ccan_list_for_each(&active_units.head, unit, unode) {
         rb_gc_mark((VALUE)unit->iseq);
