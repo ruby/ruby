@@ -660,7 +660,7 @@ fn jump_to_next_insn(
 ) {
     // Reset the depth since in current usages we only ever jump to to
     // chain_depth > 0 from the same instruction.
-    let mut reset_depth = *current_context;
+    let mut reset_depth = current_context.clone();
     reset_depth.reset_chain_depth();
 
     let jump_block = BlockId {
@@ -1870,7 +1870,7 @@ fn jit_chain_guard(
     };
 
     if (ctx.get_chain_depth() as i32) < depth_limit {
-        let mut deeper = *ctx;
+        let mut deeper = ctx.clone();
         deeper.increment_chain_depth();
         let bid = BlockId {
             iseq: jit.iseq,
@@ -1964,7 +1964,7 @@ fn gen_get_ivar(
     side_exit: CodePtr,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
-    let starting_context = *ctx; // make a copy for use with jit_chain_guard
+    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
     // If recv isn't already a register, load it.
     let recv = match recv {
@@ -2178,7 +2178,7 @@ fn gen_setinstancevariable(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let starting_context = *ctx; // make a copy for use with jit_chain_guard
+    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
@@ -3357,7 +3357,7 @@ fn gen_opt_case_dispatch(
         defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
-    let starting_context = *ctx;
+    let starting_context = ctx.clone();
 
     let case_hash = jit_get_arg(jit, 0);
     let else_offset = jit_get_arg(jit, 1).as_u32();
@@ -5359,7 +5359,7 @@ fn gen_send_iseq(
     // Pop arguments and receiver in return context, push the return value
     // After the return, sp_offset will be 1. The codegen for leave writes
     // the return value in case of JIT-to-JIT return.
-    let mut return_ctx = *ctx;
+    let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
     return_ctx.stack_push(Type::Unknown);
     return_ctx.set_sp_offset(1);
@@ -5728,7 +5728,7 @@ fn gen_send_general(
                         // instead we look up the method and call it,
                         // doing some stack shifting based on the VM_CALL_OPT_SEND flag
 
-                        let starting_context = *ctx;
+                        let starting_context = ctx.clone();
 
                         if argc == 0 {
                             gen_counter_incr!(asm, send_send_wrong_args);
@@ -6642,7 +6642,7 @@ fn gen_getblockparamproxy(
         return EndBlock;
     }
 
-    let starting_context = *ctx; // make a copy for use with jit_chain_guard
+    let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
