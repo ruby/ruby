@@ -47,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: "check-yjit-bindings"
+          - test_task: "yjit-bindgen"
             hint: "To fix: use patch in logs"
             configure: "--with-gcc=clang-12 --enable-yjit=dev"
 
