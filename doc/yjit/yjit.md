@@ -29,16 +29,24 @@ If you wish to learn more about the approach taken, here are some conference tal
 - ECOOP 2015 talk: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://www.youtube.com/watch?v=S-aHBuoiYE0)
 - ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf)
 
-To cite this repository in your publications, please use this bibtex snippet:
+To cite YJIT in your publications, please cite the VMIL 2021 paper:
 
 ```
-@misc{yjit_ruby_jit,
-  author = {Chevalier-Boisvert, Maxime and Wu, Alan and Patterson, Aaron},
-  title = {YJIT - Yet Another Ruby JIT},
-  year = {2021},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Shopify/yjit}},
+@inproceedings{yjit_vmil2021,
+author = {Chevalier-Boisvert, Maxime and Gibbs, Noah and Boussier, Jean and Wu, Si Xing (Alan) and Patterson, Aaron and Newton, Kevin and Hawthorn, John},
+title = {YJIT: A Basic Block Versioning JIT Compiler for CRuby},
+year = {2021},
+isbn = {9781450391092},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3486606.3486781},
+doi = {10.1145/3486606.3486781},
+booktitle = {Proceedings of the 13th ACM SIGPLAN International Workshop on Virtual Machines and Intermediate Languages},
+pages = {25–32},
+numpages = {8},
+keywords = {ruby, dynamically typed, compiler, optimization, just-in-time, bytecode},
+location = {Chicago, IL, USA},
+series = {VMIL 2021}
 }
 ```
 
@@ -146,10 +154,10 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 10)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 256 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
-- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must compile with `cppflags=-DRUBY_DEBUG` to use this)
+- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 128 MiB)
+- `--yjit-stats`: produce statistics after the execution of a program
+- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
 
@@ -175,19 +183,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
 - CRuby method calls are costly. Favor larger methods over smaller methods.
 - Try to write code so that the same variables always have the same type
 
-You can also compile YJIT in debug mode and use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
-
-### Memory Statistics
-
-YJIT, including in production configuration, keeps track of the size of generated code. If you check `YJIT.runtime_stats` you can see them:
-
-```
-$ RUBYOPT="--yjit" irb
-irb(main):001:0> RubyVM::YJIT.runtime_stats
-=> {:inline_code_size=>331945, :outlined_code_size=>272980}
-```
-
-These are the size in bytes of generated inlined code and generated outlined code. If the combined sizes for generated code are very close to the total YJIT exec-mem-size (see above), YJIT will stop generating code once the limit is reached. Try to make sure you have enough exec-mem-size for the program you're running. By default YJIT will allocate 268,435,456 bytes (256 MiB) of space for generated inlined and outlined code.
+You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
 ### Other Statistics
 

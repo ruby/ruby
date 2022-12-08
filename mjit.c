@@ -1145,6 +1145,7 @@ check_unit_queue(void)
     // Dequeue a unit
     struct rb_mjit_unit *unit = get_from_list(&unit_queue);
     if (unit == NULL) return;
+    VM_ASSERT(!unit->compact_p);
 
     // Run the MJIT compiler synchronously
     current_cc_ms = real_ms_time();
@@ -1164,7 +1165,7 @@ check_unit_queue(void)
         current_cc_pid = start_c_compile_unit(unit);
         if (current_cc_pid == -1) { // JIT failure
             current_cc_pid = 0;
-            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // TODO: consider unit->compact_p
+            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
             current_cc_unit = NULL;
         }
     }

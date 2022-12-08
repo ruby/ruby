@@ -315,6 +315,7 @@ module SyncDefaultGems
       rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
       cp_r("#{upstream}/ext/cgi", "ext")
       cp_r("#{upstream}/lib", ".")
+      rm_rf("lib/cgi/escape.jar")
       cp_r("#{upstream}/test/cgi", "test")
       cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
       `git checkout ext/cgi/escape/depend`

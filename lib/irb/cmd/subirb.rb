@@ -10,31 +10,44 @@
 #
 
 require_relative "nop"
-require_relative "../ext/multi-irb"
 
 module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class IrbCommand < Nop
+    class MultiIRBCommand < Nop
+      def initialize(conf)
+        super
+        extend_irb_context
+      end
+
+      private
+
+      def extend_irb_context
+        # this extension patches IRB context like IRB.CurrentContext
+        require_relative "../ext/multi-irb"
+      end
+    end
+
+    class IrbCommand < MultiIRBCommand
       def execute(*obj)
         IRB.irb(nil, *obj)
       end
     end
 
-    class Jobs < Nop
+    class Jobs < MultiIRBCommand
       def execute
         IRB.JobManager
       end
     end
 
-    class Foreground < Nop
+    class Foreground < MultiIRBCommand
       def execute(key)
         IRB.JobManager.switch(key)
       end
     end
 
-    class Kill < Nop
+    class Kill < MultiIRBCommand
       def execute(*keys)
         IRB.JobManager.kill(*keys)
       end
