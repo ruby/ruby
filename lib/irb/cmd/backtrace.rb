@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Backtrace < Debug
+    class Backtrace < DebugCommand
       def self.transform_args(args)
         args&.dump
       end

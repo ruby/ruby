@@ -14,6 +14,17 @@ module IRB
 
   module ExtendCommand
     class Nop
+      class << self
+        def category(category = nil)
+          @category = category if category
+          @category
+        end
+
+        def description(description = nil)
+          @description = description if description
+          @description
+        end
+      end
 
       if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
         def self.execute(conf, *opts, **kwargs, &block)

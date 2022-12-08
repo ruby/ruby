@@ -20,6 +20,9 @@ module IRB
     class Load < Nop
       include IrbLoader
 
+      category "IRB"
+      description "Load a Ruby file."
+
       def execute(file_name, priv = nil)
         return irb_load(file_name, priv)
       end
@@ -27,6 +30,9 @@ module IRB
 
     class Require < Nop
       include IrbLoader
+
+      category "IRB"
+      description "Require a Ruby file."
 
       def execute(file_name)
 
@@ -58,6 +64,10 @@ module IRB
 
     class Source < Nop
       include IrbLoader
+
+      category "IRB"
+      description "Loads a given file in the current session."
+
       def execute(file_name)
         source_file(file_name)
       end

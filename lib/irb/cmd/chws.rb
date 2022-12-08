@@ -19,12 +19,18 @@ module IRB
   module ExtendCommand
 
     class CurrentWorkingWorkspace < Nop
+      category "IRB"
+      description "Show the current workspace."
+
       def execute(*obj)
         irb_context.main
       end
     end
 
     class ChangeWorkspace < Nop
+      category "IRB"
+      description "Change the current workspace to an object."
+
       def execute(*obj)
         irb_context.change_workspace(*obj)
         irb_context.main

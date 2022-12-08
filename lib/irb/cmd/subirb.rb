@@ -30,24 +30,36 @@ module IRB
     end
 
     class IrbCommand < MultiIRBCommand
+      category "IRB"
+      description "Start a child IRB."
+
       def execute(*obj)
         IRB.irb(nil, *obj)
       end
     end
 
     class Jobs < MultiIRBCommand
+      category "IRB"
+      description "List of current sessions."
+
       def execute
         IRB.JobManager
       end
     end
 
     class Foreground < MultiIRBCommand
+      category "IRB"
+      description "Switches to the session of the given number."
+
       def execute(key)
         IRB.JobManager.switch(key)
       end
     end
 
     class Kill < MultiIRBCommand
+      category "IRB"
+      description "Kills the session with the given number."
+
       def execute(*keys)
         IRB.JobManager.kill(*keys)
       end

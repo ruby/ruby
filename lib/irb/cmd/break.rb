@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Break < Debug
+    class Break < DebugCommand
       def self.transform_args(args)
         args&.dump
       end

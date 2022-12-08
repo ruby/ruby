@@ -6,6 +6,9 @@ module IRB
 
   module ExtendCommand
     class Edit < Nop
+      category "Misc"
+      description 'Open a file with the editor command defined with `ENV["EDITOR"]`.'
+
       class << self
         def transform_args(args)
           # Return a string literal as is for backward compatibility

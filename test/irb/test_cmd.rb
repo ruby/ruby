@@ -583,6 +583,16 @@ module TestIRB
       $bar = nil
     end
 
+    def test_show_cmds
+      out, err = execute_lines(
+        "show_cmds\n"
+      )
+
+      assert_empty err
+      assert_match(/List all available commands and their description/, out)
+      assert_match(/Start the debugger of debug\.gem/, out)
+    end
+
     class EditTest < CommandTestCase
       def setup
         @original_editor = ENV["EDITOR"]

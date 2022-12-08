@@ -9,6 +9,9 @@ module IRB
 
   module ExtendCommand
     class ShowSource < Nop
+      category "Context"
+      description "Show the source code of a given method or constant."
+
       class << self
         def transform_args(args)
           # Return a string literal as is for backward compatibility
