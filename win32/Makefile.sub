@@ -16,6 +16,23 @@ empty =
 MFLAGS=-l
 !endif
 
+!if "$(BASERUBY)" == ""
+! if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
+! else
+!   include baseruby.mk
+! endif
+! if [del baseruby.mk]
+! endif
+!else if "$(BASERUBY)" == "no" || [($(BASERUBY) -eexit) > nul 2> nul]
+BASERUBY =
+!endif
+!if "$(BASERUBY)" == ""
+BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+HAVE_BASERUBY = no
+!else
+HAVE_BASERUBY = yes
+!endif
+
 !ifndef REVISION_FORCE
 !if "$(HAVE_BASERUBY)" == "yes"
 REVISION_FORCE = PHONY

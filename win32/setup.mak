@@ -67,19 +67,7 @@ MJIT_SUPPORT = $(MJIT_SUPPORT)
 <<
 !if defined(BASERUBY)
 	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
-!else
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I --disable=gems>> $(MAKEFILE)
 !endif
-	@type << >> $(MAKEFILE)
-$(BANG)if "$$(BASERUBY)" == ""
-BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
-HAVE_BASERUBY = no
-$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
-HAVE_BASERUBY = yes
-$(BANG)else
-HAVE_BASERUBY = no
-$(BANG)endif
-<<
 !if "$(RUBY_DEVEL)" == "yes"
 	RUBY_DEVEL = yes
 !endif
