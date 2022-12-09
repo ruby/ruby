@@ -1167,9 +1167,7 @@ check_unit_queue(void)
     else {
         current_cc_pid = start_c_compile_unit(unit);
         if (current_cc_pid == -1) { // JIT failure
-            current_cc_pid = 0;
-            current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
-            current_cc_unit = NULL;
+            mjit_notify_waitpid(1);
         }
     }
 }
@@ -1208,7 +1206,9 @@ check_compaction(void)
         }
         else {
             current_cc_pid = start_c_compile_unit(unit);
-            // TODO: check -1
+            if (current_cc_pid == -1) { // JIT failure
+                mjit_notify_waitpid(1);
+            }
         }
     }
 }
