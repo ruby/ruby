@@ -21,8 +21,8 @@
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
 enum rb_mjit_func_state {
-    // ISEQ has never been enqueued to unit_queue yet
-    MJIT_FUNC_NOT_QUEUED = 0,
+    // ISEQ has not been compiled yet
+    MJIT_FUNC_NOT_COMPILED = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
     MJIT_FUNC_COMPILING = 1,

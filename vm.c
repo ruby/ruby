@@ -389,10 +389,10 @@ static inline VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t 
 static VALUE
 mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
-    uintptr_t func_i = (uintptr_t)(body->jit_func);
-    ASSUME(MJIT_FUNC_STATE_P(func_i));
-    switch ((enum rb_mjit_func_state)func_i) {
-      case MJIT_FUNC_NOT_QUEUED:
+    uintptr_t mjit_state = (uintptr_t)(body->jit_func);
+    ASSUME(MJIT_FUNC_STATE_P(mjit_state));
+    switch ((enum rb_mjit_func_state)mjit_state) {
+      case MJIT_FUNC_NOT_COMPILED:
         if (body->total_calls == mjit_opts.call_threshold) {
             rb_mjit_add_iseq_to_process(iseq);
             if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
