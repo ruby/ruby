@@ -1128,7 +1128,7 @@ static void mjit_wait(struct rb_mjit_unit *unit);
 static void
 check_unit_queue(void)
 {
-    if (mjit_opts.custom) return;
+    if (mjit_opts.custom) return; // Custom RubyVM::MJIT.compile is in use
     if (worker_stopped) return;
     if (current_cc_pid != 0) return; // still compiling
 
@@ -1319,7 +1319,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 {
     if (!mjit_enabled || pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
-    if (mjit_opts.custom) {
+    if (mjit_opts.custom) { // Hook custom RubyVM::MJIT.compile if defined
         mjit_hook_custom_compile(iseq);
         return;
     }
