@@ -57,6 +57,14 @@ class TestProtocol < Test::Unit::TestCase
     mockio
   end
 
+  def test_readuntil
+    assert_output("", "") do
+      sio = StringIO.new("12345".dup)
+      io = Net::BufferedIO.new(sio)
+      assert_equal "12345", io.readuntil("5")
+    end
+  end
+
   def test_write0_multibyte
     mockio = create_mockio(max: 1)
     io = Net::BufferedIO.new(mockio)

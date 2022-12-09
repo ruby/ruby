@@ -120,6 +120,7 @@ module Net # :nodoc:
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.b
+      @rbuf_empty = true
       @rbuf_offset = 0
     end
 
