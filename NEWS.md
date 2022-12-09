@@ -400,6 +400,7 @@ Note: We're only listing outstanding class updates.
     * bigdecimal 3.1.3
     * bundler 2.4.0.dev
     * cgi 0.3.6
+    * csv 3.2.6
     * date 3.3.0
     * delegate 0.3.0
     * did_you_mean 1.6.2
@@ -418,7 +419,7 @@ Note: We're only listing outstanding class updates.
     * io-wait 0.3.0.pre
     * ipaddr 1.2.5
     * irb 1.6.0
-    * json 2.6.2
+    * json 2.6.3
     * logger 1.5.2
     * mutex_m 0.1.2
     * net-http 0.3.1
@@ -438,7 +439,8 @@ Note: We're only listing outstanding class updates.
     * resolv 0.2.2
     * securerandom 0.2.1
     * set 1.0.3
-    * stringio 3.0.5
+    * stringio 3.0.4
+    * strscan 3.0.5
     * syntax_suggest 1.0.1
     * timeout 0.3.1
     * tmpdir 0.1.3
@@ -446,6 +448,7 @@ Note: We're only listing outstanding class updates.
     * un 0.2.1
     * uri 0.12.0
     * win32ole 1.8.9
+    * yaml 0.2.1
     * zlib 3.0.0
 
 *   The following bundled gems are updated.
