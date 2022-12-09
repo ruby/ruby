@@ -1263,7 +1263,6 @@ ar_copy(VALUE hash1, VALUE hash2)
         if (new_tab == NULL) {
 #if RHASH_INLINE_AR_TABLE
             new_tab = ar_alloc_table(hash1);
-        }
 #else
             new_tab = (ar_table*) rb_transient_heap_alloc(hash1, sizeof(ar_table));
             if (new_tab != NULL) {
@@ -1273,14 +1272,15 @@ ar_copy(VALUE hash1, VALUE hash2)
                 RHASH_UNSET_TRANSIENT_FLAG(hash1);
                 new_tab = (ar_table*)ruby_xmalloc(sizeof(ar_table));
             }
-        }
-        *new_tab = *old_tab;
 #endif
+        }
         RHASH(hash1)->ar_hint.word = RHASH(hash2)->ar_hint.word;
         RHASH_AR_TABLE_BOUND_SET(hash1, RHASH_AR_TABLE_BOUND(hash2));
         RHASH_AR_TABLE_SIZE_SET(hash1, RHASH_AR_TABLE_SIZE(hash2));
 #if RHASH_INLINE_AR_TABLE
         memcpy(new_tab, old_tab, sizeof(ar_table));
+#else
+        *new_tab = *old_tab;
 #endif
         hash_ar_table_set(hash1, new_tab);
         rb_gc_writebarrier_remember(hash1);
