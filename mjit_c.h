@@ -14,23 +14,35 @@
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
+// Type of rb_mjit_unit
+enum rb_mjit_unit_type {
+    // Single-ISEQ unit for mjit_compile
+    MJIT_UNIT_ISEQ = 0,
+    // All-ISEQ unit for mjit_compact
+    MJIT_UNIT_COMPACT = 1,
+};
+
 // The unit structure that holds metadata of ISeq for MJIT.
+// TODO: Use different structs for ISEQ and COMPACT
 struct rb_mjit_unit {
     struct ccan_list_node unode;
     // Unique order number of unit.
     int id;
     // Dlopen handle of the loaded object file.
     void *handle;
+    // Type of this unit
+    enum rb_mjit_unit_type type;
+
+    // ISEQ for a non-batch unit
     rb_iseq_t *iseq;
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    // True if it's a unit for JIT compaction
-    bool compact_p;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
+    // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
+    unsigned int cc_entries_size;
 };
 
 // Storage to keep data which is consistent in each conditional branch.

@@ -1104,6 +1104,24 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
     list->length = 0;
 }
 
+static struct rb_mjit_unit*
+create_unit(enum rb_mjit_unit_type type)
+{
+    struct rb_mjit_unit *unit = ZALLOC_N(struct rb_mjit_unit, 1);
+    unit->id = current_unit_num++;
+    unit->type = type;
+    return unit;
+}
+
+static struct rb_mjit_unit*
+create_iseq_unit(const rb_iseq_t *iseq)
+{
+    struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_ISEQ);
+    unit->iseq = (rb_iseq_t *)iseq;
+    ISEQ_BODY(iseq)->jit_unit = unit;
+    return unit;
+}
+
 static void mjit_wait(struct rb_mjit_unit *unit);
 
 // Check the unit queue and start mjit_compile if nothing is in progress.
@@ -1130,7 +1148,7 @@ check_unit_queue(void)
     // Dequeue a unit
     struct rb_mjit_unit *unit = get_from_list(&unit_queue);
     if (unit == NULL) return;
-    VM_ASSERT(!unit->compact_p);
+    VM_ASSERT(unit->type == MJIT_UNIT_ISEQ);
 
     // Run the MJIT compiler synchronously
     current_cc_ms = real_ms_time();
@@ -1156,22 +1174,6 @@ check_unit_queue(void)
     }
 }
 
-// Create unit for `iseq`. This function may be called from an MJIT worker.
-static struct rb_mjit_unit*
-create_unit(const rb_iseq_t *iseq)
-{
-    struct rb_mjit_unit *unit = ZALLOC_N(struct rb_mjit_unit, 1);
-    unit->id = current_unit_num++;
-    if (iseq == NULL) { // Compact unit
-        unit->compact_p = true;
-    }
-    else { // Normal unit
-        unit->iseq = (rb_iseq_t *)iseq;
-        ISEQ_BODY(iseq)->jit_unit = unit;
-    }
-    return unit;
-}
-
 // Check if it should compact all JIT code and start it as needed
 static void
 check_compaction(void)
@@ -1188,7 +1190,7 @@ check_compaction(void)
     if (compact_units.length < max_compact_size
         && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
             || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
-        struct rb_mjit_unit *unit = create_unit(NULL);
+        struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_COMPACT);
 
         // Run the MJIT compiler synchronously
         current_cc_ms = real_ms_time();
@@ -1225,7 +1227,7 @@ mjit_notify_waitpid(int exit_code)
     // Check the result
     if (exit_code != 0) {
         verbose(2, "Failed to generate so");
-        if (!current_cc_unit->compact_p) {
+        if (current_cc_unit->type == MJIT_UNIT_ISEQ) {
             current_cc_unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
         }
         free_unit(current_cc_unit);
@@ -1236,11 +1238,11 @@ mjit_notify_waitpid(int exit_code)
     // Load .so file
     char so_file[MAXPATHLEN];
     sprint_uniq_filename(so_file, (int)sizeof(so_file), current_cc_unit->id, MJIT_TMP_PREFIX, DLEXT);
-    if (current_cc_unit->compact_p) { // Compact unit
+    if (current_cc_unit->type == MJIT_UNIT_COMPACT) {
         load_compact_funcs_from_so(current_cc_unit, c_file, so_file);
         current_cc_unit = NULL;
     }
-    else { // Normal unit
+    else { // MJIT_UNIT_ISEQ
         // Load the function from so
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, sizeof(funcname), current_cc_unit);
@@ -1327,7 +1329,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     }
 
     ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
-    create_unit(iseq);
+    create_iseq_unit(iseq);
     if (compile_info != NULL)
         ISEQ_BODY(iseq)->jit_unit->compile_info = *compile_info;
     add_to_list(ISEQ_BODY(iseq)->jit_unit, &unit_queue);
@@ -1363,7 +1365,7 @@ mjit_wait(struct rb_mjit_unit *unit)
     while (current_cc_pid == initial_pid) {
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS) {
-            if (!unit->compact_p) {
+            if (unit->type == MJIT_UNIT_ISEQ) {
                 unit->iseq->body->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // C compiler was too slow. Give up.
             }
             mjit_warning("timed out to wait for JIT finish");

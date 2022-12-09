@@ -621,9 +621,9 @@ module RubyVM::MJIT
       unode: [self.ccan_list_node, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), unode)")],
       id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), id)")],
       handle: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), handle)")],
+      type: [self.rb_mjit_unit_type, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), type)")],
       iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), iseq)")],
       used_code_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), used_code_p)")],
-      compact_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compact_p)")],
       compile_info: [self.rb_mjit_compile_info, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compile_info)")],
       cc_entries: [CType::Pointer.new { CType::Pointer.new { self.rb_callcache } }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries)")],
       cc_entries_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries_size)")],
@@ -781,6 +781,10 @@ module RubyVM::MJIT
 
   def C.ccan_list_node
     CType::Stub.new(:ccan_list_node)
+  end
+
+  def C.rb_mjit_unit_type
+    CType::Stub.new(:rb_mjit_unit_type)
   end
 
   ### MJIT bindgen end ###
