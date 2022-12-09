@@ -1422,8 +1422,6 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
 
-                RUBY_ASSERT(dest_shape->type == SHAPE_IVAR);
-
                 if (shape_id == source_shape_id && dest_shape->edge_name == id) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
 

@@ -242,9 +242,10 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             // has the same attributes as this shape.
             if (new_parent) {
                 rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type);
+                new_child->capacity = shape->capacity;
+
                 if (new_child->type == SHAPE_IVAR) {
                     move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
-
                 }
 
                 return new_child;
