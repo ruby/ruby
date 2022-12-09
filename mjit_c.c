@@ -2,7 +2,7 @@
 
   mjit_c.c - C helpers for MJIT
 
-  Copyright (C) 2017 Takashi Kokubun <takashikkbn@gmail.com>.
+  Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
 
 **********************************************************************/
 

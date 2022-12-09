@@ -3,6 +3,7 @@
   mjit.c - MRI method JIT compiler functions for Ruby's main thread
 
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
+  Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
 
 **********************************************************************/
 
