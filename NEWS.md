@@ -407,7 +407,7 @@ Note: We're only listing outstanding class updates.
     * drb 2.1.1
     * erb 4.0.2
     * error_highlight 0.5.1
-    * etc 1.4.1
+    * etc 1.4.2
     * fcntl 1.0.2
     * fiddle 1.1.1
     * fileutils 1.7.0
