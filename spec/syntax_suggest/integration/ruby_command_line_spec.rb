@@ -76,9 +76,17 @@ module SyntaxSuggest
       end
     end
 
-    it "annotates a syntax error in Ruby 3.2+ when require is not used" do
-      pending("Support for SyntaxError#detailed_message monkeypatch needed https://gist.github.com/schneems/09f45cc23b9a8c46e9af6acbb6e6840d?permalink_comment_id=4172585#gistcomment-4172585")
+    it "gem can be tested when executing on Ruby with default gem included" do
+      skip if ruby_core?
+      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
+      out = `ruby -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
+
+      expect($?.success?).to be_truthy
+      expect(out).to include(lib_dir.join("syntax_suggest").join("core_ext.rb").to_s).once
+    end
+
+    it "annotates a syntax error in Ruby 3.2+ when require is not used" do
       skip if ruby_core?
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
