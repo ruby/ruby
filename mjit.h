@@ -2,7 +2,7 @@
 #define RUBY_MJIT_H 1
 /**********************************************************************
 
-  mjit.h - Interface to MRI method JIT compiler for Ruby's main thread
+  mjit.h - Interface to MRI method JIT compiler
 
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
   Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
