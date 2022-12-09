@@ -6590,6 +6590,41 @@ fn gen_setclassvariable(
     KeepCompiling
 }
 
+fn gen_getconstant(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+
+    let id = jit_get_arg(jit, 0).as_usize();
+
+    // vm_get_ev_const can raise exceptions.
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    let allow_nil_opnd = ctx.stack_pop(1);
+    let klass_opnd = ctx.stack_pop(1);
+
+    extern "C" {
+        fn rb_vm_get_ev_const(ec: EcPtr, klass: VALUE, id: ID, allow_nil: VALUE) -> VALUE;
+    }
+
+    let val_opnd = asm.ccall(
+        rb_vm_get_ev_const as *const u8,
+        vec![
+            EC,
+            klass_opnd,
+            id.into(),
+            allow_nil_opnd
+        ],
+    );
+
+    let top = ctx.stack_push(Type::Unknown);
+    asm.mov(top, val_opnd);
+
+    KeepCompiling
+}
+
 fn gen_opt_getconstant_path(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -6993,6 +7028,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
+        YARVINSN_getconstant => Some(gen_getconstant),
         YARVINSN_opt_getconstant_path => Some(gen_opt_getconstant_path),
         YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
