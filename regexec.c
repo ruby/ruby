@@ -3774,6 +3774,11 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  DATA_ENSURE(0);
 	  p += addr;
 	}
+	else if (s == end) {
+	  /* At the end of the string, just match with it */
+	  DATA_ENSURE(0);
+	  p += addr;
+	}
 	else {
 	  STACK_PUSH_ALT(p + addr, s, sprev, pkeep); /* Push possible point. */
 	  n = enclen(encode, s, end);
