@@ -825,7 +825,7 @@ class RubyVM::MJIT::Compiler
   end
 
   def captured_cc_entries(status)
-    status.compiled_iseq.jit_unit.cc_entries + status.cc_entries_index
+    status.compiled_iseq.mjit_unit.cc_entries + status.cc_entries_index
   end
 
   def call_data_index(cd, body)
@@ -842,7 +842,7 @@ class RubyVM::MJIT::Compiler
   end
 
   def rb_mjit_iseq_compile_info(body)
-    body.jit_unit.compile_info
+    body.mjit_unit.compile_info
   end
 
   def ISEQ_IS_SIZE(body)

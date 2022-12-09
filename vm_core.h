@@ -503,12 +503,14 @@ struct rb_iseq_constant_body {
 
     const rb_iseq_t *mandatory_only_iseq;
 
-#if USE_MJIT
+#if USE_MJIT || USE_YJIT
     /* The following fields are MJIT related info.  */
     VALUE (*jit_func)(struct rb_execution_context_struct *,
                       struct rb_control_frame_struct *); /* function pointer for loaded native code */
     long unsigned total_calls; /* number of total calls with `jit_exec()` */
-    struct rb_mjit_unit *jit_unit;
+#endif
+#if USE_MJIT
+    struct rb_mjit_unit *mjit_unit;
 #endif
 
 #if USE_YJIT

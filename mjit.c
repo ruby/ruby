@@ -323,7 +323,7 @@ free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) { // ISeq is not GCed
         ISEQ_BODY(unit->iseq)->jit_func = (jit_func_t)MJIT_FUNC_FAILED;
-        ISEQ_BODY(unit->iseq)->jit_unit = NULL;
+        ISEQ_BODY(unit->iseq)->mjit_unit = NULL;
     }
     if (unit->cc_entries) {
         void *entries = (void *)unit->cc_entries;
@@ -688,7 +688,7 @@ mjit_compact(char* c_file)
     struct rb_mjit_unit *child_unit = 0;
     ccan_list_for_each(&active_units.head, child_unit, unode) {
         if (!success) continue;
-        if (ISEQ_BODY(child_unit->iseq)->jit_unit == NULL) continue; // Sometimes such units are created. TODO: Investigate why
+        if (ISEQ_BODY(child_unit->iseq)->mjit_unit == NULL) continue; // Sometimes such units are created. TODO: Investigate why
 
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, sizeof(funcname), child_unit);
@@ -872,10 +872,10 @@ start_c_compile_unit(struct rb_mjit_unit *unit)
     }
 }
 
-// Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
+// Capture cc entries of `captured_iseq` and append them to `compiled_iseq->mjit_unit->cc_entries`.
 // This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
 //
-// Index to refer to `compiled_iseq->jit_unit->cc_entries` is returned instead of the address
+// Index to refer to `compiled_iseq->mjit_unit->cc_entries` is returned instead of the address
 // because old addresses may be invalidated by `realloc` later. -1 is returned on failure.
 //
 // This assumes that it's safe to reference cc without acquiring GVL.
@@ -883,10 +883,10 @@ int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
 {
     VM_ASSERT(compiled_iseq != NULL);
-    VM_ASSERT(compiled_iseq->jit_unit != NULL);
+    VM_ASSERT(compiled_iseq->mjit_unit != NULL);
     VM_ASSERT(captured_iseq != NULL);
 
-    struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
+    struct rb_mjit_unit *unit = compiled_iseq->mjit_unit;
     unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
     VM_ASSERT(captured_iseq->ci_size > 0);
 
@@ -919,8 +919,8 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
 static void
 mark_iseq_units(const rb_iseq_t *iseq, void *data)
 {
-    if (ISEQ_BODY(iseq)->jit_unit != NULL) {
-        ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
+    if (ISEQ_BODY(iseq)->mjit_unit != NULL) {
+        ISEQ_BODY(iseq)->mjit_unit->used_code_p = true;
     }
 }
 
@@ -1031,8 +1031,8 @@ mjit_update_references(const rb_iseq_t *iseq)
         return;
 
     CRITICAL_SECTION_START(4, "mjit_update_references");
-    if (ISEQ_BODY(iseq)->jit_unit) {
-        ISEQ_BODY(iseq)->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)ISEQ_BODY(iseq)->jit_unit->iseq);
+    if (ISEQ_BODY(iseq)->mjit_unit) {
+        ISEQ_BODY(iseq)->mjit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)ISEQ_BODY(iseq)->mjit_unit->iseq);
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
@@ -1040,7 +1040,7 @@ mjit_update_references(const rb_iseq_t *iseq)
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
-    // `ISEQ_BODY(iseq)->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // `ISEQ_BODY(iseq)->mjit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
     ccan_list_for_each(&stale_units.head, unit, unode) {
@@ -1059,13 +1059,13 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     if (!mjit_enabled)
         return;
 
-    if (ISEQ_BODY(iseq)->jit_unit) {
-        // jit_unit is not freed here because it may be referred by multiple
+    if (ISEQ_BODY(iseq)->mjit_unit) {
+        // mjit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
-        ISEQ_BODY(iseq)->jit_unit->iseq = NULL;
+        ISEQ_BODY(iseq)->mjit_unit->iseq = NULL;
     }
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
-    // `ISEQ_BODY(iseq)->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // `ISEQ_BODY(iseq)->mjit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
     ccan_list_for_each(&stale_units.head, unit, unode) {
@@ -1118,7 +1118,7 @@ create_iseq_unit(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit *unit = create_unit(MJIT_UNIT_ISEQ);
     unit->iseq = (rb_iseq_t *)iseq;
-    ISEQ_BODY(iseq)->jit_unit = unit;
+    ISEQ_BODY(iseq)->mjit_unit = unit;
     return unit;
 }
 
@@ -1331,8 +1331,8 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_COMPILING;
     create_iseq_unit(iseq);
     if (compile_info != NULL)
-        ISEQ_BODY(iseq)->jit_unit->compile_info = *compile_info;
-    add_to_list(ISEQ_BODY(iseq)->jit_unit, &unit_queue);
+        ISEQ_BODY(iseq)->mjit_unit->compile_info = *compile_info;
+    add_to_list(ISEQ_BODY(iseq)->mjit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
@@ -1379,8 +1379,8 @@ mjit_wait(struct rb_mjit_unit *unit)
 struct rb_mjit_compile_info*
 rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 {
-    VM_ASSERT(body->jit_unit != NULL);
-    return &body->jit_unit->compile_info;
+    VM_ASSERT(body->mjit_unit != NULL);
+    return &body->mjit_unit->compile_info;
 }
 
 static void
@@ -1391,9 +1391,9 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
-    VM_ASSERT(ISEQ_BODY(iseq)->jit_unit != NULL);
+    VM_ASSERT(ISEQ_BODY(iseq)->mjit_unit != NULL);
 
-    mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info);
+    mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->mjit_unit->compile_info);
     check_unit_queue();
 }
 
@@ -1917,9 +1917,9 @@ void
 mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
     const struct rb_callcache **cc_entries;
-    if (body->jit_unit && (cc_entries = body->jit_unit->cc_entries) != NULL) {
-        // It must be `body->jit_unit->cc_entries_size` instead of `body->ci_size` to mark children's cc_entries
-        for (unsigned int i = 0; i < body->jit_unit->cc_entries_size; i++) {
+    if (body->mjit_unit && (cc_entries = body->mjit_unit->cc_entries) != NULL) {
+        // It must be `body->mjit_unit->cc_entries_size` instead of `body->ci_size` to mark children's cc_entries
+        for (unsigned int i = 0; i < body->mjit_unit->cc_entries_size; i++) {
             const struct rb_callcache *cc = cc_entries[i];
             if (cc != NULL && vm_cc_markable(cc)) {
                 // Pin `cc` and `cc->cme` against GC.compact as their addresses may be written in JIT-ed code.
