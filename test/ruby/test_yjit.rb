@@ -389,6 +389,29 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles("'foo' =~ /(o)./; $2", insns: %i[getspecial], result: nil)
   end
 
+  def test_compile_getconstant
+    assert_compiles(<<~RUBY, insns: %i[getconstant], result: [], call_threshold: 1)
+      def get_argv(klass)
+        klass::ARGV
+      end
+
+      get_argv(Object)
+    RUBY
+  end
+
+  def test_compile_getconstant_with_sp_offset
+    assert_compiles(<<~RUBY, insns: %i[getconstant], result: 2, call_threshold: 1)
+      class Foo
+        Bar = 1
+      end
+
+      2.times do
+        s = Foo # this opt_getconstant_path needs warmup, so 2.times is needed
+        Class.new(Foo).const_set(:Bar, s::Bar)
+      end
+    RUBY
+  end
+
   def test_compile_opt_getconstant_path
     assert_compiles(<<~RUBY, insns: %i[opt_getconstant_path], result: 123, call_threshold: 2)
       def get_foo

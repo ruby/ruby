@@ -6563,11 +6563,11 @@ fn gen_getconstant(
 
     let id = jit_get_arg(jit, 0).as_usize();
 
-    let allow_nil_opnd = ctx.stack_pop(1);
-    let klass_opnd = ctx.stack_pop(1);
-
     // vm_get_ev_const can raise exceptions.
     jit_prepare_routine_call(jit, ctx, asm);
+
+    let allow_nil_opnd = ctx.stack_pop(1);
+    let klass_opnd = ctx.stack_pop(1);
 
     extern "C" {
         fn rb_vm_get_ev_const(ec: EcPtr, klass: VALUE, id: ID, allow_nil: VALUE) -> VALUE;
