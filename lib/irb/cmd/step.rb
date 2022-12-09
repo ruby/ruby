@@ -8,8 +8,7 @@ module IRB
   module ExtendCommand
     class Step < DebugCommand
       def execute(*args)
-        # Run `next` first to move out of binding.irb
-        super(pre_cmds: "next", do_cmds: ["step", *args].join(" "))
+        super(do_cmds: ["step", *args].join(" "))
       end
     end
   end

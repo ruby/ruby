@@ -55,6 +55,13 @@ module IRB
         end
       end
 
+      module SkipPathHelperForIRB
+        def skip_internal_path?(path)
+          # The latter can be removed once https://github.com/ruby/debug/issues/866 is resolved
+          super || path.match?(IRB_DIR) || path.match?('<internal:prelude>')
+        end
+      end
+
       def setup_debugger
         unless defined?(DEBUGGER__::SESSION)
           begin
@@ -75,6 +82,8 @@ module IRB
             end
             frames
           end
+
+          DEBUGGER__::ThreadClient.prepend(SkipPathHelperForIRB)
         end
 
         true

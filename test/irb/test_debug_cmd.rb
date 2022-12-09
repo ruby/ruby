@@ -119,11 +119,13 @@ module TestIRB
 
       output = run_ruby_file do
         type "step"
+        type "step"
         type "continue"
       end
 
       assert_match(/\(rdbg:irb\) step/, output)
-      assert_match(/=>   2|   puts "Hello"/, output)
+      assert_match(/=>   5\| foo/, output)
+      assert_match(/=>   2\|   puts "Hello"/, output)
     end
 
     def test_continue
