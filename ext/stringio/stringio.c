@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.5"
+#define STRINGIO_VERSION "3.0.4"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -719,7 +719,7 @@ strio_copy(VALUE copy, VALUE orig)
  *   lineno -> current_line_number
  *
  * Returns the current line number in +self+;
- * see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
+ * see {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -732,7 +732,7 @@ strio_get_lineno(VALUE self)
  *   lineno = new_line_number -> new_line_number
  *
  * Sets the current line number in +self+ to the given +new_line_number+;
- * see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
+ * see {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -807,7 +807,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  *   pos -> stream_position
  *
  * Returns the current position (in bytes);
- * see {Position}[rdoc-ref:io_streams.rdoc@Position].
+ * see {Position}[rdoc-ref:IO@Position].
  *
  * StringIO#tell is an alias for StringIO#pos.
  */
@@ -822,7 +822,7 @@ strio_get_pos(VALUE self)
  *   pos = new_position -> new_position
  *
  * Sets the current position (in bytes);
- * see {Position}[rdoc-ref:io_streams.rdoc@Position].
+ * see {Position}[rdoc-ref:IO@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -841,8 +841,8 @@ strio_set_pos(VALUE self, VALUE pos)
  *   rewind -> 0
  *
  * Sets the current position and line number to zero;
- * see {Position}[rdoc-ref:io_streams.rdoc@Position]
- * and {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
+ * see {Position}[rdoc-ref:IO@Position]
+ * and {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_rewind(VALUE self)
@@ -859,7 +859,7 @@ strio_rewind(VALUE self)
  *
  * Sets the current position to the given integer +offset+ (in bytes),
  * with respect to a given constant +whence+;
- * see {Position}[rdoc-ref:io_streams.rdoc@Position].
+ * see {Position}[rdoc-ref:IO@Position].
  */
 static VALUE
 strio_seek(int argc, VALUE *argv, VALUE self)
@@ -915,7 +915,7 @@ strio_get_sync(VALUE self)
  *   each_byte {|byte| ... } -> self
  *
  * With a block given, calls the block with each remaining byte in the stream;
- * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  *
  * With no block given, returns an enumerator.
  */
@@ -938,7 +938,7 @@ strio_each_byte(VALUE self)
  *   getc -> character or nil
  *
  * Reads and returns the next character from the stream;
- * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_getc(VALUE self)
@@ -964,7 +964,7 @@ strio_getc(VALUE self)
  *   getbyte -> byte or nil
  *
  * Reads and returns the next 8-bit byte from the stream;
- * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_getbyte(VALUE self)
@@ -1003,7 +1003,7 @@ strio_extend(struct StringIO *ptr, long pos, long len)
  *   ungetc(character) -> nil
  *
  * Pushes back ("unshifts") a character or integer onto the stream;
- * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
@@ -1041,7 +1041,7 @@ strio_ungetc(VALUE self, VALUE c)
  *   ungetbyte(byte) -> nil
  *
  * Pushes back ("unshifts") an 8-bit byte onto the stream;
- * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
@@ -1104,7 +1104,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
  *   readchar -> string
  *
  * Like +getc+, but raises an exception if already at end-of-stream;
- * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_readchar(VALUE self)
@@ -1119,7 +1119,7 @@ strio_readchar(VALUE self)
  *   readbyte -> byte
  *
  * Like +getbyte+, but raises an exception if already at end-of-stream;
- * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_readbyte(VALUE self)
@@ -1134,7 +1134,7 @@ strio_readbyte(VALUE self)
  *   each_char {|c| ... } -> self
  *
  * With a block given, calls the block with each remaining character in the stream;
- * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  *
  * With no block given, returns an enumerator.
  */
@@ -1156,7 +1156,7 @@ strio_each_char(VALUE self)
  *   each_codepoint {|codepoint| ... } -> self
  *
  * With a block given, calls the block with each remaining codepoint in the stream;
- * see {Codepoint IO}[rdoc-ref:io_streams.rdoc@Codepoint+IO].
+ * see {Codepoint IO}[rdoc-ref:IO@Codepoint+IO].
  *
  * With no block given, returns an enumerator.
  */
@@ -1374,7 +1374,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
  *
  * Reads and returns a line from the stream;
  * assigns the return value to <tt>$_</tt>;
- * see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
+ * see {Line IO}[rdoc-ref:IO@Line+IO].
  */
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
@@ -1399,7 +1399,7 @@ strio_gets(int argc, VALUE *argv, VALUE self)
  *   readline(sep, limit, chomp: false) -> string
  *
  * Reads a line as with IO#gets, but raises EOFError if already at end-of-file;
- * see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
+ * see {Line IO}[rdoc-ref:IO@Line+IO].
  */
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
@@ -1418,7 +1418,7 @@ strio_readline(int argc, VALUE *argv, VALUE self)
  * Calls the block with each remaining line read from the stream;
  * does nothing if already at end-of-file;
  * returns +self+.
- * See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
+ * See {Line IO}[rdoc-ref:IO@Line+IO].
  *
  * StringIO#each is an alias for StringIO#each_line.
  */
@@ -1850,7 +1850,7 @@ strio_set_encoding_by_bom(VALUE self)
 /*
  * \IO streams for strings, with access similar to
  * {IO}[rdoc-ref:IO];
- * see {IO Streams}[rdoc-ref:io_streams.rdoc].
+ * see {IO}[rdoc-ref:IO].
  *
  * === About the Examples
  *
