@@ -21,7 +21,7 @@ end
 RSpec.configure do |config|
   config.filter_run_excluding :realworld => true
 
-  git_version = Bundler::Source::Git::GitProxy.new(nil, nil, nil).version
+  git_version = Bundler::Source::Git::GitProxy.new(nil, nil).version
 
   config.filter_run_excluding :git => RequirementChecker.against(git_version)
   config.filter_run_excluding :bundler => RequirementChecker.against(Bundler::VERSION.split(".")[0])

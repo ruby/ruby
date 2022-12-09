@@ -52,8 +52,9 @@ RSpec.describe "bundle install with git sources" do
       bundle "update foo"
 
       sha = git.ref_for("main", 11)
-      spec_file = default_bundle_path.join("bundler/gems/foo-1.0-#{sha}/foo.gemspec").to_s
-      ruby_code = Gem::Specification.load(spec_file).to_ruby
+      spec_file = default_bundle_path.join("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
+      expect(spec_file).to exist
+      ruby_code = Gem::Specification.load(spec_file.to_s).to_ruby
       file_code = File.read(spec_file)
       expect(file_code).to eq(ruby_code)
     end
@@ -216,6 +217,22 @@ RSpec.describe "bundle install with git sources" do
       RUBY
 
       expect(out).to eq("WIN")
+    end
+
+    it "works when an abbreviated revision is added after an initial, potentially shallow clone" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        git "#{lib_path("foo-1.0")}" do
+          gem "foo"
+        end
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        git "#{lib_path("foo-1.0")}", :ref => #{@revision[0..7].inspect} do
+          gem "foo"
+        end
+      G
     end
 
     it "works when the revision is a non-head ref" do

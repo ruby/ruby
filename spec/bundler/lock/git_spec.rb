@@ -14,6 +14,14 @@ RSpec.describe "bundle lock with git gems" do
     expect(the_bundle).to include_gems "foo 1.0.0"
   end
 
+  it "doesn't print errors even if running lock after removing the cache" do
+    FileUtils.rm_rf(Dir[default_cache_path("git/foo-1.0-*")].first)
+
+    bundle "lock --verbose"
+
+    expect(err).to be_empty
+  end
+
   it "locks a git source to the current ref" do
     update_git "foo"
     bundle :install
