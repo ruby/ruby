@@ -134,12 +134,6 @@ extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
 
-extern void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
-extern void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
-extern void rb_native_cond_signal(rb_nativethread_cond_t *cond);
-extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
-extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
-
 // process.c
 extern void mjit_add_waiting_pid(rb_vm_t *vm, rb_pid_t pid);
 
@@ -167,16 +161,6 @@ static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.
 static int current_unit_num;
 // A mutex for conitionals and critical sections.
 static rb_nativethread_lock_t mjit_engine_mutex;
-// A thread conditional to wake up `mjit_finish` at the end of PCH thread.
-static rb_nativethread_cond_t mjit_pch_wakeup;
-// A thread conditional to wake up the client if there is a change in
-// executed unit status.
-static rb_nativethread_cond_t mjit_client_wakeup;
-// A thread conditional to wake up a worker if there we have something
-// to add or we need to stop MJIT engine.
-static rb_nativethread_cond_t mjit_worker_wakeup;
-// A thread conditional to wake up workers if at the end of GC.
-static rb_nativethread_cond_t mjit_gc_wakeup;
 // The times when unload_units is requested. unload_units is called after some requests.
 static int unload_requests = 0;
 // The total number of unloaded units.
@@ -1763,10 +1747,6 @@ mjit_init(const struct mjit_options *opts)
 
     // Initialize mutex
     rb_native_mutex_initialize(&mjit_engine_mutex);
-    rb_native_cond_initialize(&mjit_pch_wakeup);
-    rb_native_cond_initialize(&mjit_client_wakeup);
-    rb_native_cond_initialize(&mjit_worker_wakeup);
-    rb_native_cond_initialize(&mjit_gc_wakeup);
 
     // If --mjit=pause is given, lazily start MJIT when RubyVM::MJIT.resume is called.
     // You can use it to control MJIT warmup, or to customize the JIT implementation.
@@ -1883,10 +1863,6 @@ mjit_finish(bool close_handle_p)
     stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
-    rb_native_cond_destroy(&mjit_pch_wakeup);
-    rb_native_cond_destroy(&mjit_client_wakeup);
-    rb_native_cond_destroy(&mjit_worker_wakeup);
-    rb_native_cond_destroy(&mjit_gc_wakeup);
 
     if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status == PCH_SUCCESS && !mjit_opts.custom)
         remove_file(pch_file);
