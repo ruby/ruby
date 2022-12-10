@@ -468,7 +468,8 @@ Note: We're only listing outstanding class updates.
 
 ## Compatibility issues
 
-Note: Excluding feature bug fixes.
+* `String#to_c` currently treat a sequence of underscores as an end of Complex
+  string. [[Bug #19087]]
 
 ### Removed constants
 
@@ -671,6 +672,7 @@ The following deprecated APIs are removed.
 [Feature #19070]: https://bugs.ruby-lang.org/issues/19070
 [Feature #19071]: https://bugs.ruby-lang.org/issues/19071
 [Feature #19078]: https://bugs.ruby-lang.org/issues/19078
+[Bug #19087]: https://bugs.ruby-lang.org/issues/19087
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
