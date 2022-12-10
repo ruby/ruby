@@ -2090,8 +2090,15 @@ fiber_storage_validate_each(VALUE key, VALUE value, VALUE _argument)
 static void
 fiber_storage_validate(VALUE value)
 {
+    // nil is an allowed value and will be lazily initialized.
+    if (value == Qnil) return;
+
     if (!RB_TYPE_P(value, T_HASH)) {
         rb_raise(rb_eTypeError, "storage must be a hash");
+    }
+
+    if (RB_OBJ_FROZEN(value)) {
+        rb_raise(rb_eFrozenError, "storage must not be frozen");
     }
 
     rb_hash_foreach(value, fiber_storage_validate_each, Qundef);
