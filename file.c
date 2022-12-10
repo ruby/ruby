@@ -7074,7 +7074,7 @@ const char ruby_null_device[] =
  *
  *  === \Data Mode Specified as an \Integer
  *
- *  Data mode cannot be specified as an integer.
+ *  \Data mode cannot be specified as an integer.
  *  When the stream access mode is given as an integer,
  *  the data mode is always text, never binary.
  *
