@@ -13,7 +13,7 @@ if links.empty? || lines.last != ""
 end
 
 new_src = lines.join("\n").gsub(/\[?\[(Feature|Bug)\s+#(\d+)\]\]?/) do
-  links[$2] ||= "[#$1 ##$2]: ".ljust(17) + "https://bugs.ruby-lang.org/issues/##$2"
+  links[$2] ||= "[#$1 ##$2]: ".ljust(18) + "https://bugs.ruby-lang.org/issues/#$2"
   "[[#$1 ##$2]]"
 end.chomp + "\n\n" + links.keys.sort.map {|k| links[k] }.join("\n") + "\n"
 
