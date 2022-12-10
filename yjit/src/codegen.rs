@@ -4877,12 +4877,16 @@ fn gen_send_iseq(
 
     // No support for callees with these parameters yet as they require allocation
     // or complex handling.
-    if unsafe {
-        get_iseq_flags_has_rest(iseq)
-            || get_iseq_flags_has_post(iseq)
-            || get_iseq_flags_has_kwrest(iseq)
-    } {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+    if unsafe { get_iseq_flags_has_rest(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_rest);
+        return CantCompile;
+    }
+    if unsafe { get_iseq_flags_has_post(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_post);
+        return CantCompile;
+    }
+    if unsafe { get_iseq_flags_has_kwrest(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_kwrest);
         return CantCompile;
     }
 
@@ -4902,14 +4906,14 @@ fn gen_send_iseq(
     // positionals, then we need to allocate a hash. For now we're going to
     // call that too complex and bail.
     if supplying_kws && !unsafe { get_iseq_flags_has_kw(iseq) } {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+        gen_counter_incr!(asm, send_iseq_has_no_kw);
         return CantCompile;
     }
 
     // If we have a method accepting no kwargs (**nil), exit if we have passed
     // it any kwargs.
     if supplying_kws && unsafe { get_iseq_flags_accepts_no_kwarg(iseq) } {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+        gen_counter_incr!(asm, send_iseq_accepts_no_kwarg);
         return CantCompile;
     }
 
@@ -4924,7 +4928,7 @@ fn gen_send_iseq(
             // In this case (param.flags.has_block && local_iseq != iseq),
             // the block argument is setup as a local variable and requires
             // materialization (allocation). Bail.
-            gen_counter_incr!(asm, send_iseq_complex_callee);
+            gen_counter_incr!(asm, send_iseq_materialized_block);
             return CantCompile;
         }
     }
@@ -4958,12 +4962,12 @@ fn gen_send_iseq(
 
 
     if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+        gen_counter_incr!(asm, send_iseq_splat_with_opt);
         return CantCompile;
     }
 
     if doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+        gen_counter_incr!(asm, send_iseq_splat_with_kw);
         return CantCompile;
     }
 
@@ -5000,10 +5004,10 @@ fn gen_send_iseq(
     }
 
     // If we have unfilled optional arguments and keyword arguments then we
-    // would need to move adjust the arguments location to account for that.
+    // would need to adjust the arguments location to account for that.
     // For now we aren't handling this case.
     if doing_kw_call && opts_missing > 0 {
-        gen_counter_incr!(asm, send_iseq_complex_callee);
+        gen_counter_incr!(asm, send_iseq_missing_optional_kw);
         return CantCompile;
     }
 
@@ -5031,7 +5035,7 @@ fn gen_send_iseq(
             // We have so many keywords that (1 << num) encoded as a FIXNUM
             // (which shifts it left one more) no longer fits inside a 32-bit
             // immediate.
-            gen_counter_incr!(asm, send_iseq_complex_callee);
+            gen_counter_incr!(asm, send_iseq_too_many_kwargs);
             return CantCompile;
         }
 
