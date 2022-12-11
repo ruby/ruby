@@ -1695,10 +1695,10 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_linear_time_p
-    assert Regexp.linear_time?(/a/)
-    assert Regexp.linear_time?('a')
-    assert Regexp.linear_time?('a', Regexp::IGNORECASE)
-    assert !Regexp.linear_time?(/(a)\1/)
-    assert !Regexp.linear_time?("(a)\\1")
+    assert_send [Regexp, :linear_time?, /a/]
+    assert_send [Regexp, :linear_time?, 'a']
+    assert_send [Regexp, :linear_time?, 'a', Regexp::IGNORECASE]
+    assert_not_send [Regexp, :linear_time?, /(a)\1/]
+    assert_not_send [Regexp, :linear_time?, "(a)\\1"]
   end
 end
