@@ -325,34 +325,6 @@ const struct ruby_opt_message mjit_option_messages[] = {
 };
 #undef M
 
-// Initialize MJIT.  Start a thread creating the precompiled header and
-// processing ISeqs.  The function should be called first for using MJIT.
-// If everything is successful, MJIT_INIT_P will be TRUE.
-void
-mjit_init(const struct mjit_options *opts)
-{
-    VM_ASSERT(mjit_enabled);
-    mjit_opts = *opts;
-
-    // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
-    rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
-    if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
-        verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
-        mjit_enabled = false;
-        return;
-    }
-    rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
-    rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
-    rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
-    rb_cMJITICPtr = rb_funcall(rb_mMJITC, rb_intern("IC"), 0);
-    rb_funcall(rb_cMJITICPtr, rb_intern("new"), 1, SIZET2NUM(0)); // Trigger no-op constant events before enabling hooks
-    rb_mMJITHooks = rb_const_get(rb_mMJIT, rb_intern("Hooks"));
-
-    mjit_call_p = true;
-
-    // TODO: implement
-}
-
 VALUE
 mjit_pause(bool wait_p)
 {
@@ -371,12 +343,6 @@ void
 mjit_child_after_fork(void)
 {
     // TODO: remove this
-}
-
-void
-mjit_finish(bool close_handle_p)
-{
-    // TODO: implement
 }
 
 // Called by rb_vm_mark()
@@ -398,6 +364,38 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
     // TODO: implement
     return false;
+}
+
+//
+// New stuff from here
+//
+
+void
+mjit_init(const struct mjit_options *opts)
+{
+    VM_ASSERT(mjit_enabled);
+    mjit_opts = *opts;
+
+    // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
+    rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
+    if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
+        verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
+        mjit_enabled = false;
+        return;
+    }
+    rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
+    rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
+    rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+
+    mjit_call_p = true;
+
+    // TODO: implement
+}
+
+void
+mjit_finish(bool close_handle_p)
+{
+    // TODO: implement
 }
 
 #include "mjit.rbinc"
