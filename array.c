@@ -8732,7 +8732,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - #pop: Removes and returns the last element.
  *  - #shift:  Removes and returns the first element.
- *  - #compact!: Removes all non-+nil+ elements.
+ *  - #compact!: Removes all +nil+ elements.
  *  - #delete: Removes elements equal to a given object.
  *  - #delete_at: Removes the element at a given offset.
  *  - #delete_if: Removes elements specified by a given block.
