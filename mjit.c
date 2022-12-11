@@ -7,64 +7,6 @@
 
 **********************************************************************/
 
-/* We utilize widely used C compilers (GCC and LLVM Clang) to
-   implement MJIT.  We feed them a C code generated from ISEQ.  The
-   industrial C compilers are slower than regular JIT engines.
-   Generated code performance of the used C compilers has a higher
-   priority over the compilation speed.
-
-   So our major goal is to minimize the ISEQ compilation time when we
-   use widely optimization level (-O2).  It is achieved by
-
-   o Using a precompiled version of the header
-   o Keeping all files in `/tmp`.  On modern Linux `/tmp` is a file
-     system in memory. So it is pretty fast
-   o Implementing MJIT as a multi-threaded code because we want to
-     compile ISEQs in parallel with iseq execution to speed up Ruby
-     code execution.  MJIT has one thread (*worker*) to do
-     parallel compilations:
-      o It prepares a precompiled code of the minimized header.
-        It starts at the MRI execution start
-      o It generates PIC object files of ISEQs
-      o It takes one JIT unit from a priority queue unless it is empty.
-      o It translates the JIT unit ISEQ into C-code using the precompiled
-        header, calls CC and load PIC code when it is ready
-      o Currently MJIT put ISEQ in the queue when ISEQ is called
-      o MJIT can reorder ISEQs in the queue if some ISEQ has been called
-        many times and its compilation did not start yet
-      o MRI reuses the machine code if it already exists for ISEQ
-      o The machine code we generate can stop and switch to the ISEQ
-        interpretation if some condition is not satisfied as the machine
-        code can be speculative or some exception raises
-      o Speculative machine code can be canceled.
-
-   Here is a diagram showing the MJIT organization:
-
-                 _______
-                |header |
-                |_______|
-                    |                         MRI building
-      --------------|----------------------------------------
-                    |                         MRI execution
-                    |
-       _____________|_____
-      |             |     |
-      |          ___V__   |  CC      ____________________
-      |         |      |----------->| precompiled header |
-      |         |      |  |         |____________________|
-      |         |      |  |              |
-      |         | MJIT |  |              |
-      |         |      |  |              |
-      |         |      |  |          ____V___  CC  __________
-      |         |______|----------->| C code |--->| .so file |
-      |                   |         |________|    |__________|
-      |                   |                              |
-      |                   |                              |
-      | MRI machine code  |<-----------------------------
-      |___________________|             loading
-
-*/
-
 #include "ruby/internal/config.h" // defines USE_MJIT
 
 #if USE_MJIT
@@ -124,17 +66,6 @@ bool mjit_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
-
-// Priority queue of iseqs waiting for JIT compilation.
-// This variable is a pointer to head unit of the queue.
-static struct rb_mjit_unit_list unit_queue = { CCAN_LIST_HEAD_INIT(unit_queue.head) };
-// List of units which are successfully compiled.
-static struct rb_mjit_unit_list active_units = { CCAN_LIST_HEAD_INIT(active_units.head) };
-// List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`.
-static struct rb_mjit_unit_list compact_units = { CCAN_LIST_HEAD_INIT(compact_units.head) };
-// List of units before recompilation and just waiting for dlclose().
-static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.head) };
-// The number of so far processed ISEQs, used to generate unique id.
 
 #include "mjit_config.h"
 
