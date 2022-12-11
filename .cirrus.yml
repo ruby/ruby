@@ -10,7 +10,7 @@ env:
 
 task:
   name: Arm64 Graviton2 / $CC
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document') || $CIRRUS_CHANGE_TITLE =~ '.*[DOC].*'"
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
@@ -66,7 +66,7 @@ task:
 yjit_task:
   name: Arm64 Graviton2 / $CC YJIT
   auto_cancellation: $CIRRUS_BRANCH != 'master'
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document')"
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc,ronn,[1-8]}', '.document') || $CIRRUS_CHANGE_TITLE =~ '.*[DOC].*'"
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
