@@ -91,7 +91,7 @@ Note that each entry is kept to a minimum, see links for details.
     ```
 
 * `eval` and related methods are able to generate code coverage. Enabled using
-  `Coverage.setup(:all)` or `Coverge.setup(eval: true)`. [[Feature #19008]]
+  `Coverage.setup(:all)` or `Coverage.setup(eval: true)`. [[Feature #19008]]
 
 * `Coverage.supported?(mode)` enables detection of what coverage modes are
   supported. [[Feature #19026]]
@@ -262,7 +262,7 @@ Note: We're only listing outstanding class updates.
 
         1. SyntaxError is suppressed
         2. AST is returned for invalid input
-        3. `end` is complemented when a parser reachs to the end of input but `end` is insufficient
+        3. `end` is complemented when a parser reaches to the end of input but `end` is insufficient
         4. `end` is treated as keyword based on indent
 
         ```ruby
@@ -495,7 +495,7 @@ The following deprecated methods are removed.
   `UnboundMethod#public?`, `UnboundMethod#private?`, `UnboundMethod#protected?`
   [[Bug #18729]] [[Bug #18751]] [[Bug #18435]]
 
-### Source code incompatiblity of extension libraries [[Bug #19100]]
+### Source code incompatibility of extension libraries [[Bug #19100]]
 
 * Extension libraries provide PRNG, subclasses of Random, need updates.
   See [PRNG update] below for more information.
