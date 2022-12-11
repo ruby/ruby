@@ -14,10 +14,10 @@ class TestRubyVMMJIT < Test::Unit::TestCase
   end
 
   def test_pause
-    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, wait: false)
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, wait: false)
       i = 0
       while i < 5
-        eval("def mjit#{i}; end; mjit#{i}")
+        eval("def mjit#{i}; end; mjit#{i}; mjit#{i}")
         i += 1
       end
       print RubyVM::MJIT.pause
@@ -36,24 +36,21 @@ class TestRubyVMMJIT < Test::Unit::TestCase
   end
 
   def test_pause_waits_until_compaction
-    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, wait: false)
-      def a() end; a
-      def b() end; b
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, wait: false)
+      def a() end; a; a
+      def b() end; b; b
       RubyVM::MJIT.pause
     EOS
     assert_equal(
       2, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
       "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
     )
-    assert_equal(
-      1, err.scan(/#{JITSupport::JIT_COMPACTION_PREFIX}/).size,
-      "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
-    ) unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
   end
 
   def test_pause_after_waitall
-    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, wait: false)
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, wait: false)
       def test() = nil
+      test
       test
       Process.waitall
       print RubyVM::MJIT.pause
@@ -65,7 +62,7 @@ class TestRubyVMMJIT < Test::Unit::TestCase
   end
 
   def test_pause_does_not_hang_on_full_units
-    out, _ = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, max_cache: 10, wait: false)
+    out, _ = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, max_cache: 10, wait: false)
       i = 0
       while i < 11
         eval("def mjit#{i}; end; mjit#{i}")
@@ -77,7 +74,7 @@ class TestRubyVMMJIT < Test::Unit::TestCase
   end
 
   def test_pause_wait_false
-    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, wait: false)
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, wait: false)
       i = 0
       while i < 10
         eval("def mjit#{i}; end; mjit#{i}")
@@ -95,7 +92,7 @@ class TestRubyVMMJIT < Test::Unit::TestCase
   end
 
   def test_resume
-    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 1, wait: false)
+    out, err = eval_with_jit(<<~'EOS', verbose: 1, call_threshold: 2, wait: false)
       print RubyVM::MJIT.resume
       print RubyVM::MJIT.pause
       print RubyVM::MJIT.resume
