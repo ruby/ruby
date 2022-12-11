@@ -452,6 +452,11 @@ module Net   #:nodoc:
     #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
     #   Net::HTTP.get(uri, headers)
     #
+    # Related:
+    #
+    # - Net::HTTP::Get: request class for \HTTP method +GET+.
+    # - Net::HTTP#get: convenience method for \HTTP method +GET+.
+    #
     def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port).body
     end
@@ -460,7 +465,7 @@ module Net   #:nodoc:
     #   Net::HTTP.get_response(hostname, path, port = 80) -> http_response
     #   Net::HTTP:get_response(uri, headers = {}, port = uri.port) -> http_response
     #
-    # Like Net::HTTP.get, but returns an Net::HTTPResponse object
+    # Like Net::HTTP.get, but returns a Net::HTTPResponse object
     # instead of the body string.
     def HTTP.get_response(uri_or_host, path_or_headers = nil, port = nil, &block)
       if path_or_headers && !path_or_headers.is_a?(Hash)
@@ -479,16 +484,31 @@ module Net   #:nodoc:
       end
     end
 
-    # Posts data to the specified URI object.
+    # Posts data to a host; returns a Net::HTTPResponse object.
     #
-    # Example:
+    # Argument +url+ must be a URL;
+    # argument +data+ must be a string:
     #
-    #   require 'net/http'
-    #   require 'uri'
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = '{"title": "foo", "body": "bar", "userId": 1}'
+    #   headers = {'content-type': 'application/json'}
+    #   res = Net::HTTP.post(_uri, data, headers) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
     #
-    #   Net::HTTP.post URI('http://www.example.com/api/search'),
-    #                  { "q" => "ruby", "max" => "50" }.to_json,
-    #                  "Content-Type" => "application/json"
+    # Output:
+    #
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": 1,
+    #     "id": 101
+    #   }
+    #
+    # Related:
+    #
+    # - Net::HTTP::Post: request class for \HTTP method +POST+.
+    # - Net::HTTP#post: convenience method for \HTTP method +POST+.
     #
     def HTTP.post(url, data, header = nil)
       start(url.hostname, url.port,
@@ -497,22 +517,25 @@ module Net   #:nodoc:
       }
     end
 
-    # Posts HTML form data to the specified URI object.
-    # The form data must be provided as a Hash mapping from String to String.
-    # Example:
+    # Posts data to a host; returns a Net::HTTPResponse object.
     #
-    #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
+    # Argument +url+ must be a URI;
+    # argument +data+ must be a hash:
     #
-    # This method also does Basic Authentication if and only if +url+.user exists.
-    # But userinfo for authentication is deprecated (RFC3986).
-    # So this feature will be removed.
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = {title: 'foo', body: 'bar', userId: 1}
+    #   res = Net::HTTP.post_form(_uri, data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
     #
-    # Example:
+    # Output:
     #
-    #   require 'net/http'
-    #
-    #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
-    #                       { "q" => "ruby", "max" => "50" }
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": "1",
+    #     "id": 101
+    #   }
     #
     def HTTP.post_form(url, params)
       req = Post.new(url)
@@ -528,17 +551,26 @@ module Net   #:nodoc:
     # HTTP session management
     #
 
-    # The default port to use for HTTP requests; defaults to 80.
+    # Returns intger +80+, the default port to use for HTTP requests:
+    #
+    #   Net::HTTP.default_port # => 80
+    #
     def HTTP.default_port
       http_default_port()
     end
 
-    # The default port to use for HTTP requests; defaults to 80.
+    # Returns integer +80+, the default port to use for HTTP requests:
+    #
+    #   Net::HTTP.http_default_port # => 80
+    #
     def HTTP.http_default_port
       80
     end
 
-    # The default port to use for HTTPS requests; defaults to 443.
+    # Returns integer +443+, the default port to use for HTTPS requests:
+    #
+    #   Net::HTTP.https_default_port # => 443
+    #
     def HTTP.https_default_port
       443
     end
@@ -548,20 +580,42 @@ module Net   #:nodoc:
     end
 
     # :call-seq:
-    #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass) {|http| ... }
-    #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt) {|http| ... }
+    #   HTTP.start(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, opts) -> http
+    #   HTTP.start(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, opts) {|http| ... } -> object
     #
-    # Creates a new \Net::HTTP object,
-    # opens a TCP connection and \HTTP session.
+    # Creates a new \Net::HTTP object, +http+, via \Net::HTTP.new:
     #
-    # Argument +address+ is the hostname or IP address of the server.
+    #   Net::HTTP.new(address, port, p_addr, p_port, p_user, p_pass)
+    #
+    # - For arguments +hostname+ through +p_pass+, see Net::HTTP.new.
+    # - For argument +opts+, see below.
+    #
+    # Note: If +port+ is +nil+ and <tt>opts[:use_ssl]</tt> is a truthy value,
+    # the value passed to +new+ is Net::HTTP.https_default_port, not +port+.
+    #
+    # With no block given:
+    #
+    # - Calls <tt>http.start</tt> with no block (see #start),
+    #   which opens a TCP connection and \HTTP session.
+    # - Returns +http+.
+    # - The caller should call #finish to close the session:
+    #
+    #     http = Net::HTTP.start(hostname)
+    #     http.started? # => true
+    #     http.finish
+    #     http.started? # => false
     #
     # With a block given:
     #
-    # - Passes the object to the given block,
-    #   which may make any number of requests to the host.
-    # - Closes the \HTTP session on block exit.
-    # - Returns the block's value.
+    # - Calls <tt>http.start</tt> with the block (see #start), which:
+    #
+    #   - Opens a TCP connection and \HTTP session.
+    #   - Calls the block,
+    #     which may make any number of requests to the host.
+    #   - Closes the \HTTP session and TCP connection on block exit.
+    #   - Returns the block's value +object+.
+    #
+    # - Returns +object+.
     #
     # Example:
     #
@@ -586,19 +640,7 @@ module Net   #:nodoc:
     #     "completed": false
     #   }
     #
-    # With no block given, returns the \Net::HTTP object;
-    # the caller should call #finish to close the session.
-    #
-    # Other arguments:
-    #
-    # - +port+: Server port number.
-    # - +p_addr+: Proxy address.
-    # - +p_port+: Proxy port.
-    # - +p_user+: Proxy user name.
-    # - +p_pass+: Proxy password.
-    # - +opts+: Optional options hash.
-    #
-    # The options hash +opts+ sets certain values,
+    # If the last argument given is a hash, it is the +opts+ hash,
     # where each key is a method or accessor to be called,
     # and its value is the value to be set.
     #
@@ -649,25 +691,113 @@ module Net   #:nodoc:
       alias newobj new # :nodoc:
     end
 
-    # Creates a new Net::HTTP object without opening a TCP connection or
-    # HTTP session.
+    # Returns a new Net::HTTP object +http+
+    # (but does not open a TCP connection or HTTP session).
     #
-    # The +address+ should be a DNS hostname or IP address, the +port+ is the
-    # port the server operates on.  If no +port+ is given the default port for
-    # HTTP or HTTPS is used.
+    # <b>No Proxy</b>
     #
-    # If none of the +p_+ arguments are given, the proxy host and port are
-    # taken from the +http_proxy+ environment variable (or its uppercase
-    # equivalent) if present.  If the proxy requires authentication you must
-    # supply it by hand.  See URI::Generic#find_proxy for details of proxy
-    # detection from the environment.  To disable proxy detection set +p_addr+
-    # to nil.
+    # With only string argument +hostname+ given
+    # (and <tt>ENV['http_proxy']</tt> undefined or +nil+),
+    # the returned +http+:
     #
-    # If you are connecting to a custom proxy, +p_addr+ specifies the DNS name
-    # or IP address of the proxy host, +p_port+ the port to use to access the
-    # proxy, +p_user+ and +p_pass+ the username and password if authorization
-    # is required to use the proxy, and p_no_proxy hosts which do not
-    # use the proxy.
+    # - Has the given address.
+    # - Has the default port number, Net::HTTP.default_port (80).
+    # - Has no proxy.
+    #
+    # Example:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.address # => "jsonplaceholder.typicode.com"
+    #   http.port    # => 80
+    #   http.proxy?  # => false
+    #
+    # With integer argument +port+ also given,
+    # the returned +http+ has the given port:
+    #
+    #   http = Net::HTTP.new(hostname, 8000)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:8000 open=false>
+    #   http.port # => 8000
+    #
+    # <b>Proxy Using Argument +p_addr+ as a \String</b>
+    #
+    # When argument +p_addr+ is a string hostname,
+    # the returned +http+ has a proxy:
+    #
+    #   http = Net::HTTP.new(hostname, nil, 'proxy.example')
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.proxy_address # => "proxy.example"
+    #   # These use default values.
+    #   http.proxy_port    # => 80
+    #   http.proxy_user    # => nil
+    #   http.proxy_pass    # => nil
+    #
+    # The port, username, and password for the proxy may also be given:
+    #
+    #   http = Net::HTTP.new(hostname, nil, 'proxy.example', 8000, 'pname', 'ppass')
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.proxy_address # => "proxy.example"
+    #   http.proxy_port    # => 8000
+    #   http.proxy_user    # => "pname"
+    #   http.proxy_pass    # => "ppass"
+    #
+    # <b>Proxy Using <tt>ENV['http_proxy']</tt></b>
+    #
+    # When environment variable <tt>'http_proxy'</tt>
+    # is set to a \URI string,
+    # the returned +http+ will have that URI as its proxy;
+    # note that the \URI string must have a protocol
+    # such as <tt>'http'</tt> or <tt>'https'</tt>:
+    #
+    #   ENV['http_proxy'] = 'http://example.com'
+    #   # => "http://example.com"
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.address       # => "jsonplaceholder.typicode.com"
+    #   http.proxy_address # => "example.com"
+    #
+    # The \URI string may include proxy username, password, and port number:
+    #
+    #   ENV['http_proxy'] = 'http://pname:ppass@example.com:8000'
+    #   # => "http://pname:ppass@example.com:8000"
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy_port # => 8000
+    #   http.proxy_user # => "pname"
+    #   http.proxy_pass # => "ppass"
+    #
+    # <b>Argument +p_no_proxy+</b>
+    #
+    # You can use argument +p_no_proxy+ to reject certain proxies:
+    #
+    # - Reject a certain address:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example')
+    #     http.proxy_address # => nil
+    #
+    # - Reject certain domains or subdomains:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'my.proxy.example', 8000, 'pname', 'ppass', 'proxy.example')
+    #     http.proxy_address # => nil
+    #
+    # - Reject certain addresses and port combinations:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example:1234')
+    #     http.proxy_address # => "proxy.example"
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example:8000')
+    #     http.proxy_address # => nil
+    #
+    # - Reject a list of the types above delimited using a comma:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
+    #     http.proxy_address # => nil
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'my.proxy', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
+    #     http.proxy_address # => nil
     #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
@@ -1161,7 +1291,7 @@ module Net   #:nodoc:
     #
     # This class is obsolete.  You may pass these same parameters directly to
     # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
-    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
+    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil) #:nodoc:
       return self unless p_addr
 
       Class.new(self) {
