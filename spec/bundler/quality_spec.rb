@@ -197,7 +197,7 @@ RSpec.describe "The library itself" do
 
     gem_list = loaded_gemspec.files
 
-    expect(git_list.sort).to eq(gem_list.sort)
+    expect(git_list).to match_array(gem_list)
   end
 
   it "does not contain any warnings" do
