@@ -371,6 +371,12 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 //
 
 void
+rb_mjit_compile(const rb_iseq_t *iseq)
+{
+    // TODO: implement
+}
+
+void
 mjit_init(const struct mjit_options *opts)
 {
     VM_ASSERT(mjit_enabled);

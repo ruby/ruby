@@ -85,7 +85,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN bool mjit_call_p;
 
-extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
+extern void rb_mjit_compile(const rb_iseq_t *iseq);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
 extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);

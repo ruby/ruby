@@ -395,7 +395,7 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
     switch ((enum rb_mjit_func_state)mjit_state) {
       case MJIT_FUNC_NOT_COMPILED:
         if (body->total_calls == mjit_opts.call_threshold) {
-            rb_mjit_add_iseq_to_process(iseq);
+            rb_mjit_compile(iseq);
             if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
                 return body->jit_func(ec, ec->cfp);
             }
@@ -441,8 +441,13 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else if (UNLIKELY(MJIT_FUNC_STATE_P(func = body->jit_func))) {
-        return mjit_check_iseq(ec, iseq, body);
+    else { // mjit_call_p
+        if (body->total_calls == mjit_opts.call_threshold) {
+            rb_mjit_compile(iseq);
+        }
+        if ((func = body->jit_func) == 0) {
+            return Qundef;
+        }
     }
 
     // Call the JIT code
