@@ -495,10 +495,10 @@ The following deprecated methods are removed.
   `UnboundMethod#public?`, `UnboundMethod#private?`, `UnboundMethod#protected?`
   [[Bug #18729]] [[Bug #18751]] [[Bug #18435]]
 
-### Source code incompatibility of extension libraries [[Bug #19100]]
+### Source code incompatibility of extension libraries
 
 * Extension libraries provide PRNG, subclasses of Random, need updates.
-  See [PRNG update] below for more information.
+  See [PRNG update] below for more information. [[Bug #19100]]
 
 ### Error printer
 
