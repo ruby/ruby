@@ -2030,6 +2030,29 @@ exc_cause(VALUE exc)
     return rb_attr_get(exc, id_cause);
 }
 
+/*
+ * call-seq:
+ *   exception.root_cause   -> an_exception
+ *
+ * The innermost exception wrapped by this exception.
+ * This is useful for unwrapping exceptions and discovering their original exception.
+ */
+
+static VALUE
+exc_root_cause(VALUE exc)
+{
+    VALUE current = exc;
+
+    while (true) {
+        VALUE latest_cause = exc_cause(current);
+        if (NIL_P(latest_cause)) return current;
+
+        current = latest_cause;
+    }
+
+    UNREACHABLE_RETURN(Qnil);
+}
+
 static VALUE
 try_convert_to_exception(VALUE obj)
 {
@@ -3480,6 +3503,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
     rb_define_method(rb_eException, "cause", exc_cause, 0);
+    rb_define_method(rb_eException, "root_cause", exc_root_cause, 0);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
