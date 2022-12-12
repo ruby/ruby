@@ -12,9 +12,9 @@ module ObjectSpace
   module_function
 
   # call-seq:
-  #   ObjectSpace.dump(obj[, output: :string]) # => "{ ... }"
-  #   ObjectSpace.dump(obj, output: :file)     # => #<File:/tmp/rubyobj20131125-88733-1xkfmpv.json>
-  #   ObjectSpace.dump(obj, output: :stdout)   # => nil
+  #   ObjectSpace.dump(obj[, output: :string]) -> "{ ... }"
+  #   ObjectSpace.dump(obj, output: :file) -> #<File:/tmp/rubyobj20131125-88733-1xkfmpv.json>
+  #   ObjectSpace.dump(obj, output: :stdout) -> nil
   #
   # Dump the contents of a ruby object as JSON.
   #
@@ -44,13 +44,11 @@ module ObjectSpace
 
 
   # call-seq:
-  #   ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
-  #   ObjectSpace.dump_all(output: :stdout) # => nil
-  #   ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
-  #   ObjectSpace.dump_all(output:
-  #     File.open('heap.json','w'))         # => #<File:heap.json>
-  #   ObjectSpace.dump_all(output: :string,
-  #     since: 42)                          # => "{...}\n{...}\n..."
+  #   ObjectSpace.dump_all([output: :file]) -> #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
+  #   ObjectSpace.dump_all(output: :stdout) -> nil
+  #   ObjectSpace.dump_all(output: :string) -> "{...}\n{...}\n..."
+  #   ObjectSpace.dump_all(output: File.open('heap.json','w')) -> #<File:heap.json>
+  #   ObjectSpace.dump_all(output: :string, since: 42) -> "{...}\n{...}\n..."
   #
   # Dump the contents of the ruby heap as JSON.
   #
@@ -107,13 +105,11 @@ module ObjectSpace
   end
 
   #  call-seq:
-  #    ObjectSpace.dump_shapes([output: :file]) # => #<File:/tmp/rubyshapes20131125-88469-laoj3v.json>
-  #    ObjectSpace.dump_shapes(output: :stdout) # => nil
-  #    ObjectSpace.dump_shapes(output: :string) # => "{...}\n{...}\n..."
-  #    ObjectSpace.dump_shapes(output:
-  #      File.open('shapes.json','w'))         # => #<File:shapes.json>
-  #    ObjectSpace.dump_all(output: :string,
-  #      since: 42)                          # => "{...}\n{...}\n..."
+  #    ObjectSpace.dump_shapes([output: :file]) -> #<File:/tmp/rubyshapes20131125-88469-laoj3v.json>
+  #    ObjectSpace.dump_shapes(output: :stdout) -> nil
+  #    ObjectSpace.dump_shapes(output: :string) -> "{...}\n{...}\n..."
+  #    ObjectSpace.dump_shapes(output: File.open('shapes.json','w')) -> #<File:shapes.json>
+  #    ObjectSpace.dump_all(output: :string, since: 42) -> "{...}\n{...}\n..."
   #
   #  Dump the contents of the ruby shape tree as JSON.
   #
