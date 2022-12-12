@@ -3530,6 +3530,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 #define RDX_BITS   8  /* radix bit-length */
 #define NUM_PASSES 8  /* number of passes on uint64_t, 64 / RDX_BITS + (64 % RDX_BITS > 0) */
 #define RADIX    256  /* radix, number of values in the range 0...(1 << RDX_BITS) */
+#define MSB64 ((uint64_t)1 << 63)
 
 typedef struct rsort_double_t { uint64_t z; VALUE v; } rsort_double_t;
 
@@ -3566,7 +3567,7 @@ rsort_noflonum(VALUE *const p, const long l, VALUE *pp,
             if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
                 free(_r); return 1;
             }
-            u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+            u.z ^= ((int64_t)(u.z) >> 63) | MSB64;
             is_unordered |= prev > u.z, prev = u.z;
             for (int i = 0; i < NUM_PASSES; i++)
                 F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
@@ -3580,7 +3581,7 @@ rsort_noflonum(VALUE *const p, const long l, VALUE *pp,
         if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
             free(_r); return 1;
         }
-        u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+        u.z ^= ((int64_t)(u.z) >> 63) | MSB64;
         for (int i = 0; i < NUM_PASSES; i++)
             F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
         *pa = (rsort_double_t){ u.z, *pp++ };
@@ -3622,7 +3623,7 @@ rsort_double(VALUE *const p, const long l)
                     free(_r); return 1;
                 }
                 /* u.z = (u.d < +0.0) ? ~(u.z) : u.z ^ ((uint64_t)1 << 63); */
-                *pa = u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+                *pa = u.z ^= ((int64_t)(u.z) >> 63) | MSB64;
                 is_unordered |= prev > u.z, prev = u.z;
                 for (int i = 0; i < NUM_PASSES; i++)
                     F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
@@ -3638,7 +3639,7 @@ rsort_double(VALUE *const p, const long l)
         if (!RB_FLOAT_TYPE_P(*pp) || isnan(u.d = rb_float_value(*pp))) {
             free(_r); return 1;
         }
-        *pa = u.z ^= ((int64_t)(u.z) >> 63) | ((uint64_t)1 << 63);
+        *pa = u.z ^= ((int64_t)(u.z) >> 63) | MSB64;
         for (int i = 0; i < NUM_PASSES; i++)
             F[i][(uint8_t)(u.z >> i * RDX_BITS)]++;
         if (!FLONUM_P(*pp++))
@@ -3656,7 +3657,7 @@ rsort_double(VALUE *const p, const long l)
         else
             for (pa = a, PA = pa + l; pa < PA; pa++) {
                 union { double d; uint64_t z; } u; u.z = *pa;
-                u.z ^= ((u.z >> 63) - 1) | (((uint64_t)1 << 63));
+                u.z ^= ((u.z >> 63) - 1) | MSB64;
                 p[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = rb_float_new(u.d);
             }
         tmp = a, a = b, b = tmp;
@@ -3673,36 +3674,35 @@ rsort(VALUE *const p, const long l)
 
 #if RSORT_GUARD
 
-    if (!FIXNUM_P(*p)) {
-        if (!RB_FLOAT_TYPE_P(*p)) return 1;
-        return rsort_double(p, l);
-    }
+    if (!FIXNUM_P(*p)) return RB_FLOAT_TYPE_P(*p) ? rsort_double(p, l) : 1;
 
     VALUE *pp = p, *const P = pp + l;
+
+    uint64_t shift_range;
+
+    {
+        uint64_t prev = 0, max = 0, min = ~max; _Bool is_unordered = 0;
+        while (pp < P) {
+            const uint64_t x = *pp ^ MSB64;
+            is_unordered |= prev > x, prev = x;
+            if (x > max) max = x;
+            if (x < min) min = x;
+            if (!FIXNUM_P(*pp++)) return 1;
+        }
+        if (!is_unordered) return 0;
+        shift_range = (min >= MSB64 || max < MSB64 ||
+                       MSB64 - min > ~(uint64_t)0 - max) ? 0 : MSB64 - min;
+    }
+
     uint64_t F[NUM_PASSES][RADIX] = {{0}},
              *const _r = malloc(l * 2 * sizeof(uint64_t)),
              *a = _r, *pa = a, *PA, *b = a + l;
     if (_r == NULL) return 1;
 
-    {
-        uint64_t prev = 0; _Bool is_unordered = 0;
-        while (!is_unordered && pp < P) {
-            VALUE *PP = pp + 100; if (PP > P) PP = P;
-            for (; pp < PP; pa++) {
-                is_unordered |= prev > (*pa = *pp ^ ((uint64_t)1 << 63)), prev = *pa;
-                for (int i = 0; i < NUM_PASSES; i++)
-                    F[i][(uint8_t)(*pa >> i * RDX_BITS)]++;
-                if (!FIXNUM_P(*pp++)) { free(_r); return 1; }
-            }
-        }
-        if (!is_unordered) { free(_r); return 0; }
-    }
-
-    for (; pp < P; pa++) {
-        *pa = *pp ^ ((uint64_t)1 << 63);
+    for (pp = p; pp < P; pa++) {
+        *pa = (*pp++ ^ MSB64) + shift_range;
         for (int i = 0; i < NUM_PASSES; i++)
             F[i][(uint8_t)(*pa >> i * RDX_BITS)]++;
-        if (!FIXNUM_P(*pp++)) { free(_r); return 1; }
     }
 
     int skip[NUM_PASSES] = {0}, last = 0; rsort_calc_offsets(F, skip, &last, l);
@@ -3715,7 +3715,7 @@ rsort(VALUE *const p, const long l)
                 b[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = *pa;
         else
             for (pa = a, PA = pa + l; pa < PA; pa++)
-                p[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = (VALUE)(*pa ^ ((uint64_t)1 << 63));
+                p[o[(uint8_t)(*pa >> i * RDX_BITS)]++] = (VALUE)((*pa - shift_range) ^ MSB64);
         tmp = a, a = b, b = tmp;
     }
 
@@ -3724,6 +3724,7 @@ rsort(VALUE *const p, const long l)
 #undef RDX_BITS
 #undef NUM_PASSES
 #undef RADIX
+#undef MSB64
 
 #else
 
