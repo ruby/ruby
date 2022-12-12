@@ -36,6 +36,17 @@ class RDoc::RDoc
   GENERATORS = {}
 
   ##
+  # List of directory names always skipped
+
+  UNCONDITIONALLY_SKIPPED_DIRECTORIES = %w[CVS .svn .git].freeze
+
+  ##
+  # List of directory names skipped if test suites should be skipped
+
+  TEST_SUITE_DIRECTORY_NAMES = %w[spec test].freeze
+
+
+  ##
   # Generator instance used for creating output
 
   attr_accessor :generator
@@ -280,7 +291,10 @@ option)
           file_list[rel_file_name] = mtime
         end
       when "directory" then
-        next if rel_file_name == "CVS" || rel_file_name == ".svn"
+        next if UNCONDITIONALLY_SKIPPED_DIRECTORIES.include?(rel_file_name)
+
+        basename = File.basename(rel_file_name)
+        next if options.skip_tests && TEST_SUITE_DIRECTORY_NAMES.include?(basename)
 
         created_rid = File.join rel_file_name, "created.rid"
         next if File.file? created_rid

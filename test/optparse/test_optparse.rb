@@ -98,6 +98,18 @@ class TestOptionParser < Test::Unit::TestCase
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
   end
 
+  def test_raise_unknown
+    @opt.def_option('--my-foo [ARG]') {|arg| @foo = arg}
+    assert @opt.raise_unknown
+
+    @opt.raise_unknown = false
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo --my-bar]))
+    assert_nil(@foo)
+
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo x --my-bar]))
+    assert_equal("x", @foo)
+  end
+
   def test_nonopt_pattern
     @opt.def_option(/^[^-]/) do |arg|
       assert(false, "Never gets called")

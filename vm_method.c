@@ -1385,12 +1385,14 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 // This is exposed for YJIT so that we can make assumptions that methods are
 // not defined.
 const rb_callable_method_entry_t *
-rb_callable_method_entry_or_negative(VALUE klass, ID mid) {
+rb_callable_method_entry_or_negative(VALUE klass, ID mid)
+{
     return callable_method_entry_or_negative(klass, mid, NULL);
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr) {
+callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
+{
     const rb_callable_method_entry_t *cme;
     cme = callable_method_entry_or_negative(klass, mid, defined_class_ptr);
     return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
@@ -1541,8 +1543,8 @@ remove_method(VALUE klass, ID mid)
     rb_method_entry_t *me = 0;
     VALUE self = klass;
 
-    klass = RCLASS_ORIGIN(klass);
     rb_class_modify_check(klass);
+    klass = RCLASS_ORIGIN(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
         rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }

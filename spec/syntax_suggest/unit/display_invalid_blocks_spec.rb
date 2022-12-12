@@ -25,7 +25,7 @@ module SyntaxSuggest
         code_lines: search.code_lines
       )
       display.call
-      expect(io.string).to include("Syntax OK")
+      expect(io.string).to include("")
     end
 
     it "selectively prints to terminal if input is a tty by default" do
@@ -52,7 +52,7 @@ module SyntaxSuggest
       )
       display.call
       expect(io.string).to include([
-        "❯ 2  ",
+        "> 2  ",
         DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT,
         "  def hello"
       ].join)
@@ -69,7 +69,7 @@ module SyntaxSuggest
         code_lines: code_lines
       )
       display.call
-      expect(io.string).to include("❯ 2    def hello")
+      expect(io.string).to include("> 2    def hello")
     end
 
     it "outputs to io when using `call`" do
@@ -92,7 +92,7 @@ module SyntaxSuggest
         code_lines: code_lines
       )
       display.call
-      expect(io.string).to include("❯ 2    def hello")
+      expect(io.string).to include("> 2    def hello")
     end
 
     it " wraps code with github style codeblocks" do
@@ -116,7 +116,7 @@ module SyntaxSuggest
       ).call
       expect(io.string).to include(<<~EOM)
           1  class OH
-        ❯ 2    def hello
+        > 2    def hello
           4    def hai
           5    end
           6  end
@@ -143,7 +143,7 @@ module SyntaxSuggest
 
       expect(io.string).to include([
         "  1  class OH",
-        "❯ 2    def hello",
+        "> 2    def hello",
         "  4    end",
         "  5  end",
         ""
@@ -161,7 +161,7 @@ module SyntaxSuggest
       expect(io.string).to include(
         [
           "  1  class OH",
-          ["❯ 2  ", DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT, "  def hello"].join,
+          ["> 2  ", DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT, "  def hello"].join,
           "  4    end",
           "  5  end",
           ""

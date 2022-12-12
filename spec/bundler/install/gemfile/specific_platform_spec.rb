@@ -363,21 +363,17 @@ RSpec.describe "bundle install with specific platforms" do
     G
 
     error_message = <<~ERROR.strip
-      Could not find gem 'sorbet-static (= 0.5.6433)' with platform 'arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+      Could not find compatible versions
+
+      Because every version of sorbet depends on sorbet-static = 0.5.6433
+        and sorbet-static = 0.5.6433 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally for any resolution platforms (arm64-darwin-21),
+        every version of sorbet is forbidden.
+      So, because Gemfile depends on sorbet = 0.5.6433,
+        version solving has failed.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
         * sorbet-static-0.5.6433-x86_64-linux
-    ERROR
-
-    error_message = <<~ERROR.strip
-      Could not find compatible versions
-
-      Because every version of sorbet depends on sorbet-static = 0.5.6433
-        and sorbet-static = 0.5.6433 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
-        every version of sorbet is forbidden.
-      So, because Gemfile depends on sorbet = 0.5.6433,
-        version solving has failed.
     ERROR
 
     simulate_platform "arm64-darwin-21" do

@@ -16,6 +16,9 @@ module IRB
 
   module ExtendCommand
     class Help < Nop
+      category "Context"
+      description "Enter the mode to look up RI documents."
+
       def execute(*names)
         require 'rdoc/ri/driver'
         opts = RDoc::RI::Driver.process_args([])

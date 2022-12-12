@@ -4,7 +4,7 @@
 ENV['GEM_HOME'] = File.expand_path('./.bundle', __dir__)
 require 'rubygems/source'
 require 'bundler/inline'
-gemfile do
+gemfile(true) do
   source 'https://rubygems.org'
   gem 'ffi-clang', '0.7.0', require: false
 end
@@ -329,7 +329,14 @@ cflags = [
   File.join(build_dir, ".ext/include/#{RUBY_PLATFORM}"),
 ].map { |dir| "-I#{dir}" }
 
-nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
+# Clear .cache/clangd created by the language server, which could break this bindgen
+clangd_cache = File.join(src_dir, '.cache/clangd')
+if Dir.exist?(clangd_cache)
+  system('rm', '-rf', clangd_cache, exception: true)
+end
+
+# Parse mjit_c.h and generate mjit_c.rb
+nodes = HeaderParser.new(File.join(src_dir, 'mjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
   uses: %w[
@@ -352,7 +359,6 @@ generator = BindingGenerator.new(
       SHAPE_FROZEN
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
-      SHAPE_IVAR_UNDEF
       SHAPE_ROOT
     ],
     ULONG: %w[
@@ -424,4 +430,5 @@ generator = BindingGenerator.new(
 )
 generator.generate(nodes)
 
+# Write mjit_c.rb
 File.write(src_path, generator.src)

@@ -229,6 +229,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal :force,  h[:major_by] if use_rgengc?
     assert_equal :method, h[:gc_by]
     assert_equal true,    h[:immediate_sweep]
+    assert_equal true,    h.key?(:need_major_by)
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]
@@ -244,6 +245,25 @@ class TestGc < Test::Unit::TestCase
     assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
     assert_raise(ArgumentError){ GC.latest_gc_info(:invalid) }
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
+  end
+
+  def test_latest_gc_info_need_major_by
+    return unless use_rgengc?
+    omit 'stress' if GC.stress
+
+    3.times { GC.start }
+    assert_nil GC.latest_gc_info(:need_major_by)
+
+    # allocate objects until need_major_by is set or major GC happens
+    major_count = GC.stat(:major_gc_count)
+    objects = []
+    while GC.stat(:major_gc_count) == major_count && GC.latest_gc_info(:need_major_by).nil?
+      objects.append(100.times.map { '*' })
+    end
+
+    assert_not_nil GC.latest_gc_info(:need_major_by)
+    GC.start(full_mark: false) # should be upgraded to major
+    assert_not_nil GC.latest_gc_info(:major_by)
   end
 
   def test_stress_compile_send

@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Delete < Debug
+    class Delete < DebugCommand
       def execute(*args)
         super(pre_cmds: ["delete", *args].join(" "))
       end

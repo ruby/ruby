@@ -58,7 +58,7 @@ module SyntaxSuggest
 
       expect(exit_obj.called?).to be_truthy
       expect(exit_obj.value).to eq(1)
-      expect(out.strip).to include("❯ 36      def filename")
+      expect(out.strip).to include("> 36      def filename")
     end
 
     it "parses valid code with flags" do

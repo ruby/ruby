@@ -4,6 +4,8 @@ class MethodNameCheckTest < Test::Unit::TestCase
   include DidYouMean::TestHelper
 
   class User
+    attr_writer :writer
+    attr_reader :reader
     def friends; end
     def first_name; end
     def descendants; end
@@ -144,4 +146,20 @@ class MethodNameCheckTest < Test::Unit::TestCase
     assert_correction [], error.corrections
     assert_not_match(/Did you mean\? +yield/, get_message(error))
   end if RUBY_ENGINE != "jruby"
+
+  # Do not suggest `name=` for `name`
+  def test_does_not_suggest_writer
+    error = assert_raise(NoMethodError) { @user.writer }
+
+    assert_correction [], error.corrections
+    assert_not_match(/Did you mean\?  writer=/, get_message(error))
+  end
+
+  # Do not suggest `name` for `name=`
+  def test_does_not_suggest_reader
+    error = assert_raise(NoMethodError) { @user.reader = 1 }
+
+    assert_correction [], error.corrections
+    assert_not_match(/Did you mean\?  reader/, get_message(error))
+  end
 end

@@ -1070,6 +1070,12 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
     }
 }
 
+VALUE
+rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil)
+{
+    return vm_get_ev_const(ec, orig_klass, id, allow_nil == Qtrue, 0);
+}
+
 static inline VALUE
 vm_get_ev_const_chain(rb_execution_context_t *ec, const ID *segments)
 {
@@ -1415,8 +1421,6 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             else if (dest_shape_id != INVALID_SHAPE_ID) {
                 rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
-
-                RUBY_ASSERT(dest_shape->type == SHAPE_IVAR || dest_shape->type == SHAPE_IVAR_UNDEF);
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
@@ -5176,12 +5180,11 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+                if (OPTIMIZED_CMP(v, result) > 0) {
                     result = v;
                 }
             }
@@ -5201,12 +5204,11 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+                if (OPTIMIZED_CMP(v, result) < 0) {
                     result = v;
                 }
             }
@@ -5216,6 +5218,12 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
     else {
         return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
+}
+
+VALUE
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    return vm_opt_newarray_min(ec, num, ptr);
 }
 
 #undef id_cmp

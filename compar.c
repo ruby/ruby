@@ -50,7 +50,7 @@ VALUE
 rb_invcmp(VALUE x, VALUE y)
 {
     VALUE invcmp = rb_exec_recursive(invcmp_recursive, x, y);
-    if (UNDEF_P(invcmp) || NIL_P(invcmp)) {
+    if (NIL_OR_UNDEF_P(invcmp)) {
         return Qnil;
     }
     else {

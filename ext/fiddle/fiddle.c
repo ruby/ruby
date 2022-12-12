@@ -650,6 +650,30 @@ Init_fiddle(void)
     rb_define_module_function(mFiddle, "realloc", rb_fiddle_realloc, 2);
     rb_define_module_function(mFiddle, "free", rb_fiddle_free, 1);
 
+    /* Document-const: Qtrue
+     *
+     * The value of Qtrue
+     */
+    rb_define_const(mFiddle, "Qtrue", INT2NUM(Qtrue));
+
+    /* Document-const: Qfalse
+     *
+     * The value of Qfalse
+     */
+    rb_define_const(mFiddle, "Qfalse", INT2NUM(Qfalse));
+
+    /* Document-const: Qnil
+     *
+     * The value of Qnil
+     */
+    rb_define_const(mFiddle, "Qnil", INT2NUM(Qnil));
+
+    /* Document-const: Qundef
+     *
+     * The value of Qundef
+     */
+    rb_define_const(mFiddle, "Qundef", INT2NUM(Qundef));
+
     Init_fiddle_function();
     Init_fiddle_closure();
     Init_fiddle_handle();

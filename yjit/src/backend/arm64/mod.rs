@@ -317,7 +317,7 @@ impl Assembler
                     let (opnd0, opnd1) = split_boolean_operands(asm, left, right);
                     asm.xor(opnd0, opnd1);
                 },
-                Insn::CCall { opnds, target, .. } => {
+                Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // Load each operand into the corresponding argument
@@ -339,7 +339,7 @@ impl Assembler
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
-                    asm.ccall(target.unwrap_fun_ptr(), vec![]);
+                    asm.ccall(fptr, vec![]);
                 },
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, left);
@@ -676,7 +676,6 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
-                Target::FunPtr(_) => unreachable!()
             };
         }
 
@@ -822,7 +821,11 @@ impl Assembler
                     // the Arm64 assembler works, the register that is going to
                     // be stored is first and the address is second. However in
                     // our IR we have the address first and the register second.
-                    stur(cb, src.into(), dest.into());
+                    match dest.rm_num_bits() {
+                        64 | 32 => stur(cb, src.into(), dest.into()),
+                        16 => sturh(cb, src.into(), dest.into()),
+                        num_bits => panic!("unexpected dest num_bits: {} (src: {:#?}, dest: {:#?})", num_bits, src, dest),
+                    }
                 },
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { opnd, dest: out } => {
@@ -938,10 +941,10 @@ impl Assembler
                         emit_pop(cb, A64Opnd::Reg(reg));
                     }
                 },
-                Insn::CCall { target, .. } => {
+                Insn::CCall { fptr, .. } => {
                     // The offset to the call target in bytes
                     let src_addr = cb.get_write_ptr().into_i64();
-                    let dst_addr = target.unwrap_fun_ptr() as i64;
+                    let dst_addr = *fptr as i64;
 
                     // Use BL if the offset is short enough to encode as an immediate.
                     // Otherwise, use BLR with a register.
@@ -983,7 +986,6 @@ impl Assembler
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
-                        _ => unreachable!()
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
@@ -1377,6 +1379,24 @@ mod tests {
 
         let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
         asm.cmp(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_16_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(16, Opnd::Reg(X0_REG), 0);
+        asm.store(shape_opnd, Opnd::UImm(4097));
+        asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_32_bit_register_store_some_number() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
+        asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
     }
 

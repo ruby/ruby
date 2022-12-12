@@ -34,6 +34,7 @@ struct lex_context;
 #include "internal/compile.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
+#include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
@@ -665,10 +666,6 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 
 #define lambda_beginning_p() (p->lex.lpar_beg == p->lex.paren_nest)
 
-#define ANON_BLOCK_ID '&'
-#define ANON_REST_ID '*'
-#define ANON_KEYWORD_REST_ID idPow
-
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
 #ifndef RIPPER
@@ -944,11 +941,7 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #endif
 
 #define idFWD_REST   '*'
-#ifdef RUBY3_KEYWORDS
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
-#else
-#define idFWD_KWREST 0
-#endif
 #define idFWD_BLOCK  '&'
 
 #define RE_OPTION_ONCE (1<<16)
@@ -3120,11 +3113,11 @@ block_arg	: tAMPER arg_value
 		    }
                 | tAMPER
                     {
-                        if (!local_id(p, ANON_BLOCK_ID)) {
+                        if (!local_id(p, idFWD_BLOCK)) {
                             compile_error(p, "no anonymous block parameter");
                         }
                     /*%%%*/
-                        $$ = NEW_BLOCK_PASS(NEW_LVAR(ANON_BLOCK_ID, &@1), &@$);
+                        $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% %*/
                     /*% ripper: Qnil %*/
                     }
@@ -3157,11 +3150,11 @@ args		: arg_value
 		    }
 		| tSTAR
 		    {
-                        if (!local_id(p, ANON_REST_ID)) {
+                        if (!local_id(p, idFWD_REST)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
-			$$ = NEW_SPLAT(NEW_LVAR(ANON_REST_ID, &@1), &@$);
+			$$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!(args_new!, Qnil) %*/
 		    }
@@ -3181,11 +3174,11 @@ args		: arg_value
 		    }
 		| args ',' tSTAR
 		    {
-                        if (!local_id(p, ANON_REST_ID)) {
+                        if (!local_id(p, idFWD_REST)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
-			$$ = rest_arg_append(p, $1, NEW_LVAR(ANON_REST_ID, &@3), &@$);
+			$$ = rest_arg_append(p, $1, NEW_LVAR(idFWD_REST, &@3), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!($1, Qnil) %*/
 		    }
@@ -4948,7 +4941,16 @@ opt_rescue	: k_rescue exc_list exc_var then
 			$$ = NEW_RESBODY($2,
 					 $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), NO_LEX_CTXT, &@3), $5) : $5,
 					 $6, &@$);
-			fixpos($$, $2?$2:$5);
+
+                        if ($2) {
+                            fixpos($$, $2);
+                        }
+                        else if ($3) {
+                            fixpos($$, $3);
+                        }
+                        else {
+                            fixpos($$, $5);
+                        }
 		    /*% %*/
 		    /*% ripper: rescue!(escape_Qundef($2), escape_Qundef($3), escape_Qundef($5), escape_Qundef($6)) %*/
 		    }
@@ -5808,9 +5810,9 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		| kwrest_mark
 		    {
-			arg_var(p, ANON_KEYWORD_REST_ID);
+			arg_var(p, idFWD_KWREST);
 		    /*%%%*/
-			$$ = ANON_KEYWORD_REST_ID;
+			$$ = idFWD_KWREST;
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5884,9 +5886,9 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    }
 		| restarg_mark
 		    {
-			arg_var(p, ANON_REST_ID);
+			arg_var(p, idFWD_REST);
 		    /*%%%*/
-			$$ = ANON_REST_ID;
+			$$ = idFWD_REST;
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5906,9 +5908,9 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    }
                 | blkarg_mark
                     {
-			arg_var(p, ANON_BLOCK_ID);
+			arg_var(p, idFWD_BLOCK);
                     /*%%%*/
-			$$ = ANON_BLOCK_ID;
+			$$ = idFWD_BLOCK;
                     /*% %*/
 		    /*% ripper: blockarg!(Qnil) %*/
                     }
@@ -6042,12 +6044,12 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		| tDSTAR
 		    {
-                        if (!local_id(p, ANON_KEYWORD_REST_ID)) {
+                        if (!local_id(p, idFWD_KWREST)) {
                             compile_error(p, "no anonymous keyword rest parameter");
                         }
 		    /*%%%*/
                         $$ = list_append(p, NEW_LIST(0, &@$),
-                                         NEW_LVAR(ANON_KEYWORD_REST_ID, &@$));
+                                         NEW_LVAR(idFWD_KWREST, &@$));
 		    /*% %*/
 		    /*% ripper: assoc_splat!(Qnil) %*/
 		    }
@@ -6983,7 +6985,7 @@ parser_str_new(const char *ptr, long len, rb_encoding *enc, int func, rb_encodin
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
 	if (is_ascii_string(str)) {
 	}
-	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
+	else if (rb_is_usascii_enc(enc0) && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());
 	}
     }
@@ -8344,7 +8346,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		    int cr = ENC_CODERANGE_UNKNOWN;
 		    rb_str_coderange_scan_restartable(p->lex.ptok, p->lex.pcur, enc, &cr);
 		    if (cr != ENC_CODERANGE_7BIT &&
-			p->enc == rb_usascii_encoding() &&
+			rb_is_usascii_enc(p->enc) &&
 			enc != rb_utf8_encoding()) {
 			enc = rb_ascii8bit_encoding();
 		    }
@@ -12572,8 +12574,6 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
-    args->ruby2_keywords = args->forwarding;
-
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
 
@@ -13257,9 +13257,7 @@ static int
 check_forwarding_args(struct parser_params *p)
 {
     if (local_id(p, idFWD_REST) &&
-#if idFWD_KWREST
         local_id(p, idFWD_KWREST) &&
-#endif
         local_id(p, idFWD_BLOCK)) return TRUE;
     compile_error(p, "unexpected ...");
     return FALSE;
@@ -13269,9 +13267,7 @@ static void
 add_forwarding_args(struct parser_params *p)
 {
     arg_var(p, idFWD_REST);
-#if idFWD_KWREST
     arg_var(p, idFWD_KWREST);
-#endif
     arg_var(p, idFWD_BLOCK);
 }
 
@@ -13279,15 +13275,11 @@ add_forwarding_args(struct parser_params *p)
 static NODE *
 new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
 {
-    NODE *splat = NEW_SPLAT(NEW_LVAR(idFWD_REST, loc), loc);
-#if idFWD_KWREST
+    NODE *rest = NEW_LVAR(idFWD_REST, loc);
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
-#endif
     NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
-    NODE *args = leading ? rest_arg_append(p, leading, splat, argsloc) : splat;
-#if idFWD_KWREST
-    args = arg_append(p, splat, new_hash(p, kwrest, loc), loc);
-#endif
+    NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
+    args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
     return arg_blk_pass(args, block);
 }
 #endif
@@ -13469,7 +13461,7 @@ rb_reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
         }
 	rb_enc_associate(str, rb_ascii8bit_encoding());
     }
-    else if (p->enc == rb_usascii_encoding()) {
+    else if (rb_is_usascii_enc(p->enc)) {
 	if (!is_ascii_string(str)) {
 	    /* raise in re.c */
 	    rb_enc_associate(str, rb_usascii_encoding());

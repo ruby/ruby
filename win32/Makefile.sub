@@ -16,6 +16,23 @@ empty =
 MFLAGS=-l
 !endif
 
+!if "$(BASERUBY)" == ""
+! if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
+! else
+!   include baseruby.mk
+! endif
+! if [del baseruby.mk]
+! endif
+!else if "$(BASERUBY)" == "no" || [($(BASERUBY) -eexit) > nul 2> nul]
+BASERUBY =
+!endif
+!if "$(BASERUBY)" == ""
+BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+HAVE_BASERUBY = no
+!else
+HAVE_BASERUBY = yes
+!endif
+
 !ifndef REVISION_FORCE
 !if "$(HAVE_BASERUBY)" == "yes"
 REVISION_FORCE = PHONY
@@ -91,6 +108,7 @@ PURIFY =
 AUTOCONF = autoconf
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+RM1 = del
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
@@ -104,6 +122,8 @@ BASERUBY = ruby
 !if !defined(TEST_RUNNABLE)
 TEST_RUNNABLE = yes
 !endif
+
+CAT_DEPEND = type
 
 !if !defined(MACHINE)
 MACHINE = x86
@@ -1336,7 +1356,7 @@ probes.h: {$(VPATH)}probes.dmyh
 <<KEEP
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile_attr.inc
+	  vmtc.inc vm.inc mjit_sp_inc.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \

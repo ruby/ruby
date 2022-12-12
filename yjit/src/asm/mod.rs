@@ -24,6 +24,9 @@ pub mod x86_64;
 
 pub mod arm64;
 
+/// Size of a code page in bytes. Each code page is split into an inlined and an outlined portion.
+const CODE_PAGE_SIZE: usize = 16 * 1024;
+
 //
 // TODO: need a field_size_of macro, to compute the size of a struct field in bytes
 //
@@ -56,9 +59,6 @@ pub struct CodeBlock {
 
     // Current writing position
     write_pos: usize,
-
-    // Size of a code page (inlined + outlined)
-    page_size: usize,
 
     // Size reserved for writing a jump to the next page
     page_end_reserve: usize,
@@ -94,13 +94,12 @@ pub struct LabelState {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, page_size: usize, outlined: bool) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool) -> Self {
         let mem_size = mem_block.borrow().virtual_region_size();
         let mut cb = Self {
             mem_block,
             mem_size,
             write_pos: 0,
-            page_size,
             page_end_reserve: JMP_PTR_BYTES,
             label_addrs: Vec::new(),
             label_names: Vec::new(),
@@ -122,10 +121,10 @@ impl CodeBlock {
 
         // Use the freed_pages list if code GC has been used. Otherwise use the next page.
         let next_page_idx = if let Some(freed_pages) = CodegenGlobals::get_freed_pages() {
-            let current_page = self.write_pos / self.page_size;
+            let current_page = self.write_pos / CODE_PAGE_SIZE;
             freed_pages.iter().find(|&&page| current_page < page).map(|&page| page)
         } else {
-            Some(self.write_pos / self.page_size + 1)
+            Some(self.write_pos / CODE_PAGE_SIZE + 1)
         };
 
         // Move self to the next page
@@ -162,7 +161,7 @@ impl CodeBlock {
         // but you need to waste some space for keeping write_pos for every single page.
         // It doesn't seem necessary for performance either. So we're currently not doing it.
         let dst_pos = self.get_page_pos(page_idx);
-        if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
+        if CODE_PAGE_SIZE * page_idx < self.mem_size && self.write_pos < dst_pos {
             // Reset dropped_bytes
             self.dropped_bytes = false;
 
@@ -200,14 +199,14 @@ impl CodeBlock {
             }
 
             // Free the grouped pages at once
-            let start_ptr = self.mem_block.borrow().start_ptr().add_bytes(page_idx * self.page_size);
-            let batch_size = self.page_size * batch_idxs.len();
+            let start_ptr = self.mem_block.borrow().start_ptr().add_bytes(page_idx * CODE_PAGE_SIZE);
+            let batch_size = CODE_PAGE_SIZE * batch_idxs.len();
             self.mem_block.borrow_mut().free_bytes(start_ptr, batch_size as u32);
         }
     }
 
     pub fn page_size(&self) -> usize {
-        self.page_size
+        CODE_PAGE_SIZE
     }
 
     pub fn mapped_region_size(&self) -> usize {
@@ -217,16 +216,16 @@ impl CodeBlock {
     /// Return the number of code pages that have been mapped by the VirtualMemory.
     pub fn num_mapped_pages(&self) -> usize {
         // CodeBlock's page size != VirtualMem's page size on Linux,
-        // so mapped_region_size % self.page_size may not be 0
-        ((self.mapped_region_size() - 1) / self.page_size) + 1
+        // so mapped_region_size % CODE_PAGE_SIZE may not be 0
+        ((self.mapped_region_size() - 1) / CODE_PAGE_SIZE) + 1
     }
 
     /// Return the number of code pages that have been reserved by the VirtualMemory.
     pub fn num_virtual_pages(&self) -> usize {
         let virtual_region_size = self.mem_block.borrow().virtual_region_size();
         // CodeBlock's page size != VirtualMem's page size on Linux,
-        // so mapped_region_size % self.page_size may not be 0
-        ((virtual_region_size - 1) / self.page_size) + 1
+        // so mapped_region_size % CODE_PAGE_SIZE may not be 0
+        ((virtual_region_size - 1) / CODE_PAGE_SIZE) + 1
     }
 
     /// Return the number of code pages that have been freed and not used yet.
@@ -236,17 +235,17 @@ impl CodeBlock {
 
     pub fn has_freed_page(&self, page_idx: usize) -> bool {
         CodegenGlobals::get_freed_pages().as_ref().map_or(false, |pages| pages.contains(&page_idx)) && // code GCed
-            self.write_pos < page_idx * self.page_size // and not written yet
+            self.write_pos < page_idx * CODE_PAGE_SIZE // and not written yet
     }
 
     /// Convert a page index to the write_pos for the page start.
     fn get_page_pos(&self, page_idx: usize) -> usize {
-        self.page_size * page_idx + self.page_start()
+        CODE_PAGE_SIZE * page_idx + self.page_start()
     }
 
     /// write_pos of the current page start
     pub fn page_start_pos(&self) -> usize {
-        self.get_write_pos() / self.page_size * self.page_size + self.page_start()
+        self.get_write_pos() / CODE_PAGE_SIZE * CODE_PAGE_SIZE + self.page_start()
     }
 
     /// Offset of each page where CodeBlock should start writing
@@ -254,7 +253,7 @@ impl CodeBlock {
         let mut start = if self.inline() {
             0
         } else {
-            self.page_size / 2
+            CODE_PAGE_SIZE / 2
         };
         if cfg!(debug_assertions) && !cfg!(test) {
             // Leave illegal instructions at the beginning of each page to assert
@@ -267,9 +266,9 @@ impl CodeBlock {
     /// Offset of each page where CodeBlock should stop writing (exclusive)
     pub fn page_end(&self) -> usize {
         let page_end = if self.inline() {
-            self.page_size / 2
+            CODE_PAGE_SIZE / 2
         } else {
-            self.page_size
+            CODE_PAGE_SIZE
         };
         page_end - self.page_end_reserve // reserve space to jump to the next page
     }
@@ -299,14 +298,14 @@ impl CodeBlock {
 
         let mut addrs = vec![];
         while start < end {
-            let page_idx = start.saturating_sub(region_start) / self.page_size;
-            let current_page = region_start + (page_idx * self.page_size);
+            let page_idx = start.saturating_sub(region_start) / CODE_PAGE_SIZE;
+            let current_page = region_start + (page_idx * CODE_PAGE_SIZE);
             let page_end = std::cmp::min(end, current_page + self.page_end());
             // If code GC has been used, skip pages that are used by past on-stack code
             if freed_pages.map_or(true, |pages| pages.contains(&page_idx)) {
                 addrs.push((start, page_end));
             }
-            start = current_page + self.page_size + self.page_start();
+            start = current_page + CODE_PAGE_SIZE + self.page_start();
         }
         addrs
     }
@@ -314,11 +313,11 @@ impl CodeBlock {
     /// Return the code size that has been used by this CodeBlock.
     pub fn code_size(&self) -> usize {
         let mut size = 0;
-        let current_page_idx = self.write_pos / self.page_size;
+        let current_page_idx = self.write_pos / CODE_PAGE_SIZE;
         for page_idx in 0..self.num_mapped_pages() {
             if page_idx == current_page_idx {
                 // Count only actually used bytes for the current page.
-                size += (self.write_pos % self.page_size).saturating_sub(self.page_start());
+                size += (self.write_pos % CODE_PAGE_SIZE).saturating_sub(self.page_start());
             } else if !self.has_freed_page(page_idx) {
                 // Count an entire range for any non-freed pages that have been used.
                 size += self.page_end() - self.page_start() + self.page_end_reserve;
@@ -329,7 +328,7 @@ impl CodeBlock {
 
     /// Check if this code block has sufficient remaining capacity
     pub fn has_capacity(&self, num_bytes: usize) -> bool {
-        let page_offset = self.write_pos % self.page_size;
+        let page_offset = self.write_pos % CODE_PAGE_SIZE;
         let capacity = self.page_end().saturating_sub(page_offset);
         num_bytes <= capacity
     }
@@ -407,8 +406,8 @@ impl CodeBlock {
             return vec![];
         }
 
-        let start_page = (start_addr.into_usize() - mem_start) / self.page_size;
-        let end_page = (end_addr.into_usize() - mem_start - 1) / self.page_size;
+        let start_page = (start_addr.into_usize() - mem_start) / CODE_PAGE_SIZE;
+        let end_page = (end_addr.into_usize() - mem_start - 1) / CODE_PAGE_SIZE;
         (start_page..=end_page).collect() // TODO: consider returning an iterator
     }
 
@@ -574,7 +573,7 @@ impl CodeBlock {
         });
         // Avoid accumulating freed pages for future code GC
         for_each_off_stack_iseq_payload(|iseq_payload: &mut IseqPayload| {
-            iseq_payload.pages.clear();
+            iseq_payload.pages = std::collections::HashSet::default();
         });
         // Outlined code generated by CodegenGlobals::init() should also be kept.
         for page in CodegenGlobals::get_ocb_pages() {
@@ -636,14 +635,15 @@ impl CodeBlock {
 impl CodeBlock {
     /// Stubbed CodeBlock for testing. Can't execute generated code.
     pub fn new_dummy(mem_size: usize) -> Self {
+        use std::ptr::NonNull;
         use crate::virtualmem::*;
         use crate::virtualmem::tests::TestingAllocator;
 
         let alloc = TestingAllocator::new(mem_size);
         let mem_start: *const u8 = alloc.mem_start();
-        let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), 16 * 1024, false)
+        Self::new(Rc::new(RefCell::new(virt_mem)), false)
     }
 }
 

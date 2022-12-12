@@ -25,7 +25,7 @@ module SyntaxSuggest
         io: io
       )
 
-      expect(io.string.strip).to eq("Syntax OK")
+      expect(io.string.strip).to eq("")
     end
 
     it "raises original error with warning if a non-syntax error is passed" do
@@ -65,9 +65,20 @@ module SyntaxSuggest
     it "respects highlight API" do
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
-      error = SyntaxError.new("#{fixtures_dir.join("this_project_extra_def.rb.txt")}:1 ")
+      core_ext_file = lib_dir.join("syntax_suggest").join("core_ext.rb")
+      require_relative core_ext_file
 
-      require "syntax_suggest/core_ext"
+      error_klass = Class.new do
+        def path
+          fixtures_dir.join("this_project_extra_def.rb.txt")
+        end
+
+        def detailed_message(**kwargs)
+          "error"
+        end
+      end
+      error_klass.prepend(SyntaxSuggest.module_for_detailed_message)
+      error = error_klass.new
 
       expect(error.detailed_message(highlight: true)).to include(SyntaxSuggest::DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT)
       expect(error.detailed_message(highlight: false)).to_not include(SyntaxSuggest::DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT)
@@ -76,9 +87,20 @@ module SyntaxSuggest
     it "can be disabled via falsey kwarg" do
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
-      error = SyntaxError.new("#{fixtures_dir.join("this_project_extra_def.rb.txt")}:1 ")
+      core_ext_file = lib_dir.join("syntax_suggest").join("core_ext.rb")
+      require_relative core_ext_file
 
-      require "syntax_suggest/core_ext"
+      error_klass = Class.new do
+        def path
+          fixtures_dir.join("this_project_extra_def.rb.txt")
+        end
+
+        def detailed_message(**kwargs)
+          "error"
+        end
+      end
+      error_klass.prepend(SyntaxSuggest.module_for_detailed_message)
+      error = error_klass.new
 
       expect(error.detailed_message(syntax_suggest: true)).to_not eq(error.detailed_message(syntax_suggest: false))
     end

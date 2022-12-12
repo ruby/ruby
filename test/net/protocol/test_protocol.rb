@@ -57,6 +57,14 @@ class TestProtocol < Test::Unit::TestCase
     mockio
   end
 
+  def test_readuntil
+    assert_output("", "") do
+      sio = StringIO.new("12345".dup)
+      io = Net::BufferedIO.new(sio)
+      assert_equal "12345", io.readuntil("5")
+    end
+  end
+
   def test_write0_multibyte
     mockio = create_mockio(max: 1)
     io = Net::BufferedIO.new(mockio)
@@ -118,5 +126,34 @@ class TestProtocol < Test::Unit::TestCase
     io = Net::BufferedIO.new(mockio)
     io.write_timeout = 0.1
     assert_raise(Net::WriteTimeout){ io.write("a"*50,"a"*50,"a") }
+  end
+
+  class FakeReadPartialIO
+    def initialize(chunks)
+      @chunks = chunks.map(&:dup)
+    end
+
+    def read_nonblock(size, buf = nil, exception: false)
+      if buf
+        buf.replace(@chunks.shift)
+        buf
+      else
+        @chunks.shift
+      end
+    end
+  end
+
+  def test_shareable_buffer_leak # https://github.com/ruby/net-protocol/pull/19
+    expected_chunks = [
+      "aaaaa",
+      "bbbbb",
+    ]
+    fake_io = FakeReadPartialIO.new(expected_chunks)
+    io = Net::BufferedIO.new(fake_io)
+    actual_chunks = []
+    reader = Net::ReadAdapter.new(-> (chunk) { actual_chunks << chunk })
+    io.read(5, reader)
+    io.read(5, reader)
+    assert_equal expected_chunks, actual_chunks
   end
 end

@@ -1639,6 +1639,12 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_explicit_path
+    io = IO.for_fd(0, path: "Fake Path", autoclose: false)
+    assert_match %r"Fake Path", io.inspect
+    assert_equal "Fake Path", io.path
+  end
+
   def test_write_nonblock_simple_no_exceptions
     pipe(proc do |w|
       w.write_nonblock('1', exception: false)

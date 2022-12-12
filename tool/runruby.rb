@@ -133,15 +133,6 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  unless runner
-    if e = config['PRELOADENV']
-      e = nil if e.empty?
-      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-    end
-    if e
-      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
-    end
-  end
 end
 
 ENV.update env

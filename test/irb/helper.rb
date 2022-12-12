@@ -1,4 +1,6 @@
 require "test/unit"
+require "pathname"
+
 begin
   require_relative "../lib/helper"
 rescue LoadError # ruby/ruby defines helpers differently
@@ -34,6 +36,10 @@ module TestIRB
       def reset
         @line_no = 0
       end
+    end
+
+    def ruby_core?
+      !Pathname(__dir__).join("../../", "irb.gemspec").exist?
     end
 
     def save_encodings

@@ -713,6 +713,18 @@ EOS
     erb = Marshal.load(Marshal.dump(erb))
     assert_raise(ArgumentError) {erb.result}
   end
+
+  def test_multi_line_comment_lineno
+    erb = ERB.new(<<~EOS)
+      <%= __LINE__ %>
+      <%#
+      %><%= __LINE__ %>
+    EOS
+    assert_equal <<~EOS, erb.result
+      1
+      3
+    EOS
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

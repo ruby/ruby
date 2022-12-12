@@ -261,6 +261,8 @@ module RubyVM::YJIT
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
       $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "compiled_branch_count: " + ("%10d" % stats[:compiled_branch_count])
+      $stderr.puts "block_next_count:      " + ("%10d" % stats[:block_next_count])
+      $stderr.puts "defer_count:           " + ("%10d" % stats[:defer_count])
       $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])
       $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
@@ -297,14 +299,14 @@ module RubyVM::YJIT
         end
       end
 
-      exits = exits.sort_by { |name, count| -count }[0...how_many]
+      exits = exits.select { |_name, count| count > 0 }.sort_by { |_name, count| -count }.first(how_many)
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
         top_n_total = exits.map { |name, count| count }.sum
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
-        $stderr.puts "Top-#{how_many} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+        $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
         longest_insn_name_len = exits.map { |name, count| name.length }.max
         exits.each do |name, count|

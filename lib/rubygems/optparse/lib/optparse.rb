@@ -425,7 +425,7 @@
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class Gem::OptionParser
-  Gem::OptionParser::Version = "0.2.0"
+  Gem::OptionParser::Version = "0.3.0"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -765,15 +765,15 @@ class Gem::OptionParser
     end
 
     #
-    # Switch that takes an argument, which does not begin with '-'.
+    # Switch that takes an argument, which does not begin with '-' or is '-'.
     #
     class PlacedArgument < self
 
       #
-      # Returns nil if argument is not present or begins with '-'.
+      # Returns nil if argument is not present or begins with '-' and is not '-'.
       #
       def parse(arg, argv, &error)
-        if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
+        if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
           return nil, block, nil
         end
         opt = (val = parse_arg(val, &error))[1]
@@ -1148,6 +1148,7 @@ XXX
     @summary_indent = indent
     @default_argv = ARGV
     @require_exact = false
+    @raise_unknown = true
     add_officious
     yield self if block_given?
   end
@@ -1224,6 +1225,9 @@ XXX
   # Whether to require that options match exactly (disallows providing
   # abbreviated long option as short option).
   attr_accessor :require_exact
+
+  # Whether to raise at unknown option.
+  attr_accessor :raise_unknown
 
   #
   # Heading banner preceding summary.
@@ -1502,7 +1506,7 @@ XXX
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
-        desc.push(o)
+        desc.push(o) if o && !o.empty?
       end
     end
 
@@ -1639,9 +1643,11 @@ XXX
           begin
             sw, = complete(:long, opt, true)
             if require_exact && !sw.long.include?(arg)
+              throw :terminate, arg unless raise_unknown
               raise InvalidOption, arg
             end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
           end
           begin
@@ -1673,6 +1679,7 @@ XXX
               end
             end
           rescue ParseError
+            throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
           end
           begin
@@ -1862,12 +1869,7 @@ XXX
     end
     all_candidates.select! {|cand| cand.is_a?(String) }
     checker = DidYouMean::SpellChecker.new(dictionary: all_candidates)
-    suggestions = all_candidates & checker.correct(opt)
-    if DidYouMean.respond_to?(:formatter)
-      DidYouMean.formatter.message_for(suggestions)
-    else
-       "\nDid you mean?  #{suggestions.join("\n               ")}"
-    end
+    DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
   end
 
   def candidate(word)
@@ -1908,10 +1910,13 @@ XXX
   # directory ~/.options, then the basename with '.options' suffix
   # under XDG and Haiku standard places.
   #
-  def load(filename = nil)
+  # The optional +into+ keyword argument works exactly like that accepted in
+  # method #parse.
+  #
+  def load(filename = nil, into: nil)
     unless filename
       basename = File.basename($0, '.*')
-      return true if load(File.expand_path(basename, '~/.options')) rescue nil
+      return true if load(File.expand_path(basename, '~/.options'), into: into) rescue nil
       basename << ".options"
       return [
         # XDG
@@ -1923,11 +1928,11 @@ XXX
         '~/config/settings',
       ].any? {|dir|
         next if !dir or dir.empty?
-        load(File.expand_path(basename, dir)) rescue nil
+        load(File.expand_path(basename, dir), into: into) rescue nil
       }
     end
     begin
-      parse(*IO.readlines(filename).each {|s| s.chomp!})
+      parse(*File.readlines(filename, chomp: true), into: into)
       true
     rescue Errno::ENOENT, Errno::ENOTDIR
       false

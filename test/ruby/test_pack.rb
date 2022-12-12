@@ -22,6 +22,20 @@ class TestPack < Test::Unit::TestCase
     assert_equal(x, x.pack("l").unpack("l"))
   end
 
+  def test_ascii_incompatible
+    assert_raise(Encoding::CompatibilityError) do
+      ["foo"].pack("u".encode("UTF-32BE"))
+    end
+
+    assert_raise(Encoding::CompatibilityError) do
+      "foo".unpack("C".encode("UTF-32BE"))
+    end
+
+    assert_raise(Encoding::CompatibilityError) do
+      "foo".unpack1("C".encode("UTF-32BE"))
+    end
+  end
+
   def test_pack_n
     assert_equal "\000\000", [0].pack('n')
     assert_equal "\000\001", [1].pack('n')

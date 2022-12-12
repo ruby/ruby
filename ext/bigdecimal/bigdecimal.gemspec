@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
-  s.version       = "3.1.2"
+  s.version       = "3.1.3"
   s.authors       = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
   s.email         = ["mrkn@mrkn.jp"]
 

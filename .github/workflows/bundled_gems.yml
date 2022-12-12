@@ -13,8 +13,13 @@ on:
     - cron: '45 6 * * *'
   workflow_dispatch:
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   update:
+    permissions:
+      contents: write  # for Git to git push
     if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
     name: update ${{ github.workflow }}
     runs-on: ubuntu-latest
@@ -29,9 +34,9 @@ jobs:
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
           echo "TODAY=$(date +%F)" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
         with:
           path: .downloaded-cache
           key: downloaded-cache-${{ github.sha }}
@@ -69,12 +74,12 @@ jobs:
               [g, v] unless last[g] == v
             end
             changed, added = changed.partition {|g, _| last[g]}
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
+            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n+\K(?: \1\*( +).*\n)*/) do
+              mark = "#{$1} *#{$2}"
               changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
             end or next
-            news.sub!(/^\*( +)The following default gems are now bundled gems\.\n\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
+            news.sub!(/^\*( +)The following default gems are now bundled gems\.\n+\K(?: \1\*( +).*\n)*/) do
+              mark = "#{$1} *#{$2}"
               added.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
             end or next if added
             File.write("NEWS.md", news)

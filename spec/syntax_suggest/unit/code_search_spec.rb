@@ -185,8 +185,8 @@ module SyntaxSuggest
         expect(search.record_dir.join("1-add-1-(3__4).txt").read).to include(<<~EOM)
             1  class OH
             2    def hello
-          ❯ 3    def hai
-          ❯ 4    end
+          > 3    def hai
+          > 4    end
             5  end
         EOM
       end
@@ -245,7 +245,7 @@ module SyntaxSuggest
         ).call
 
         expect(document).to include(<<~'EOM')
-          ❯ 36      def filename
+          > 36      def filename
         EOM
       end
 
@@ -295,9 +295,9 @@ module SyntaxSuggest
              1  require 'rails_helper'
              2
              3  RSpec.describe AclassNameHere, type: :worker do
-          ❯  4    describe "thing" do
-          ❯ 16    end # line 16 accidental end, but valid block
-          ❯ 30    end # mismatched due to 16
+          >  4    describe "thing" do
+          > 16    end # line 16 accidental end, but valid block
+          > 30    end # mismatched due to 16
             31  end
         EOM
       end

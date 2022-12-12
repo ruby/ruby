@@ -1219,7 +1219,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     rb_check_frozen(obj);
 
     VALUE val = undef;
-    attr_index_t index;
+    rb_shape_t * shape = rb_shape_get_shape(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
@@ -1228,36 +1228,18 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
         RB_VM_LOCK_ENTER();
         {
-            rb_shape_t * shape = rb_shape_get_shape(obj);
-            if (rb_shape_get_iv_index(shape, id, &index)) {
-                rb_shape_transition_shape_remove_ivar(obj, id, shape);
-                val = RCLASS_IVPTR(obj)[index];
-                RCLASS_IVPTR(obj)[index] = Qundef;
-            }
+            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
         }
         RB_VM_LOCK_LEAVE();
 
         break;
       case T_OBJECT: {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape);
-            val = ROBJECT_IVPTR(obj)[index];
-            ROBJECT_IVPTR(obj)[index] = Qundef;
-        }
+        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
 
         break;
       }
       default: {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape);
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
-            val = ivtbl->ivptr[index];
-            ivtbl->ivptr[index] = Qundef;
-        }
+        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
 
         break;
       }
@@ -1613,7 +1595,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_INITIAL_CAPACITY:
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
-      case SHAPE_IVAR_UNDEF:
       case SHAPE_T_OBJECT:
         iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
         return;
@@ -1892,56 +1873,37 @@ check_id_type(VALUE obj, VALUE *pname,
 VALUE
 rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
-    VALUE val = Qnil;
+    VALUE val = Qundef;
     const ID id = id_for_var(obj, name, an, instance);
 
     // Frozen check comes here because it's expected that we raise a
     // NameError (from the id_for_var check) before we raise a FrozenError
     rb_check_frozen(obj);
 
-    attr_index_t index;
-
     if (!id) {
         goto not_defined;
     }
+
+    rb_shape_t * shape = rb_shape_get_shape(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape);
-            val = RCLASS_IVPTR(obj)[index];
-            RCLASS_IVPTR(obj)[index] = Qundef;
-            return val;
-        }
+        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
         break;
       case T_OBJECT: {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape);
-            val = ROBJECT_IVPTR(obj)[index];
-            ROBJECT_IVPTR(obj)[index] = Qundef;
-            return val;
-        }
-
+        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
         break;
       }
       default: {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            rb_shape_transition_shape_remove_ivar(obj, id, shape);
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
-            val = ivtbl->ivptr[index];
-            ivtbl->ivptr[index] = Qundef;
-            return val;
-        }
-
+        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
         break;
       }
+    }
+
+    if (val != Qundef) {
+        return val;
     }
 
   not_defined:
@@ -3924,7 +3886,8 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 }
 
 static int
-tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest) {
+tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest)
+{
     rb_class_ivar_set(dest, key, val);
 
     return ST_CONTINUE;

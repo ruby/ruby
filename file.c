@@ -484,41 +484,6 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     return LONG2FIX(argc);
 }
 
-/*
- *  call-seq:
- *    path -> filepath
- *
- *  Returns the string filepath used to create +self+:
- *
- *    f = File.new('t.txt') # => #<File:t.txt>
-      f.path                # => "t.txt"
- *
- *  Does not normalize the returned filepath:
- *
- *    f = File.new('../files/t.txt') # => #<File:../files/t.txt>
-      f.path                         # => "../files/t.txt"
- *
- *  Raises IOError for a file created using File::Constants::TMPFILE, because it has no filename.
- *
- *  File#to_path is an alias for File#path.
- *
- */
-
-static VALUE
-rb_file_path(VALUE obj)
-{
-    rb_io_t *fptr;
-
-    fptr = RFILE(rb_io_taint_check(obj))->fptr;
-    rb_io_check_initialized(fptr);
-
-    if (NIL_P(fptr->pathv)) {
-        rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
-    }
-
-    return rb_str_dup(fptr->pathv);
-}
-
 static size_t
 stat_memsize(const void *p)
 {
@@ -7109,7 +7074,7 @@ const char ruby_null_device[] =
  *
  *  === \Data Mode Specified as an \Integer
  *
- *  Data mode cannot be specified as an integer.
+ *  \Data mode cannot be specified as an integer.
  *  When the stream access mode is given as an integer,
  *  the data mode is always text, never binary.
  *
@@ -7555,8 +7520,6 @@ Init_File(void)
     /* Name of the null device */
     rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
-    rb_define_method(rb_cFile, "path",  rb_file_path, 0);
-    rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);
     rb_define_global_function("test", rb_f_test, -1);
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);

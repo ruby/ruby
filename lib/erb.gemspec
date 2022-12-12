@@ -8,8 +8,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = 'erb'
   spec.version       = ERB.const_get(:VERSION, false)
-  spec.authors       = ['Masatoshi SEKI']
-  spec.email         = ['seki@ruby-lang.org']
+  spec.authors       = ['Masatoshi SEKI', 'Takashi Kokubun']
+  spec.email         = ['seki@ruby-lang.org', 'k0kubun@ruby-lang.org']
 
   spec.summary       = %q{An easy to use but powerful templating system for Ruby.}
   spec.description   = %q{An easy to use but powerful templating system for Ruby.}
@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
     spec.platform = 'java'
   else
     spec.required_ruby_version = '>= 2.7.0'
-    spec.extensions = ['ext/erb/extconf.rb']
+    spec.extensions = ['ext/erb/escape/extconf.rb']
   end
 
   spec.add_dependency 'cgi', '>= 0.3.3'

@@ -32,7 +32,11 @@ def spec_dir
 end
 
 def lib_dir
-  root_dir.join("lib")
+  if ruby_core?
+    root_dir.join("../lib")
+  else
+    root_dir.join("lib")
+  end
 end
 
 def root_dir

@@ -29,9 +29,7 @@ module Bundler
           " is a chance you are experiencing a man-in-the-middle attack, but" \
           " most likely your system doesn't have the CA certificates needed" \
           " for verification. For information about OpenSSL certificates, see" \
-          " https://railsapps.github.io/openssl-certificate-verify-failed.html." \
-          " To connect without using SSL, edit your Gemfile" \
-          " sources and change 'https' to 'http'."
+          " https://railsapps.github.io/openssl-certificate-verify-failed.html."
       end
     end
 
@@ -39,9 +37,7 @@ module Bundler
     class SSLError < HTTPError
       def initialize(msg = nil)
         super msg || "Could not load OpenSSL.\n" \
-            "You must recompile Ruby with OpenSSL support or change the sources in your " \
-            "Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL " \
-            "using RVM are available at rvm.io/packages/openssl."
+            "You must recompile Ruby with OpenSSL support."
       end
     end
 

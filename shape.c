@@ -2,10 +2,17 @@
 #include "vm_sync.h"
 #include "shape.h"
 #include "gc.h"
+#include "symbol.h"
+#include "id_table.h"
 #include "internal/class.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
+#include "variable.h"
 #include <stdbool.h>
+
+#ifndef SHAPE_DEBUG
+#define SHAPE_DEBUG (VM_CHECK_MODE > 0)
+#endif
 
 static ID id_frozen;
 static ID id_t_object;
@@ -30,6 +37,17 @@ bool
 rb_shape_root_shape_p(rb_shape_t* shape)
 {
     return shape == rb_shape_get_root_shape();
+}
+
+void
+rb_shape_each_shape(each_shape_callback callback, void *data)
+{
+    rb_shape_t *cursor = rb_shape_get_root_shape();
+    rb_shape_t *end = rb_shape_get_shape_by_id(GET_VM()->next_shape_id);
+    while (cursor < end) {
+        callback(cursor, data);
+        cursor += 1;
+    }
 }
 
 rb_shape_t*
@@ -92,6 +110,19 @@ rb_shape_get_shape_id(VALUE obj)
 #endif
 }
 
+size_t
+rb_shape_depth(rb_shape_t * shape)
+{
+    size_t depth = 1;
+
+    while (shape->parent_id != INVALID_SHAPE_ID) {
+        depth++;
+        shape = rb_shape_get_parent(shape);
+    }
+
+    return depth;
+}
+
 rb_shape_t*
 rb_shape_get_shape(VALUE obj)
 {
@@ -127,7 +158,6 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type)
                 new_shape->next_iv_index = shape->next_iv_index + 1;
                 break;
               case SHAPE_CAPACITY_CHANGE:
-              case SHAPE_IVAR_UNDEF:
               case SHAPE_FROZEN:
               case SHAPE_T_OBJECT:
                 new_shape->next_iv_index = shape->next_iv_index;
@@ -153,12 +183,89 @@ rb_shape_frozen_shape_p(rb_shape_t* shape)
     return SHAPE_FROZEN == (enum shape_type)shape->type;
 }
 
-void
-rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape)
+static void
+move_iv(VALUE obj, ID id, attr_index_t from, attr_index_t to)
 {
-    rb_shape_t * next_shape = get_next_shape_internal(shape, id, SHAPE_IVAR_UNDEF);
+    switch(BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        RCLASS_IVPTR(obj)[to] = RCLASS_IVPTR(obj)[from];
+        break;
+      case T_OBJECT:
+        ROBJECT_IVPTR(obj)[to] = ROBJECT_IVPTR(obj)[from];
+        break;
+      default: {
+        struct gen_ivtbl *ivtbl;
+        rb_gen_ivtbl_get(obj, id, &ivtbl);
+        ivtbl->ivptr[to] = ivtbl->ivptr[from];
+        break;
+      }
+    }
+}
 
-    rb_shape_set_shape(obj, next_shape);
+static rb_shape_t *
+remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
+{
+    if (shape->parent_id == INVALID_SHAPE_ID) {
+        // We've hit the top of the shape tree and couldn't find the
+        // IV we wanted to remove, so return NULL
+        return NULL;
+    }
+    else {
+        if (shape->type == SHAPE_IVAR && shape->edge_name == id) {
+            // We've hit the edge we wanted to remove, return it's _parent_
+            // as the new parent while we go back down the stack.
+            attr_index_t index = shape->next_iv_index - 1;
+
+            switch(BUILTIN_TYPE(obj)) {
+              case T_CLASS:
+              case T_MODULE:
+                *removed = RCLASS_IVPTR(obj)[index];
+                break;
+              case T_OBJECT:
+                *removed = ROBJECT_IVPTR(obj)[index];
+                break;
+              default: {
+                struct gen_ivtbl *ivtbl;
+                rb_gen_ivtbl_get(obj, id, &ivtbl);
+                *removed = ivtbl->ivptr[index];
+                break;
+              }
+            }
+            return rb_shape_get_parent(shape);
+        }
+        else {
+            // This isn't the IV we want to remove, keep walking up.
+            rb_shape_t * new_parent = remove_shape_recursive(obj, id, rb_shape_get_parent(shape), removed);
+
+            // We found a new parent.  Create a child of the new parent that
+            // has the same attributes as this shape.
+            if (new_parent) {
+                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type);
+                new_child->capacity = shape->capacity;
+
+                if (new_child->type == SHAPE_IVAR) {
+                    move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
+                }
+
+                return new_child;
+            }
+            else {
+                // We went all the way to the top of the shape tree and couldn't
+                // find an IV to remove, so return NULL
+                return NULL;
+            }
+        }
+    }
+}
+
+void
+rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed)
+{
+    rb_shape_t * new_shape = remove_shape_recursive(obj, id, shape, removed);
+    if (new_shape) {
+        rb_shape_set_shape(obj, new_shape);
+    }
 }
 
 void
@@ -192,6 +299,7 @@ rb_shape_transition_shape_frozen(VALUE obj)
 rb_shape_t *
 rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
 {
+    RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     return get_next_shape_internal(shape, id, SHAPE_IVAR);
 }
 
@@ -234,7 +342,6 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
                 *value = shape->next_iv_index - 1;
                 return true;
               case SHAPE_CAPACITY_CHANGE:
-              case SHAPE_IVAR_UNDEF:
               case SHAPE_ROOT:
               case SHAPE_INITIAL_CAPACITY:
               case SHAPE_T_OBJECT:
@@ -296,10 +403,10 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
 
-uint8_t
-rb_shape_id_num_bits(void)
+int32_t
+rb_shape_id_offset(void)
 {
-    return SHAPE_ID_NUM_BITS;
+    return sizeof(uintptr_t) - SHAPE_ID_NUM_BITS / sizeof(uintptr_t);
 }
 
 rb_shape_t *
@@ -325,9 +432,6 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 
         midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
         break;
-      case SHAPE_IVAR_UNDEF:
-        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR_UNDEF);
-        break;
       case SHAPE_ROOT:
       case SHAPE_FROZEN:
       case SHAPE_CAPACITY_CHANGE:
@@ -339,16 +443,45 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
     return midway_shape;
 }
 
-#if VM_CHECK_MODE > 0
+size_t
+rb_shape_edges_count(rb_shape_t *shape)
+{
+    if (shape->edges) {
+        return rb_id_table_size(shape->edges);
+    }
+    return 0;
+}
+
+size_t
+rb_shape_memsize(rb_shape_t *shape)
+{
+    size_t memsize = sizeof(rb_shape_t);
+    if (shape->edges) {
+        memsize += rb_id_table_memsize(shape->edges);
+    }
+    return memsize;
+}
+
+#if SHAPE_DEBUG
 VALUE rb_cShape;
+
+static size_t
+shape_memsize(const void *shape_ptr)
+{
+    return rb_shape_memsize((rb_shape_t *)shape_ptr);
+}
 
 /*
  * Exposing Shape to Ruby via RubyVM.debug_shape
  */
 static const rb_data_type_t shape_data_type = {
-    "Shape",
-    {NULL, NULL, NULL,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "Shape",
+    .function = {
+        .dmark = NULL,
+        .dfree = NULL,
+        .dsize = shape_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -391,12 +524,10 @@ rb_shape_parent_id(VALUE self)
 static VALUE
 parse_key(ID key)
 {
-    if ((key & RUBY_ID_INTERNAL) == RUBY_ID_INTERNAL) {
-        return LONG2NUM(key);
-    }
-    else {
+    if (is_instance_id(key)) {
         return ID2SYM(key);
     }
+    return LONG2NUM(key);
 }
 
 static VALUE
@@ -438,17 +569,13 @@ rb_shape_edge_name(VALUE self)
     rb_shape_t* shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
 
-    if ((shape->edge_name & (ID_INTERNAL)) == ID_INTERNAL) {
-        return INT2NUM(shape->capacity);
-    }
-    else {
-        if (shape->edge_name) {
+    if (shape->edge_name) {
+        if (is_instance_id(shape->edge_name)) {
             return ID2SYM(shape->edge_name);
         }
-        else {
-            return Qnil;
-        }
+        return INT2NUM(shape->capacity);
     }
+    return Qnil;
 }
 
 static VALUE
@@ -474,13 +601,7 @@ rb_shape_export_depth(VALUE self)
 {
     rb_shape_t* shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-
-    unsigned int depth = 0;
-    while (shape->parent_id != INVALID_SHAPE_ID) {
-        depth++;
-        shape = rb_shape_get_parent(shape);
-    }
-    return INT2NUM(depth);
+    return SIZET2NUM(rb_shape_depth(shape));
 }
 
 static VALUE
@@ -617,7 +738,7 @@ Init_default_shapes(void)
 void
 Init_shape(void)
 {
-#if VM_CHECK_MODE > 0
+#if SHAPE_DEBUG
     rb_cShape = rb_define_class_under(rb_cRubyVM, "Shape", rb_cObject);
     rb_undef_alloc_func(rb_cShape);
 
@@ -634,7 +755,6 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
     rb_define_const(rb_cShape, "SHAPE_T_OBJECT", INT2NUM(SHAPE_T_OBJECT));
-    rb_define_const(rb_cShape, "SHAPE_IVAR_UNDEF", INT2NUM(SHAPE_IVAR_UNDEF));
     rb_define_const(rb_cShape, "SHAPE_FROZEN", INT2NUM(SHAPE_FROZEN));
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));

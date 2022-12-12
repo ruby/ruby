@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Info < Debug
+    class Info < DebugCommand
       def self.transform_args(args)
         args&.dump
       end

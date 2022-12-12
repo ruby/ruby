@@ -1565,7 +1565,8 @@ IO_BUFFER_DECLARE_TYPE(F64, double, RB_IO_BUFFER_BIG_ENDIAN, DBL2NUM, NUM2DBL, r
 #undef IO_BUFFER_DECLARE_TYPE
 
 static inline size_t
-io_buffer_data_type_size(ID data_type) {
+io_buffer_data_type_size(ID data_type)
+{
 #define IO_BUFFER_DATA_TYPE_SIZE(name) if (data_type == RB_IO_BUFFER_DATA_TYPE_##name) return RB_IO_BUFFER_DATA_TYPE_##name##_SIZE;
     IO_BUFFER_DATA_TYPE_SIZE(U8)
     IO_BUFFER_DATA_TYPE_SIZE(S8)

@@ -5,6 +5,9 @@ module IRB
 
   module ExtendCommand
     class Measure < Nop
+      category "Misc"
+      description "`measure` enables the mode to measure processing time. `measure :off` disables it."
+
       def initialize(*args)
         super(*args)
       end

@@ -555,8 +555,8 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
 
     // Check the size of opnd1
     match opnd1 {
-        X86Opnd::Reg(reg) => assert!(reg.num_bits == opnd_size),
-        X86Opnd::Mem(mem) => assert!(mem.num_bits == opnd_size),
+        X86Opnd::Reg(reg) => assert_eq!(reg.num_bits, opnd_size),
+        X86Opnd::Mem(mem) => assert_eq!(mem.num_bits, opnd_size),
         X86Opnd::Imm(imm) => assert!(imm.num_bits <= opnd_size),
         X86Opnd::UImm(uimm) => assert!(uimm.num_bits <= opnd_size),
         _ => ()
@@ -606,7 +606,14 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
         },
         // R/M + UImm
         (_, X86Opnd::UImm(uimm)) => {
-            let num_bits = imm_num_bits(uimm.value.try_into().unwrap());
+            // If the size of left hand operand equals the number of bits
+            // required to represent the right hand immediate, then we
+            // don't care about sign extension when calculating the immediate
+            let num_bits = if opnd0.num_bits() == uimm_num_bits(uimm.value) {
+                uimm_num_bits(uimm.value)
+            } else {
+                imm_num_bits(uimm.value.try_into().unwrap())
+            };
 
             if num_bits <= 8 {
                 // 8-bit immediate
@@ -625,7 +632,7 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
                 write_rm(cb, sz_pref, rex_w, X86Opnd::None, opnd0, op_ext_imm, &[op_mem_imm_lrg]);
                 cb.write_int(uimm.value, if opnd_size > 32 { 32 } else { opnd_size.into() });
             } else {
-                panic!("immediate value too large (num_bits={})", num_bits);
+                panic!("immediate value too large (num_bits={}, num={uimm:?})", num_bits);
             }
         },
         _ => unreachable!()

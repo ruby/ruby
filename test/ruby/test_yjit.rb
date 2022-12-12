@@ -1,21 +1,23 @@
 # frozen_string_literal: true
 #
 # This set of tests can be run with:
-# make test-all TESTS='test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
+# make test-all TESTS='test/ruby/test_yjit.rb'
 
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+return unless JITSupport.yjit_supported?
 
 # Tests for YJIT with assertions on compilation and side exits
 # insipired by the MJIT tests in test/ruby/test_mjit.rb
 class TestYJIT < Test::Unit::TestCase
+  running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
   def test_yjit_in_ruby_description
     assert_includes(RUBY_DESCRIPTION, '+YJIT')
-  end
+  end if running_with_yjit
 
   # Check that YJIT is in the version string
   def test_yjit_in_version
@@ -27,22 +29,20 @@ class TestYJIT < Test::Unit::TestCase
       %w(--version --disable=yjit --yjit),
       %w(--version --disable=yjit --enable-yjit),
       %w(--version --disable=yjit --enable=yjit),
-      *([
-        %w(--version --jit),
-        %w(--version --disable-jit --jit),
-        %w(--version --disable-jit --enable-jit),
-        %w(--version --disable-jit --enable=jit),
-        %w(--version --disable=jit --yjit),
-        %w(--version --disable=jit --enable-jit),
-        %w(--version --disable=jit --enable=jit),
-      ] if JITSupport.yjit_supported?),
+      %w(--version --jit),
+      %w(--version --disable-jit --jit),
+      %w(--version --disable-jit --enable-jit),
+      %w(--version --disable-jit --enable=jit),
+      %w(--version --disable=jit --yjit),
+      %w(--version --disable=jit --enable-jit),
+      %w(--version --disable=jit --enable=jit),
     ].each do |version_args|
       assert_in_out_err(version_args) do |stdout, stderr|
         assert_equal(RUBY_DESCRIPTION, stdout.first)
         assert_equal([], stderr)
       end
     end
-  end
+  end if running_with_yjit
 
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
@@ -64,7 +64,7 @@ class TestYJIT < Test::Unit::TestCase
     end
     assert_in_out_err([yjit_child_env, '-e puts RUBY_DESCRIPTION'], '', [RUBY_DESCRIPTION])
     assert_in_out_err([yjit_child_env, '-e p RubyVM::YJIT.enabled?'], '', ['true'])
-  end
+  end if running_with_yjit
 
   def test_compile_setclassvariable
     script = 'class Foo; def self.foo; @@foo = 1; end; end; Foo.foo'
@@ -387,6 +387,29 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles("'foo' =~ /(o)./; $+", insns: %i[getspecial], result: "o")
     assert_compiles("'foo' =~ /(o)./; $1", insns: %i[getspecial], result: "o")
     assert_compiles("'foo' =~ /(o)./; $2", insns: %i[getspecial], result: nil)
+  end
+
+  def test_compile_getconstant
+    assert_compiles(<<~RUBY, insns: %i[getconstant], result: [], call_threshold: 1)
+      def get_argv(klass)
+        klass::ARGV
+      end
+
+      get_argv(Object)
+    RUBY
+  end
+
+  def test_compile_getconstant_with_sp_offset
+    assert_compiles(<<~RUBY, insns: %i[getconstant], result: 2, call_threshold: 1)
+      class Foo
+        Bar = 1
+      end
+
+      2.times do
+        s = Foo # this opt_getconstant_path needs warmup, so 2.times is needed
+        Class.new(Foo).const_set(:Bar, s::Bar)
+      end
+    RUBY
   end
 
   def test_compile_opt_getconstant_path
@@ -824,6 +847,39 @@ class TestYJIT < Test::Unit::TestCase
       return :ok if stats[:invalidation_count] < 10
 
       :fail
+    RUBY
+  end
+
+  def test_int_equal
+    assert_compiles(<<~'RUBY', exits: :any, result: [true, false, true, false, true, false, true, false])
+      def eq(a, b)
+        a == b
+      end
+
+      def eqq(a, b)
+        a === b
+      end
+
+      big1 = 2 ** 65
+      big2 = big1 + 1
+      [eq(1, 1), eq(1, 2), eq(big1, big1), eq(big1, big2), eqq(1, 1), eqq(1, 2), eqq(big1, big1), eqq(big1, big2)]
+    RUBY
+  end
+
+  def test_opt_case_dispatch
+    assert_compiles(<<~'RUBY', exits: :any, result: [:"1", "2", 3])
+      def case_dispatch(val)
+        case val
+        when 1
+          :"#{val}"
+        when 2
+          "#{val}"
+        else
+          val
+        end
+      end
+
+      [case_dispatch(1), case_dispatch(2), case_dispatch(3)]
     RUBY
   end
 

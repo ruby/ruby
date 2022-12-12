@@ -1058,23 +1058,6 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   ##
-  # Normalizes tabs in +body+
-
-  def handle_tab_width(body)
-    if /\t/ =~ body
-      tab_width = @options.tab_width
-      body.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) do
-          ' ' * (tab_width * $&.length - $`.length % tab_width)
-        end && $~
-        line
-      end.join "\n"
-    else
-      body
-    end
-  end
-
-  ##
   # Loads the variable map with the given +name+ from the RDoc::Store, if
   # present.
 

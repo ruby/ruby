@@ -268,8 +268,6 @@ HELP_EXTRA_TASKS = \
 	"  update-github:         merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
-extract-gems: $(HAVE_BASERUBY:yes=update-gems)
-
 # 1. squeeze spaces
 # 2. strip and skip comment/empty lines
 # 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z|xxxxxx|URL"
@@ -286,8 +284,18 @@ bundled-gems := $(shell sed \
 bundled-gems-rev := $(filter-out $(subst |,,$(bundled-gems)),$(bundled-gems))
 bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
 
+# calls $(1) with name, version, revision, URL
+foreach-bundled-gems-rev = \
+    $(foreach g,$(bundled-gems-rev),$(call foreach-bundled-gems-rev-0,$(1),$(subst |, ,$(value g))))
+foreach-bundled-gems-rev-0 = \
+    $(call $(1),$(word 1,$(2)),$(word 2,$(2)),$(word 3,$(2)),$(word 4,$(2)))
+bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
+bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
+
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
-update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst |, ,$(value g))))
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -307,8 +315,7 @@ $(srcdir)/gems/%.gem:
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
 extract-gems: | $(patsubst %,$(srcdir)/.bundle/gems/%,$(bundled-gems))
-extract-gems: | $(foreach g,$(bundled-gems-rev), \
-	$(srcdir)/.bundle/gems/$(word 1,$(subst |, ,$(value g)))-$(word 2,$(subst |, ,$(value g))))
+extract-gems: | $(call foreach-bundled-gems-rev,bundled-gem-extracted)
 
 $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
@@ -333,10 +340,10 @@ $(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
 
 endef
 define copy-gem-0
-$(call copy-gem,$(word 1,$(1)),$(word 2,$(1)),$(word 3,$(1)),$(word 4,$(1)))
+$(eval $(call copy-gem,$(1),$(2),$(3),$(4)))
 endef
 
-$(foreach g,$(bundled-gems-rev),$(eval $(call copy-gem-0,$(subst |, ,$(value g)))))
+$(call foreach-bundled-gems-rev,copy-gem-0)
 
 $(srcdir)/gems/src:
 	$(MAKEDIRS) $@
@@ -376,16 +383,10 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
-ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))),,\
-	   $(wildcard $(srcdir)/lib/unicode_normalize/tables.rb)),)
-# Needs the dependency when any Unicode data file exists, or
-# normalization tables script doesn't.  Otherwise, when the target
-# only exists, use it as-is.
-.PHONY: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
-UNICODE_TABLES_TIMESTAMP =
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
-	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-endif
+.SECONDARY: update-unicode-files
+.SECONDARY: update-unicode-auxiliary-files
+.SECONDARY: update-unicode-ucd-emoji-files
+.SECONDARY: update-unicode-emoji-files
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
