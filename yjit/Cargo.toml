@@ -43,3 +43,5 @@ opt-level = 3
 # The extra robustness that comes from checking for arithmetic overflow is
 # worth the performance cost for the compiler.
 overflow-checks = true
+# Generate debug info
+debug = true
