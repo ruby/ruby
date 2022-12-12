@@ -3304,6 +3304,41 @@ fn gen_opt_str_uminus(
     KeepCompiling
 }
 
+fn gen_opt_newarray_max(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let num = jit_get_arg(jit, 0).as_u32();
+
+    // Save the PC and SP because we may allocate
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    extern "C" {
+        fn rb_vm_opt_newarray_max(ec: EcPtr, num: u32, elts: *const VALUE) -> VALUE;
+    }
+
+    let offset_magnitude = (SIZEOF_VALUE as u32) * num;
+    let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_ptr = asm.lea(values_opnd);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_newarray_max as *const u8,
+        vec![
+            EC,
+            num.into(),
+            values_ptr
+        ],
+    );
+
+    ctx.stack_pop(num.as_usize());
+    let stack_ret = ctx.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val_opnd);
+
+    KeepCompiling
+}
+
 fn gen_opt_newarray_min(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -7006,6 +7041,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_mod => Some(gen_opt_mod),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
+        YARVINSN_opt_newarray_max => Some(gen_opt_newarray_max),
         YARVINSN_opt_newarray_min => Some(gen_opt_newarray_min),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_concatarray => Some(gen_concatarray),
