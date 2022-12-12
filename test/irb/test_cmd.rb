@@ -379,13 +379,13 @@ module TestIRB
     def test_help_and_show_doc
       ["help", "show_doc"].each do |cmd|
         out, _ = execute_lines(
-          "#{cmd} 'String#gsub'\n",
+          "#{cmd} String#gsub\n",
           "\n",
         )
 
         # the former is what we'd get without document content installed, like on CI
         # the latter is what we may get locally
-        possible_rdoc_output = [/Nothing known about String#gsub/, /Returns a copy of self with all occurrences of the given pattern/]
+        possible_rdoc_output = [/Nothing known about String#gsub/, /str.gsub\(pattern\)/]
         assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `#{cmd}` command to match one of the possible outputs")
       end
     ensure

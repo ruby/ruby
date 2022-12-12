@@ -18,13 +18,6 @@ module IRB
             args.strip.dump
           end
         end
-
-        private
-
-        def string_literal?(args)
-          sexp = Ripper.sexp(args)
-          sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
-        end
       end
 
       def execute(*args)

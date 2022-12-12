@@ -16,6 +16,17 @@ module IRB
 
   module ExtendCommand
     class Help < Nop
+      class << self
+        def transform_args(args)
+          # Return a string literal as is for backward compatibility
+          if args.empty? || string_literal?(args)
+            args
+          else # Otherwise, consider the input as a String for convenience
+            args.strip.dump
+          end
+        end
+      end
+
       category "Context"
       description "Enter the mode to look up RI documents."
 
