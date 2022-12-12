@@ -43,48 +43,48 @@ module ObjectSpace
   end
 
 
-  #  call-seq:
-  #    ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
-  #    ObjectSpace.dump_all(output: :stdout) # => nil
-  #    ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
-  #    ObjectSpace.dump_all(output:
-  #      File.open('heap.json','w'))         # => #<File:heap.json>
-  #    ObjectSpace.dump_all(output: :string,
-  #      since: 42)                          # => "{...}\n{...}\n..."
+  # call-seq:
+  #   ObjectSpace.dump_all([output: :file]) # => #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
+  #   ObjectSpace.dump_all(output: :stdout) # => nil
+  #   ObjectSpace.dump_all(output: :string) # => "{...}\n{...}\n..."
+  #   ObjectSpace.dump_all(output:
+  #     File.open('heap.json','w'))         # => #<File:heap.json>
+  #   ObjectSpace.dump_all(output: :string,
+  #     since: 42)                          # => "{...}\n{...}\n..."
   #
-  #  Dump the contents of the ruby heap as JSON.
+  # Dump the contents of the ruby heap as JSON.
   #
-  #. _full__ must be a boolean. If true all heap slots are dumped including the empty ones (T_NONE).
+  # _full__ must be a boolean. If true all heap slots are dumped including the empty ones (T_NONE).
   #
-  #  _since_ must be a non-negative integer or +nil+.
+  # _since_ must be a non-negative integer or +nil+.
   #
-  #  If _since_ is a positive integer, only objects of that generation and
-  #  newer generations are dumped. The current generation can be accessed using
-  #  GC::count. Objects that were allocated without object allocation tracing enabled
-  #  are ignored. See ::trace_object_allocations for more information and
-  #  examples.
+  # If _since_ is a positive integer, only objects of that generation and
+  # newer generations are dumped. The current generation can be accessed using
+  # GC::count. Objects that were allocated without object allocation tracing enabled
+  # are ignored. See ::trace_object_allocations for more information and
+  # examples.
   #
-  #  If _since_ is omitted or is +nil+, all objects are dumped.
+  # If _since_ is omitted or is +nil+, all objects are dumped.
   #
-  #  _shapes_ must be a boolean or a non-negative integer.
+  # _shapes_ must be a boolean or a non-negative integer.
   #
-  #  If _shapes_ is a positive integer, only shapes newer than the provided
-  #  shape id are dumped. The current shape_id can be accessed using +RubyVM.stat(:next_shape_id)+.
+  # If _shapes_ is a positive integer, only shapes newer than the provided
+  # shape id are dumped. The current shape_id can be accessed using +RubyVM.stat(:next_shape_id)+.
   #
-  #  If _shapes_ is +false+, no shapes are dumped.
+  # If _shapes_ is +false+, no shapes are dumped.
   #
-  #  To only dump objects allocated past a certain point you can combine _since_ and _shapes_:
-  #    ObjectSpace.trace_object_allocations
-  #    GC.start
-  #    gc_generation = GC.count
-  #    shape_generation = RubyVM.stat(:next_shape_id)
-  #.   call_method_to_instrument
-  #    ObjectSpace.dump_all(since: gc_generation, shapes: shape_generation)
+  # To only dump objects allocated past a certain point you can combine _since_ and _shapes_:
+  #   ObjectSpace.trace_object_allocations
+  #   GC.start
+  #   gc_generation = GC.count
+  #   shape_generation = RubyVM.stat(:next_shape_id)
+  #   call_method_to_instrument
+  #   ObjectSpace.dump_all(since: gc_generation, shapes: shape_generation)
   #
-  #  This method is only expected to work with C Ruby.
-  #  This is an experimental method and is subject to change.
-  #  In particular, the function signature and output format are
-  #  not guaranteed to be compatible in future versions of ruby.
+  # This method is only expected to work with C Ruby.
+  # This is an experimental method and is subject to change.
+  # In particular, the function signature and output format are
+  # not guaranteed to be compatible in future versions of ruby.
   def dump_all(output: :file, full: false, since: nil, shapes: true)
     out = case output
     when :file, nil
