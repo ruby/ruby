@@ -58,6 +58,6 @@ MJIT_SYMBOL_EXPORT_END
 #define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 #define PROC_REDEFINED_OP_FLAG   (1 << 12)
 
-#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY(ruby_vm_redefined_flag[(op)]&(klass)) == 0)
+#define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((ruby_vm_redefined_flag[(op)]&(klass)) == 0))
 
 #endif
