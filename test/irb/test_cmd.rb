@@ -376,38 +376,6 @@ module TestIRB
       assert_match(/Please specify the file name./, out)
     end
 
-    def test_help_and_show_doc
-      ["help", "show_doc"].each do |cmd|
-        out, _ = execute_lines(
-          "#{cmd} String#gsub\n",
-          "\n",
-        )
-
-        # the former is what we'd get without document content installed, like on CI
-        # the latter is what we may get locally
-        possible_rdoc_output = [/Nothing known about String#gsub/, /str.gsub\(pattern\)/]
-        assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `#{cmd}` command to match one of the possible outputs")
-      end
-    ensure
-      # this is the only way to reset the redefined method without coupling the test with its implementation
-      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
-    end
-
-    def test_help_without_rdoc
-      out, _ = without_rdoc do
-        execute_lines(
-          "help 'String#gsub'\n",
-          "\n",
-        )
-      end
-
-      # if it fails to require rdoc, it only returns the command object
-      assert_match(/=> IRB::ExtendCommand::Help\n/, out)
-    ensure
-      # this is the only way to reset the redefined method without coupling the test with its implementation
-      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
-    end
-
     def test_irb_load
       File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
       out, err = execute_lines(
@@ -610,6 +578,40 @@ module TestIRB
       assert_empty err
       assert_match(/List all available commands and their description/, out)
       assert_match(/Start the debugger of debug\.gem/, out)
+    end
+
+    class ShowDocTest < CommandTestCase
+      def test_help_and_show_doc
+        ["help", "show_doc"].each do |cmd|
+          out, _ = execute_lines(
+            "#{cmd} String#gsub\n",
+            "\n",
+          )
+
+          # the former is what we'd get without document content installed, like on CI
+          # the latter is what we may get locally
+          possible_rdoc_output = [/Nothing known about String#gsub/, /gsub\(pattern\)/]
+          assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `#{cmd}` command to match one of the possible outputs. Got:\n#{out}")
+        end
+      ensure
+        # this is the only way to reset the redefined method without coupling the test with its implementation
+        EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+      end
+
+      def test_show_doc_without_rdoc
+        out, _ = without_rdoc do
+          execute_lines(
+            "show_doc String#gsub\n",
+            "\n",
+          )
+        end
+
+        # if it fails to require rdoc, it only returns the command object
+        assert_match(/=> IRB::ExtendCommand::Help\n/, out)
+      ensure
+        # this is the only way to reset the redefined method without coupling the test with its implementation
+        EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+      end
     end
 
     class EditTest < CommandTestCase
