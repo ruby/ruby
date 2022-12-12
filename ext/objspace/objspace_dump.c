@@ -686,6 +686,7 @@ dump_result(struct dump_config *dc)
     }
 }
 
+/* :nodoc: */
 static VALUE
 objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
@@ -766,6 +767,7 @@ shape_i(rb_shape_t *shape, void *data)
     dump_append(dc, "}\n");
 }
 
+/* :nodoc: */
 static VALUE
 objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
@@ -788,6 +790,7 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
     return dump_result(&dc);
 }
 
+/* :nodoc: */
 static VALUE
 objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
 {

@@ -4713,6 +4713,7 @@ id2ref(VALUE objid)
     }
 }
 
+/* :nodoc: */
 static VALUE
 os_id2ref(VALUE os, VALUE objid)
 {
