@@ -114,7 +114,7 @@ module ObjectSpace
   #  Dump the contents of the ruby shape tree as JSON.
   #
   #  If _shapes_ is a positive integer, only shapes newer than the provided
-  #  shape id are dumped. The current shape_id can be accessed using +RubyVM.stat(:next_shape_id)+.
+  #  shape id are dumped. The current shape_id can be accessed using <tt>RubyVM.stat(:next_shape_id)</tt>.
   #
   #  This method is only expected to work with C Ruby.
   #  This is an experimental method and is subject to change.
