@@ -5,6 +5,30 @@ module RubyVM::MJIT # :nodoc: all
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/mjit/bindgen.rb instead.
   class << C
+    #========================================================================================
+    #
+    # New stuff
+    #
+    def mjit_mark_writable
+      Primitive.cstmt! %{
+        extern bool rb_yjit_mark_writable(void *mem_block, uint32_t mem_size);
+        rb_yjit_mark_writable(rb_mjit_mem_block, MJIT_CODE_SIZE);
+        return Qnil;
+      }
+    end
+
+    def mjit_mark_executable
+      Primitive.cstmt! %{
+        extern bool rb_yjit_mark_executable(void *mem_block, uint32_t mem_size);
+        rb_yjit_mark_executable(rb_mjit_mem_block, MJIT_CODE_SIZE);
+        return Qnil;
+      }
+    end
+
+    #========================================================================================
+    #
+    # Old stuff
+    #
     def rb_hash_values(cdhash_addr)
       Primitive.cexpr! 'rb_hash_values((VALUE)NUM2PTR(cdhash_addr))'
     end

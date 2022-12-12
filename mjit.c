@@ -371,8 +371,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 // New stuff from here
 //
 
-// TODO: Make it configurable
-#define MJIT_CODE_SIZE 16 * 1024 * 1024
+// JIT buffer
+uint8_t *rb_mjit_mem_block = NULL;
 
 void
 rb_mjit_compile(const rb_iseq_t *iseq)
@@ -393,7 +393,7 @@ mjit_init(const struct mjit_options *opts)
     mjit_opts = *opts;
 
     extern uint8_t* rb_yjit_reserve_addr_space(uint32_t mem_size);
-    uint8_t *mem_block = rb_yjit_reserve_addr_space(MJIT_CODE_SIZE);
+    rb_mjit_mem_block = rb_yjit_reserve_addr_space(MJIT_CODE_SIZE);
 
     // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
     rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
@@ -404,7 +404,7 @@ mjit_init(const struct mjit_options *opts)
     }
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
     VALUE rb_cMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
-    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 1, SIZET2NUM((size_t)mem_block));
+    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 1, SIZET2NUM((size_t)rb_mjit_mem_block));
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
 
     mjit_call_p = true;

@@ -1,6 +1,14 @@
+require 'mjit/x86_64/assembler'
+
 class RubyVM::MJIT::Compiler
-  C = RubyVM::MJIT.const_get(:C, false)
-  INSNS = RubyVM::MJIT.const_get(:INSNS, false)
+  # MJIT internals
+  Assembler = RubyVM::MJIT::Assembler
+  C = RubyVM::MJIT::C
+
+  # Ruby constants
+  Qundef = Fiddle::Qundef
+
+  attr_accessor :write_pos
 
   # @param mem_block [Integer] JIT buffer address
   def initialize(mem_block)
@@ -10,6 +18,16 @@ class RubyVM::MJIT::Compiler
 
   # @param iseq [RubyVM::MJIT::CPointer::Struct]
   def compile(iseq)
-    # TODO: implement
+    return if iseq.body.location.label == '<main>'
+
+    iseq.body.jit_func = write_addr
+    asm = Assembler.new
+    asm.mov(:eax, Qundef)
+    asm.ret
+    asm.compile(self)
+  end
+
+  def write_addr
+    @mem_block + @write_pos
   end
 end

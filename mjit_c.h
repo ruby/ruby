@@ -94,4 +94,14 @@ struct compile_status {
     struct inlined_call_context inline_context;
 };
 
+//================================================================================
+//
+// New stuff from here
+//
+
+// TODO: Make it configurable
+#define MJIT_CODE_SIZE 16 * 1024 * 1024
+
+extern uint8_t *rb_mjit_mem_block;
+
 #endif /* MJIT_C_H */
