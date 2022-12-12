@@ -262,7 +262,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
 # define PLATFORM_JIT_OPTION "--yjit"
 #else
-# define PLATFORM_JIT_OPTION "--mjit"
+# define PLATFORM_JIT_OPTION "--mjit (experimental)"
 #endif
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
@@ -285,12 +285,12 @@ usage(const char *name, int help, int highlight, int columns)
         M("-w",		   "",			   "turn warnings on for your script"),
         M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION " (experimental)"),
+        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
 #if USE_MJIT
         M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
 #endif
 #if USE_YJIT
-        M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
+        M("--yjit",        "",                     "enable in-process JIT compiler"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
@@ -378,7 +378,7 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(mjit_option_messages[i]);
 #endif
 #if USE_YJIT
-    printf("%s""YJIT options (experimental):%s\n", sb, se);
+    printf("%s""YJIT options:%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
 #endif

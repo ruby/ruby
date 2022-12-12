@@ -581,6 +581,8 @@ The following deprecated APIs are removed.
 
 ### YJIT
 
+* YJIT is no longer experimental
+    * Has been tested on production workloads for over a year and proven to be quite stable.
 * YJIT now supports both x86-64 and arm64/aarch64 CPUs on Linux, MacOS, BSD and other UNIX platforms.
     * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4.
 * Building YJIT now requires Rust 1.58.0+. [[Feature #18481]]
