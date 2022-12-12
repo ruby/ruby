@@ -67,7 +67,7 @@ module ObjectSpace
   # _shapes_ must be a boolean or a non-negative integer.
   #
   # If _shapes_ is a positive integer, only shapes newer than the provided
-  # shape id are dumped. The current shape_id can be accessed using +RubyVM.stat(:next_shape_id)+.
+  # shape id are dumped. The current shape_id can be accessed using <tt>RubyVM.stat(:next_shape_id)</tt>.
   #
   # If _shapes_ is +false+, no shapes are dumped.
   #
