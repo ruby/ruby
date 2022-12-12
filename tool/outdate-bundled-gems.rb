@@ -14,8 +14,6 @@ until ARGV.empty?
     # just to run when `make -n`
   when /\A--mflags=(.*)/
     fu = FileUtils::DryRun if /\A-\S*n/ =~ $1
-  when /\A--basedir=(.*)/m
-    dir = $1
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
