@@ -95,7 +95,9 @@ curdir.glob(".bundle/specifications/*.gemspec") do |spec|
 end
 
 curdir.glob(".bundle/gems/*/") do |dir|
-  unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
+  base = File.basename(dir)
+  unless curdir.exist?(".bundle/specifications/#{base}.gemspec") or
+        curdir.exist?("#{dir}/.bundled.#{base}.gemspec")
     curdir.rmdir(dir)
   end
 end
