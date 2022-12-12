@@ -1062,7 +1062,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
 static void
 load_failed(VALUE fname)
 {
-    rb_load_fail(fname, "cannot load such file");
+    rb_load_fail(fname, "cannot load file");
 }
 
 static VALUE

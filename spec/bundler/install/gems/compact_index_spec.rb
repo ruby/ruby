@@ -712,7 +712,7 @@ The checksum of /versions does not match the checksum provided by the server! So
       bundled_app("broken_ssl").mkpath
       bundled_app("broken_ssl/openssl.rb").open("w") do |f|
         f.write <<-RUBY
-          raise LoadError, "cannot load such file -- openssl"
+          raise LoadError, "cannot load file -- openssl"
         RUBY
       end
     end
