@@ -126,7 +126,7 @@ static VALUE rb_mMJIT = 0;
 // RubyVM::MJIT::C
 static VALUE rb_mMJITC = 0;
 // RubyVM::MJIT::Compiler
-static VALUE rb_cMJITCompiler = 0;
+static VALUE rb_MJITCompiler = 0;
 // RubyVM::MJIT::CPointer::Struct_rb_iseq_t
 static VALUE rb_cMJITIseqPtr = 0;
 // RubyVM::MJIT::CPointer::Struct_IC
@@ -371,6 +371,9 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 // New stuff from here
 //
 
+// TODO: Make it configurable
+#define MJIT_CODE_SIZE 16 * 1024 * 1024
+
 void
 rb_mjit_compile(const rb_iseq_t *iseq)
 {
@@ -378,7 +381,7 @@ rb_mjit_compile(const rb_iseq_t *iseq)
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
     VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
-    rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 1, iseq_ptr);
+    rb_funcall(rb_MJITCompiler, rb_intern("compile"), 1, iseq_ptr);
 
     mjit_call_p = original_call_p;
 }
@@ -389,6 +392,9 @@ mjit_init(const struct mjit_options *opts)
     VM_ASSERT(mjit_enabled);
     mjit_opts = *opts;
 
+    extern uint8_t* rb_yjit_reserve_addr_space(uint32_t mem_size);
+    uint8_t *mem_block = rb_yjit_reserve_addr_space(MJIT_CODE_SIZE);
+
     // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
     rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
     if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
@@ -397,7 +403,8 @@ mjit_init(const struct mjit_options *opts)
         return;
     }
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
-    rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
+    VALUE rb_cMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
+    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 1, SIZET2NUM((size_t)mem_block));
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
 
     mjit_call_p = true;
