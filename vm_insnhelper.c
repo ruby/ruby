@@ -2493,71 +2493,138 @@ rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
-// If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
-MJIT_STATIC bool
-rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
+static inline void
+vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calling, VALUE ary)
 {
-    return IS_ARGS_SPLAT(ci) || IS_ARGS_KW_OR_KW_SPLAT(ci);
+    vm_check_canary(GET_EC(), cfp->sp);
+
+    if (!NIL_P(ary)) {
+        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        long len = RARRAY_LEN(ary), i;
+
+        CHECK_VM_STACK_OVERFLOW(cfp, len);
+
+        for (i = 0; i < len; i++) {
+            *cfp->sp++ = ptr[i];
+        }
+        calling->argc += i;
+    }
 }
 
+static inline void
+vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_callinfo *ci)
+{
+    const VALUE *const passed_keywords = vm_ci_kwarg(ci)->keywords;
+    const int kw_len = vm_ci_kwarg(ci)->keyword_len;
+    const VALUE h = rb_hash_new_with_size(kw_len);
+    VALUE *sp = cfp->sp;
+    int i;
+
+    for (i=0; i<kw_len; i++) {
+        rb_hash_aset(h, passed_keywords[i], (sp - kw_len)[i]);
+    }
+    (sp-kw_len)[0] = h;
+
+    cfp->sp -= kw_len - 1;
+    calling->argc -= kw_len - 1;
+    calling->kw_splat = 1;
+}
+
+static inline VALUE
+vm_caller_setup_keyword_hash(const struct rb_callinfo *ci, VALUE keyword_hash)
+{
+    if (UNLIKELY(!RB_TYPE_P(keyword_hash, T_HASH))) {
+        /* Convert a non-hash keyword splat to a new hash */
+        keyword_hash = rb_hash_dup(rb_to_hash_type(keyword_hash));
+    }
+    else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
+        /* Convert a hash keyword splat to a new hash unless
+         * a mutable keyword splat was passed.
+         */
+        keyword_hash = rb_hash_dup(keyword_hash);
+    }
+    return keyword_hash;
+}
 
 static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  struct rb_calling_info *restrict calling,
                  const struct rb_callinfo *restrict ci)
 {
-    if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
-        VALUE final_hash;
-        /* This expands the rest argument to the stack.
-         * So, vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT is now inconsistent.
-         */
-        vm_caller_setup_arg_splat(cfp, calling);
-        if (!IS_ARGS_KW_OR_KW_SPLAT(ci) &&
-                calling->argc > 0 &&
-                RB_TYPE_P((final_hash = *(cfp->sp - 1)), T_HASH) &&
-                (((struct RHash *)final_hash)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
-            *(cfp->sp - 1) = rb_hash_dup(final_hash);
-            calling->kw_splat = 1;
-        }
-    }
-    if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
-        if (IS_ARGS_KEYWORD(ci)) {
-            /* This converts VM_CALL_KWARG style to VM_CALL_KW_SPLAT style
-             * by creating a keyword hash.
-             * So, vm_ci_flag(ci) & VM_CALL_KWARG is now inconsistent.
-             */
-            vm_caller_setup_arg_kw(cfp, calling, ci);
+    if (UNLIKELY(IS_ARGS_SPLAT(ci) && IS_ARGS_KW_SPLAT(ci))) {
+        // f(*a, **kw)
+        VM_ASSERT(calling->kw_splat == 1);
+
+        cfp->sp -= 2;
+        calling->argc -= 2;
+        VALUE ary = cfp->sp[0];
+        VALUE kwh = vm_caller_setup_keyword_hash(ci, cfp->sp[1]);
+
+        // splat a
+        vm_caller_setup_arg_splat(cfp, calling, ary);
+
+        // put kw
+        if (!RHASH_EMPTY_P(kwh)) {
+            cfp->sp[0] = kwh;
+            cfp->sp++;
+            calling->argc++;
+
+            VM_ASSERT(calling->kw_splat == 1);
         }
         else {
-            VALUE keyword_hash = cfp->sp[-1];
-            if (!RB_TYPE_P(keyword_hash, T_HASH)) {
-                /* Convert a non-hash keyword splat to a new hash */
-                cfp->sp[-1] = rb_hash_dup(rb_to_hash_type(keyword_hash));
+            calling->kw_splat = 0;
+        }
+    }
+    else if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
+        // f(*a)
+        VM_ASSERT(calling->kw_splat == 0);
+
+        cfp->sp -= 1;
+        calling->argc -= 1;
+        VALUE ary = cfp->sp[0];
+
+        vm_caller_setup_arg_splat(cfp, calling, ary);
+
+        // check the last argument
+        VALUE last_hash;
+        if (!IS_ARGS_KEYWORD(ci) &&
+            calling->argc > 0 &&
+            RB_TYPE_P((last_hash = cfp->sp[-1]), T_HASH) &&
+            (((struct RHash *)last_hash)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+
+            if (RHASH_EMPTY_P(last_hash)) {
+                calling->argc--;
+                cfp->sp -= 1;
             }
-            else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
-                /* Convert a hash keyword splat to a new hash unless
-                 * a mutable keyword splat was passed.
-                 */
-                cfp->sp[-1] = rb_hash_dup(keyword_hash);
+            else {
+                cfp->sp[-1] = rb_hash_dup(last_hash);
+                calling->kw_splat = 1;
             }
         }
     }
-}
+    else if (UNLIKELY(IS_ARGS_KW_SPLAT(ci))) {
+        // f(**kw)
+        VM_ASSERT(calling->kw_splat == 1);
+        VALUE kwh = vm_caller_setup_keyword_hash(ci, cfp->sp[-1]);
 
-static inline void
-CALLER_REMOVE_EMPTY_KW_SPLAT(struct rb_control_frame_struct *restrict cfp,
-                             struct rb_calling_info *restrict calling,
-                             const struct rb_callinfo *restrict ci)
-{
-    if (UNLIKELY(calling->kw_splat)) {
-        /* This removes the last Hash object if it is empty.
-         * So, vm_ci_flag(ci) & VM_CALL_KW_SPLAT is now inconsistent.
-         */
-        if (RHASH_EMPTY_P(cfp->sp[-1])) {
+        if (RHASH_EMPTY_P(kwh)) {
             cfp->sp--;
             calling->argc--;
             calling->kw_splat = 0;
         }
+        else {
+            cfp->sp[-1] = kwh;
+        }
+    }
+    else if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
+        // f(k1:1, k2:2)
+        VM_ASSERT(calling->kw_splat == 0);
+
+        /* This converts VM_CALL_KWARG style to VM_CALL_KW_SPLAT style
+         * by creating a keyword hash.
+         * So, vm_ci_flag(ci) & VM_CALL_KWARG is now inconsistent.
+         */
+        vm_caller_setup_arg_kw(cfp, calling, ci);
     }
 }
 
@@ -2702,7 +2769,6 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         if (LIKELY(rb_simple_iseq_p(iseq))) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             if (calling->argc != ISEQ_BODY(iseq)->param.lead_num) {
                 argument_arity_error(ec, iseq, calling->argc, ISEQ_BODY(iseq)->param.lead_num, ISEQ_BODY(iseq)->param.lead_num);
@@ -2716,7 +2782,6 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
         else if (rb_iseq_only_optparam_p(iseq)) {
             rb_control_frame_t *cfp = ec->cfp;
             CALLER_SETUP_ARG(cfp, calling, ci);
-            CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
             const int lead_num = ISEQ_BODY(iseq)->param.lead_num;
             const int opt_num = ISEQ_BODY(iseq)->param.opt_num;
@@ -3246,6 +3311,13 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     return val;
 }
 
+// If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
+MJIT_STATIC bool
+rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
+{
+    return IS_ARGS_SPLAT(ci) || IS_ARGS_KW_OR_KW_SPLAT(ci);
+}
+
 static VALUE
 vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
@@ -3253,7 +3325,6 @@ vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
-    CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
     CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat);
     return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
 }
@@ -3841,14 +3912,12 @@ vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb
         return vm_call_opt_block_call(ec, cfp, calling);
       case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
         CALLER_SETUP_ARG(cfp, calling, ci);
-        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         rb_check_arity(calling->argc, 0, 0);
         CC_SET_FASTPATH(cc, vm_call_opt_struct_aref, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
         return vm_call_opt_struct_aref(ec, cfp, calling);
 
       case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
         CALLER_SETUP_ARG(cfp, calling, ci);
-        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         rb_check_arity(calling->argc, 1, 1);
         CC_SET_FASTPATH(cc, vm_call_opt_struct_aset, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
         return vm_call_opt_struct_aset(ec, cfp, calling);
@@ -3890,7 +3959,6 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
       case VM_METHOD_TYPE_ATTRSET:
         CALLER_SETUP_ARG(cfp, calling, ci);
-        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
         rb_check_arity(calling->argc, 1, 1);
 
@@ -3927,7 +3995,6 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
       case VM_METHOD_TYPE_IVAR:
         CALLER_SETUP_ARG(cfp, calling, ci);
-        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         rb_check_arity(calling->argc, 0, 0);
         vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
         const unsigned int ivar_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT);
@@ -4302,7 +4369,6 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
         VALUE arg0;
 
         CALLER_SETUP_ARG(cfp, calling, ci);
-        CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
 
         if (arg_setup_type == arg_setup_block &&
             calling->argc == 1 &&
@@ -4402,7 +4468,6 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     const struct rb_captured_block *captured = VM_BH_TO_IFUNC_BLOCK(block_handler);
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
-    CALLER_REMOVE_EMPTY_KW_SPLAT(ec->cfp, calling, ci);
     argc = calling->argc;
     val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->kw_splat, calling->block_handler, NULL);
     POPN(argc); /* TODO: should put before C/yield? */
