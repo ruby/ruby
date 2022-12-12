@@ -148,13 +148,11 @@ module Bundler
     class TCPSocketProbe
       def replies?(mirror)
         MirrorSockets.new(mirror).any? do |socket, address, timeout|
-          begin
-            socket.connect_nonblock(address)
-          rescue Errno::EINPROGRESS
-            wait_for_writtable_socket(socket, address, timeout)
-          rescue RuntimeError # Connection failed somehow, again
-            false
-          end
+          socket.connect_nonblock(address)
+        rescue Errno::EINPROGRESS
+          wait_for_writtable_socket(socket, address, timeout)
+        rescue RuntimeError # Connection failed somehow, again
+          false
         end
       end
 

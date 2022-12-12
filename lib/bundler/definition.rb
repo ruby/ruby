@@ -295,7 +295,7 @@ module Bundler
 
       # Convert to \r\n if the existing lock has them
       # i.e., Windows with `git config core.autocrlf=true`
-      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match("\r\n")
+      contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match?("\r\n")
 
       if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first

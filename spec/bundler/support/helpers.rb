@@ -290,7 +290,7 @@ module Spec
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
             with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
-          elsif gem_name =~ %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}
+          elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
             install_gem(gem_name, default)
           else
             install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
@@ -486,10 +486,10 @@ module Spec
       Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
     end
 
-    # versions providing a bundler version finder but not including
+    # versions not including
     # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def rubygems_version_failing_to_activate_bundler_prereleases
-      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1") && Gem.rubygems_version >= Gem::Version.new("2.7.0")
+      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
     end
 
     def revision_for(path)

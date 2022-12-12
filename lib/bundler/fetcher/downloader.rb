@@ -80,7 +80,7 @@ module Bundler
       private
 
       def validate_uri_scheme!(uri)
-        return if uri.scheme =~ /\Ahttps?\z/
+        return if /\Ahttps?\z/.match?(uri.scheme)
         raise InvalidOption,
           "The request uri `#{uri}` has an invalid scheme (`#{uri.scheme}`). " \
           "Did you mean `http` or `https`?"

@@ -338,11 +338,7 @@ module Gem
     end
 
     def glob_files_in_dir(glob, base_path)
-      if RUBY_VERSION >= "2.5"
-        Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
-      else
-        Dir.glob(File.join(base_path.to_s.gsub(/[\[\]]/, '\\\\\\&'), glob)).map! {|f| File.expand_path(f) }
-      end
+      Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
     end
   end
 end

@@ -126,7 +126,7 @@ module Spec
             next if version == v("1.4.2.1") && platform != pl("x86-mswin32")
             next if version == v("1.4.2") && platform == pl("x86-mswin32")
             gem "nokogiri", version, platform do
-              dep "weakling", ">= 0.0.3" if platform =~ pl("java")
+              dep "weakling", ">= 0.0.3" if platform =~ pl("java") # rubocop:disable Performance/RegexpMatch
             end
           end
         end

@@ -235,7 +235,7 @@ module Bundler
 
         gemfile.each_with_index do |line, index|
           next unless !line.nil? && line.strip.start_with?(block_name)
-          if gemfile[index + 1] =~ /^\s*end\s*$/
+          if /^\s*end\s*$/.match?(gemfile[index + 1])
             gemfile[index] = nil
             gemfile[index + 1] = nil
           end

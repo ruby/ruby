@@ -64,7 +64,7 @@ module Bundler
           at = if local?
             path
           elsif user_ref = options["ref"]
-            if ref =~ /\A[a-z0-9]{4,}\z/i
+            if /\A[a-z0-9]{4,}\z/i.match?(ref)
               shortref_for_display(user_ref)
             else
               user_ref
@@ -295,7 +295,7 @@ module Bundler
       end
 
       def uri_hash
-        if uri =~ %r{^\w+://(\w+@)?}
+        if %r{^\w+://(\w+@)?}.match?(uri)
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
           input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
