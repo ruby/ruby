@@ -118,7 +118,6 @@ module SyncDefaultGems
       "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
     end
     changed or return false
-    File.rename(file, file + "~")
     File.binwrite(file, src)
     return true
   end
