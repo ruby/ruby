@@ -574,6 +574,8 @@ The following deprecated APIs are removed.
   New keys, `:constant_cache_invalidations` and `:constant_cache_misses`,
   were introduced to help with use cases for `:global_constant_state`.
   [[Feature #18589]]
+* The cache-based optimization for Regexp matching is introduced.
+  [[Feature #19104]]
 
 ## JIT
 
@@ -674,5 +676,6 @@ The following deprecated APIs are removed.
 [Feature #19078]: https://bugs.ruby-lang.org/issues/19078
 [Bug #19087]:     https://bugs.ruby-lang.org/issues/19087
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
+[Feature #19104]: https://bugs.ruby-lang.org/issues/19104
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
