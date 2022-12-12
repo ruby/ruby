@@ -207,9 +207,7 @@ module Net::HTTPHeader
   # or +nil+ if there is no such key;
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res['Connection'] # => "keep-alive"
   #   res['Nosuch']     # => nil
   #
@@ -293,9 +291,7 @@ module Net::HTTPHeader
   # or +nil+ if there is no such field;
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.get_fields('Connection') # => ["keep-alive"]
   #   res.get_fields('Nosuch')     # => nil
   #
@@ -314,9 +310,7 @@ module Net::HTTPHeader
   # ignores the +default_val+;
   # see {Fields}[rdoc-ref:Net::HTTPHeader@Fields]:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #
   #   # Field exists; block not called.
   #   res.fetch('Connection') do |value|
@@ -343,9 +337,7 @@ module Net::HTTPHeader
 
   # Calls the block with each key/value pair:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.each_header do |key, value|
   #     p [key, value] if key.start_with?('c')
   #   end
@@ -372,20 +364,18 @@ module Net::HTTPHeader
 
   # Calls the block with each field key:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.each_key do |key|
   #     p key if key.start_with?('c')
   #   end
   #
   # Output:
   #
-  # "content-type"
-  # "connection"
-  # "cache-control"
-  # "cf-cache-status"
-  # "cf-ray"
+  #   "content-type"
+  #   "connection"
+  #   "cache-control"
+  #   "cf-cache-status"
+  #   "cf-ray"
   #
   # Returns an enumerator if no block is given.
   #
@@ -399,9 +389,7 @@ module Net::HTTPHeader
 
   # Calls the block with each capitalized field name:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.each_capitalized_name do |key|
   #     p key if key.start_with?('C')
   #   end
@@ -427,9 +415,7 @@ module Net::HTTPHeader
 
   # Calls the block with each string field value:
   #
-  #   res = Net::HTTP.start(hostname) do |http|
-  #     http.get('/todos/1')
-  #   end
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.each_value do |value|
   #     p value if value.start_with?('c')
   #   end
@@ -610,8 +596,15 @@ module Net::HTTPHeader
 
   alias range= set_range
 
-  # Returns an Integer object which represents the HTTP Content-Length:
-  # header field, or +nil+ if that field was not provided.
+  # Returns the value of field <tt>'Content-Length'</tt> as an integer,
+  # or +nil+ if there is no such field;
+  # see {Content-Length request header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-length-request-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/nosuch/1')
+  #   res.content_length # => 2
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res.content_length # => nil
+  #
   def content_length
     return nil unless key?('Content-Length')
     len = self['Content-Length'].slice(/\d+/) or
@@ -619,6 +612,20 @@ module Net::HTTPHeader
     len.to_i
   end
 
+  # Sets the value of field <tt>'Content-Length'</tt> to the given numeric;
+  # see {Content-Length response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-length-response-header]:
+  #
+  #   _uri = uri.dup
+  #   hostname = _uri.hostname           # => "jsonplaceholder.typicode.com"
+  #   _uri.path = '/posts'               # => "/posts"
+  #   req = Net::HTTP::Post.new(_uri)    # => #<Net::HTTP::Post POST>
+  #   req.body = '{"title": "foo","body": "bar","userId": 1}'
+  #   req.content_length = req.body.size # => 42
+  #   req.content_type = 'application/json'
+  #   res = Net::HTTP.start(hostname) do |http|
+  #     http.request(req)
+  #   end # => #<Net::HTTPCreated 201 Created readbody=true>
+  #
   def content_length=(len)
     unless len
       @header.delete 'content-length'
@@ -627,20 +634,31 @@ module Net::HTTPHeader
     @header['content-length'] = [len.to_i.to_s]
   end
 
-  # Returns "true" if the "transfer-encoding" header is present and
-  # set to "chunked".  This is an HTTP/1.1 feature, allowing
-  # the content to be sent in "chunks" without at the outset
-  # stating the entire content length.
+  # Returns +true+ if field <tt>'Transfer-Encoding'</tt>
+  # exists and has value <tt>'chunked'</tt>,
+  # +false+ otherwise;
+  # see {Transfer-Encoding response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#transfer-encoding-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['Transfer-Encoding'] # => "chunked"
+  #   res.chunked?             # => true
+  #
   def chunked?
     return false unless @header['transfer-encoding']
     field = self['Transfer-Encoding']
     (/(?:\A|[^\-\w])chunked(?![\-\w])/i =~ field) ? true : false
   end
 
-  # Returns a Range object which represents the value of the Content-Range:
-  # header field.
-  # For a partial entity body, this indicates where this fragment
-  # fits inside the full entity body, as range of byte offsets.
+  # Returns a Range object representing the value of field
+  # <tt>'Content-Range'</tt>, or +nil+ if no such field exists;
+  # see {Content-Range response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-range-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['Content-Range'] # => nil
+  #   res['Content-Range'] = 'bytes 0-499/1000'
+  #   res['Content-Range'] # => "bytes 0-499/1000"
+  #   res.content_range    # => 0..499
+  #
   def content_range
     return nil unless @header['content-range']
     m = %r<\A\s*(\w+)\s+(\d+)-(\d+)/(\d+|\*)>.match(self['Content-Range']) or
@@ -649,14 +667,29 @@ module Net::HTTPHeader
     m[2].to_i .. m[3].to_i
   end
 
-  # The length of the range represented in Content-Range: header.
+  # Returns the integer representing length of the value of field
+  # <tt>'Content-Range'</tt>, or +nil+ if no such field exists;
+  # see {Content-Range response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-range-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['Content-Range'] # => nil
+  #   res['Content-Range'] = 'bytes 0-499/1000'
+  #   res.range_length     # => 500
+  #
   def range_length
     r = content_range() or return nil
     r.end - r.begin + 1
   end
 
-  # Returns a content type string such as "text/html".
-  # This method returns nil if Content-Type: header field does not exist.
+  # Returns the {media type}[https://en.wikipedia.org/wiki/Media_type]
+  # from the value of field <tt>'Content-Type'</tt>,
+  # or +nil+ if no such field exists;
+  # see {Content-Type response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-type-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['content-type'] # => "application/json; charset=utf-8"
+  #   res.content_type    # => "application/json"
+  #
   def content_type
     return nil unless main_type()
     if sub_type()
@@ -665,16 +698,31 @@ module Net::HTTPHeader
     end
   end
 
-  # Returns a content type string such as "text".
-  # This method returns nil if Content-Type: header field does not exist.
+  # Returns the leading ('type') part of the
+  # {media type}[https://en.wikipedia.org/wiki/Media_type]
+  # from the value of field <tt>'Content-Type'</tt>,
+  # or +nil+ if no such field exists;
+  # see {Content-Type response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-type-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['content-type'] # => "application/json; charset=utf-8"
+  #   res.main_type       # => "application"
+  #
   def main_type
     return nil unless @header['content-type']
     self['Content-Type'].split(';').first.to_s.split('/')[0].to_s.strip
   end
 
-  # Returns a content type string such as "html".
-  # This method returns nil if Content-Type: header field does not exist
-  # or sub-type is not given (e.g. "Content-Type: text").
+  # Returns the trailing ('subtype') part of the
+  # {media type}[https://en.wikipedia.org/wiki/Media_type]
+  # from the value of field <tt>'Content-Type'</tt>,
+  # or +nil+ if no such field exists;
+  # see {Content-Type response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-type-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['content-type'] # => "application/json; charset=utf-8"
+  #   res.sub_type        # => "json"
+  #
   def sub_type
     return nil unless @header['content-type']
     _, sub = *self['Content-Type'].split(';').first.to_s.split('/')
@@ -682,9 +730,14 @@ module Net::HTTPHeader
     sub.strip
   end
 
-  # Any parameters specified for the content type, returned as a Hash.
-  # For example, a header of Content-Type: text/html; charset=EUC-JP
-  # would result in type_params returning {'charset' => 'EUC-JP'}
+  # Returns the trailing ('parameters') part of the value of field <tt>'Content-Type'</tt>,
+  # or +nil+ if no such field exists;
+  # see {Content-Type response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-type-response-header]:
+  #
+  #   res = Net::HTTP.get_response(hostname, '/todos/1')
+  #   res['content-type'] # => "application/json; charset=utf-8"
+  #   res.type_params     # => {"charset"=>"utf-8"}
+  #
   def type_params
     result = {}
     list = self['Content-Type'].to_s.split(';')
@@ -696,10 +749,12 @@ module Net::HTTPHeader
     result
   end
 
-  # Sets the content type in an HTTP header.
-  # The +type+ should be a full HTTP content type, e.g. "text/html".
-  # The +params+ are an optional Hash of parameters to add after the
-  # content type, e.g. {'charset' => 'iso-8859-1'}.
+  # Sets the value of field <tt>'Content-Type'</tt>;
+  # returns the new value;
+  # see {Content-Type request header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-type-request-header]:
+  #
+  #   req = Net::HTTP::Get.new(uri)
+  #   req.set_content_type('application/json') # => ["application/json"]
   #
   # Net::HTTPHeader#content_type= is an alias for Net::HTTPHeader#set_content_type.
   def set_content_type(type, params = {})
