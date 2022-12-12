@@ -2061,13 +2061,8 @@ You may need to `bundle install` to install missing gems
   end
 
   def redefine_method(base, method, new_result)
-    if RUBY_VERSION >= "2.5"
-      base.alias_method(method, method)
-      base.define_method(method) { new_result }
-    else
-      base.send(:alias_method, method, method)
-      base.send(:define_method, method) { new_result }
-    end
+    base.alias_method(method, method)
+    base.define_method(method) { new_result }
   end
 
   def with_plugin(path)

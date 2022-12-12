@@ -250,7 +250,7 @@ module Bundler
 
         # Adds credentials to the URI
         def configured_uri
-          if /https?:/ =~ uri
+          if /https?:/.match?(uri)
             remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth

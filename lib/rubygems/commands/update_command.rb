@@ -329,14 +329,8 @@ command to remove old versions.
         Gem::Version.new("3.2.3")
       elsif Gem.ruby_version > Gem::Version.new("2.7.a")
         Gem::Version.new("3.1.2")
-      elsif Gem.ruby_version > Gem::Version.new("2.6.a")
-        Gem::Version.new("3.0.1")
-      elsif Gem.ruby_version > Gem::Version.new("2.5.a")
-        Gem::Version.new("2.7.3")
-      elsif Gem.ruby_version > Gem::Version.new("2.4.a")
-        Gem::Version.new("2.6.8")
       else
-        Gem::Version.new("2.5.2")
+        Gem::Version.new("3.0.1")
       end
   end
 end

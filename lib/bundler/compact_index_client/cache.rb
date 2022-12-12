@@ -68,7 +68,7 @@ module Bundler
 
       def info_path(name)
         name = name.to_s
-        if name =~ /[^a-z0-9_-]/
+        if /[^a-z0-9_-]/.match?(name)
           name += "-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}"
           info_roots.last.join(name)
         else

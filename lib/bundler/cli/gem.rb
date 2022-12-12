@@ -270,7 +270,7 @@ module Bundler
         Bundler.ui.info hint_text("test")
 
         result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
-        if result =~ /rspec|minitest|test-unit/
+        if /rspec|minitest|test-unit/.match?(result)
           test_framework = result
         else
           test_framework = false
@@ -311,7 +311,7 @@ module Bundler
         Bundler.ui.info hint_text("ci")
 
         result = Bundler.ui.ask "Enter a CI service. github/travis/gitlab/circle/(none):"
-        if result =~ /github|travis|gitlab|circle/
+        if /github|travis|gitlab|circle/.match?(result)
           ci_template = result
         else
           ci_template = false
@@ -342,7 +342,7 @@ module Bundler
         Bundler.ui.info hint_text("linter")
 
         result = Bundler.ui.ask "Enter a linter. rubocop/standard/(none):"
-        if result =~ /rubocop|standard/
+        if /rubocop|standard/.match?(result)
           linter_template = result
         else
           linter_template = false
@@ -389,7 +389,7 @@ module Bundler
     end
 
     def ensure_safe_gem_name(name, constant_array)
-      if name =~ /^\d/
+      if /^\d/.match?(name)
         Bundler.ui.error "Invalid gem name #{name} Please give a name which does not start with numbers."
         exit 1
       end
@@ -416,28 +416,15 @@ module Bundler
     end
 
     def required_ruby_version
-      if Gem.ruby_version < Gem::Version.new("2.4.a") then "2.3.0"
-      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "2.4.0"
-      elsif Gem.ruby_version < Gem::Version.new("2.6.a") then "2.5.0"
-      else
-        "2.6.0"
-      end
+      "2.6.0"
     end
 
     def rubocop_version
-      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.81.0"
-      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.12"
-      else
-        "1.21"
-      end
+      "1.21"
     end
 
     def standard_version
-      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.2.5"
-      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.0"
-      else
-        "1.3"
-      end
+      "1.3"
     end
   end
 end

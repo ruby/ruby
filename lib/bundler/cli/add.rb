@@ -40,7 +40,7 @@ module Bundler
       raise InvalidOption, "Please specify gems to add." if gems.empty?
 
       version.to_a.each do |v|
-        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN =~ v.to_s
+        raise InvalidOption, "Invalid gem requirement pattern '#{v}'" unless Gem::Requirement::PATTERN.match?(v.to_s)
       end
     end
   end
