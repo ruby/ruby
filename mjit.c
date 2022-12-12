@@ -366,6 +366,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     return false;
 }
 
+//================================================================================
 //
 // New stuff from here
 //
@@ -373,7 +374,13 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 void
 rb_mjit_compile(const rb_iseq_t *iseq)
 {
-    // TODO: implement
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+
+    VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
+    rb_funcall(rb_cMJITCompiler, rb_intern("compile"), 1, iseq_ptr);
+
+    mjit_call_p = original_call_p;
 }
 
 void
