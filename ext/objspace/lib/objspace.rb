@@ -54,7 +54,7 @@ module ObjectSpace
   #
   # Dump the contents of the ruby heap as JSON.
   #
-  # _full__ must be a boolean. If true all heap slots are dumped including the empty ones (T_NONE).
+  # _full_ must be a boolean. If true all heap slots are dumped including the empty ones (T_NONE).
   #
   # _since_ must be a non-negative integer or +nil+.
   #
