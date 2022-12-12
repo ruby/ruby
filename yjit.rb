@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# This module allows for introspection of YJIT, CRuby's experimental in-process
+# This module allows for introspection of YJIT, CRuby's in-process
 # just-in-time compiler. This module exists only to help develop YJIT, as such,
 # everything in the module is highly implementation specific and comes with no
 # API stability guarantee whatsoever.
