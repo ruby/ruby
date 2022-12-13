@@ -29,7 +29,7 @@ class Output
     outpath = nil
 
     if (@ifchange or overwrite or create_only) and
-      (@vpath.open(@path, "rb") {|f| outpath = f.path; (@ifchange and f.read == data) or create_only} rescue false)
+      (@vpath.open(@path, "rb") {|f| outpath = f.path; (@ifchange and f.read == data) or (create_only and !f.read.empty?)} rescue false)
       puts "#{outpath} #{unchanged}"
       written = false
     else
