@@ -49,7 +49,7 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 128 * 1024 * 1024,
+    exec_mem_size: 64 * 1024 * 1024,
     call_threshold: 30,
     greedy_versioning: false,
     no_type_prop: false,

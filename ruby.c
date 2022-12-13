@@ -340,7 +340,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if YJIT_STATS
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
 #endif
-        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 256)"),
+        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 64)"),
         M("--yjit-call-threshold=num", "", "Number of calls to trigger JIT (default: 10)"),
         M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
