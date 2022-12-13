@@ -8421,20 +8421,20 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
     size_t idx = 0;
 
     switch (BUILTIN_TYPE(src)) {
-        case T_ARRAY:
-            obj_size = rb_ary_size_as_embedded(src);
-            break;
+      case T_ARRAY:
+        obj_size = rb_ary_size_as_embedded(src);
+        break;
 
-        case T_OBJECT:
-            obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
-            break;
+      case T_OBJECT:
+        obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
+        break;
 
-        case T_STRING:
-            obj_size = rb_str_size_as_embedded(src);
-            break;
+      case T_STRING:
+        obj_size = rb_str_size_as_embedded(src);
+        break;
 
-        default:
-            return src_pool;
+      default:
+        return src_pool;
     }
 
     if (rb_gc_size_allocatable_p(obj_size)){
