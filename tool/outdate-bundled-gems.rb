@@ -111,7 +111,7 @@ end
 
 version = RbConfig::CONFIG['ruby_version']
 curdir.glob(".bundle/{extensions,.timestamp}/#{platform}/*/") do |dir|
-  unless File.basename(dir) == version
+  unless File.basename(dir).start_with?(version)
     curdir.rmdir(dir)
   end
 end
