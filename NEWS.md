@@ -418,7 +418,7 @@ Note: We're only listing outstanding class updates.
     * io-nonblock 0.2.0
     * io-wait 0.3.0.pre
     * ipaddr 1.2.5
-    * irb 1.6.0
+    * irb 1.6.1
     * json 2.6.3
     * logger 1.5.2
     * mutex_m 0.1.2
