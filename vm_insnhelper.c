@@ -2533,17 +2533,22 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
 static inline VALUE
 vm_caller_setup_keyword_hash(const struct rb_callinfo *ci, VALUE keyword_hash)
 {
-    if (UNLIKELY(!RB_TYPE_P(keyword_hash, T_HASH))) {
+    if (keyword_hash == RB_KWREST_EMPTY_VAL) {
+        return keyword_hash;
+    }
+    else if (UNLIKELY(!RB_TYPE_P(keyword_hash, T_HASH))) {
         /* Convert a non-hash keyword splat to a new hash */
-        keyword_hash = rb_hash_dup(rb_to_hash_type(keyword_hash));
+        return rb_hash_dup(rb_to_hash_type(keyword_hash));
     }
     else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
         /* Convert a hash keyword splat to a new hash unless
          * a mutable keyword splat was passed.
          */
-        keyword_hash = rb_hash_dup(keyword_hash);
+        return rb_hash_dup(keyword_hash);
     }
-    return keyword_hash;
+    else {
+        return keyword_hash;
+    }
 }
 
 static inline void
@@ -2564,7 +2569,7 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
         vm_caller_setup_arg_splat(cfp, calling, ary);
 
         // put kw
-        if (!RHASH_EMPTY_P(kwh)) {
+        if (!KWHASH_EMPTY_P(kwh)) {
             cfp->sp[0] = kwh;
             cfp->sp++;
             calling->argc++;
@@ -2592,7 +2597,7 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
             RB_TYPE_P((last_hash = cfp->sp[-1]), T_HASH) &&
             (((struct RHash *)last_hash)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
 
-            if (RHASH_EMPTY_P(last_hash)) {
+            if (KWHASH_EMPTY_P(last_hash)) {
                 calling->argc--;
                 cfp->sp -= 1;
             }
@@ -2607,7 +2612,7 @@ CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
         VM_ASSERT(calling->kw_splat == 1);
         VALUE kwh = vm_caller_setup_keyword_hash(ci, cfp->sp[-1]);
 
-        if (RHASH_EMPTY_P(kwh)) {
+        if (KWHASH_EMPTY_P(kwh)) {
             cfp->sp--;
             calling->argc--;
             calling->kw_splat = 0;

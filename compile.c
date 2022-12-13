@@ -284,10 +284,10 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define ADD_TRACE_WITH_DATA(seq, event, data) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), (data)))
 
-static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level);
+static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level, bool raw);
 static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level);
 
-#define ADD_GETLOCAL(seq, line_node, idx, level) iseq_add_getlocal(iseq, (seq), (line_node), (idx), (level))
+#define ADD_GETLOCAL(seq, line_node, idx, level) iseq_add_getlocal(iseq, (seq), (line_node), (idx), (level), false)
 #define ADD_SETLOCAL(seq, line_node, idx, level) iseq_add_setlocal(iseq, (seq), (line_node), (idx), (level))
 
 /* add label */
@@ -1591,8 +1591,14 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     return idx;
 }
 
-static int
-iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+enum LVAR_TYPE{
+    LVAR_KWREST_PARAM = 1,
+    LVAR_BLOCK_PARAM = 2,
+    LVAR_KWREST_OTHER = 3,
+};
+
+static enum LVAR_TYPE
+iseq_local_type(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
 {
     const struct rb_iseq_constant_body *body;
     while (level > 0) {
@@ -1600,14 +1606,30 @@ iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int l
         level--;
     }
     body = ISEQ_BODY(iseq);
-    if (body->local_iseq == iseq && /* local variables */
+
+    if (body->local_iseq == iseq && // lvar only
         body->param.flags.has_block &&
         body->local_table_size - body->param.block_start == idx) {
-        return TRUE;
+        return LVAR_BLOCK_PARAM;
     }
-    else {
-        return FALSE;
+    else if (body->param.flags.has_kwrest &&
+             body->local_table_size - body->param.keyword->rest_start == idx) {
+        return LVAR_KWREST_PARAM;
     }
+
+    return LVAR_KWREST_OTHER;
+}
+
+static int
+iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    return iseq_local_type(iseq, idx, level) == LVAR_BLOCK_PARAM;
+}
+
+static int
+iseq_local_kwrest_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    return iseq_local_type(iseq, idx, level) == LVAR_KWREST_PARAM;
 }
 
 static int
@@ -1616,6 +1638,21 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
     int level, ls;
     int idx = get_dyna_var_idx(iseq, id, &level, &ls);
     if (iseq_local_block_param_p(iseq, ls - idx, level)) {
+        *pidx = ls - idx;
+        *plevel = level;
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+}
+
+static int
+iseq_kwrest_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
+{
+    int level, ls;
+    int idx = get_dyna_var_idx(iseq, id, &level, &ls);
+    if (iseq_local_kwrest_param_p(iseq, ls - idx, level)) {
         *pidx = ls - idx;
         *plevel = level;
         return TRUE;
@@ -1673,14 +1710,25 @@ iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 }
 
 static void
-iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level)
+iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level, bool raw)
 {
-    if (iseq_local_block_param_p(iseq, idx, level)) {
-        ADD_INSN2(seq, line_node, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
-    }
-    else {
+    if (raw) {
         ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
+    else {
+        switch (iseq_local_type(iseq, idx, level)) {
+          case LVAR_KWREST_PARAM:
+            ADD_INSN2(seq, line_node, getkwrestparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+          case LVAR_BLOCK_PARAM:
+            ADD_INSN2(seq, line_node, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+          default:
+            ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+        }
+    }
+
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
 }
 
@@ -1695,8 +1743,6 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     }
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
-
-
 
 static void
 iseq_calc_param_size(rb_iseq_t *iseq)
@@ -4760,7 +4806,14 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                          * This is only done for method calls and not for literal hashes,
                          * because literal hashes should always result in a new hash.
                          */
-                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
+
+                        int idx, lv;
+                        if (nd_type(kw) == NODE_LVAR && iseq_kwrest_param_id_p(iseq, kw->nd_vid, &idx, &lv)) {
+                            iseq_add_getlocal(iseq, ret, kw, idx, lv, true);
+                        }
+                        else {
+                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                        }
                     }
                     else {
                         /* There is more than one keyword argument, or this is not a method

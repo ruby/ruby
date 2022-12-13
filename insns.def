@@ -98,6 +98,22 @@ setlocal
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
 
+/* Get a kw rest parameter */
+DEFINE_INSN
+getkwrestparam
+(lindex_t idx, rb_num_t level)
+()
+(VALUE val)
+{
+    val = *(vm_get_ep(GET_EP(), level) - idx);
+    if (val == RB_KWREST_EMPTY_VAL) {
+        val = rb_hash_new();
+        vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
+    }
+    RB_DEBUG_COUNTER_INC(lvar_get);
+    (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
+}
+
 /* Get a block parameter. */
 DEFINE_INSN
 getblockparam

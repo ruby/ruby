@@ -65,8 +65,8 @@ RUBY_FUNC_EXPORTED
 MJIT_FUNC_EXPORTED
 #endif
 VALUE vm_exec(rb_execution_context_t *, bool);
-
 extern const char *const rb_debug_counter_names[];
+#define RB_KWREST_EMPTY_VAL Qundef
 
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
