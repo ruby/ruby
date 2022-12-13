@@ -28,8 +28,11 @@ class Output
     updated = color.fail("updated")
     outpath = nil
 
-    if (@ifchange or overwrite or create_only) and
-      (@vpath.open(@path, "rb") {|f| outpath = f.path; (@ifchange and f.read == data) or (create_only and !f.read.empty?)} rescue false)
+    if (@ifchange or overwrite or create_only) and (@vpath.open(@path, "rb") {|f|
+      outpath = f.path
+      original = f.read
+      (@ifchange and original == data) or (create_only and !original.empty?)
+    } rescue false)
       puts "#{outpath} #{unchanged}"
       written = false
     else
