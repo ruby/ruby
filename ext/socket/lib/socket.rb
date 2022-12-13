@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'socket.so'
-require 'io/wait'
+require 'io/wait' unless ::IO.public_instance_methods(false).include? :wait_readable
 
 class Addrinfo
   # creates an Addrinfo object from the arguments.
