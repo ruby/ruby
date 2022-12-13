@@ -156,6 +156,11 @@ module Bundler
       package_deps = @cached_dependencies[package]
       sorted_versions = @sorted_versions[package]
       package_deps[version].map do |dep_package, dep_constraint|
+        if package == dep_package
+          cause = PubGrub::Incompatibility::CircularDependency.new(dep_package, dep_constraint.constraint_string)
+          return [PubGrub::Incompatibility.new([PubGrub::Term.new(dep_constraint, true)], :cause => cause)]
+        end
+
         low = high = sorted_versions.index(version)
 
         # find version low such that all >= low share the same dep
