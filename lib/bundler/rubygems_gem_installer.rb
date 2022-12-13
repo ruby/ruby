@@ -109,8 +109,10 @@ module Bundler
 
     def strict_rm_rf(dir)
       Bundler.rm_rf dir
-    rescue Errno::ENOTEMPTY => e
-      raise DirectoryRemovalError.new(e.cause, "Could not delete previous installation of `#{dir}`")
+    rescue StandardError => e
+      raise unless File.exist?(dir)
+
+      raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
     end
 
     def validate_bundler_checksum(checksum)
