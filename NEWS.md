@@ -576,6 +576,8 @@ The following deprecated APIs are removed.
   [[Feature #18589]]
 * The cache-based optimization for Regexp matching is introduced.
   [[Feature #19104]]
+* Variable Width Allocation is now enabled by default.
+  [[Feature #18239]].
 
 ## JIT
 
@@ -638,6 +640,7 @@ The following deprecated APIs are removed.
 [Feature #17837]: https://bugs.ruby-lang.org/issues/17837
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
+[Feature #18239]: https://bugs.ruby-lang.org/issues/18239#note-17
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Feature #18367]: https://bugs.ruby-lang.org/issues/18367
 [Bug #18435]:     https://bugs.ruby-lang.org/issues/18435
