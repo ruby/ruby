@@ -3678,7 +3678,7 @@ rsort(VALUE *const p, const long l)
 
     VALUE *pp = p, *const P = pp + l;
 
-    uint64_t shift_range;
+    uint64_t shift_range; int num_passes = NUM_PASSES;
 
     {
         uint64_t prev = 0, max = 0, min = ~max; _Bool is_unordered = 0;
@@ -3692,6 +3692,8 @@ rsort(VALUE *const p, const long l)
         if (!is_unordered) return 0;
         shift_range = (min >= MSB64 || max < MSB64 ||
                        MSB64 - min > ~(uint64_t)0 - max) ? 0 : MSB64 - min;
+        min += shift_range, max += shift_range;
+        for (int s = 56; (min >> s) == (max >> s); s -= 8, --num_passes);
     }
 
     uint64_t F[NUM_PASSES][RADIX] = {{0}},
@@ -3699,9 +3701,11 @@ rsort(VALUE *const p, const long l)
              *a = _r, *pa = a, *PA, *b = a + l;
     if (_r == NULL) return 1;
 
+    for (int i = num_passes; i < NUM_PASSES; F[i++][0] = l);
+
     for (pp = p; pp < P; pa++) {
         *pa = (*pp++ ^ MSB64) + shift_range;
-        for (int i = 0; i < NUM_PASSES; i++)
+        for (int i = 0; i < num_passes; i++)
             F[i][(uint8_t)(*pa >> i * RDX_BITS)]++;
     }
 
