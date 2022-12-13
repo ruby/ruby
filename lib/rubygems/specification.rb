@@ -874,7 +874,7 @@ class Gem::Specification < Gem::BasicSpecification
   # You probably want to use one of the Enumerable methods instead.
 
   def self.all
-    warn "NOTE: Specification.all called from #{caller.first}" unless
+    warn "NOTE: Specification.all called from #{caller(1, 1).first}" unless
       Gem::Deprecate.skip
     _all
   end
