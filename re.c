@@ -4206,7 +4206,8 @@ rb_reg_s_union_m(VALUE self, VALUE args)
  *
  */
 static VALUE
-rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self) {
+rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self)
+{
     VALUE re;
     VALUE src, opts = Qundef, n_flag = Qundef, kwargs;
 
