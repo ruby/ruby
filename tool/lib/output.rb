@@ -18,7 +18,7 @@ class Output
     @vpath.def_options(opt)
   end
 
-  def write(data, overwrite: false)
+  def write(data, overwrite: false, create_only: false)
     unless @path
       $stdout.print data
       return true
@@ -28,8 +28,8 @@ class Output
     updated = color.fail("updated")
     outpath = nil
 
-    if (@ifchange or overwrite) and
-      (@vpath.open(@path, "rb") {|f| outpath = f.path; f.read == data if @ifchange} rescue false)
+    if (@ifchange or overwrite or create_only) and
+      (@vpath.open(@path, "rb") {|f| outpath = f.path; (@ifchange and f.read == data) or (create_only and !f.read.empty?)} rescue false)
       puts "#{outpath} #{unchanged}"
       written = false
     else
