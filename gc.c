@@ -574,6 +574,7 @@ struct RMoved {
     VALUE flags;
     VALUE dummy;
     VALUE destination;
+    shape_id_t original_shape_id;
 };
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
@@ -6089,9 +6090,18 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     object = rb_gc_location(forwarding_object);
 
+                    shape_id_t original_shape_id = 0;
+                    if (RB_TYPE_P(object, T_OBJECT)) {
+                        original_shape_id = RMOVED(forwarding_object)->original_shape_id;
+                    }
+
                     gc_move(objspace, object, forwarding_object, GET_HEAP_PAGE(object)->slot_size, page->slot_size);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
+
+                    if (original_shape_id) {
+                        ROBJECT_SET_SHAPE_ID(forwarding_object, original_shape_id);
+                    }
 
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
@@ -8465,10 +8475,26 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
 {
     GC_ASSERT(BUILTIN_TYPE(src) != T_MOVED);
 
-    rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(gc_compact_destination_pool(objspace, size_pool, src));
+    rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, size_pool, src);
+    rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(dest_pool);
+    rb_shape_t *new_shape = NULL;
+    rb_shape_t *orig_shape = NULL;
 
     if (gc_compact_heap_cursors_met_p(dheap)) {
         return dheap != heap;
+    }
+
+    if (RB_TYPE_P(src, T_OBJECT) && gc_is_moveable_obj(objspace, src)) {
+        orig_shape = rb_shape_get_shape(src);
+        if (dheap != heap && !rb_shape_obj_too_complex(src)) {
+            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + SIZE_POOL_COUNT));
+            new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
+
+            if (!new_shape) {
+                dest_pool = size_pool;
+                dheap = heap;
+            }
+        }
     }
 
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
@@ -8495,6 +8521,15 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             return false;
         }
     }
+
+    if (orig_shape) {
+        if (new_shape) {
+            VALUE dest = rb_gc_location(src);
+            rb_shape_set_shape(dest, new_shape);
+        }
+        RMOVED(src)->original_shape_id = rb_shape_id(orig_shape);
+    }
+
     return true;
 }
 
@@ -10083,10 +10118,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
             xfree(ptr);
         }
         ptr = ROBJECT(v)->as.ary;
-        size_t size_pool_shape_id = size_pool_idx_for_size(embed_size);
-        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id + SIZE_POOL_COUNT);
-        rb_shape_t * new_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape(v));
-        rb_shape_set_shape(v, new_shape);
     }
 #endif
 

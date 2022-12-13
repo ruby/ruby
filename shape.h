@@ -216,6 +216,8 @@ rb_shape_t * rb_shape_alloc(ID edge_name, rb_shape_t * parent);
 rb_shape_t * rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t size_pool_index);
 rb_shape_t * rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id);
 
+rb_shape_t *rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *orig_shape);
+
 bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
