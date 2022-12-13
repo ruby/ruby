@@ -4901,7 +4901,7 @@ p_var_ref	: '^' tIDENTIFIER
                     }
 		;
 
-p_expr_ref	: '^' tLPAREN expr_value ')'
+p_expr_ref	: '^' tLPAREN expr_value rparen
 		    {
 		    /*%%%*/
 			$$ = NEW_BEGIN($3, &@$);
