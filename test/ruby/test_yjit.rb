@@ -1,5 +1,3 @@
-return
-
 # frozen_string_literal: true
 #
 # This set of tests can be run with:
