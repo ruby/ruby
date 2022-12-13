@@ -30,8 +30,10 @@ class Output
 
     if (@ifchange or overwrite or create_only) and (@vpath.open(@path, "rb") {|f|
       outpath = f.path
-      original = f.read
-      (@ifchange and original == data) or (create_only and !original.empty?)
+      if @ifchange or create_only
+        original = f.read
+        (@ifchange and original == data) or (create_only and !original.empty?)
+      end
     } rescue false)
       puts "#{outpath} #{unchanged}"
       written = false
