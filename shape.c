@@ -404,6 +404,39 @@ rb_shape_id_offset(void)
 }
 
 rb_shape_t *
+rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
+{
+    RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
+    rb_shape_t *next_shape = initial_shape;
+
+    if (dest_shape->type != initial_shape->type) {
+        next_shape = rb_shape_traverse_from_new_root(initial_shape, rb_shape_get_parent(dest_shape));
+        if (!next_shape) {
+            return NULL;
+        }
+    }
+
+    switch ((enum shape_type)dest_shape->type) {
+      case SHAPE_IVAR:
+        if (!next_shape->edges) {
+            return NULL;
+        }
+        if (!rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, (VALUE *)&next_shape)) {
+            return NULL;
+        }
+        break;
+      case SHAPE_ROOT:
+      case SHAPE_FROZEN:
+      case SHAPE_CAPACITY_CHANGE:
+      case SHAPE_INITIAL_CAPACITY:
+      case SHAPE_T_OBJECT:
+        break;
+    }
+
+    return next_shape;
+}
+
+rb_shape_t *
 rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 {
     rb_shape_t * midway_shape;
