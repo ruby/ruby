@@ -864,6 +864,11 @@ module Net   #:nodoc:
       end
     end
 
+    # Returns a string representation of +self+:
+    #
+    #   Net::HTTP.new(hostname).inspect
+    #   # => "#<Net::HTTP jsonplaceholder.typicode.com:80 open=false>"
+    #
     def inspect
       "#<#{self.class} #{@address}:#{@port} open=#{started?}>"
     end
@@ -871,11 +876,51 @@ module Net   #:nodoc:
     # *WARNING* This method opens a serious security hole.
     # Never use this method in production code.
     #
-    # Sets an output stream for debugging.
+    # Sets the output stream for debugging:
     #
     #   http = Net::HTTP.new(hostname)
-    #   http.set_debug_output $stderr
-    #   http.start { .... }
+    #   File.open('t.tmp', 'w') do |file|
+    #     http.set_debug_output(file)
+    #     http.start
+    #     http.get('/nosuch/1')
+    #     http.finish
+    #   end
+    #   puts File.read('t.tmp')
+    #
+    # Output:
+    #
+    #   opening connection to jsonplaceholder.typicode.com:80...
+    #   opened
+    #   <- "GET /nosuch/1 HTTP/1.1\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nHost: jsonplaceholder.typicode.com\r\n\r\n"
+    #   -> "HTTP/1.1 404 Not Found\r\n"
+    #   -> "Date: Mon, 12 Dec 2022 21:14:11 GMT\r\n"
+    #   -> "Content-Type: application/json; charset=utf-8\r\n"
+    #   -> "Content-Length: 2\r\n"
+    #   -> "Connection: keep-alive\r\n"
+    #   -> "X-Powered-By: Express\r\n"
+    #   -> "X-Ratelimit-Limit: 1000\r\n"
+    #   -> "X-Ratelimit-Remaining: 999\r\n"
+    #   -> "X-Ratelimit-Reset: 1670879660\r\n"
+    #   -> "Vary: Origin, Accept-Encoding\r\n"
+    #   -> "Access-Control-Allow-Credentials: true\r\n"
+    #   -> "Cache-Control: max-age=43200\r\n"
+    #   -> "Pragma: no-cache\r\n"
+    #   -> "Expires: -1\r\n"
+    #   -> "X-Content-Type-Options: nosniff\r\n"
+    #   -> "Etag: W/\"2-vyGp6PvFo4RvsFtPoIWeCReyIC8\"\r\n"
+    #   -> "Via: 1.1 vegur\r\n"
+    #   -> "CF-Cache-Status: MISS\r\n"
+    #   -> "Server-Timing: cf-q-config;dur=1.3000000762986e-05\r\n"
+    #   -> "Report-To: {\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=yOr40jo%2BwS1KHzhTlVpl54beJ5Wx2FcG4gGV0XVrh3X9OlR5q4drUn2dkt5DGO4GDcE%2BVXT7CNgJvGs%2BZleIyMu8CLieFiDIvOviOY3EhHg94m0ZNZgrEdpKD0S85S507l1vsEwEHkoTm%2Ff19SiO\"}],\"group\":\"cf-nel\",\"max_age\":604800}\r\n"
+    #   -> "NEL: {\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}\r\n"
+    #   -> "Server: cloudflare\r\n"
+    #   -> "CF-RAY: 778977dc484ce591-DFW\r\n"
+    #   -> "alt-svc: h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400\r\n"
+    #   -> "\r\n"
+    #   reading 2 bytes...
+    #   -> "{}"
+    #   read 2 bytes
+    #   Conn keep-alive
     #
     def set_debug_output(output)
       warn 'Net::HTTP#set_debug_output called after HTTP started', uplevel: 1 if started?
@@ -899,8 +944,24 @@ module Net   #:nodoc:
     # body encoding.
     attr_reader :response_body_encoding
 
-    # Set the encoding to use for the response body.  If given a String, find
-    # the related Encoding.
+    # Sets the encoding to be used for the response body;
+    # returns the encoding.
+    #
+    # The given +value+ may be:
+    #
+    # - An Encoding object.
+    # - The name of an encoding.
+    # - An alias for an encoding name.
+    #
+    # See {Encoding}[rdoc-ref:Encoding].
+    #
+    # Examples:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.response_body_encoding = Encoding::US_ASCII # => #<Encoding:US-ASCII>
+    #   http.response_body_encoding = 'US-ASCII'         # => "US-ASCII"
+    #   http.response_body_encoding = 'ASCII'            # => "ASCII"
+    #
     def response_body_encoding=(value)
       value = Encoding.find(value) if value.is_a?(String)
       @response_body_encoding = value
@@ -912,12 +973,37 @@ module Net   #:nodoc:
     attr_writer :proxy_user
     attr_writer :proxy_pass
 
-    # The IP address to connect to/used to connect to
+    # Returns the IP address for the connection.
+    #
+    # If the session has not been started,
+    # returns the value set by #ipaddr=,
+    # or +nil+ if it has not been set:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.ipaddr # => nil
+    #   http.ipaddr = '172.67.155.76'
+    #   http.ipaddr # => "172.67.155.76"
+    #
+    # If the session has been started,
+    # returns the IP address from the socket:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.start
+    #   http.ipaddr # => "172.67.155.76"
+    #   http.finish
+    #
     def ipaddr
       started? ?  @socket.io.peeraddr[3] : @ipaddr
     end
 
-    # Set the IP address to connect to
+    # Sets the IP address for the connection:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.ipaddr # => nil
+    #   http.ipaddr = '172.67.155.76'
+    #   http.ipaddr # => "172.67.155.76"
+    #
+    # The IP address may not be set if the session has been started.
     def ipaddr=(addr)
       raise IOError, "ipaddr value changed, but session already started" if started?
       @ipaddr = addr
@@ -942,12 +1028,17 @@ module Net   #:nodoc:
     # Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
 
-    # Maximum number of times to retry an idempotent request in case of
+    # Sets the maximum number of times to retry an idempotent request in case of
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
     # Timeout::Error.
-    # Should be a non-negative integer number. Zero means no retries.
-    # The default value is 1.
+    # The initial value is 1.
+    #
+    # Argument +retries+ must be a non-negative numeric value:
+    #
+    #   http.max_retries = 2   # => 2
+    #   http.max_retries       # => 2
+    #
     def max_retries=(retries)
       retries = retries.to_int
       if retries < 0
