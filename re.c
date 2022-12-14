@@ -4194,6 +4194,39 @@ rb_reg_s_union_m(VALUE self, VALUE args)
     return rb_reg_s_union(self, args);
 }
 
+/*
+ *  call-seq:
+ *    Regexp.linear_time?(re)
+ *    Regexp.linear_time?(string, options = 0)
+ *
+ *  Returns +true+ if matching against <tt>re</tt> can be
+ *  done in linear time to the input string.
+ *
+ *    Regexp.linear_time?(/re/) # => true
+ *
+ */
+static VALUE
+rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self)
+{
+    VALUE re;
+    VALUE src, opts = Qundef, n_flag = Qundef, kwargs;
+
+    rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
+
+    if (RB_TYPE_P(src, T_REGEXP)) {
+        re = src;
+        if (opts != Qnil) {
+            rb_warn("flags ignored");
+        }
+    }
+    else {
+        re = rb_class_new_instance(argc, argv, rb_cRegexp);
+    }
+
+    rb_reg_check(re);
+    return RBOOL(onig_check_linear_time(RREGEXP_PTR(re)));
+}
+
 /* :nodoc: */
 static VALUE
 rb_reg_init_copy(VALUE copy, VALUE re)
@@ -4571,6 +4604,7 @@ Init_Regexp(void)
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
     rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
+    rb_define_singleton_method(rb_cRegexp, "linear_time?", rb_reg_s_linear_time_p, -1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "initialize_copy", rb_reg_init_copy, 1);

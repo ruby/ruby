@@ -1696,4 +1696,12 @@ class TestRegexp < Test::Unit::TestCase
       assert_nil(/^a*b?a*$/ =~ "a" * 1000000 + "x")
     end;
   end
+
+  def test_linear_time_p
+    assert_send [Regexp, :linear_time?, /a/]
+    assert_send [Regexp, :linear_time?, 'a']
+    assert_send [Regexp, :linear_time?, 'a', Regexp::IGNORECASE]
+    assert_not_send [Regexp, :linear_time?, /(a)\1/]
+    assert_not_send [Regexp, :linear_time?, "(a)\\1"]
+  end
 end
