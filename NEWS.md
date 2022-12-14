@@ -441,6 +441,7 @@ Note: We're only listing outstanding class updates.
     * readline-ext 0.1.5
     * reline 0.3.2
     * resolv 0.2.2
+    * resolv-replace 0.1.1
     * securerandom 0.2.1
     * set 1.0.3
     * stringio 3.0.4
