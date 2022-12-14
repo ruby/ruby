@@ -7,10 +7,10 @@ use std::fmt;
 use std::convert::From;
 use std::io::Write;
 use std::mem::take;
-use crate::cruby::{VALUE};
+use crate::cruby::{VALUE, IseqPtr};
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
-use crate::core::{Context, Type, TempMapping};
+use crate::core::{Context, Type, TempMapping, get_iseq_payload};
 use crate::options::*;
 
 #[cfg(target_arch = "x86_64")]
@@ -1128,6 +1128,20 @@ impl Assembler
             use crate::disasm::dump_disasm_addr_range;
             let end_addr = cb.get_write_ptr();
             dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
+        }
+        gc_offsets
+    }
+
+    /// Compile instructions and mark the compiled pages for Code GC
+    pub fn compile_with_iseq(self, cb: &mut CodeBlock, iseq: IseqPtr) -> Vec<u32>
+    {
+        let start_addr = cb.get_write_ptr();
+        let gc_offsets = self.compile(cb);
+        let end_addr = cb.get_write_ptr();
+        if let Some(payload) = get_iseq_payload(iseq) {
+            for page in cb.addrs_to_pages(start_addr, end_addr) {
+                payload.pages.insert(page);
+            }
         }
         gc_offsets
     }

@@ -1924,7 +1924,7 @@ fn set_branch_target(
     // branch_stub_hit call
     asm.jmp_opnd(jump_addr);
 
-    asm.compile(ocb);
+    asm.compile_with_iseq(ocb, branch.block.borrow().blockid.iseq);
 
     if ocb.has_dropped_bytes() {
         // No space
