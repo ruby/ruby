@@ -19,8 +19,8 @@ end
 
 class AutoIndent < RubyLex
   def initialize
-    set_input(self)
-    context = Struct.new(:auto_indent_mode, :workspace).new(true, nil)
+    context = Struct.new("MockIRBContext", :auto_indent_mode, :workspace, :local_variables).new(true, nil, [])
+    set_input(self, context: context)
     set_auto_indent(context)
   end
 
