@@ -2219,9 +2219,6 @@ fn gen_setinstancevariable(
         let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
 
         // The function could raise exceptions.
-        jit_prepare_routine_call(jit, ctx, asm);
-
-        // Save the PC and SP because the callee may allocate
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_routine_call(jit, ctx, asm);
 
