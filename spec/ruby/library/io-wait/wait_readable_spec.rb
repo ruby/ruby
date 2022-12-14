@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
 
-require 'io/wait'
+ruby_version_is ''...'3.2' do
+  require 'io/wait'
+end
 
 describe "IO#wait_readable" do
   before :each do

@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 require 'socket.so'
-require 'io/wait' unless ::IO.method_defined?(:wait_readable, false)
+
+unless IO.method_defined?(:wait_writable, false)
+  # It's only required on older Rubies < v3.2:
+  require 'io/wait'
+end
 
 class Addrinfo
   # creates an Addrinfo object from the arguments.
