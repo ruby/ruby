@@ -649,6 +649,11 @@ module SyncDefaultGems
 
       if release
         last_release = `git tag`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
+        if gem == "syntax_suggest"
+          # for syntax_suggest v1.0.1
+          # https://github.com/ruby/syntax_suggest/issues/167.
+          last_release = "3cd67bcc13"
+        end
         `git checkout #{last_release}`
       else
         `git checkout #{default_branch}`
