@@ -1326,6 +1326,40 @@ fn guard_object_is_array(
     asm.jne(side_exit.as_side_exit());
 }
 
+/// This guards that a special flag is not set on a hash.
+/// By passing a hash with this flag set as the last argument
+/// in a splat call, you can change the way keywords are handled
+/// to behave like ruby 2. We don't currently support this.
+fn guard_object_is_not_ruby2_keyword_hash(
+    asm: &mut Assembler,
+    object_opnd: Opnd,
+    side_exit: CodePtr,
+) {
+    asm.comment("guard object is not ruby2 keyword hash");
+
+    let not_ruby2_keyword = asm.new_label("not_ruby2_keyword");
+    asm.test(object_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.jnz(not_ruby2_keyword);
+
+    asm.cmp(object_opnd, Qfalse.into());
+    asm.je(not_ruby2_keyword);
+
+    let flags_opnd = asm.load(Opnd::mem(
+        VALUE_BITS,
+        object_opnd,
+        RUBY_OFFSET_RBASIC_FLAGS,
+    ));
+    let type_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
+
+    asm.cmp(type_opnd, (RUBY_T_HASH as u64).into());
+    asm.jne(not_ruby2_keyword);
+
+    asm.test(flags_opnd, (RHASH_PASS_AS_KEYWORDS as u64).into());
+    asm.jnz(side_exit.as_side_exit());
+
+    asm.write_label(not_ruby2_keyword);
+}
+
 fn guard_object_is_string(
     asm: &mut Assembler,
     object_reg: Opnd,
@@ -4567,7 +4601,7 @@ fn gen_send_cfunc(
 ) -> CodegenStatus {
     let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-    let argc = argc;
+    let mut argc = argc;
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -4578,8 +4612,30 @@ fn gen_send_cfunc(
         return CantCompile;
     }
 
-    if flags & VM_CALL_ARGS_SPLAT != 0  {
-        gen_counter_incr!(asm, send_args_splat_cfunc);
+    // We aren't handling a vararg cfuncs with splat currently.
+    if flags & VM_CALL_ARGS_SPLAT != 0 && cfunc_argc == -1 {
+        gen_counter_incr!(asm, send_args_splat_cfunc_var_args);
+        return CantCompile;
+    }
+
+    if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
+        // zsuper methods are super calls without any arguments.
+        // They are also marked as splat, but don't actually have an array
+        // they pull arguments from, instead we need to change to call
+        // a different method with the current stack.
+        gen_counter_incr!(asm, send_args_splat_cfunc_zuper);
+        return CantCompile;
+    }
+
+    // In order to handle backwards compatibility between ruby 3 and 2
+    // ruby2_keywords was introduced. It is called only on methods
+    // with splat and changes they way they handle them.
+    // We are just going to not compile these.
+    // https://docs.ruby-lang.org/en/3.2/Module.html#method-i-ruby2_keywords
+    if unsafe {
+        get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
+    } {
+        gen_counter_incr!(asm, send_args_splat_cfunc_ruby2_keywords);
         return CantCompile;
     }
 
@@ -4589,6 +4645,11 @@ fn gen_send_cfunc(
     } else {
         unsafe { get_cikw_keyword_len(kw_arg) }
     };
+
+    if kw_arg_num != 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
+        gen_counter_incr!(asm, send_cfunc_splat_with_kw);
+        return CantCompile;
+    }
 
     if c_method_tracing_currently_enabled(jit) {
         // Don't JIT if tracing c_call or c_return
@@ -4622,14 +4683,15 @@ fn gen_send_cfunc(
 
     // Number of args which will be passed through to the callee
     // This is adjusted by the kwargs being combined into a hash.
-    let passed_argc = if kw_arg.is_null() {
+    let mut passed_argc = if kw_arg.is_null() {
         argc
     } else {
         argc - kw_arg_num + 1
     };
 
+
     // If the argument count doesn't match
-    if cfunc_argc >= 0 && cfunc_argc != passed_argc {
+    if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {
         gen_counter_incr!(asm, send_cfunc_argc_mismatch);
         return CantCompile;
     }
@@ -4680,6 +4742,22 @@ fn gen_send_cfunc(
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
         handle_opt_send_shift_stack(asm, argc, ctx);
+    }
+
+    // push_splat_args does stack manipulation so we can no longer side exit
+    if flags & VM_CALL_ARGS_SPLAT != 0 {
+        let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
+        // + 1 because we pass self
+        if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
+            gen_counter_incr!(asm, send_cfunc_toomany_args);
+            return CantCompile;
+        }
+        // We are going to assume that the splat fills
+        // all the remaining arguments. In the generated code
+        // we test if this is true and if not side exit.
+        argc = required_args as i32;
+        passed_argc = argc;
+        push_splat_args(required_args, ctx, asm, ocb, side_exit)
     }
 
     // Points to the receiver operand on the stack
@@ -4812,13 +4890,13 @@ fn gen_return_branch(
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
-fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: CodePtr) {
+fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: CodePtr) {
 
     asm.comment("push_splat_args");
 
     let array_opnd = ctx.stack_opnd(0);
-
     let array_reg = asm.load(array_opnd);
+
     guard_object_is_heap(
         asm,
         array_reg,
@@ -4830,6 +4908,8 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
         counted_exit!(ocb, side_exit, send_splat_not_array),
     );
 
+    asm.comment("Get array length for embedded or heap");
+
     // Pull out the embed flag to check if it's an embedded array.
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
 
@@ -4840,25 +4920,53 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
     // Conditionally move the length of the heap array
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+
+    // Need to repeat this here to deal with register allocation
+    let array_opnd = ctx.stack_opnd(0);
+    let array_reg = asm.load(array_opnd);
+
     let array_len_opnd = Opnd::mem(
         (8 * size_of::<std::os::raw::c_long>()) as u8,
-        asm.load(array_opnd),
+        array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
     let array_len_opnd = asm.csel_nz(emb_len_opnd, array_len_opnd);
 
-    // Only handle the case where the number of values in the array is equal to the number requested
+    asm.comment("Side exit if length doesn't not equal remaining args");
     asm.cmp(array_len_opnd, required_args.into());
     asm.jne(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal).as_side_exit());
 
+    asm.comment("Check last argument is not ruby2keyword hash");
+
+    // Need to repeat this here to deal with register allocation
+    let array_reg = asm.load(ctx.stack_opnd(0));
+
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_ptr_opnd = Opnd::mem(
+        (8 * size_of::<usize>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+    );
+    // Load the address of the embedded array
+    // (struct RArray *)(obj)->as.ary
+    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+    let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+
+    let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
+
+    guard_object_is_not_ruby2_keyword_hash(
+        asm,
+        last_array_value,
+        counted_exit!(ocb, side_exit, send_splatarray_last_ruby_2_keywords));
+
+    asm.comment("Push arguments from array");
     let array_opnd = ctx.stack_pop(1);
 
     if required_args > 0 {
-
         // Load the address of the embedded array
         // (struct RArray *)(obj)->as.ary
         let array_reg = asm.load(array_opnd);
-        let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
 
         // Conditionally load the address of the heap array
         // (struct RArray *)(obj)->as.heap.ptr
@@ -4866,16 +4974,20 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
         asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
         let heap_ptr_opnd = Opnd::mem(
             (8 * size_of::<usize>()) as u8,
-            asm.load(array_opnd),
+            array_reg,
             RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
         );
-
+        // Load the address of the embedded array
+        // (struct RArray *)(obj)->as.ary
+        let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
         for i in 0..required_args {
             let top = ctx.stack_push(Type::Unknown);
-            asm.mov(top, Opnd::mem(64, ary_opnd, i * SIZEOF_VALUE_I32));
+            asm.mov(top, Opnd::mem(64, ary_opnd, i as i32 * SIZEOF_VALUE_I32));
         }
+
+        asm.comment("end push_each");
     }
 }
 
@@ -5250,7 +5362,7 @@ fn gen_send_iseq(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        let required_args = num_params as i32 - (argc - 1);
+        let required_args = num_params - (argc as u32 - 1);
         // We are going to assume that the splat fills
         // all the remaining arguments. In the generated code
         // we test if this is true and if not side exit.
@@ -5722,11 +5834,6 @@ fn gen_send_general(
     loop {
         let def_type = unsafe { get_cme_def_type(cme) };
 
-        if flags & VM_CALL_ARGS_SPLAT != 0 && def_type != VM_METHOD_TYPE_ISEQ  {
-            gen_counter_incr!(asm, send_args_splat_non_iseq);
-            return CantCompile;
-        }
-
         match def_type {
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
@@ -5748,6 +5855,11 @@ fn gen_send_general(
                 );
             }
             VM_METHOD_TYPE_IVAR => {
+                if flags & VM_CALL_ARGS_SPLAT != 0 {
+                    gen_counter_incr!(asm, send_args_splat_ivar);
+                    return CantCompile;
+                }
+
                 if argc != 0 {
                     // Argument count mismatch. Getters take no arguments.
                     gen_counter_incr!(asm, send_getter_arity);
@@ -5795,6 +5907,10 @@ fn gen_send_general(
                 );
             }
             VM_METHOD_TYPE_ATTRSET => {
+                if flags & VM_CALL_ARGS_SPLAT != 0 {
+                    gen_counter_incr!(asm, send_args_splat_attrset);
+                    return CantCompile;
+                }
                 if flags & VM_CALL_KWARG != 0 {
                     gen_counter_incr!(asm, send_attrset_kwargs);
                     return CantCompile;
@@ -5816,6 +5932,10 @@ fn gen_send_general(
             }
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
+                if flags & VM_CALL_ARGS_SPLAT != 0 {
+                    gen_counter_incr!(asm, send_args_splat_bmethod);
+                    return CantCompile;
+                }
                 return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, flags, argc);
             }
             VM_METHOD_TYPE_ZSUPER => {
@@ -5839,6 +5959,11 @@ fn gen_send_general(
             VM_METHOD_TYPE_OPTIMIZED => {
                 if flags & VM_CALL_ARGS_BLOCKARG != 0 {
                     gen_counter_incr!(asm, send_block_arg);
+                    return CantCompile;
+                }
+
+                if flags & VM_CALL_ARGS_SPLAT != 0 {
+                    gen_counter_incr!(asm, send_args_splat_optimized);
                     return CantCompile;
                 }
 
@@ -6008,6 +6133,10 @@ fn gen_send_general(
                         return CantCompile;
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
+                        if flags & VM_CALL_ARGS_SPLAT != 0 {
+                            gen_counter_incr!(asm, send_args_splat_aref);
+                            return CantCompile;
+                        }
                         return gen_struct_aref(
                             jit,
                             ctx,
@@ -6022,6 +6151,10 @@ fn gen_send_general(
                         );
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_ASET => {
+                        if flags & VM_CALL_ARGS_SPLAT != 0 {
+                            gen_counter_incr!(asm, send_args_splat_aset);
+                            return CantCompile;
+                        }
                         return gen_struct_aset(
                             jit,
                             ctx,

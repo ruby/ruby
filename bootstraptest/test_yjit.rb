@@ -3456,3 +3456,28 @@ assert_equal 'ok', %q{
 
   cw(4)
 }
+
+assert_equal 'threw', %q{
+  def foo(args)
+    wrap(*args)
+  rescue ArgumentError
+    'threw'
+  end
+
+  def wrap(a)
+    [a]
+  end
+
+  foo([Hash.ruby2_keywords_hash({})])
+}
+
+assert_equal 'threw', %q{
+  # C call
+  def bar(args)
+    Array(*args)
+  rescue ArgumentError
+    'threw'
+  end
+
+  bar([Hash.ruby2_keywords_hash({})])
+}
