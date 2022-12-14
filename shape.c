@@ -142,12 +142,6 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type)
         // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
         // we can return that. Otherwise, we'll need to get a new shape
         if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res)) {
-            // In this case, the shape exists, but the shape is garbage, so we need to recreate it
-            if (res) {
-                rb_id_table_delete(shape->edges, id);
-                res->parent_id = INVALID_SHAPE_ID;
-            }
-
             rb_shape_t * new_shape = rb_shape_alloc(id, shape);
 
             new_shape->type = (uint8_t)shape_type;
