@@ -407,6 +407,7 @@ Note: We're only listing outstanding class updates.
     * did_you_mean 1.6.2
     * digest 3.1.1
     * drb 2.1.1
+    * english 0.7.2
     * erb 4.0.2
     * error_highlight 0.5.1
     * etc 1.4.2
