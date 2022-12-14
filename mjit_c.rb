@@ -25,6 +25,12 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    # @param from [Integer] - From address
+    # @param to [Integer]   - To address
+    def dump_disasm(from, to)
+      Primitive.dump_disasm(from, to)
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -372,6 +378,7 @@ module RubyVM::MJIT # :nodoc: all
       max_cache_size: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), max_cache_size)")],
       pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), pause)")],
       custom: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), custom)")],
+      dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), dump_disasm)")],
     )
   end
 

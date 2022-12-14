@@ -3855,6 +3855,12 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AC_DEFINE(USE_YJIT, 1)
 ], [AC_DEFINE(USE_YJIT, 0)])
 
+# If YJIT links capstone, libcapstone stops working on the C side.
+# capstone should be linked for MJIT only when YJIT doesn't.
+AS_IF([test x"$MJIT_SUPPORT" = "xyes" -a -z "$CARGO_BUILD_ARGS" ], [
+    AC_CHECK_LIB([capstone], [cs_disasm])
+])
+
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
 AC_SUBST(RUSTC)dnl Rust compiler command

@@ -63,6 +63,8 @@ struct mjit_options {
     bool pause;
     // [experimental] Call custom RubyVM::MJIT.compile instead of MJIT.
     bool custom;
+    // Enable disasm of all JIT code
+    bool dump_disasm;
 };
 
 // State of optimization switches

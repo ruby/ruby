@@ -304,6 +304,9 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     else if (opt_match_noarg(s, l, "pause")) {
         mjit_opt->pause = true;
     }
+    else if (opt_match_noarg(s, l, "dump-disasm")) {
+        mjit_opt->dump_disasm = true;
+    }
     else {
         rb_raise(rb_eRuntimeError,
                  "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
@@ -412,6 +415,10 @@ mjit_init(const struct mjit_options *opts)
     // Normalize options
     if (mjit_opts.call_threshold == 0)
         mjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
+#ifndef HAVE_LIBCAPSTONE
+    if (mjit_opts.dump_disasm)
+        verbose(1, "libcapstone has not been linked. Ignoring --mjit-dump-disasm.");
+#endif
 }
 
 void
