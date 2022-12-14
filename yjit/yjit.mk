@@ -62,7 +62,7 @@ ifneq ($(strip $(CARGO)),) # if configure found Cargo
 .PHONY: yjit-bindgen yjit-bindgen-show-unused
 yjit-bindgen: yjit.$(OBJEXT)
 	YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
-	if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff --exit-code yjit/src/cruby_bindings.inc.rs; fi
+	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff --exit-code yjit/src/cruby_bindings.inc.rs; fi
 
 check-yjit-bindgen-unused: yjit.$(OBJEXT)
 	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")
