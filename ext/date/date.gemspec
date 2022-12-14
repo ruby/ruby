@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
     s.extensions = "ext/date/extconf.rb"
   end
 
-  s.required_ruby_version = ">= 2.4.0"
+  s.required_ruby_version = ">= 2.6.0"
 
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]
