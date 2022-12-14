@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "english"
-  spec.version       = "0.7.1"
+  spec.version       = "0.7.2"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
