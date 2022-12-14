@@ -450,6 +450,7 @@ Note: We're only listing outstanding class updates.
     * tsort 0.1.1
     * un 0.2.1
     * uri 0.12.0
+    * weakref 0.1.2
     * win32ole 1.8.9
     * yaml 0.2.1
     * zlib 3.0.0
