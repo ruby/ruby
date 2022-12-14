@@ -1502,7 +1502,7 @@ assert_equal "#{n}#{n}", %Q{
       end
     end
   }.map{|r| r.take}.join
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3692339025/jobs/6251137785
 
 # NameError
 assert_equal "ok", %q{
