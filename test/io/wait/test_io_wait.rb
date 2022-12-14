@@ -4,6 +4,9 @@ require 'test/unit'
 require 'timeout'
 require 'socket'
 
+# For `IO#ready?` and `IO#nread`:
+require 'io/wait'
+
 class TestIOWait < Test::Unit::TestCase
 
   def setup
