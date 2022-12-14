@@ -383,7 +383,11 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
-    dc->cur_obj_klass = BUILTIN_TYPE(obj) == T_NODE ? 0 : RBASIC_CLASS(obj);
+    if (BUILTIN_TYPE(obj) == T_NODE || BUILTIN_TYPE(obj) == T_IMEMO) {
+        dc->cur_obj_klass = 0;
+    } else {
+        dc->cur_obj_klass = RBASIC_CLASS(obj);
+    }
 
     if (dc->partial_dump && (!ainfo || ainfo->generation < dc->since)) {
         return;
