@@ -3,7 +3,6 @@
 require 'test/unit'
 require 'tempfile'
 require 'timeout'
-require 'io/wait'
 require 'rbconfig'
 
 class TestProcess < Test::Unit::TestCase
