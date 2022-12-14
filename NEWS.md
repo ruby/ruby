@@ -446,6 +446,7 @@ Note: We're only listing outstanding class updates.
     * syntax_suggest 1.0.1
     * syslog 0.1.1
     * tempfile 0.1.3
+    * time 0.2.1
     * timeout 0.3.1
     * tmpdir 0.1.3
     * tsort 0.1.1
