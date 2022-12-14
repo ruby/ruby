@@ -648,7 +648,7 @@ module SyncDefaultGems
       `git fetch origin --tags`
 
       if release
-        last_release = `git tag`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
+        last_release = `git tag | sort -V`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
         if gem == "syntax_suggest"
           # for syntax_suggest v1.0.1
           # https://github.com/ruby/syntax_suggest/issues/167.
