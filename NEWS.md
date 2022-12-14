@@ -437,7 +437,7 @@ Note: We're only listing outstanding class updates.
     * racc 1.6.1
     * rdoc 6.5.0
     * readline-ext 0.1.5
-    * reline 0.3.1
+    * reline 0.3.2
     * resolv 0.2.2
     * securerandom 0.2.1
     * set 1.0.3
