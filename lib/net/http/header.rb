@@ -301,7 +301,7 @@ module Net::HTTPHeader
     @header[stringified_downcased_key].dup
   end
 
-  # :call-seq
+  # call-seq:
   #   fetch(key, default_val = nil) {|key| ... } -> object
   #   fetch(key, default_val = nil) -> value or default_val
   #
@@ -540,7 +540,7 @@ module Net::HTTPHeader
     result
   end
 
-  # :call-seq:
+  # call-seq:
   #   set_range(length) -> length
   #   set_range(offset, length) -> range
   #   set_range(begin..length) -> range
@@ -772,6 +772,7 @@ module Net::HTTPHeader
   # application/x-www-form-urlencoded
   #
   # Example:
+  #
   #    http.form_data = {"q" => "ruby", "lang" => "en"}
   #    http.form_data = {"q" => ["ruby", "perl"], "lang" => "en"}
   #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
@@ -801,12 +802,14 @@ module Net::HTTPHeader
   #
   # Each item of params should respond to +each+ and yield 2-3 arguments,
   # or an array of 2-3 elements. The arguments yielded should be:
-  #  * The name of the field.
-  #  * The value of the field, it should be a String or a File or IO-like.
-  #  * An options hash, supporting the following options, only
-  #    used for file uploads:
-  #    :filename :: The name of the file to use.
-  #    :content_type :: The content type of the uploaded file.
+  #
+  # - The name of the field.
+  # - The value of the field, it should be a String or a File or IO-like.
+  # - An options hash, supporting the following options
+  #   (used only for file uploads); entries:
+  #
+  #   - +:filename+: The name of the file to use.
+  #   - +:content_type+: The content type of the uploaded file.
   #
   # Each item is a file field or a normal field.
   # If +value+ is a File object or the +opt+ hash has a :filename key,
@@ -818,6 +821,7 @@ module Net::HTTPHeader
   # chunked encoding.
   #
   # Example:
+  #
   #    req.set_form([["q", "ruby"], ["lang", "en"]])
   #
   #    req.set_form({"f"=>File.open('/path/to/filename')},
