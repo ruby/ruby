@@ -5231,6 +5231,8 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static bool
 try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, VALUE src)
 {
+    GC_ASSERT(gc_is_moveable_obj(objspace, src));
+
     struct heap_page *src_page = GET_HEAP_PAGE(src);
     if (!free_page) {
         return false;
@@ -5239,35 +5241,33 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
-    if (gc_is_moveable_obj(objspace, src)) {
-        GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
+    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
 
-        asan_unlock_freelist(free_page);
-        VALUE dest = (VALUE)free_page->freelist;
-        asan_lock_freelist(free_page);
-        asan_unpoison_object(dest, false);
-        if (!dest) {
-            /* if we can't get something from the freelist then the page must be
-             * full */
-            return false;
-        }
-        free_page->freelist = RANY(dest)->as.free.next;
-
-        GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
-
-        if (src_page->slot_size > free_page->slot_size) {
-            objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
-        }
-        else if (free_page->slot_size > src_page->slot_size) {
-            objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
-        }
-        objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
-        objspace->rcompactor.total_moved++;
-
-        gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
-        gc_pin(objspace, src);
-        free_page->free_slots--;
+    asan_unlock_freelist(free_page);
+    VALUE dest = (VALUE)free_page->freelist;
+    asan_lock_freelist(free_page);
+    asan_unpoison_object(dest, false);
+    if (!dest) {
+        /* if we can't get something from the freelist then the page must be
+         * full */
+        return false;
     }
+    free_page->freelist = RANY(dest)->as.free.next;
+
+    GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
+
+    if (src_page->slot_size > free_page->slot_size) {
+        objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
+    }
+    else if (free_page->slot_size > src_page->slot_size) {
+        objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
+    }
+    objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
+    objspace->rcompactor.total_moved++;
+
+    gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
+    gc_pin(objspace, src);
+    free_page->free_slots--;
 
     return true;
 }
@@ -8474,6 +8474,7 @@ static bool
 gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_pool, VALUE src)
 {
     GC_ASSERT(BUILTIN_TYPE(src) != T_MOVED);
+    GC_ASSERT(gc_is_moveable_obj(objspace, src));
 
     rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, size_pool, src);
     rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(dest_pool);
@@ -8484,7 +8485,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
         return dheap != heap;
     }
 
-    if (RB_TYPE_P(src, T_OBJECT) && gc_is_moveable_obj(objspace, src)) {
+    if (RB_TYPE_P(src, T_OBJECT)) {
         orig_shape = rb_shape_get_shape(src);
         if (dheap != heap && !rb_shape_obj_too_complex(src)) {
             rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + SIZE_POOL_COUNT));
@@ -8547,9 +8548,11 @@ gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
 
-            if (!gc_compact_move(objspace, heap, size_pool, vp)) {
-                //the cursors met. bubble up
-                return false;
+            if (gc_is_moveable_obj(objspace, vp)) {
+                if (!gc_compact_move(objspace, heap, size_pool, vp)) {
+                    //the cursors met. bubble up
+                    return false;
+                }
             }
         }
         p += slot_size;
