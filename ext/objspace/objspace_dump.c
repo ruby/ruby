@@ -406,10 +406,8 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, "\"");
 
     size_t shape_id = rb_shape_get_shape_id(obj);
-    if (shape_id) {
-        dump_append(dc, ", \"shape_id\":");
-        dump_append_sizet(dc, shape_id);
-    }
+    dump_append(dc, ", \"shape_id\":");
+    dump_append_sizet(dc, shape_id);
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
@@ -548,6 +546,9 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_OBJECT:
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
+        if (rb_shape_obj_too_complex(obj)) {
+            dump_append(dc, ", \"too_complex_shape\":true");
+        }
         break;
 
       case T_FILE:
