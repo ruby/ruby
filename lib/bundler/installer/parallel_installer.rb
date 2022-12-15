@@ -53,10 +53,6 @@ module Bundler
         @dependencies ||= all_dependencies.reject {|dep| ignorable_dependency? dep }
       end
 
-      def missing_lockfile_dependencies(all_spec_names)
-        dependencies.reject {|dep| all_spec_names.include? dep.name }
-      end
-
       # Represents all dependencies
       def all_dependencies
         @spec.dependencies
@@ -84,8 +80,6 @@ module Bundler
     end
 
     def call
-      check_for_corrupt_lockfile
-
       if @rake
         do_install(@rake, 0)
         Gem::Specification.reset
@@ -123,31 +117,6 @@ module Bundler
         unmet_spec_dependencies.each do |unmet_spec_dependency|
           warning << "* #{unmet_spec_dependency}, depended upon #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
         end
-      end
-
-      Bundler.ui.warn(warning.join("\n"))
-    end
-
-    def check_for_corrupt_lockfile
-      missing_dependencies = @specs.map do |s|
-        [
-          s,
-          s.missing_lockfile_dependencies(@specs.map(&:name)),
-        ]
-      end.reject {|a| a.last.empty? }
-      return if missing_dependencies.empty?
-
-      warning = []
-      warning << "Your lockfile was created by an old Bundler that left some things out."
-      if @size != 1
-        warning << "Because of the missing DEPENDENCIES, we can only install gems one at a time, instead of installing #{@size} at a time."
-        @size = 1
-      end
-      warning << "You can fix this by adding the missing gems to your Gemfile, running bundle install, and then removing the gems from your Gemfile."
-      warning << "The missing gems are:"
-
-      missing_dependencies.each do |spec, missing|
-        warning << "* #{missing.map(&:name).join(", ")} depended upon by #{spec.name}"
       end
 
       Bundler.ui.warn(warning.join("\n"))

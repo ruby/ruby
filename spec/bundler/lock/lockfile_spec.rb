@@ -1221,6 +1221,59 @@ RSpec.describe "the lockfile format" do
       and include("Either installing with `--full-index` or running `bundle update rack_middleware` should fix the problem.")
   end
 
+  it "auto-heals when the lockfile is missing specs" do
+    build_repo4 do
+      build_gem "minitest-bisect", "1.6.0" do |s|
+        s.add_dependency "path_expander", "~> 1.1"
+      end
+
+      build_gem "path_expander", "1.1.1"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "minitest-bisect"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          minitest-bisect (1.6.0)
+            path_expander (~> 1.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        minitest-bisect
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+    expect(out).to include("re-resolving dependencies because your lock file is missing some gems")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          minitest-bisect (1.6.0)
+            path_expander (~> 1.1)
+          path_expander (1.1.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        minitest-bisect
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   describe "a line ending" do
     def set_lockfile_mtime_to_known_value
       time = Time.local(2000, 1, 1, 0, 0, 0)
