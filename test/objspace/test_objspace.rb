@@ -272,6 +272,35 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_too_complex_shape
+    if defined?(RubyVM::Shape)
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        Object.new.instance_variable_set(:"@a#{_1}", 1)
+      end
+
+      tc = Object.new
+      tc.instance_variable_set(:@new_ivar, 1)
+      info = ObjectSpace.dump(tc)
+      assert_match(/"too_complex_shape":true/, info)
+      if defined?(JSON)
+        assert_true(JSON.parse(info)["too_complex_shape"])
+      end
+    end
+  end
+
+  class NotTooComplex ; end
+
+  def test_dump_not_too_complex_shape
+    tc = NotTooComplex.new
+    tc.instance_variable_set(:@new_ivar, 1)
+    info = ObjectSpace.dump(tc)
+
+    assert_not_match(/"too_complex_shape"/, info)
+    if defined?(JSON)
+      assert_nil(JSON.parse(info)["too_complex_shape"])
+    end
+  end
+
   def test_dump_to_default
     line = nil
     info = nil
