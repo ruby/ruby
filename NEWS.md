@@ -187,6 +187,14 @@ Note: We're only listing outstanding class updates.
       similar to Struct and partially shares an implementation, but has more
       lean and strict API. [[Feature #16122]]
 
+        ```ruby
+        Measure = Data.define(:amount, :unit)
+        distance = Measure.new(100, 'km')            #=> #<data Measure amount=100, unit="km">
+        weight = Measure.new(amount: 50, unit: 'kg') #=> #<data Measure amount=50, unit="kg">
+        weight.amount                                #=> 50
+        weight.amount = 40                           #=> NoMethodError: undefined method `amount='
+        ```
+
 * Encoding
 
     * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
