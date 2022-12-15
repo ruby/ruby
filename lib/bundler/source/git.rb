@@ -148,7 +148,7 @@ module Bundler
             "#{current_branch} but Gemfile specifies #{branch}"
         end
 
-        changed = cached_revision && cached_revision != git_proxy.revision
+        changed = cached_revision && cached_revision != revision
 
         if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(cached_revision)
           raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \

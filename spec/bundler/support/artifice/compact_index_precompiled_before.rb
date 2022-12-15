@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexPrecompiledBefore < CompactIndexAPI
   get "/info/:name" do
@@ -21,5 +19,7 @@ class CompactIndexPrecompiledBefore < CompactIndexAPI
     lines.push(ruby).join("\n")
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexPrecompiledBefore)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "helpers/endpoint"
+require_relative "endpoint"
 
 class EndpointFallback < Endpoint
   DEPENDENCY_LIMIT = 60
@@ -13,7 +13,3 @@ class EndpointFallback < Endpoint
     end
   end
 end
-
-require_relative "helpers/artifice"
-
-Artifice.activate_with(EndpointFallback)
