@@ -347,11 +347,8 @@ Note: We're only listing outstanding class updates.
 
         ```ruby
         Post = Struct.new(:id, :name)
-
-        # In addition to this,
         Post.new(1, "hello") #=> #<struct Post id=1, name="hello">
-
-        # Let the following initialization also work
+        # From Ruby 3.2, the following code also works without keyword_init: true.
         Post.new(id: 1, name: "hello") #=> #<struct Post id=1, name="hello">
         ```
 
