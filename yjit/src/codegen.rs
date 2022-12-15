@@ -5938,6 +5938,11 @@ fn gen_send_general(
                             return CantCompile;
                         }
 
+                        // If this is a .send call we need to adjust the stack
+                        if flags & VM_CALL_OPT_SEND != 0 {
+                            handle_opt_send_shift_stack(asm, argc as i32, ctx);
+                        }
+
                         // About to reset the SP, need to load this here
                         let recv_load = asm.load(recv);
 
@@ -6309,7 +6314,7 @@ fn gen_leave(
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Only the return value should be on the stack
-    assert!(ctx.get_stack_size() == 1);
+    assert_eq!(1, ctx.get_stack_size());
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
