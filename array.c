@@ -3666,6 +3666,40 @@ rsort_double(VALUE *const p, const long l)
     free(_r); return 0;
 }
 
+#define F_SIZE (1 << 14) /* 16 KiB L1D per thread (Skylake) */
+
+static int
+rsort_try_count(VALUE *const p, const long l, const uint64_t min, const uint64_t max)
+{
+    const _Bool wide_counter = l > ((long)1 << 32);
+    const uint64_t max_range_size = F_SIZE / (wide_counter ? sizeof(uint64_t) : sizeof(uint32_t)),
+                   size_of_range  = (max - min) + 1;
+    if (size_of_range == 0 || size_of_range > max_range_size) return 1;
+    VALUE *pp = p, *const P = pp + l;
+    if (wide_counter) {
+        uint64_t F[F_SIZE / sizeof(uint64_t)] = {0};
+        while (pp < P) F[(*pp++ ^ MSB64) - min]++;
+        pp = p;
+        for (uint64_t i = 0; i < size_of_range; i++) {
+            const uint64_t v = (i + min) ^ MSB64;
+            uint64_t count = F[i];
+            while (count--) *pp++ = (VALUE)v;
+        }
+    } else {
+        uint32_t F[F_SIZE / sizeof(uint32_t)] = {0};
+        while (pp < P) F[(*pp++ ^ MSB64) - min]++;
+        pp = p;
+        for (uint64_t i = 0; i < size_of_range; i++) {
+            const uint64_t v = (i + min) ^ MSB64;
+            uint32_t count = F[i];
+            while (count--) *pp++ = (VALUE)v;
+        }
+    }
+    return 0;
+}
+
+#undef F_SIZE
+
 #endif
 
 static int
@@ -3689,7 +3723,7 @@ rsort(VALUE *const p, const long l)
             if (x < min) min = x;
             if (!FIXNUM_P(*pp++)) return 1;
         }
-        if (!is_unordered) return 0;
+        if (!is_unordered || !rsort_try_count(p, l, min, max)) return 0;
         shift_range = (min >= MSB64 || max < MSB64 ||
                        MSB64 - min > ~(uint64_t)0 - max) ? 0 : MSB64 - min;
         min += shift_range, max += shift_range;
