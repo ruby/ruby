@@ -202,6 +202,8 @@ Note: We're only listing outstanding class updates.
       try to dynamically guess the endian based on a byte order mark.
       Use `Encoding::UTF_16BE`/`UTF_16LE` and `Encoding::UTF_32BE`/`UTF_32LE` instead.
       This change speeds up getting the encoding of a String. [[Feature #18949]]
+    * Limit maximum encoding set size by 256.
+      If exceeding maximum size, `EncodingError` will be raised. [[Feature #18949]]
 
 * Enumerator
 
