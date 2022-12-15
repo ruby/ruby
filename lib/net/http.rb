@@ -1036,6 +1036,7 @@ module Net   #:nodoc:
     #
     # Argument +retries+ must be a non-negative numeric value:
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.max_retries = 2   # => 2
     #   http.max_retries       # => 2
     #
@@ -1049,13 +1050,27 @@ module Net   #:nodoc:
 
     attr_reader :max_retries
 
-    # Setter for the read_timeout attribute.
+    # Sets the read timeout, in seconds, for +self+ to integer +sec+;
+    # the initial value is 60.
+    #
+    # Argument +sec+ must be a non-negative numeric value:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.read_timeout # => 60
+    #   http.get('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
+    #   http.read_timeout = 0
+    #   http.get('/todos/1') # Raises Net::ReadTimeout.
+    #
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
     end
 
-    # Setter for the write_timeout attribute.
+    # Sets the write timeout, in seconds, for +self+ to integer +sec+;
+    # the initial value is 60.
+    #
+    # Argument +sec+ must be a non-negative numeric value.
+    #
     def write_timeout=(sec)
       @socket.write_timeout = sec if @socket
       @write_timeout = sec
