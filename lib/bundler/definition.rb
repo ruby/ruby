@@ -144,6 +144,8 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
+
+      @incomplete_lockfile = check_missing_lockfile_specs
     end
 
     def gem_version_promoter
@@ -458,7 +460,7 @@ module Bundler
     private :sources
 
     def nothing_changed?
-      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes
+      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@incomplete_lockfile
     end
 
     def unlocking?
@@ -603,6 +605,7 @@ module Bundler
         [@new_platform, "you added a new platform to your gemfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
+        [@incomplete_lockfile, "your lock file is missing some gems"],
       ].select(&:first).map(&:last).join(", ")
     end
 
@@ -655,6 +658,14 @@ module Bundler
         changed || specs_changed?(source)
       end.map(&:first)
       !sources_with_changes.each {|source| @unlock[:sources] << source.name }.empty?
+    end
+
+    def check_missing_lockfile_specs
+      all_locked_specs = @locked_specs.map(&:name) << "bundler"
+
+      @locked_specs.any? do |s|
+        s.dependencies.any? {|dep| !all_locked_specs.include?(dep.name) }
+      end
     end
 
     def converge_paths
