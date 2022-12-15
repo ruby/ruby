@@ -551,74 +551,20 @@ rb_shape_memsize(rb_shape_t *shape)
 }
 
 #if SHAPE_DEBUG
-VALUE rb_cShape;
-
-static size_t
-shape_memsize(const void *shape_ptr)
-{
-    return rb_shape_memsize((rb_shape_t *)shape_ptr);
-}
-
 /*
  * Exposing Shape to Ruby via RubyVM.debug_shape
  */
-static const rb_data_type_t shape_data_type = {
-    .wrap_struct_name = "Shape",
-    .function = {
-        .dmark = NULL,
-        .dfree = NULL,
-        .dsize = shape_memsize,
-    },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
-};
-
-static VALUE
-rb_wrapped_shape_id(VALUE self)
-{
-    rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    return INT2NUM(rb_shape_id(shape));
-}
-
-static VALUE
-rb_shape_type(VALUE self)
-{
-    rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    return INT2NUM(shape->type);
-}
-
-static VALUE
-rb_shape_capacity(VALUE self)
-{
-    rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    return INT2NUM(shape->capacity);
-}
 
 static VALUE
 rb_shape_too_complex(VALUE self)
 {
     rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
+    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     if (rb_shape_id(shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
         return Qtrue;
     }
     else {
         return Qfalse;
-    }
-}
-
-static VALUE
-rb_shape_parent_id(VALUE self)
-{
-    rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    if (shape->parent_id != INVALID_SHAPE_ID) {
-        return INT2NUM(shape->parent_id);
-    }
-    else {
-        return Qnil;
     }
 }
 
@@ -631,15 +577,23 @@ parse_key(ID key)
     return LONG2NUM(key);
 }
 
+static VALUE rb_shape_edge_name(rb_shape_t * shape);
+
 static VALUE
 rb_shape_t_to_rb_cShape(rb_shape_t *shape)
 {
-    union { const rb_shape_t *in; void *out; } deconst;
-    VALUE res;
-    deconst.in = shape;
-    res = TypedData_Wrap_Struct(rb_cShape, &shape_data_type, deconst.out);
+    VALUE rb_cShape = rb_const_get(rb_cRubyVM, rb_intern("Shape"));
 
-    return res;
+    VALUE obj = rb_struct_new(rb_cShape,
+            INT2NUM(rb_shape_id(shape)),
+            INT2NUM(shape->parent_id),
+            rb_shape_edge_name(shape),
+            INT2NUM(shape->next_iv_index),
+            INT2NUM(shape->size_pool_index),
+            INT2NUM(shape->type),
+            INT2NUM(shape->capacity));
+    rb_obj_freeze(obj);
+    return obj;
 }
 
 static enum rb_id_table_iterator_result
@@ -653,7 +607,8 @@ static VALUE
 rb_shape_edges(VALUE self)
 {
     rb_shape_t* shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
+
+    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
 
     VALUE hash = rb_hash_new();
 
@@ -665,11 +620,8 @@ rb_shape_edges(VALUE self)
 }
 
 static VALUE
-rb_shape_edge_name(VALUE self)
+rb_shape_edge_name(rb_shape_t * shape)
 {
-    rb_shape_t* shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-
     if (shape->edge_name) {
         if (is_instance_id(shape->edge_name)) {
             return ID2SYM(shape->edge_name);
@@ -680,28 +632,10 @@ rb_shape_edge_name(VALUE self)
 }
 
 static VALUE
-rb_shape_next_iv_index(VALUE self)
-{
-    rb_shape_t* shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-
-    return INT2NUM(shape->next_iv_index);
-}
-
-static VALUE
-rb_shape_size_pool_index(VALUE self)
-{
-    rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-
-    return INT2NUM(shape->size_pool_index);
-}
-
-static VALUE
 rb_shape_export_depth(VALUE self)
 {
     rb_shape_t* shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
+    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     return SIZET2NUM(rb_shape_depth(shape));
 }
 
@@ -709,7 +643,7 @@ static VALUE
 rb_shape_parent(VALUE self)
 {
     rb_shape_t * shape;
-    TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
+    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     if (shape->parent_id != INVALID_SHAPE_ID) {
         return rb_shape_t_to_rb_cShape(rb_shape_get_parent(shape));
     }
@@ -769,12 +703,6 @@ static VALUE
 shape_transition_tree(VALUE self)
 {
     return rb_obj_shape(rb_shape_get_root_shape());
-}
-
-static VALUE
-next_shape_id(VALUE self)
-{
-    return INT2NUM(GET_VM()->next_shape_id);
 }
 
 static VALUE
@@ -847,19 +775,19 @@ void
 Init_shape(void)
 {
 #if SHAPE_DEBUG
-    rb_cShape = rb_define_class_under(rb_cRubyVM, "Shape", rb_cObject);
-    rb_undef_alloc_func(rb_cShape);
+    VALUE rb_cShape = rb_struct_define_under(rb_cRubyVM, "Shape",
+            "id",
+            "parent_id",
+            "edge_name",
+            "next_iv_index",
+            "size_pool_index",
+            "type",
+            "capacity",
+            NULL);
 
-    rb_define_method(rb_cShape, "parent_id", rb_shape_parent_id, 0);
     rb_define_method(rb_cShape, "parent", rb_shape_parent, 0);
     rb_define_method(rb_cShape, "edges", rb_shape_edges, 0);
-    rb_define_method(rb_cShape, "edge_name", rb_shape_edge_name, 0);
-    rb_define_method(rb_cShape, "next_iv_index", rb_shape_next_iv_index, 0);
-    rb_define_method(rb_cShape, "size_pool_index", rb_shape_size_pool_index, 0);
     rb_define_method(rb_cShape, "depth", rb_shape_export_depth, 0);
-    rb_define_method(rb_cShape, "id", rb_wrapped_shape_id, 0);
-    rb_define_method(rb_cShape, "type", rb_shape_type, 0);
-    rb_define_method(rb_cShape, "capacity", rb_shape_capacity, 0);
     rb_define_method(rb_cShape, "too_complex?", rb_shape_too_complex, 0);
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
@@ -873,7 +801,6 @@ Init_shape(void)
 
     rb_define_singleton_method(rb_cShape, "transition_tree", shape_transition_tree, 0);
     rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
-    rb_define_singleton_method(rb_cShape, "next_shape_id", next_shape_id, 0);
     rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
 #endif

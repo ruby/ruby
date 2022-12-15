@@ -391,7 +391,7 @@ class TestShapes < Test::Unit::TestCase
 
   def test_out_of_bounds_shape
     assert_raise ArgumentError do
-      RubyVM::Shape.find_by_id(RubyVM::Shape.next_shape_id)
+      RubyVM::Shape.find_by_id(RubyVM.stat[:next_shape_id])
     end
     assert_raise ArgumentError do
       RubyVM::Shape.find_by_id(-1)
