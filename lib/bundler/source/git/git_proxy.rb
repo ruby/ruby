@@ -61,7 +61,7 @@ module Bundler
         end
 
         def revision
-          @revision ||= find_local_revision
+          @revision ||= allowed_with_path { find_local_revision }
         end
 
         def current_branch
@@ -90,16 +90,11 @@ module Bundler
 
           Bundler.ui.info "Fetching #{credential_filtered_uri}"
 
-          unless path.exist?
-            SharedHelpers.filesystem_access(path.dirname) do |p|
-              FileUtils.mkdir_p(p)
-            end
-            git_retry "clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s
-            return unless extra_ref
-          end
+          extra_fetch_needed = clone_needs_extra_fetch?
+          unshallow_needed = clone_needs_unshallow?
+          return unless extra_fetch_needed || unshallow_needed
 
-          fetch_args = extra_fetch_args
-          fetch_args.unshift("--unshallow") if path.join("shallow").exist? && full_clone?
+          fetch_args = unshallow_needed ? ["--unshallow"] : depth_args
 
           git_retry(*["fetch", "--force", "--quiet", "--no-tags", *fetch_args, "--", configured_uri, refspec].compact, :dir => path)
         end
@@ -123,7 +118,7 @@ module Bundler
             end
           end
 
-          git(*["fetch", "--force", "--quiet", *extra_fetch_args, path.to_s, revision_refspec].compact, :dir => destination)
+          git "fetch", "--force", "--quiet", *extra_fetch_args, :dir => destination
 
           git "reset", "--hard", @revision, :dir => destination
 
@@ -137,6 +132,24 @@ module Bundler
 
         private
 
+        def clone_needs_extra_fetch?
+          return true if path.exist?
+
+          SharedHelpers.filesystem_access(path.dirname) do |p|
+            FileUtils.mkdir_p(p)
+          end
+          git_retry "clone", "--bare", "--no-hardlinks", "--quiet", *extra_clone_args, "--", configured_uri, path.to_s
+
+          extra_ref
+        end
+
+        def clone_needs_unshallow?
+          return false unless path.join("shallow").exist?
+          return true if full_clone?
+
+          @revision && @revision != head_revision
+        end
+
         def extra_ref
           return false if not_pinned?
           return true unless full_clone?
@@ -147,7 +160,7 @@ module Bundler
         def depth
           return @depth if defined?(@depth)
 
-          @depth = if legacy_locked_revision? || !supports_fetching_unreachable_refs?
+          @depth = if !supports_fetching_unreachable_refs?
             nil
           elsif not_pinned?
             1
@@ -241,11 +254,24 @@ module Bundler
         end
 
         def find_local_revision
-          allowed_with_path do
-            git("rev-parse", "--verify", branch || tag || ref || "HEAD", :dir => path).strip
-          end
+          options_ref = branch || tag || ref
+          return head_revision if options_ref.nil?
+
+          find_revision_for(options_ref)
+        end
+
+        def head_revision
+          verify("HEAD")
+        end
+
+        def find_revision_for(reference)
+          verify(reference)
         rescue GitCommandError => e
-          raise MissingGitRevisionError.new(e.command, path, branch || tag || ref, credential_filtered_uri)
+          raise MissingGitRevisionError.new(e.command, path, reference, credential_filtered_uri)
+        end
+
+        def verify(reference)
+          git("rev-parse", "--verify", reference, :dir => path).strip
         end
 
         # Adds credentials to the URI
@@ -325,16 +351,16 @@ module Bundler
           args
         end
 
-        def extra_fetch_args
+        def depth_args
           return [] if full_clone?
 
           ["--depth", depth.to_s]
         end
 
-        def revision_refspec
-          return if legacy_locked_revision?
-
-          revision
+        def extra_fetch_args
+          extra_args = [path.to_s, *depth_args]
+          extra_args.push(revision) unless legacy_locked_revision?
+          extra_args
         end
 
         def full_clone?

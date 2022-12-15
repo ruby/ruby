@@ -1,8 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    artifice (0.6)
-      rack-test
     builder (3.2.4)
     compact_index (0.13.0)
     mustermann (1.1.2)
@@ -33,7 +31,6 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  artifice (~> 0.6.0)
   builder (~> 3.2)
   compact_index (~> 0.13.0)
   rack (= 2.0.8)

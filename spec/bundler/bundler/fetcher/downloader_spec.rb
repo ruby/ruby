@@ -178,26 +178,6 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response causes a NoMethodError" do
-      before { allow(connection).to receive(:request).with(uri, net_http_get) { raise NoMethodError.new(message) } }
-
-      context "and the error message is about use_ssl=" do
-        let(:message) { "undefined method 'use_ssl='" }
-
-        it "should raise a LoadError about openssl" do
-          expect { subject.request(uri, options) }.to raise_error(LoadError, "cannot load such file -- openssl")
-        end
-      end
-
-      context "and the error message is not about use_ssl=" do
-        let(:message) { "undefined method 'undefined_method_call'" }
-
-        it "should raise the original NoMethodError" do
-          expect { subject.request(uri, options) }.to raise_error(NoMethodError, /undefined method 'undefined_method_call'/)
-        end
-      end
-    end
-
     context "when the request response causes a OpenSSL::SSL::SSLError" do
       before { allow(connection).to receive(:request).with(uri, net_http_get) { raise OpenSSL::SSL::SSLError.new } }
 

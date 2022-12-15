@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint"
+require_relative "helpers/endpoint"
 
 class EndpointMirrorSource < Endpoint
   get "/gems/:id" do
@@ -11,5 +11,7 @@ class EndpointMirrorSource < Endpoint
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointMirrorSource)
