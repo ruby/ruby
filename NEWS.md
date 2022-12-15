@@ -345,6 +345,16 @@ Note: We're only listing outstanding class updates.
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on Struct.new [[Feature #16806]]
 
+        ```ruby
+        Post = Struct.new(:id, :name)
+
+        # In addition to this,
+        Post.new(1, "hello") #=> #<struct Post id=1, name="hello">
+
+        # Let the following initialization also work
+        Post.new(id: 1, name: "hello") #=> #<struct Post id=1, name="hello">
+        ```
+
 * Thread
 
     * Thread#each_caller_location is added. [[Feature #16663]]
