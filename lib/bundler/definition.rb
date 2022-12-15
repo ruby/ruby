@@ -16,7 +16,6 @@ module Bundler
       :locked_deps,
       :locked_gems,
       :platforms,
-      :requires,
       :ruby_version,
       :lockfile,
       :gemfiles
@@ -145,8 +144,6 @@ module Bundler
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
-
-      @requires = compute_requires
     end
 
     def gem_version_promoter
@@ -869,17 +866,6 @@ module Bundler
         proposed = proposed.gsub(pattern, "\n").gsub(whitespace_cleanup, "\n\n").strip
       end
       current == proposed
-    end
-
-    def compute_requires
-      dependencies.reduce({}) do |requires, dep|
-        next requires unless dep.should_include?
-        requires[dep.name] = Array(dep.autorequire || dep.name).map do |file|
-          # Allow `require: true` as an alias for `require: <name>`
-          file == true ? dep.name : file
-        end
-        requires
-      end
     end
 
     def additional_base_requirements_for_resolve(last_resolve)
