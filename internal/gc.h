@@ -67,7 +67,13 @@ struct rb_objspace; /* in vm_core.h */
     rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
                  (VALUE)(b), __FILE__, __LINE__)
 
-#include "shape.h"
+// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
+// The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
+#if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+# define SIZE_POOL_COUNT 5
+#else
+# define SIZE_POOL_COUNT 1
+#endif
 
 #define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
 
