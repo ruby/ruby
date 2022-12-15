@@ -28,6 +28,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bignum.h"
+#include "internal/basic_operators.h"
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -93,8 +94,10 @@ rb_hash_freeze(VALUE hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_default, id_flatten_bang;
+static ID id_hash, id_flatten_bang;
 static ID id_hash_iter_lev;
+
+#define id_default idDefault
 
 VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
@@ -2070,10 +2073,22 @@ call_default_proc(VALUE proc, VALUE hash, VALUE key)
     return rb_proc_call_with_block(proc, 2, args, Qnil);
 }
 
+static bool
+rb_hash_default_unredefined(VALUE hash)
+{
+    VALUE klass = RBASIC_CLASS(hash);
+    if (LIKELY(klass == rb_cHash)) {
+        return !!BASIC_OP_UNREDEFINED_P(BOP_DEFAULT, HASH_REDEFINED_OP_FLAG);
+    }
+    else {
+        return LIKELY(rb_method_basic_definition_p(klass, id_default));
+    }
+}
+
 VALUE
 rb_hash_default_value(VALUE hash, VALUE key)
 {
-    if (LIKELY(rb_method_basic_definition_p(CLASS_OF(hash), id_default))) {
+    if (LIKELY(rb_hash_default_unredefined(hash))) {
         VALUE ifnone = RHASH_IFNONE(hash);
         if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
         if (UNDEF_P(key)) return Qnil;
@@ -7164,7 +7179,6 @@ void
 Init_Hash(void)
 {
     id_hash = rb_intern_const("hash");
-    id_default = rb_intern_const("default");
     id_flatten_bang = rb_intern_const("flatten!");
     id_hash_iter_lev = rb_make_internal_id();
 
