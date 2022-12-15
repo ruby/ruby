@@ -464,9 +464,9 @@ Note: We're only listing outstanding class updates.
 
     * minitest 5.16.3
     * power_assert 2.0.2
-    * test-unit 3.5.5
+    * test-unit 3.5.7
     * net-ftp 0.2.0
-    * net-imap 0.3.1
+    * net-imap 0.3.2
     * net-pop 0.1.2
     * net-smtp 0.3.3
     * rbs 2.8.1
