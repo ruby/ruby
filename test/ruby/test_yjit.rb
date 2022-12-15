@@ -1022,6 +1022,12 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_send_to_call
+    assert_compiles(<<~'RUBY', result: :ok)
+      ->{ :ok }.send(:call)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
