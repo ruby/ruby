@@ -3,10 +3,9 @@
 require 'test/unit'
 require 'timeout'
 require 'socket'
-begin
-  require 'io/wait'
-rescue LoadError
-end
+
+# For `IO#ready?` and `IO#nread`:
+require 'io/wait'
 
 class TestIOWait < Test::Unit::TestCase
 

@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "helpers/endpoint"
+require_relative "compact_index"
 
-class EndpointExtra < Endpoint
+class CompactIndexExtra < CompactIndexAPI
+  get "/extra/versions" do
+    halt 404
+  end
+
   get "/extra/api/v1/dependencies" do
     halt 404
   end
@@ -27,7 +31,3 @@ class EndpointExtra < Endpoint
     File.binread("#{gem_repo2}/gems/#{params[:id]}")
   end
 end
-
-require_relative "helpers/artifice"
-
-Artifice.activate_with(EndpointExtra)

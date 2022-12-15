@@ -36,9 +36,6 @@ module Bundler
         end
       when Thor::Error
         Bundler.ui.error error.message
-      when LoadError
-        raise error unless /cannot load such file -- openssl|openssl.so|libcrypto.so/.match?(error.message)
-        Bundler.ui.error "\nCould not load OpenSSL. #{error.class}: #{error}\n#{error.backtrace.join("\n  ")}"
       when Interrupt
         Bundler.ui.error "\nQuitting..."
         Bundler.ui.trace error

@@ -37,6 +37,35 @@ class TestShapes < Test::Unit::TestCase
     end
   end
 
+  class TooComplex
+    attr_reader :hopefully_unique_name, :b
+
+    def initialize
+      @hopefully_unique_name = "a"
+      @b = "b"
+    end
+
+    # Make enough lazily defined accessors to allow us to force
+    # polymorphism
+    class_eval (RubyVM::Shape::SHAPE_MAX_VARIATIONS + 1).times.map {
+      "def a#{_1}_m; @a#{_1} ||= #{_1}; end"
+    }.join(" ; ")
+
+    class_eval "attr_accessor " + (RubyVM::Shape::SHAPE_MAX_VARIATIONS + 1).times.map {
+      ":a#{_1}"
+    }.join(", ")
+
+    def iv_not_defined; @not_defined; end
+
+    def write_iv_method
+      self.a3 = 12345
+    end
+
+    def write_iv
+      @a3 = 12345
+    end
+  end
+
   # RubyVM::Shape.of returns new instances of shape objects for
   # each call. This helper method allows us to define equality for
   # shapes
@@ -49,6 +78,156 @@ class TestShapes < Test::Unit::TestCase
 
   def refute_shape_equal(shape1, shape2)
     refute_equal(shape1.id, shape2.id)
+  end
+
+  def test_too_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+  end
+
+  def test_too_complex_ractor
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      assert_predicate RubyVM::Shape.of(tc), :too_complex?
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.new(tc) { |x| Ractor.yield(x.very_unique) }.take
+      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| Ractor.yield(x.instance_variables) }.take.sort
+    end;
+  end
+
+  def test_too_complex_ractor_shareable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      assert_predicate RubyVM::Shape.of(tc), :too_complex?
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
+  def test_read_iv_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_equal 3, tc.a3_m
+  end
+
+  def test_read_method_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_equal 3, tc.a3_m
+    assert_equal 3, tc.a3
+  end
+
+  def test_write_method_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    tc.write_iv_method
+    tc.write_iv_method
+    assert_equal 12345, tc.a3_m
+    assert_equal 12345, tc.a3
+  end
+
+  def test_write_iv_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    tc.write_iv
+    tc.write_iv
+    assert_equal 12345, tc.a3_m
+    assert_equal 12345, tc.a3
+  end
+
+  def test_iv_read_via_method_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_equal 3, tc.a3_m
+    assert_equal 3, tc.instance_variable_get(:@a3)
+  end
+
+  def test_delete_iv_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+
+    assert_equal 3, tc.a3_m # make sure IV is initialized
+    assert tc.instance_variable_defined?(:@a3)
+    tc.remove_instance_variable(:@a3)
+    assert_nil tc.a3
+  end
+
+  def test_delete_undefined_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+
+    refute tc.instance_variable_defined?(:@a3)
+    assert_raise(NameError) do
+      tc.remove_instance_variable(:@a3)
+    end
+    assert_nil tc.a3
+  end
+
+  def test_freeze_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    tc.freeze
+    assert_raise(FrozenError) { tc.a3_m }
+  end
+
+  def test_read_undefined_iv_after_complex
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_equal nil, tc.iv_not_defined
   end
 
   def test_shape_order
@@ -216,6 +395,13 @@ class TestShapes < Test::Unit::TestCase
     end
     assert_raise ArgumentError do
       RubyVM::Shape.find_by_id(-1)
+    end
+  end
+
+  def ensure_complex
+    RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+      tc = TooComplex.new
+      tc.send("a#{_1}_m")
     end
   end
 end if defined?(RubyVM::Shape)

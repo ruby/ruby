@@ -34,6 +34,13 @@ RSpec.describe "bundle lock with git gems" do
     expect(out).to eq("WIN")
   end
 
+  it "properly clones a git source locked to an out of date ref" do
+    update_git "foo"
+
+    bundle :install, :env => { "BUNDLE_PATH" => "foo" }
+    expect(err).to be_empty
+  end
+
   it "provides correct #full_gem_path" do
     run <<-RUBY
       puts Bundler.rubygems.find_name('foo').first.full_gem_path

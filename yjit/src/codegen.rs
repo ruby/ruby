@@ -1963,6 +1963,11 @@ fn gen_get_ivar(
     recv_opnd: YARVOpnd,
     side_exit: CodePtr,
 ) -> CodegenStatus {
+    // If the object has a too complex shape, we exit
+    if comptime_receiver.shape_too_complex() {
+        return CantCompile;
+    }
+
     let comptime_val_klass = comptime_receiver.class_of();
     let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
@@ -2192,7 +2197,8 @@ fn gen_setinstancevariable(
 
     // If the comptime receiver is frozen, writing an IV will raise an exception
     // and we don't want to JIT code to deal with that situation.
-    if comptime_receiver.is_frozen() {
+    // If the object has a too complex shape, we will also exit
+    if comptime_receiver.is_frozen() || comptime_receiver.shape_too_complex() {
         return CantCompile;
     }
 
@@ -2219,9 +2225,6 @@ fn gen_setinstancevariable(
         let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
 
         // The function could raise exceptions.
-        jit_prepare_routine_call(jit, ctx, asm);
-
-        // Save the PC and SP because the callee may allocate
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_routine_call(jit, ctx, asm);
 
@@ -2284,39 +2287,53 @@ fn gen_setinstancevariable(
             megamorphic_side_exit,
         );
 
-        let write_val = ctx.stack_pop(1);
+        let write_val;
 
         match ivar_index {
             // If we don't have an instance variable index, then we need to
             // transition out of the current shape.
             None => {
-                let mut shape = comptime_receiver.shape_of();
+                let shape = comptime_receiver.shape_of();
+
+                let current_capacity = unsafe { (*shape).capacity };
+                let new_capacity = current_capacity * 2;
 
                 // If the object doesn't have the capacity to store the IV,
                 // then we'll need to allocate it.
-                let needs_extension = unsafe { (*shape).next_iv_index >= (*shape).capacity };
+                let needs_extension = unsafe { (*shape).next_iv_index >= current_capacity };
 
                 // We can write to the object, but we need to transition the shape
                 let ivar_index = unsafe { (*shape).next_iv_index } as usize;
 
-                if needs_extension {
-                    let current_capacity = unsafe { (*shape).capacity };
-                    let newsize = current_capacity * 2;
-
+                let capa_shape = if needs_extension {
                     // We need to add an extended table to the object
                     // First, create an outgoing transition that increases the
                     // capacity
-                    shape = unsafe {
-                        rb_shape_transition_shape_capa(shape, newsize)
-                    };
+                    Some(unsafe { rb_shape_transition_shape_capa(shape, new_capacity) })
+                } else {
+                    None
+                };
 
+                let dest_shape = if capa_shape.is_none() {
+                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
+                } else {
+                    unsafe { rb_shape_get_next(capa_shape.unwrap(), comptime_receiver, ivar_name) }
+                };
+
+                let new_shape_id = unsafe { rb_shape_id(dest_shape) };
+
+                if new_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+                    return CantCompile;
+                }
+
+                if needs_extension {
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
                                   recv,
                                   Opnd::UImm(current_capacity.into()),
-                                  Opnd::UImm(newsize.into())
+                                  Opnd::UImm(new_capacity.into())
                               ]
                     );
 
@@ -2324,10 +2341,7 @@ fn gen_setinstancevariable(
                     recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
                 }
 
-                let new_shape_id = unsafe {
-                    rb_shape_id(rb_shape_get_next(shape, comptime_receiver, ivar_name))
-                };
-
+                write_val = ctx.stack_pop(1);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension);
 
                 asm.comment("write shape");
@@ -2345,6 +2359,7 @@ fn gen_setinstancevariable(
                 // the iv index by searching up the shape tree.  If we've
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
+                write_val = ctx.stack_pop(1);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
             },
         }

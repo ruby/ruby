@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint_extra"
-
-Artifice.deactivate
+require_relative "helpers/endpoint_extra"
 
 class EndpointExtraMissing < EndpointExtra
   get "/extra/fetch/actual/gem/:id" do
@@ -13,5 +11,7 @@ class EndpointExtraMissing < EndpointExtra
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointExtraMissing)

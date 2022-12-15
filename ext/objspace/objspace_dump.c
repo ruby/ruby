@@ -13,8 +13,10 @@
 **********************************************************************/
 
 #include "gc.h"
+#include "id_table.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/class.h"
 #include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"
@@ -498,6 +500,9 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_CLASS:
+        dump_append(dc, ", \"variation_count\":");
+        dump_append_d(dc, RCLASS_EXT(obj)->variation_count);
+
       case T_MODULE:
         if (rb_class_get_superclass(obj)) {
             dump_append(dc, ", \"superclass\":");
@@ -542,7 +547,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_OBJECT:
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_IV_CAPACITY(obj));
+        dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
         break;
 
       case T_FILE:
@@ -731,7 +736,7 @@ shape_i(rb_shape_t *shape, void *data)
     dump_append_sizet(dc, rb_shape_depth(shape));
 
     dump_append(dc, ", \"shape_type\":");
-    switch(shape->type) {
+    switch((enum shape_type)shape->type) {
       case SHAPE_ROOT:
         dump_append(dc, "\"ROOT\"");
         break;
@@ -757,6 +762,9 @@ shape_i(rb_shape_t *shape, void *data)
         break;
       case SHAPE_T_OBJECT:
         dump_append(dc, "\"T_OBJECT\"");
+        break;
+      case SHAPE_OBJ_TOO_COMPLEX:
+        dump_append(dc, "\"OBJ_TOO_COMPLEX\"");
         break;
       default:
         rb_bug("[objspace] unexpected shape type");

@@ -398,6 +398,10 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
+    pub fn shape_too_complex(self) -> bool {
+        unsafe { rb_shape_obj_too_complex(self) }
+    }
+
     pub fn shape_id_of(self) -> u32 {
         unsafe { rb_shape_get_shape_id(self) }
     }
