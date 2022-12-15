@@ -115,7 +115,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}",
+              "env": "${{ github.workflow }} / ${{ matrix.name }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}"
