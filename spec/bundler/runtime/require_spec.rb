@@ -145,7 +145,7 @@ RSpec.describe "Bundler.require" do
 
   it "doesn't swallow the error when the library has an unrelated error" do
     build_lib "loadfuuu", "1.0.0" do |s|
-      s.write "lib/loadfuuu.rb", "raise LoadError.new(\"cannot load such file -- load-bar\")"
+      s.write "lib/loadfuuu.rb", "raise LoadError.new(\"cannot load file -- load-bar\")"
     end
 
     gemfile <<-G
@@ -164,7 +164,7 @@ RSpec.describe "Bundler.require" do
     RUBY
     run(cmd)
 
-    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load file -- load-bar")
   end
 
   describe "with namespaced gems" do
@@ -247,7 +247,7 @@ RSpec.describe "Bundler.require" do
 
     it "doesn't swallow the error when the library has an unrelated error" do
       build_lib "load-fuuu", "1.0.0" do |s|
-        s.write "lib/load/fuuu.rb", "raise LoadError.new(\"cannot load such file -- load-bar\")"
+        s.write "lib/load/fuuu.rb", "raise LoadError.new(\"cannot load file -- load-bar\")"
       end
 
       gemfile <<-G
@@ -266,7 +266,7 @@ RSpec.describe "Bundler.require" do
       RUBY
       run(cmd)
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load file -- load-bar")
     end
   end
 

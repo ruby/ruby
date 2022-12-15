@@ -706,7 +706,7 @@ RSpec.describe "gemcutter's dependency API" do
       bundled_app("broken_ssl").mkpath
       bundled_app("broken_ssl/openssl.rb").open("w") do |f|
         f.write <<-RUBY
-          raise LoadError, "cannot load such file -- openssl"
+          raise LoadError, "cannot load file -- openssl"
         RUBY
       end
     end

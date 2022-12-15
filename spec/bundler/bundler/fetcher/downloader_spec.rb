@@ -185,7 +185,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
         let(:message) { "undefined method 'use_ssl='" }
 
         it "should raise a LoadError about openssl" do
-          expect { subject.request(uri, options) }.to raise_error(LoadError, "cannot load such file -- openssl")
+          expect { subject.request(uri, options) }.to raise_error(LoadError, "cannot load file -- openssl")
         end
       end
 

@@ -60,7 +60,7 @@ module TestIRB
       ::Kernel.send(:alias_method, :old_require, :require)
 
       ::Kernel.define_method(:require) do |name|
-        raise LoadError, "cannot load such file -- rdoc (test)" if name.match?("rdoc") || name.match?(/^rdoc\/.*/)
+        raise LoadError, "cannot load file -- rdoc (test)" if name.match?("rdoc") || name.match?(/^rdoc\/.*/)
         ::Kernel.send(:old_require, name)
       end
 

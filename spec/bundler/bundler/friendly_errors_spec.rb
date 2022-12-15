@@ -111,14 +111,14 @@ RSpec.describe Bundler, "friendly errors" do
     end
 
     context "LoadError" do
-      let(:error) { LoadError.new("cannot load such file -- openssl") }
+      let(:error) { LoadError.new("cannot load file -- openssl") }
 
       before do
         allow(error).to receive(:backtrace).and_return(["backtrace"])
       end
 
       it "Bundler.ui receive error" do
-        expect(Bundler.ui).to receive(:error).with("\nCould not load OpenSSL. LoadError: cannot load such file -- openssl\nbacktrace")
+        expect(Bundler.ui).to receive(:error).with("\nCould not load OpenSSL. LoadError: cannot load file -- openssl\nbacktrace")
         Bundler::FriendlyErrors.log_error(error)
       end
     end
