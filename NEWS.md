@@ -587,6 +587,14 @@ The following deprecated APIs are removed.
   [[Feature #19104]]
 * Variable Width Allocation is now enabled by default.
   [[Feature #18239]].
+* Added a new instance variable caching mechanism, called object shapes, which
+  improves inline cache hits for most objects and allows us to generate very
+  efficient JIT code. Objects whose instance variables are defined in a
+  consistent order will see the most performance benefits.
+  [[Feature #18776]]
+* Speed up marking instruction sequences by using a bitmap to find "markable"
+  objects.  This change results in faster major collections.
+  [[Feature #18875]]
 
 ## JIT
 
