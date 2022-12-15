@@ -1,5 +1,8 @@
 #ifndef RUBY_SHAPE_H
 #define RUBY_SHAPE_H
+
+#include "internal/gc.h"
+
 #if (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #define SIZEOF_SHAPE_T 4
 #define SHAPE_IN_BASIC_FLAGS 1
@@ -32,14 +35,6 @@ typedef uint16_t shape_id_t;
 # define MAX_SHAPE_ID (SHAPE_MASK - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK
 # define ROOT_SHAPE_ID 0x0
-
-// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
-// The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
-#if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
-# define SIZE_POOL_COUNT 5
-#else
-# define SIZE_POOL_COUNT 1
-#endif
 
 # define SPECIAL_CONST_SHAPE_ID (SIZE_POOL_COUNT * 2)
 # define OBJ_TOO_COMPLEX_SHAPE_ID (SPECIAL_CONST_SHAPE_ID + 1)
