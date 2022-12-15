@@ -19,7 +19,14 @@ class Gem::Ext::Builder
     $1.downcase
   end
 
-  def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil, targets = ["clean", "", "install"])
+  def self.make(dest_path, results, make_dir = Dir.pwd, targets_or_sitedir = ["clean", "", "install"], old_targets = ["clean", "", "install"])
+    if !targets_or_sitedir.is_a?(Array)
+      verbose { "sitedir parameter to Gem::Ext::Builder.make is getting ignored. sitearchdir and sitelibdir are now always set to the first argument passed to this method. Please stop passing this parameter" }
+      targets = old_targets
+    else
+      targets = targets_or_sitedir
+    end
+
     unless File.exist? File.join(make_dir, "Makefile")
       raise Gem::InstallError, "Makefile not found"
     end
@@ -35,10 +42,8 @@ class Gem::Ext::Builder
 
     env = [destdir]
 
-    if sitedir
-      env << format("sitearchdir=%s", sitedir)
-      env << format("sitelibdir=%s", sitedir)
-    end
+    env << format("sitearchdir=%s", dest_path)
+    env << format("sitelibdir=%s", dest_path)
 
     targets.each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
