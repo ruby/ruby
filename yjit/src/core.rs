@@ -1682,7 +1682,6 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     return branchref;
 }
 
-
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
     /// See [set_branch_target].
@@ -1910,19 +1909,14 @@ fn set_branch_target(
     let mut asm = Assembler::new();
     asm.comment("branch stub hit");
 
-    // Call branch_stub_hit(branch_ptr, target_idx, ec)
-    let jump_addr = asm.ccall(
-        branch_stub_hit as *mut u8,
-        vec![
-            Opnd::const_ptr(branch_ptr as *const u8),
-            Opnd::UImm(target_idx as u64),
-            EC,
-        ]
-    );
+    // Set up the arguments unique to this stub for:
+    // branch_stub_hit(branch_ptr, target_idx, ec)
+    asm.mov(C_ARG_OPNDS[0], Opnd::const_ptr(branch_ptr as *const u8));
+    asm.mov(C_ARG_OPNDS[1], target_idx.into());
 
-    // Jump to the address returned by the
-    // branch_stub_hit call
-    asm.jmp_opnd(jump_addr);
+    // Jump to trampoline to call branch_stub_hit()
+    // Not really a side exit, just don't need a padded jump here.
+    asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
 
     asm.compile(ocb);
 
@@ -1937,6 +1931,35 @@ fn set_branch_target(
             ctx: ctx.clone(),
         }));
     }
+}
+
+pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
+    let ocb = ocb.unwrap();
+    let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
+
+    // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
+    // `branch_ptr` and `target_idx` is different for each stub,
+    // but the call and what's after is the same. This trampoline
+    // is the unchanging part.
+    // Since this trampoline is static, it allows code GC inside
+    // branch_stub_hit() to free stubs without problems.
+    asm.comment("branch_stub_hit() trampoline");
+    let jump_addr = asm.ccall(
+        branch_stub_hit as *mut u8,
+        vec![
+            C_ARG_OPNDS[0],
+            C_ARG_OPNDS[1],
+            EC,
+        ]
+    );
+
+    // Jump to the address returned by the branch_stub_hit() call
+    asm.jmp_opnd(jump_addr);
+
+    asm.compile(ocb);
+
+    code_ptr
 }
 
 impl Assembler

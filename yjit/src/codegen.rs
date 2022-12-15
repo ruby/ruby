@@ -7147,6 +7147,9 @@ pub struct CodegenGlobals {
     // Filled by gen_code_for_exit_from_stub().
     stub_exit_code: CodePtr,
 
+    // For servicing branch stubs
+    branch_stub_hit_trampoline: CodePtr,
+
     // Code for full logic of returning from C method and exiting to the interpreter
     outline_full_cfunc_return_pos: CodePtr,
 
@@ -7241,6 +7244,8 @@ impl CodegenGlobals {
 
         let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
+        let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb);
+
         // Generate full exit code for C func
         let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
 
@@ -7257,6 +7262,7 @@ impl CodegenGlobals {
             leave_exit_code,
             stub_exit_code: stub_exit_code,
             outline_full_cfunc_return_pos: cfunc_exit_code,
+            branch_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
@@ -7389,6 +7395,10 @@ impl CodegenGlobals {
 
     pub fn get_outline_full_cfunc_return_pos() -> CodePtr {
         CodegenGlobals::get_instance().outline_full_cfunc_return_pos
+    }
+
+    pub fn get_branch_stub_hit_trampoline() -> CodePtr {
+        CodegenGlobals::get_instance().branch_stub_hit_trampoline
     }
 
     pub fn look_up_codegen_method(method_serial: usize) -> Option<MethodGenFn> {
