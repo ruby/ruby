@@ -933,7 +933,7 @@ rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
     VALUE name = argv[0];
 
     if (!format) {
-        format = rb_fstring_lit("undefined method `%s' for %s%s%s");
+        format = rb_fstring_lit("undefined method `%1$s' for %3$s%4$s");
     }
     if (exc == rb_eNoMethodError) {
         VALUE args = rb_ary_new4(argc - 1, argv + 1);
@@ -965,17 +965,17 @@ raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VA
     stack_check(ec);
 
     if (last_call_status & MISSING_PRIVATE) {
-        format = rb_fstring_lit("private method `%s' called for %s%s%s");
+        format = rb_fstring_lit("private method `%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_PROTECTED) {
-        format = rb_fstring_lit("protected method `%s' called for %s%s%s");
+        format = rb_fstring_lit("protected method `%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_VCALL) {
-        format = rb_fstring_lit("undefined local variable or method `%s' for %s%s%s");
+        format = rb_fstring_lit("undefined local variable or method `%1$s' for %3$s%4$s");
         exc = rb_eNameError;
     }
     else if (last_call_status & MISSING_SUPER) {
-        format = rb_fstring_lit("super: no superclass method `%s' for %s%s%s");
+        format = rb_fstring_lit("super: no superclass method `%1$s' for %3$s%4$s");
     }
 
     {
