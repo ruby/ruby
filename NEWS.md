@@ -253,6 +253,13 @@ Note: We're only listing outstanding class updates.
 
 * Regexp
 
+    * The cache-based optimization is introduced.
+      Many (but not all) Regexp matching is now in linear time, which
+      will prevent regular expression denial of service (ReDoS)
+      vulnearbility. [[Feature #19104]]
+
+    * Regexp.linear_time? is introduced. [[Feature #19194]]
+
     * Regexp.new now supports passing the regexp flags not only as an Integer,
       but also as a String.  Unknown flags raise ArgumentError.
       Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
@@ -503,6 +510,10 @@ Note: We're only listing outstanding class updates.
 
 *   The following default gems are now bundled gems.
 
+## Supported platforms
+
+* WebAssembly/WASI is added. [[Feature #18462]]
+
 ## Compatibility issues
 
 * `String#to_c` currently treat a sequence of underscores as an end of Complex
@@ -692,6 +703,7 @@ The following deprecated APIs are removed.
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Feature #18367]: https://bugs.ruby-lang.org/issues/18367
 [Bug #18435]:     https://bugs.ruby-lang.org/issues/18435
+[Feature #18462]: https://bugs.ruby-lang.org/issues/18462
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18564]: https://bugs.ruby-lang.org/issues/18564
@@ -717,6 +729,7 @@ The following deprecated APIs are removed.
 [Feature #18822]: https://bugs.ruby-lang.org/issues/18822
 [Feature #18824]: https://bugs.ruby-lang.org/issues/18824
 [Feature #18832]: https://bugs.ruby-lang.org/issues/18832
+[Feature #18875]: https://bugs.ruby-lang.org/issues/18875
 [Feature #18925]: https://bugs.ruby-lang.org/issues/18925
 [Feature #18944]: https://bugs.ruby-lang.org/issues/18944
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
@@ -733,3 +746,4 @@ The following deprecated APIs are removed.
 [Feature #19104]: https://bugs.ruby-lang.org/issues/19104
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
+[Feature #19194]: https://bugs.ruby-lang.org/issues/19194

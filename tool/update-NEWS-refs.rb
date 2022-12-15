@@ -4,7 +4,7 @@ orig_src = File.read(File.join(__dir__, "../NEWS.md"))
 lines = orig_src.lines(chomp: true)
 
 links = {}
-while lines.last =~ %r{\A\[(?:Feature|Bug) #(\d+)\]:\s+https://bugs\.ruby-lang\.org/issues/\1\z}
+while lines.last =~ %r{\A\[(?:Feature|Bug) #(\d+)\]:\s+https://bugs\.ruby-lang\.org/issues/\1(?:#.*)?\z}
   links[$1] = lines.pop
 end
 
