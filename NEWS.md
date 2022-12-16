@@ -450,7 +450,7 @@ Note: We're only listing outstanding class updates.
     * ipaddr 1.2.5
     * irb 1.6.1
     * json 2.6.3
-    * logger 1.5.2
+    * logger 1.5.3
     * mutex_m 0.1.2
     * net-http 0.3.1
     * net-protocol 0.2.1
