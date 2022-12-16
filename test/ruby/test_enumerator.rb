@@ -924,6 +924,10 @@ class TestEnumerator < Test::Unit::TestCase
     e.each { |*x| elts << x }
     assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"], [3, "a"], [3, "b"]], elts
 
+    assert_raise(ArgumentError) {
+      Enumerator::Product.new(1..3, foo: 1, bar: 2)
+    }
+
     e = Enumerator.product(1..3, %w[a b])
     assert_instance_of(Enumerator::Product, e)
 
@@ -943,5 +947,9 @@ class TestEnumerator < Test::Unit::TestCase
     e = Enumerator.product(1..3, Enumerator.new { |y| y << 'a' << 'b' })
     assert_equal(nil, e.size)
     assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
+
+    assert_raise(ArgumentError) {
+      Enumerator.product(1..3, foo: 1, bar: 2)
+    }
   end
 end
