@@ -444,7 +444,7 @@ Note: We're only listing outstanding class updates.
     * fileutils 1.7.0
     * forwardable 1.3.3
     * getoptlong 0.2.0
-    * io-console 0.5.11
+    * io-console 0.6.0
     * io-nonblock 0.2.0
     * io-wait 0.3.0
     * ipaddr 1.2.5
