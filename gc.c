@@ -9902,6 +9902,17 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
     return FALSE;
 }
 
+/* Used in places that could malloc, which can cause the GC to run. We need to
+ * temporarily disable the GC to allow the malloc to happen. */
+#define COULD_MALLOC_REGION_START() \
+    GC_ASSERT(during_gc); \
+    VALUE _already_disabled = rb_gc_disable_no_rest(); \
+    during_gc = false;
+
+#define COULD_MALLOC_REGION_END() \
+    during_gc = true; \
+    if (_already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size)
 {
@@ -9930,11 +9941,12 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)src), (VALUE)src);
 
     if (FL_TEST((VALUE)src, FL_EXIVAR)) {
-        /* Same deal as below. Generic ivars are held in st tables.
-         * Resizing the table could cause a GC to happen and we can't allow it */
-        VALUE already_disabled = rb_gc_disable_no_rest();
-        rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
-        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+        /* Resizing the st table could cause a malloc */
+        COULD_MALLOC_REGION_START();
+        {
+            rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
+        }
+        COULD_MALLOC_REGION_END();
     }
 
     st_data_t srcid = (st_data_t)src, id;
@@ -9943,13 +9955,13 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
      * the object to object id mapping. */
     if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        /* inserting in the st table can cause the GC to run. We need to
-         * prevent re-entry in to the GC since `gc_move` is running in the GC,
-         * so temporarily disable the GC around the st table mutation */
-        VALUE already_disabled = rb_gc_disable_no_rest();
-        st_delete(objspace->obj_to_id_tbl, &srcid, 0);
-        st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
-        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+        /* Resizing the st table could cause a malloc */
+        COULD_MALLOC_REGION_START();
+        {
+            st_delete(objspace->obj_to_id_tbl, &srcid, 0);
+            st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+        }
+        COULD_MALLOC_REGION_END();
     }
 
     /* Move the object */
@@ -12192,9 +12204,26 @@ objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
     return size;
 }
 
+static bool
+malloc_during_gc_p(rb_objspace_t *objspace)
+{
+    /* malloc is not allowed during GC when we're not using multiple ractors
+     * (since ractors can run while another thread is sweeping) and when we
+     * have the GVL (since if we don't have the GVL, we'll try to acquire the
+     * GVL which will block and ensure the other thread finishes GC). */
+    return during_gc && !rb_multi_ractor_p() && ruby_thread_has_gvl_p();
+}
+
 static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE
+        rb_bug("Cannot malloc during GC");
+#endif
+    }
+
     size = objspace_malloc_size(objspace, mem, size);
     objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
 
@@ -12273,6 +12302,13 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("realloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE
+        rb_bug("Cannot realloc during GC");
+#endif
+    }
+
     void *mem;
 
     if (!ptr) return objspace_xmalloc0(objspace, new_size);
