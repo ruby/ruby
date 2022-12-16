@@ -214,6 +214,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_definemethod_definesmethod
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworldhelloworld', success_count: 3, insns: %i[definemethod definesmethod])
     begin;
       print 2.times.map {
@@ -228,6 +229,8 @@ class TestMJIT < Test::Unit::TestCase
         method_definition + smethod_definition
       }.join
     end;
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_putspecialobject
