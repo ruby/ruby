@@ -506,6 +506,8 @@ Note: We're only listing outstanding class updates.
 * `String#to_c` currently treat a sequence of underscores as an end of Complex
   string. [[Bug #19087]]
 
+* Now `ENV.clone` raises `TypeError` as well as `ENV.dup` [[Bug #17767]]
+
 ### Removed constants
 
 The following deprecated constants are removed.
@@ -680,6 +682,7 @@ The following deprecated APIs are removed.
 [Feature #17351]: https://bugs.ruby-lang.org/issues/17351
 [Feature #17391]: https://bugs.ruby-lang.org/issues/17391
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
+[Bug #17767]:     https://bugs.ruby-lang.org/issues/17767
 [Feature #17837]: https://bugs.ruby-lang.org/issues/17837
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18159]: https://bugs.ruby-lang.org/issues/18159
