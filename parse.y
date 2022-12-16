@@ -1326,6 +1326,15 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 # define compile_error parser_compile_error
 #endif
 
+static void
+no_anonymous_rest_parameter_check(struct parser_params* p)
+{
+    if (!local_id(p, idFWD_REST) || local_id(p, idFWD_ALL)) {
+        compile_error(p, "no anonymous rest parameter");
+    }
+}
+
+
 #define WARN_EOL(tok) \
     (looking_at_eol_p(p) ? \
      (void)rb_warning0("`" tok "' at the end of line without an expression") : \
@@ -3133,10 +3142,7 @@ args		: arg_value
 		    }
 		| tSTAR
 		    {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
+                        no_anonymous_rest_parameter_check(p);
 		    /*%%%*/
 			$$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$);
 		    /*% %*/
@@ -3158,10 +3164,7 @@ args		: arg_value
 		    }
 		| args ',' tSTAR
 		    {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
+                        no_anonymous_rest_parameter_check(p);
 		    /*%%%*/
 			$$ = rest_arg_append(p, $1, NEW_LVAR(idFWD_REST, &@3), &@$);
 		    /*% %*/
