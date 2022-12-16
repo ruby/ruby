@@ -430,7 +430,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * cgi 0.3.6
     * csv 3.2.6
-    * date 3.3.1
+    * date 3.3.2
     * delegate 0.3.0
     * did_you_mean 1.6.2
     * digest 3.1.1
