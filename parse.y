@@ -12754,8 +12754,7 @@ new_find_pattern_tail(struct parser_params *p, ID pre_rest_arg, NODE *args, ID p
 static NODE*
 new_hash_pattern(struct parser_params *p, NODE *constant, NODE *hshptn, const YYLTYPE *loc)
 {
-    hshptn->nd_pconst = constant;
-    return hshptn;
+    return new_find_pattern(p, constant, hshptn, loc);
 }
 
 static NODE*
