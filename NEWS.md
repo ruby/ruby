@@ -446,7 +446,7 @@ Note: We're only listing outstanding class updates.
     * getoptlong 0.2.0
     * io-console 0.5.11
     * io-nonblock 0.2.0
-    * io-wait 0.3.0.pre
+    * io-wait 0.3.0
     * ipaddr 1.2.5
     * irb 1.6.1
     * json 2.6.3
