@@ -5151,12 +5151,6 @@ fn gen_send_iseq(
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     let opts_missing: i32 = opt_num - opts_filled;
 
-
-    if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_splat_with_opt);
-        return CantCompile;
-    }
-
     if doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0 {
         gen_counter_incr!(asm, send_iseq_splat_with_kw);
         return CantCompile;
@@ -5202,13 +5196,24 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if opt_num > 0 {
+    if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT == 0 {
         num_params -= opts_missing as u32;
         unsafe {
             let opt_table = get_iseq_body_param_opt_table(iseq);
             start_pc_offset = (*opt_table.offset(opts_filled as isize)).as_u32();
         }
-    }
+    } else if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
+        // We are going to assume that args_splat fills all of the optional arguments.
+        // We should actually get the array length instead at compile time.
+        // We don't set num_params here because we use it for the splat.
+        // If our assumption is wrong, we will exit early in the splat code.
+        // We could do that a bit smarter and not exit but instead change
+        // the offset we jump to. But we aren't currently doing that.
+        unsafe {
+            let opt_table = get_iseq_body_param_opt_table(iseq);
+            start_pc_offset = (*opt_table.offset(opt_num as isize)).as_u32();
+        };
+    };
 
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
