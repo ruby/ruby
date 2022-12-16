@@ -1528,7 +1528,7 @@ static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 
 #if USE_MMTK
-static size_t rb_mmtk_heap_limit(void);
+static void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min, size_t *max);
 #endif
 
 static inline int
@@ -1937,11 +1937,14 @@ rb_objspace_alloc(void)
 
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
 
-        // Note: the limit is currently broken for NoGC, but we still attempt to
-        // initialise it properly regardless.
-        // See https://github.com/mmtk/mmtk-core/issues/214
-        size_t heap_size = rb_mmtk_heap_limit();
-        mmtk_builder_set_heap_size(mmtk_builder, heap_size);
+        bool is_dynamic;
+        size_t min_size, max_size;
+        rb_mmtk_heap_limit(&is_dynamic, &min_size, &max_size);
+        if (is_dynamic) {
+            mmtk_builder_set_dynamic_heap_size(mmtk_builder, min_size, max_size);
+        } else {
+            mmtk_builder_set_fixed_heap_size(mmtk_builder, max_size);
+        }
 
 #if RACTOR_CHECK_MODE
         ruby_binding_options.ractor_check_mode = true;
@@ -15468,14 +15471,14 @@ static size_t rb_mmtk_available_system_memory(void)
 }
 
 static size_t
-rb_mmtk_parse_heap_limit(char *argv, bool* had_error)
+rb_mmtk_parse_heap_limit(const char *argv, bool* had_error)
 {
     char *endval = NULL;
     int pow = 0;
 
     size_t base = strtol(argv, &endval, 10);
     if (base == 0) {
-        mmtk_max_heap_parse_error = true;
+        *had_error = true;
     }
 
     // if there were non-numbers in the string
@@ -15496,15 +15499,31 @@ rb_mmtk_parse_heap_limit(char *argv, bool* had_error)
     return (base << pow);
 }
 
-size_t rb_mmtk_heap_limit(void) {
+void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min_size, size_t *max_size) {
     const char *envval;
     if (mmtk_max_heap_size > 0) {
-        return mmtk_max_heap_size;
-    }
-    else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
-        return atol(envval);
+        *is_dynamic = false;
+        *min_size = 0;
+        *max_size = mmtk_max_heap_size;
+    } else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+        bool had_error = false;
+        size_t parsed_max = rb_mmtk_parse_heap_limit(envval, &had_error);
+        if (had_error) {
+            fprintf(stderr, "Error: Invalid THIRD_PARTY_HEAP_LIMIT: %s\n", envval);
+            abort();
+        }
+        *is_dynamic = false;
+        *min_size = 0;
+        *max_size = parsed_max;
     } else {
-        return rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+        const size_t default_min = 1024 * 1024;
+        size_t default_max = rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+        if (default_max < default_min) {
+            default_max = default_min;
+        }
+        *is_dynamic = true;
+        *min_size = default_min;
+        *max_size = default_max;
     }
 }
 
