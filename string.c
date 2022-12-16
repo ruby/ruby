@@ -416,7 +416,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
     else {
         if (FL_TEST_RAW(str, STR_FAKESTR)) {
             if (arg->copy) {
-                VALUE new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->as.heap.len);
+                VALUE new_str = rb_str_new(RSTRING(str)->as.heap.ptr, RSTRING(str)->as.heap.len);
                 rb_enc_copy(new_str, str);
                 str = new_str;
             }
@@ -968,7 +968,7 @@ rb_usascii_str_new(const char *ptr, long len)
 VALUE
 rb_utf8_str_new(const char *ptr, long len)
 {
-    VALUE str = str_new(rb_cString, ptr, len);
+    VALUE str = rb_str_new(ptr, len);
     rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
