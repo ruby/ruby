@@ -5,22 +5,34 @@ class RubyVM::MJIT::Assembler
     @bytes = []
   end
 
-  def compile(compiler)
-    with_dump_disasm(compiler) do
-      RubyVM::MJIT::C.mjit_mark_writable
-      write_bytes(compiler.write_addr, @bytes)
-      RubyVM::MJIT::C.mjit_mark_executable
+  def compile(compiler) = with_dump_disasm(compiler) do
+    RubyVM::MJIT::C.mjit_mark_writable
+    write_bytes(compiler.write_addr, @bytes)
+    RubyVM::MJIT::C.mjit_mark_executable
 
-      compiler.write_pos += @bytes.size
-      @bytes.clear
+    compiler.write_pos += @bytes.size
+    @bytes.clear
+  end
+
+  def add(_reg, imm)
+    #           REX.W [83]  RSI   ib
+    @bytes.push(0x48, 0x83, 0xc6, imm)
+  end
+
+  def mov(reg, val)
+    case reg
+    when :rax
+      #           REX.W [C7]  RAX   imm32
+      @bytes.push(0x48, 0xc7, 0xc0, val, 0x00, 0x00, 0x00)
+    else
+      #           REX.W [89]  [rdi+val],rsi
+      @bytes.push(0x48, 0x89, 0x77, reg.last)
     end
   end
 
-  def mov(_reg, val)
-    @bytes.push(0xb8, val, 0x00, 0x00, 0x00)
-  end
-
   def ret
+    # Near return
+    #           [C3]
     @bytes.push(0xc3)
   end
 

@@ -47,12 +47,15 @@ module RubyVM::MJIT # :nodoc: all
         type[@addr + offset / 8] = value
       end
 
-      # @param sizeof [Integer]
+      # @param size [Integer]
       # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
-      def self.define(sizeof, members)
+      def self.define(size, members)
         Class.new(self) do
           # Return the size of this type
-          define_singleton_method(:sizeof) { sizeof }
+          define_singleton_method(:size) { size }
+
+          # Return the offset to a field
+          define_singleton_method(:offsetof) { |field| members.fetch(field).last / 8 }
 
           # Get the offset of a member named +name+
           define_singleton_method(:offsetof) { |name|
@@ -62,9 +65,9 @@ module RubyVM::MJIT # :nodoc: all
 
           define_method(:initialize) do |addr = nil|
             if addr.nil? # TODO: get rid of this feature later
-              addr = Fiddle.malloc(sizeof)
+              addr = Fiddle.malloc(size)
             end
-            super(addr, sizeof, members)
+            super(addr, size, members)
           end
 
           members.each do |member, (type, offset, to_ruby)|

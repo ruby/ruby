@@ -19,15 +19,29 @@ class RubyVM::MJIT::Compiler
   # @param iseq [RubyVM::MJIT::CPointer::Struct]
   def compile(iseq)
     return if iseq.body.location.label == '<main>'
-
-    iseq.body.jit_func = write_addr
-    asm = Assembler.new
-    asm.mov(:eax, Qundef)
-    asm.ret
-    asm.compile(self)
+    iseq.body.jit_func = compile_iseq(iseq)
   end
 
   def write_addr
     @mem_block + @write_pos
+  end
+
+  private
+
+  # ec -> RDI, cfp -> RSI
+  def compile_iseq(iseq)
+    addr = write_addr
+    asm = Assembler.new
+
+    # pop the current frame (ec->cfp++)
+    asm.add(:rsi, C.rb_control_frame_t.size)
+    asm.mov([:rdi, C.rb_execution_context_t.offsetof(:cfp)], :rsi)
+
+    # return a value
+    asm.mov(:rax, 7)
+    asm.ret
+
+    asm.compile(self)
+    addr
   end
 end
