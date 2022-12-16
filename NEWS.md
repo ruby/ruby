@@ -394,8 +394,19 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* CGI
+
+    * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent` are added.
+      [[Feature #18822]]
+
 * ERB
 
+    * `ERB::Util.html_escape` is made faster than `CGI.escapeHTML`.
+        * It no longer allocates a String object when no character needs to be escaped.
+        * It skips calling `#to_s` method when an argument is already a String.
+        * `ERB::Escape.html_escape` is added as an alias to `ERB::Util.html_escape`,
+          which has not been monkey-patched by Rails.
+    * `ERB::Util.url_encode` is made faster using `CGI.escapeURIComponent`.
     * `-S` option is removed from `erb` command.
 
 * FileUtils
@@ -698,6 +709,7 @@ The following deprecated APIs are removed.
 [Feature #18798]: https://bugs.ruby-lang.org/issues/18798
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18821]: https://bugs.ruby-lang.org/issues/18821
+[Feature #18822]: https://bugs.ruby-lang.org/issues/18822
 [Feature #18824]: https://bugs.ruby-lang.org/issues/18824
 [Feature #18832]: https://bugs.ruby-lang.org/issues/18832
 [Feature #18925]: https://bugs.ruby-lang.org/issues/18925
