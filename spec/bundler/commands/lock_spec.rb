@@ -176,7 +176,10 @@ RSpec.describe "bundle lock" do
         build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "foo", %w[2.0.0.pre] do |s|
+          s.add_dependency "bar"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 2.1.2.pre 3.0.0 3.1.0.pre 4.0.0.pre]
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
@@ -209,6 +212,32 @@ RSpec.describe "bundle lock" do
       bundle "lock --update --minor --strict"
 
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
+    end
+
+    context "pre" do
+      it "defaults to major" do
+        bundle "lock --update --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+
+      it "patch preferred" do
+        bundle "lock --update --patch --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+      end
+
+      it "minor preferred" do
+        bundle "lock --update --minor --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+      end
+
+      it "major preferred" do
+        bundle "lock --update --major --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
     end
   end
 
