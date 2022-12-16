@@ -422,7 +422,7 @@ enc_registered(struct enc_table *enc_table, const char *name)
     st_data_t idx = 0;
 
     if (!name) return -1;
-    if (!enc_table->list) return -1;
+    if (!enc_table->names) return -1;
     if (st_lookup(enc_table->names, (st_data_t)name, &idx)) {
         return (int)idx;
     }
