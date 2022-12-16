@@ -62,5 +62,7 @@ DESCRIPTION
     s.extensions = ["ext/psych/extconf.rb"]
     s.add_dependency 'stringio'
   end
+  
+  s.metadata['msys2_mingw_dependencies'] = 'libyaml libyaml-devel'
 
 end
