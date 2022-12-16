@@ -117,7 +117,8 @@ module Bundler
       cause = PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
       name = package.name
       constraint = unsatisfied_term.constraint
-      requirement = Gem::Requirement.new(constraint.constraint_string.split(","))
+      constraint_string = constraint.constraint_string
+      requirement = Gem::Requirement.new(constraint_string.split(","))
 
       if name == "bundler"
         custom_explanation = "the current Bundler version (#{Bundler::VERSION}) does not satisfy #{constraint}"
@@ -128,8 +129,7 @@ module Bundler
         platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
         custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
 
-        dependency = Dependency.new(name, requirement)
-        label = SharedHelpers.pretty_dependency(dependency)
+        label = "#{name} (#{constraint_string})"
         extended_explanation = other_specs_matching_message(specs_matching_other_platforms, label) if specs_matching_other_platforms.any?
       end
 
