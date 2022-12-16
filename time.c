@@ -2532,12 +2532,16 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone)
     }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
-        if (ndigits < 9) {
-            VALUE mul = rb_int_positive_pow(10, 9 - ndigits);
+        static const size_t TIME_SCALE_NUMDIGITS =
+            /* TIME_SCALE should be 10000... */
+            rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
+
+        if (ndigits < TIME_SCALE_NUMDIGITS) {
+            VALUE mul = rb_int_positive_pow(10, TIME_SCALE_NUMDIGITS - ndigits);
             subsec = rb_int_mul(subsec, mul);
         }
-        else if (ndigits > 9) {
-            VALUE num = rb_int_positive_pow(10, ndigits - 9);
+        else if (ndigits > TIME_SCALE_NUMDIGITS) {
+            VALUE num = rb_int_positive_pow(10, ndigits - TIME_SCALE_NUMDIGITS);
             subsec = rb_rational_new(subsec, num);
         }
     }
