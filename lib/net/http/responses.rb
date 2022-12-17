@@ -12,7 +12,11 @@ module Net
   # Parent class for informational (1xx) HTTP response classes.
   #
   # An informational response indicates that the request was received and understood.
-  # See {Informational Response}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#1xx_informational_response].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#status.1xx].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#1xx_informational_response].
   #
   class HTTPInformation < HTTPResponse
     HAS_BODY = false
@@ -23,7 +27,12 @@ module Net
   #
   # A success response indicates the action requested by the client
   # was received, understood, and accepted.
-  # See {Success Response}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_success].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#status.2xx].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#2xx_success].
+  #
   class HTTPSuccess < HTTPResponse
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPError                  #
@@ -33,7 +42,12 @@ module Net
   #
   # A redirection response indicates the client must take additional action
   # to complete the request.
-  # See {Redirection Response}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_redirection].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#status.3xx].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#3xx_redirection].
+  #
   class HTTPRedirection < HTTPResponse
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPRetriableError         #
@@ -42,7 +56,12 @@ module Net
   # Parent class for client error (4xx) HTTP response classes.
   #
   # A client error response indicates that the client may have caused an error.
-  # See {Client Error Response}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_client_errors].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#status.4xx].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#4xx_client_errors].
+  #
   class HTTPClientError < HTTPResponse
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPClientException        #
@@ -51,7 +70,12 @@ module Net
   # Parent class for server error (5xx) HTTP response classes.
   #
   # A server error response indicates that the server failed to fulfill a request.
-  # See {Server Error Response}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#5xx_server_errors].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#status.5xx].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#5xx_server_errors].
+  #
   class HTTPServerError < HTTPResponse
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPFatalError             #
@@ -59,8 +83,14 @@ module Net
 
   # Response class for +Continue+ responses (status code 100).
   #
-  # A +Continue+ response indicates that the server has received the request headers
-  # See {100 Continue}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#100].
+  # A +Continue+ response indicates that the server has received the request headers.
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/100].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-100-continue].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#100].
+  #
   class HTTPContinue < HTTPInformation
     HAS_BODY = false
   end
@@ -69,7 +99,13 @@ module Net
   #
   # The <tt>Switching Protocol<tt> response indicates that the server has received
   # a request to switch protocols, and has agreed to do so.
-  # See {101 Switching Protocols}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#101].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-101-switching-protocols].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#101].
+  #
   class HTTPSwitchProtocol < HTTPInformation
     HAS_BODY = false
   end
@@ -78,7 +114,11 @@ module Net
   #
   # The +Processing+ response indicates that the server has received
   # and is processing the request, but no response is available yet.
-  # See {102 Processing}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#102].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#102].
+  #
   class HTTPProcessing < HTTPInformation
     HAS_BODY = false
   end
@@ -88,7 +128,12 @@ module Net
   # The <tt>Early Hints</tt> indicates that the server has received
   # and is processing the request, and contains certain headers;
   # the final response is not available yet.
-  # See {103 Early Hints}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#103].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#103].
+  #
   class HTTPEarlyHints < HTTPInformation
     HAS_BODY = false
   end
