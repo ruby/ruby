@@ -2088,9 +2088,11 @@ rb_hash_default_unredefined(VALUE hash)
 VALUE
 rb_hash_default_value(VALUE hash, VALUE key)
 {
+    RUBY_ASSERT(RB_TYPE_P(hash, T_HASH));
+
     if (LIKELY(rb_hash_default_unredefined(hash))) {
         VALUE ifnone = RHASH_IFNONE(hash);
-        if (!FL_TEST(hash, RHASH_PROC_DEFAULT)) return ifnone;
+        if (LIKELY(!FL_TEST_RAW(hash, RHASH_PROC_DEFAULT))) return ifnone;
         if (UNDEF_P(key)) return Qnil;
         return call_default_proc(ifnone, hash, key);
     }
