@@ -12280,7 +12280,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
     if (UNLIKELY(malloc_during_gc_p(objspace))) {
         rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
         rb_bug("Cannot malloc during GC");
 #endif
     }
@@ -12304,7 +12304,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 {
     if (UNLIKELY(malloc_during_gc_p(objspace))) {
         rb_warn("realloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
         rb_bug("Cannot realloc during GC");
 #endif
     }
@@ -12548,7 +12548,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 {
     if (UNLIKELY(malloc_during_gc_p(objspace))) {
         rb_warn("calloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
         rb_bug("Cannot calloc during GC");
 #endif
     }
