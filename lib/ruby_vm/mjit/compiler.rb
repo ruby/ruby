@@ -1,47 +1,70 @@
-require 'mjit/x86_64/assembler'
+require 'mjit/insn_compiler'
+require 'mjit/instruction'
+require 'mjit/x86_assembler'
 
-class RubyVM::MJIT::Compiler
-  # MJIT internals
-  Assembler = RubyVM::MJIT::Assembler
-  C = RubyVM::MJIT::C
+module RubyVM::MJIT
+  # Compilation status
+  KeepCompiling = :keep_compiling
+  CantCompile = :cant_compile
+  EndBlock = :end_block
 
-  # Ruby constants
-  Qundef = Fiddle::Qundef
+  class Compiler
+    # Ruby constants
+    Qundef = Fiddle::Qundef
 
-  attr_accessor :write_pos
+    attr_accessor :write_pos
 
-  # @param mem_block [Integer] JIT buffer address
-  def initialize(mem_block)
-    @mem_block = mem_block
-    @write_pos = 0
-  end
+    # @param mem_block [Integer] JIT buffer address
+    def initialize(mem_block)
+      @mem_block = mem_block
+      @write_pos = 0
+      @insn_compiler = InsnCompiler.new
+    end
 
-  # @param iseq [RubyVM::MJIT::CPointer::Struct]
-  def compile(iseq)
-    return if iseq.body.location.label == '<main>'
-    iseq.body.jit_func = compile_iseq(iseq)
-  end
+    # @param iseq [RubyVM::MJIT::CPointer::Struct]
+    def compile(iseq)
+      return if iseq.body.location.label == '<main>'
+      iseq.body.jit_func = compile_iseq(iseq)
+    rescue Exception => e
+      # TODO: check --mjit-verbose
+      $stderr.puts e.full_message
+    end
 
-  def write_addr
-    @mem_block + @write_pos
-  end
+    def write_addr
+      @mem_block + @write_pos
+    end
 
-  private
+    private
 
-  # ec -> RDI, cfp -> RSI
-  def compile_iseq(iseq)
-    addr = write_addr
-    asm = Assembler.new
+    # ec -> RDI, cfp -> RSI
+    def compile_iseq(iseq)
+      addr = write_addr
+      asm = X86Assembler.new
 
-    # pop the current frame (ec->cfp++)
-    asm.add(:rsi, C.rb_control_frame_t.size)
-    asm.mov([:rdi, C.rb_execution_context_t.offsetof(:cfp)], :rsi)
+      index = 0
+      while index < iseq.body.iseq_size
+        insn = decode_insn(iseq.body.iseq_encoded[index])
+        status = compile_insn(asm, insn)
+        if status == EndBlock
+          break
+        end
+        index += insn.len
+      end
 
-    # return a value
-    asm.mov(:rax, 7)
-    asm.ret
+      asm.compile(self)
+      addr
+    end
 
-    asm.compile(self)
-    addr
+    def compile_insn(asm, insn)
+      case insn.name
+      when :putnil then @insn_compiler.compile_putnil(asm)
+      when :leave  then @insn_compiler.compile_leave(asm)
+      else raise NotImplementedError, "insn '#{insn.name}' is not supported yet"
+      end
+    end
+
+    def decode_insn(encoded)
+      INSNS.fetch(C.rb_vm_insn_decode(encoded))
+    end
   end
 end
