@@ -118,13 +118,13 @@ module Bundler
       name = package.name
       constraint = unsatisfied_term.constraint
       constraint_string = constraint.constraint_string
-      requirement = Gem::Requirement.new(constraint_string.split(","))
+      requirements = constraint_string.split(" OR ").map {|req| Gem::Requirement.new(req.split(",")) }
 
       if name == "bundler"
         custom_explanation = "the current Bundler version (#{Bundler::VERSION}) does not satisfy #{constraint}"
-        extended_explanation = bundler_not_found_message(requirement)
+        extended_explanation = bundler_not_found_message(requirements)
       else
-        specs_matching_other_platforms = filter_matching_specs(@all_specs[name], requirement)
+        specs_matching_other_platforms = filter_matching_specs(@all_specs[name], requirements)
 
         platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
         custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
@@ -265,8 +265,10 @@ module Bundler
 
     private
 
-    def filter_matching_specs(specs, requirement)
-      specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
+    def filter_matching_specs(specs, requirements)
+      Array(requirements).flat_map do |requirement|
+        specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
+      end
     end
 
     def requirement_satisfied_by?(requirement, spec)
@@ -357,8 +359,9 @@ module Bundler
       end
     end
 
-    def bundler_not_found_message(conflict_dependency)
-      candidate_specs = filter_matching_specs(source_for(:default_bundler).specs.search("bundler"), conflict_dependency)
+    def bundler_not_found_message(conflict_dependencies)
+      candidate_specs = filter_matching_specs(source_for(:default_bundler).specs.search("bundler"), conflict_dependencies)
+
       if candidate_specs.any?
         target_version = candidate_specs.last.version
         new_command = [File.basename($PROGRAM_NAME), "_#{target_version}_", *ARGV].join(" ")
