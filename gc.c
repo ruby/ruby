@@ -12217,13 +12217,6 @@ malloc_during_gc_p(rb_objspace_t *objspace)
 static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
-    if (UNLIKELY(malloc_during_gc_p(objspace))) {
-        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE
-        rb_bug("Cannot malloc during GC");
-#endif
-    }
-
     size = objspace_malloc_size(objspace, mem, size);
     objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
 
@@ -12285,6 +12278,13 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE
+        rb_bug("Cannot malloc during GC");
+#endif
+    }
+
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
@@ -12546,6 +12546,13 @@ ruby_xmalloc2_body(size_t n, size_t size)
 static void *
 objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("calloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE
+        rb_bug("Cannot calloc during GC");
+#endif
+    }
+
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
