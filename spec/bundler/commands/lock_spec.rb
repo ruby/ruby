@@ -713,5 +713,44 @@ RSpec.describe "bundle lock" do
            #{Bundler::VERSION}
       L
     end
+
+    it "properly shows resolution errors including OR requirements" do
+      build_repo4 do
+        build_gem "activeadmin", "2.13.1" do |s|
+          s.add_dependency "railties", ">= 6.1", "< 7.1"
+        end
+        build_gem "actionpack", "6.1.4"
+        build_gem "actionpack", "7.0.3.1"
+        build_gem "actionpack", "7.0.4"
+        build_gem "railties", "6.1.4" do |s|
+          s.add_dependency "actionpack", "6.1.4"
+        end
+        build_gem "rails", "7.0.3.1" do |s|
+          s.add_dependency "railties", "7.0.3.1"
+        end
+        build_gem "rails", "7.0.4" do |s|
+          s.add_dependency "railties", "7.0.4"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", ">= 7.0.3.1"
+        gem "activeadmin", "2.13.1"
+      G
+
+      bundle "lock", :raise_on_error => false
+
+      expect(err).to eq <<~ERR.strip
+        Could not find compatible versions
+
+        Because rails >= 7.0.4 depends on railties = 7.0.4
+          and rails < 7.0.4 depends on railties = 7.0.3.1,
+          railties = 7.0.3.1 OR = 7.0.4 is required.
+        So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+          version solving has failed.
+      ERR
+    end
   end
 end
