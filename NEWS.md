@@ -90,12 +90,6 @@ Note that each entry is kept to a minimum, see links for details.
     foo(k: 1)
     ```
 
-* `eval` and related methods are able to generate code coverage. Enabled using
-  `Coverage.setup(:all)` or `Coverage.setup(eval: true)`. [[Feature #19008]]
-
-* `Coverage.supported?(mode)` enables detection of what coverage modes are
-  supported. [[Feature #19026]]
-
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -408,6 +402,14 @@ Note: We're only listing outstanding class updates.
 
     * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent` are added.
       [[Feature #18822]]
+
+* Coverage
+
+    * `Coverage.setup` now accepts `eval: true`. By this, `eval` and related methods are
+      able to generate code coverage. [[Feature #19008]]
+
+    * `Coverage.supported?(mode)` enables detection of what coverage modes are
+      supported. [[Feature #19026]]
 
 * Date
 
