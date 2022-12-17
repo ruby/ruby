@@ -3352,6 +3352,10 @@ AS_IF([test x"$cross_compiling" = xyes], [
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
+  AS_CASE(["$target_os"],[darwin*],[
+    # darwin target requires miniruby for linking ext bundles
+    PREP="$PREP"' miniruby$(EXEEXT)'
+  ])
   RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
