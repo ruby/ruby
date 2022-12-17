@@ -160,12 +160,6 @@ Note: We're only listing outstanding class updates.
     * Introduce `IO.new(..., path:)` and promote `File#path` to `IO#path`.
       [[Feature #19036]]
 
-* UNIXSocket
-
-    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
-      support for File.socket? and File::Stat#socket? where possible.
-      [[Feature #19135]]
-
 * Class
 
     * Class#attached_object, which returns the object for which
@@ -331,17 +325,6 @@ Note: We're only listing outstanding class updates.
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the Set constant or a call to Enumerable#to_set.
 
-* Socket
-
-    * Added the following constants for supported platforms.
-        * `SO_INCOMING_CPU`
-        * `SO_INCOMING_NAPI_ID`
-        * `SO_RTABLE`
-        * `SO_SETFIB`
-        * `SO_USER_COOKIE`
-        * `TCP_KEEPALIVE`
-        * `TCP_CONNECTION_INFO`
-
 * String
 
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
@@ -457,10 +440,27 @@ Note: We're only listing outstanding class updates.
 
     * Added `Pathname#lutime`. [[GH-pathname-20]]
 
+* Socket
+
+    * Added the following constants for supported platforms.
+        * `SO_INCOMING_CPU`
+        * `SO_INCOMING_NAPI_ID`
+        * `SO_RTABLE`
+        * `SO_SETFIB`
+        * `SO_USER_COOKIE`
+        * `TCP_KEEPALIVE`
+        * `TCP_CONNECTION_INFO`
+
 * SyntaxSuggest
 
     * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
       [[Feature #18159]]
+
+* UNIXSocket
+
+    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
+      support for File.socket? and File::Stat#socket? where possible.
+      [[Feature #19135]]
 
 *   The following default gems are updated.
 
