@@ -15,7 +15,7 @@ module Bundler
       "test-unit" => "3.0",
     }.freeze
 
-    attr_reader :options, :gem_name, :thor, :name, :target
+    attr_reader :options, :gem_name, :thor, :name, :target, :extension
 
     def initialize(options, gem_name, thor)
       @options = options
@@ -28,7 +28,9 @@ module Bundler
       @name = @gem_name
       @target = SharedHelpers.pwd.join(gem_name)
 
-      validate_ext_name if options[:ext]
+      @extension = options[:ext]
+
+      validate_ext_name if @extension
     end
 
     def run
@@ -64,7 +66,7 @@ module Bundler
         :author => git_author_name.empty? ? "TODO: Write your name" : git_author_name,
         :email => git_user_email.empty? ? "TODO: Write your email address" : git_user_email,
         :test => options[:test],
-        :ext => options[:ext],
+        :ext => extension,
         :exe => options[:exe],
         :bundler_version => bundler_dependency_version,
         :git => use_git,
@@ -188,7 +190,7 @@ module Bundler
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
 
-      if options[:ext]
+      if extension
         templates.merge!(
           "ext/newgem/extconf.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/newgem.h.tt" => "ext/#{name}/#{underscored_name}.h",

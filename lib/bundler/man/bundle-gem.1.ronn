@@ -41,7 +41,7 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
-* `--ext`:
+* `--ext=c`:
   Add boilerplate for C extension code to the generated project. This behavior
   is disabled by default.
 
