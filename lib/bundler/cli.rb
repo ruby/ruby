@@ -10,6 +10,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
+    EXTENSIONS = ["c"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -22,6 +23,8 @@ module Bundler
     }.freeze
 
     def self.start(*)
+      check_deprecated_ext_option(ARGV) if ARGV.include?("--ext")
+
       super
     ensure
       Bundler::SharedHelpers.print_major_deprecations!
@@ -576,7 +579,7 @@ module Bundler
     method_option :edit, :type => :string, :aliases => "-e", :required => false, :banner => "EDITOR",
                          :lazy_default => [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? },
                          :desc => "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
-    method_option :ext, :type => :boolean, :default => false, :desc => "Generate the boilerplate for C extension code"
+    method_option :ext, :type => :string, :desc => "Generate the boilerplate for C extension code.", :enum => EXTENSIONS
     method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
     method_option :rubocop, :type => :boolean, :desc => "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
@@ -753,6 +756,38 @@ module Bundler
       else
         args
       end
+    end
+
+    def self.check_deprecated_ext_option(arguments)
+      # when deprecated version of `--ext` is called
+      # print out deprecation warning and pretend `--ext=c` was provided
+      if deprecated_ext_value?(arguments)
+        SharedHelpers.major_deprecation 2, "Option `--ext` without explicit value is deprecated. Please pass value like `--ext=c` for C extension. Pretending `--ext=c` was used for now."
+        arguments[arguments.index("--ext")] = "--ext=c"
+      end
+    end
+
+    def self.deprecated_ext_value?(arguments)
+      index = arguments.index("--ext")
+      next_argument = arguments[index+1]
+
+      # it is ok when --ext is followed with valid extension value
+      # for example `bundle gem hello --ext c`
+      return false if EXTENSIONS.include?(next_argument)
+
+      # deprecated call when --ext is called with no value in last position
+      # for example `bundle gem hello_gem --ext`
+      return true if next_argument.nil?
+
+      # deprecated call when --ext is followed by other parameter
+      # for example `bundle gem --ext --no-ci hello_gem`
+      return true if next_argument.start_with?("-")
+
+      # deprecated call when --ext is followed by gem name
+      # for example `bundle gem --ext hello_gem`
+      return true if next_argument
+
+      false
     end
 
     private
