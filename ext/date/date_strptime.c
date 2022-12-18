@@ -11,12 +11,14 @@ static const char *day_names[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday",
     "Thursday", "Friday", "Saturday",
 };
+static const int ABBREVIATED_DAY_NAME_LENGTH = 3;
 
 static const char *month_names[] = {
     "January", "February", "March", "April",
     "May", "June", "July", "August", "September",
     "October", "November", "December",
 };
+static const int ABBREVIATED_MONTH_NAME_LENGTH = 3;
 
 #define sizeof_array(o) (sizeof o / sizeof o[0])
 
@@ -146,6 +148,12 @@ do { \
 
 VALUE date_zone_to_diff(VALUE);
 
+static inline int
+head_match_p(size_t len, const char *name, const char *str, size_t slen, size_t si)
+{
+    return slen - si >= len && strncasecmp(name, &str[si], len) == 0;
+}
+
 static size_t
 date__strptime_internal(const char *str, size_t slen,
 			const char *fmt, size_t flen, VALUE hash)
@@ -153,6 +161,7 @@ date__strptime_internal(const char *str, size_t slen,
     size_t si, fi;
     int c;
 
+#define HEAD_MATCH_P(len, name) head_match_p(len, name, str, slen, si)
     si = fi = 0;
 
     while (fi < flen) {
@@ -203,8 +212,8 @@ date__strptime_internal(const char *str, size_t slen,
 		    for (i = 0; i < (int)sizeof_array(day_names); i++) {
 			const char *day_name = day_names[i];
 			size_t l = strlen(day_name);
-			if ((slen - si >= l && strncasecmp(day_name, &str[si], l) == 0) ||
-			    (slen - si >= (l = 3) && strncasecmp(day_name, &str[si], l) == 0)) {
+			if (HEAD_MATCH_P(l, day_name) ||
+			    HEAD_MATCH_P(l = ABBREVIATED_DAY_NAME_LENGTH, day_name)) {
 			    si += l;
 			    set_hash("wday", INT2FIX(i));
 			    goto matched;
@@ -221,8 +230,8 @@ date__strptime_internal(const char *str, size_t slen,
 		    for (i = 0; i < (int)sizeof_array(month_names); i++) {
 			const char *month_name = month_names[i];
 			size_t l = strlen(month_name);
-			if ((slen - si >= l && strncasecmp(month_name, &str[si], l) == 0) ||
-			    (slen - si >= (l = 3) && strncasecmp(month_name, &str[si], l) == 0)) {
+			if (HEAD_MATCH_P(l, month_name) ||
+			    HEAD_MATCH_P(l = ABBREVIATED_MONTH_NAME_LENGTH, month_name)) {
 			    si += l;
 			    set_hash("mon", INT2FIX(i + 1));
 			    goto matched;
