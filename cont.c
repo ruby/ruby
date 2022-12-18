@@ -1578,16 +1578,6 @@ cont_restore_1(rb_context_t *cont)
     cont_restore_thread(cont);
 
     /* restore machine stack */
-#ifdef _M_AMD64
-#error This code is buggy and weird.
-    {
-        /* workaround for x64 SEH */
-        jmp_buf buf;
-        setjmp(buf);
-        _JUMP_BUFFER *bp = (void*)&cont->jmpbuf;
-        bp->Frame = ((_JUMP_BUFFER*)((void*)&buf))->Frame;
-    }
-#endif
     if (cont->machine.stack_src) {
         FLUSH_REGISTER_WINDOWS;
         MEMCPY(cont->machine.stack_src, cont->machine.stack,
