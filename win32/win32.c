@@ -544,7 +544,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
   afterwards with xfree.
 
   Try:
-  HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
+  HOME, USERPROFILE, HOMEDRIVE + HOMEPATH environment variables
   Special Folders - Profile and Personal
 */
 WCHAR *
@@ -553,12 +553,16 @@ rb_w32_home_dir(void)
     WCHAR *buffer = NULL;
     size_t buffer_len = MAX_PATH, len = 0;
     enum {
-        HOME_NONE, ENV_HOME, ENV_DRIVEPATH, ENV_USERPROFILE
+        HOME_NONE, ENV_HOME, ENV_USERPROFILE, ENV_DRIVEPATH
     } home_type = HOME_NONE;
 
     if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
         buffer_len = len;
         home_type = ENV_HOME;
+    }
+    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
+        buffer_len = len;
+        home_type = ENV_USERPROFILE;
     }
     else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
         buffer_len = len;
@@ -566,10 +570,6 @@ rb_w32_home_dir(void)
             buffer_len += len;
             home_type = ENV_DRIVEPATH;
         }
-    }
-    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
-        buffer_len = len;
-        home_type = ENV_USERPROFILE;
     }
 
     /* allocate buffer */
@@ -579,12 +579,12 @@ rb_w32_home_dir(void)
       case ENV_HOME:
         GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
         break;
+      case ENV_USERPROFILE:
+        GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
+        break;
       case ENV_DRIVEPATH:
         len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
         GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
-        break;
-      case ENV_USERPROFILE:
-        GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
         break;
       default:
         if (!get_special_folder(CSIDL_PROFILE, buffer, buffer_len) &&
