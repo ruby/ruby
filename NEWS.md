@@ -346,12 +346,12 @@ Note: We're only listing outstanding class updates.
 
 * Thread::Queue
 
-    * Thread::Queue.pop(timeout: sec) is added. [[Feature #18774]]
+    * Thread::Queue#pop(timeout: sec) is added. [[Feature #18774]]
 
 * Thread::SizedQueue
 
-    * Thread::SizedQueue.pop(timeout: sec) is added. [[Feature #18774]]
-    * Thread::SizedQueue.push(timeout: sec) is added. [[Feature #18944]]
+    * Thread::SizedQueue#pop(timeout: sec) is added. [[Feature #18774]]
+    * Thread::SizedQueue#push(timeout: sec) is added. [[Feature #18944]]
 
 * Time
 
