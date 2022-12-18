@@ -111,9 +111,7 @@ module Bundler
           end.compact
 
           if options[:parseable]
-            relevant_outdated_gems.each do |gems|
-              print_gems(gems)
-            end
+            print_gems(relevant_outdated_gems)
           else
             print_gems_table(relevant_outdated_gems)
           end
