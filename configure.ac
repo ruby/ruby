@@ -3354,7 +3354,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
-  AS_CASE(["$target_os"],[darwin*],[
+  AS_CASE(["$enable_shared:$EXTSTATIC:$target_os"], [no::darwin*], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
