@@ -342,7 +342,7 @@ Note: We're only listing outstanding class updates.
 
 * Thread
 
-    * Thread#each_caller_location is added. [[Feature #16663]]
+    * Thread.each_caller_location is added. [[Feature #16663]]
 
 * Thread::Queue
 
