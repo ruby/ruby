@@ -524,7 +524,9 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
 
+tool_warned=$ac_tool_warned ac_tool_warned=no
 AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
+ac_tool_warned=$tool_warned
 AS_IF([test -z "$PKG_CONFIG"], [],
 ["$PKG_CONFIG" --print-errors --version > /dev/null 2>&1], [],
 [
