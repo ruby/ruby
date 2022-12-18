@@ -19,7 +19,40 @@ describe "Dir.home" do
     it "returns a non-frozen string" do
       Dir.home.should_not.frozen?
     end
+
+    platform_is :windows do
+      ruby_version_is "3.0" do
+        it "returns the current user's home directory from USERPROFILE as UTF-8" do
+          old_dir = ENV['USERPROFILE']
+          ENV.delete 'HOME'
+          ENV['USERPROFILE'] = "C:\\rubyspäc\\home"
+          home = Dir.home
+          home.should == "C:/rubyspäc/home"
+          home.encoding.should == Encoding::UTF_8
+        ensure
+          ENV['USERPROFILE'] = old_dir
+        end
+
+        it "returns the current user's home directory from HOMEDRIVE + HOMEPATH as UTF-8" do
+          old_dir = ENV['USERPROFILE']
+          old_drive = ENV['HOMEDRIVE']
+          old_path = ENV['HOMEPATH']
+          ENV.delete 'HOME'
+          ENV.delete 'USERPROFILE'
+          ENV['HOMEDRIVE'] = "C:"
+          ENV['HOMEPATH'] = "\\rubysp€c\\home"
+          home = Dir.home
+          home.should == "C:/rubysp€c/home"
+          home.encoding.should == Encoding::UTF_8
+        ensure
+          ENV['USERPROFILE'] = old_dir
+          ENV['HOMEDRIVE'] = old_drive
+          ENV['HOMEPATH'] = old_path
+        end
+      end
+    end
   end
+
 
   describe "when called with the current user name" do
     platform_is :solaris do
