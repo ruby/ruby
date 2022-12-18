@@ -601,9 +601,9 @@ The following deprecated methods are removed.
 ### Constant lookup when defining a class/module
 
 * When defining a class/module directly under the Object class by class/module
-  statement, if there is already a class/module with the same name, the statement
-  was handled as "open class" in Ruby 3.1 or before. Since Ruby 3.2, a new class
-  is defined instead. [[Feature #18832]]
+  statement, if there is already a class/module defined by `Module#include`
+  with the same name, the statement was handled as "open class" in Ruby 3.1 or before.
+  Since Ruby 3.2, a new class is defined instead. [[Feature #18832]]
 
 ## Stdlib compatibility issues
 
