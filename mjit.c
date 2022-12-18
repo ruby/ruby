@@ -384,7 +384,7 @@ rb_mjit_compile(const rb_iseq_t *iseq)
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
     VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
-    rb_funcall(rb_MJITCompiler, rb_intern("compile"), 1, iseq_ptr);
+    rb_funcall(rb_MJITCompiler, rb_intern("call"), 1, iseq_ptr);
 
     mjit_call_p = original_call_p;
 }

@@ -6,12 +6,15 @@ module RubyVM::MJIT
       @bytes = []
     end
 
-    def compile(compiler) = with_dump_disasm(compiler) do
-      C.mjit_mark_writable
-      write_bytes(compiler.write_addr, @bytes)
-      C.mjit_mark_executable
-
-      compiler.write_pos += @bytes.size
+    def compile(addr)
+      writer = ByteWriter.new(addr)
+      # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
+      # So writing byte by byte to avoid hitting that situation.
+      @bytes.each_with_index do |byte, index|
+        writer[index] = byte
+      end
+      @bytes.size
+    ensure
       @bytes.clear
     end
 
@@ -35,28 +38,6 @@ module RubyVM::MJIT
       # Near return
       #           [C3]
       @bytes.push(0xc3)
-    end
-
-    private
-
-    def with_dump_disasm(compiler)
-      from = compiler.write_addr
-      yield
-      to = compiler.write_addr
-      if C.mjit_opts.dump_disasm && from < to
-        C.dump_disasm(from, to).each do |address, mnemonic, op_str|
-          puts "  0x#{"%p" % address}: #{mnemonic} #{op_str}"
-        end
-      end
-    end
-
-    def write_bytes(addr, bytes)
-      writer = ByteWriter.new(addr)
-      # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
-      # So writing byte by byte to avoid hitting that situation.
-      bytes.each_with_index do |byte, index|
-        writer[index] = byte
-      end
     end
   end
 end
