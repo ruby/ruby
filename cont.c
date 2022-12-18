@@ -1579,6 +1579,7 @@ cont_restore_1(rb_context_t *cont)
 
     /* restore machine stack */
 #ifdef _M_AMD64
+#error This code is buggy and weird.
     {
         /* workaround for x64 SEH */
         jmp_buf buf;
