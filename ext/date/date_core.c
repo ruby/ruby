@@ -64,7 +64,8 @@ static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
 
 #define RETURN_FALSE_UNLESS_NUMERIC(obj) if(!RTEST(rb_obj_is_kind_of((obj), rb_cNumeric))) return Qfalse
 inline static void
-check_numeric(VALUE obj, const char* field) {
+check_numeric(VALUE obj, const char* field)
+{
     if(!RTEST(rb_obj_is_kind_of(obj, rb_cNumeric))) {
         rb_raise(rb_eTypeError, "invalid %s (not numeric)", field);
     }
@@ -7437,7 +7438,8 @@ d_lite_jisx0301(VALUE self)
 }
 
 static VALUE
-deconstruct_keys(VALUE self, VALUE keys, int is_datetime) {
+deconstruct_keys(VALUE self, VALUE keys, int is_datetime)
+{
     VALUE h = rb_hash_new();
     long i;
 
@@ -7520,7 +7522,8 @@ deconstruct_keys(VALUE self, VALUE keys, int is_datetime) {
  *
  */
 static VALUE
-d_lite_deconstruct_keys(VALUE self, VALUE keys) {
+d_lite_deconstruct_keys(VALUE self, VALUE keys)
+{
     return deconstruct_keys(self, keys, /* is_datetime=false */ 0);
 }
 
@@ -8868,7 +8871,8 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
  *
  */
 static VALUE
-dt_lite_deconstruct_keys(VALUE self, VALUE keys) {
+dt_lite_deconstruct_keys(VALUE self, VALUE keys)
+{
     return deconstruct_keys(self, keys, /* is_datetime=true */ 1);
 }
 
