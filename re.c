@@ -4210,7 +4210,7 @@ rb_reg_s_union_m(VALUE self, VALUE args)
  *  is guaranteed about the return value of this method.  Our current algorithm
  *  is (*1) but this is subject to change in the future.  Alternative
  *  implementations can also behave differently.  They might always return
- *  false of everything.
+ *  false for everything.
  *
  *  (*1): https://doi.org/10.1109/SP40001.2021.00032
  *
