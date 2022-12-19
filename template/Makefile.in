@@ -474,7 +474,7 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 
 .d.h:
 	@$(ECHO) translating probes $<
-	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) -s $<
+	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) $(CPPFLAGS) -s $<
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
 
