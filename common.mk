@@ -8536,7 +8536,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c
 loadpath.$(OBJEXT): {$(VPATH)}missing.h
-loadpath.$(OBJEXT): {$(VPATH)}revision.h
 loadpath.$(OBJEXT): {$(VPATH)}st.h
 loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
