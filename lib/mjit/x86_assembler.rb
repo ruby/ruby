@@ -24,25 +24,39 @@ module RubyVM::MJIT
       @bytes.clear
     end
 
-    def add(_reg, imm)
-      #           REX.W [83]  RSI   ib
-      @bytes.push(0x48, 0x83, 0xc6, imm)
+    def add(dst, src)
+      case [dst, src]
+      # ADD r/m64, imm8
+      in [Symbol => dst_reg, Integer => src_imm] if r_reg?(dst_reg) && src_imm <= 0xff
+        # REX.W + 83 /0 ib
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)),
+          imm: imm8(src_imm),
+        )
+      else
+        raise NotImplementedError, "add: not-implemented input: #{dst.inspect}, #{src.inspect}"
+      end
     end
 
     def mov(dst, src)
       case [dst, src]
       # MOV r/m64, imm32
       in [Symbol => dst_reg, Integer => src_imm] if r_reg?(dst_reg)
-        # REX.W + C7 /0
+        # REX.W + C7 /0 id
+        # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
         insn(
           prefix: REX_W,
           opcode: 0xc7,
-          mod_rm: mod_rm(mod: 0b11, reg: reg_code(dst_reg)),
+          mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)),
           imm: imm32(src_imm),
         )
       # MOV r/m64, r64
       in [[Symbol => dst_reg, Integer => dst_offset], Symbol => src_reg] if r_reg?(dst_reg) && r_reg?(src_reg) && dst_offset <= 0xff
         # REX.W + 89 /r
+        # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
         insn(
           prefix: REX_W,
           opcode: 0x89,
@@ -50,7 +64,7 @@ module RubyVM::MJIT
           disp: dst_offset,
         )
       else
-        raise NotImplementedError, "mov got not-implemented input: #{reg.inspect}, #{val.inspect}"
+        raise NotImplementedError, "mov: not-implemented input: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -108,7 +122,7 @@ module RubyVM::MJIT
     #
     # /0: R/M is 0 (not used)
     # /r: R/M is a register
-    def mod_rm(mod:, reg:, rm: 0)
+    def mod_rm(mod:, reg: 0, rm: 0)
       if mod > 0b11
         raise ArgumentError, "too large Mod: #{mod}"
       end
@@ -119,6 +133,14 @@ module RubyVM::MJIT
         raise ArgumentError, "too large R/M: #{rm}"
       end
       (mod << 6) + (reg << 3) + rm
+    end
+
+    # ib: 1 byte
+    def imm8(imm)
+      if imm > 0xff
+        raise ArgumentError, "unexpected imm8: #{imm}"
+      end
+      [imm]
     end
 
     # id: 4 bytes
