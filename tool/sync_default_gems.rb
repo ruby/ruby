@@ -471,6 +471,12 @@ module SyncDefaultGems
   end
 
   def message_filter(repo, sha, input: ARGF)
+    unless repo.count("/") == 1 and /\A\S+\z/ =~ repo
+      raise ArgumentError, "invalid repository: #{repo}"
+    end
+    unless /\A\h{10,40}\z/ =~ sha
+      raise ArgumentError, "invalid commit-hash: #{sha}"
+    end
     log = input.read
     log.delete!("\r")
     log << "\n" if !log.end_with?("\n")
