@@ -782,10 +782,10 @@ The following deprecated APIs are removed.
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
 [Feature #19194]: https://bugs.ruby-lang.org/issues/19194
+[GH-net-protocol-14]: https://github.com/ruby/net-protocol/pull/14
+[GH-pathname-20]: https://github.com/ruby/pathname/pull/20
 [GH-6791]:        https://github.com/ruby/ruby/pull/6791
 [GH-6868]:        https://github.com/ruby/ruby/pull/6868
-[GH-pathname-20]: https://github.com/ruby/pathname/pull/20
-[GH-net-protocol-14]: https://github.com/ruby/net-protocol/pull/14
-[CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
 [sec-156615]:     https://hackerone.com/reports/156615
 [ruby-3-2-irb]:   https://st0012.dev/whats-new-in-ruby-3-2-irb
+[CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
