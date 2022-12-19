@@ -442,7 +442,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * cgi 0.3.6
     * csv 3.2.6
-    * date 3.3.2
+    * date 3.3.3
     * delegate 0.3.0
     * did_you_mean 1.6.2
     * digest 3.1.1
@@ -464,7 +464,7 @@ Note: We're only listing outstanding class updates.
     * json 2.6.3
     * logger 1.5.3
     * mutex_m 0.1.2
-    * net-http 0.3.1
+    * net-http 0.3.2
     * net-protocol 0.2.1
     * nkf 0.1.2
     * open-uri 0.3.0
