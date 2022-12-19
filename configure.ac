@@ -3791,7 +3791,7 @@ AS_IF([test "$cross_compiling" = no],
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
-    [enable in-process JIT compiler that requires Rust build tools [default=no]]),
+    [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
     [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
         [yes:yes:yes|:yes:yes], [
