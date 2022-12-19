@@ -2548,6 +2548,16 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
     obj_info_t *obj = NULL;
     /* 2 is NULL + main executable */
     void **dladdr_fbases = (void **)calloc(num_traces+2, sizeof(void *));
+
+#if defined(__APPLE__) && defined(__aarch64__)
+    // Strip Arm64's pointer authentication.
+    for (i = 0; i < num_traces; i++) {
+        // I wish I could use "ptrauth_strip()" but I get an error:
+        // "this target does not support pointer authentication"
+        traces[i] = (void*)(((uint64_t)traces[i]) & 0x7fffffffffffull);
+    }
+#endif
+
 #ifdef HAVE_MAIN_EXE_PATH
     char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
