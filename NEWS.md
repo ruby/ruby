@@ -468,7 +468,7 @@ Note: We're only listing outstanding class updates.
     * csv 3.2.6
     * date 3.3.3
     * delegate 0.3.0
-    * did_you_mean 1.6.2
+    * did_you_mean 1.6.3
     * digest 3.1.1
     * drb 2.1.1
     * english 0.7.2
