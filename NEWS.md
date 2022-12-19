@@ -157,6 +157,9 @@ Note: We're only listing outstanding class updates.
         STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
         ```
 
+    * Introduce `IO.new(..., path:)` and promote `File#path` to `IO#path`.
+      [[Feature #19036]]
+
 * UNIXSocket
 
     * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
@@ -406,6 +409,14 @@ Note: We're only listing outstanding class updates.
       For example `String.instance_method(:object_id).inspect` returns
       `"#<UnboundMethod: Kernel#object_id()>"`
       (was `"#<UnboundMethod: String(Kernel)#object_id()>"`).
+
+* GC
+
+    * Expose `need_major_gc` via `GC.latest_gc_info`. [[GH-6791]]
+
+* ObjectSpace
+
+    * `ObjectSpace.dump_all` dump shapes as well. [[GH-6868]]
 
 ## Stdlib updates
 
@@ -748,6 +759,7 @@ The following deprecated APIs are removed.
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
 [Feature #19013]: https://bugs.ruby-lang.org/issues/19013
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
+[Feature #19036]: https://bugs.ruby-lang.org/issues/19036
 [Feature #19060]: https://bugs.ruby-lang.org/issues/19060
 [Feature #19070]: https://bugs.ruby-lang.org/issues/19070
 [Feature #19071]: https://bugs.ruby-lang.org/issues/19071
@@ -759,3 +771,5 @@ The following deprecated APIs are removed.
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
 [Feature #19194]: https://bugs.ruby-lang.org/issues/19194
 [GH-6086]:        https://github.com/ruby/ruby/pull/6086
+[GH-6791]:        https://github.com/ruby/ruby/pull/6791
+[GH-6868]:        https://github.com/ruby/ruby/pull/6868
