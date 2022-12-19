@@ -303,7 +303,7 @@ module RubyVM::YJIT
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
-        top_n_total = exits.map { |name, count| count }.sum
+        top_n_total = exits.sum { |name, count| count }
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
         $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
