@@ -414,6 +414,10 @@ Note: We're only listing outstanding class updates.
     * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent` are added.
       [[Feature #18822]]
 
+* Date
+
+    * Added `Date#deconstruct_keys` and `DateTime#deconstruct_keys` same as [[Feature #19071]]
+
 * ERB
 
     * `ERB::Util.html_escape` is made faster than `CGI.escapeHTML`.
