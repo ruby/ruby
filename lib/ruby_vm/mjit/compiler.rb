@@ -26,8 +26,7 @@ module RubyVM::MJIT
       return if iseq.body.location.label == '<main>'
       iseq.body.jit_func = compile_block(iseq)
     rescue Exception => e
-      # TODO: check --mjit-verbose
-      $stderr.puts e.full_message
+      $stderr.puts e.full_message # TODO: check verbose
     end
 
     def write_addr
@@ -35,6 +34,20 @@ module RubyVM::MJIT
     end
 
     private
+
+    def compile(asm)
+      start_addr = write_addr
+
+      C.mjit_mark_writable
+      @write_pos += asm.compile(start_addr)
+      C.mjit_mark_executable
+
+      end_addr = write_addr
+      if C.mjit_opts.dump_disasm && start_addr < end_addr
+        dump_disasm(start_addr, end_addr)
+      end
+      start_addr
+    end
 
     # ec -> RDI, cfp -> RSI
     def compile_block(iseq)
@@ -56,24 +69,10 @@ module RubyVM::MJIT
 
     def compile_insn(asm, insn)
       case insn.name
-      when :putnil then @insn_compiler.on_putnil(asm)
-      when :leave  then @insn_compiler.on_leave(asm)
+      when :putnil then @insn_compiler.putnil(asm)
+      when :leave  then @insn_compiler.leave(asm)
       else raise NotImplementedError, "insn '#{insn.name}' is not supported yet"
       end
-    end
-
-    def compile(asm)
-      start_addr = write_addr
-
-      C.mjit_mark_writable
-      @write_pos += asm.compile(start_addr)
-      C.mjit_mark_executable
-
-      end_addr = write_addr
-      if C.mjit_opts.dump_disasm && start_addr < end_addr
-        dump_disasm(start_addr, end_addr)
-      end
-      start_addr
     end
 
     def decode_insn(encoded)
