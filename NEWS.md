@@ -96,8 +96,6 @@ Note that each entry is kept to a minimum, see links for details.
 * `Coverage.supported?(mode)` enables detection of what coverage modes are
   supported. [[Feature #19026]]
 
-## Command line options
-
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
