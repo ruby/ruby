@@ -440,6 +440,18 @@ Note: We're only listing outstanding class updates.
     * Add FileUtils.ln_sr method and `relative:` option to FileUtils.ln_s.
       [[Feature #18925]]
 
+* IRB
+
+    * Added many of new commands and improvements. see [[ruby-3-2-irb]]
+
+* Net::Protocol
+
+    * Improve `Net::BufferedIO` performance. [[GH-net-protocol-14]]
+
+* Pathname
+
+    * Added `Pathname#lutime`. [[GH-pathname-20]]
+
 * SyntaxSuggest
 
     * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
@@ -600,6 +612,10 @@ The following deprecated methods are removed.
     ```
 
     [[Feature #18571]]
+
+* Check cookie name/path/domain characters in `CGI::Cookie`. [[CVE-2021-33621]]
+
+* `URI.parse` return empty string in host instead of nil. [[sec-156615]]
 
 ## C API updates
 
@@ -768,3 +784,8 @@ The following deprecated APIs are removed.
 [Feature #19194]: https://bugs.ruby-lang.org/issues/19194
 [GH-6791]:        https://github.com/ruby/ruby/pull/6791
 [GH-6868]:        https://github.com/ruby/ruby/pull/6868
+[GH-pathname-20]: https://github.com/ruby/pathname/pull/20
+[GH-net-protocol-14]: https://github.com/ruby/net-protocol/pull/14
+[CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
+[sec-156615]:     https://hackerone.com/reports/156615
+[ruby-3-2-irb]:   https://st0012.dev/whats-new-in-ruby-3-2-irb
