@@ -1548,11 +1548,7 @@ reg_enc_error(VALUE re, VALUE str)
 static inline int
 str_coderange(VALUE str)
 {
-    int cr = ENC_CODERANGE(str);
-    if (cr == ENC_CODERANGE_UNKNOWN) {
-        cr = rb_enc_str_coderange(str);
-    }
-    return cr;
+    return rb_enc_str_coderange(str);
 }
 
 static rb_encoding*
