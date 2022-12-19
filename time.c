@@ -3193,7 +3193,7 @@ static const bool debug_guessrange =
 static inline void
 debug_report_guessrange(time_t guess_lo, time_t guess_hi)
 {
-    unsigned_time_t guess_diff = (unsigned_time_t)(guess_hi-guess_lo);
+    time_t guess_diff = guess_hi - guess_lo;
     fprintf(stderr, "find time guess range: %"PRI_TIMET_PREFIX"d - "
             "%"PRI_TIMET_PREFIX"d : %"PRI_TIMET_PREFIX"u\n",
             guess_lo, guess_hi, guess_diff);
