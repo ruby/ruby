@@ -210,6 +210,33 @@ RSpec.describe "bundle install" do
       expect(err).to be_empty
     end
 
+    it "prints the previous version when switching to a previously downloaded gem" do
+      build_repo4 do
+        build_gem "rails", "7.0.3"
+        build_gem "rails", "7.0.4"
+      end
+
+      bundle "config set path.system true"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'rails', "7.0.4"
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'rails', "7.0.3"
+      G
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'rails', "7.0.4"
+      G
+
+      expect(out).to include("Using rails 7.0.4 (was 7.0.3)")
+      expect(err).to be_empty
+    end
+
     it "can install dependencies with newer bundler version with system gems" do
       bundle "config set path.system true"
 

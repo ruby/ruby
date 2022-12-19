@@ -100,8 +100,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_sign_verify
     p256 = Fixtures.pkey("p256")
     data = "Sign me!"
-    signature = p256.sign("SHA1", data)
-    assert_equal true, p256.verify("SHA1", signature, data)
+    signature = p256.sign("SHA256", data)
+    assert_equal true, p256.verify("SHA256", signature, data)
 
     signature0 = (<<~'end;').unpack("m")[0]
       MEQCIEOTY/hD7eI8a0qlzxkIt8LLZ8uwiaSfVbjX2dPAvN11AiAQdCYx56Fq

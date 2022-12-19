@@ -76,7 +76,7 @@ class TestGemCommandManager < Gem::TestCase
 
     message = "Unknown command pish".dup
 
-    if RUBY_VERSION >= "2.4" && defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
+    if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
       message << "\nDid you mean?  \"push\""
     end
 

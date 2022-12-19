@@ -527,7 +527,7 @@ class TestFile < Test::Unit::TestCase
       io.write "foo"
       io.flush
       assert_equal 3, io.size
-      assert_raise(IOError) { io.path }
+      assert_nil io.path
     ensure
       io&.close
     end

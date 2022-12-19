@@ -515,17 +515,19 @@ wmod(wideval_t wx, wideval_t wy)
 }
 
 static VALUE
-num_exact(VALUE v)
+num_exact_check(VALUE v)
 {
     VALUE tmp;
 
     switch (TYPE(v)) {
       case T_FIXNUM:
       case T_BIGNUM:
-        return v;
+        tmp = v;
+        break;
 
       case T_RATIONAL:
-        return rb_rational_canonicalize(v);
+        tmp = rb_rational_canonicalize(v);
+        break;
 
       default:
         if (!UNDEF_P(tmp = rb_check_funcall(v, idTo_r, 0, NULL))) {
@@ -535,10 +537,11 @@ num_exact(VALUE v)
                 /* FALLTHROUGH */
             }
             else if (RB_INTEGER_TYPE_P(tmp)) {
-                return tmp;
+                break;
             }
             else if (RB_TYPE_P(tmp, T_RATIONAL)) {
-                return rb_rational_canonicalize(tmp);
+                tmp = rb_rational_canonicalize(tmp);
+                break;
             }
         }
         else if (!NIL_P(tmp = rb_check_to_int(v))) {
@@ -547,9 +550,26 @@ num_exact(VALUE v)
 
       case T_NIL:
       case T_STRING:
-        rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
-                 rb_obj_class(v));
+        return Qnil;
     }
+    ASSUME(!NIL_P(tmp));
+    return tmp;
+}
+
+NORETURN(static void num_exact_fail(VALUE v));
+static void
+num_exact_fail(VALUE v)
+{
+    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
+             rb_obj_class(v));
+}
+
+static VALUE
+num_exact(VALUE v)
+{
+    VALUE num = num_exact_check(v);
+    if (NIL_P(num)) num_exact_fail(v);
+    return num;
 }
 
 /* time_t */
@@ -2349,12 +2369,13 @@ vtm_day_wraparound(struct vtm *vtm)
     vtm_add_day(vtm, 1);
 }
 
+static VALUE time_init_vtm(VALUE time, struct vtm vtm, VALUE zone);
+
 static VALUE
-time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday, VALUE hour, VALUE min, VALUE sec, VALUE zone)
+time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
+               VALUE hour, VALUE min, VALUE sec, VALUE zone)
 {
     struct vtm vtm;
-    VALUE utc = Qnil;
-    struct time_object *tobj;
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
@@ -2379,6 +2400,15 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         vtm.sec = obj2subsecx(sec, &subsecx);
         vtm.subsecx = subsecx;
     }
+
+    return time_init_vtm(time, vtm, zone);
+}
+
+static VALUE
+time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
+{
+    VALUE utc = Qnil;
+    struct time_object *tobj;
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
@@ -2441,6 +2471,144 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
         tobj->timew = timelocalw(&vtm);
         return time_localtime(time);
     }
+}
+
+static int
+two_digits(const char *ptr, const char *end, const char **endp, const char *name)
+{
+    ssize_t len = end - ptr;
+    if (len < 2 || (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) ||
+        ((len > 2) && ISDIGIT(ptr[2]))) {
+        VALUE mesg = rb_sprintf("two digits %s is expected", name);
+        if (ptr[-1] == '-' || ptr[-1] == ':') {
+            rb_str_catf(mesg, " after `%c'", ptr[-1]);
+        }
+        rb_str_catf(mesg, ": %.*s", ((len > 10) ? 10 : (int)(end - ptr)) + 1, ptr - 1);
+        rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
+    }
+    *endp = ptr + 2;
+    return (ptr[0] - '0') * 10 + (ptr[1] - '0');
+}
+
+static VALUE
+parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, bool sign)
+{
+    ssize_t len = (end - ptr);
+    int flags = sign ? RB_INT_PARSE_SIGN : 0;
+    return rb_int_parse_cstr(ptr, len, (char **)endp, ndigits, 10, flags);
+}
+
+static VALUE
+time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, VALUE precision)
+{
+    if (NIL_P(str = rb_check_string_type(str))) return Qnil;
+    if (!rb_enc_str_asciicompat_p(str)) {
+        rb_raise(rb_eArgError, "time string should have ASCII compatible encoding");
+    }
+
+    const char *const begin = RSTRING_PTR(str);
+    const char *const end = RSTRING_END(str);
+    const char *ptr = begin;
+    VALUE year = Qnil, subsec = Qnil;
+    int mon = -1, mday = -1, hour = -1, min = -1, sec = -1;
+    size_t ndigits;
+    size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
+
+    while ((ptr < end) && ISSPACE(*ptr)) ptr++;
+    year = parse_int(ptr, end, &ptr, &ndigits, true);
+    if (NIL_P(year)) {
+        rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
+    }
+    else if (ndigits < 4) {
+        rb_raise(rb_eArgError, "year must be 4 or more digits: %.*s", (int)ndigits, ptr - ndigits);
+    }
+    do {
+#define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
+#define peek_n(c, n) (peekable_p(n) && ((unsigned char)ptr[n] == (c)))
+#define peek(c) peek_n(c, 0)
+#define peekc_n(n) (peekable_p(n) ? (int)(unsigned char)ptr[n] : -1)
+#define peekc() peekc_n(0)
+#define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
+        if (!peek('-')) break;
+        expect_two_digits(mon);
+        if (!peek('-')) break;
+        expect_two_digits(mday);
+        if (!peek(' ') && !peek('T')) break;
+        const char *const time_part = ptr + 1;
+        if (!ISDIGIT(peekc_n(1))) break;
+#define nofraction(x) \
+        if (peek('.')) { \
+            rb_raise(rb_eArgError, "fraction " #x " is not supported: %.*s", \
+                     (int)(ptr + 1 - time_part), time_part); \
+        }
+#define need_colon(x) \
+        if (!peek(':')) { \
+            rb_raise(rb_eArgError, "missing " #x " part: %.*s", \
+                     (int)(ptr + 1 - time_part), time_part); \
+        }
+        expect_two_digits(hour);
+        nofraction(hour);
+        need_colon(min);
+        expect_two_digits(min);
+        nofraction(min);
+        need_colon(sec);
+        expect_two_digits(sec);
+        if (peek('.')) {
+            ptr++;
+            for (ndigits = 0; ndigits < prec && ISDIGIT(peekc_n(ndigits)); ++ndigits);
+            if (!ndigits) {
+                int clen = rb_enc_precise_mbclen(ptr, end, rb_enc_get(str));
+                if (clen < 0) clen = 0;
+                rb_raise(rb_eArgError, "subsecond expected after dot: %.*s",
+                         (int)(ptr - time_part) + clen, time_part);
+            }
+            subsec = parse_int(ptr, ptr + ndigits, &ptr, &ndigits, false);
+            if (NIL_P(subsec)) break;
+            while (ptr < end && ISDIGIT(*ptr)) ptr++;
+        }
+    } while (0);
+    while (ptr < end && ISSPACE(*ptr)) ptr++;
+    const char *const zstr = ptr;
+    while (ptr < end && !ISSPACE(*ptr)) ptr++;
+    const char *const zend = ptr;
+    while (ptr < end && ISSPACE(*ptr)) ptr++;
+    if (ptr < end) {
+        VALUE mesg = rb_str_new_cstr("can't parse at: ");
+        rb_str_cat(mesg, ptr, end - ptr);
+        rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
+    }
+    if (zend > zstr) {
+        zone = rb_str_subseq(str, zstr - begin, zend - zstr);
+    }
+    if (!NIL_P(subsec)) {
+        /* subseconds is the last using ndigits */
+        static const size_t TIME_SCALE_NUMDIGITS =
+            /* TIME_SCALE should be 10000... */
+            rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
+
+        if (ndigits < TIME_SCALE_NUMDIGITS) {
+            VALUE mul = rb_int_positive_pow(10, TIME_SCALE_NUMDIGITS - ndigits);
+            subsec = rb_int_mul(subsec, mul);
+        }
+        else if (ndigits > TIME_SCALE_NUMDIGITS) {
+            VALUE num = rb_int_positive_pow(10, ndigits - TIME_SCALE_NUMDIGITS);
+            subsec = rb_rational_new(subsec, num);
+        }
+    }
+
+    struct vtm vtm = {
+        .wday = VTM_WDAY_INITVAL,
+        .yday = 0,
+        .zone = str_empty,
+        .year = year,
+        .mon  = (mon < 0)  ? 1 : mon,
+        .mday = (mday < 0) ? 1 : mday,
+        .hour = (hour < 0) ? 0 : hour,
+        .min  = (min < 0)  ? 0 : min,
+        .sec  = (sec < 0)  ? 0 : sec,
+        .subsecx = NIL_P(subsec) ? INT2FIX(0) : subsec,
+    };
+    return time_init_vtm(klass, vtm, zone);
 }
 
 static void

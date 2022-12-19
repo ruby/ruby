@@ -943,6 +943,8 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define idFWD_REST   '*'
 #define idFWD_KWREST idPow /* Use simple "**", as tDSTAR is "**arg" */
 #define idFWD_BLOCK  '&'
+#define idFWD_ALL    idDot3
+#define FORWARD_ARGS_WITH_RUBY2_KEYWORDS
 
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
@@ -3150,7 +3152,8 @@ args		: arg_value
 		    }
 		| tSTAR
 		    {
-                        if (!local_id(p, idFWD_REST)) {
+                        if (!local_id(p, idFWD_REST) ||
+                            local_id(p, idFWD_ALL)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
@@ -3174,7 +3177,8 @@ args		: arg_value
 		    }
 		| args ',' tSTAR
 		    {
-                        if (!local_id(p, idFWD_REST)) {
+                        if (!local_id(p, idFWD_REST) ||
+                            local_id(p, idFWD_ALL)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
 		    /*%%%*/
@@ -4901,7 +4905,7 @@ p_var_ref	: '^' tIDENTIFIER
                     }
 		;
 
-p_expr_ref	: '^' tLPAREN expr_value ')'
+p_expr_ref	: '^' tLPAREN expr_value rparen
 		    {
 		    /*%%%*/
 			$$ = NEW_BEGIN($3, &@$);
@@ -5601,7 +5605,11 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 args_forward	: tBDOT3
 		    {
 		    /*%%%*/
+#ifdef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
+			$$ = 0;
+#else
 			$$ = idFWD_KWREST;
+#endif
 		    /*% %*/
 		    /*% ripper: args_forward! %*/
 		    }
@@ -6044,7 +6052,8 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		| tDSTAR
 		    {
-                        if (!local_id(p, idFWD_KWREST)) {
+                        if (!local_id(p, idFWD_KWREST) ||
+                            local_id(p, idFWD_ALL)) {
                             compile_error(p, "no anonymous keyword rest parameter");
                         }
 		    /*%%%*/
@@ -12574,6 +12583,12 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 
     args->opt_args       = opt_args;
 
+#ifdef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
+    args->ruby2_keywords = args->forwarding;
+#else
+    args->ruby2_keywords = 0;
+#endif
+
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
 
@@ -13256,9 +13271,7 @@ local_id(struct parser_params *p, ID id)
 static int
 check_forwarding_args(struct parser_params *p)
 {
-    if (local_id(p, idFWD_REST) &&
-        local_id(p, idFWD_KWREST) &&
-        local_id(p, idFWD_BLOCK)) return TRUE;
+    if (local_id(p, idFWD_ALL)) return TRUE;
     compile_error(p, "unexpected ...");
     return FALSE;
 }
@@ -13267,8 +13280,11 @@ static void
 add_forwarding_args(struct parser_params *p)
 {
     arg_var(p, idFWD_REST);
+#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     arg_var(p, idFWD_KWREST);
+#endif
     arg_var(p, idFWD_BLOCK);
+    arg_var(p, idFWD_ALL);
 }
 
 #ifndef RIPPER
@@ -13276,10 +13292,14 @@ static NODE *
 new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc, const YYLTYPE *argsloc)
 {
     NODE *rest = NEW_LVAR(idFWD_REST, loc);
+#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
+#endif
     NODE *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
-    NODE *args = leading ? rest_arg_append(p, leading, rest, loc) : NEW_SPLAT(rest, loc);
+    NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
+#ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
+#endif
     return arg_blk_pass(args, block);
 }
 #endif

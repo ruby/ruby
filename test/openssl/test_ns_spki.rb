@@ -22,7 +22,7 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
     spki = OpenSSL::Netscape::SPKI.new
     spki.challenge = "RandomString"
     spki.public_key = key1.public_key
-    spki.sign(key1, OpenSSL::Digest.new('SHA1'))
+    spki.sign(key1, OpenSSL::Digest.new('SHA256'))
     assert(spki.verify(spki.public_key))
     assert(spki.verify(key1.public_key))
     assert(!spki.verify(key2.public_key))

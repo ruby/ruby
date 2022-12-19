@@ -13,14 +13,14 @@ module Bundler
     # * The dependency explicit set in the Gemfile for this gem (if any).
     #
     class Package
-      attr_reader :name, :platforms, :dependency
+      attr_reader :name, :platforms, :dependency, :locked_version
 
       def initialize(name, platforms, locked_specs, unlock, dependency: nil)
         @name = name
         @platforms = platforms
-        @locked_specs = locked_specs
+        @locked_version = locked_specs[name].first&.version
         @unlock = unlock
-        @dependency = dependency
+        @dependency = dependency || Dependency.new(name, @locked_version)
       end
 
       def to_s
@@ -43,24 +43,20 @@ module Bundler
         @name.hash
       end
 
-      def locked_version
-        @locked_specs[name].first&.version
-      end
-
       def unlock?
         @unlock.empty? || @unlock.include?(name)
       end
 
       def prerelease_specified?
-        @dependency&.prerelease?
+        @dependency.prerelease?
       end
 
       def force_ruby_platform?
-        @dependency&.force_ruby_platform
+        @dependency.force_ruby_platform
       end
 
       def current_platform?
-        @dependency&.current_platform?
+        @dependency.current_platform?
       end
     end
   end

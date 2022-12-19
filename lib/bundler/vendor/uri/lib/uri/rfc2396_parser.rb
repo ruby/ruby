@@ -116,7 +116,7 @@ module Bundler::URI
     # See also Bundler::URI::Parser.initialize_regexp.
     attr_reader :regexp
 
-    # Returns a split Bundler::URI against regexp[:ABS_URI].
+    # Returns a split Bundler::URI against +regexp[:ABS_URI]+.
     def split(uri)
       case uri
       when ''
@@ -257,8 +257,8 @@ module Bundler::URI
       end
     end
 
-    # Returns Regexp that is default self.regexp[:ABS_URI_REF],
-    # unless +schemes+ is provided. Then it is a Regexp.union with self.pattern[:X_ABS_URI].
+    # Returns Regexp that is default +self.regexp[:ABS_URI_REF]+,
+    # unless +schemes+ is provided. Then it is a Regexp.union with +self.pattern[:X_ABS_URI]+.
     def make_regexp(schemes = nil)
       unless schemes
         @regexp[:ABS_URI_REF]
@@ -277,7 +277,7 @@ module Bundler::URI
     # +str+::
     #    String to make safe
     # +unsafe+::
-    #    Regexp to apply. Defaults to self.regexp[:UNSAFE]
+    #    Regexp to apply. Defaults to +self.regexp[:UNSAFE]+
     #
     # == Description
     #
@@ -309,7 +309,7 @@ module Bundler::URI
     # +str+::
     #    String to remove escapes from
     # +escaped+::
-    #    Regexp to apply. Defaults to self.regexp[:ESCAPED]
+    #    Regexp to apply. Defaults to +self.regexp[:ESCAPED]+
     #
     # == Description
     #
@@ -322,8 +322,14 @@ module Bundler::URI
     end
 
     @@to_s = Kernel.instance_method(:to_s)
-    def inspect
-      @@to_s.bind_call(self)
+    if @@to_s.respond_to?(:bind_call)
+      def inspect
+        @@to_s.bind_call(self)
+      end
+    else
+      def inspect
+        @@to_s.bind(self).call
+      end
     end
 
     private

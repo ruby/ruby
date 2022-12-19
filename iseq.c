@@ -103,7 +103,8 @@ compile_data_free(struct iseq_compile_data *compile_data)
 }
 
 static void
-remove_from_constant_cache(ID id, IC ic) {
+remove_from_constant_cache(ID id, IC ic)
+{
     rb_vm_t *vm = GET_VM();
     VALUE lookup_result;
     st_data_t ic_data = (st_data_t)ic;
@@ -125,6 +126,14 @@ remove_from_constant_cache(ID id, IC ic) {
 static void
 iseq_clear_ic_references(const rb_iseq_t *iseq)
 {
+    // In some cases (when there is a compilation error), we end up with
+    // ic_size greater than 0, but no allocated is_entries buffer.
+    // If there's no is_entries buffer to loop through, return early.
+    // [Bug #19173]
+    if (!ISEQ_BODY(iseq)->is_entries) {
+        return;
+    }
+
     for (unsigned int ic_idx = 0; ic_idx < ISEQ_BODY(iseq)->ic_size; ic_idx++) {
         IC ic = &ISEQ_IS_IC_ENTRY(ISEQ_BODY(iseq), ic_idx);
 
@@ -506,15 +515,17 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
-        /* IC entries constant segments */
-        for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
-            IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-            const ID *ids = ic->segments;
-            if (!ids) continue;
-            while (*ids++) {
-                size += sizeof(ID);
+        if (ISEQ_BODY(iseq)->is_entries) {
+            /* IC entries constant segments */
+            for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
+                IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
+                const ID *ids = ic->segments;
+                if (!ids) continue;
+                while (*ids++) {
+                    size += sizeof(ID);
+                }
+                size += sizeof(ID); // null terminator
             }
-            size += sizeof(ID); // null terminator
         }
 
         /* body->call_data */
@@ -2498,33 +2509,20 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 attr_index_t
 rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
 {
-    bool calls_super = false;
-
     struct rb_id_table * iv_names = rb_id_table_create(0);
 
-    VALUE * code = ISEQ_BODY(initialize_iseq)->iseq_encoded;
+    for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->ivc_size; i++) {
+        IVC cache = (IVC)&ISEQ_BODY(initialize_iseq)->is_entries[i];
 
-    for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->iseq_size; ) {
-        VALUE insn = code[i];
-        int original_insn = rb_vm_insn_addr2insn((const void *)insn);
-
-        if (BIN(setinstancevariable) == original_insn) {
-            ID name = (ID)code[i + 1];
-            rb_id_table_insert(iv_names, name, Qtrue);
+        if (cache->iv_set_name) {
+            rb_id_table_insert(iv_names, cache->iv_set_name, Qtrue);
         }
-        else if (BIN(invokesuper) == original_insn) {
-            calls_super = true;
-        }
-
-        i += insn_len(original_insn);
     }
 
     attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
 
-    if (calls_super) {
-        VALUE superclass = rb_class_superclass(klass);
-        count += RCLASS_EXT(superclass)->max_iv_count;
-    }
+    VALUE superclass = rb_class_superclass(klass);
+    count += RCLASS_EXT(superclass)->max_iv_count;
 
     rb_id_table_free(iv_names);
 

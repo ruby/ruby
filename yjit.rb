@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# This module allows for introspection of YJIT, CRuby's experimental in-process
+# This module allows for introspection of YJIT, CRuby's in-process
 # just-in-time compiler. This module exists only to help develop YJIT, as such,
 # everything in the module is highly implementation specific and comes with no
 # API stability guarantee whatsoever.
@@ -299,14 +299,14 @@ module RubyVM::YJIT
         end
       end
 
-      exits = exits.sort_by { |name, count| -count }[0...how_many]
+      exits = exits.select { |_name, count| count > 0 }.sort_by { |_name, count| -count }.first(how_many)
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
         top_n_total = exits.map { |name, count| count }.sum
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
-        $stderr.puts "Top-#{how_many} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+        $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
         longest_insn_name_len = exits.map { |name, count| name.length }.max
         exits.each do |name, count|

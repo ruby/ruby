@@ -282,12 +282,12 @@ module RubyVM::MJIT
 
       # Dereference
       def *
-        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
+        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack1('c')
         if @width == 1
           bit = (1 & (byte >> @offset))
           bit == 1
         elsif @width <= 8 && @offset == 0
-          bitmask = @width.times.map { |i| 1 << i }.sum
+          bitmask = @width.times.sum { |i| 1 << i }
           byte & bitmask
         else
           raise NotImplementedError.new("not-implemented bit field access: width=#{@width} offset=#{@offset}")

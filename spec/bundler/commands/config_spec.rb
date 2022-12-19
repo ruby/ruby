@@ -143,17 +143,15 @@ RSpec.describe ".bundle/config" do
     end
 
     it "has lower precedence than env" do
-      begin
-        ENV["BUNDLE_FOO"] = "env"
+      ENV["BUNDLE_FOO"] = "env"
 
-        bundle "config set --global foo global"
-        expect(out).to match(/You have a bundler environment variable for foo set to "env"/)
+      bundle "config set --global foo global"
+      expect(out).to match(/You have a bundler environment variable for foo set to "env"/)
 
-        run "puts Bundler.settings[:foo]"
-        expect(out).to eq("env")
-      ensure
-        ENV.delete("BUNDLE_FOO")
-      end
+      run "puts Bundler.settings[:foo]"
+      expect(out).to eq("env")
+    ensure
+      ENV.delete("BUNDLE_FOO")
     end
 
     it "can be deleted" do
@@ -221,15 +219,13 @@ RSpec.describe ".bundle/config" do
     end
 
     it "has higher precedence than env" do
-      begin
-        ENV["BUNDLE_FOO"] = "env"
-        bundle "config set --local foo local"
+      ENV["BUNDLE_FOO"] = "env"
+      bundle "config set --local foo local"
 
-        run "puts Bundler.settings[:foo]"
-        expect(out).to eq("local")
-      ensure
-        ENV.delete("BUNDLE_FOO")
-      end
+      run "puts Bundler.settings[:foo]"
+      expect(out).to eq("local")
+    ensure
+      ENV.delete("BUNDLE_FOO")
     end
 
     it "can be deleted" do

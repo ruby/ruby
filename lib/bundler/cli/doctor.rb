@@ -73,12 +73,10 @@ module Bundler
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
           bad_paths = dylibs(bundle).select do |f|
-            begin
-              Fiddle.dlopen(f)
-              false
-            rescue Fiddle::DLError
-              true
-            end
+            Fiddle.dlopen(f)
+            false
+          rescue Fiddle::DLError
+            true
           end
           if bad_paths.any?
             broken_links[spec] ||= []

@@ -288,6 +288,37 @@ class TestCSVEncodings < Test::Unit::TestCase
                  error.message)
   end
 
+  def test_string_input_transcode
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046"
+    csv = CSV.new(value, encoding: "UTF-8:EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_string
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"), encoding: "EUC-JP")
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
+  def test_string_input_set_encoding_encoding
+    # U+3042 HIRAGANA LETTER A
+    # U+3044 HIRAGANA LETTER I
+    # U+3046 HIRAGANA LETTER U
+    value = "\u3042\u3044\u3046".encode("EUC-JP")
+    csv = CSV.new(value.dup.force_encoding("UTF-8"),
+                  encoding: Encoding.find("EUC-JP"))
+    assert_equal([[value.encode("EUC-JP")]],
+                 csv.read)
+  end
+
   private
 
   def assert_parses(fields, encoding, **options)

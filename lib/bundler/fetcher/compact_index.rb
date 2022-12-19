@@ -12,17 +12,15 @@ module Bundler
         method = instance_method(method_name)
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
-          begin
-            method.bind(self).call(*args, &blk)
-          rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
-            raise HTTPError, e.message
-          rescue AuthenticationRequiredError
-            # Fail since we got a 401 from the server.
-            raise
-          rescue HTTPError => e
-            Bundler.ui.trace(e)
-            nil
-          end
+          method.bind(self).call(*args, &blk)
+        rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
+          raise HTTPError, e.message
+        rescue AuthenticationRequiredError
+          # Fail since we got a 401 from the server.
+          raise
+        rescue HTTPError => e
+          Bundler.ui.trace(e)
+          nil
         end
       end
 

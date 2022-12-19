@@ -150,7 +150,7 @@ class Reline::ANSI
     until c = @@input.raw(intr: true) { @@input.wait_readable(0.1) && @@input.getbyte }
       Reline.core.line_editor.resize
     end
-    (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
+    (c == 0x16 && @@input.raw(min: 0, time: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
     nil

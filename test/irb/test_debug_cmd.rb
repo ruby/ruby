@@ -15,8 +15,17 @@ module TestIRB
       "RUBY_DEBUG_NO_RELINE" => "true", "NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => ''
     }
 
+    def setup
+      if ruby_core?
+        omit "This test works only under ruby/irb"
+      end
+
+      if RUBY_ENGINE == 'truffleruby'
+        omit "This test runs with ruby/debug, which doesn't work with truffleruby"
+      end
+    end
+
     def test_backtrace
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           binding.irb
@@ -34,7 +43,6 @@ module TestIRB
     end
 
     def test_debug
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'ruby'
         binding.irb
         puts "hello"
@@ -51,7 +59,6 @@ module TestIRB
     end
 
     def test_next
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'ruby'
         binding.irb
         puts "hello"
@@ -67,7 +74,6 @@ module TestIRB
     end
 
     def test_break
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -84,7 +90,6 @@ module TestIRB
     end
 
     def test_delete
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -104,7 +109,6 @@ module TestIRB
     end
 
     def test_step
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           puts "Hello"
@@ -115,15 +119,16 @@ module TestIRB
 
       output = run_ruby_file do
         type "step"
+        type "step"
         type "continue"
       end
 
       assert_match(/\(rdbg:irb\) step/, output)
-      assert_match(/=>   2|   puts "Hello"/, output)
+      assert_match(/=>   5\| foo/, output)
+      assert_match(/=>   2\|   puts "Hello"/, output)
     end
 
     def test_continue
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         puts "Hello"
@@ -141,7 +146,6 @@ module TestIRB
     end
 
     def test_finish
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           binding.irb
@@ -160,7 +164,6 @@ module TestIRB
     end
 
     def test_info
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         def foo
           a = "He" + "llo"
@@ -180,7 +183,6 @@ module TestIRB
     end
 
     def test_catch
-      omit if RUBY_ENGINE == 'truffleruby'
       write_ruby <<~'RUBY'
         binding.irb
         1 / 0
@@ -198,6 +200,8 @@ module TestIRB
 
     private
 
+    TIMEOUT_SEC = 3
+
     def run_ruby_file(&block)
       cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
       tmp_dir = Dir.mktmpdir
@@ -211,7 +215,7 @@ module TestIRB
       yield
 
       PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("IRBRC" => rc_file.to_path), *cmd) do |read, write, pid|
-        Timeout.timeout(3) do
+        Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line
 
@@ -223,6 +227,10 @@ module TestIRB
             end
           end
         end
+      ensure
+        read.close
+        write.close
+        kill_safely(pid)
       end
 
       lines.join
@@ -246,6 +254,35 @@ module TestIRB
       read.gets
     rescue Errno::EIO
       nil
+    end
+
+    def kill_safely pid
+      return if wait_pid pid, TIMEOUT_SEC
+
+      Process.kill :TERM, pid
+      return if wait_pid pid, 0.2
+
+      Process.kill :KILL, pid
+      Process.waitpid(pid)
+    rescue Errno::EPERM, Errno::ESRCH
+    end
+
+    def wait_pid pid, sec
+      total_sec = 0.0
+      wait_sec = 0.001 # 1ms
+
+      while total_sec < sec
+        if Process.waitpid(pid, Process::WNOHANG) == pid
+          return true
+        end
+        sleep wait_sec
+        total_sec += wait_sec
+        wait_sec *= 2
+      end
+
+      false
+    rescue Errno::ECHILD
+      true
     end
 
     def type(command)

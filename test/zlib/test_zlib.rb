@@ -804,10 +804,10 @@ if defined? Zlib
           io.rewind
 
           gz0 = Zlib::GzipWriter.new(io)
-          assert_raise(NoMethodError) { gz0.path }
+          assert_nil gz0.path
 
           gz1 = Zlib::GzipReader.new(io)
-          assert_raise(NoMethodError) { gz1.path }
+          assert_nil gz1.path
           gz0.close
           gz1.close
         end

@@ -120,6 +120,7 @@ RSpec.describe "bundle update" do
       G
 
       bundle "update", :all => true
+      expect(err).to be_empty
     end
 
     describe "with submodules" do

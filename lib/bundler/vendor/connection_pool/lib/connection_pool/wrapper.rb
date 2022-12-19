@@ -30,7 +30,6 @@ class Bundler::ConnectionPool
       METHODS.include?(id) || with { |c| c.respond_to?(id, *args) }
     end
 
-    # rubocop:disable Style/MethodMissingSuper
     # rubocop:disable Style/MissingRespondToMissing
     if ::RUBY_VERSION >= "3.0.0"
       def method_missing(name, *args, **kwargs, &block)

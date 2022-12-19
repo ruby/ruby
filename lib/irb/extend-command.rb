@@ -45,14 +45,15 @@ module IRB # :nodoc:
       [:quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
     ]
 
+
     @EXTEND_COMMANDS = [
       [
         :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
+        [:cwws, NO_OVERRIDE],
+        [:pwws, NO_OVERRIDE],
         [:irb_print_working_workspace, OVERRIDE_ALL],
         [:irb_cwws, OVERRIDE_ALL],
         [:irb_pwws, OVERRIDE_ALL],
-        [:cwws, NO_OVERRIDE],
-        [:pwws, NO_OVERRIDE],
         [:irb_current_working_binding, OVERRIDE_ALL],
         [:irb_print_working_binding, OVERRIDE_ALL],
         [:irb_cwb, OVERRIDE_ALL],
@@ -60,10 +61,10 @@ module IRB # :nodoc:
       ],
       [
         :irb_change_workspace, :ChangeWorkspace, "cmd/chws",
-        [:irb_chws, OVERRIDE_ALL],
-        [:irb_cws, OVERRIDE_ALL],
         [:chws, NO_OVERRIDE],
         [:cws, NO_OVERRIDE],
+        [:irb_chws, OVERRIDE_ALL],
+        [:irb_cws, OVERRIDE_ALL],
         [:irb_change_binding, OVERRIDE_ALL],
         [:irb_cb, OVERRIDE_ALL],
         [:cb, NO_OVERRIDE],
@@ -77,16 +78,16 @@ module IRB # :nodoc:
       ],
       [
         :irb_push_workspace, :PushWorkspace, "cmd/pushws",
-        [:irb_pushws, OVERRIDE_ALL],
         [:pushws, NO_OVERRIDE],
+        [:irb_pushws, OVERRIDE_ALL],
         [:irb_push_binding, OVERRIDE_ALL],
         [:irb_pushb, OVERRIDE_ALL],
         [:pushb, NO_OVERRIDE],
       ],
       [
         :irb_pop_workspace, :PopWorkspace, "cmd/pushws",
-        [:irb_popws, OVERRIDE_ALL],
         [:popws, NO_OVERRIDE],
+        [:irb_popws, OVERRIDE_ALL],
         [:irb_pop_binding, OVERRIDE_ALL],
         [:irb_popb, OVERRIDE_ALL],
         [:popb, NO_OVERRIDE],
@@ -131,7 +132,7 @@ module IRB # :nodoc:
         :irb_catch, :Catch, "cmd/catch",
       ],
       [
-        :irb_next, :Next, "cmd/next",
+        :irb_next, :Next, "cmd/next"
       ],
       [
         :irb_delete, :Delete, "cmd/delete",
@@ -161,6 +162,7 @@ module IRB # :nodoc:
 
       [
         :irb_help, :Help, "cmd/help",
+        [:show_doc, NO_OVERRIDE],
         [:help, NO_OVERRIDE],
       ],
 
@@ -187,8 +189,40 @@ module IRB # :nodoc:
         :irb_whereami, :Whereami, "cmd/whereami",
         [:whereami, NO_OVERRIDE],
       ],
-
+      [
+        :irb_show_cmds, :ShowCmds, "cmd/show_cmds",
+        [:show_cmds, NO_OVERRIDE],
+      ]
     ]
+
+
+    @@commands = []
+
+    def self.all_commands_info
+      return @@commands unless @@commands.empty?
+      user_aliases = IRB.CurrentContext.command_aliases.each_with_object({}) do |(alias_name, target), result|
+        result[target] ||= []
+        result[target] << alias_name
+      end
+
+      @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
+        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+          require_relative load_file
+        end
+
+        klass = ExtendCommand.const_get(cmd_class, false)
+        aliases = aliases.map { |a| a.first }
+
+        if additional_aliases = user_aliases[cmd_name]
+          aliases += additional_aliases
+        end
+
+        display_name = aliases.shift || cmd_name
+        @@commands << { display_name: display_name, description: klass.description, category: klass.category }
+      end
+
+      @@commands
+    end
 
     # Convert a command name to its implementation class if such command exists
     def self.load_command(command)

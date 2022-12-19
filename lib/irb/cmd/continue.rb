@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Continue < Debug
+    class Continue < DebugCommand
       def execute(*args)
         super(do_cmds: ["continue", *args].join(" "))
       end

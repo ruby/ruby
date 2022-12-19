@@ -1724,8 +1724,14 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
-    RB_OBJ_WRITE(method, &data->recv, obj);
-    RB_OBJ_WRITE(method, &data->klass, klass);
+    if (obj == Qundef) {
+        RB_OBJ_WRITE(method, &data->recv, Qundef);
+        RB_OBJ_WRITE(method, &data->klass, Qundef);
+    }
+    else {
+        RB_OBJ_WRITE(method, &data->recv, obj);
+        RB_OBJ_WRITE(method, &data->klass, klass);
+    }
     RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->owner, original_me->owner);
     RB_OBJ_WRITE(method, &data->me, me);
@@ -1876,9 +1882,9 @@ method_unbind(VALUE obj)
     method = TypedData_Make_Struct(rb_cUnboundMethod, struct METHOD,
                                    &method_data_type, data);
     RB_OBJ_WRITE(method, &data->recv, Qundef);
-    RB_OBJ_WRITE(method, &data->klass, orig->klass);
+    RB_OBJ_WRITE(method, &data->klass, Qundef);
     RB_OBJ_WRITE(method, &data->iclass, orig->iclass);
-    RB_OBJ_WRITE(method, &data->owner, orig->owner);
+    RB_OBJ_WRITE(method, &data->owner, orig->me->owner);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
 
     return method;
@@ -3139,7 +3145,11 @@ method_inspect(VALUE method)
         defined_class = RBASIC_CLASS(defined_class);
     }
 
-    if (FL_TEST(mklass, FL_SINGLETON)) {
+    if (data->recv == Qundef) {
+        // UnboundMethod
+        rb_str_buf_append(str, rb_inspect(defined_class));
+    }
+    else if (FL_TEST(mklass, FL_SINGLETON)) {
         VALUE v = rb_ivar_get(mklass, attached);
 
         if (UNDEF_P(data->recv)) {

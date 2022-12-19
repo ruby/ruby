@@ -179,5 +179,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     # Make sure the threads are dead...
     thread.kill
     signaller.kill
+    thread.join
+    signaller.join
   end
 end

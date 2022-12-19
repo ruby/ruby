@@ -374,6 +374,57 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
+      context "with a Gemfile and lock file that don't resolve under the current platform" do
+        before do
+          build_repo4 do
+            build_gem "sorbet", "0.5.10554" do |s|
+              s.add_dependency "sorbet-static", "0.5.10554"
+            end
+
+            build_gem "sorbet-static", "0.5.10554" do |s|
+              s.platform = "universal-darwin-21"
+            end
+          end
+
+          gemfile <<~G
+            source "#{file_uri_for(gem_repo4)}"
+            gem 'sorbet', '= 0.5.10554'
+          G
+
+          lockfile <<~L
+            GEM
+              remote: #{file_uri_for(gem_repo4)}/
+              specs:
+                sorbet (0.5.10554)
+                  sorbet-static (= 0.5.10554)
+                sorbet-static (0.5.10554-universal-darwin-21)
+
+            PLATFORMS
+              arm64-darwin-21
+
+            DEPENDENCIES
+              sorbet (= 0.5.10554)
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
+
+        it "raises a proper error" do
+          simulate_platform "aarch64-linux" do
+            bundle "install", :raise_on_error => false
+          end
+
+          nice_error = strip_whitespace(<<-E).strip
+            Could not find gem 'sorbet-static (= 0.5.10554)' with platforms 'arm64-darwin-21', 'aarch64-linux' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+
+            The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
+              * sorbet-static-0.5.10554-universal-darwin-21
+          E
+          expect(err).to end_with(nice_error)
+        end
+      end
+
       it "gives a meaningful error on ruby version mismatches between dependencies" do
         build_repo4 do
           build_gem "requires-old-ruby" do |s|

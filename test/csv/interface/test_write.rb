@@ -85,6 +85,15 @@ testrow
     LINE
   end
 
+  def test_generate_lines
+    lines = CSV.generate_lines([["foo", "bar"], [1, 2], [3, 4]])
+    assert_equal(<<-LINES, lines)
+foo,bar
+1,2
+3,4
+    LINES
+  end
+
   def test_headers_detection
     headers = ["a", "b", "c"]
     CSV.open(@output.path, "w", headers: true) do |csv|

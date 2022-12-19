@@ -464,6 +464,8 @@ END
         true
       end
     end
+
+    assert_valid_syntax("1 in ^(1\n)")
   end
 
   def test_array_pattern

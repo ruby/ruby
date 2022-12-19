@@ -596,76 +596,73 @@ class TestGemRequire < Gem::TestCase
     assert_empty unresolved_names
   end
 
-  # uplevel is 2.5+ only
-  if RUBY_VERSION >= "2.5"
-    ["", "Kernel."].each do |prefix|
-      define_method "test_no_kernel_require_in_#{prefix.tr(".", "_")}warn_with_uplevel" do
-        Dir.mktmpdir("warn_test") do |dir|
-          File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
-          File.write(dir + "/main.rb", "require 'sub'\n")
-          _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
-          end
-          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
-          _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
-          end
-          assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
-        end
-      end
-
-      define_method "test_no_other_behavioral_changes_with_#{prefix.tr(".", "_")}warn" do
-        Dir.mktmpdir("warn_test") do |dir|
-          File.write(dir + "/main.rb", "#{prefix}warn({x:1}, {y:2}, [])\n")
-          _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
-          end
-          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
-          _, err = capture_subprocess_io do
-            system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
-          end
-          assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
-        end
-      end
-    end
-
-    def test_no_crash_when_overriding_warn_with_warning_module
+  ["", "Kernel."].each do |prefix|
+    define_method "test_no_kernel_require_in_#{prefix.tr(".", "_")}warn_with_uplevel" do
       Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
-        _, err = capture_subprocess_io do
-          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
-        end
-        assert_match(/Foo Bar\n$/, err)
-        _, err = capture_subprocess_io do
-          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
-        end
-        assert_match(/Foo Bar\n$/, err)
-      end
-    end
-
-    def test_expected_backtrace_location_when_inheriting_from_basic_object_and_including_kernel
-      Dir.mktmpdir("warn_test") do |dir|
-        File.write(dir + "/main.rb", "\nrequire 'sub'\n")
-        File.write(dir + "/sub.rb", <<-'RUBY')
-          require 'rubygems'
-          class C < BasicObject
-            include ::Kernel
-            def deprecated
-              warn "This is a deprecated method", uplevel: 2
-            end
-          end
-          C.new.deprecated
-        RUBY
-
+        File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
+        File.write(dir + "/main.rb", "require 'sub'\n")
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
         end
-        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+        assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
         end
-        assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+        assert_match(/main\.rb:1: warning: uplevel\ntest\n$/, err)
       end
+    end
+
+    define_method "test_no_other_behavioral_changes_with_#{prefix.tr(".", "_")}warn" do
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/main.rb", "#{prefix}warn({x:1}, {y:2}, [])\n")
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        _, err = capture_subprocess_io do
+          system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
+        end
+        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+      end
+    end
+  end
+
+  def test_no_crash_when_overriding_warn_with_warning_module
+    Dir.mktmpdir("warn_test") do |dir|
+      File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
+      _, err = capture_subprocess_io do
+        system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
+      end
+      assert_match(/Foo Bar\n$/, err)
+      _, err = capture_subprocess_io do
+        system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
+      end
+      assert_match(/Foo Bar\n$/, err)
+    end
+  end
+
+  def test_expected_backtrace_location_when_inheriting_from_basic_object_and_including_kernel
+    Dir.mktmpdir("warn_test") do |dir|
+      File.write(dir + "/main.rb", "\nrequire 'sub'\n")
+      File.write(dir + "/sub.rb", <<-'RUBY')
+        require 'rubygems'
+        class C < BasicObject
+          include ::Kernel
+          def deprecated
+            warn "This is a deprecated method", uplevel: 2
+          end
+        end
+        C.new.deprecated
+      RUBY
+
+      _, err = capture_subprocess_io do
+        system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "-I", dir, "main.rb")
+      end
+      assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
+      _, err = capture_subprocess_io do
+        system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "-I", dir, "main.rb")
+      end
+      assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
     end
   end
 

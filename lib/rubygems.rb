@@ -774,6 +774,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     open_file(path, "wb") do |io|
       io.write data
     end
+  rescue Errno::ENOSPC
+    # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
+    File.delete(path) if File.exist?(path)
+    raise
   end
 
   ##
@@ -1349,4 +1353,4 @@ require_relative "rubygems/core_ext/kernel_gem"
 require_relative "rubygems/core_ext/kernel_require"
 require_relative "rubygems/core_ext/kernel_warn"
 
-require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"]
+require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)

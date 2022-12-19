@@ -7,6 +7,9 @@ module IRB
 
   module ExtendCommand
     class Whereami < Nop
+      category "Context"
+      description "Show the source code around binding.irb again."
+
       def execute(*)
         code = irb_context.workspace.code_around_binding
         if code

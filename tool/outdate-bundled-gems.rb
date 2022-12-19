@@ -14,8 +14,6 @@ until ARGV.empty?
     # just to run when `make -n`
   when /\A--mflags=(.*)/
     fu = FileUtils::DryRun if /\A-\S*n/ =~ $1
-  when /\A--basedir=(.*)/m
-    dir = $1
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
@@ -97,7 +95,9 @@ curdir.glob(".bundle/specifications/*.gemspec") do |spec|
 end
 
 curdir.glob(".bundle/gems/*/") do |dir|
-  unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
+  base = File.basename(dir)
+  unless curdir.exist?(".bundle/specifications/#{base}.gemspec") or
+        curdir.exist?("#{dir}/.bundled.#{base}.gemspec")
     curdir.rmdir(dir)
   end
 end
@@ -109,20 +109,21 @@ curdir.glob(".bundle/{extensions,.timestamp}/*/") do |dir|
   end
 end
 
-version = RbConfig::CONFIG['ruby_version']
+baseruby_version = RbConfig::CONFIG['ruby_version'] # This may not have "-static"
 curdir.glob(".bundle/{extensions,.timestamp}/#{platform}/*/") do |dir|
-  unless File.basename(dir) == version
+  version = File.basename(dir).split('-', 2).first # Remove "-static" if exists
+  unless version == baseruby_version
     curdir.rmdir(dir)
   end
 end
 
-curdir.glob(".bundle/extensions/#{platform}/#{version}/*/") do |dir|
+curdir.glob(".bundle/extensions/#{platform}/#{baseruby_version}/*/") do |dir|
   unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
     curdir.rmdir(dir)
   end
 end
 
-curdir.glob(".bundle/.timestamp/#{platform}/#{version}/.*.time") do |stamp|
+curdir.glob(".bundle/.timestamp/#{platform}/#{baseruby_version}/.*.time") do |stamp|
   unless curdir.directory?(File.join(".bundle", stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')))
     curdir.unlink(stamp)
   end

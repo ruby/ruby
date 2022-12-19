@@ -694,7 +694,21 @@ unexpected_bytecode_error:
 bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
-#endif /* USE_MATCH_CACHE */
+#else /* USE_MATCH_CACHE */
+static OnigPosition count_num_cache_opcode(regex_t* reg, long* num, long* table_size)
+{
+  *num = NUM_CACHE_OPCODE_FAIL;
+  return 0;
+}
+#endif
+
+extern int
+onig_check_linear_time(OnigRegexType* reg)
+{
+  long num = 0, table_size = 0;
+  count_num_cache_opcode(reg, &num, &table_size);
+  return num != NUM_CACHE_OPCODE_FAIL;
+}
 
 extern void
 onig_region_clear(OnigRegion* region)
@@ -3771,6 +3785,11 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	    goto fail;
 	  }
 	  /* All possible points were found. Try matching after (?~...). */
+	  DATA_ENSURE(0);
+	  p += addr;
+	}
+	else if (s == end) {
+	  /* At the end of the string, just match with it */
 	  DATA_ENSURE(0);
 	  p += addr;
 	}

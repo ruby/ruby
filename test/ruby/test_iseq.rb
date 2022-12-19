@@ -355,6 +355,13 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  # [Bug #19173]
+  def test_compile_error
+    assert_raise SyntaxError do
+      RubyVM::InstructionSequence.compile 'using Module.new; yield'
+    end
+  end
+
   def test_compile_file_error
     Tempfile.create(%w"test_iseq .rb") do |f|
       f.puts "end"

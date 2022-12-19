@@ -1,6 +1,8 @@
 #! /usr/bin/ruby -Ku
 # -*- coding: utf-8 -*-
 
+require 'io/console'
+
 class Board
   def clr
     print "\e[2J"
@@ -143,8 +145,8 @@ class Board
 end
 
 bd=Board.new(10,10,10)
-system("stty raw -echo")
-begin
+
+IO.console.raw do
   loop do
     case STDIN.getc
     when ?n  # new game
@@ -170,7 +172,5 @@ begin
       bd.reset
     end
   end
-ensure
-  system("stty -raw echo")
 end
 print "\n"

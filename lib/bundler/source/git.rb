@@ -64,7 +64,7 @@ module Bundler
           at = if local?
             path
           elsif user_ref = options["ref"]
-            if ref =~ /\A[a-z0-9]{4,}\z/i
+            if /\A[a-z0-9]{4,}\z/i.match?(ref)
               shortref_for_display(user_ref)
             else
               user_ref
@@ -72,7 +72,7 @@ module Bundler
           elsif ref
             ref
           else
-            git_proxy.branch
+            current_branch
           end
 
           rev = "at #{at}@#{shortref_for_display(revision)}"
@@ -126,7 +126,7 @@ module Bundler
         path = Pathname.new(path)
         path = path.expand_path(Bundler.root) unless path.relative?
 
-        unless options["branch"] || Bundler.settings[:disable_local_branch_check]
+        unless branch || Bundler.settings[:disable_local_branch_check]
           raise GitError, "Cannot use local override for #{name} at #{path} because " \
             ":branch is not specified in Gemfile. Specify a branch or run " \
             "`bundle config unset local.#{override_for(original_path)}` to remove the local override"
@@ -141,14 +141,14 @@ module Bundler
 
         # Create a new git proxy without the cached revision
         # so the Gemfile.lock always picks up the new revision.
-        @git_proxy = GitProxy.new(path, uri, ref)
+        @git_proxy = GitProxy.new(path, uri, options)
 
-        if git_proxy.branch != options["branch"] && !Bundler.settings[:disable_local_branch_check]
+        if current_branch != branch && !Bundler.settings[:disable_local_branch_check]
           raise GitError, "Local override for #{name} at #{path} is using branch " \
-            "#{git_proxy.branch} but Gemfile specifies #{options["branch"]}"
+            "#{current_branch} but Gemfile specifies #{branch}"
         end
 
-        changed = cached_revision && cached_revision != git_proxy.revision
+        changed = cached_revision && cached_revision != revision
 
         if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(cached_revision)
           raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \
@@ -228,6 +228,10 @@ module Bundler
         git_proxy.revision
       end
 
+      def current_branch
+        git_proxy.current_branch
+      end
+
       def allow_git_ops?
         @allow_remote || @allow_cached
       end
@@ -291,7 +295,7 @@ module Bundler
       end
 
       def uri_hash
-        if uri =~ %r{^\w+://(\w+@)?}
+        if %r{^\w+://(\w+@)?}.match?(uri)
           # Downcase the domain component of the URI
           # and strip off a trailing slash, if one is present
           input = Bundler::URI.parse(uri).normalize.to_s.sub(%r{/$}, "")
@@ -313,7 +317,7 @@ module Bundler
       end
 
       def git_proxy
-        @git_proxy ||= GitProxy.new(cache_path, uri, ref, cached_revision, self)
+        @git_proxy ||= GitProxy.new(cache_path, uri, options, cached_revision, self)
       end
 
       def fetch

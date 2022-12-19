@@ -63,7 +63,7 @@ module Bundler
       @state        = nil
       @specs        = {}
 
-      if lockfile.match(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
+      if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} contains merge conflicts.\n" \
           "Run `git checkout HEAD -- #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` first to get a clean lock."
       end
@@ -80,7 +80,7 @@ module Bundler
           @state = :ruby
         elsif line == BUNDLED
           @state = :bundled_with
-        elsif line =~ /^[^\s]/
+        elsif /^[^\s]/.match?(line)
           @state = nil
         elsif @state
           send("parse_#{@state}", line)

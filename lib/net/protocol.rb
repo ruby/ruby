@@ -26,7 +26,7 @@ require 'io/wait'
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.1.3"
+    VERSION = "0.2.1"
 
     private
     def Protocol.protocol_param(name, val)
@@ -120,6 +120,7 @@ module Net # :nodoc:
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.b
+      @rbuf_empty = true
       @rbuf_offset = 0
     end
 
@@ -156,7 +157,7 @@ module Net # :nodoc:
       read_bytes = 0
       begin
         while read_bytes + rbuf_size < len
-          if s = rbuf_consume_all_shareable!
+          if s = rbuf_consume_all
             read_bytes += s.bytesize
             dest << s
           end
@@ -177,7 +178,7 @@ module Net # :nodoc:
       read_bytes = 0
       begin
         while true
-          if s = rbuf_consume_all_shareable!
+          if s = rbuf_consume_all
             read_bytes += s.bytesize
             dest << s
           end
@@ -249,18 +250,8 @@ module Net # :nodoc:
       @rbuf.bytesize - @rbuf_offset
     end
 
-    # Warning: this method may share the buffer to avoid
-    # copying. The caller must no longer use the returned
-    # string once rbuf_fill has been called again
-    def rbuf_consume_all_shareable!
-      @rbuf_empty = true
-      buf = if @rbuf_offset == 0
-        @rbuf
-      else
-        @rbuf.byteslice(@rbuf_offset..-1)
-      end
-      @rbuf_offset = @rbuf.bytesize
-      buf
+    def rbuf_consume_all
+      rbuf_consume if rbuf_size > 0
     end
 
     def rbuf_consume(len = nil)

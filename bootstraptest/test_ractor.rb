@@ -286,7 +286,8 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
     test i
   }
 } unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') || # https://bugs.ruby-lang.org/issues/17878
+  true # too flaky everywhere http://ci.rvm.jp/results/trunk@ruby-sp1/4321096
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -481,6 +482,7 @@ assert_equal 'ok', %q{
 }
 
 # multiple Ractors can receive (wait) from one Ractor
+yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
@@ -503,7 +505,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3603398545/jobs/6071549328#step:18:33
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
@@ -1474,7 +1476,7 @@ assert_equal "#{N}#{N}", %Q{
 }
 
 # enc_table
-assert_equal "#{N/10}", %Q{
+assert_equal "100", %Q{
   Ractor.new do
     loop do
       Encoding.find("test-enc-#{rand(5_000)}").inspect
@@ -1483,7 +1485,7 @@ assert_equal "#{N/10}", %Q{
   end
 
   src = Encoding.find("UTF-8")
-  #{N/10}.times{|i|
+  100.times{|i|
     src.replicate("test-enc-\#{i}")
   }
 }
@@ -1502,7 +1504,7 @@ assert_equal "#{n}#{n}", %Q{
       end
     end
   }.map{|r| r.take}.join
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3692339025/jobs/6251137785
 
 # NameError
 assert_equal "ok", %q{
@@ -1543,7 +1545,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3575374374/jobs/6011846425
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end

@@ -75,7 +75,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close, id_min, id_time, id_intr;
+static ID id_getc, id_console, id_close;
 #if ENABLE_IO_GETPASS
 static ID id_gets, id_chomp_bang;
 #endif
@@ -112,11 +112,26 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 }
 #endif
 
+enum rawmode_opt_ids {
+    kwd_min,
+    kwd_time,
+    kwd_intr,
+    rawmode_opt_id_count
+};
+static ID rawmode_opt_ids[rawmode_opt_id_count];
+
 typedef struct {
     int vmin;
     int vtime;
     int intr;
 } rawmode_arg_t;
+
+#ifndef UNDEF_P
+# define UNDEF_P(obj) ((obj) == Qundef)
+#endif
+#ifndef NIL_OR_UNDEF_P
+# define NIL_OR_UNDEF_P(obj) (NIL_P(obj) || UNDEF_P(obj))
+#endif
 
 static rawmode_arg_t *
 rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *opts)
@@ -124,6 +139,7 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
     int argc = *argcp;
     rawmode_arg_t *optp = NULL;
     VALUE vopts = Qnil;
+    VALUE optvals[rawmode_opt_id_count];
 #ifdef RB_SCAN_ARGS_PASS_CALLED_KEYWORDS
     argc = rb_scan_args(argc, argv, "*:", NULL, &vopts);
 #else
@@ -138,19 +154,20 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
     }
 #endif
     rb_check_arity(argc, min_argc, max_argc);
-    if (!NIL_P(vopts)) {
-	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
-	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
-	VALUE intr = rb_hash_aref(vopts, ID2SYM(id_intr));
+    if (rb_get_kwargs(vopts, rawmode_opt_ids,
+		      0, rawmode_opt_id_count, optvals)) {
+	VALUE vmin = optvals[kwd_min];
+	VALUE vtime = optvals[kwd_time];
+	VALUE intr = optvals[kwd_intr];
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
 	opts->intr = 0;
-	if (!NIL_P(vmin)) {
+	if (!NIL_OR_UNDEF_P(vmin)) {
 	    opts->vmin = NUM2INT(vmin);
 	    optp = opts;
 	}
-	if (!NIL_P(vtime)) {
+	if (!NIL_OR_UNDEF_P(vtime)) {
 	    VALUE v10 = INT2FIX(10);
 	    vtime = rb_funcall3(vtime, '*', 1, &v10);
 	    opts->vtime = NUM2INT(vtime);
@@ -165,6 +182,7 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
 	    opts->intr = 0;
 	    optp = opts;
 	    break;
+	  case Qundef:
 	  case Qnil:
 	    break;
 	  default:
@@ -1633,9 +1651,11 @@ Init_console(void)
 #endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
-    id_min = rb_intern("min");
-    id_time = rb_intern("time");
-    id_intr = rb_intern("intr");
+#define init_rawmode_opt_id(name) \
+    rawmode_opt_ids[kwd_##name] = rb_intern(#name)
+    init_rawmode_opt_id(min);
+    init_rawmode_opt_id(time);
+    init_rawmode_opt_id(intr);
 #ifndef HAVE_RB_F_SEND
     id___send__ = rb_intern("__send__");
 #endif
