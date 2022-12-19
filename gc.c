@@ -8519,7 +8519,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
 
         dheap->sweeping_page = ccan_list_next(&dheap->pages, dheap->sweeping_page, page_node);
         if (gc_compact_heap_cursors_met_p(dheap)) {
-            return false;
+            return dheap != heap;
         }
     }
 
