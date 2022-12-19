@@ -8527,7 +8527,16 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
 
         dheap->sweeping_page = ccan_list_next(&dheap->pages, dheap->sweeping_page, page_node);
         if (gc_compact_heap_cursors_met_p(dheap)) {
-            return dheap != heap;
+            if (dheap != heap) {
+                // if the destination heap is different, but we cannot move into it, try the process again but move
+                // into the same heap as the source object instead
+                dheap = heap;
+                // Stop T_OBJECTs having their shape changed
+                new_shape = NULL;
+            }
+            else {
+                return false;
+            }
         }
     }
 
