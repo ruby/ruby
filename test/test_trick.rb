@@ -189,3 +189,26 @@ END
     assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
   end
 end
+
+class TestTRICK2022 < Test::Unit::TestCase
+  def test_01_tompng
+    src = File.join(__dir__, "../sample/trick2022/01-tompng/entry.rb")
+
+    # only syntax check because it requires matrix
+    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+  end
+
+  def test_02_tompng
+    src = File.join(__dir__, "../sample/trick2022/02-tompng/entry.rb")
+
+    # only syntax check because it works as a web server
+    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+  end
+
+  def test_03_mame
+    src = File.join(__dir__, "../sample/trick2022/03-mame/entry.rb")
+
+    # TODO
+    assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+  end
+end
