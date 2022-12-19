@@ -10118,13 +10118,11 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
     }
 
 #if USE_RVARGC
-    uint32_t numiv = ROBJECT_IV_CAPACITY(v);
-
     size_t slot_size = rb_gc_obj_slot_size(v);
-    size_t embed_size = rb_obj_embedded_size(numiv);
+    size_t embed_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(v));
     if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
         // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * numiv);
+        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_IV_COUNT(v));
         RB_FL_SET_RAW(v, ROBJECT_EMBED);
         if (ROBJ_TRANSIENT_P(v)) {
             ROBJ_TRANSIENT_UNSET(v);
