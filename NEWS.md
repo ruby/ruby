@@ -273,10 +273,6 @@ Note: We're only listing outstanding class updates.
 
     * Refinement#refined_class has been added. [[Feature #12737]]
 
-* RubyVM
-
-    * Add debug counters to `RubyVM.stat`. [[GH-6086]]
-
 * RubyVM::AbstractSyntaxTree
 
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
@@ -770,6 +766,5 @@ The following deprecated APIs are removed.
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
 [Feature #19138]: https://bugs.ruby-lang.org/issues/19138
 [Feature #19194]: https://bugs.ruby-lang.org/issues/19194
-[GH-6086]:        https://github.com/ruby/ruby/pull/6086
 [GH-6791]:        https://github.com/ruby/ruby/pull/6791
 [GH-6868]:        https://github.com/ruby/ruby/pull/6868
