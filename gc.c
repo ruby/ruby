@@ -10902,7 +10902,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
  * This function compacts objects together in Ruby's heap.  It eliminates
  * unused space (or fragmentation) in the heap by moving objects in to that
  * unused space.  This function returns a hash which contains statistics about
- * which objects were moved.  See `GC.latest_gc_info` for details about
+ * which objects were moved.  See <tt>GC.latest_gc_info</tt> for details about
  * compaction statistics.
  *
  * This method is implementation specific and not expected to be implemented
