@@ -97,28 +97,28 @@
  *  - The stacktrace will only include the stack from the Enumerator, not above.
  *  - Fiber-local variables are *not* inherited inside the Enumerator Fiber,
  *    which instead starts with no Fiber-local variables.
- *  - Fiber-scoped variables *are* inherited and are designed
- *    to handle Enumerator Fibers. Assigning to a Fiber-scope variable
+ *  - Fiber storage variables *are* inherited and are designed
+ *    to handle Enumerator Fibers. Assigning to a Fiber storage variable
  *    only affects the current Fiber, so if you want to change state
  *    in the caller Fiber of the Enumerator Fiber, you need to use an
- *    extra indirection (e.g., use some object in the Fiber-scoped
+ *    extra indirection (e.g., use some object in the Fiber storage
  *    variable and mutate some ivar of it).
  *
  * Concretely:
  *   Thread.current[:fiber_local] = 1
- *   Fiber[:scoped_var] = 1
+ *   Fiber[:storage_var] = 1
  *   e = Enumerator.new do |y|
  *     p Thread.current[:fiber_local] # for external iteration: nil, for internal iteration: 1
- *     p Fiber[:scoped_var] # => 1, inherited
- *     Fiber[:scoped_var] += 1
+ *     p Fiber[:storage_var] # => 1, inherited
+ *     Fiber[:storage_var] += 1
  *     y << 42
  *   end
  *
  *   p e.next # => 42
- *   p Fiber[:scoped_var] # => 1 (it ran in a different Fiber)
+ *   p Fiber[:storage_var] # => 1 (it ran in a different Fiber)
  *
  *   e.each { p _1 }
- *   p Fiber[:scoped_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
+ *   p Fiber[:storage_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
  *
  *  == Convert External Iteration to Internal Iteration
  *
