@@ -2069,6 +2069,14 @@ fiber_storage_get(rb_fiber_t *fiber)
     return storage;
 }
 
+static void storage_access_must_be_from_same_fiber(VALUE self) {
+    rb_fiber_t *fiber = fiber_ptr(self);
+    rb_fiber_t *current = fiber_current();
+    if (fiber != current) {
+        rb_raise(rb_eArgError, "Fiber storage can only be accessed from the Fiber it belongs to");
+    }
+}
+
 /**
  *  call-seq: Fiber.current.storage -> hash (dup)
  *
@@ -2077,6 +2085,7 @@ fiber_storage_get(rb_fiber_t *fiber)
 static VALUE
 rb_fiber_storage_get(VALUE self)
 {
+    storage_access_must_be_from_same_fiber(self);
     return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
 }
 
@@ -2134,6 +2143,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
           "Fiber#storage= is experimental and may be removed in the future!");
     }
 
+    storage_access_must_be_from_same_fiber(self);
     fiber_storage_validate(value);
 
     fiber_ptr(self)->cont.saved_ec.storage = rb_obj_dup(value);

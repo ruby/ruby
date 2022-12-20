@@ -11,8 +11,7 @@ describe "Fiber.new(storage:)" do
     end
 
     it "creates a fiber with lazily initialized storage" do
-      fiber = Fiber.new(storage: nil) {}
-      fiber.storage.should == {}
+      Fiber.new(storage: nil) { Fiber.current.storage }.resume.should == {}
     end
 
     it "creates a fiber by inheriting the storage of the parent fiber" do
@@ -28,33 +27,34 @@ describe "Fiber.new(storage:)" do
   end
 end
 
-describe "Fiber#storage" do
+describe "Fiber#storage=" do
   ruby_version_is "3.2" do
     it "can clear the storage of the fiber" do
-      fiber = Fiber.new(storage: {life: 42}) { Fiber.current.storage }
-      fiber.storage = nil
+      fiber = Fiber.new(storage: {life: 42}) {
+        Fiber.current.storage = nil
+        Fiber.current.storage
+      }
       fiber.resume.should == {}
     end
 
     it "can set the storage of the fiber" do
-      fiber = Fiber.new(storage: {life: 42}) { Fiber.current.storage }
-      fiber.storage = {life: 43}
+      fiber = Fiber.new(storage: {life: 42}) {
+        Fiber.current.storage = {life: 43}
+        Fiber.current.storage
+      }
       fiber.resume.should == {life: 43}
     end
 
     it "can't set the storage of the fiber to non-hash" do
-      fiber = Fiber.new(storage: {life: 42}) { Fiber.current.storage }
-      -> { fiber.storage = 42 }.should raise_error(TypeError)
+      -> { Fiber.current.storage = 42 }.should raise_error(TypeError)
     end
 
     it "can't set the storage of the fiber to a frozen hash" do
-      fiber = Fiber.new(storage: {life: 42}) { Fiber.current.storage }
-      -> { fiber.storage = {life: 43}.freeze }.should raise_error(FrozenError)
+      -> { Fiber.current.storage = {life: 43}.freeze }.should raise_error(FrozenError)
     end
 
     it "can't set the storage of the fiber to a hash with non-symbol keys" do
-      fiber = Fiber.new(storage: {life: 42}) { Fiber.current.storage }
-      -> { fiber.storage = {life: 43, Object.new => 44} }.should raise_error(TypeError)
+      -> { Fiber.current.storage = {life: 43, Object.new => 44} }.should raise_error(TypeError)
     end
   end
 end
