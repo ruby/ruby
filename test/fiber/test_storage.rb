@@ -41,6 +41,18 @@ class TestFiberStorage < Test::Unit::TestCase
     Warning[:experimental] = old
   end
 
+  def test_storage_only_allow_access_from_same_fiber
+    old, Warning[:experimental] = Warning[:experimental], false
+
+    f = Fiber.new do
+      Fiber[:a] = 1
+    end
+    assert_raise(ArgumentError) { f.storage }
+    assert_raise(ArgumentError) { f.storage = {} }
+  ensure
+    Warning[:experimental] = old
+  end
+
   def test_inherited_storage
     Fiber.new(storage: {foo: :bar}) do
       f = Fiber.new do
