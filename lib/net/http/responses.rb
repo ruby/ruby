@@ -281,6 +281,7 @@ module Net
   #
   # The <tt>IM Used</tt> response indicates that the server has fulfilled a request
   # for the resource, and the response is a representation of the result
+  # of one or more instance-manipulations applied to the current instance.
   #
   # References:
   #
