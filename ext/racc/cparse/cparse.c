@@ -7,8 +7,6 @@
     This library is free software.
     You can distribute/modify this program under the same terms of ruby.
 
-    $originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $
-
 */
 
 #include <ruby.h>
