@@ -245,7 +245,7 @@ Note: We're only listing outstanding class updates.
     * The cache-based optimization is introduced.
       Many (but not all) Regexp matching is now in linear time, which
       will prevent regular expression denial of service (ReDoS)
-      vulnearbility. [[Feature #19104]]
+      vulnerability. [[Feature #19104]]
 
     * Regexp.linear_time? is introduced. [[Feature #19194]]
 
