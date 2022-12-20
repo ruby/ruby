@@ -10796,7 +10796,7 @@ gc_update_references(rb_objspace_t *objspace)
 #if GC_CAN_COMPILE_COMPACTION
 /*
  *  call-seq:
- *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+ *     GC.latest_compact_info -> hash
  *
  * Returns information about object moved in the most recent GC compaction.
  *

@@ -219,7 +219,7 @@ module GC
   end
 
   #  call-seq:
-  #     GC.latest_gc_info -> {:gc_by=>:newobj}
+  #     GC.latest_gc_info -> hash
   #     GC.latest_gc_info(hash) -> hash
   #     GC.latest_gc_info(:major_by) -> :malloc
   #
