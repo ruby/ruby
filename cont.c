@@ -2153,7 +2153,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
 /**
  *  call-seq: Fiber[key] -> value
  *
- *  Returns the value of the fiber-scoped variable identified by +key+.
+ *  Returns the value of the fiber storage variable identified by +key+.
  *
  *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
  *  Fiber#store.
@@ -2176,7 +2176,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 /**
  *  call-seq: Fiber[key] = value
  *
- *  Assign +value+ to the fiber-scoped variable identified by +key+.
+ *  Assign +value+ to the fiber storage variable identified by +key+.
  *  The variable is created if it doesn't exist.
  *
  *  +key+ must be a Symbol, otherwise a TypeError is raised.
