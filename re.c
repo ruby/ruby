@@ -3759,10 +3759,11 @@ struct reg_init_args {
 
 static VALUE reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
 static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
+void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...);
 
 /*
  *  call-seq:
- *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
+ *    Regexp.new(string, options = 0, timeout: nil) -> regexp
  *    Regexp.new(regexp, timeout: nil) -> regexp
  *
  *  With argument +string+ given, returns a new regexp with the given string
@@ -3780,23 +3781,17 @@ static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
  *      Regexp.new('foo', 'im') # => /foo/im
  *
  *  - The logical OR of one or more of the constants
- *    Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE:
+ *    Regexp::EXTENDED, Regexp::IGNORECASE, Regexp::MULTILINE, and
+ *    Regexp::NOENCODING:
  *
  *      Regexp.new('foo', Regexp::IGNORECASE) # => /foo/i
  *      Regexp.new('foo', Regexp::EXTENDED)   # => /foo/x
  *      Regexp.new('foo', Regexp::MULTILINE)  # => /foo/m
+ *      Regexp.new('foo', Regexp::NOENCODING)  # => /foo/n
  *      flags = Regexp::IGNORECASE | Regexp::EXTENDED |  Regexp::MULTILINE
  *      Regexp.new('foo', flags)              # => /foo/mix
  *
  *  - +nil+ or +false+, which is ignored.
- *
- *  If optional argument +n_flag+ if it is a string starts with
- *  <code>'n'</code> or <code>'N'</code>, the encoding of +string+ is
- *  ignored and the new regexp encoding is fixed to +ASCII-8BIT+ or
- *  +US-ASCII+, by its content.
- *
- *      Regexp.new('foo', nil, 'n')     # => /foo/n
- *      Regexp.new("\u3042", nil, 'n')  # => /\xE3\x81\x82/n
  *
  *  If optional keyword argument +timeout+ is given,
  *  its float value overrides the timeout interval for the class,
@@ -3841,7 +3836,7 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
     VALUE str, src, opts = Qundef, n_flag = Qundef, kwargs;
     VALUE re = Qnil;
 
-    rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
+    argc = rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
 
     args->timeout = Qnil;
     if (!NIL_P(kwargs)) {
@@ -3850,6 +3845,10 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
             keywords[0] = rb_intern_const("timeout");
         }
         rb_get_kwargs(kwargs, keywords, 0, 1, &args->timeout);
+    }
+
+    if (argc == 3) {
+        rb_warn_deprecated_to_remove("3.3", "3rd argument to Regexp.new", "2nd argument");
     }
 
     if (RB_TYPE_P(src, T_REGEXP)) {
@@ -3875,9 +3874,6 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
             if (kcode[0] == 'n' || kcode[0] == 'N') {
                 enc = rb_ascii8bit_encoding();
                 flags |= ARG_ENCODING_NONE;
-            }
-            else {
-                rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "encoding option is ignored - %s", kcode);
             }
         }
         str = StringValue(src);
