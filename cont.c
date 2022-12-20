@@ -2185,9 +2185,6 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
         // The default, inherit storage (dup) from the current fiber:
         storage = inherit_fiber_storage();
     }
-    else if (storage == Qfalse) {
-        storage = current_fiber_storage();
-    }
     else /* nil, hash, etc. */ {
         fiber_storage_validate(storage);
         storage = rb_obj_dup(storage);
@@ -2299,18 +2296,6 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *    end.resume
  *    Fiber[:x] # => 1
  *
- *  If the <tt>storage</tt> is <tt>false</tt>, this function uses the current
- *  fiber's storage by reference. This is used for Enumerator to create
- *  hidden fiber.
- *
- *    Fiber[:count] = 0
- *    enumerator = Enumerator.new do |y|
- *      loop{y << (Fiber[:count] += 1)}
- *    end
- *    Fiber[:count] # => 0
- *    enumerator.next # => 1
- *    Fiber[:count] # => 1
- *
  *  If the given <tt>storage</tt> is <tt>nil</tt>, this function will lazy
  *  initialize the internal storage, which starts as an empty hash.
  *
@@ -2322,7 +2307,7 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage,
  *  and it must be an instance of Hash.
  *
- *  Explicitly using `storage: true/false` is currently experimental and may
+ *  Explicitly using `storage: true` is currently experimental and may
  *  change in the future.
  */
 static VALUE

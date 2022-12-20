@@ -83,13 +83,12 @@ class TestFiberStorage < Test::Unit::TestCase
       Fiber[:count] = 0
 
       enumerator = Enumerator.new do |y|
-        # Since the fiber is implementation detail, the storage are shared with the parent:
         Fiber[:count] += 1
         y << Fiber[:count]
       end
 
       assert_equal 1, enumerator.next
-      assert_equal 1, Fiber[:count]
+      assert_equal 0, Fiber[:count]
     end.resume
   end
 

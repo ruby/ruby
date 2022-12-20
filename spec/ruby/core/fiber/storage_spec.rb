@@ -22,14 +22,6 @@ describe "Fiber.new(storage:)" do
       fiber.resume.should == {life: 42}
     end
 
-    it "creates a fiber with a reference to the storage of the parent fiber" do
-      fiber = Fiber.new(storage: {life: 42}) do
-        Fiber.new(storage: false) { Fiber[:life] = 43 }.resume
-        Fiber.current.storage
-      end
-      fiber.resume.should == {life: 43}
-    end
-
     it "cannot create a fiber with non-hash storage" do
       -> { Fiber.new(storage: 42) {} }.should raise_error(TypeError)
     end
