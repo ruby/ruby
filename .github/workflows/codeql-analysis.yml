@@ -4,19 +4,17 @@ on:
   # push:
   #   paths-ignore:
   #     - 'doc/**'
+  #     - '**/man'
   #     - '**.md'
   #     - '**.rdoc'
   #     - '**/.document'
-  #     - '**.[1-8]'
-  #     - '**.ronn'
   # pull_request:
   #   paths-ignore:
   #     - 'doc/**'
+  #     - '**/man'
   #     - '**.md'
   #     - '**.rdoc'
   #     - '**/.document'
-  #     - '**.[1-8]'
-  #     - '**.ronn'
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
