@@ -793,7 +793,7 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 		i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
 
 noarch-fake.rb: # prerequisite of yes-fake
-	touch $@
+	$(Q) exit > $@
 
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
@@ -1221,7 +1221,7 @@ $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 $(REVISION_H)$(no_baseruby:no=~disabled~):
 	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
-	$(Q) touch $@
+	$(Q) exit > $@
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y $(srcdir)/defs/id.def $(srcdir)/ext/ripper/depend
 	$(ECHO) generating $@
@@ -1357,7 +1357,7 @@ after-update:: extract-gems
 
 update-src::
 	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) touch "$(srcdir)/revision.h"
+	$(Q) exit > "$(srcdir)/revision.h"
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
@@ -1614,7 +1614,7 @@ $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
-	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
+	$(Q) $(TOUCH) $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
 
 UNICODE_TABLES_DATA_FILES = \
 	$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
@@ -1626,7 +1626,7 @@ UNICODE_TABLES_DEPENDENTS = $(UNICODE_TABLES_DEPENDENTS_1:noneyes=force)
 UNICODE_TABLES_TIMESTAMP = yes
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:none=time):
 	$(Q) $(MAKEDIRS) $(@D)
-	touch $(@) || $(NULLCMD)
+	$(Q) exit > $(@) || $(NULLCMD)
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:force=time): \
 		$(tooldir)/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \

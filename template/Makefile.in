@@ -228,6 +228,7 @@ RMDIR         = @RMDIR@
 RMDIRS        = @RMDIRS@
 RMALL         = @RMALL@
 LN_S          = @LN_S@
+TOUCH         = touch
 NM            = @NM@
 AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)

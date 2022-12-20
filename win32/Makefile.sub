@@ -113,6 +113,7 @@ RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
+TOUCH = $(BASERUBY) -run -e touch --
 CP = copy > nul
 MV = move > nul
 RM1 = del /f /q
