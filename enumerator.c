@@ -73,6 +73,8 @@
  *   puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
  *   # => ["0:foo", "1:bar", "2:baz"]
  *
+ *  == External Iteration
+ *
  * An Enumerator can also be used as an external iterator.
  * For example, Enumerator#next returns the next value of the iterator
  * or raises StopIteration if the Enumerator is at the end.
@@ -83,15 +85,44 @@
  *   puts e.next   # => 3
  *   puts e.next   # raises StopIteration
  *
- * Note that enumeration sequence by +next+, +next_values+, +peek+ and
- * +peek_values+ do not affect other non-external
- * enumeration methods, unless the underlying iteration method itself has
- * side-effect, e.g. IO#each_line.
+ * +next+, +next_values+, +peek+ and +peek_values+ are the only methods
+ * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+).
  *
- * Moreover, implementation typically uses fibers so performance could be
- * slower and exception stacktraces different than expected.
+ * These methods do not affect other internal enumeration methods,
+ * unless the underlying iteration method itself has side-effect, e.g. IO#each_line.
  *
- * You can use this to implement an internal iterator as follows:
+ * External iteration differs *significantly* from internal iteration
+ * due to using a Fiber:
+ *  - The Fiber adds some overhead compared to internal enumeration.
+ *  - The stacktrace will only include the stack from the Enumerator, not above.
+ *  - Fiber-local variables are *not* inherited inside the Enumerator Fiber,
+ *    which instead starts with no Fiber-local variables.
+ *  - Fiber-scoped variables *are* inherited and are designed
+ *    to handle Enumerator Fibers. Assigning to a Fiber-scope variable
+ *    only affects the current Fiber, so if you want to change state
+ *    in the caller Fiber of the Enumerator Fiber, you need to use an
+ *    extra indirection (e.g., use some object in the Fiber-scoped
+ *    variable and mutate some ivar of it).
+ *
+ * Concretely:
+ *   Thread.current[:fiber_local] = 1
+ *   Fiber[:scoped_var] = 1
+ *   e = Enumerator.new do |y|
+ *     p Thread.current[:fiber_local] # for external iteration: nil, for internal iteration: 1
+ *     p Fiber[:scoped_var] # => 1, inherited
+ *     Fiber[:scoped_var] += 1
+ *     y << 42
+ *   end
+ *
+ *   p e.next # => 42
+ *   p Fiber[:scoped_var] # => 1 (it ran in a different Fiber)
+ *
+ *   e.each { p _1 }
+ *   p Fiber[:scoped_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
+ *
+ *  == Convert External Iteration to Internal Iteration
+ *
+ * You can use an external iterator to implement an internal iterator as follows:
  *
  *   def ext_each(e)
  *     while true
