@@ -767,8 +767,7 @@ next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
     e->dst = curr;
-    // We inherit the fiber storage by reference, not by copy, by specifying Qfalse here.
-    e->fib = rb_fiber_new_storage(next_i, obj, Qfalse);
+    e->fib = rb_fiber_new(next_i, obj);
     e->lookahead = Qundef;
 }
 
