@@ -3406,12 +3406,14 @@ cont.$(OBJEXT): $(top_srcdir)/internal/array.h
 cont.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 cont.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
+cont.$(OBJEXT): $(top_srcdir)/internal/error.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+cont.$(OBJEXT): $(top_srcdir)/internal/string.h
 cont.$(OBJEXT): $(top_srcdir)/internal/variable.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
 cont.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -3432,6 +3434,7 @@ cont.$(OBJEXT): {$(VPATH)}constant.h
 cont.$(OBJEXT): {$(VPATH)}cont.c
 cont.$(OBJEXT): {$(VPATH)}debug_counter.h
 cont.$(OBJEXT): {$(VPATH)}defines.h
+cont.$(OBJEXT): {$(VPATH)}encoding.h
 cont.$(OBJEXT): {$(VPATH)}eval_intern.h
 cont.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 cont.$(OBJEXT): {$(VPATH)}gc.h
@@ -3509,6 +3512,15 @@ cont.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
 cont.$(OBJEXT): {$(VPATH)}internal/ctype.h
 cont.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 cont.$(OBJEXT): {$(VPATH)}internal/dosish.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
 cont.$(OBJEXT): {$(VPATH)}internal/error.h
 cont.$(OBJEXT): {$(VPATH)}internal/eval.h
 cont.$(OBJEXT): {$(VPATH)}internal/event.h
@@ -3584,6 +3596,8 @@ cont.$(OBJEXT): {$(VPATH)}method.h
 cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}mjit.h
 cont.$(OBJEXT): {$(VPATH)}node.h
+cont.$(OBJEXT): {$(VPATH)}onigmo.h
+cont.$(OBJEXT): {$(VPATH)}oniguruma.h
 cont.$(OBJEXT): {$(VPATH)}ractor.h
 cont.$(OBJEXT): {$(VPATH)}ractor_core.h
 cont.$(OBJEXT): {$(VPATH)}ruby_assert.h

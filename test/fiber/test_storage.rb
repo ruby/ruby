@@ -31,15 +31,18 @@ class TestFiberStorage < Test::Unit::TestCase
   end
 
   def test_storage_assignment
+    old, Warning[:experimental] = Warning[:experimental], false
+
     Fiber.new do
       Fiber.current.storage = {foo: :bar}
       assert_equal :bar, Fiber[:foo]
     end.resume
+  ensure
+    Warning[:experimental] = old
   end
 
   def test_inherited_storage
-    Fiber.new do
-      Fiber.current.storage = {foo: :bar}
+    Fiber.new(storage: {foo: :bar}) do
       f = Fiber.new do
         assert_equal :bar, Fiber[:foo]
       end

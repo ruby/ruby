@@ -29,6 +29,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/error.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
@@ -2128,6 +2129,11 @@ fiber_storage_validate(VALUE value)
 static VALUE
 rb_fiber_storage_set(VALUE self, VALUE value)
 {
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
+          "Fiber#storage= is experimental and may be removed in the future!");
+    }
+
     fiber_storage_validate(value);
 
     fiber_ptr(self)->cont.saved_ec.storage = rb_obj_dup(value);
