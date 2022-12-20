@@ -103,8 +103,8 @@ Note: We're only listing outstanding class updates.
       fiber. [[Feature #19078]]
 
         Existing Thread and Fiber local variables can be tricky to use.
-        Thread local variables are shared between all fibers, making it
-        hard to isolate, while Fiber local variables can be hard to
+        Thread-local variables are shared between all fibers, making it
+        hard to isolate, while Fiber-local variables can be hard to
         share.  It is often desirable to define unit of execution
         ("execution context") such that some state is shared between all
         fibers and threads created in that context.  This is what Fiber
