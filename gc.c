@@ -10798,7 +10798,7 @@ gc_update_references(rb_objspace_t *objspace)
  *  call-seq:
  *     GC.latest_compact_info -> hash
  *
- * Returns information about object moved in the most recent GC compaction.
+ * Returns information about object moved in the most recent \GC compaction.
  *
  * The returned hash has two keys :considered and :moved.  The hash for
  * :considered lists the number of objects that were considered for movement
@@ -10908,7 +10908,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
  * This method is implementation specific and not expected to be implemented
  * in any implementation besides MRI.
  *
- * To test whether GC compaction is supported, use the idiom:
+ * To test whether \GC compaction is supported, use the idiom:
  *
  *   GC.respond_to?(:compact)
  */
@@ -13505,7 +13505,7 @@ gc_prof_set_heap_info(rb_objspace_t *objspace)
  *  call-seq:
  *    GC::Profiler.clear          -> nil
  *
- *  Clears the GC profiler data.
+ *  Clears the \GC profiler data.
  *
  */
 
@@ -13819,7 +13819,7 @@ gc_profile_total_time(VALUE self)
  *  call-seq:
  *    GC::Profiler.enabled?	-> true or false
  *
- *  The current status of GC profile mode.
+ *  The current status of \GC profile mode.
  */
 
 static VALUE
@@ -13833,7 +13833,7 @@ gc_profile_enable_get(VALUE self)
  *  call-seq:
  *    GC::Profiler.enable	-> nil
  *
- *  Starts the GC profiler.
+ *  Starts the \GC profiler.
  *
  */
 
@@ -13850,7 +13850,7 @@ gc_profile_enable(VALUE _)
  *  call-seq:
  *    GC::Profiler.disable	-> nil
  *
- *  Stops the GC profiler.
+ *  Stops the \GC profiler.
  *
  */
 
@@ -14573,7 +14573,7 @@ Init_GC(void)
 
     {
         VALUE opts;
-        /* GC build options */
+        /* \GC build options */
         rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
 #define OPT(o) if (o) rb_ary_push(opts, rb_fstring_lit(#o))
         OPT(GC_DEBUG);
