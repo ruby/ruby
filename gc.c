@@ -10798,7 +10798,7 @@ gc_update_references(rb_objspace_t *objspace)
  *  call-seq:
  *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
  *
- *  Returns information about object moved in the most recent GC compaction.
+ * Returns information about object moved in the most recent GC compaction.
  *
  * The returned hash has two keys :considered and :moved.  The hash for
  * :considered lists the number of objects that were considered for movement
