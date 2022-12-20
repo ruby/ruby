@@ -81,7 +81,7 @@ module Gem::GemcutterUtilities
   #
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
-  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, &block)
+  def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, credentials: {}, &block)
     require "net/http"
 
     self.host = host if host
@@ -104,7 +104,7 @@ module Gem::GemcutterUtilities
     response = request_with_otp(method, uri, &block)
 
     if mfa_unauthorized?(response)
-      ask_otp
+      ask_otp(credentials)
       response = request_with_otp(method, uri, &block)
     end
 
@@ -166,11 +166,12 @@ module Gem::GemcutterUtilities
     mfa_params   = get_mfa_params(profile)
     all_params   = scope_params.merge(mfa_params)
     warning      = profile["warning"]
+    credentials  = { email: email, password: password }
 
     say "#{warning}\n" if warning
 
     response = rubygems_api_request(:post, "api/v1/api_key",
-                                    sign_in_host, scope: scope) do |request|
+                                    sign_in_host, credentials: credentials, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
       request.body = URI.encode_www_form({ name: key_name }.merge(all_params))
@@ -249,9 +250,26 @@ module Gem::GemcutterUtilities
     end
   end
 
-  def ask_otp
-    say "You have enabled multi-factor authentication. Please enter OTP code."
+  def ask_otp(credentials)
+    webauthn_url = webauthn_verification_url(credentials)
+    unless webauthn_url
+      say "You have enabled multi-factor authentication. Please enter OTP code."
+    else
+      say "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_url} or your authenticator app."
+    end
+
     options[:otp] = ask "Code: "
+  end
+
+  def webauthn_verification_url(credentials)
+    response = rubygems_api_request(:post, "api/v1/webauthn_verification") do |request|
+      if credentials
+        request.basic_auth credentials[:email], credentials[:password]
+      else
+        request.add_field "Authorization", api_key
+      end
+    end
+    response.is_a?(Net::HTTPSuccess) ? response.body : nil
   end
 
   def pretty_host(host)

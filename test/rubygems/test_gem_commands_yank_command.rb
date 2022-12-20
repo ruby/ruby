@@ -73,6 +73,9 @@ class TestGemCommandsYankCommand < Gem::TestCase
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
     ]
+    webauthn_uri = "http://example/api/v1/webauthn_verification"
+    @fetcher.data[webauthn_uri] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -94,6 +97,9 @@ class TestGemCommandsYankCommand < Gem::TestCase
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     yank_uri = "http://example/api/v1/gems/yank"
     @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
+    webauthn_uri = "http://example/api/v1/webauthn_verification"
+    @fetcher.data[webauthn_uri] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -107,6 +113,33 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @otp_ui.output
     assert_match response, @otp_ui.output
     assert_match "Code: ", @otp_ui.output
+    assert_equal "111111", @fetcher.last_request["OTP"]
+  end
+
+  def test_execute_with_webauthn_otp_success
+    webauthn_verification_url = "http://example/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    yank_uri = "http://example/api/v1/gems/yank"
+    webauthn_uri = "http://example/api/v1/webauthn_verification"
+    @fetcher.data[webauthn_uri] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+    @fetcher.data[yank_uri] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
+    ]
+
+    @cmd.options[:args]           = %w[a]
+    @cmd.options[:added_platform] = true
+    @cmd.options[:version]        = req("= 1.0")
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.execute
+    end
+
+    assert_match "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_verification_url}", @otp_ui.output
+    assert_match "Code: ", @otp_ui.output
+    assert_match %r{Yanking gem from http://example}, @otp_ui.output
+    assert_match %r{Successfully yanked}, @otp_ui.output
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 

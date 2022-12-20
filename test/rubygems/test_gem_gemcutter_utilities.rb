@@ -231,10 +231,33 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
-  def util_sign_in(response, host = nil, args = [], extra_input = "")
-    email            = "you@example.com"
-    password         = "secret"
-    profile_response = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+  def test_sign_in_with_webauthn_otp
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    response_fail = "You have enabled multifactor authentication"
+
+    util_sign_in(proc do
+      @call_count ||= 0
+      if (@call_count += 1).odd?
+        HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+      else
+        HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+      end
+    end, nil, [], "111111\n", webauthn_verification_url)
+
+    assert_match "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_verification_url}", @sign_in_ui.output
+  end
+
+  def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
+    email             = "you@example.com"
+    password          = "secret"
+    profile_response  = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
+    webauthn_response =
+      if webauthn_url
+        HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
+      else
+        HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
+      end
 
     if host
       ENV["RUBYGEMS_HOST"] = host
@@ -245,6 +268,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @fetcher = Gem::FakeFetcher.new
     @fetcher.data["#{host}/api/v1/api_key"] = response
     @fetcher.data["#{host}/api/v1/profile/me.yaml"] = profile_response
+    @fetcher.data["#{host}/api/v1/webauthn_verification"] = webauthn_response
     Gem::RemoteFetcher.fetcher = @fetcher
 
     @sign_in_ui = Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n" + extra_input)

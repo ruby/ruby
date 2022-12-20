@@ -392,6 +392,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
       HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
+    @fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     use_ui @otp_ui do
@@ -407,6 +409,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   def test_otp_verified_failure
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
+    @fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     assert_raise Gem::MockGemUi::TermError do
@@ -421,6 +425,28 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
+  def test_webauthn_otp_verified_success
+    webauthn_verification_url = "#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success = "Successfully registered gem: freewill (1.0.0)"
+
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
+    ]
+    @fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.send_gem(@path)
+    end
+
+    assert_match "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_verification_url}", @otp_ui.output
+    assert_match "Code: ", @otp_ui.output
+    assert_match response_success, @otp_ui.output
+    assert_equal "111111", @fetcher.last_request["OTP"]
+  end
+
   def test_sending_gem_unathorized_api_key_with_mfa_enabled
     response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_forbidden = "The API key doesn't have access"
@@ -431,6 +457,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
       HTTPResponseFactory.create(body: response_forbidden, code: 403, msg: "Forbidden"),
       HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
+    @fetcher.data["#{@host}/api/v1/webauthn_verification"] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @fetcher.data["#{@host}/api/v1/api_key"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
     @cmd.instance_variable_set :@host, @host
@@ -471,6 +499,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @fetcher.data["#{@host}/api/v1/profile/me.yaml"] = [
       HTTPResponseFactory.create(body: response_profile, code: 200, msg: "OK"),
     ]
+    @fetcher.data["#{@host}/api/v1/webauthn_verification"] =
+      HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @cmd.instance_variable_set :@scope, :push_rubygem
     @cmd.options[:args] = [@path]
