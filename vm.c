@@ -2122,7 +2122,7 @@ static void
 hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                    bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
-    if (state == TAG_RAISE && RBASIC_CLASS(err) == rb_eSysStackError) {
+    if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
         return;
     }
     else {
