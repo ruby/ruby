@@ -361,6 +361,68 @@ RSpec.describe "bundle update" do
       expect(out).to include("Installing quickbooks-ruby 1.0.19").and include("Installing oauth2 1.4.10")
     end
 
+    it "does not downgrade direct dependencies when using gemspec sources" do
+      create_file("rails.gemspec", <<-G)
+        Gem::Specification.new do |gem|
+          gem.name = "rails"
+          gem.version = "7.1.0.alpha"
+          gem.author = "DHH"
+          gem.summary = "Full-stack web application framework."
+        end
+      G
+
+      build_repo4 do
+        build_gem "rake", "12.3.3"
+        build_gem "rake", "13.0.6"
+
+        build_gem "sneakers", "2.11.0" do |s|
+          s.add_dependency "rake"
+        end
+
+        build_gem "sneakers", "2.12.0" do |s|
+          s.add_dependency "rake", "~> 12.3"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec
+
+        gem "rake"
+        gem "sneakers"
+      G
+
+      lockfile <<~L
+        PATH
+          remote: .
+          specs:
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            rake (13.0.6)
+            sneakers (2.11.0)
+              rake
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rake
+          sneakers
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update --verbose"
+
+      expect(out).not_to include("Installing sneakers 2.12.0")
+      expect(out).not_to include("Installing rake 12.3.3")
+      expect(out).to include("Installing sneakers 2.11.0").and include("Installing rake 13.0.6")
+    end
+
     it "does not downgrade indirect dependencies unnecessarily" do
       build_repo4 do
         build_gem "a" do |s|

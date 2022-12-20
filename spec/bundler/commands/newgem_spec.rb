@@ -348,7 +348,6 @@ RSpec.describe "bundle gem" do
   shared_examples_for "CI config is absent" do
     it "does not create any CI files" do
       expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-      expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
       expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
     end
@@ -888,9 +887,26 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "--ci set to travis" do
+      it "generates a GitHub Actions config file" do
+        bundle "gem #{gem_name} --ci=travis", :raise_on_error => false
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator.")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
+      end
+    end
+
+    context "--ci set to travis" do
+      it "generates a GitHub Actions config file" do
+        bundle "gem #{gem_name} --ci=travis", :raise_on_error => false
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator.")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       end
     end
 
@@ -918,20 +934,23 @@ RSpec.describe "bundle gem" do
       end
     end
 
-    context "--ci set to travis" do
-      it "generates a Travis CI config file" do
-        bundle "gem #{gem_name} --ci=travis"
-
-        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
-      end
-    end
-
     context "gem.ci setting set to none" do
       it "doesn't generate any CI config" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "gem.ci setting set to travis" do
+      it "errors with friendly message" do
+        bundle "config set gem.ci travis"
+        bundle "gem #{gem_name}", :raise_on_error => false
+
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator,")
+        expect(err).to include("bundle config unset gem.ci")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       end
     end
 
@@ -941,15 +960,6 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
-      end
-    end
-
-    context "gem.ci setting set to travis" do
-      it "generates a Travis CI config file" do
-        bundle "config set gem.ci travis"
-        bundle "gem #{gem_name}"
-
-        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
       end
     end
 

@@ -31,7 +31,6 @@ module Bundler
           msg = String.new
           msg << "Git error: command `#{command}` in directory #{path} has failed."
           msg << "\n#{extra_info}" if extra_info
-          msg << "\nIf this error persists you could try removing the cache directory '#{path}'" if path.exist?
           super msg
         end
       end
@@ -47,7 +46,7 @@ module Bundler
       # All actions required by the Git source is encapsulated in this
       # object.
       class GitProxy
-        attr_accessor :path, :uri, :branch, :tag, :ref
+        attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref
         attr_writer :revision
 
         def initialize(path, uri, options = {}, revision = nil, git = nil)
@@ -56,6 +55,7 @@ module Bundler
           @branch   = options["branch"]
           @tag      = options["tag"]
           @ref      = options["ref"]
+          @explicit_ref = branch || tag || ref
           @revision = revision
           @git      = git
         end
@@ -94,9 +94,7 @@ module Bundler
           unshallow_needed = clone_needs_unshallow?
           return unless extra_fetch_needed || unshallow_needed
 
-          fetch_args = unshallow_needed ? ["--unshallow"] : depth_args
-
-          git_retry(*["fetch", "--force", "--quiet", "--no-tags", *fetch_args, "--", configured_uri, refspec].compact, :dir => path)
+          git_remote_fetch(unshallow_needed ? ["--unshallow"] : depth_args)
         end
 
         def copy_to(destination, submodules = false)
@@ -131,6 +129,22 @@ module Bundler
         end
 
         private
+
+        def git_remote_fetch(args)
+          command = ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+          command_with_no_credentials = check_allowed(command)
+
+          Bundler::Retry.new("`#{command_with_no_credentials}` at #{path}", [MissingGitRevisionError]).attempts do
+            out, err, status = capture(command, path)
+            return out if status.success?
+
+            if err.include?("couldn't find remote ref")
+              raise MissingGitRevisionError.new(command_with_no_credentials, path, explicit_ref, credential_filtered_uri)
+            else
+              raise GitCommandError.new(command_with_no_credentials, path, err)
+            end
+          end
+        end
 
         def clone_needs_extra_fetch?
           return true if path.exist?
@@ -216,11 +230,7 @@ module Bundler
         def git_null(*command, dir: nil)
           check_allowed(command)
 
-          out, status = SharedHelpers.with_clean_git_env do
-            capture_and_ignore_stderr(*capture3_args_for(command, dir))
-          end
-
-          [URICredentialsFilter.credential_filtered_string(out, uri), status]
+          capture(command, dir, :ignore_err => true)
         end
 
         def git_retry(*command, dir: nil)
@@ -234,15 +244,13 @@ module Bundler
         def git(*command, dir: nil)
           command_with_no_credentials = check_allowed(command)
 
-          out, status = SharedHelpers.with_clean_git_env do
-            capture_and_filter_stderr(*capture3_args_for(command, dir))
-          end
+          out, err, status = capture(command, dir)
 
-          filtered_out = URICredentialsFilter.credential_filtered_string(out, uri)
+          Bundler.ui.warn err unless err.empty?
 
-          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, filtered_out) unless status.success?
+          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, out) unless status.success?
 
-          filtered_out
+          out
         end
 
         def has_revision_cached?
@@ -254,10 +262,9 @@ module Bundler
         end
 
         def find_local_revision
-          options_ref = branch || tag || ref
-          return head_revision if options_ref.nil?
+          return head_revision if explicit_ref.nil?
 
-          find_revision_for(options_ref)
+          find_revision_for(explicit_ref)
         end
 
         def head_revision
@@ -318,17 +325,17 @@ module Bundler
           command_with_no_credentials
         end
 
-        def capture_and_filter_stderr(*cmd)
-          require "open3"
-          return_value, captured_err, status = Open3.capture3(*cmd)
-          Bundler.ui.warn URICredentialsFilter.credential_filtered_string(captured_err, uri) unless captured_err.empty?
-          [return_value, status]
-        end
+        def capture(cmd, dir, ignore_err: false)
+          SharedHelpers.with_clean_git_env do
+            require "open3"
+            out, err, status = Open3.capture3(*capture3_args_for(cmd, dir))
 
-        def capture_and_ignore_stderr(*cmd)
-          require "open3"
-          return_value, _, status = Open3.capture3(*cmd)
-          [return_value, status]
+            filtered_out = URICredentialsFilter.credential_filtered_string(out, uri)
+            return [filtered_out, status] if ignore_err
+
+            filtered_err = URICredentialsFilter.credential_filtered_string(err, uri)
+            [filtered_out, filtered_err, status]
+          end
         end
 
         def capture3_args_for(cmd, dir)
