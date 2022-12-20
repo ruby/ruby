@@ -515,7 +515,7 @@ Note: We're only listing outstanding class updates.
     * set 1.0.3
     * stringio 3.0.4
     * strscan 3.0.5
-    * syntax_suggest 1.0.1
+    * syntax_suggest 1.0.2
     * syslog 0.1.1
     * tempfile 0.1.3
     * time 0.2.1
