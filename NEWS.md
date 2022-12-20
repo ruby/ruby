@@ -548,7 +548,7 @@ Note: We're only listing outstanding class updates.
 
 ## Supported platforms
 
-* WebAssembly/WASI is added. [[Feature #18462]]
+* WebAssembly/WASI is added. See [[wasm/README.md]] and [[ruby.wasm]] for more details. [[Feature #18462]]
 
 ## Compatibility issues
 
@@ -799,3 +799,5 @@ The following deprecated APIs are removed.
 [sec-156615]:     https://hackerone.com/reports/156615
 [ruby-3-2-irb]:   https://st0012.dev/whats-new-in-ruby-3-2-irb
 [CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
+[wasm/README.md]: https://github.com/ruby/ruby/blob/master/wasm/README.md
+[ruby.wasm]:      https://github.com/ruby/ruby.wasm
