@@ -4897,7 +4897,7 @@ time_yday(VALUE time)
  *    t.zone                     # => "Central Daylight Time"
  *    t.dst?                     # => true
  *
- *    Time#isdst is an alias for Time#dst?.
+ *  Time#isdst is an alias for Time#dst?.
  */
 
 static VALUE
