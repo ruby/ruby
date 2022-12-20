@@ -223,7 +223,7 @@ module GC
   #     GC.latest_gc_info(hash) -> hash
   #     GC.latest_gc_info(:major_by) -> :malloc
   #
-  #  Returns information about the most recent garbage collection.
+  # Returns information about the most recent garbage collection.
   #
   # If the optional argument, hash, is given,
   # it is overwritten and returned.
