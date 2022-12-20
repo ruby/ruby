@@ -1479,7 +1479,7 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
     VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
-        defined_class = RBASIC(defined_class)->klass;
+        defined_class = RBASIC_CLASS(defined_class);
     }
 
     struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
@@ -4102,9 +4102,9 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
-            RB_TYPE_P(RBASIC(klass)->klass, T_MODULE) &&
-        FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
-        klass = RBASIC(klass)->klass;
+            RB_TYPE_P(RBASIC_CLASS(klass), T_MODULE) &&
+        FL_TEST_RAW(RBASIC_CLASS(klass), RMODULE_IS_REFINEMENT)) {
+        klass = RBASIC_CLASS(klass);
     }
     klass = RCLASS_ORIGIN(klass);
     return RCLASS_SUPER(klass);

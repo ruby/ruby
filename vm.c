@@ -539,7 +539,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
             return FALSE;
     }
     if (RB_TYPE_P(klass, T_ICLASS)) {
-        klass = RBASIC(klass)->klass;
+        klass = RBASIC_CLASS(klass);
     }
     else if (FL_TEST(klass, FL_SINGLETON)) {
         klass = rb_attr_get(klass, id__attached__);
@@ -2122,7 +2122,7 @@ static void
 hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                    bool cfp_returning_with_value, int state, struct vm_throw_data *err)
 {
-    if (state == TAG_RAISE && RBASIC(err)->klass == rb_eSysStackError) {
+    if (state == TAG_RAISE && RBASIC_CLASS(err) == rb_eSysStackError) {
         return;
     }
     else {

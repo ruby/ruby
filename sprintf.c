@@ -1070,7 +1070,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     long len, n;
     long blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
-    if (RBASIC(result)->klass) {
+    if (RBASIC_CLASS(result)) {
         rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (uio->uio_resid == 0)
@@ -1102,7 +1102,7 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 
     if (valsize != sizeof(VALUE)) return 0;
     value = *(VALUE *)valp;
-    if (RBASIC(result)->klass) {
+    if (RBASIC_CLASS(result)) {
         rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
@@ -1150,7 +1150,7 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
 {
     rb_printf_buffer_extra buffer;
 #define f buffer.base
-    VALUE klass = RBASIC(result)->klass;
+    VALUE klass = RBASIC_CLASS(result);
     int coderange = ENC_CODERANGE(result);
     long scanned = 0;
 

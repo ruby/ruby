@@ -843,7 +843,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
 
             VALUE defined_class = me->owner;
             if (RB_TYPE_P(defined_class, T_ICLASS)) {
-                defined_class = RBASIC(defined_class)->klass;
+                defined_class = RBASIC_CLASS(defined_class);
             }
 
             if (UNDEF_P(self) || !rb_obj_is_kind_of(self, defined_class)) {

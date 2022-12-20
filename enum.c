@@ -1353,7 +1353,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 
     v = enum_yield(argc, i);
 
-    if (RBASIC(ary)->klass) {
+    if (RBASIC_CLASS(ary)) {
         rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
     if (RARRAY_LEN(data->buf) != SORT_BY_BUFSIZE*2) {
@@ -1377,7 +1377,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
     VALUE b;
     VALUE ary = (VALUE)data;
 
-    if (RBASIC(ary)->klass) {
+    if (RBASIC_CLASS(ary)) {
         rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
 
@@ -1505,7 +1505,7 @@ enum_sort_by(VALUE obj)
                        ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
                                   sort_by_cmp, (void *)ary));
     }
-    if (RBASIC(ary)->klass) {
+    if (RBASIC_CLASS(ary)) {
         rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
     for (i=1; i<RARRAY_LEN(ary); i+=2) {
@@ -1701,7 +1701,7 @@ struct nmin_data {
 static VALUE
 cmpint_reenter_check(struct nmin_data *data, VALUE val)
 {
-    if (RBASIC(data->buf)->klass) {
+    if (RBASIC_CLASS(data->buf)) {
         rb_raise(rb_eRuntimeError, "%s%s reentered",
                  data->rev ? "max" : "min",
                  data->by ? "_by" : "");

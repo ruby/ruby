@@ -173,7 +173,7 @@ rb_tmp_class_path(VALUE klass, int *permanent, fallback_func fallback)
             }
             else {
                 int perm;
-                path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
+                path = rb_tmp_class_path(RBASIC_CLASS(klass), &perm, fallback);
             }
         }
         *permanent = 0;
@@ -2124,7 +2124,7 @@ autoload_data(VALUE mod, ID id)
             return 0;
         }
         else {
-            mod = RBASIC(mod)->klass;
+            mod = RBASIC_CLASS(mod);
         }
     }
 
@@ -2824,7 +2824,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         // Do lookup in original class or module in case we are at an origin
         // iclass in the chain.
         tmp = current;
-        if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
+        if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC_CLASS(tmp);
 
         // Do the lookup. Loop in case of autoload.
         while ((ce = rb_const_lookup(tmp, id))) {
@@ -3555,7 +3555,7 @@ static VALUE
 original_module(VALUE c)
 {
     if (RB_TYPE_P(c, T_ICLASS))
-        return RBASIC(c)->klass;
+        return RBASIC_CLASS(c);
     return c;
 }
 
@@ -3568,7 +3568,7 @@ cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
         }
         else {
             // check the original module
-            klass = RBASIC(klass)->klass;
+            klass = RBASIC_CLASS(klass);
         }
     }
 
@@ -3672,7 +3672,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     }
 
     if (RB_TYPE_P(target, T_ICLASS)) {
-        target = RBASIC(target)->klass;
+        target = RBASIC_CLASS(target);
     }
     check_before_mod_set(target, id, val, "class variable");
 

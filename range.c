@@ -2048,7 +2048,7 @@ range_loader(VALUE range, VALUE obj)
 {
     VALUE beg, end, excl;
 
-    if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC(obj)->klass != rb_cObject) {
+    if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC_CLASS(obj) != rb_cObject) {
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 

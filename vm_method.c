@@ -336,7 +336,7 @@ rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, con
 {
     VALUE table_owner = klass;
     if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
-        table_owner = RBASIC(table_owner)->klass;
+        table_owner = RBASIC_CLASS(table_owner);
     }
     VM_ASSERT(RB_TYPE_P(table_owner, T_CLASS) || RB_TYPE_P(table_owner, T_ICLASS) || RB_TYPE_P(table_owner, T_MODULE));
     VM_ASSERT(table == RCLASS_M_TBL(table_owner));

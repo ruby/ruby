@@ -538,8 +538,8 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
     }
     while (BUILTIN_TYPE(klass) == T_ICLASS) {
         if (!FL_TEST(klass, RICLASS_IS_ORIGIN) ||
-                BUILTIN_TYPE(RBASIC(klass)->klass) != T_MODULE) {
-            VALUE path = rb_class_name(RBASIC(klass)->klass);
+                BUILTIN_TYPE(RBASIC_CLASS(klass)) != T_MODULE) {
+            VALUE path = rb_class_name(RBASIC_CLASS(klass));
             w_byte(TYPE_EXTENDED, arg);
             w_unique(path, arg);
         }
@@ -929,7 +929,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
+            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC_CLASS(obj));
             if (st_lookup(compat_allocator_tbl,
                           (st_data_t)allocator,
                           &compat_data)) {
@@ -1886,7 +1886,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
                 goto format_error;
             }
-            if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
+            if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC_CLASS(v)))) {
                 VALUE tmp = rb_obj_alloc(c);
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;

@@ -3461,7 +3461,7 @@ struct ary_sort_data {
 static VALUE
 sort_reentered(VALUE ary)
 {
-    if (RBASIC(ary)->klass) {
+    if (RBASIC_CLASS(ary)) {
         rb_raise(rb_eRuntimeError, "sort reentered");
     }
     return Qnil;
@@ -6558,7 +6558,7 @@ flatten(VALUE ary, int level)
                 continue;
             }
             tmp = rb_check_array_type(elt);
-            if (RBASIC(result)->klass) {
+            if (RBASIC_CLASS(result)) {
                 if (memo) {
                     RB_GC_GUARD(vmemo);
                     st_clear(memo);
@@ -6963,7 +6963,7 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
     for (i = 0; i < r; i++) ARY_SET(result, i, RARRAY_AREF(values, p[i]));
     ARY_SET_LEN(result, r);
     rb_yield(result);
-    return !RBASIC(values)->klass;
+    return !RBASIC_CLASS(values);
 }
 
 /*

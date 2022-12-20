@@ -1886,7 +1886,7 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
             VALUE sym;
 
             if (BUILTIN_TYPE(mod) == T_ICLASS) {
-                klass = RBASIC(mod)->klass;
+                klass = RBASIC_CLASS(mod);
             }
             else if (mod != RCLASS_ORIGIN(mod)) {
                 continue;

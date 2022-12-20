@@ -32,7 +32,7 @@
 
 #define id_attached id__attached__
 
-#define METACLASS_OF(k) RBASIC(k)->klass
+#define METACLASS_OF(k) RBASIC_CLASS(k)
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;

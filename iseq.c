@@ -54,7 +54,7 @@ static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_tabl
 static int succ_index_lookup(const struct succ_index_table *sd, int x);
 #endif
 
-#define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
+#define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC_CLASS(obj))
 
 static inline VALUE
 obj_resurrect(VALUE obj)

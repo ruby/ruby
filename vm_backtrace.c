@@ -1395,7 +1395,7 @@ get_klass(const rb_control_frame_t *cfp)
     VALUE klass;
     if (rb_vm_control_frame_id_and_class(cfp, 0, 0, &klass)) {
         if (RB_TYPE_P(klass, T_ICLASS)) {
-            return RBASIC(klass)->klass;
+            return RBASIC_CLASS(klass);
         }
         else {
             return klass;
@@ -1733,7 +1733,7 @@ rb_profile_frame_classpath(VALUE frame)
 
     if (klass && !NIL_P(klass)) {
         if (RB_TYPE_P(klass, T_ICLASS)) {
-            klass = RBASIC(klass)->klass;
+            klass = RBASIC_CLASS(klass);
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
             klass = rb_ivar_get(klass, id__attached__);

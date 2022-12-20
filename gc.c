@@ -14001,11 +14001,11 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
         if (internal_object_p(obj)) {
             /* ignore */
         }
-        else if (RBASIC(obj)->klass == 0) {
+        else if (RBASIC_CLASS(obj) == 0) {
             APPEND_S("(temporary internal)");
         }
-        else if (RTEST(RBASIC(obj)->klass)) {
-            VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+        else if (RTEST(RBASIC_CLASS(obj))) {
+            VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
             if (!NIL_P(class_path)) {
                 APPEND_F("(%s)", RSTRING_PTR(class_path));
             }

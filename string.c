@@ -1475,7 +1475,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             assert(OBJ_FROZEN(shared));
 
             if ((ofs > 0) || (rest > 0) ||
-                (klass != RBASIC(shared)->klass) ||
+                (klass != RBASIC_CLASS(shared)) ||
                 ENCODING_GET(shared) != ENCODING_GET(orig)) {
                 str = str_new_shared(klass, shared);
                 assert(!STR_EMBED_P(str));

@@ -254,7 +254,7 @@ anonymous_struct(VALUE klass)
     VALUE nstr;
 
     nstr = rb_class_new(klass);
-    rb_make_metaclass(nstr, RBASIC(klass)->klass);
+    rb_make_metaclass(nstr, RBASIC_CLASS(klass));
     rb_class_inherited(klass, nstr);
     return nstr;
 }
