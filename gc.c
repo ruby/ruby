@@ -5844,23 +5844,29 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
 
     size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
-    /* Some size pools may have very few pages (or even no pages). These size pools
-     * should still have allocatable pages. */
-    if (min_free_slots < gc_params.heap_init_slots) {
-        min_free_slots = gc_params.heap_init_slots;
-    }
 
     /* If we don't have enough slots and we have pages on the tomb heap, move
      * pages from the tomb heap to the eden heap. This may prevent page
      * creation thrashing (frequently allocating and deallocting pages) and
      * GC thrashing (running GC more frequently than required). */
     struct heap_page *resurrected_page;
-    while (swept_slots < min_free_slots &&
+    while ((swept_slots < min_free_slots || swept_slots < gc_params.heap_init_slots) &&
             (resurrected_page = heap_page_resurrect(objspace, size_pool))) {
         swept_slots += resurrected_page->free_slots;
 
         heap_add_page(objspace, size_pool, heap, resurrected_page);
         heap_add_freepage(heap, resurrected_page);
+    }
+
+    /* Some size pools may have very few pages (or even no pages). These size pools
+     * should still have allocatable pages. */
+    if (min_free_slots < gc_params.heap_init_slots && swept_slots < gc_params.heap_init_slots) {
+        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+        size_t extra_slots = gc_params.heap_init_slots - swept_slots;
+        size_t extend_page_count = CEILDIV(extra_slots * multiple, HEAP_PAGE_OBJ_LIMIT);
+        if (extend_page_count > size_pool->allocatable_pages) {
+            size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
+        }
     }
 
     if (swept_slots < min_free_slots) {
