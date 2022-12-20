@@ -31,6 +31,7 @@ module Bundler
       @extension = options[:ext]
 
       validate_ext_name if @extension
+      travis_removal_info
     end
 
     def run
@@ -134,8 +135,6 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-      when "travis"
-        templates.merge!("travis.yml.tt" => ".travis.yml")
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
       when "circle"
@@ -308,12 +307,11 @@ module Bundler
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
           "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
-          "* Travis CI:      https://travis-ci.org/\n" \
           "\n"
         Bundler.ui.info hint_text("ci")
 
-        result = Bundler.ui.ask "Enter a CI service. github/travis/gitlab/circle/(none):"
-        if /github|travis|gitlab|circle/.match?(result)
+        result = Bundler.ui.ask "Enter a CI service. github/gitlab/circle/(none):"
+        if /github|gitlab|circle/.match?(result)
           ci_template = result
         else
           ci_template = false
@@ -427,6 +425,20 @@ module Bundler
 
     def standard_version
       "1.3"
+    end
+
+    #
+    # TODO: remove at next minor release
+    def travis_removal_info
+      if options[:ci] == "travis"
+        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator."
+        exit 1
+      end
+
+      if Bundler.settings["gem.ci"] == "travis"
+        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator, but it is present in bundle config. Please configure another provider using `bundle config set gem.ci SERVICE` (where SERVICE is one of github/gitlab/circle) or unset configuration using `bundle config unset gem.ci`."
+        exit 1
+      end
     end
   end
 end

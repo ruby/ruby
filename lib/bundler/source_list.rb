@@ -161,11 +161,17 @@ module Bundler
     end
 
     def map_sources(replacement_sources)
-      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
+      rubygems, git, plugin = [@rubygems_sources, @git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
           replacement_sources.find {|s| s == source } || source
         end
       end
+
+      path = @path_sources.map do |source|
+        replacement_sources.find {|s| s == (source.is_a?(Source::Gemspec) ? source.as_path_source : source) } || source
+      end
+
+      [rubygems, path, git, plugin]
     end
 
     def global_replacement_source(replacement_sources)
