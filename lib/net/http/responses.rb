@@ -295,7 +295,13 @@ module Net
   #
   # The <tt>Multiple Choices</tt> response indicates that the server
   # offers multiple options for the resource from which the client may choose.
-  # See {300 Multiple Choices}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#300].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/300].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-300-multiple-choices].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#300].
+  #
   class HTTPMultipleChoices < HTTPRedirection
     HAS_BODY = true
   end
@@ -305,7 +311,13 @@ module Net
   #
   # The <tt>Moved Permanently</tt> response indicates that links or records
   # returning this response should be updated to use the given URL.
-  # See {301 Moved Permanently}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#301].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-301-moved-permanently].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#301].
+  #
   class HTTPMovedPermanently < HTTPRedirection
     HAS_BODY = true
   end
@@ -314,7 +326,13 @@ module Net
   #
   # The <tt>Found</tt> response indicates that the client
   # should look at (browse to) another URL.
-  # See {302 Found}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#302].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-302-found].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#302].
+  #
   class HTTPFound < HTTPRedirection
     HAS_BODY = true
   end
@@ -323,7 +341,13 @@ module Net
   # Response class for <tt>See Other</tt> responses (status code 303).
   #
   # The response to the request can be found under another URI using the GET method.
-  # See {303 See Other}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#303].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-303-see-other].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#303].
+  #
   class HTTPSeeOther < HTTPRedirection
     HAS_BODY = true
   end
@@ -332,7 +356,13 @@ module Net
   #
   # Indicates that the resource has not been modified since the version
   # specified by the request headers.
-  # See {304 Not Modified}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#304].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-304-not-modified].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#304].
+  #
   class HTTPNotModified < HTTPRedirection
     HAS_BODY = false
   end
@@ -341,7 +371,12 @@ module Net
   #
   # The requested resource is available only through a proxy,
   # whose address is provided in the response.
-  # See {305 Use Proxy}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#305].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-305-use-proxy].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#305].
+  #
   class HTTPUseProxy < HTTPRedirection
     HAS_BODY = false
   end
@@ -350,7 +385,13 @@ module Net
   #
   # The request should be repeated with another URI;
   # however, future requests should still use the original URI.
-  # See {307 Temporary Redirect}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#307].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-307-temporary-redirect].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#307].
+  #
   class HTTPTemporaryRedirect < HTTPRedirection
     HAS_BODY = true
   end
@@ -358,7 +399,13 @@ module Net
   # Response class for <tt>Permanent Redirect</tt> responses (status code 308).
   #
   # This and all future requests should be directed to the given URI.
-  # See {308 Permanent Redirect}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#308].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-308-permanent-redirect].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#308].
+  #
   class HTTPPermanentRedirect < HTTPRedirection
     HAS_BODY = true
   end
