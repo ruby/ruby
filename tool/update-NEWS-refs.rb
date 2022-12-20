@@ -12,9 +12,12 @@ if links.empty? || lines.last != ""
   raise "NEWS.md must end with a sequence of links"
 end
 
+labels = links.keys.select {|k| !(k.start_with?("Feature") || k.start_with?("Bug"))}
 new_src = lines.join("\n").gsub(/\[?\[((?:Feature|Bug)\s+#(\d+))\]\]?/) do
   links[$1] ||= "[#$1]: ".ljust(18) + "https://bugs.ruby-lang.org/issues/#$2"
   "[[#$1]]"
+end.gsub(/\[\[#{Regexp.union(labels)}\]\]?/) do
+  "[#$1]"
 end.chomp + "\n\n"
 
 redmine_links, non_redmine_links = links.partition {|k,| k =~ /\A(Feature|Bug)\s+#\d+\z/ }

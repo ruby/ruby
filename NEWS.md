@@ -385,17 +385,17 @@ Note: We're only listing outstanding class updates.
 
 * GC
 
-    * Expose `need_major_gc` via `GC.latest_gc_info`. [[GH-6791]]
+    * Expose `need_major_gc` via `GC.latest_gc_info`. [GH-6791]
 
 * ObjectSpace
 
-    * `ObjectSpace.dump_all` dump shapes as well. [[GH-6868]]
+    * `ObjectSpace.dump_all` dump shapes as well. [GH-6868]
 
 ## Stdlib updates
 
 * Bundler
 
-    * Bundler now uses [[PubGrub]] resolver instead of [[Molinillo]] for performance improvement.
+    * Bundler now uses [PubGrub] resolver instead of [Molinillo] for performance improvement.
     * Add support for `bundle gem --ext=rust` command. [[GH-rubygems-6149]]
 
 * CGI
@@ -432,15 +432,15 @@ Note: We're only listing outstanding class updates.
 
 * IRB
 
-    * Added many of new commands and improvements. see [[ruby-3-2-irb]]
+    * Added many of new commands and improvements. see [ruby-3-2-irb]
 
 * Net::Protocol
 
-    * Improve `Net::BufferedIO` performance. [[GH-net-protocol-14]]
+    * Improve `Net::BufferedIO` performance. [GH-net-protocol-14]
 
 * Pathname
 
-    * Added `Pathname#lutime`. [[GH-pathname-20]]
+    * Added `Pathname#lutime`. [GH-pathname-20]
 
 * Socket
 
@@ -546,7 +546,7 @@ Note: We're only listing outstanding class updates.
 
 ## Supported platforms
 
-* WebAssembly/WASI is added. See [[wasm/README.md]] and [[ruby.wasm]] for more details. [[Feature #18462]]
+* WebAssembly/WASI is added. See [wasm/README.md] and [ruby.wasm] for more details. [[Feature #18462]]
 
 ## Compatibility issues
 
@@ -618,9 +618,9 @@ The following deprecated methods are removed.
 
     [[Feature #18571]]
 
-* Check cookie name/path/domain characters in `CGI::Cookie`. [[CVE-2021-33621]]
+* Check cookie name/path/domain characters in `CGI::Cookie`. [CVE-2021-33621]
 
-* `URI.parse` return empty string in host instead of nil. [[sec-156615]]
+* `URI.parse` return empty string in host instead of nil. [sec-156615]
 
 ## C API updates
 
