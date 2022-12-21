@@ -467,12 +467,13 @@ These keyword-value pairs specify encoding options:
     with a carriage-return character (<tt>"\r"</tt>).
   - <tt>:crlf_newline: true</tt>: Replace each line-feed character (<tt>"\n"</tt>)
     with a carriage-return/line-feed string (<tt>"\r\n"</tt>).
-  - <tt>:universal_newline: true</tt>: Replace each carriage-return/line-feed string
+  - <tt>:universal_newline: true</tt>: Replace each carriage-return
+    character (<tt>"\r"</tt>) and each carriage-return/line-feed string
     (<tt>"\r\n"</tt>) with a line-feed character (<tt>"\n"</tt>).
 
   Examples:
 
-    s = "\n \r\n"                              # => "\n \r\n"
-    s.encode('ASCII', cr_newline: true)        # => "\r \r\r"
-    s.encode('ASCII', crlf_newline: true)      # => "\r\n \r\r\n"
-    s.encode('ASCII', universal_newline: true) # => "\n \n"
+    s = "\n \r \r\n"                           # => "\n \r \r\n"
+    s.encode('ASCII', cr_newline: true)        # => "\r \r \r\r"
+    s.encode('ASCII', crlf_newline: true)      # => "\r\n \r \r\r\n"
+    s.encode('ASCII', universal_newline: true) # => "\n \n \n"
