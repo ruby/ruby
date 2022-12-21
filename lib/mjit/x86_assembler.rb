@@ -73,7 +73,16 @@ module RubyVM::MJIT
           mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
           disp: dst_offset,
         )
-      # MOV r64, r/m64
+      # MOV r64, r/m64 (Mod 00)
+      in [Symbol => dst_reg, [Symbol => src_reg]] if r_reg?(dst_reg) && r_reg?(src_reg)
+        # REX.W + 8B /r
+        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x8b,
+          mod_rm: mod_rm(mod: 0b00, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 00: [reg]
+        )
+      # MOV r64, r/m64 (Mod 01)
       in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_offset]] if r_reg?(dst_reg) && r_reg?(src_reg) && src_offset <= 0xff
         # REX.W + 8B /r
         # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)

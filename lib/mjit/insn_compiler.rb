@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.mov([:rdi, C.rb_execution_context_t.offsetof(:cfp)], :rsi) # ec->cfp = rsi
 
       # return a value
-      asm.mov(:rax, 1001)
+      asm.mov(:rax, [:rbx])
       asm.ret
       EndBlock
     end
