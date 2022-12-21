@@ -3750,6 +3750,15 @@ set_timeout(rb_hrtime_t *hrt, VALUE timeout)
     double2hrtime(hrt, timeout_d);
 }
 
+struct reg_init_args {
+    VALUE src, str, timeout;
+    rb_encoding *enc;
+    int flags;
+};
+
+static void reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
+static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
+
 /*
  *  call-seq:
  *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
@@ -3813,26 +3822,38 @@ set_timeout(rb_hrtime_t *hrt, VALUE timeout)
 static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
-    int flags = 0;
-    VALUE str;
-    rb_encoding *enc = 0;
+    struct reg_init_args args;
 
-    VALUE src, opts = Qundef, n_flag = Qundef, kwargs, timeout = Qnil;
+    reg_extract_args(argc, argv, &args);
+    reg_init_args(self, args.str, args.enc, args.flags);
+
+    set_timeout(&RREGEXP_PTR(self)->timelimit, args.timeout);
+
+    return self;
+}
+
+static void
+reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
+{
+    int flags = 0;
+    rb_encoding *enc = 0;
+    VALUE str, src, opts = Qundef, n_flag = Qundef, kwargs;
 
     rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
 
+    args->timeout = Qnil;
     if (!NIL_P(kwargs)) {
         static ID keywords[1];
         if (!keywords[0]) {
             keywords[0] = rb_intern_const("timeout");
         }
-        rb_get_kwargs(kwargs, keywords, 0, 1, &timeout);
+        rb_get_kwargs(kwargs, keywords, 0, 1, &args->timeout);
     }
 
     if (RB_TYPE_P(src, T_REGEXP)) {
         VALUE re = src;
 
-        if (opts != Qnil) {
+        if (!NIL_P(opts)) {
             rb_warn("flags ignored");
         }
         rb_reg_check(re);
@@ -3847,7 +3868,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
             else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
                 flags = ONIG_OPTION_IGNORECASE;
         }
-        if (!UNDEF_P(n_flag) && !NIL_P(n_flag)) {
+        if (!NIL_OR_UNDEF_P(n_flag)) {
             char *kcode = StringValuePtr(n_flag);
             if (kcode[0] == 'n' || kcode[0] == 'N') {
                 enc = rb_ascii8bit_encoding();
@@ -3859,15 +3880,19 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
         }
         str = StringValue(src);
     }
+    args->src = src;
+    args->str = str;
+    args->enc = enc;
+    args->flags = flags;
+}
+
+static VALUE
+reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags)
+{
     if (enc && rb_enc_get(str) != enc)
         rb_reg_init_str_enc(self, str, enc, flags);
     else
         rb_reg_init_str(self, str, flags);
-
-    regex_t *reg = RREGEXP_PTR(self);
-
-    set_timeout(&reg->timelimit, timeout);
-
     return self;
 }
 
@@ -4219,21 +4244,17 @@ static VALUE
 rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self)
 {
     VALUE re;
-    VALUE src, opts = Qundef, n_flag = Qundef, kwargs;
+    struct reg_init_args args;
 
-    rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
+    reg_extract_args(argc, argv, &args);
 
-    if (RB_TYPE_P(src, T_REGEXP)) {
-        re = src;
-        if (opts != Qnil) {
-            rb_warn("flags ignored");
-        }
+    if (RB_TYPE_P(args.src, T_REGEXP)) {
+        re = args.src;
     }
     else {
-        re = rb_class_new_instance(argc, argv, rb_cRegexp);
+        re = reg_init_args(rb_reg_alloc(), args.str, args.enc, args.flags);
     }
 
-    rb_reg_check(re);
     return RBOOL(onig_check_linear_time(RREGEXP_PTR(re)));
 }
 

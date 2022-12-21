@@ -1703,5 +1703,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_send [Regexp, :linear_time?, 'a', Regexp::IGNORECASE]
     assert_not_send [Regexp, :linear_time?, /(a)\1/]
     assert_not_send [Regexp, :linear_time?, "(a)\\1"]
+
+    assert_raise(TypeError) {Regexp.linear_time?(nil)}
+    assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
   end
 end
