@@ -250,39 +250,51 @@ get_nth_dirname(unsigned long dir, const char *p)
     return p;
 }
 
+static const char *parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t *obj, const char **out_path, uint64_t *out_directory_index);
+
 static void
-fill_filename(int file, const char *include_directories, const char *filenames, line_info_t *line, obj_info_t *obj)
+fill_filename(int file, uint8_t format, uint16_t version, const char *include_directories, const char *filenames, line_info_t *line, obj_info_t *obj)
 {
     int i;
     const char *p = filenames;
     const char *filename;
     unsigned long dir;
-    for (i = 1; i <= file; i++) {
-	filename = p;
-	if (!*p) {
-	    /* Need to output binary file name? */
-	    kprintf("Unexpected file number %d in %s at %tx\n",
-		    file, binary_filename, filenames - obj->mapped);
-	    return;
-	}
-	while (*p) p++;
-	p++;
-	dir = uleb128(&p);
-	/* last modified. */
-	uleb128(&p);
-	/* size of the file. */
-	uleb128(&p);
+    if (version >= 5) {
+        const char *path;
+        uint64_t directory_index = -1;
+        parse_ver5_debug_line_header(filenames, file + 1, format, obj, &path, &directory_index);
+        line->filename = path;
+        parse_ver5_debug_line_header(include_directories, (int)directory_index, format, obj, &path, NULL);
+        line->dirname = path;
+    }
+    else {
+        for (i = 1; i <= file; i++) {
+            filename = p;
+            if (!*p) {
+                /* Need to output binary file name? */
+                kprintf("Unexpected file number %d in %s at %tx\n",
+                        file, binary_filename, filenames - obj->mapped);
+                return;
+            }
+            while (*p) p++;
+            p++;
+            dir = uleb128(&p);
+            /* last modified. */
+            uleb128(&p);
+            /* size of the file. */
+            uleb128(&p);
 
-	if (i == file) {
-	    line->filename = filename;
-	    line->dirname = get_nth_dirname(dir, include_directories);
-	}
+            if (i == file) {
+                line->filename = filename;
+                line->dirname = get_nth_dirname(dir, include_directories);
+            }
+        }
     }
 }
 
 static void
 fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
-	  const char *include_directories, const char *filenames,
+	  uint8_t format, uint16_t version, const char *include_directories, const char *filenames,
 	  obj_info_t *obj, line_info_t *lines, int offset)
 {
     int i;
@@ -292,7 +304,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
 	if (addr < a && a < addr + 100) {
-	    fill_filename(file, include_directories, filenames, &lines[i], obj);
+	    fill_filename(file, format, version, include_directories, filenames, &lines[i], obj);
 	    lines[i].line = line;
 	}
     }
@@ -317,7 +329,7 @@ struct LineNumberProgramHeader {
 };
 
 static int
-parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
+parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgramHeader *header)
 {
     const char *p = *pp;
     header->unit_length = *(uint32_t *)p;
@@ -334,7 +346,13 @@ parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
 
     header->version = *(uint16_t *)p;
     p += sizeof(uint16_t);
-    if (header->version > 4) return -1;
+    if (header->version > 5) return -1;
+
+    if (header->version >= 5) {
+        /* address_size = *(uint8_t *)p++; */
+        /* segment_selector_size = *(uint8_t *)p++; */
+        p += 2;
+    }
 
     header->header_length = header->format == 4 ? *(uint32_t *)p : *(uint64_t *)p;
     p += header->format;
@@ -355,20 +373,27 @@ parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
     /* header->standard_opcode_lengths = (uint8_t *)p - 1; */
     p += header->opcode_base - 1;
 
-    header->include_directories = p;
-
-    /* temporary measure for compress-debug-sections */
-    if (p >= header->cu_end) return -1;
-
-    /* skip include directories */
-    while (*p) {
-	p = memchr(p, '\0', header->cu_end - p);
-	if (!p) return -1;
-	p++;
+    if (header->version >= 5) {
+        header->include_directories = p;
+        p = parse_ver5_debug_line_header(p, -1, header->format, obj, NULL, NULL);
+        header->filenames = p;
     }
-    p++;
+    else {
+        header->include_directories = p;
 
-    header->filenames = p;
+        /* temporary measure for compress-debug-sections */
+        if (p >= header->cu_end) return -1;
+
+        /* skip include directories */
+        while (*p) {
+            p = memchr(p, '\0', header->cu_end - p);
+            if (!p) return -1;
+            p++;
+        }
+        p++;
+
+        header->filenames = p;
+    }
 
     *pp = header->cu_start;
 
@@ -394,13 +419,15 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
     /* int epilogue_begin = 0; */
     /* unsigned int isa = 0; */
 
-    if (parse_debug_line_header(&p, &header))
+    if (parse_debug_line_header(obj, &p, &header))
         return -1;
     is_stmt = header.default_is_stmt;
 
 #define FILL_LINE()						    \
     do {							    \
 	fill_line(num_traces, traces, addr, file, line,		    \
+                  header.format,                                    \
+                  header.version,                                   \
                   header.include_directories,                       \
                   header.filenames,                                 \
 		  obj, lines, offset);				    \
@@ -839,6 +866,8 @@ typedef struct {
     const char *current_cu;
     uint64_t current_low_pc;
     const char *debug_line_cu_end;
+    uint8_t debug_line_format;
+    uint16_t debug_line_version;
     const char *debug_line_files;
     const char *debug_line_directories;
     const char *p;
@@ -1022,10 +1051,12 @@ di_read_debug_line_cu(DebugInfoReader *reader)
     struct LineNumberProgramHeader header;
 
     p = (const char *)reader->debug_line_cu_end;
-    if (parse_debug_line_header(&p, &header))
+    if (parse_debug_line_header(reader->obj, &p, &header))
         return -1;
 
     reader->debug_line_cu_end = (char *)header.cu_end;
+    reader->debug_line_format = header.format;
+    reader->debug_line_version = header.version;
     reader->debug_line_directories = (char *)header.include_directories;
     reader->debug_line_files = (char *)header.filenames;
 
@@ -1673,7 +1704,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 line.sname = get_cstr_value(&v);
                 break;
               case DW_AT_call_file:
-                fill_filename((int)v.as.uint64, reader->debug_line_directories, reader->debug_line_files, &line, reader->obj);
+                fill_filename((int)v.as.uint64, reader->debug_line_format, reader->debug_line_version, reader->debug_line_directories, reader->debug_line_files, &line, reader->obj);
                 break;
               case DW_AT_call_line:
                 line.line = (int)v.as.uint64;
@@ -1700,7 +1731,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
             uintptr_t saddr = ranges_include(reader, &ranges, offset);
             if (saddr) {
-                /* fprintf(stderr, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
+                /* fprintf(stdout, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
                 if (lines[i].sname) {
                     line_info_t *lp = malloc(sizeof(line_info_t));
                     memcpy(lp, &lines[i], sizeof(line_info_t));
@@ -1717,6 +1748,54 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             }
         }
     }
+}
+
+// This function parses the following attributes of Line Number Program Header in DWARF 5:
+//
+// * directory_entry_format_count
+// * directory_entry_format
+// * directories_count
+// * directories
+//
+// or
+//
+// * file_name_entry_format_count
+// * file_name_entry_format
+// * file_names_count
+// * file_names
+//
+// It records DW_LNCT_path and DW_LNCT_directory_index at the index "idx".
+static const char *
+parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t *obj, const char **out_path, uint64_t *out_directory_index) {
+    int i, j;
+    int entry_format_count = *(uint8_t *)p++;
+    const char *entry_format = p;
+
+    /* skip the part of entry_format */
+    for (i = 0; i < entry_format_count * 2; i++) uleb128(&p);
+
+    int entry_count = (int)uleb128(&p);
+
+    DebugInfoReader reader;
+    debug_info_reader_init(&reader, obj);
+    reader.format = format;
+    reader.p = p;
+    for (j = 0; j < entry_count; j++) {
+        const char *format = entry_format;
+        for (i = 0; i < entry_format_count; i++) {
+            DebugInfoValue v = {{}};
+            unsigned long dw_lnct = uleb128(&format);
+            unsigned long dw_form = uleb128(&format);
+            debug_info_reader_read_value(&reader, dw_form, &v);
+            if (dw_lnct == 1 /* DW_LNCT_path */ && v.type == VAL_cstr && out_path)
+                *out_path = v.as.ptr + v.off;
+            if (dw_lnct == 2 /* DW_LNCT_directory_index */ && v.type == VAL_uint && out_directory_index)
+                *out_directory_index = v.as.uint64;
+        }
+        if (i == idx) return 0;
+    }
+
+    return reader.p;
 }
 
 #ifdef USE_ELF
