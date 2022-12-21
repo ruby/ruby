@@ -863,6 +863,7 @@ enum {
 typedef struct {
     obj_info_t *obj;
     const char *file;
+    uint8_t current_version;
     const char *current_cu;
     uint64_t current_low_pc;
     const char *debug_line_cu_end;
@@ -1472,7 +1473,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         const char *p;
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
         bool base_valid = true;
-        if (reader->obj->debug_rnglists.ptr) {
+        if (reader->current_version >= 5) {
             p = reader->obj->debug_rnglists.ptr + ptr->ranges;
             for (;;) {
                 uint8_t rle = read_uint8(&p);
@@ -1583,6 +1584,7 @@ di_read_cu(DebugInfoReader *reader)
     }
     reader->cu_end = reader->p + unit_length;
     version = read_uint16(&reader->p);
+    reader->current_version = version;
     if (version > 5) {
         return -1;
     }
