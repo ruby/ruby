@@ -234,7 +234,8 @@ onig_get_capture_tree(OnigRegion* region)
 #ifdef USE_CACHE_MATCH_OPT
 
 /* count number of jump-like opcodes for allocation of cache memory. */
-static OnigPosition count_num_cache_opcode(regex_t* reg, long* num, long* table_size)
+static OnigPosition
+count_num_cache_opcode(regex_t* reg, long* num, long* table_size)
 {
   UChar* p = reg->p;
   UChar* pend = p + reg->used;
@@ -457,7 +458,8 @@ bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
 
-static OnigPosition init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
+static OnigPosition
+init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
 {
   UChar* pbegin;
   UChar* p = reg->p;
@@ -695,7 +697,8 @@ bytecode_error:
   return ONIGERR_UNDEFINED_BYTECODE;
 }
 #else /* USE_MATCH_CACHE */
-static OnigPosition count_num_cache_opcode(regex_t* reg, long* num, long* table_size)
+static OnigPosition
+count_num_cache_opcode(regex_t* reg, long* num, long* table_size)
 {
   *num = NUM_CACHE_OPCODE_FAIL;
   return 0;
@@ -1209,7 +1212,8 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }\
 } while (0)
 
-static long find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
+static long
+find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_stk, OnigCacheIndex* table, long num_cache_table, UChar* p)
 {
   long l = 0, r = num_cache_table - 1, m = 0;
   OnigCacheIndex* item;
@@ -1250,7 +1254,9 @@ static long find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIn
   return range->base_num + range->inner_num * range->lower + (range->inner_num + 1) * (count - range->lower) + item->num;
 }
 
-static void reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* match_cache, OnigCacheIndex *table, long num_cache_size, long num_cache_table) {
+static void
+reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* match_cache, OnigCacheIndex *table, long num_cache_size, long num_cache_table)
+{
   long l = 0, r = num_cache_table - 1, m1 = 0, m2 = 0;
   int is_inc = *pend == OP_REPEAT_INC || *pend == OP_REPEAT_INC_NG;
   OnigCacheIndex *item1, *item2;
@@ -1873,7 +1879,8 @@ make_capture_history_tree(OnigCaptureTreeNode* node, OnigStackType** kp,
 #endif /* USE_CAPTURE_HISTORY */
 
 #ifdef USE_BACKREF_WITH_LEVEL
-static int mem_is_in_memp(int mem, int num, UChar* memp)
+static int
+mem_is_in_memp(int mem, int num, UChar* memp)
 {
   int i;
   MemNumType m;
