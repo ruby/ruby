@@ -466,13 +466,13 @@ module SyncDefaultGems
     if log and !log.empty?
       log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
       conv[log]
-      log.sub!(/(?:(\A\s*)|\s*\n)(?=((?i:Co-authored-by:.*\n)+)?\Z)/) {
+      log.sub!(/(?:(\A\s*)|\s*\n)(?=((?i:^Co-authored-by:.*\n?)+)?\Z)/) {
         ($~.begin(1) ? "" : "\n\n") + commit_url + ($~.begin(2) ? "\n" : "")
       }
     else
       log = commit_url
     end
-    print subject, "\n\n", log
+    puts subject, "\n", log
   end
 
   # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh

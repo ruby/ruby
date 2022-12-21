@@ -62,5 +62,15 @@ module Test_SyncDefaultGems
       ]
       assert_message_filter(expected, trailers, [expected, "", trailers, ""].join("\n"))
     end
+
+    def test_co_authored_by_no_newline
+      expected = [
+        "commit something",
+      ]
+      trailers = [
+        "Co-Authored-By: git <git@ruby-lang.org>",
+      ]
+      assert_message_filter(expected, trailers, [expected, "", trailers].join("\n"))
+    end
   end
 end
