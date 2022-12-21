@@ -1959,7 +1959,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  the current thread, blocking and non-blocking fibers' behavior is identical.
  *
  *  Ruby doesn't provide a scheduler class: it is expected to be implemented by
- *  the user and correspond to Fiber::SchedulerInterface.
+ *  the user and correspond to Fiber::Scheduler.
  *
  *  There is also Fiber.schedule method, which is expected to immediately perform
  *  the given block in a non-blocking manner. Its actual implementation is up to
@@ -2080,9 +2080,10 @@ storage_access_must_be_from_same_fiber(VALUE self)
 }
 
 /**
- *  call-seq: Fiber.current.storage -> hash (dup)
+ *  call-seq: fiber.storage -> hash (dup)
  *
- *  Returns a copy of the storage hash for the current fiber.
+ *  Returns a copy of the storage hash for the fiber. The method can only be called on the
+ *  Fiber.current.
  */
 static VALUE
 rb_fiber_storage_get(VALUE self)
@@ -2117,16 +2118,17 @@ fiber_storage_validate(VALUE value)
 }
 
 /**
- *  call-seq: Fiber.current.storage = hash
+ *  call-seq: fiber.storage = hash
  *
- *  Sets the storage hash for the current fiber. This feature is experimental
- *  and may change in the future.
+ *  Sets the storage hash for the fiber. This feature is experimental
+ *  and may change in the future. The method can only be called on the
+ *  Fiber.current.
  *
  *  You should be careful about using this method as you may inadvertently clear
  *  important fiber-storage state. You should mostly prefer to assign specific
- *  keys in the storage using Fiber#[]=.
+ *  keys in the storage using Fiber::[]=.
  *
- *  You can also use Fiber.new(storage: nil) to create a fiber with an empty
+ *  You can also use <tt>Fiber.new(storage: nil)</tt> to create a fiber with an empty
  *  storage.
  *
  *  Example:
@@ -2160,7 +2162,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
  *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
  *  Fiber#store.
  *
- *  See also Fiber[]=.
+ *  See also Fiber::[]=.
  */
 static VALUE
 rb_fiber_storage_aref(VALUE class, VALUE key)
@@ -2183,7 +2185,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
  *
  *  +key+ must be a Symbol, otherwise a TypeError is raised.
  *
- *  See also Fiber[].
+ *  See also Fiber::[].
  */
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
@@ -2397,7 +2399,7 @@ rb_fiber_s_schedule_kw(int argc, VALUE* argv, int kw_splat)
  *
  *  Note that the behavior described above is how the method is <em>expected</em>
  *  to behave, actual behavior is up to the current scheduler's implementation of
- *  Fiber::SchedulerInterface#fiber method. Ruby doesn't enforce this method to
+ *  Fiber::Scheduler#fiber method. Ruby doesn't enforce this method to
  *  behave in any particular way.
  *
  *  If the scheduler is not set, the method raises
@@ -2416,7 +2418,7 @@ rb_fiber_s_schedule(int argc, VALUE *argv, VALUE obj)
  *
  *  Returns the Fiber scheduler, that was last set for the current thread with Fiber.set_scheduler.
  *  Returns +nil+ if no scheduler is set (which is the default), and non-blocking fibers'
- #  behavior is the same as blocking.
+ *  behavior is the same as blocking.
  *  (see "Non-blocking fibers" section in class docs for details about the scheduler concept).
  *
  */
@@ -2450,7 +2452,7 @@ rb_fiber_current_scheduler(VALUE klass)
  *  thread will call scheduler's +close+ method on finalization (allowing the scheduler to
  *  properly manage all non-finished fibers).
  *
- *  +scheduler+ can be an object of any class corresponding to Fiber::SchedulerInterface. Its
+ *  +scheduler+ can be an object of any class corresponding to Fiber::Scheduler. Its
  *  implementation is up to the user.
  *
  *  See also the "Non-blocking fibers" section in class docs.
