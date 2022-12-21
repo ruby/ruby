@@ -1106,26 +1106,16 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
         rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
-        if (RB_TYPE_P(value, T_CLASS)) {
 # define LITERAL(str) (*sz = rb_strlen_lit(str), str)
-
-            if (value == rb_cNilClass) {
-                return LITERAL("nil");
-            }
-            else if (value == rb_cInteger) {
-                return LITERAL("Integer");
-            }
-            else if (value == rb_cSymbol) {
-                return LITERAL("Symbol");
-            }
-            else if (value == rb_cTrueClass) {
-                return LITERAL("true");
-            }
-            else if (value == rb_cFalseClass) {
-                return LITERAL("false");
-            }
-# undef LITERAL
+        /* optimize special const cases */
+        switch (value) {
+# define LITERAL_CASE(x) case Q##x: return LITERAL(#x)
+          LITERAL_CASE(nil);
+          LITERAL_CASE(true);
+          LITERAL_CASE(false);
+# undef LITERAL_CASE
         }
+# undef LITERAL
         value = rb_inspect(value);
     }
     else if (SYMBOL_P(value)) {

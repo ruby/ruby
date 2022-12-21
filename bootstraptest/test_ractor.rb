@@ -480,7 +480,6 @@ assert_equal 'ok', %q{
 }
 
 # multiple Ractors can receive (wait) from one Ractor
-yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
@@ -503,7 +502,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3603398545/jobs/6071549328#step:18:33
+}
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
@@ -1474,7 +1473,7 @@ assert_equal "#{N}#{N}", %Q{
 }
 
 # enc_table
-assert_equal "#{N/10}", %Q{
+assert_equal "100", %Q{
   Ractor.new do
     loop do
       Encoding.find("test-enc-#{rand(5_000)}").inspect
@@ -1483,7 +1482,7 @@ assert_equal "#{N/10}", %Q{
   end
 
   src = Encoding.find("UTF-8")
-  #{N/10}.times{|i|
+  100.times{|i|
     src.replicate("test-enc-\#{i}")
   }
 }
@@ -1543,7 +1542,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3575374374/jobs/6011846425
+}
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end

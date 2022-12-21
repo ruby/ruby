@@ -10,28 +10,15 @@
 static const char *day_names[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday",
     "Thursday", "Friday", "Saturday",
-    "Sun", "Mon", "Tue", "Wed",
-    "Thu", "Fri", "Sat"
 };
+static const int ABBREVIATED_DAY_NAME_LENGTH = 3;
 
 static const char *month_names[] = {
     "January", "February", "March", "April",
     "May", "June", "July", "August", "September",
     "October", "November", "December",
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
-
-static const char *merid_names[] = {
-    "am", "pm",
-    "a.m.", "p.m."
-};
-
-static const char *extz_pats[] = {
-    ":z",
-    "::z",
-    ":::z"
-};
+static const int ABBREVIATED_MONTH_NAME_LENGTH = 3;
 
 #define sizeof_array(o) (sizeof o / sizeof o[0])
 
@@ -75,7 +62,7 @@ num_pattern_p(const char *s)
 #define NUM_PATTERN_P() num_pattern_p(&fmt[fi + 1])
 
 static long
-read_digits(const char *s, VALUE *n, size_t width)
+read_digits(const char *s, size_t slen, VALUE *n, size_t width)
 {
     size_t l;
 
@@ -83,7 +70,7 @@ read_digits(const char *s, VALUE *n, size_t width)
         return 0;
 
     l = 0;
-    while (ISDIGIT(s[l])) {
+    while (l < slen && ISDIGIT(s[l])) {
         if (++l == width) break;
     }
 
@@ -131,7 +118,7 @@ do { \
 #define READ_DIGITS(n,w) \
 do { \
     size_t l; \
-    l = read_digits(&str[si], &n, w); \
+    l = read_digits(&str[si], slen - si, &n, w); \
     if (l == 0) \
 	fail();	\
     si += l; \
@@ -161,6 +148,12 @@ do { \
 
 VALUE date_zone_to_diff(VALUE);
 
+static inline int
+head_match_p(size_t len, const char *name, const char *str, size_t slen, size_t si)
+{
+    return slen - si >= len && strncasecmp(name, &str[si], len) == 0;
+}
+
 static size_t
 date__strptime_internal(const char *str, size_t slen,
 			const char *fmt, size_t flen, VALUE hash)
@@ -168,9 +161,18 @@ date__strptime_internal(const char *str, size_t slen,
     size_t si, fi;
     int c;
 
+#define HEAD_MATCH_P(len, name) head_match_p(len, name, str, slen, si)
     si = fi = 0;
 
     while (fi < flen) {
+	if (isspace((unsigned char)fmt[fi])) {
+	    while (si < slen && isspace((unsigned char)str[si]))
+		si++;
+	    while (++fi < flen && isspace((unsigned char)fmt[fi]));
+	    continue;
+	}
+
+	if (si >= slen) fail();
 
 	switch (fmt[fi]) {
 	  case '%':
@@ -194,12 +196,11 @@ date__strptime_internal(const char *str, size_t slen,
 		{
 		    int i;
 
-		    for (i = 0; i < (int)sizeof_array(extz_pats); i++)
-			if (strncmp(extz_pats[i], &fmt[fi],
-					strlen(extz_pats[i])) == 0) {
-			    fi += i;
-			    goto again;
-			}
+		    for (i = 1; i < 3 && fi + i < flen && fmt[fi+i] == ':'; ++i);
+		    if (fmt[fi+i] == 'z') {
+			fi += i - 1;
+			goto again;
+		    }
 		    fail();
 		}
 
@@ -209,10 +210,12 @@ date__strptime_internal(const char *str, size_t slen,
 		    int i;
 
 		    for (i = 0; i < (int)sizeof_array(day_names); i++) {
-			size_t l = strlen(day_names[i]);
-			if (strncasecmp(day_names[i], &str[si], l) == 0) {
+			const char *day_name = day_names[i];
+			size_t l = strlen(day_name);
+			if (HEAD_MATCH_P(l, day_name) ||
+			    HEAD_MATCH_P(l = ABBREVIATED_DAY_NAME_LENGTH, day_name)) {
 			    si += l;
-			    set_hash("wday", INT2FIX(i % 7));
+			    set_hash("wday", INT2FIX(i));
 			    goto matched;
 			}
 		    }
@@ -225,10 +228,12 @@ date__strptime_internal(const char *str, size_t slen,
 		    int i;
 
 		    for (i = 0; i < (int)sizeof_array(month_names); i++) {
-			size_t l = strlen(month_names[i]);
-			if (strncasecmp(month_names[i], &str[si], l) == 0) {
+			const char *month_name = month_names[i];
+			size_t l = strlen(month_name);
+			if (HEAD_MATCH_P(l, month_name) ||
+			    HEAD_MATCH_P(l = ABBREVIATED_MONTH_NAME_LENGTH, month_name)) {
 			    si += l;
-			    set_hash("mon", INT2FIX((i % 12) + 1));
+			    set_hash("mon", INT2FIX(i + 1));
 			    goto matched;
 			}
 		    }
@@ -402,18 +407,19 @@ date__strptime_internal(const char *str, size_t slen,
 
 	      case 'P':
 	      case 'p':
+		if (slen - si < 2) fail();
 		{
-		    int i;
-
-		    for (i = 0; i < 4; i++) {
-			size_t l = strlen(merid_names[i]);
-			if (strncasecmp(merid_names[i], &str[si], l) == 0) {
-			    si += l;
-			    set_hash("_merid", INT2FIX((i % 2) == 0 ? 0 : 12));
-			    goto matched;
-			}
+		    char c = str[si];
+		    const int hour = (c == 'P' || c == 'p') ? 12 : 0;
+		    if (!hour && !(c == 'A' || c == 'a')) fail();
+		    if ((c = str[si+1]) == '.') {
+			if (slen - si < 4 || str[si+3] != '.') fail();
+			c = str[si += 2];
 		    }
-		    fail();
+		    if (!(c == 'M' || c == 'm')) fail();
+		    si += 2;
+		    set_hash("_merid", INT2FIX(hour));
+		    goto matched;
 		}
 
 	      case 'Q':
@@ -587,7 +593,7 @@ date__strptime_internal(const char *str, size_t slen,
 
 		    b = rb_backref_get();
 		    rb_match_busy(b);
-		    m = f_match(pat, rb_usascii_str_new2(&str[si]));
+		    m = f_match(pat, rb_usascii_str_new(&str[si], slen - si));
 
 		    if (!NIL_P(m)) {
 			VALUE s, l, o;
@@ -619,22 +625,13 @@ date__strptime_internal(const char *str, size_t slen,
 		if (str[si] != '%')
 		    fail();
 		si++;
-		if (fi < flen)
-		    if (str[si] != fmt[fi])
+		if (fi < flen) {
+		    if (si >= slen || str[si] != fmt[fi])
 			fail();
-		si++;
+		    si++;
+		}
 		goto matched;
 	    }
-	  case ' ':
-	  case '\t':
-	  case '\n':
-	  case '\v':
-	  case '\f':
-	  case '\r':
-	    while (isspace((unsigned char)str[si]))
-		si++;
-	    fi++;
-	    break;
 	  default:
 	  ordinal:
 	    if (str[si] != fmt[fi])

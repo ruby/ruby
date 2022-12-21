@@ -721,13 +721,23 @@ w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
-    if (ivarg.num_ivar) {
-        rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
-                 CLASS_OF(arg->obj));
-    }
+
     if (shape_id != rb_shape_get_shape_id(arg->obj)) {
-        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
-                 CLASS_OF(arg->obj));
+        rb_shape_t * expected_shape = rb_shape_get_shape_by_id(shape_id);
+        rb_shape_t * actual_shape = rb_shape_get_shape(arg->obj);
+
+        // If the shape tree got _shorter_ then we probably removed an IV
+        // If the shape tree got longer, then we probably added an IV.
+        // The exception message might not be accurate when someone adds and
+        // removes the same number of IVs, but they will still get an exception
+        if (rb_shape_depth(expected_shape) > rb_shape_depth(actual_shape)) {
+            rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
+                    CLASS_OF(arg->obj));
+        }
+        else {
+            rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
+                    CLASS_OF(arg->obj));
+        }
     }
 }
 

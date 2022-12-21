@@ -17,7 +17,7 @@ class Gem::Ext::Builder
     $1.downcase
   end
 
-  def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil)
+  def self.make(dest_path, results, make_dir = Dir.pwd, sitedir = nil, targets = ["clean", "", "install"])
     unless File.exist? File.join(make_dir, "Makefile")
       raise Gem::InstallError, "Makefile not found"
     end
@@ -40,7 +40,7 @@ class Gem::Ext::Builder
       env << "sitelibdir=%s" % sitedir
     end
 
-    ["clean", "", "install"].each do |target|
+    targets.each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
       cmd = [
         *make_program,

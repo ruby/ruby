@@ -29,6 +29,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/error.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
@@ -1578,7 +1579,7 @@ cont_restore_1(rb_context_t *cont)
     cont_restore_thread(cont);
 
     /* restore machine stack */
-#ifdef _M_AMD64
+#if defined(_M_AMD64) && !defined(__MINGW64__)
     {
         /* workaround for x64 SEH */
         jmp_buf buf;
@@ -2068,6 +2069,14 @@ fiber_storage_get(rb_fiber_t *fiber)
     return storage;
 }
 
+static void storage_access_must_be_from_same_fiber(VALUE self) {
+    rb_fiber_t *fiber = fiber_ptr(self);
+    rb_fiber_t *current = fiber_current();
+    if (fiber != current) {
+        rb_raise(rb_eArgError, "Fiber storage can only be accessed from the Fiber it belongs to");
+    }
+}
+
 /**
  *  call-seq: Fiber.current.storage -> hash (dup)
  *
@@ -2076,6 +2085,7 @@ fiber_storage_get(rb_fiber_t *fiber)
 static VALUE
 rb_fiber_storage_get(VALUE self)
 {
+    storage_access_must_be_from_same_fiber(self);
     return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
 }
 
@@ -2090,8 +2100,15 @@ fiber_storage_validate_each(VALUE key, VALUE value, VALUE _argument)
 static void
 fiber_storage_validate(VALUE value)
 {
+    // nil is an allowed value and will be lazily initialized.
+    if (value == Qnil) return;
+
     if (!RB_TYPE_P(value, T_HASH)) {
         rb_raise(rb_eTypeError, "storage must be a hash");
+    }
+
+    if (RB_OBJ_FROZEN(value)) {
+        rb_raise(rb_eFrozenError, "storage must not be frozen");
     }
 
     rb_hash_foreach(value, fiber_storage_validate_each, Qundef);
@@ -2121,6 +2138,12 @@ fiber_storage_validate(VALUE value)
 static VALUE
 rb_fiber_storage_set(VALUE self, VALUE value)
 {
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
+          "Fiber#storage= is experimental and may be removed in the future!");
+    }
+
+    storage_access_must_be_from_same_fiber(self);
     fiber_storage_validate(value);
 
     fiber_ptr(self)->cont.saved_ec.storage = rb_obj_dup(value);
@@ -2130,7 +2153,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
 /**
  *  call-seq: Fiber[key] -> value
  *
- *  Returns the value of the fiber-local variable identified by +key+.
+ *  Returns the value of the fiber storage variable identified by +key+.
  *
  *  The +key+ must be a symbol, and the value is set by Fiber#[]= or
  *  Fiber#store.
@@ -2153,7 +2176,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 /**
  *  call-seq: Fiber[key] = value
  *
- *  Assign +value+ to the fiber-local variable identified by +key+.
+ *  Assign +value+ to the fiber storage variable identified by +key+.
  *  The variable is created if it doesn't exist.
  *
  *  +key+ must be a Symbol, otherwise a TypeError is raised.
@@ -2177,9 +2200,6 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
     if (storage == Qundef || storage == Qtrue) {
         // The default, inherit storage (dup) from the current fiber:
         storage = inherit_fiber_storage();
-    }
-    else if (storage == Qfalse) {
-        storage = current_fiber_storage();
     }
     else /* nil, hash, etc. */ {
         fiber_storage_validate(storage);
@@ -2292,18 +2312,6 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *    end.resume
  *    Fiber[:x] # => 1
  *
- *  If the <tt>storage</tt> is <tt>false</tt>, this function uses the current
- *  fiber's storage by reference. This is used for Enumerator to create
- *  hidden fiber.
- *
- *    Fiber[:count] = 0
- *    enumerator = Enumerator.new do |y|
- *      loop{y << (Fiber[:count] += 1)}
- *    end
- *    Fiber[:count] # => 0
- *    enumerator.next # => 1
- *    Fiber[:count] # => 1
- *
  *  If the given <tt>storage</tt> is <tt>nil</tt>, this function will lazy
  *  initialize the internal storage, which starts as an empty hash.
  *
@@ -2315,7 +2323,7 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage,
  *  and it must be an instance of Hash.
  *
- *  Explicitly using `storage: true/false` is currently experimental and may
+ *  Explicitly using `storage: true` is currently experimental and may
  *  change in the future.
  */
 static VALUE

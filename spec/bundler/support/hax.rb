@@ -33,11 +33,4 @@ module Gem
   if ENV["BUNDLER_SPEC_GEM_SOURCES"]
     self.sources = [ENV["BUNDLER_SPEC_GEM_SOURCES"]]
   end
-
-  # We only need this hack for rubygems versions without the BundlerVersionFinder
-  if Gem.rubygems_version < Gem::Version.new("2.7.0")
-    @path_to_default_spec_map.delete_if do |_path, spec|
-      spec.name == "bundler"
-    end
-  end
 end

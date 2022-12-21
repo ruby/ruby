@@ -136,11 +136,7 @@ module Bundler
 
         mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
+        content = ERB.new(template, :trim_mode => "-").result(binding)
 
         File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
         if Gem.win_platform? || options[:all_platforms]
@@ -183,11 +179,7 @@ module Bundler
 
         mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
+        content = ERB.new(template, :trim_mode => "-").result(binding)
 
         File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
         if Gem.win_platform? || options[:all_platforms]
@@ -226,12 +218,10 @@ module Bundler
 
       requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.map do |spec|
-        begin
-          Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
-        rescue TypeError
-          error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-          raise Gem::InvalidSpecificationException, error_message
-        end
+        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
       end.flatten
       Bundler.rubygems.load_plugin_files(path_plugin_files)
       Bundler.rubygems.load_env_plugins

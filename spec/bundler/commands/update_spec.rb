@@ -361,6 +361,68 @@ RSpec.describe "bundle update" do
       expect(out).to include("Installing quickbooks-ruby 1.0.19").and include("Installing oauth2 1.4.10")
     end
 
+    it "does not downgrade direct dependencies when using gemspec sources" do
+      create_file("rails.gemspec", <<-G)
+        Gem::Specification.new do |gem|
+          gem.name = "rails"
+          gem.version = "7.1.0.alpha"
+          gem.author = "DHH"
+          gem.summary = "Full-stack web application framework."
+        end
+      G
+
+      build_repo4 do
+        build_gem "rake", "12.3.3"
+        build_gem "rake", "13.0.6"
+
+        build_gem "sneakers", "2.11.0" do |s|
+          s.add_dependency "rake"
+        end
+
+        build_gem "sneakers", "2.12.0" do |s|
+          s.add_dependency "rake", "~> 12.3"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec
+
+        gem "rake"
+        gem "sneakers"
+      G
+
+      lockfile <<~L
+        PATH
+          remote: .
+          specs:
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            rake (13.0.6)
+            sneakers (2.11.0)
+              rake
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          rake
+          sneakers
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update --verbose"
+
+      expect(out).not_to include("Installing sneakers 2.12.0")
+      expect(out).not_to include("Installing rake 12.3.3")
+      expect(out).to include("Installing sneakers 2.11.0").and include("Installing rake 13.0.6")
+    end
+
     it "does not downgrade indirect dependencies unnecessarily" do
       build_repo4 do
         build_gem "a" do |s|
@@ -1409,7 +1471,10 @@ RSpec.describe "bundle update conservative" do
         build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "foo", %w[2.0.0.pre] do |s|
+          s.add_dependency "bar"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 2.1.2.pre 3.0.0 3.1.0.pre 4.0.0.pre]
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
@@ -1472,6 +1537,32 @@ RSpec.describe "bundle update conservative" do
         bundle "update --minor --strict", :all => true
 
         expect(the_bundle).to include_gems "foo 1.5.0", "bar 2.1.1", "qux 1.1.0"
+      end
+    end
+
+    context "pre" do
+      it "defaults to major" do
+        bundle "update --pre foo bar"
+
+        expect(the_bundle).to include_gems "foo 2.0.0.pre", "bar 4.0.0.pre", "qux 1.0.0"
+      end
+
+      it "patch preferred" do
+        bundle "update --patch --pre foo bar"
+
+        expect(the_bundle).to include_gems "foo 1.4.5", "bar 2.1.2.pre", "qux 1.0.0"
+      end
+
+      it "minor preferred" do
+        bundle "update --minor --pre foo bar"
+
+        expect(the_bundle).to include_gems "foo 1.5.1", "bar 3.1.0.pre", "qux 1.0.0"
+      end
+
+      it "major preferred" do
+        bundle "update --major --pre foo bar"
+
+        expect(the_bundle).to include_gems "foo 2.0.0.pre", "bar 4.0.0.pre", "qux 1.0.0"
       end
     end
   end

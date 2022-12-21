@@ -2959,6 +2959,8 @@ ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
     return ST_CONTINUE;
 }
 
+void rb_exc_check_circular_cause(VALUE exc);
+
 static VALUE
 exception_loader(VALUE exc, VALUE obj)
 {
@@ -2972,6 +2974,8 @@ exception_loader(VALUE exc, VALUE obj)
     if (RB_TYPE_P(exc, T_CLASS)) return obj; // maybe called from Marshal's TYPE_USERDEF
 
     rb_ivar_foreach(obj, ivar_copy_i, exc);
+
+    rb_exc_check_circular_cause(exc);
 
     if (rb_attr_get(exc, id_bt) == rb_attr_get(exc, id_bt_locations)) {
         rb_ivar_set(exc, id_bt_locations, Qnil);
@@ -3024,14 +3028,12 @@ Init_Exception(void)
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
-    ID id_path = rb_intern_const("path");
-
     /* the path failed to parse */
-    rb_attr(rb_eSyntaxError, id_path, TRUE, FALSE, FALSE);
+    rb_attr(rb_eSyntaxError, idPath, TRUE, FALSE, FALSE);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
-    rb_attr(rb_eLoadError, id_path, TRUE, FALSE, FALSE);
+    rb_attr(rb_eLoadError, idPath, TRUE, FALSE, FALSE);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 

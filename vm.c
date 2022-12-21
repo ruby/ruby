@@ -66,6 +66,8 @@ MJIT_FUNC_EXPORTED
 #endif
 VALUE vm_exec(rb_execution_context_t *, bool);
 
+extern const char *const rb_debug_counter_names[];
+
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
 VM_EP_LEP(const VALUE *ep)
@@ -387,20 +389,19 @@ static inline VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t 
 static VALUE
 mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
-    uintptr_t func_i = (uintptr_t)(body->jit_func);
-    ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
-    switch ((enum rb_mjit_iseq_func)func_i) {
-      case NOT_ADDED_JIT_ISEQ_FUNC:
+    uintptr_t mjit_state = (uintptr_t)(body->jit_func);
+    ASSUME(MJIT_FUNC_STATE_P(mjit_state));
+    switch ((enum rb_mjit_func_state)mjit_state) {
+      case MJIT_FUNC_NOT_COMPILED:
         if (body->total_calls == mjit_opts.call_threshold) {
             rb_mjit_add_iseq_to_process(iseq);
-            if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
+            if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
                 return body->jit_func(ec, ec->cfp);
             }
         }
         break;
-      case NOT_READY_JIT_ISEQ_FUNC:
-      case NOT_COMPILED_JIT_ISEQ_FUNC:
-      default: // to avoid warning with LAST_JIT_ISEQ_FUNC
+      case MJIT_FUNC_COMPILING:
+      case MJIT_FUNC_FAILED:
         break;
     }
     return Qundef;
@@ -439,7 +440,7 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else if (UNLIKELY((uintptr_t)(func = body->jit_func) <= LAST_JIT_ISEQ_FUNC)) {
+    else if (UNLIKELY(MJIT_FUNC_STATE_P(func = body->jit_func))) {
         return mjit_check_iseq(ec, iseq, body);
     }
 
@@ -466,7 +467,6 @@ VALUE rb_cThread;
 VALUE rb_mRubyVMFrozenCore;
 VALUE rb_block_param_proxy;
 
-#define ruby_vm_redefined_flag GET_VM()->redefined_flag
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_ractor_t *ruby_single_main_ractor;
@@ -580,6 +580,8 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *      :global_cvar_state=>27
  *    }
  *
+ *  If <tt>USE_DEBUG_COUNTER</tt> is enabled, debug counters will be included.
+ *
  *  The contents of the hash are implementation specific and may be changed in
  *  the future.
  *
@@ -623,6 +625,21 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(global_cvar_state, ruby_vm_global_cvar_state);
     SET(next_shape_id, (rb_serial_t)GET_VM()->next_shape_id);
 #undef SET
+
+#if USE_DEBUG_COUNTER
+    ruby_debug_counter_show_at_exit(FALSE);
+    for (size_t i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
+        const VALUE name = rb_sym_intern_ascii_cstr(rb_debug_counter_names[i]);
+        const VALUE boxed_value = SIZET2NUM(rb_debug_counter[i]);
+
+        if (key == name) {
+            return boxed_value;
+        }
+        else if (hash != Qnil) {
+            rb_hash_aset(hash, name, boxed_value);
+        }
+    }
+#endif
 
     if (!NIL_P(key)) { /* matched key should return above */
         rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
@@ -1894,6 +1911,7 @@ rb_iter_break_value(VALUE val)
 
 /* optimization: redefine management */
 
+short ruby_vm_redefined_flag[BOP_LAST_];
 static st_table *vm_opt_method_def_table = 0;
 static st_table *vm_opt_mid_table = 0;
 
@@ -2035,6 +2053,8 @@ vm_init_redefined_flag(void)
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));
     OP(NilP, NIL_P), (C(NilClass));
+    OP(Cmp, CMP), (C(Integer), C(Float), C(String));
+    OP(Default, DEFAULT), (C(Hash));
 #undef C
 #undef OP
 }

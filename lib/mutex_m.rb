@@ -40,7 +40,7 @@
 #
 module Mutex_m
 
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
   Ractor.make_shareable(VERSION) if defined?(Ractor)
 
   def Mutex_m.define_aliases(cl) # :nodoc:

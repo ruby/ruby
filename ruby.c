@@ -262,7 +262,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
 # define PLATFORM_JIT_OPTION "--yjit"
 #else
-# define PLATFORM_JIT_OPTION "--mjit"
+# define PLATFORM_JIT_OPTION "--mjit (experimental)"
 #endif
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
@@ -285,12 +285,12 @@ usage(const char *name, int help, int highlight, int columns)
         M("-w",		   "",			   "turn warnings on for your script"),
         M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION " (experimental)"),
+        M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
 #if USE_MJIT
         M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
 #endif
 #if USE_YJIT
-        M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
+        M("--yjit",        "",                     "enable in-process JIT compiler"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
@@ -337,10 +337,8 @@ usage(const char *name, int help, int highlight, int columns)
 #endif
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
-#if YJIT_STATS
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
-#endif
-        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 256)"),
+        M("--yjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: 64)"),
         M("--yjit-call-threshold=num", "", "Number of calls to trigger JIT (default: 10)"),
         M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
@@ -378,7 +376,7 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(mjit_option_messages[i]);
 #endif
 #if USE_YJIT
-    printf("%s""YJIT options (experimental):%s\n", sb, se);
+    printf("%s""YJIT options:%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
 #endif
@@ -1508,7 +1506,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
                 setup_yjit_options(s);
 #else
-                rb_warn("Ruby was built without YJIT support");
+                rb_warn("Ruby was built without YJIT support."
+                        " You may need to install rustc to build Ruby with YJIT.");
 #endif
             }
             else if (strcmp("yydebug", s) == 0) {

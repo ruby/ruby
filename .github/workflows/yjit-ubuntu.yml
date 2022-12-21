@@ -3,19 +3,17 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -47,7 +45,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: "check-yjit-bindings"
+          - test_task: "yjit-bindgen"
+            hint: "To fix: use patch in logs"
             configure: "--with-gcc=clang-12 --enable-yjit=dev"
 
           - test_task: "check"

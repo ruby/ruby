@@ -14,7 +14,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       ["keyUsage","keyCertSign, cRLSign",true],
       ["subjectKeyIdentifier","hash",false],
     ]
-    dgst = OpenSSL::Digest.new('SHA1')
+    dgst = OpenSSL::Digest.new('SHA256')
     cert = OpenSSL::TestUtils.issue_cert(
       subj, key, s, exts, nil, nil, digest: dgst, not_before: now, not_after: now+3600)
 
@@ -42,7 +42,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::Sequence, sig.class)
     assert_equal(2, sig.value.size)
     assert_equal(OpenSSL::ASN1::ObjectId, sig.value[0].class)
-    assert_equal("1.2.840.113549.1.1.5", sig.value[0].oid)
+    assert_equal("1.2.840.113549.1.1.11", sig.value[0].oid)
     assert_equal(OpenSSL::ASN1::Null, sig.value[1].class)
 
     dn = tbs_cert.value[3] # issuer
@@ -189,7 +189,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_equal(OpenSSL::ASN1::Null, pkey.value[0].value[1].class)
 
     assert_equal(OpenSSL::ASN1::BitString, sig_val.class)
-    cululated_sig = key.sign(OpenSSL::Digest.new('SHA1'), tbs_cert.to_der)
+    cululated_sig = key.sign(OpenSSL::Digest.new('SHA256'), tbs_cert.to_der)
     assert_equal(cululated_sig, sig_val.value)
   end
 

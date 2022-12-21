@@ -50,6 +50,9 @@ fn main() {
         // Don't want to copy over C comment
         .generate_comments(false)
 
+        // Makes the output more compact
+        .merge_extern_blocks(true)
+
         // Don't want layout tests as they are platform dependent
         .layout_tests(false)
 
@@ -85,12 +88,14 @@ fn main() {
         // From shape.h
         .allowlist_function("rb_shape_get_shape_id")
         .allowlist_function("rb_shape_get_shape_by_id")
-        .allowlist_function("rb_shape_id_num_bits")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_get_next")
         .allowlist_function("rb_shape_id")
         .allowlist_function("rb_shape_transition_shape_capa")
+        .allowlist_function("rb_shape_obj_too_complex")
+        .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_var("OBJ_TOO_COMPLEX_SHAPE_ID")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")

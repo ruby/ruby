@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-require "pty" unless RUBY_ENGINE == 'truffleruby'
+begin
+  require "pty"
+rescue LoadError
+  return
+end
+
 require "tempfile"
 require "tmpdir"
 require "envutil"
@@ -119,11 +124,13 @@ module TestIRB
 
       output = run_ruby_file do
         type "step"
+        type "step"
         type "continue"
       end
 
       assert_match(/\(rdbg:irb\) step/, output)
-      assert_match(/=>   2|   puts "Hello"/, output)
+      assert_match(/=>   5\| foo/, output)
+      assert_match(/=>   2\|   puts "Hello"/, output)
     end
 
     def test_continue
@@ -198,6 +205,8 @@ module TestIRB
 
     private
 
+    TIMEOUT_SEC = 3
+
     def run_ruby_file(&block)
       cmd = [EnvUtil.rubybin, "-I", LIB, @ruby_file.to_path]
       tmp_dir = Dir.mktmpdir
@@ -211,7 +220,7 @@ module TestIRB
       yield
 
       PTY.spawn(IRB_AND_DEBUGGER_OPTIONS.merge("IRBRC" => rc_file.to_path), *cmd) do |read, write, pid|
-        Timeout.timeout(3) do
+        Timeout.timeout(TIMEOUT_SEC) do
           while line = safe_gets(read)
             lines << line
 
@@ -223,6 +232,10 @@ module TestIRB
             end
           end
         end
+      ensure
+        read.close
+        write.close
+        kill_safely(pid)
       end
 
       lines.join
@@ -246,6 +259,35 @@ module TestIRB
       read.gets
     rescue Errno::EIO
       nil
+    end
+
+    def kill_safely pid
+      return if wait_pid pid, TIMEOUT_SEC
+
+      Process.kill :TERM, pid
+      return if wait_pid pid, 0.2
+
+      Process.kill :KILL, pid
+      Process.waitpid(pid)
+    rescue Errno::EPERM, Errno::ESRCH
+    end
+
+    def wait_pid pid, sec
+      total_sec = 0.0
+      wait_sec = 0.001 # 1ms
+
+      while total_sec < sec
+        if Process.waitpid(pid, Process::WNOHANG) == pid
+          return true
+        end
+        sleep wait_sec
+        total_sec += wait_sec
+        wait_sec *= 2
+      end
+
+      false
+    rescue Errno::ECHILD
+      true
     end
 
     def type(command)

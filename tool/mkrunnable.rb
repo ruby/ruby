@@ -93,7 +93,9 @@ def ln_relative(src, dest, executable = false)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  return ln_exe(src, dest) if executable
+  if executable
+    return (ln_exe(src, dest) if File.exist?(src))
+  end
   clean_link(relative_path_from(src, parent), dest) {|s, d| ln_safe(s, d)}
 end
 

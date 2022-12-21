@@ -9,6 +9,9 @@ module IRB
 
   module ExtendCommand
     class ShowSource < Nop
+      category "Context"
+      description "Show the source code of a given method or constant."
+
       class << self
         def transform_args(args)
           # Return a string literal as is for backward compatibility
@@ -61,11 +64,6 @@ module IRB
             end
           end
           first_line
-        end
-
-        def string_literal?(args)
-          sexp = Ripper.sexp(args)
-          sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
         end
       end
 

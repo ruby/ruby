@@ -272,8 +272,20 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
 
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
-    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
+
+    if (rb_shape_id(src_shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
+        struct rb_id_table * table = rb_id_table_create(rb_id_table_size(ROBJECT_IV_HASH(obj)));
+
+        rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
+        rb_shape_set_too_complex(dest);
+
+        ROBJECT(dest)->as.heap.ivptr = (VALUE *)table;
+
+        return;
+    }
+
+    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
     rb_shape_t * shape_to_set_on_dest = src_shape;
     VALUE * src_buf;
     VALUE * dest_buf;
@@ -677,8 +689,8 @@ inspect_i(st_data_t k, st_data_t v, st_data_t a)
     else {
         rb_str_cat2(str, ", ");
     }
-    rb_str_catf(str, "%"PRIsVALUE"=%+"PRIsVALUE,
-                rb_id2str(id), value);
+    rb_str_catf(str, "%"PRIsVALUE"=", rb_id2str(id));
+    rb_str_buf_append(str, rb_inspect(value));
 
     return ST_CONTINUE;
 }

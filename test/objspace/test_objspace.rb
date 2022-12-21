@@ -272,6 +272,35 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_too_complex_shape
+    if defined?(RubyVM::Shape)
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        Object.new.instance_variable_set(:"@a#{_1}", 1)
+      end
+
+      tc = Object.new
+      tc.instance_variable_set(:@new_ivar, 1)
+      info = ObjectSpace.dump(tc)
+      assert_match(/"too_complex_shape":true/, info)
+      if defined?(JSON)
+        assert_true(JSON.parse(info)["too_complex_shape"])
+      end
+    end
+  end
+
+  class NotTooComplex ; end
+
+  def test_dump_not_too_complex_shape
+    tc = NotTooComplex.new
+    tc.instance_variable_set(:@new_ivar, 1)
+    info = ObjectSpace.dump(tc)
+
+    assert_not_match(/"too_complex_shape"/, info)
+    if defined?(JSON)
+      assert_nil(JSON.parse(info)["too_complex_shape"])
+    end
+  end
+
   def test_dump_to_default
     line = nil
     info = nil
@@ -414,7 +443,7 @@ class TestObjSpace < Test::Unit::TestCase
           @obj1 = Object.new
           GC.start
           @obj2 = Object.new
-          ObjectSpace.dump_all(output: :stdout, since: gc_gen)
+          ObjectSpace.dump_all(output: :stdout, since: gc_gen, shapes: false)
         end
 
         p dump_my_heap_please
@@ -422,7 +451,7 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal 'nil', output.pop
       since = output.shift.to_i
       assert_operator output.size, :>, 0
-      generations = output.map { |l| JSON.parse(l)["generation"] }.uniq.sort
+      generations = output.map { |l| JSON.parse(l) }.map { |o| o["generation"] }.uniq.sort
       assert_equal [since, since + 1], generations
     end
   end
@@ -479,6 +508,7 @@ class TestObjSpace < Test::Unit::TestCase
       output.each { |l|
         obj = JSON.parse(l)
         next if obj["type"] == "ROOT"
+        next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
         assert_equal 0, obj["slot_size"] % GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
@@ -792,6 +822,16 @@ class TestObjSpace < Test::Unit::TestCase
     end
     dump = ObjectSpace.dump(obj)
     assert_equal name, JSON.parse(dump)["method"], dump
+  end
+
+  def test_dump_shapes
+    json = ObjectSpace.dump_shapes(output: :string)
+    json.each_line do |line|
+      assert_include(line, '"type":"SHAPE"')
+    end
+
+    assert_empty ObjectSpace.dump_shapes(output: :string, since: RubyVM.stat(:next_shape_id))
+    assert_equal 2, ObjectSpace.dump_shapes(output: :string, since: RubyVM.stat(:next_shape_id) - 2).lines.size
   end
 
   private

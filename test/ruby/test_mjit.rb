@@ -11,6 +11,7 @@ class TestMJIT < Test::Unit::TestCase
     /\AJIT recompile: .+\n\z/,
     /\AJIT inline: .+\n\z/,
     /\AJIT cancel: .+\n\z/,
+    /\AJIT batch \([^)]+ms\): .+\n\z/,
     /\ASuccessful MJIT finish\n\z/,
   ]
   MAX_CACHE_PATTERNS = [
@@ -67,11 +68,11 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_nop
-    assert_compile_once('nil rescue true', result_inspect: 'nil', insns: %i[nop])
+    assert_compile_twice('nil rescue true', result_inspect: 'nil', insns: %i[nop])
   end
 
   def test_compile_insn_local
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[setlocal_WC_0 getlocal_WC_0])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[setlocal_WC_0 getlocal_WC_0])
     begin;
       foo = 1
       foo
@@ -96,7 +97,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_blockparam
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2, insns: %i[getblockparam setblockparam])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 2, insns: %i[getblockparam setblockparam])
     begin;
       def foo(&b)
         a = b
@@ -104,6 +105,7 @@ class TestMJIT < Test::Unit::TestCase
         a.call + 2
       end
 
+      print foo { 1 }
       print foo { 1 }
     end;
   end
@@ -124,25 +126,25 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_getspecial
-    assert_compile_once('$1', result_inspect: 'nil', insns: %i[getspecial])
+    assert_compile_twice('$1', result_inspect: 'nil', insns: %i[getspecial])
   end
 
   def test_compile_insn_setspecial
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
     begin;
       true if nil.nil?..nil.nil?
     end;
   end
 
   def test_compile_insn_instancevariable
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getinstancevariable setinstancevariable])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getinstancevariable setinstancevariable])
     begin;
       @foo = 1
       @foo
     end;
 
     # optimized getinstancevariable call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 1, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 2, call_threshold: 2)
     begin;
       class A
         def initialize
@@ -162,7 +164,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_classvariable
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 1, insns: %i[getclassvariable setclassvariable])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 1, insns: %i[getclassvariable setclassvariable])
     begin;
       class Foo
         def self.foo
@@ -172,19 +174,22 @@ class TestMJIT < Test::Unit::TestCase
       end
 
       print Foo.foo
+      print Foo.foo
     end;
   end
 
   def test_compile_insn_constant
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[opt_getconstant_path setconstant])
-    begin;
-      FOO = 1
-      FOO
-    end;
+    EnvUtil.suppress_warning do
+      assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[opt_getconstant_path setconstant])
+      begin;
+        FOO = 1
+        FOO
+      end;
+    end
   end
 
   def test_compile_insn_global
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getglobal setglobal])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getglobal setglobal])
     begin;
       $foo = 1
       $foo
@@ -192,26 +197,27 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putnil
-    assert_compile_once('nil', result_inspect: 'nil', insns: %i[putnil])
+    assert_compile_twice('nil', result_inspect: 'nil', insns: %i[putnil])
   end
 
   def test_compile_insn_putself
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 1, insns: %i[putself])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 1, insns: %i[putself])
     begin;
-      proc { print "hello" }.call
+      2.times { print "hello" }
     end;
   end
 
   def test_compile_insn_putobject
-    assert_compile_once('0', result_inspect: '0', insns: %i[putobject_INT2FIX_0_])
-    assert_compile_once('1', result_inspect: '1', insns: %i[putobject_INT2FIX_1_])
-    assert_compile_once('2', result_inspect: '2', insns: %i[putobject])
+    assert_compile_twice('0', result_inspect: '0', insns: %i[putobject_INT2FIX_0_])
+    assert_compile_twice('1', result_inspect: '1', insns: %i[putobject_INT2FIX_1_])
+    assert_compile_twice('2', result_inspect: '2', insns: %i[putobject])
   end
 
   def test_compile_insn_definemethod_definesmethod
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworld', success_count: 3, insns: %i[definemethod definesmethod])
+    verbose_bak, $VERBOSE = $VERBOSE, nil
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworldhelloworld', success_count: 3, insns: %i[definemethod definesmethod])
     begin;
-      print 1.times.map {
+      print 2.times.map {
         def method_definition
           'hello'
         end
@@ -223,12 +229,14 @@ class TestMJIT < Test::Unit::TestCase
         method_definition + smethod_definition
       }.join
     end;
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_putspecialobject
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'a', success_count: 2, insns: %i[putspecialobject])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'aa', success_count: 2, insns: %i[putspecialobject])
     begin;
-      print 1.times.map {
+      print 2.times.map {
         def a
           'a'
         end
@@ -241,15 +249,15 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putstring_concatstrings_objtostring
-    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings objtostring])
+    assert_compile_twice('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings objtostring])
   end
 
   def test_compile_insn_toregexp
-    assert_compile_once('/#{true}/ =~ "true"', result_inspect: '0', insns: %i[toregexp])
+    assert_compile_twice('/#{true}/ =~ "true"', result_inspect: '0', insns: %i[toregexp])
   end
 
   def test_compile_insn_newarray
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '[1, 2, 3]', insns: %i[newarray])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '[1, 2, 3]', insns: %i[newarray])
     begin;
       a, b, c = 1, 2, 3
       [a, b, c]
@@ -257,39 +265,39 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_newarraykwsplat
-    assert_compile_once('[**{ x: 1 }]', result_inspect: '[{:x=>1}]', insns: %i[newarraykwsplat])
+    assert_compile_twice('[**{ x: 1 }]', result_inspect: '[{:x=>1}]', insns: %i[newarraykwsplat])
   end
 
   def test_compile_insn_intern_duparray
-    assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
+    assert_compile_twice('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
 
   def test_compile_insn_expandarray
-    assert_compile_once('y = [ true, false, nil ]; x, = y; x', result_inspect: 'true', insns: %i[expandarray])
+    assert_compile_twice('y = [ true, false, nil ]; x, = y; x', result_inspect: 'true', insns: %i[expandarray])
   end
 
   def test_compile_insn_concatarray
-    assert_compile_once('["t", "r", *x = "u", "e"].join', result_inspect: '"true"', insns: %i[concatarray])
+    assert_compile_twice('["t", "r", *x = "u", "e"].join', result_inspect: '"true"', insns: %i[concatarray])
   end
 
   def test_compile_insn_splatarray
-    assert_compile_once('[*(1..2)]', result_inspect: '[1, 2]', insns: %i[splatarray])
+    assert_compile_twice('[*(1..2)]', result_inspect: '[1, 2]', insns: %i[splatarray])
   end
 
   def test_compile_insn_newhash
-    assert_compile_once('a = 1; { a: a }', result_inspect: '{:a=>1}', insns: %i[newhash])
+    assert_compile_twice('a = 1; { a: a }', result_inspect: '{:a=>1}', insns: %i[newhash])
   end
 
   def test_compile_insn_duphash
-    assert_compile_once('{ a: 1 }', result_inspect: '{:a=>1}', insns: %i[duphash])
+    assert_compile_twice('{ a: 1 }', result_inspect: '{:a=>1}', insns: %i[duphash])
   end
 
   def test_compile_insn_newrange
-    assert_compile_once('a = 1; 0..a', result_inspect: '0..1', insns: %i[newrange])
+    assert_compile_twice('a = 1; 0..a', result_inspect: '0..1', insns: %i[newrange])
   end
 
   def test_compile_insn_pop
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[pop])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[pop])
     begin;
       a = false
       b = 1
@@ -298,7 +306,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_dup
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '3', insns: %i[dup])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '3', insns: %i[dup])
     begin;
       a = 1
       a&.+(2)
@@ -306,7 +314,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_dupn
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[dupn])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[dupn])
     begin;
       klass = Class.new
       klass::X ||= true
@@ -314,7 +322,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_swap_topn
-    assert_compile_once('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
+    assert_compile_twice('{}["true"] = true', result_inspect: 'true', insns: %i[swap topn])
   end
 
   def test_compile_insn_reput
@@ -322,11 +330,11 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_setn
-    assert_compile_once('[nil][0] = 1', result_inspect: '1', insns: %i[setn])
+    assert_compile_twice('[nil][0] = 1', result_inspect: '1', insns: %i[setn])
   end
 
   def test_compile_insn_adjuststack
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[adjuststack])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[adjuststack])
     begin;
       x = [true]
       x[0] ||= nil
@@ -335,15 +343,16 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_defined
-    assert_compile_once('defined?(a)', result_inspect: 'nil', insns: %i[defined])
+    assert_compile_twice('defined?(a)', result_inspect: 'nil', insns: %i[defined])
   end
 
   def test_compile_insn_checkkeyword
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'true', success_count: 1, insns: %i[checkkeyword])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'truetrue', success_count: 1, insns: %i[checkkeyword])
     begin;
       def test(x: rand)
         x
       end
+      print test(x: true)
       print test(x: true)
     end;
   end
@@ -357,35 +366,36 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_send
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 3, insns: %i[send])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 4, insns: %i[send])
     begin;
+      print proc { yield_self { 1 } }.call
       print proc { yield_self { 1 } }.call
     end;
   end
 
   def test_compile_insn_opt_str_freeze
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"foo"', insns: %i[opt_str_freeze])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"foo"', insns: %i[opt_str_freeze])
     begin;
       'foo'.freeze
     end;
   end
 
   def test_compile_insn_opt_nil_p
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'false', insns: %i[opt_nil_p])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'false', insns: %i[opt_nil_p])
     begin;
       nil.nil?.nil?
     end;
   end
 
   def test_compile_insn_opt_str_uminus
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"bar"', insns: %i[opt_str_uminus])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"bar"', insns: %i[opt_str_uminus])
     begin;
       -'bar'
     end;
   end
 
   def test_compile_insn_opt_newarray_max
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '2', insns: %i[opt_newarray_max])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '2', insns: %i[opt_newarray_max])
     begin;
       a = 1
       b = 2
@@ -394,7 +404,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_newarray_min
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[opt_newarray_min])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[opt_newarray_min])
     begin;
       a = 1
       b = 2
@@ -403,11 +413,11 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_send_without_block
-    assert_compile_once('print', result_inspect: 'nil', insns: %i[opt_send_without_block])
+    assert_compile_twice('print', result_inspect: 'nil', insns: %i[opt_send_without_block])
   end
 
   def test_compile_insn_invokesuper
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 4, insns: %i[invokesuper])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 4, insns: %i[invokesuper])
     begin;
       mod = Module.new {
         def test
@@ -421,21 +431,23 @@ class TestMJIT < Test::Unit::TestCase
         end
       }
       print klass.new.test
+      print klass.new.test
     end;
   end
 
   def test_compile_insn_invokeblock_leave
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '2', success_count: 2, insns: %i[invokeblock leave])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '22', success_count: 2, insns: %i[invokeblock leave])
     begin;
       def foo
         yield
       end
       print foo { 2 }
+      print foo { 2 }
     end;
   end
 
   def test_compile_insn_throw
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '4', success_count: 2, insns: %i[throw])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '44', success_count: 2, insns: %i[throw])
     begin;
       def test
         proc do
@@ -448,11 +460,12 @@ class TestMJIT < Test::Unit::TestCase
         end.call
       end
       print test
+      print test
     end;
   end
 
   def test_compile_insn_jump_branchif
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: 'nil', insns: %i[jump branchif])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: 'nil', insns: %i[jump branchif])
     begin;
       a = false
       1 + 1 while a
@@ -460,7 +473,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_branchunless
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '1', insns: %i[branchunless])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '1', insns: %i[branchunless])
     begin;
       a = true
       if a
@@ -472,7 +485,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_branchnil
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '3', insns: %i[branchnil])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '3', insns: %i[branchnil])
     begin;
       a = 2
       a&.+(1)
@@ -480,7 +493,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_objtostring
-    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[objtostring])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[objtostring])
     begin;
       a = '2'
       "4#{a}"
@@ -488,15 +501,15 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_getconstant_path
-    assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getconstant_path])
+    assert_compile_twice('Struct', result_inspect: 'Struct', insns: %i[opt_getconstant_path])
   end
 
   def test_compile_insn_once
-    assert_compile_once('/#{true}/o =~ "true" && $~.to_a', result_inspect: '["true"]', insns: %i[once])
+    assert_compile_twice('/#{true}/o =~ "true" && $~.to_a', result_inspect: '["true"]', insns: %i[once])
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
@@ -506,34 +519,34 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_calc
-    assert_compile_once('4 + 2 - ((2 * 3 / 2) % 2)', result_inspect: '5', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
-    assert_compile_once('4.0 + 2.0 - ((2.0 * 3.0 / 2.0) % 2.0)', result_inspect: '5.0', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
-    assert_compile_once('4 + 2', result_inspect: '6')
+    assert_compile_twice('4 + 2 - ((2 * 3 / 2) % 2)', result_inspect: '5', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
+    assert_compile_twice('4.0 + 2.0 - ((2.0 * 3.0 / 2.0) % 2.0)', result_inspect: '5.0', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
+    assert_compile_twice('4 + 2', result_inspect: '6')
   end
 
   def test_compile_insn_opt_cmp
-    assert_compile_once('(1 == 1) && (1 != 2)', result_inspect: 'true', insns: %i[opt_eq opt_neq])
+    assert_compile_twice('(1 == 1) && (1 != 2)', result_inspect: 'true', insns: %i[opt_eq opt_neq])
   end
 
   def test_compile_insn_opt_rel
-    assert_compile_once('1 < 2 && 1 <= 1 && 2 > 1 && 1 >= 1', result_inspect: 'true', insns: %i[opt_lt opt_le opt_gt opt_ge])
+    assert_compile_twice('1 < 2 && 1 <= 1 && 2 > 1 && 1 >= 1', result_inspect: 'true', insns: %i[opt_lt opt_le opt_gt opt_ge])
   end
 
   def test_compile_insn_opt_ltlt
-    assert_compile_once('[1] << 2', result_inspect: '[1, 2]', insns: %i[opt_ltlt])
+    assert_compile_twice('[1] << 2', result_inspect: '[1, 2]', insns: %i[opt_ltlt])
   end
 
   def test_compile_insn_opt_and
-    assert_compile_once('1 & 3', result_inspect: '1', insns: %i[opt_and])
+    assert_compile_twice('1 & 3', result_inspect: '1', insns: %i[opt_and])
   end
 
   def test_compile_insn_opt_or
-    assert_compile_once('1 | 3', result_inspect: '3', insns: %i[opt_or])
+    assert_compile_twice('1 | 3', result_inspect: '3', insns: %i[opt_or])
   end
 
   def test_compile_insn_opt_aref
     # optimized call (optimized JIT) -> send call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '21', success_count: 2, call_threshold: 1, insns: %i[opt_aref])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '221', success_count: 1, call_threshold: 2, insns: %i[opt_aref])
     begin;
       obj = Object.new
       def obj.[](h)
@@ -542,11 +555,12 @@ class TestMJIT < Test::Unit::TestCase
 
       block = proc { |h| h[1] }
       print block.call({ 1 => 2 })
+      print block.call({ 1 => 2 })
       print block.call(obj)
     end;
 
     # send call -> optimized call (send JIT) -> optimized call
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 2, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 3, call_threshold: 2)
     begin;
       obj = Object.new
       def obj.[](h)
@@ -561,11 +575,11 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_aref_with
-    assert_compile_once("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
+    assert_compile_twice("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
   end
 
   def test_compile_insn_opt_aset
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
     begin;
       hash = { '1' => 2 }
       (hash['2'] = 2) + (hash[1.to_s] = 3)
@@ -573,7 +587,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_length_size
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '4', insns: %i[opt_length opt_size])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '4', insns: %i[opt_length opt_size])
     begin;
       array = [1, 2]
       array.length + array.size
@@ -581,20 +595,20 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_empty_p
-    assert_compile_once('[].empty?', result_inspect: 'true', insns: %i[opt_empty_p])
+    assert_compile_twice('[].empty?', result_inspect: 'true', insns: %i[opt_empty_p])
   end
 
   def test_compile_insn_opt_succ
-    assert_compile_once('1.succ', result_inspect: '2', insns: %i[opt_succ])
+    assert_compile_twice('1.succ', result_inspect: '2', insns: %i[opt_succ])
   end
 
   def test_compile_insn_opt_not
-    assert_compile_once('!!true', result_inspect: 'true', insns: %i[opt_not])
+    assert_compile_twice('!!true', result_inspect: 'true', insns: %i[opt_not])
   end
 
   def test_compile_insn_opt_regexpmatch2
-    assert_compile_once("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
-    assert_compile_once("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
+    assert_compile_twice("/true/ =~ 'true'", result_inspect: '0', insns: %i[opt_regexpmatch2])
+    assert_compile_twice("'true' =~ /true/", result_inspect: '0', insns: %i[opt_regexpmatch2])
   end
 
   def test_compile_insn_invokebuiltin
@@ -603,7 +617,7 @@ class TestMJIT < Test::Unit::TestCase
     EOS
     insns = collect_insns(iseq)
     mark_tested_insn(:invokebuiltin, used_insns: insns)
-    assert_eval_with_jit('print [].sample(1)', stdout: '[]', success_count: 1)
+    assert_eval_with_jit('print [].sample(1); print [].sample(1)', stdout: '[][]', success_count: 1)
   end
 
   def test_compile_insn_opt_invokebuiltin_delegate_leave
@@ -612,11 +626,11 @@ class TestMJIT < Test::Unit::TestCase
     EOS
     insns = collect_insns(iseq)
     mark_tested_insn(:opt_invokebuiltin_delegate_leave, used_insns: insns)
-    assert_eval_with_jit('print "\x00".unpack("c")', stdout: '[0]', success_count: 1)
+    assert_eval_with_jit('print "\x00".unpack("c");print "\x00".unpack("c")', stdout: '[0][0]', success_count: 1)
   end
 
   def test_compile_insn_checkmatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch])
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch])
     begin;
       ary = %w(hello good-bye)
       case 'hello'
@@ -627,23 +641,25 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_opt_pc
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 1)
     begin;
       def test(arg = 'hello')
         print arg
       end
       test
+      test
     end;
   end
 
   def test_mjit_output
-    out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, call_threshold: 5)
-    assert_equal("MJIT\n" * 5, out)
-    assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1 -> .+_ruby_mjit_p\d+u\d+\.c$/, err)
+    out, err = eval_with_jit('4.times { puts "MJIT" }', verbose: 1, call_threshold: 2)
+    assert_equal("MJIT\n" * 4, out)
+    assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1$/, err)
     assert_match(/^Successful MJIT finish$/, err)
   end
 
   def test_nothing_to_unload_with_jit_wait
+    omit 'unload_units is removed for now'
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 11, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
     begin;
       def a1() a2() end
@@ -662,6 +678,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_unload_units_on_fiber
+    omit 'unload_units is removed for now'
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 12, max_cache: 10, ignorable_patterns: MAX_CACHE_PATTERNS)
     begin;
       def a1() a2(false); a2(true) end
@@ -684,9 +701,10 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_unload_units_and_compaction
+    omit 'unload_units is removed for now'
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
-      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, call_threshold: 1, max_cache: 10)
+      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, call_threshold: 2, max_cache: 10)
       begin;
         i = 0
         while i < 11
@@ -741,12 +759,13 @@ class TestMJIT < Test::Unit::TestCase
       def arr
         [nil, [:type => :development]]
       end
+      arr
       p arr
     end;
   end
 
   def test_local_stack_on_exception
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 2)
     begin;
       def b
         raise
@@ -761,11 +780,12 @@ class TestMJIT < Test::Unit::TestCase
       end
 
       print a
+      print a
     end;
   end
 
   def test_local_stack_with_sp_motion_by_blockargs
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 2)
     begin;
       def b(base)
         1
@@ -782,11 +802,12 @@ class TestMJIT < Test::Unit::TestCase
       end
 
       print a
+      print a
     end;
   end
 
   def test_catching_deep_exception
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 4)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '11', success_count: 4)
     begin;
       def catch_true(paths, prefixes) # catch_except_p: true
         prefixes.each do |prefix| # catch_except_p: true
@@ -800,6 +821,7 @@ class TestMJIT < Test::Unit::TestCase
         catch_true(paths, prefixes)
       end
 
+      print wrapper(['1'], ['2'])
       print wrapper(['1'], ['2'])
     end;
   end
@@ -819,7 +841,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_c_method
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 2, recompile_count: 1, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aaa", success_count: 1, recompile_count: 1, call_threshold: 2)
     begin;
       def test(obj, recursive: nil)
         if recursive
@@ -856,7 +878,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_undefined_ivar
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 5, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "bbb", success_count: 4, call_threshold: 2)
     begin;
       class Foo
         def initialize
@@ -877,7 +899,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_inlined_setivar_frozen
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 2, call_threshold: 3)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "FrozenError\n", success_count: 1, call_threshold: 2)
     begin;
       class A
         def a
@@ -911,7 +933,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_attr_reader
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 3, call_threshold: 2)
     begin;
       class A
         attr_reader :a, :b
@@ -942,7 +964,7 @@ class TestMJIT < Test::Unit::TestCase
       print(2 * a.test)
     end;
 
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true", success_count: 1, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true", success_count: 3, call_threshold: 2)
     begin;
       class Hoge
         attr_reader :foo
@@ -1004,11 +1026,12 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_jump_to_precompiled_branch
-    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0", success_count: 1, call_threshold: 1)
+    assert_eval_with_jit("#{<<~'begin;'}\n#{<<~'end;'}", stdout: ".0.0", success_count: 1, call_threshold: 2)
     begin;
       def test(foo)
         ".#{foo unless foo == 1}" if true
       end
+      print test(0)
       print test(0)
     end;
   end
@@ -1038,7 +1061,7 @@ class TestMJIT < Test::Unit::TestCase
       omit '.bundle.dSYM directory is left but removing it is not supported for now'
     end
     Dir.mktmpdir("jit_test_clean_objects_on_exec_") do |dir|
-      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1)
+      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2)
       begin;
         def a; end; a
         exec "true"
@@ -1070,7 +1093,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_frame_omitted_inlining
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\n", success_count: 1, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\ntrue\ntrue\n", success_count: 2, call_threshold: 2)
     begin;
       class Integer
         remove_method :zero?
@@ -1079,20 +1102,20 @@ class TestMJIT < Test::Unit::TestCase
         end
       end
 
-      3.times do
+      4.times do
         p 0.zero?
       end
     end;
   end
 
   def test_block_handler_with_possible_frame_omitted_inlining
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n", success_count: 2, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "70.0\n70.0\n70.0\n70.0\n", success_count: 2, call_threshold: 2)
     begin;
       def multiply(a, b)
         a *= b
       end
 
-      3.times do
+      4.times do
         p multiply(7.0, 10.0)
       end
     end;
@@ -1131,7 +1154,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_mjit_pause_wait
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, call_threshold: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '', success_count: 0, call_threshold: 2)
     begin;
       RubyVM::MJIT.pause
       proc {}.call
@@ -1139,7 +1162,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_not_cancel_by_tracepoint_class
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 1, call_threshold: 2)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 3, call_threshold: 2)
     begin;
       TracePoint.new(:class) {}.enable
       2.times {}
@@ -1155,7 +1178,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_caller_locations_without_catch_table
-    out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1)
+    out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2)
     begin;
       def b                             # 2
         caller_locations.first          # 3
@@ -1173,64 +1196,31 @@ class TestMJIT < Test::Unit::TestCase
     assert_equal("-e:8:in `a'\n", lines[1])
   end
 
-  def test_fork_with_mjit_worker_thread
-    Dir.mktmpdir("jit_test_fork_with_mjit_worker_thread_") do |dir|
-      # call_threshold: 2 to skip fork block
-      out, err = eval_with_jit({ "TMPDIR" => dir }, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
-      begin;
-        def before_fork; end
-        def after_fork; end
-
-        before_fork; before_fork # the child should not delete this .o file
-        pid = Process.fork do # this child should not delete shared .pch file
-          sleep 2.0 # to prevent mixing outputs on Solaris
-          after_fork; after_fork # this child does not share JIT-ed after_fork with parent
-        end
-        after_fork; after_fork # this parent does not share JIT-ed after_fork with child
-
-        Process.waitpid(pid)
-      end;
-      success_count = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
-      debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
-      assert_equal(3, success_count, debug_info)
-
-      # assert no remove error
-      assert_equal("Successful MJIT finish\n" * 2, err.gsub(/^#{JIT_SUCCESS_PREFIX}:[^\n]+\n/, ''), debug_info)
-
-      # ensure objects are deleted
-      if RUBY_PLATFORM.match?(/darwin/)
-        omit '.bundle.dSYM directory is left but removing it is not supported for now'
-      end
-      assert_send([Dir, :empty?, dir], debug_info)
-    end
-  end if defined?(fork)
-
   def test_jit_failure
-    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 1, verbose: 1)
+    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
     begin;
-      1.times do
+      2.times do
         class A
         end
       end
     end;
     assert_match(/^MJIT warning: .+ unsupported instruction: defineclass/, err)
-    assert_match(/^JIT failure: block in <main>/, err)
   end
 
   private
 
   # The shortest way to test one proc
-  def assert_compile_once(script, result_inspect:, insns: [], uplevel: 1)
+  def assert_compile_twice(script, result_inspect:, insns: [], uplevel: 1)
     if script.match?(/\A\n.+\n\z/m)
       script = script.gsub(/^/, '  ')
     else
       script = " #{script} "
     end
-    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: uplevel + 1)
+    assert_eval_with_jit("test = proc {#{script}}; p test.call; p test.call", stdout: "#{result_inspect}\n#{result_inspect}\n", success_count: 1, insns: insns, uplevel: uplevel + 1)
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, call_threshold: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
+  def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, call_threshold: 2, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
     out, err = eval_with_jit(script, verbose: 1, call_threshold: call_threshold, max_cache: max_cache)
     success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size

@@ -118,6 +118,14 @@ module Spec
       end
     end
 
+    def default_cache_path(*path)
+      if Bundler.feature_flag.global_gem_cache?
+        home(".bundle/cache", *path)
+      else
+        default_bundle_path("cache/bundler", *path)
+      end
+    end
+
     def bundled_app(*path)
       root = tmp.join("bundled_app")
       FileUtils.mkdir_p(root)
@@ -287,25 +295,11 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "rubocop23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "rubocop24_gems"
-      else
-        "rubocop_gems"
-      end
-      tool_dir.join("#{filename}.rb")
+      source_root.join("tool/bundler/rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "standard23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "standard24_gems"
-      else
-        "standard_gems"
-      end
-      tool_dir.join("#{filename}.rb")
+      source_root.join("tool/bundler/standard_gems.rb")
     end
 
     def tool_dir

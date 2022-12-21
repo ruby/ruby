@@ -5,6 +5,9 @@ module IRB
 
   module ExtendCommand
     class Debug < Nop
+      category "Debugging"
+      description "Start the debugger of debug.gem."
+
       BINDING_IRB_FRAME_REGEXPS = [
         '<internal:prelude>',
         binding.method(:irb).source_location.first,
@@ -52,6 +55,13 @@ module IRB
         end
       end
 
+      module SkipPathHelperForIRB
+        def skip_internal_path?(path)
+          # The latter can be removed once https://github.com/ruby/debug/issues/866 is resolved
+          super || path.match?(IRB_DIR) || path.match?('<internal:prelude>')
+        end
+      end
+
       def setup_debugger
         unless defined?(DEBUGGER__::SESSION)
           begin
@@ -72,6 +82,8 @@ module IRB
             end
             frames
           end
+
+          DEBUGGER__::ThreadClient.prepend(SkipPathHelperForIRB)
         end
 
         true
@@ -90,13 +102,14 @@ module IRB
         return false unless debug_gem
 
         # Discover debug/debug.so under extensions for Ruby 3.2+
-        debug_so = Gem.paths.path.flat_map do |path|
-          Dir.glob("#{path}/extensions/**/#{File.basename(debug_gem)}/debug/debug.so")
+        ext_name = "/debug/debug.#{RbConfig::CONFIG['DLEXT']}"
+        ext_path = Gem.paths.path.flat_map do |path|
+          Dir.glob("#{path}/extensions/**/#{File.basename(debug_gem)}#{ext_name}")
         end.first
 
         # Attempt to forcibly load the bundled gem
-        if debug_so
-          $LOAD_PATH << debug_so.delete_suffix('/debug/debug.so')
+        if ext_path
+          $LOAD_PATH << ext_path.delete_suffix(ext_name)
         end
         $LOAD_PATH << "#{debug_gem}/lib"
         begin
@@ -106,6 +119,17 @@ module IRB
         rescue LoadError
           false
         end
+      end
+    end
+
+    class DebugCommand < Debug
+      def self.category
+        "Debugging"
+      end
+
+      def self.description
+        command_name = self.name.split("::").last.downcase
+        "Start the debugger of debug.gem and run its `#{command_name}` command."
       end
     end
   end

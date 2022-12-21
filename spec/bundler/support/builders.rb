@@ -456,7 +456,7 @@ module Spec
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"
 
-          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"] unless RUBY_VERSION < "2.4"
+          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
 
           extension_name = "#{name}_c"
           if extra_lib_dir = with_config("ext-lib")

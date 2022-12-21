@@ -434,13 +434,6 @@ module Gem::Security
   end
 
   ##
-  # In Ruby 2.3 EC doesn't implement the private_key? but not the private? method
-
-  if defined?(OpenSSL::PKey::EC) && Gem::Version.new(String.new(RUBY_VERSION)) < Gem::Version.new("2.4.0")
-    OpenSSL::PKey::EC.send(:alias_method, :private?, :private_key?)
-  end
-
-  ##
   # Creates a self-signed certificate with an issuer and subject from +email+,
   # a subject alternative name of +email+ and the given +extensions+ for the
   # +key+.
@@ -492,13 +485,7 @@ module Gem::Security
       when "rsa"
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
       when "ec"
-        if RUBY_VERSION >= "2.4.0"
-          OpenSSL::PKey::EC.generate(EC_NAME)
-        else
-          domain_key = OpenSSL::PKey::EC.new(EC_NAME)
-          domain_key.generate_key
-          domain_key
-        end
+        OpenSSL::PKey::EC.generate(EC_NAME)
       else
         raise Gem::Security::Exception,
         "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."

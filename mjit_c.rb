@@ -194,10 +194,6 @@ module RubyVM::MJIT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR) }
   end
 
-  def C.SHAPE_IVAR_UNDEF
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR_UNDEF) }
-  end
-
   def C.SHAPE_ROOT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
   end
@@ -310,6 +306,7 @@ module RubyVM::MJIT
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
       "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
       value: [CType::Immediate.parse("uintptr_t"), Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), value)")],
+      iv_set_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), iv_set_name)")],
     )
   end
 
@@ -529,7 +526,7 @@ module RubyVM::MJIT
       mandatory_only_iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mandatory_only_iseq)")],
       jit_func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
       total_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)")],
-      jit_unit: [CType::Pointer.new { self.rb_mjit_unit }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_unit)")],
+      mjit_unit: [CType::Pointer.new { self.rb_mjit_unit }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mjit_unit)")],
     )
   end
 
@@ -623,13 +620,14 @@ module RubyVM::MJIT
       "rb_mjit_unit", Primitive.cexpr!("SIZEOF(struct rb_mjit_unit)"),
       unode: [self.ccan_list_node, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), unode)")],
       id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), id)")],
-      handle: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), handle)")],
+      type: [self.rb_mjit_unit_type, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), type)")],
       iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), iseq)")],
       used_code_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), used_code_p)")],
-      compact_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compact_p)")],
       compile_info: [self.rb_mjit_compile_info, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compile_info)")],
       cc_entries: [CType::Pointer.new { CType::Pointer.new { self.rb_callcache } }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries)")],
       cc_entries_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries_size)")],
+      handle: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), handle)")],
+      units: [self.rb_mjit_unit_list, Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), units)")],
     )
   end
 
@@ -784,6 +782,14 @@ module RubyVM::MJIT
 
   def C.ccan_list_node
     CType::Stub.new(:ccan_list_node)
+  end
+
+  def C.rb_mjit_unit_type
+    CType::Stub.new(:rb_mjit_unit_type)
+  end
+
+  def C.rb_mjit_unit_list
+    CType::Stub.new(:rb_mjit_unit_list)
   end
 
   ### MJIT bindgen end ###

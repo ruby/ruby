@@ -3,19 +3,17 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -109,6 +107,20 @@ jobs:
           NO_THREAD_TESTS="$(grep -L Thread -R ./bootstraptest | awk -F/ '{ print $NF }' | uniq | sed -n 's/test_\(.*\).rb/\1/p' | paste -s -d, -)"
           ruby ./bootstraptest/runner.rb --ruby="$(which wasmtime) run $PWD/../build/ruby --mapdir /::./ -- " --verbose "--sets=$NO_THREAD_TESTS"
         working-directory: src
+
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }} / ${{ matrix.name }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

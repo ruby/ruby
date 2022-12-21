@@ -326,7 +326,7 @@ require "digest"
 #  end
 #
 class PStore
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
 
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze

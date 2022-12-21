@@ -312,28 +312,28 @@ RSpec.describe "bundle gem" do
 
   it "has no rubocop offenses when using --ext and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --linter=rubocop"
+    bundle "gem #{gem_name} --ext=c --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=minitest, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=minitest --linter=rubocop"
+    bundle "gem #{gem_name} --ext=c --test=minitest --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=rspec, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=rspec --linter=rubocop"
+    bundle "gem #{gem_name} --ext=c --test=rspec --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --ext=test-unit, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    bundle "gem #{gem_name} --ext --test=test-unit --linter=rubocop"
+    bundle "gem #{gem_name} --ext=c --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
@@ -348,7 +348,6 @@ RSpec.describe "bundle gem" do
   shared_examples_for "CI config is absent" do
     it "does not create any CI files" do
       expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-      expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
       expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
     end
@@ -888,9 +887,26 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "--ci set to travis" do
+      it "generates a GitHub Actions config file" do
+        bundle "gem #{gem_name} --ci=travis", :raise_on_error => false
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator.")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
+      end
+    end
+
+    context "--ci set to travis" do
+      it "generates a GitHub Actions config file" do
+        bundle "gem #{gem_name} --ci=travis", :raise_on_error => false
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator.")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       end
     end
 
@@ -918,20 +934,23 @@ RSpec.describe "bundle gem" do
       end
     end
 
-    context "--ci set to travis" do
-      it "generates a Travis CI config file" do
-        bundle "gem #{gem_name} --ci=travis"
-
-        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
-      end
-    end
-
     context "gem.ci setting set to none" do
       it "doesn't generate any CI config" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+    end
+
+    context "gem.ci setting set to travis" do
+      it "errors with friendly message" do
+        bundle "config set gem.ci travis"
+        bundle "gem #{gem_name}", :raise_on_error => false
+
+        expect(err).to include("Support for Travis CI was removed from gem skeleton generator,")
+        expect(err).to include("bundle config unset gem.ci")
+
+        expect(bundled_app("#{gem_name}/.travis.yml")).to_not exist
       end
     end
 
@@ -941,15 +960,6 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name}"
 
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
-      end
-    end
-
-    context "gem.ci setting set to travis" do
-      it "generates a Travis CI config file" do
-        bundle "config set gem.ci travis"
-        bundle "gem #{gem_name}"
-
-        expect(bundled_app("#{gem_name}/.travis.yml")).to exist
       end
     end
 
@@ -1322,11 +1332,30 @@ RSpec.describe "bundle gem" do
 
     include_examples "generating a gem"
 
-    context "--ext parameter set" do
-      let(:flags) { "--ext" }
+    context "--ext parameter with no value" do
+      context "is deprecated", :bundler => "< 3" do
+        it "prints deprecation when used after gem name" do
+          bundle ["gem", "--ext", gem_name].compact.join(" ")
+          expect(err).to include "[DEPRECATED] Option `--ext` without explicit value is deprecated."
+          expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
+        end
+
+        it "prints deprecation when used before gem name" do
+          bundle ["gem", gem_name, "--ext"].compact.join(" ")
+          expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
+        end
+      end
+    end
+
+    context "--ext parameter set with C" do
+      let(:flags) { "--ext=c" }
 
       before do
         bundle ["gem", gem_name, flags].compact.join(" ")
+      end
+
+      it "is not deprecated" do
+        expect(err).not_to include "[DEPRECATED] Option `--ext` without explicit value is deprecated."
       end
 
       it "builds ext skeleton" do

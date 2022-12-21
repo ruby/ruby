@@ -31,15 +31,33 @@ class TestGemIndexer < Gem::TestCase
     @indexer = Gem::Indexer.new(@indexerdir)
   end
 
+  def teardown
+    FileUtils.rm_rf(@indexer.directory)
+  ensure
+    super
+  end
+
+  def with_indexer(dir, **opts)
+    indexer = Gem::Indexer.new(dir, **opts)
+    build_directory = indexer.directory
+    yield indexer
+  ensure
+    FileUtils.rm_rf(build_directory) if build_directory
+  end
+
   def test_initialize
     assert_equal @indexerdir, @indexer.dest_directory
-    assert_match %r{#{Dir.mktmpdir('gem_generate_index').match(/.*-/)}}, @indexer.directory
+    Dir.mktmpdir("gem_generate_index") do |tmpdir|
+      assert_match %r{#{tmpdir.match(/.*-/)}}, @indexer.directory
+    end
 
-    indexer = Gem::Indexer.new @indexerdir
-    assert indexer.build_modern
+    with_indexer(@indexerdir) do |indexer|
+      assert_predicate indexer, :build_modern
+    end
 
-    indexer = Gem::Indexer.new @indexerdir, :build_modern => true
-    assert indexer.build_modern
+    with_indexer(@indexerdir, :build_modern => true) do |indexer|
+      assert_predicate indexer, :build_modern
+    end
   end
 
   def test_build_indices
@@ -159,26 +177,27 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    @indexer = Gem::Indexer.new @indexerdir
-    @indexer.build_modern = true
+    with_indexer @indexerdir do |indexer|
+      indexer.build_modern = true
 
-    use_ui @ui do
-      @indexer.generate_index
+      use_ui @ui do
+        indexer.generate_index
+      end
+      quickdir = File.join @indexerdir, "quick"
+      marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
+
+      assert_directory_exists quickdir
+      assert_directory_exists marshal_quickdir
+
+      assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
+      assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
+
+      assert_indexed @indexerdir, "specs.#{@marshal_version}"
+      assert_indexed @indexerdir, "specs.#{@marshal_version}.gz"
+
+      assert_indexed @indexerdir, "latest_specs.#{@marshal_version}"
+      assert_indexed @indexerdir, "latest_specs.#{@marshal_version}.gz"
     end
-    quickdir = File.join @indexerdir, "quick"
-    marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
-
-    assert_directory_exists quickdir
-    assert_directory_exists marshal_quickdir
-
-    assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
-    assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
-
-    assert_indexed @indexerdir, "specs.#{@marshal_version}"
-    assert_indexed @indexerdir, "specs.#{@marshal_version}.gz"
-
-    assert_indexed @indexerdir, "latest_specs.#{@marshal_version}"
-    assert_indexed @indexerdir, "latest_specs.#{@marshal_version}.gz"
   end
 
   def test_generate_index_ui

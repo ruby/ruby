@@ -112,7 +112,7 @@ module Forwardable
   require 'forwardable/impl'
 
   # Version of +forwardable.rb+
-  VERSION = "1.3.2"
+  VERSION = "1.3.3"
   VERSION.freeze
   FORWARDABLE_VERSION = VERSION
   FORWARDABLE_VERSION.freeze

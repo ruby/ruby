@@ -166,7 +166,7 @@ module TestIRB
       actual_history = nil
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
-        open(IRB.rc_file("_history"), "w") do |f|
+        File.open(IRB.rc_file("_history"), "w") do |f|
           f.write(initial_irb_history)
         end
 
@@ -182,7 +182,7 @@ module TestIRB
         io.save_history
 
         io.load_history
-        open(IRB.rc_file("_history"), "r") do |f|
+        File.open(IRB.rc_file("_history"), "r") do |f|
           actual_history = f.read
         end
       end

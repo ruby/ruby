@@ -21,6 +21,7 @@ jobs:
       - name: Check for trailing spaces
         run: |
           ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]'
+          ! git grep -n '^[	 ][	 ]*$' -- '*.md'
       - name: Check for bash specific substitution in configure.ac
         run: |
           ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac

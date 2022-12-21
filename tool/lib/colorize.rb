@@ -6,7 +6,7 @@ class Colorize
   #   Colorize.new(color: color, colors_file: colors_file)
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
-    @color = (opts[:color] if opts)
+    @color = opts && opts[:color] || color
     if color or (color == nil && STDOUT.tty? && (ENV["NO_COLOR"] || "").empty?)
       if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
         @beg = "\e["

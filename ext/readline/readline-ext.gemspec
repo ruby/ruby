@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "readline-ext"
-  spec.version       = "0.1.4"
+  spec.version       = "0.1.5"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 

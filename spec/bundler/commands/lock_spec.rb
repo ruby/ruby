@@ -176,7 +176,10 @@ RSpec.describe "bundle lock" do
         build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "foo", %w[2.0.0.pre] do |s|
+          s.add_dependency "bar"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 2.1.2.pre 3.0.0 3.1.0.pre 4.0.0.pre]
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
@@ -210,6 +213,52 @@ RSpec.describe "bundle lock" do
 
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
+
+    context "pre" do
+      it "defaults to major" do
+        bundle "lock --update --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+
+      it "patch preferred" do
+        bundle "lock --update --patch --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+      end
+
+      it "minor preferred" do
+        bundle "lock --update --minor --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+      end
+
+      it "major preferred" do
+        bundle "lock --update --major --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+    end
+  end
+
+  it "updates the bundler version in the lockfile without re-resolving", :rubygems => ">= 3.3.0.dev" do
+    build_repo4 do
+      build_gem "rack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    FileUtils.rm_r gem_repo4
+
+    bundle "lock --update --bundler"
+    expect(the_bundle).to include_gem "rack 1.0"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
   end
 
   it "supports adding new platforms" do
@@ -593,6 +642,115 @@ RSpec.describe "bundle lock" do
       bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
+    end
+  end
+
+  context "when a system gem has incorrect dependencies, different from the lockfile" do
+    before do
+      build_repo4 do
+        build_gem "debug", "1.6.3" do |s|
+          s.add_dependency "irb", ">= 1.3.6"
+        end
+
+        build_gem "irb", "1.5.0"
+      end
+
+      system_gems "irb-1.5.0", :gem_repo => gem_repo4
+      system_gems "debug-1.6.3", :gem_repo => gem_repo4
+
+      # simulate gemspec with wrong empty dependencies
+      debug_gemspec_path = system_gem_path("specifications/debug-1.6.3.gemspec")
+      debug_gemspec = Gem::Specification.load(debug_gemspec_path.to_s)
+      debug_gemspec.dependencies.clear
+      File.write(debug_gemspec_path, debug_gemspec.to_ruby)
+    end
+
+    it "respects the existing lockfile, even when reresolving" do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "debug"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      simulate_platform "arm64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          arm64-darwin-22
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "properly shows resolution errors including OR requirements" do
+      build_repo4 do
+        build_gem "activeadmin", "2.13.1" do |s|
+          s.add_dependency "railties", ">= 6.1", "< 7.1"
+        end
+        build_gem "actionpack", "6.1.4"
+        build_gem "actionpack", "7.0.3.1"
+        build_gem "actionpack", "7.0.4"
+        build_gem "railties", "6.1.4" do |s|
+          s.add_dependency "actionpack", "6.1.4"
+        end
+        build_gem "rails", "7.0.3.1" do |s|
+          s.add_dependency "railties", "7.0.3.1"
+        end
+        build_gem "rails", "7.0.4" do |s|
+          s.add_dependency "railties", "7.0.4"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", ">= 7.0.3.1"
+        gem "activeadmin", "2.13.1"
+      G
+
+      bundle "lock", :raise_on_error => false
+
+      expect(err).to eq <<~ERR.strip
+        Could not find compatible versions
+
+        Because rails >= 7.0.4 depends on railties = 7.0.4
+          and rails < 7.0.4 depends on railties = 7.0.3.1,
+          railties = 7.0.3.1 OR = 7.0.4 is required.
+        So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+          version solving has failed.
+      ERR
     end
   end
 end
