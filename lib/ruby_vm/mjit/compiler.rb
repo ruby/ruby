@@ -9,9 +9,6 @@ module RubyVM::MJIT
   EndBlock = :end_block
 
   class Compiler
-    # Ruby constants
-    Qundef = Fiddle::Qundef
-
     attr_accessor :write_pos
 
     # @param mem_block [Integer] JIT buffer address
@@ -24,7 +21,11 @@ module RubyVM::MJIT
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
     def call(iseq)
       return if iseq.body.location.label == '<main>'
-      iseq.body.jit_func = compile_block(iseq)
+
+      asm = X86Assembler.new
+      compile_prologue(asm)
+      compile_block(asm, iseq)
+      iseq.body.jit_func = compile(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
@@ -34,6 +35,32 @@ module RubyVM::MJIT
     end
 
     private
+
+    #  ec: rdi
+    # cfp: rsi
+    def compile_prologue(asm)
+      asm.mov(:rbx, [:rsi, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
+    end
+
+    def compile_block(asm, iseq)
+      index = 0
+      while index < iseq.body.iseq_size
+        insn = decode_insn(iseq.body.iseq_encoded[index])
+        status = compile_insn(asm, insn)
+        if status == EndBlock
+          break
+        end
+        index += insn.len
+      end
+    end
+
+    def compile_insn(asm, insn)
+      case insn.name
+      when :putnil then @insn_compiler.putnil(asm)
+      when :leave  then @insn_compiler.leave(asm)
+      else raise NotImplementedError, "insn '#{insn.name}' is not supported yet"
+      end
+    end
 
     def compile(asm)
       start_addr = write_addr
@@ -47,32 +74,6 @@ module RubyVM::MJIT
         dump_disasm(start_addr, end_addr)
       end
       start_addr
-    end
-
-    # ec -> RDI, cfp -> RSI
-    def compile_block(iseq)
-      addr = write_addr
-      asm = X86Assembler.new
-
-      index = 0
-      while index < iseq.body.iseq_size
-        insn = decode_insn(iseq.body.iseq_encoded[index])
-        status = compile_insn(asm, insn)
-        if status == EndBlock
-          break
-        end
-        index += insn.len
-      end
-
-      compile(asm)
-    end
-
-    def compile_insn(asm, insn)
-      case insn.name
-      when :putnil then @insn_compiler.putnil(asm)
-      when :leave  then @insn_compiler.leave(asm)
-      else raise NotImplementedError, "insn '#{insn.name}' is not supported yet"
-      end
     end
 
     def decode_insn(encoded)

@@ -43,14 +43,24 @@ module RubyVM::MJIT
 
     def mov(dst, src)
       case [dst, src]
-      # MOV r/m64, imm32
+      # MOV r/m64, imm32 (Mod 00)
+      in [[Symbol => dst_reg], Integer => src_imm] if r_reg?(dst_reg)
+        # REX.W + C7 /0 id
+        # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+        insn(
+          prefix: REX_W,
+          opcode: 0xc7,
+          mod_rm: mod_rm(mod: 0b00, rm: reg_code(dst_reg)), # Mod 00: [reg]
+          imm: imm32(src_imm),
+        )
+      # MOV r/m64, imm32 (Mod 11)
       in [Symbol => dst_reg, Integer => src_imm] if r_reg?(dst_reg)
         # REX.W + C7 /0 id
         # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
         insn(
           prefix: REX_W,
           opcode: 0xc7,
-          mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)),
+          mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)), # Mod 11: reg
           imm: imm32(src_imm),
         )
       # MOV r/m64, r64
@@ -60,8 +70,18 @@ module RubyVM::MJIT
         insn(
           prefix: REX_W,
           opcode: 0x89,
-          mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # disp8
+          mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
           disp: dst_offset,
+        )
+      # MOV r64, r/m64
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_offset]] if r_reg?(dst_reg) && r_reg?(src_reg) && src_offset <= 0xff
+        # REX.W + 8B /r
+        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x8b,
+          mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
+          disp: src_offset,
         )
       else
         raise NotImplementedError, "mov: not-implemented input: #{dst.inspect}, #{src.inspect}"
