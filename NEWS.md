@@ -544,8 +544,6 @@ Note: We're only listing outstanding class updates.
     * typeprof 0.21.3
     * debug 1.7.0
 
-*   The following default gems are now bundled gems.
-
 ## Supported platforms
 
 * WebAssembly/WASI is added. See [[wasm/README.md]] and [[ruby.wasm]] for more details. [[Feature #18462]]
