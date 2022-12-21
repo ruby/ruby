@@ -14777,6 +14777,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - +:binmode+: If a truthy value, specifies the mode as binary, text-only otherwise.
  *  - +:autoclose+: If a truthy value, specifies that the +fd+ will close
  *    when the stream closes; otherwise it remains open.
+ *  - +:path:+ If a string value is provided, it is used in #inspect and is available as
+ *    #path method.
  *
  *  Also available are the options offered in String#encode,
  *  which may control conversion between external internal encoding.
