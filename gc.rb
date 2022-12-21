@@ -218,7 +218,7 @@ module GC
     Primitive.gc_stat_heap heap_name, hash_or_key
   end
 
-  #  call-seq:
+  # call-seq:
   #     GC.latest_gc_info -> hash
   #     GC.latest_gc_info(hash) -> hash
   #     GC.latest_gc_info(:major_by) -> :malloc
