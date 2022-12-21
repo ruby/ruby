@@ -56,7 +56,7 @@ static VALUE sGroup;
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.4.0"
+#define RUBY_ETC_VERSION "1.4.2"
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);

@@ -212,6 +212,26 @@ RSpec.describe "bundle lock" do
     end
   end
 
+  it "updates the bundler version in the lockfile without re-resolving", :rubygems => ">= 3.3.0.dev" do
+    build_repo4 do
+      build_gem "rack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    FileUtils.rm_r gem_repo4
+
+    bundle "lock --update --bundler"
+    expect(the_bundle).to include_gem "rack 1.0"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
+  end
+
   it "supports adding new platforms" do
     bundle "lock --add-platform java x86-mingw32"
 
@@ -593,6 +613,76 @@ RSpec.describe "bundle lock" do
       bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
+    end
+  end
+
+  context "when a system gem has incorrect dependencies, different from the lockfile" do
+    before do
+      build_repo4 do
+        build_gem "debug", "1.6.3" do |s|
+          s.add_dependency "irb", ">= 1.3.6"
+        end
+
+        build_gem "irb", "1.5.0"
+      end
+
+      system_gems "irb-1.5.0", :gem_repo => gem_repo4
+      system_gems "debug-1.6.3", :gem_repo => gem_repo4
+
+      # simulate gemspec with wrong empty dependencies
+      debug_gemspec_path = system_gem_path("specifications/debug-1.6.3.gemspec")
+      debug_gemspec = Gem::Specification.load(debug_gemspec_path.to_s)
+      debug_gemspec.dependencies.clear
+      File.write(debug_gemspec_path, debug_gemspec.to_ruby)
+    end
+
+    it "respects the existing lockfile, even when reresolving" do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "debug"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      simulate_platform "arm64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          arm64-darwin-22
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
   end
 end

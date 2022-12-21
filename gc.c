@@ -595,6 +595,7 @@ struct RMoved {
     VALUE flags;
     VALUE dummy;
     VALUE destination;
+    shape_id_t original_shape_id;
 };
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
@@ -968,7 +969,6 @@ struct heap_page {
     short slot_size;
     short total_slots;
     short free_slots;
-    short pinned_slots;
     short final_slots;
     struct {
         unsigned int before_sweep : 1;
@@ -1551,7 +1551,7 @@ static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 
 #if USE_MMTK
-static size_t rb_mmtk_heap_limit(void);
+static void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min, size_t *max);
 #endif
 
 static inline int
@@ -1970,11 +1970,14 @@ rb_objspace_alloc(void)
 
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
 
-        // Note: the limit is currently broken for NoGC, but we still attempt to
-        // initialise it properly regardless.
-        // See https://github.com/mmtk/mmtk-core/issues/214
-        size_t heap_size = rb_mmtk_heap_limit();
-        mmtk_builder_set_heap_size(mmtk_builder, heap_size);
+        bool is_dynamic;
+        size_t min_size, max_size;
+        rb_mmtk_heap_limit(&is_dynamic, &min_size, &max_size);
+        if (is_dynamic) {
+            mmtk_builder_set_dynamic_heap_size(mmtk_builder, min_size, max_size);
+        } else {
+            mmtk_builder_set_fixed_heap_size(mmtk_builder, max_size);
+        }
 
 #if RACTOR_CHECK_MODE
         ruby_binding_options.ractor_check_mode = true;
@@ -3204,6 +3207,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
 
 #if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     VALUE *ptr = ROBJECT_IVPTR(obj);
     for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
@@ -3788,7 +3792,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
+        if (rb_shape_obj_too_complex(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+            rb_id_table_free(ROBJECT_IV_HASH(obj));
+        }
+        else if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         else if (ROBJ_TRANSIENT_P(obj)) {
@@ -5204,6 +5212,7 @@ id2ref(VALUE objid)
     }
 }
 
+/* :nodoc: */
 static VALUE
 os_id2ref(VALUE os, VALUE objid)
 {
@@ -5366,7 +5375,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            size += rb_id_table_memsize(ROBJECT_IV_HASH(obj));
+        }
+        else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
         }
         break;
@@ -5724,6 +5736,8 @@ unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static bool
 try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, VALUE src)
 {
+    GC_ASSERT(gc_is_moveable_obj(objspace, src));
+
     struct heap_page *src_page = GET_HEAP_PAGE(src);
     if (!free_page) {
         return false;
@@ -5732,35 +5746,33 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     /* We should return true if either src is successfully moved, or src is
      * unmoveable. A false return will cause the sweeping cursor to be
      * incremented to the next page, and src will attempt to move again */
-    if (gc_is_moveable_obj(objspace, src)) {
-        GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
+    GC_ASSERT(MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(src), src));
 
-        asan_unlock_freelist(free_page);
-        VALUE dest = (VALUE)free_page->freelist;
-        asan_lock_freelist(free_page);
-        asan_unpoison_object(dest, false);
-        if (!dest) {
-            /* if we can't get something from the freelist then the page must be
-             * full */
-            return false;
-        }
-        free_page->freelist = RANY(dest)->as.free.next;
-
-        GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
-
-        if (src_page->slot_size > free_page->slot_size) {
-            objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
-        }
-        else if (free_page->slot_size > src_page->slot_size) {
-            objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
-        }
-        objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
-        objspace->rcompactor.total_moved++;
-
-        gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
-        gc_pin(objspace, src);
-        free_page->free_slots--;
+    asan_unlock_freelist(free_page);
+    VALUE dest = (VALUE)free_page->freelist;
+    asan_lock_freelist(free_page);
+    asan_unpoison_object(dest, false);
+    if (!dest) {
+        /* if we can't get something from the freelist then the page must be
+         * full */
+        return false;
     }
+    free_page->freelist = RANY(dest)->as.free.next;
+
+    GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
+
+    if (src_page->slot_size > free_page->slot_size) {
+        objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
+    }
+    else if (free_page->slot_size > src_page->slot_size) {
+        objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
+    }
+    objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
+    objspace->rcompactor.total_moved++;
+
+    gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
+    gc_pin(objspace, src);
+    free_page->free_slots--;
 
     return true;
 }
@@ -6583,9 +6595,18 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
 
                     object = rb_gc_location(forwarding_object);
 
+                    shape_id_t original_shape_id = 0;
+                    if (RB_TYPE_P(object, T_OBJECT)) {
+                        original_shape_id = RMOVED(forwarding_object)->original_shape_id;
+                    }
+
                     gc_move(objspace, object, forwarding_object, GET_HEAP_PAGE(object)->slot_size, page->slot_size);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
+
+                    if (original_shape_id) {
+                        ROBJECT_SET_SHAPE_ID(forwarding_object, original_shape_id);
+                    }
 
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
@@ -7828,14 +7849,23 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            const VALUE * const ptr = ROBJECT_IVPTR(obj);
-
-            uint32_t i, len = ROBJECT_IV_COUNT(obj);
-            for (i  = 0; i < len; i++) {
-                gc_mark(objspace, ptr[i]);
-            }
-
             rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+            if (rb_shape_obj_too_complex(obj)) {
+                mark_m_tbl(objspace, ROBJECT_IV_HASH(obj));
+            }
+            else {
+                const VALUE * const ptr = ROBJECT_IVPTR(obj);
+
+                uint32_t i, len = ROBJECT_IV_COUNT(obj);
+                for (i  = 0; i < len; i++) {
+                    gc_mark(objspace, ptr[i]);
+                }
+
+                if (LIKELY(during_gc) &&
+                        ROBJ_TRANSIENT_P(obj)) {
+                    rb_transient_heap_mark(obj, ptr);
+                }
+            }
             if (shape) {
                 VALUE klass = RBASIC_CLASS(obj);
 
@@ -7844,11 +7874,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
                     RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
                 }
-            }
-
-            if (LIKELY(during_gc) &&
-                    ROBJ_TRANSIENT_P(obj)) {
-                rb_transient_heap_mark(obj, ptr);
             }
         }
         break;
@@ -8992,20 +9017,25 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
     size_t idx = 0;
 
     switch (BUILTIN_TYPE(src)) {
-        case T_ARRAY:
-            obj_size = rb_ary_size_as_embedded(src);
-            break;
+      case T_ARRAY:
+        obj_size = rb_ary_size_as_embedded(src);
+        break;
 
-        case T_OBJECT:
+      case T_OBJECT:
+        if (rb_shape_obj_too_complex(src)) {
+            return &size_pools[0];
+        }
+        else {
             obj_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(src));
-            break;
+        }
+        break;
 
-        case T_STRING:
-            obj_size = rb_str_size_as_embedded(src);
-            break;
+      case T_STRING:
+        obj_size = rb_str_size_as_embedded(src);
+        break;
 
-        default:
-            return src_pool;
+      default:
+        return src_pool;
     }
 
     if (rb_gc_size_allocatable_p(obj_size)){
@@ -9018,11 +9048,28 @@ static bool
 gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_pool, VALUE src)
 {
     GC_ASSERT(BUILTIN_TYPE(src) != T_MOVED);
+    GC_ASSERT(gc_is_moveable_obj(objspace, src));
 
-    rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(gc_compact_destination_pool(objspace, size_pool, src));
+    rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, size_pool, src);
+    rb_heap_t *dheap = SIZE_POOL_EDEN_HEAP(dest_pool);
+    rb_shape_t *new_shape = NULL;
+    rb_shape_t *orig_shape = NULL;
 
     if (gc_compact_heap_cursors_met_p(dheap)) {
         return dheap != heap;
+    }
+
+    if (RB_TYPE_P(src, T_OBJECT)) {
+        orig_shape = rb_shape_get_shape(src);
+        if (dheap != heap && !rb_shape_obj_too_complex(src)) {
+            rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)((dest_pool - size_pools) + SIZE_POOL_COUNT));
+            new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
+
+            if (!new_shape) {
+                dest_pool = size_pool;
+                dheap = heap;
+            }
+        }
     }
 
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
@@ -9049,6 +9096,15 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             return false;
         }
     }
+
+    if (orig_shape) {
+        if (new_shape) {
+            VALUE dest = rb_gc_location(src);
+            rb_shape_set_shape(dest, new_shape);
+        }
+        RMOVED(src)->original_shape_id = rb_shape_id(orig_shape);
+    }
+
     return true;
 }
 
@@ -9066,9 +9122,11 @@ gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
         if (bitset & 1) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
 
-            if (!gc_compact_move(objspace, heap, size_pool, vp)) {
-                //the cursors met. bubble up
-                return false;
+            if (gc_is_moveable_obj(objspace, vp)) {
+                if (!gc_compact_move(objspace, heap, size_pool, vp)) {
+                    //the cursors met. bubble up
+                    return false;
+                }
             }
         }
         p += slot_size;
@@ -10440,6 +10498,17 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
     return FALSE;
 }
 
+/* Used in places that could malloc, which can cause the GC to run. We need to
+ * temporarily disable the GC to allow the malloc to happen. */
+#define COULD_MALLOC_REGION_START() \
+    GC_ASSERT(during_gc); \
+    VALUE _already_disabled = rb_gc_disable_no_rest(); \
+    during_gc = false;
+
+#define COULD_MALLOC_REGION_END() \
+    during_gc = true; \
+    if (_already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size)
 {
@@ -10468,11 +10537,12 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS((VALUE)src), (VALUE)src);
 
     if (FL_TEST((VALUE)src, FL_EXIVAR)) {
-        /* Same deal as below. Generic ivars are held in st tables.
-         * Resizing the table could cause a GC to happen and we can't allow it */
-        VALUE already_disabled = rb_gc_disable_no_rest();
-        rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
-        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+        /* Resizing the st table could cause a malloc */
+        COULD_MALLOC_REGION_START();
+        {
+            rb_mv_generic_ivar((VALUE)src, (VALUE)dest);
+        }
+        COULD_MALLOC_REGION_END();
     }
 
     st_data_t srcid = (st_data_t)src, id;
@@ -10481,13 +10551,13 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
      * the object to object id mapping. */
     if (st_lookup(objspace->obj_to_id_tbl, srcid, &id)) {
         gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        /* inserting in the st table can cause the GC to run. We need to
-         * prevent re-entry in to the GC since `gc_move` is running in the GC,
-         * so temporarily disable the GC around the st table mutation */
-        VALUE already_disabled = rb_gc_disable_no_rest();
-        st_delete(objspace->obj_to_id_tbl, &srcid, 0);
-        st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
-        if (already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
+        /* Resizing the st table could cause a malloc */
+        COULD_MALLOC_REGION_START();
+        {
+            st_delete(objspace->obj_to_id_tbl, &srcid, 0);
+            st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+        }
+        COULD_MALLOC_REGION_END();
     }
 
     /* Move the object */
@@ -10631,10 +10701,17 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
+static void update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl);
+
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
+
+    if (rb_shape_obj_too_complex(v)) {
+        update_m_tbl(objspace, ROBJECT_IV_HASH(v));
+        return;
+    }
 
 #if USE_RVARGC
     uint32_t numiv = ROBJECT_IV_CAPACITY(v);
@@ -10652,10 +10729,6 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
             xfree(ptr);
         }
         ptr = ROBJECT(v)->as.ary;
-        size_t size_pool_shape_id = size_pool_idx_for_size(embed_size);
-        rb_shape_t * initial_shape = rb_shape_get_shape_by_id((shape_id_t)size_pool_shape_id + SIZE_POOL_COUNT);
-        rb_shape_t * new_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_shape(v));
-        rb_shape_set_shape(v, new_shape);
     }
 #endif
 
@@ -11557,7 +11630,7 @@ gc_count(rb_execution_context_t *ec, VALUE self)
 static VALUE
 gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned int orig_flags)
 {
-    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state;
+    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state, sym_need_major_by;
     static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
 #if RGENGC_ESTIMATE_OLDMALLOC
     static VALUE sym_oldmalloc;
@@ -11565,7 +11638,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
     static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
     static VALUE sym_none, sym_marking, sym_sweeping;
     VALUE hash = Qnil, key = Qnil;
-    VALUE major_by;
+    VALUE major_by, need_major_by;
     unsigned int flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
 
     if (SYMBOL_P(hash_or_key)) {
@@ -11585,6 +11658,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         S(immediate_sweep);
         S(have_finalizer);
         S(state);
+        S(need_major_by);
 
         S(stress);
         S(nofree);
@@ -11621,6 +11695,20 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
 #endif
       Qnil;
     SET(major_by, major_by);
+
+    if (orig_flags == 0) { /* set need_major_by only if flags not set explicitly */
+        unsigned int need_major_flags = objspace->rgengc.need_major_gc;
+        need_major_by =
+            (need_major_flags & GPR_FLAG_MAJOR_BY_NOFREE) ? sym_nofree :
+            (need_major_flags & GPR_FLAG_MAJOR_BY_OLDGEN) ? sym_oldgen :
+            (need_major_flags & GPR_FLAG_MAJOR_BY_SHADY)  ? sym_shady :
+            (need_major_flags & GPR_FLAG_MAJOR_BY_FORCE)  ? sym_force :
+#if RGENGC_ESTIMATE_OLDMALLOC
+            (need_major_flags & GPR_FLAG_MAJOR_BY_OLDMALLOC) ? sym_oldmalloc :
+#endif
+            Qnil;
+        SET(need_major_by, need_major_by);
+    }
 
     SET(gc_by,
         (flags & GPR_FLAG_NEWOBJ) ? sym_newobj :
@@ -12770,6 +12858,16 @@ objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
     return size;
 }
 
+static bool
+malloc_during_gc_p(rb_objspace_t *objspace)
+{
+    /* malloc is not allowed during GC when we're not using multiple ractors
+     * (since ractors can run while another thread is sweeping) and when we
+     * have the GVL (since if we don't have the GVL, we'll try to acquire the
+     * GVL which will block and ensure the other thread finishes GC). */
+    return during_gc && !rb_multi_ractor_p() && ruby_thread_has_gvl_p();
+}
+
 static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
@@ -12834,6 +12932,13 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
+        rb_bug("Cannot malloc during GC");
+#endif
+    }
+
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
@@ -12851,6 +12956,13 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("realloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
+        rb_bug("Cannot realloc during GC");
+#endif
+    }
+
     void *mem;
 
     if (!ptr) return objspace_xmalloc0(objspace, new_size);
@@ -13088,6 +13200,13 @@ ruby_xmalloc2_body(size_t n, size_t size)
 static void *
 objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 {
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        rb_warn("calloc during GC detected, this could cause crashes if it triggers another GC");
+#if RGENGC_CHECK_MODE || RUBY_DEBUG
+        rb_bug("Cannot calloc during GC");
+#endif
+    }
+
     void *mem;
 
     size = objspace_malloc_prepare(objspace, size);
@@ -15778,14 +15897,14 @@ static size_t rb_mmtk_available_system_memory(void)
 }
 
 static size_t
-rb_mmtk_parse_heap_limit(char *argv, bool* had_error)
+rb_mmtk_parse_heap_limit(const char *argv, bool* had_error)
 {
     char *endval = NULL;
     int pow = 0;
 
     size_t base = strtol(argv, &endval, 10);
     if (base == 0) {
-        mmtk_max_heap_parse_error = true;
+        *had_error = true;
     }
 
     // if there were non-numbers in the string
@@ -15806,15 +15925,31 @@ rb_mmtk_parse_heap_limit(char *argv, bool* had_error)
     return (base << pow);
 }
 
-size_t rb_mmtk_heap_limit(void) {
+void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min_size, size_t *max_size) {
     const char *envval;
     if (mmtk_max_heap_size > 0) {
-        return mmtk_max_heap_size;
-    }
-    else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
-        return atol(envval);
+        *is_dynamic = false;
+        *min_size = 0;
+        *max_size = mmtk_max_heap_size;
+    } else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+        bool had_error = false;
+        size_t parsed_max = rb_mmtk_parse_heap_limit(envval, &had_error);
+        if (had_error) {
+            fprintf(stderr, "Error: Invalid THIRD_PARTY_HEAP_LIMIT: %s\n", envval);
+            abort();
+        }
+        *is_dynamic = false;
+        *min_size = 0;
+        *max_size = parsed_max;
     } else {
-        return rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+        const size_t default_min = 1024 * 1024;
+        size_t default_max = rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+        if (default_max < default_min) {
+            default_max = default_min;
+        }
+        *is_dynamic = true;
+        *min_size = default_min;
+        *max_size = default_max;
     }
 }
 

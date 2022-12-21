@@ -276,7 +276,7 @@ pub enum YARVOpnd {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Copy, Clone, Default, PartialEq, Debug)]
+#[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u16,
@@ -854,7 +854,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
     if ctx.chain_depth > 0 {
-        return *ctx;
+        return ctx.clone();
     }
 
     // If this block version we're about to add will hit the version limit
@@ -875,7 +875,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return generic_ctx;
     }
 
-    return *ctx;
+    return ctx.clone();
 }
 
 /// Keep track of a block version. Block should be fully constructed.
@@ -939,7 +939,7 @@ impl Block {
         let block = Block {
             blockid,
             end_idx: 0,
-            ctx: *ctx,
+            ctx: ctx.clone(),
             start_addr: None,
             end_addr: None,
             incoming: Vec::new(),
@@ -963,7 +963,7 @@ impl Block {
     }
 
     pub fn get_ctx(&self) -> Context {
-        self.ctx
+        self.ctx.clone()
     }
 
     #[allow(unused)]
@@ -1682,7 +1682,6 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     return branchref;
 }
 
-
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
     /// See [set_branch_target].
@@ -1720,7 +1719,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let target_idx: usize = target_idx.as_usize();
     let target = branch.targets[target_idx].as_ref().unwrap();
     let target_id = target.id;
-    let target_ctx = target.ctx;
+    let target_ctx = target.ctx.clone();
 
     let target_branch_shape = match target_idx {
         0 => BranchShape::Next0,
@@ -1889,7 +1888,7 @@ fn set_branch_target(
             block: Some(blockref.clone()),
             address: block.start_addr,
             id: target,
-            ctx: *ctx,
+            ctx: ctx.clone(),
         }));
 
         return;
@@ -1910,19 +1909,14 @@ fn set_branch_target(
     let mut asm = Assembler::new();
     asm.comment("branch stub hit");
 
-    // Call branch_stub_hit(branch_ptr, target_idx, ec)
-    let jump_addr = asm.ccall(
-        branch_stub_hit as *mut u8,
-        vec![
-            Opnd::const_ptr(branch_ptr as *const u8),
-            Opnd::UImm(target_idx as u64),
-            EC,
-        ]
-    );
+    // Set up the arguments unique to this stub for:
+    // branch_stub_hit(branch_ptr, target_idx, ec)
+    asm.mov(C_ARG_OPNDS[0], Opnd::const_ptr(branch_ptr as *const u8));
+    asm.mov(C_ARG_OPNDS[1], target_idx.into());
 
-    // Jump to the address returned by the
-    // branch_stub_hit call
-    asm.jmp_opnd(jump_addr);
+    // Jump to trampoline to call branch_stub_hit()
+    // Not really a side exit, just don't need a padded jump here.
+    asm.jmp(CodegenGlobals::get_branch_stub_hit_trampoline().as_side_exit());
 
     asm.compile(ocb);
 
@@ -1934,9 +1928,38 @@ fn set_branch_target(
             block: None, // no block yet
             address: Some(stub_addr),
             id: target,
-            ctx: *ctx,
+            ctx: ctx.clone(),
         }));
     }
+}
+
+pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
+    let ocb = ocb.unwrap();
+    let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
+
+    // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
+    // `branch_ptr` and `target_idx` is different for each stub,
+    // but the call and what's after is the same. This trampoline
+    // is the unchanging part.
+    // Since this trampoline is static, it allows code GC inside
+    // branch_stub_hit() to free stubs without problems.
+    asm.comment("branch_stub_hit() trampoline");
+    let jump_addr = asm.ccall(
+        branch_stub_hit as *mut u8,
+        vec![
+            C_ARG_OPNDS[0],
+            C_ARG_OPNDS[1],
+            EC,
+        ]
+    );
+
+    // Jump to the address returned by the branch_stub_hit() call
+    asm.jmp_opnd(jump_addr);
+
+    asm.compile(ocb);
+
+    code_ptr
 }
 
 impl Assembler
@@ -2020,7 +2043,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     let mut new_target = BranchTarget {
         block: None,
         address: None,
-        ctx: *ctx,
+        ctx: ctx.clone(),
         id: target0,
     };
 
@@ -2067,7 +2090,7 @@ pub fn defer_compilation(
         panic!("Double defer!");
     }
 
-    let mut next_ctx = *cur_ctx;
+    let mut next_ctx = cur_ctx.clone();
 
     if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");
@@ -2262,7 +2285,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
                 block: None,
                 address: block.entry_exit,
                 id: block.blockid,
-                ctx: block.ctx,
+                ctx: block.ctx.clone(),
             }));
         }
 

@@ -207,6 +207,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_charpos_not_use_string_methods
+    omit "not supported on TruffleRuby" if RUBY_ENGINE == "truffleruby"
+
     string = +'abcädeföghi'
     scanner = create_string_scanner(string)
 
@@ -567,6 +569,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_invalid_encoding_string
+    omit "no encoding check on TruffleRuby for scan(String)" if RUBY_ENGINE == "truffleruby"
+
     str = "\xA1\xA2".dup.force_encoding("euc-jp")
     ss = create_string_scanner(str)
     assert_raise(Encoding::CompatibilityError) do
@@ -712,6 +716,8 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_aref_without_regex
+    omit "#[:missing] always raises on TruffleRuby if matched" if RUBY_ENGINE == "truffleruby"
+
     s = create_string_scanner('abc')
     s.get_byte
     assert_nil(s[:c])
@@ -756,6 +762,33 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal(false, StringScanner.new("a", {}).fixed_anchor?)
     assert_equal(false, StringScanner.new("a", fixed_anchor: nil).fixed_anchor?)
     assert_equal(false, StringScanner.new("a", fixed_anchor: false).fixed_anchor?)
+  end
+
+  def test_scan_aref_repeatedly
+    s = StringScanner.new('test string')
+    assert_equal "test",   s.scan(/\w(\w)(\w*)/)
+    assert_equal "test",   s[0]
+    assert_equal "e",      s[1]
+    assert_equal "st",     s[2]
+    assert_nil             s.scan(/\w+/)
+    assert_nil             s[0]
+    assert_nil             s[1]
+    assert_nil             s[2]
+    assert_equal " ",      s.scan(/\s+/)
+    assert_equal " ",      s[0]
+    assert_nil             s[1]
+    assert_nil             s[2]
+    assert_equal "string", s.scan(/\w(\w)(\w*)/)
+    assert_equal "string", s[0]
+    assert_equal "t",      s[1]
+    assert_equal "ring",   s[2]
+  end
+
+  def test_named_captures
+    omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
+    scan = StringScanner.new("foobarbaz")
+    assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
+    assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
   end
 end
 

@@ -11,6 +11,7 @@ module Bundler
     require_relative "resolver/base"
     require_relative "resolver/package"
     require_relative "resolver/candidate"
+    require_relative "resolver/incompatibility"
     require_relative "resolver/root"
 
     include GemHelpers
@@ -28,6 +29,10 @@ module Bundler
 
       root = Resolver::Root.new(name_for_explicit_dependency_source)
       root_version = Resolver::Candidate.new(0)
+
+      @all_specs = Hash.new do |specs, name|
+        specs[name] = source_for(name).specs.search(name).sort_by {|s| [s.version, s.platform.to_s] }
+      end
 
       @sorted_versions = Hash.new do |candidates, package|
         candidates[package] = if package.root?
@@ -60,7 +65,7 @@ module Bundler
       incompatibility = e.incompatibility
 
       names_to_unlock = []
-      conflict_on_bundler = nil
+      extended_explanation = nil
 
       while incompatibility.conflict?
         cause = incompatibility.cause
@@ -69,12 +74,11 @@ module Bundler
         incompatibility.terms.each do |term|
           name = term.package.name
           names_to_unlock << name if base_requirements[name]
-          next unless name == "bundler"
 
           no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
           next unless no_versions_incompat
 
-          conflict_on_bundler ||= Gem::Requirement.new(no_versions_incompat.cause.constraint.constraint.constraint_string.split(","))
+          extended_explanation = no_versions_incompat.extended_explanation
         end
       end
 
@@ -85,9 +89,9 @@ module Bundler
 
       explanation = e.message
 
-      if conflict_on_bundler
+      if extended_explanation
         explanation << "\n\n"
-        explanation << bundler_not_found_message(conflict_on_bundler)
+        explanation << extended_explanation
       end
 
       raise SolveFailure.new(explanation)
@@ -111,14 +115,25 @@ module Bundler
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
       cause = PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
+      name = package.name
+      constraint = unsatisfied_term.constraint
+      requirement = Gem::Requirement.new(constraint.constraint_string.split(","))
 
-      custom_explanation = if package.name == "bundler"
-        "the current Bundler version (#{Bundler::VERSION}) does not satisfy #{cause.constraint}"
+      if name == "bundler"
+        custom_explanation = "the current Bundler version (#{Bundler::VERSION}) does not satisfy #{constraint}"
+        extended_explanation = bundler_not_found_message(requirement)
       else
-        "#{cause.constraint} could not be found in #{repository_for(package)}"
+        specs_matching_other_platforms = filter_matching_specs(@all_specs[name], requirement)
+
+        platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
+        custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
+
+        dependency = Dependency.new(name, requirement)
+        label = SharedHelpers.pretty_dependency(dependency)
+        extended_explanation = other_specs_matching_message(specs_matching_other_platforms, label) if specs_matching_other_platforms.any?
       end
 
-      PubGrub::Incompatibility.new([unsatisfied_term], :cause => cause, :custom_explanation => custom_explanation)
+      Incompatibility.new([unsatisfied_term], :cause => cause, :custom_explanation => custom_explanation, :extended_explanation => extended_explanation)
     end
 
     def debug?
@@ -187,9 +202,9 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = @base[name] + results_for(name)
+      results = @base[name] + @all_specs[name]
       locked_requirement = base_requirements[name]
-      results = results.select {|spec| requirement_satisfied_by?(locked_requirement, spec) } if locked_requirement
+      results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       versions = results.group_by(&:version).reduce([]) do |groups, (version, specs)|
         platform_specs = package.platforms.flat_map {|platform| select_best_platform_match(specs, platform) }
@@ -208,16 +223,8 @@ module Bundler
       sort_versions(package, versions)
     end
 
-    def index_for(name)
-      source_for(name).specs
-    end
-
     def source_for(name)
       @source_requirements[name] || @source_requirements[:default]
-    end
-
-    def results_for(name)
-      index_for(name).search(name)
     end
 
     def name_for_explicit_dependency_source
@@ -226,11 +233,45 @@ module Bundler
       "Gemfile"
     end
 
-    def requirement_satisfied_by?(requirement, spec)
-      requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
+    def raise_not_found!(package)
+      name = package.name
+      source = source_for(name)
+      specs = @all_specs[name]
+      matching_part = name
+      requirement_label = SharedHelpers.pretty_dependency(package.dependency)
+      cache_message = begin
+                          " or in gems cached in #{Bundler.settings.app_cache_path}" if Bundler.app_cache.exist?
+                        rescue GemfileNotFound
+                          nil
+                        end
+      specs_matching_requirement = filter_matching_specs(specs, package.dependency.requirement)
+
+      if specs_matching_requirement.any?
+        specs = specs_matching_requirement
+        matching_part = requirement_label
+        platforms = package.platforms
+        platform_label = platforms.size == 1 ? "platform '#{platforms.first}" : "platforms '#{platforms.join("', '")}"
+        requirement_label = "#{requirement_label}' with #{platform_label}"
+      end
+
+      message = String.new("Could not find gem '#{requirement_label}' in #{source}#{cache_message}.\n")
+
+      if specs.any?
+        message << "\n#{other_specs_matching_message(specs, matching_part)}"
+      end
+
+      raise GemNotFound, message
     end
 
     private
+
+    def filter_matching_specs(specs, requirement)
+      specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
+    end
+
+    def requirement_satisfied_by?(requirement, spec)
+      requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
+    end
 
     def sort_versions(package, versions)
       if versions.size > 1
@@ -260,38 +301,13 @@ module Bundler
         next [dep_package, dep_constraint] unless versions_for(dep_package, dep_constraint.range).empty?
         next unless dep_package.current_platform?
 
-        raise GemNotFound, gem_not_found_message(dep_package, dep_constraint)
+        raise_not_found!(dep_package)
       end.compact.to_h
     end
 
-    def gem_not_found_message(package, requirement)
-      name = package.name
-      source = source_for(name)
-      specs = source.specs.search(name).sort_by {|s| [s.version, s.platform.to_s] }
-      matching_part = name
-      requirement_label = SharedHelpers.pretty_dependency(package.dependency)
-      cache_message = begin
-                          " or in gems cached in #{Bundler.settings.app_cache_path}" if Bundler.app_cache.exist?
-                        rescue GemfileNotFound
-                          nil
-                        end
-      specs_matching_requirement = specs.select {| spec| requirement_satisfied_by?(package.dependency.requirement, spec) }
-
-      if specs_matching_requirement.any?
-        specs = specs_matching_requirement
-        matching_part = requirement_label
-        platforms = package.platforms
-        platform_label = platforms.size == 1 ? "platform '#{platforms.first}" : "platforms '#{platforms.join("', '")}"
-        requirement_label = "#{requirement_label}' with #{platform_label}"
-      end
-
-      message = String.new("Could not find gem '#{requirement_label}' in #{source}#{cache_message}.\n")
-
-      if specs.any?
-        message << "\nThe source contains the following gems matching '#{matching_part}':\n"
-        message << specs.map {|s| "  * #{s.full_name}" }.join("\n")
-      end
-
+    def other_specs_matching_message(specs, requirement)
+      message = String.new("The source contains the following gems matching '#{requirement}':\n")
+      message << specs.map {|s| "  * #{s.full_name}" }.join("\n")
       message
     end
 
@@ -342,7 +358,7 @@ module Bundler
     end
 
     def bundler_not_found_message(conflict_dependency)
-      candidate_specs = source_for(:default_bundler).specs.search("bundler").select {|spec| requirement_satisfied_by?(conflict_dependency, spec) }
+      candidate_specs = filter_matching_specs(source_for(:default_bundler).specs.search("bundler"), conflict_dependency)
       if candidate_specs.any?
         target_version = candidate_specs.last.version
         new_command = [File.basename($PROGRAM_NAME), "_#{target_version}_", *ARGV].join(" ")

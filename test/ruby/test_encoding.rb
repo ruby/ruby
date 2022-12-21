@@ -69,7 +69,7 @@ class TestEncoding < Test::Unit::TestCase
   def test_extra_encoding
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      200.times {|i|
+      100.times {|i|
         EnvUtil.suppress_warning { Encoding::UTF_8.replicate("dummy#{i}") }
       }
       e = Encoding.list.last
@@ -157,6 +157,20 @@ class TestEncoding < Test::Unit::TestCase
       $:.unshift("/\x80")
       assert_raise_with_message(LoadError, /\[Bug #16382\]/) do
         require "[Bug #16382]"
+      end
+    end;
+  end
+
+  def test_exceed_encoding_table_size
+    assert_separately(%w[--disable=gems], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      begin
+        enc = Encoding::UTF_8
+        1_000.times{|i| EnvUtil.suppress_warning{ enc.replicate("R_#{i}") } } # now 256 entries
+      rescue EncodingError => e
+        assert_match(/too many encoding/, e.message)
+      else
+        assert false
       end
     end;
   end

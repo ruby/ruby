@@ -6,6 +6,9 @@ module IRB
 
   module ExtendCommand
     class Edit < Nop
+      category "Misc"
+      description 'Open a file with the editor command defined with `ENV["EDITOR"]`.'
+
       class << self
         def transform_args(args)
           # Return a string literal as is for backward compatibility
@@ -14,13 +17,6 @@ module IRB
           else # Otherwise, consider the input as a String for convenience
             args.strip.dump
           end
-        end
-
-        private
-
-        def string_literal?(args)
-          sexp = Ripper.sexp(args)
-          sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
         end
       end
 

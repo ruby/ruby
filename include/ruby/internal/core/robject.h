@@ -37,8 +37,8 @@
 /**
  * Convenient casting macro.
  *
- * @param   obj  An object, which is in fact an ::RRegexp.
- * @return  The passed object casted to ::RRegexp.
+ * @param   obj  An object, which is in fact an ::RObject.
+ * @return  The passed object casted to ::RObject.
  */
 #define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
 /** @cond INTERNAL_MACRO */

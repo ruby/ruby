@@ -6,3 +6,5 @@ benchmark:
   - Time.iso8601(iso8601)
   - Time.parse(iso8601)
   - Time.parse(inspect)
+  - Time.new(iso8601) rescue Time.iso8601(iso8601)
+  - Time.new(inspect) rescue Time.parse(inspect)

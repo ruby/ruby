@@ -50,6 +50,9 @@ fn main() {
         // Don't want to copy over C comment
         .generate_comments(false)
 
+        // Makes the output more compact
+        .merge_extern_blocks(true)
+
         // Don't want layout tests as they are platform dependent
         .layout_tests(false)
 
@@ -85,11 +88,18 @@ fn main() {
         // From shape.h
         .allowlist_function("rb_shape_get_shape_id")
         .allowlist_function("rb_shape_get_shape_by_id")
-        .allowlist_function("rb_shape_id_num_bits")
+        .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
+        .allowlist_function("rb_shape_get_next")
+        .allowlist_function("rb_shape_id")
+        .allowlist_function("rb_shape_transition_shape_capa")
+        .allowlist_function("rb_shape_obj_too_complex")
+        .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_var("OBJ_TOO_COMPLEX_SHAPE_ID")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
+        .allowlist_function("rb_obj_frozen_p")
 
         // From ruby/internal/encoding/encoding.h
         .allowlist_type("ruby_encoding_consts")
@@ -100,6 +110,10 @@ fn main() {
         // From internal/hash.h
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
+        .allowlist_function("rb_hash_stlike_foreach")
+
+        // From include/ruby/st.h
+        .allowlist_type("st_retval")
 
         // From include/ruby/internal/intern/hash.h
         .allowlist_function("rb_hash_aset")
@@ -127,6 +141,7 @@ fn main() {
         .allowlist_function("rb_gc_mark")
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")
+        .allowlist_function("rb_gc_writebarrier")
 
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
@@ -310,6 +325,7 @@ fn main() {
 
         // From internal/variable.h
         .allowlist_function("rb_gvar_(get|set)")
+        .allowlist_function("rb_ensure_iv_list_size")
 
         // From include/ruby/internal/intern/variable.h
         .allowlist_function("rb_attr_get")

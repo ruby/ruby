@@ -39,6 +39,7 @@ static inline void ROBJ_TRANSIENT_UNSET(VALUE obj);
 
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
+int rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */

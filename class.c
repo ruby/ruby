@@ -1572,6 +1572,27 @@ class_descendants(VALUE klass, bool immediate_only)
  *     A.subclasses        #=> [D, B]
  *     B.subclasses        #=> [C]
  *     C.subclasses        #=> []
+ *
+ *  Anonymous subclasses (not associated with a constant) are
+ *  returned, too:
+ *
+ *     c = Class.new(A)
+ *     A.subclasses        # => [#<Class:0x00007f003c77bd78>, D, B]
+ *
+ *  Note that the parent does not hold references to subclasses
+ *  and doesn't prevent them from being garbage collected. This
+ *  means that the subclass might disappear when all references
+ *  to it are dropped:
+ *
+ *     # drop the reference to subclass, it can be garbage-collected now
+ *     c = nil
+ *
+ *     A.subclasses
+ *     # It can be
+ *     #  => [#<Class:0x00007f003c77bd78>, D, B]
+ *     # ...or just
+ *     #  => [D, B]
+ *     # ...depending on whether garbage collector was run
  */
 
 VALUE
@@ -2148,7 +2169,7 @@ rb_freeze_singleton_class(VALUE x)
     /* should not propagate to meta-meta-class, and so on */
     if (!(RBASIC(x)->flags & FL_SINGLETON)) {
         VALUE klass = RBASIC_CLASS(x);
-        if (klass && (klass = RCLASS_ORIGIN(klass)) != 0 &&
+        if (klass && // no class when hidden from ObjectSpace
             FL_TEST(klass, (FL_SINGLETON|FL_FREEZE)) == FL_SINGLETON) {
             OBJ_FREEZE_RAW(klass);
         }

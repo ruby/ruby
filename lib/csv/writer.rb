@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "input_record_separator"
-require_relative "match_p"
 require_relative "row"
-
-using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 class CSV
   # Note: Don't use this class directly. This is an internal class.
@@ -42,7 +39,10 @@ class CSV
       @headers ||= row if @use_headers
       @lineno += 1
 
-      row = @fields_converter.convert(row, nil, lineno) if @fields_converter
+      if @fields_converter
+        quoted_fields = [false] * row.size
+        row = @fields_converter.convert(row, nil, lineno, quoted_fields)
+      end
 
       i = -1
       converted_row = row.collect do |field|
@@ -97,7 +97,7 @@ class CSV
       return unless @headers
 
       converter = @options[:header_fields_converter]
-      @headers = converter.convert(@headers, nil, 0)
+      @headers = converter.convert(@headers, nil, 0, [])
       @headers.each do |header|
         header.freeze if header.is_a?(String)
       end

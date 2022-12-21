@@ -2,9 +2,10 @@
 #define RUBY_MJIT_H 1
 /**********************************************************************
 
-  mjit.h - Interface to MRI method JIT compiler for Ruby's main thread
+  mjit.h - Interface to MRI method JIT compiler
 
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
+  Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
 
 **********************************************************************/
 
@@ -14,24 +15,23 @@
 
 # if USE_MJIT
 
-#include "debug_counter.h"
 #include "ruby.h"
 #include "vm_core.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:
-enum rb_mjit_iseq_func {
-    // ISEQ has never been enqueued to unit_queue yet
-    NOT_ADDED_JIT_ISEQ_FUNC = 0,
+enum rb_mjit_func_state {
+    // ISEQ has not been compiled yet
+    MJIT_FUNC_NOT_COMPILED = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
-    NOT_READY_JIT_ISEQ_FUNC = 1,
+    MJIT_FUNC_COMPILING = 1,
     // ISEQ included not compilable insn, some internal assertion failed
     // or the unit is unloaded
-    NOT_COMPILED_JIT_ISEQ_FUNC = 2,
-    // End mark
-    LAST_JIT_ISEQ_FUNC = 3
+    MJIT_FUNC_FAILED = 2,
 };
+// Return true if jit_func is part of enum rb_mjit_func_state
+#define MJIT_FUNC_STATE_P(jit_func) ((uintptr_t)(jit_func) <= (uintptr_t)MJIT_FUNC_FAILED)
 
 // MJIT options which can be defined on the MRI command line.
 struct mjit_options {
@@ -86,7 +86,6 @@ RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN bool mjit_call_p;
 
 extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
-extern VALUE rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
 extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);

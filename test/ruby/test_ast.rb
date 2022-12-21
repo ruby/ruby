@@ -530,10 +530,10 @@ class TestAst < Test::Unit::TestCase
     forwarding = lambda do |arg_str|
       node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
       node = node.children.last.children.last.children[1]
-      node ? [node.children[-4], node.children[-2].children, node.children[-1]] : []
+      node ? [node.children[-4], node.children[-2]&.children, node.children[-1]] : []
     end
 
-    assert_equal([:*, [:**], :&], forwarding.call('...'))
+    assert_equal([:*, nil, :&], forwarding.call('...'))
   end
 
   def test_ranges_numbered_parameter

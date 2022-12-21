@@ -7,6 +7,9 @@ module IRB
 
   module ExtendCommand
     class IrbInfo < Nop
+      category "IRB"
+      description "Show information about IRB."
+
       def execute
         Class.new {
           def inspect

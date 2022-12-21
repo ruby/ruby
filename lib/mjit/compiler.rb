@@ -315,7 +315,6 @@ class RubyVM::MJIT::Compiler
         if !pc_moved_p
           src << "        reg_cfp->pc = original_body_iseq + #{next_pos};\n"
         end
-        src << "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n"
         src << "        goto cancel;\n"
         src << "    }\n"
       end
@@ -496,7 +495,6 @@ class RubyVM::MJIT::Compiler
       if !pc_moved_p
         src << "        reg_cfp->pc = original_body_iseq + #{next_pos};\n"
       end
-      src << "        RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n"
       src << "        goto cancel;\n"
       src << "    }\n"
     end
@@ -529,7 +527,6 @@ class RubyVM::MJIT::Compiler
           src << "                rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);\n"
           src << "                if (UNLIKELY(!mjit_call_p)) {\n"
           src << "                    reg_cfp->sp = vm_base_ptr(reg_cfp) + #{stack_size};\n"
-          src << "                    RB_DEBUG_COUNTER_INC(mjit_cancel_invalidate_all);\n"
           src << "                    goto cancel;\n"
           src << "                }\n"
           src << "            }\n"
@@ -567,7 +564,6 @@ class RubyVM::MJIT::Compiler
           src << "            reg_cfp->sp = vm_base_ptr(reg_cfp) + #{stack_size};\n"
         end
         src << "            reg_cfp->pc = original_body_iseq + #{pos};\n"
-        src << "            RB_DEBUG_COUNTER_INC(mjit_cancel_opt_insn);\n"
         src << "            goto cancel;\n"
       when /\A(?<prefix>.+\b)INSN_LABEL\((?<name>[^)]+)\)(?<suffix>.+)\z/m
         prefix, name, suffix = Regexp.last_match[:prefix], Regexp.last_match[:name], Regexp.last_match[:suffix]
@@ -636,7 +632,6 @@ class RubyVM::MJIT::Compiler
   # Print the block to cancel inlined method call. It's supporting only `opt_send_without_block` for now.
   def compile_inlined_cancel_handler(src, body, inline_context)
     src << "\ncancel:\n"
-    src << "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n"
     src << "    rb_mjit_recompile_inlining(original_iseq);\n"
 
     # Swap pc/sp set on cancel with original pc/sp.
@@ -674,17 +669,14 @@ class RubyVM::MJIT::Compiler
     end
 
     src << "\nsend_cancel:\n"
-    src << "    RB_DEBUG_COUNTER_INC(mjit_cancel_send_inline);\n"
     src << "    rb_mjit_recompile_send(original_iseq);\n"
     src << "    goto cancel;\n"
 
     src << "\nivar_cancel:\n"
-    src << "    RB_DEBUG_COUNTER_INC(mjit_cancel_ivar_inline);\n"
     src << "    rb_mjit_recompile_ivar(original_iseq);\n"
     src << "    goto cancel;\n"
 
     src << "\nexivar_cancel:\n"
-    src << "    RB_DEBUG_COUNTER_INC(mjit_cancel_exivar_inline);\n"
     src << "    rb_mjit_recompile_exivar(original_iseq);\n"
     src << "    goto cancel;\n"
 
@@ -693,7 +685,6 @@ class RubyVM::MJIT::Compiler
     src << "    goto cancel;\n"
 
     src << "\ncancel:\n"
-    src << "    RB_DEBUG_COUNTER_INC(mjit_cancel);\n"
     if status.local_stack_p
       (0...body.stack_max).each do |i|
         src << "    *(vm_base_ptr(reg_cfp) + #{i}) = stack[#{i}];\n"
@@ -834,7 +825,7 @@ class RubyVM::MJIT::Compiler
   end
 
   def captured_cc_entries(status)
-    status.compiled_iseq.jit_unit.cc_entries + status.cc_entries_index
+    status.compiled_iseq.mjit_unit.cc_entries + status.cc_entries_index
   end
 
   def call_data_index(cd, body)
@@ -851,7 +842,7 @@ class RubyVM::MJIT::Compiler
   end
 
   def rb_mjit_iseq_compile_info(body)
-    body.jit_unit.compile_info
+    body.mjit_unit.compile_info
   end
 
   def ISEQ_IS_SIZE(body)

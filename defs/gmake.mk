@@ -383,16 +383,10 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
-ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))),,\
-	   $(wildcard $(srcdir)/lib/unicode_normalize/tables.rb)),)
-# Needs the dependency when any Unicode data file exists, or
-# normalization tables script doesn't.  Otherwise, when the target
-# only exists, use it as-is.
-.PHONY: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
-UNICODE_TABLES_TIMESTAMP =
-$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
-	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-endif
+.SECONDARY: update-unicode-files
+.SECONDARY: update-unicode-auxiliary-files
+.SECONDARY: update-unicode-ucd-emoji-files
+.SECONDARY: update-unicode-emoji-files
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)

@@ -1297,10 +1297,9 @@ range_min(int argc, VALUE *argv, VALUE range)
         return range_first(argc, argv, range);
     }
     else {
-        struct cmp_opt_data cmp_opt = { 0, 0 };
         VALUE b = RANGE_BEG(range);
         VALUE e = RANGE_END(range);
-        int c = NIL_P(e) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
+        int c = NIL_P(e) ? -1 : OPTIMIZED_CMP(b, e);
 
         if (c > 0 || (c == 0 && EXCL(range)))
             return Qnil;
@@ -1408,8 +1407,7 @@ range_max(int argc, VALUE *argv, VALUE range)
         return rb_call_super(argc, argv);
     }
     else {
-        struct cmp_opt_data cmp_opt = { 0, 0 };
-        int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
+        int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e);
 
         if (c > 0)
             return Qnil;

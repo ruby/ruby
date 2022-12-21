@@ -6,7 +6,7 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class Catch < Debug
+    class Catch < DebugCommand
       def self.transform_args(args)
         args&.dump
       end

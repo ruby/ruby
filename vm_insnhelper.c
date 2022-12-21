@@ -1070,6 +1070,12 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
     }
 }
 
+VALUE
+rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil)
+{
+    return vm_get_ev_const(ec, orig_klass, id, allow_nil == Qtrue, 0);
+}
+
 static inline VALUE
 vm_get_ev_const_chain(rb_execution_context_t *ec, const ID *segments)
 {
@@ -1207,6 +1213,8 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 
     if (LIKELY(cached_id == shape_id)) {
+        RUBY_ASSERT(cached_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+
         if (index == ATTR_INDEX_NOT_SET) {
             return Qnil;
         }
@@ -1236,24 +1244,31 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
         rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
-        if (rb_shape_get_iv_index(shape, id, &index)) {
-            // This fills in the cache with the shared cache object.
-            // "ent" is the shared cache object
-            fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
-
-            // We fetched the ivar list above
-            val = ivar_list[index];
-            RUBY_ASSERT(!UNDEF_P(val));
+        if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
+            if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+                val = Qnil;
+            }
         }
         else {
-            if (is_attr) {
-                vm_cc_attr_index_initialize(cc, shape_id);
+            if (rb_shape_get_iv_index(shape, id, &index)) {
+                // This fills in the cache with the shared cache object.
+                // "ent" is the shared cache object
+                fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
+
+                // We fetched the ivar list above
+                val = ivar_list[index];
+                RUBY_ASSERT(!UNDEF_P(val));
             }
             else {
-                vm_ic_attr_index_initialize(ic, shape_id);
-            }
+                if (is_attr) {
+                    vm_cc_attr_index_initialize(cc, shape_id);
+                }
+                else {
+                    vm_ic_attr_index_initialize(ic, shape_id);
+                }
 
-            val = Qnil;
+                val = Qnil;
+            }
         }
 
     }
@@ -1277,6 +1292,8 @@ general_path:
 static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
+    RUBY_ASSERT(next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+
     // Cache population code
     if (is_attr) {
         vm_cc_attr_index_set(cc, index, next_shape_id);
@@ -1303,7 +1320,9 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
             shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+            }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
             return val;
@@ -1407,6 +1426,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = ROBJECT_SHAPE_ID(obj);
+            RUBY_ASSERT(dest_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
 
             if (LIKELY(shape_id == dest_shape_id)) {
                 RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
@@ -1415,8 +1435,6 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             else if (dest_shape_id != INVALID_SHAPE_ID) {
                 rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
-
-                RUBY_ASSERT(dest_shape->type == SHAPE_IVAR || dest_shape->type == SHAPE_IVAR_UNDEF);
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
@@ -1436,6 +1454,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
             VALUE *ptr = ROBJECT_IVPTR(obj);
 
+            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -5176,12 +5195,11 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+                if (OPTIMIZED_CMP(v, result) > 0) {
                     result = v;
                 }
             }
@@ -5193,6 +5211,12 @@ vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
     }
 }
 
+VALUE
+rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    return vm_opt_newarray_max(ec, num, ptr);
+}
+
 static VALUE
 vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 {
@@ -5201,12 +5225,11 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
             return Qnil;
         }
         else {
-            struct cmp_opt_data cmp_opt = { 0, 0 };
             VALUE result = *ptr;
             rb_snum_t i = num - 1;
             while (i-- > 0) {
                 const VALUE v = *++ptr;
-                if (OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+                if (OPTIMIZED_CMP(v, result) < 0) {
                     result = v;
                 }
             }
@@ -5216,6 +5239,12 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
     else {
         return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idMin, 0, NULL, RB_NO_KEYWORDS);
     }
+}
+
+VALUE
+rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    return vm_opt_newarray_min(ec, num, ptr);
 }
 
 #undef id_cmp

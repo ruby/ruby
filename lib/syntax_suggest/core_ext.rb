@@ -3,6 +3,10 @@
 # Ruby 3.2+ has a cleaner way to hook into Ruby that doesn't use `require`
 if SyntaxError.method_defined?(:detailed_message)
   module SyntaxSuggest
+    # Mini String IO [Private]
+    #
+    # Acts like a StringIO with reduced API, but without having to require that
+    # class.
     class MiniStringIO
       def initialize(isatty: $stderr.isatty)
         @string = +""
@@ -16,52 +20,49 @@ if SyntaxError.method_defined?(:detailed_message)
 
       attr_reader :string
     end
+
+    # SyntaxSuggest.record_dir [Private]
+    #
+    # Used to monkeypatch SyntaxError via Module.prepend
+    def self.module_for_detailed_message
+      Module.new {
+        def detailed_message(highlight: true, syntax_suggest: true, **kwargs)
+          return super unless syntax_suggest
+
+          require "syntax_suggest/api" unless defined?(SyntaxSuggest::DEFAULT_VALUE)
+
+          message = super
+
+          if path
+            file = Pathname.new(path)
+            io = SyntaxSuggest::MiniStringIO.new
+
+            SyntaxSuggest.call(
+              io: io,
+              source: file.read,
+              filename: file,
+              terminal: highlight
+            )
+            annotation = io.string
+
+            annotation + message
+          else
+            message
+          end
+        rescue => e
+          if ENV["SYNTAX_SUGGEST_DEBUG"]
+            $stderr.warn(e.message)
+            $stderr.warn(e.backtrace)
+          end
+
+          # Ignore internal errors
+          message
+        end
+      }
+    end
   end
 
-  SyntaxError.prepend Module.new {
-    def detailed_message(highlight: true, syntax_suggest: true, **kwargs)
-      return super unless syntax_suggest
-
-      require "syntax_suggest/api" unless defined?(SyntaxSuggest::DEFAULT_VALUE)
-
-      message = super
-
-      file = if respond_to?(:path)
-        path
-      elsif highlight
-        # This branch will be removed when the next Ruby 3.2 preview is released with
-        # support for SyntaxError#path
-        SyntaxSuggest::PathnameFromMessage.new(super(highlight: false, **kwargs)).call.name
-      else
-        SyntaxSuggest::PathnameFromMessage.new(message).call.name
-      end
-
-      if file
-        file = Pathname.new(file)
-        io = SyntaxSuggest::MiniStringIO.new
-
-        SyntaxSuggest.call(
-          io: io,
-          source: file.read,
-          filename: file,
-          terminal: highlight
-        )
-        annotation = io.string
-
-        annotation + message
-      else
-        message
-      end
-    rescue => e
-      if ENV["SYNTAX_SUGGEST_DEBUG"]
-        $stderr.warn(e.message)
-        $stderr.warn(e.backtrace)
-      end
-
-      # Ignore internal errors
-      message
-    end
-  }
+  SyntaxError.prepend(SyntaxSuggest.module_for_detailed_message)
 else
   autoload :Pathname, "pathname"
 

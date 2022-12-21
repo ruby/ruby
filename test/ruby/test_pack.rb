@@ -777,21 +777,13 @@ EXPECTED
   end
 
   def test_pack_garbage
-    assert_warn("") do
-      assert_equal "\000", [0].pack("*U")
-    end
-
-    assert_warning(%r%unknown pack directive '\*' in '\*U'$%) do
+    assert_warn(%r%unknown pack directive '\*' in '\*U'$%) do
       assert_equal "\000", [0].pack("*U")
     end
   end
 
   def test_unpack_garbage
-    assert_warn("") do
-      assert_equal [0], "\000".unpack("*U")
-    end
-
-    assert_warning(%r%unknown unpack directive '\*' in '\*U'$%) do
+    assert_warn(%r%unknown unpack directive '\*' in '\*U'$%) do
       assert_equal [0], "\000".unpack("*U")
     end
   end

@@ -672,6 +672,8 @@ module Bundler
       "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
       "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
+    method_option "bundler", :type => :string, :lazy_default => "> 0.a", :banner =>
+      "Update the locked version of bundler"
     def lock
       require_relative "cli/lock"
       Lock.new(options).run

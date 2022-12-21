@@ -9,6 +9,9 @@ module IRB
 
   module ExtendCommand
     class Ls < Nop
+      category "Context"
+      description "Show methods, constants, and variables. `-g [query]` or `-G [query]` allows you to filter out the output."
+
       def self.transform_args(args)
         if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)
           args = match[:args]

@@ -134,9 +134,12 @@ AC_CANONICAL_TARGET
 AS_CASE(["$target_cpu-$target_os"],
     [aarch64-darwin*], [
         target_cpu=arm64
-        AS_CASE(["$target_vendor"], [unknown], [target_vendor=apple target=${target/-unknown-/-apple-}])
-        target="${target/aarch64/arm64}"
-        target_alias="${target_alias/aarch64/arm64}"
+        AS_CASE(["$target_vendor"], [unknown], [
+            target_vendor=apple
+            target=${target%%-unknown-*}-apple-${target@%:@*-unknown-}
+        ])
+        target="arm64-${target@%:@aarch64-}"
+        AS_IF([test -n "$target_alias"], [target_alias="arm64-${target_alias@%:@aarch64-}"])
     ])
 
 AC_ARG_PROGRAM
@@ -522,7 +525,9 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
 
+tool_warned=$ac_tool_warned ac_tool_warned=no
 AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
+ac_tool_warned=$tool_warned
 AS_IF([test -z "$PKG_CONFIG"], [],
 ["$PKG_CONFIG" --print-errors --version > /dev/null 2>&1], [],
 [
@@ -3105,7 +3110,7 @@ AS_IF([test "$rb_cv_dlopen" = yes], [
 
             AC_MSG_CHECKING([whether $flag is accepted for bundle])
             : > conftest.c
-            AS_IF([${LDSHARED/'$(CC)'/$CC} -o conftest.bundle $flag conftest.c >/dev/null 2>conftest.err &&
+            AS_IF([${LDSHARED%%'$(CC)'*}$CC${LDSHARED@%:@*'$(CC)'} -o conftest.bundle $flag conftest.c >/dev/null 2>conftest.err &&
                 test ! -s conftest.err], [
                 AC_MSG_RESULT([yes])
                 RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])
@@ -3350,6 +3355,10 @@ AS_IF([test x"$cross_compiling" = xyes], [
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
+  AS_CASE(["$target_os"],[darwin*],[
+    # darwin target requires miniruby for linking ext bundles
+    PREP="$PREP"' miniruby$(EXEEXT)'
+  ])
   RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
@@ -3755,7 +3764,7 @@ AS_IF([test "$RUSTC" != "no"],
     )
     dnl Fails in case rustc target doesn't match ruby target.
     dnl Can happen on Rosetta, for example.
-    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")]\n fn main() { let x = 1; format!(\"{x}\"); }" |
+    AS_IF([echo "#[cfg(target_arch = \"$YJIT_TARGET_ARCH\")] fn main() { let x = 1; format!(\"{x}\"); }" |
             $RUSTC - --emit asm=/dev/null 2>/dev/null],
         [YJIT_RUSTC_OK=yes]
     )
@@ -3785,7 +3794,7 @@ AS_IF([test "$cross_compiling" = no],
 dnl build YJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
 AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
-    [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),
+    [enable in-process JIT compiler that requires Rust build tools [default=no]]),
     [YJIT_SUPPORT=$enableval],
     [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
         [yes:yes:yes|:yes:yes], [

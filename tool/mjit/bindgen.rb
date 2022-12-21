@@ -4,7 +4,7 @@
 ENV['GEM_HOME'] = File.expand_path('./.bundle', __dir__)
 require 'rubygems/source'
 require 'bundler/inline'
-gemfile do
+gemfile(true) do
   source 'https://rubygems.org'
   gem 'ffi-clang', '0.7.0', require: false
 end
@@ -359,7 +359,6 @@ generator = BindingGenerator.new(
       SHAPE_FROZEN
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
-      SHAPE_IVAR_UNDEF
       SHAPE_ROOT
     ],
     ULONG: %w[

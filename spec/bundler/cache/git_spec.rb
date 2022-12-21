@@ -90,7 +90,6 @@ RSpec.describe "bundle cache with git" do
     expect(ref).not_to eq(old_ref)
 
     bundle "update", :all => true
-    bundle "config set cache_all true"
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist

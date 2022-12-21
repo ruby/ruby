@@ -158,8 +158,7 @@ class BundlerVCRHTTP < Net::HTTP
   alias_method :request, :request_with_vcr
 end
 
+require_relative "helpers/artifice"
+
 # Replace Net::HTTP with our VCR subclass
-::Net.class_eval do
-  remove_const(:HTTP)
-  const_set(:HTTP, BundlerVCRHTTP)
-end
+Artifice.replace_net_http(BundlerVCRHTTP)

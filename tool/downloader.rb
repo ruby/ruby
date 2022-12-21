@@ -64,7 +64,8 @@ class Downloader
         begin
           super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest)
         rescue => e
-          STDERR.puts "Download failed (#{e.message}), try another URL"
+          m1, m2 = e.message.split("\n", 2)
+          STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
           super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
         end
       else
@@ -312,7 +313,16 @@ class Downloader
     return true if cache.eql?(file)
     if /cygwin/ !~ RUBY_PLATFORM or /winsymlink:nativestrict/ =~ ENV['CYGWIN']
       begin
-        file.make_symlink(cache.relative_path_from(file.parent))
+        link = cache.relative_path_from(file.parent)
+      rescue ArgumentError
+        abs = cache.expand_path
+        link = abs.relative_path_from(file.parent.expand_path)
+        if link.to_s.count("/") > abs.to_s.count("/")
+          link = abs
+        end
+      end
+      begin
+        file.make_symlink(link)
       rescue SystemCallError
       else
         if verbose

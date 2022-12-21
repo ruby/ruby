@@ -1832,6 +1832,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
         EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
+        body->param.flags.ruby2_keywords = args->ruby2_keywords;
         body->param.lead_num = arg_size = (int)args->pre_args_num;
         if (body->param.lead_num > 0) body->param.flags.has_lead = TRUE;
         debugs("  - argc: %d\n", body->param.lead_num);
@@ -2461,7 +2462,17 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                       case TS_IVC: /* inline ivar cache */
                         {
                             unsigned int ic_index = FIX2UINT(operands[j]);
-                            vm_ic_attr_index_initialize(((IVC)&body->is_entries[ic_index]), INVALID_SHAPE_ID);
+
+                            IVC cache = ((IVC)&body->is_entries[ic_index]);
+
+                            if (insn == BIN(setinstancevariable)) {
+                                cache->iv_set_name = SYM2ID(operands[j - 1]);
+                            }
+                            else {
+                                cache->iv_set_name = 0;
+                            }
+
+                            vm_ic_attr_index_initialize(cache, INVALID_SHAPE_ID);
                         }
                       case TS_ISE: /* inline storage entry: `once` insn */
                       case TS_ICVARC: /* inline cvar cache */
@@ -11529,7 +11540,17 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     code[code_index] = (VALUE)ic;
 
                     if (operand_type == TS_IVC) {
-                        vm_ic_attr_index_initialize(((IVC)code[code_index]), INVALID_SHAPE_ID);
+                        IVC cache = (IVC)ic;
+
+                        if (insn == BIN(setinstancevariable)) {
+                            ID iv_name = (ID)code[code_index - 1];
+                            cache->iv_set_name = iv_name;
+                        }
+                        else {
+                            cache->iv_set_name = 0;
+                        }
+
+                        vm_ic_attr_index_initialize(cache, INVALID_SHAPE_ID);
                     }
 
                 }

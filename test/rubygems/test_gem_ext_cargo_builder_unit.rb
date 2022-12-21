@@ -23,16 +23,6 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
     assert_includes command, "--locked"
   end
 
-  def test_cargo_command_does_not_lock_in_dev_profile
-    skip_unsupported_platforms!
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
-    builder.profile = :dev
-    command = builder.cargo_command(Dir.pwd, @tempdir)
-
-    assert_not_includes command, "--locked"
-  end
-
   def test_cargo_command_passes_respects_cargo_env_var
     skip_unsupported_platforms!
     old_cargo = ENV["CARGO"]

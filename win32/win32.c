@@ -2584,6 +2584,18 @@ set_pioinfo_extra(void)
 #  define UCRTBASE "ucrtbase.dll"
 # endif
     /* get __pioinfo addr with _isatty */
+    /*
+     * Why Ruby depends to _pioinfo is
+     * * to associate socket and fd: CRuby creates fd with dummy file handle
+     *   and set socket to emulate Unix-like behavior. Without __pioinfo
+     *   we need something which manages the fd number allocation
+     * * to implement overlapped I/O for Windows 2000/XP
+     * * to emulate fcntl(2)
+     *
+     * see also
+     * * https://bugs.ruby-lang.org/issues/11118
+     * * https://bugs.ruby-lang.org/issues/18605
+     */
     char *p = (char*)get_proc_address(UCRTBASE, "_isatty", NULL);
     char *pend = p;
     /* _osfile(fh) & FDEV */

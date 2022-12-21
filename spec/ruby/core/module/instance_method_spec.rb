@@ -45,10 +45,14 @@ describe "Module#instance_method" do
     @parent_um.inspect.should =~ /\bModuleSpecs::InstanceMeth\b/
     @child_um.inspect.should =~ /\bfoo\b/
     @child_um.inspect.should =~ /\bModuleSpecs::InstanceMeth\b/
-    @child_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+
     @mod_um.inspect.should =~ /\bbar\b/
     @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethMod\b/
-    @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+
+    ruby_version_is ""..."3.2" do
+      @child_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+      @mod_um.inspect.should =~ /\bModuleSpecs::InstanceMethChild\b/
+    end
   end
 
   it "raises a TypeError if the given name is not a String/Symbol" do

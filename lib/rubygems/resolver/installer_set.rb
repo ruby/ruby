@@ -66,7 +66,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
     found = found.select do |s|
       Gem::Source::SpecificFile === s.source ||
-        Gem::Platform.match(s.platform)
+        Gem::Platform.match_spec?(s)
     end
 
     found = found.sort_by do |s|

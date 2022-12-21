@@ -84,9 +84,14 @@ typedef struct MMTk_RawVecOfObjRef {
 MMTk_Builder *mmtk_builder_default(void);
 
 /**
- * Set the `heap_size` option.
+ * Set the GC trigger to dynamically adjust heap size.
  */
-void mmtk_builder_set_heap_size(MMTk_Builder *builder, size_t heap_size);
+void mmtk_builder_set_dynamic_heap_size(MMTk_Builder *builder, size_t low, size_t high);
+
+/**
+ * Set the GC trigger to use a fixed heap size.
+ */
+void mmtk_builder_set_fixed_heap_size(MMTk_Builder *builder, size_t heap_size);
 
 /**
  * Set the plan.  `plan_name` is a case-sensitive C-style ('\0'-terminated) string matching

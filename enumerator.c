@@ -20,6 +20,7 @@
 
 #include "id.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/hash.h"
@@ -3481,9 +3482,16 @@ enum_product_allocate(VALUE klass)
  *   e.size #=> 6
  */
 static VALUE
-enum_product_initialize(VALUE obj, VALUE enums)
+enum_product_initialize(int argc, VALUE *argv, VALUE obj)
 {
     struct enum_product *ptr;
+    VALUE enums = Qnil, options = Qnil;
+
+    rb_scan_args(argc, argv, "*:", &enums, &options);
+
+    if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
+        rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));
+    }
 
     rb_check_frozen(obj);
     TypedData_Get_Struct(obj, struct enum_product, &enum_product_data_type, ptr);
@@ -3697,16 +3705,21 @@ enum_product_inspect(VALUE obj)
  *   e.size #=> 6
  */
 static VALUE
-enumerator_s_product(VALUE klass, VALUE enums)
+enumerator_s_product(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = enum_product_initialize(enum_product_allocate(rb_cEnumProduct), enums);
+    VALUE enums = Qnil, options = Qnil, block = Qnil;
 
-    if (rb_block_given_p()) {
-        return enum_product_run(obj, rb_block_proc());
+    rb_scan_args(argc, argv, "*:&", &enums, &options, &block);
+
+    if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
+        rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));
     }
-    else {
-        return obj;
-    }
+
+    VALUE obj = enum_product_initialize(argc, argv, enum_product_allocate(rb_cEnumProduct));
+
+    if (NIL_P(block)) return obj;
+
+    return enum_product_run(obj, block);
 }
 
 /*
@@ -4586,7 +4599,7 @@ InitVM_Enumerator(void)
     /* Product */
     rb_cEnumProduct = rb_define_class_under(rb_cEnumerator, "Product", rb_cEnumerator);
     rb_define_alloc_func(rb_cEnumProduct, enum_product_allocate);
-    rb_define_method(rb_cEnumProduct, "initialize", enum_product_initialize, -2);
+    rb_define_method(rb_cEnumProduct, "initialize", enum_product_initialize, -1);
     rb_define_method(rb_cEnumProduct, "initialize_copy", enum_product_init_copy, 1);
     rb_define_method(rb_cEnumProduct, "each", enum_product_each, 0);
     rb_define_method(rb_cEnumProduct, "size", enum_product_size, 0);
@@ -4597,7 +4610,7 @@ InitVM_Enumerator(void)
     rb_undef_method(rb_cEnumProduct, "next_values");
     rb_undef_method(rb_cEnumProduct, "peek");
     rb_undef_method(rb_cEnumProduct, "peek_values");
-    rb_define_singleton_method(rb_cEnumerator, "product", enumerator_s_product, -2);
+    rb_define_singleton_method(rb_cEnumerator, "product", enumerator_s_product, -1);
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);

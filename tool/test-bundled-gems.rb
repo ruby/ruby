@@ -1,6 +1,7 @@
 require 'rbconfig'
 require 'timeout'
 require 'fileutils'
+require_relative 'lib/colorize'
 
 ENV.delete("GNUMAKEFLAGS")
 
@@ -11,6 +12,7 @@ allowed_failures = allowed_failures.split(',').reject(&:empty?)
 
 ENV["GEM_PATH"] = [File.realpath('.bundle'), File.realpath('../.bundle', __dir__)].join(File::PATH_SEPARATOR)
 
+colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
 dummy_rake_compiler_dir = File.realpath('../dummy-rake-compiler', __FILE__)
@@ -74,19 +76,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     break
   end
 
+  print "##[endgroup]\n" if github_actions
   unless $?.success?
 
-    puts "Tests failed " +
-         ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
-            "with exit code #{$?.exitstatus}")
+    mesg = "Tests failed " +
+           ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
+              "with exit code #{$?.exitstatus}")
+    puts colorize.decorate(mesg, "fail")
     if allowed_failures.include?(gem)
-      puts "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
+      mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
+      puts colorize.decorate(mesg, "skip")
     else
       failed << gem
       exit_code = $?.exitstatus if $?.exitstatus
     end
   end
-  print "##[endgroup]\n" if github_actions
 end
 
 puts "Failed gems: #{failed.join(', ')}" unless failed.empty?

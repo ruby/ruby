@@ -394,8 +394,34 @@ impl VALUE {
         unsafe { CLASS_OF(self) }
     }
 
-    pub fn shape_of(self) -> u32 {
+    pub fn is_frozen(self) -> bool {
+        unsafe { rb_obj_frozen_p(self) != VALUE(0) }
+    }
+
+    pub fn shape_too_complex(self) -> bool {
+        unsafe { rb_shape_obj_too_complex(self) }
+    }
+
+    pub fn shape_id_of(self) -> u32 {
         unsafe { rb_shape_get_shape_id(self) }
+    }
+
+    pub fn shape_of(self) -> *mut rb_shape {
+        unsafe {
+            let shape = rb_shape_get_shape_by_id(self.shape_id_of());
+
+            if shape.is_null() {
+                panic!("Shape should not be null");
+            } else {
+                shape
+            }
+        }
+    }
+
+    pub fn embedded_p(self) -> bool {
+        unsafe {
+            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+        }
     }
 
     pub fn as_isize(self) -> isize {

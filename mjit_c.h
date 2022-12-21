@@ -14,27 +14,47 @@
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
+// Linked list of struct rb_mjit_unit.
+struct rb_mjit_unit_list {
+    struct ccan_list_head head;
+    int length; // the list length
+};
+
+enum rb_mjit_unit_type {
+    // Single-ISEQ unit for unit_queue
+    MJIT_UNIT_ISEQ = 0,
+    // Multi-ISEQ unit for mjit_batch
+    MJIT_UNIT_BATCH = 1,
+    // All-ISEQ unit for mjit_compact
+    MJIT_UNIT_COMPACT = 2,
+};
+
 // The unit structure that holds metadata of ISeq for MJIT.
+// TODO: Use different structs for ISEQ and BATCH/COMPACT
 struct rb_mjit_unit {
     struct ccan_list_node unode;
     // Unique order number of unit.
     int id;
-    // Dlopen handle of the loaded object file.
-    void *handle;
+    // Type of this unit
+    enum rb_mjit_unit_type type;
+
+    /* MJIT_UNIT_ISEQ */
+    // ISEQ for a non-batch unit
     rb_iseq_t *iseq;
-#if defined(_WIN32)
-    // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
-    char *so_file;
-#endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    // True if it's a unit for JIT compaction
-    bool compact_p;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
+    // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
+    unsigned int cc_entries_size;
+
+    /* MJIT_UNIT_BATCH, MJIT_UNIT_COMPACT */
+    // Dlopen handle of the loaded object file.
+    void *handle;
+    // Units compacted by this batch
+    struct rb_mjit_unit_list units; // MJIT_UNIT_BATCH only
 };
 
 // Storage to keep data which is consistent in each conditional branch.

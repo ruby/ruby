@@ -2,14 +2,9 @@
 
 require "strscan"
 
-require_relative "delete_suffix"
 require_relative "input_record_separator"
-require_relative "match_p"
 require_relative "row"
 require_relative "table"
-
-using CSV::DeleteSuffix if CSV.const_defined?(:DeleteSuffix)
-using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 class CSV
   # Note: Don't use this class directly. This is an internal class.
@@ -25,6 +20,10 @@ class CSV
 
     # Raised when encoding is invalid.
     class InvalidEncoding < StandardError
+    end
+
+    # Raised when unexpected case is happen.
+    class UnexpectedError < StandardError
     end
 
     #
@@ -78,10 +77,10 @@ class CSV
     # +keep_end+, +keep_back+, +keep_drop+.
     #
     # CSV::InputsScanner.scan() tries to match with pattern at the current position.
-    # If there's a match, the scanner advances the “scan pointer” and returns the matched string.
+    # If there's a match, the scanner advances the "scan pointer" and returns the matched string.
     # Otherwise, the scanner returns nil.
     #
-    # CSV::InputsScanner.rest() returns the “rest” of the string (i.e. everything after the scan pointer).
+    # CSV::InputsScanner.rest() returns the "rest" of the string (i.e. everything after the scan pointer).
     # If there is no more data (eos? = true), it returns "".
     #
     class InputsScanner
@@ -96,11 +95,13 @@ class CSV
       end
 
       def each_line(row_separator)
+        return enum_for(__method__, row_separator) unless block_given?
         buffer = nil
         input = @scanner.rest
         position = @scanner.pos
         offset = 0
         n_row_separator_chars = row_separator.size
+        # trace(__method__, :start, line, input)
         while true
           input.each_line(row_separator) do |line|
             @scanner.pos += line.bytesize
@@ -140,25 +141,28 @@ class CSV
       end
 
       def scan(pattern)
+        # trace(__method__, pattern, :start)
         value = @scanner.scan(pattern)
+        # trace(__method__, pattern, :done, :last, value) if @last_scanner
         return value if @last_scanner
 
-        if value
-          read_chunk if @scanner.eos?
-          return value
-        else
-          nil
-        end
+        read_chunk if value and @scanner.eos?
+        # trace(__method__, pattern, :done, value)
+        value
       end
 
       def scan_all(pattern)
+        # trace(__method__, pattern, :start)
         value = @scanner.scan(pattern)
+        # trace(__method__, pattern, :done, :last, value) if @last_scanner
         return value if @last_scanner
 
         return nil if value.nil?
         while @scanner.eos? and read_chunk and (sub_value = @scanner.scan(pattern))
+          # trace(__method__, pattern, :sub, sub_value)
           value << sub_value
         end
+        # trace(__method__, pattern, :done, value)
         value
       end
 
@@ -167,68 +171,126 @@ class CSV
       end
 
       def keep_start
-        @keeps.push([@scanner.pos, nil])
+        # trace(__method__, :start)
+        adjust_last_keep
+        @keeps.push([@scanner, @scanner.pos, nil])
+        # trace(__method__, :done)
       end
 
       def keep_end
-        start, buffer = @keeps.pop
-        keep = @scanner.string.byteslice(start, @scanner.pos - start)
+        # trace(__method__, :start)
+        scanner, start, buffer = @keeps.pop
+        if scanner == @scanner
+          keep = @scanner.string.byteslice(start, @scanner.pos - start)
+        else
+          keep = @scanner.string.byteslice(0, @scanner.pos)
+        end
         if buffer
           buffer << keep
           keep = buffer
         end
+        # trace(__method__, :done, keep)
         keep
       end
 
       def keep_back
-        start, buffer = @keeps.pop
+        # trace(__method__, :start)
+        scanner, start, buffer = @keeps.pop
         if buffer
+          # trace(__method__, :rescan, start, buffer)
           string = @scanner.string
-          keep = string.byteslice(start, string.bytesize - start)
+          if scanner == @scanner
+            keep = string.byteslice(start, string.bytesize - start)
+          else
+            keep = string
+          end
           if keep and not keep.empty?
             @inputs.unshift(StringIO.new(keep))
             @last_scanner = false
           end
           @scanner = StringScanner.new(buffer)
         else
+          if @scanner != scanner
+            message = "scanners are different but no buffer: "
+            message += "#{@scanner.inspect}(#{@scanner.object_id}): "
+            message += "#{scanner.inspect}(#{scanner.object_id})"
+            raise UnexpectedError, message
+          end
+          # trace(__method__, :repos, start, buffer)
           @scanner.pos = start
         end
         read_chunk if @scanner.eos?
       end
 
       def keep_drop
-        @keeps.pop
+        _, _, buffer = @keeps.pop
+        # trace(__method__, :done, :empty) unless buffer
+        return unless buffer
+
+        last_keep = @keeps.last
+        # trace(__method__, :done, :no_last_keep) unless last_keep
+        return unless last_keep
+
+        if last_keep[2]
+          last_keep[2] << buffer
+        else
+          last_keep[2] = buffer
+        end
+        # trace(__method__, :done)
       end
 
       def rest
         @scanner.rest
       end
 
+      def check(pattern)
+        @scanner.check(pattern)
+      end
+
       private
+      def trace(*args)
+        pp([*args, @scanner, @scanner&.string, @scanner&.pos, @keeps])
+      end
+
+      def adjust_last_keep
+        # trace(__method__, :start)
+
+        keep = @keeps.last
+        # trace(__method__, :done, :empty) if keep.nil?
+        return if keep.nil?
+
+        scanner, start, buffer = keep
+        string = @scanner.string
+        if @scanner != scanner
+          start = 0
+        end
+        if start == 0 and @scanner.eos?
+          keep_data = string
+        else
+          keep_data = string.byteslice(start, @scanner.pos - start)
+        end
+        if keep_data
+          if buffer
+            buffer << keep_data
+          else
+            keep[2] = keep_data.dup
+          end
+        end
+
+        # trace(__method__, :done)
+      end
+
       def read_chunk
         return false if @last_scanner
 
-        unless @keeps.empty?
-          keep = @keeps.last
-          keep_start = keep[0]
-          string = @scanner.string
-          keep_data = string.byteslice(keep_start, @scanner.pos - keep_start)
-          if keep_data
-            keep_buffer = keep[1]
-            if keep_buffer
-              keep_buffer << keep_data
-            else
-              keep[1] = keep_data.dup
-            end
-          end
-          keep[0] = 0
-        end
+        adjust_last_keep
 
         input = @inputs.first
         case input
         when StringIO
           string = input.read
           raise InvalidEncoding unless string.valid_encoding?
+          # trace(__method__, :stringio, string)
           @scanner = StringScanner.new(string)
           @inputs.shift
           @last_scanner = @inputs.empty?
@@ -237,6 +299,7 @@ class CSV
           chunk = input.gets(@row_separator, @chunk_size)
           if chunk
             raise InvalidEncoding unless chunk.valid_encoding?
+            # trace(__method__, :chunk, chunk)
             @scanner = StringScanner.new(chunk)
             if input.respond_to?(:eof?) and input.eof?
               @inputs.shift
@@ -244,6 +307,7 @@ class CSV
             end
             true
           else
+            # trace(__method__, :no_chunk)
             @scanner = StringScanner.new("".encode(@encoding))
             @inputs.shift
             @last_scanner = @inputs.empty?
@@ -278,7 +342,11 @@ class CSV
     end
 
     def field_size_limit
-      @field_size_limit
+      @max_field_size&.succ
+    end
+
+    def max_field_size
+      @max_field_size
     end
 
     def skip_lines
@@ -346,6 +414,16 @@ class CSV
         end
         message = "Invalid byte sequence in #{@encoding}"
         raise MalformedCSVError.new(message, lineno)
+      rescue UnexpectedError => error
+        if @scanner
+          ignore_broken_line
+          lineno = @lineno
+        else
+          lineno = @lineno + 1
+        end
+        message = "This should not be happen: #{error.message}: "
+        message += "Please report this to https://github.com/ruby/csv/issues"
+        raise MalformedCSVError.new(message, lineno)
       end
     end
 
@@ -390,7 +468,7 @@ class CSV
         @backslash_quote = false
       end
       @unconverted_fields = @options[:unconverted_fields]
-      @field_size_limit = @options[:field_size_limit]
+      @max_field_size = @options[:max_field_size]
       @skip_blanks = @options[:skip_blanks]
       @fields_converter = @options[:fields_converter]
       @header_fields_converter = @options[:header_fields_converter]
@@ -680,9 +758,10 @@ class CSV
       case headers
       when Array
         @raw_headers = headers
+        quoted_fields = [false] * @raw_headers.size
         @use_headers = true
       when String
-        @raw_headers = parse_headers(headers)
+        @raw_headers, quoted_fields = parse_headers(headers)
         @use_headers = true
       when nil, false
         @raw_headers = nil
@@ -692,21 +771,28 @@ class CSV
         @use_headers = true
       end
       if @raw_headers
-        @headers = adjust_headers(@raw_headers)
+        @headers = adjust_headers(@raw_headers, quoted_fields)
       else
         @headers = nil
       end
     end
 
     def parse_headers(row)
-      CSV.parse_line(row,
-                     col_sep:    @column_separator,
-                     row_sep:    @row_separator,
-                     quote_char: @quote_character)
+      quoted_fields = []
+      converter = lambda do |field, info|
+        quoted_fields << info.quoted?
+        field
+      end
+      headers = CSV.parse_line(row,
+                               col_sep:    @column_separator,
+                               row_sep:    @row_separator,
+                               quote_char: @quote_character,
+                               converters: [converter])
+      [headers, quoted_fields]
     end
 
-    def adjust_headers(headers)
-      adjusted_headers = @header_fields_converter.convert(headers, nil, @lineno)
+    def adjust_headers(headers, quoted_fields)
+      adjusted_headers = @header_fields_converter.convert(headers, nil, @lineno, quoted_fields)
       adjusted_headers.each {|h| h.freeze if h.is_a? String}
       adjusted_headers
     end
@@ -729,28 +815,28 @@ class CSV
       sample[0, 128].index(@quote_character)
     end
 
-    SCANNER_TEST = (ENV["CSV_PARSER_SCANNER_TEST"] == "yes")
-    if SCANNER_TEST
-      class UnoptimizedStringIO
-        def initialize(string)
-          @io = StringIO.new(string, "rb:#{string.encoding}")
-        end
-
-        def gets(*args)
-          @io.gets(*args)
-        end
-
-        def each_line(*args, &block)
-          @io.each_line(*args, &block)
-        end
-
-        def eof?
-          @io.eof?
-        end
+    class UnoptimizedStringIO # :nodoc:
+      def initialize(string)
+        @io = StringIO.new(string, "rb:#{string.encoding}")
       end
 
-      SCANNER_TEST_CHUNK_SIZE =
-        Integer((ENV["CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"] || "1"), 10)
+      def gets(*args)
+        @io.gets(*args)
+      end
+
+      def each_line(*args, &block)
+        @io.each_line(*args, &block)
+      end
+
+      def eof?
+        @io.eof?
+      end
+    end
+
+    SCANNER_TEST = (ENV["CSV_PARSER_SCANNER_TEST"] == "yes")
+    if SCANNER_TEST
+      SCANNER_TEST_CHUNK_SIZE_NAME = "CSV_PARSER_SCANNER_TEST_CHUNK_SIZE"
+      SCANNER_TEST_CHUNK_SIZE_VALUE = ENV[SCANNER_TEST_CHUNK_SIZE_NAME]
       def build_scanner
         inputs = @samples.collect do |sample|
           UnoptimizedStringIO.new(sample)
@@ -760,10 +846,17 @@ class CSV
         else
           inputs << @input
         end
+        begin
+          chunk_size_value = ENV[SCANNER_TEST_CHUNK_SIZE_NAME]
+        rescue # Ractor::IsolationError
+          # Ractor on Ruby 3.0 can't read ENV value.
+          chunk_size_value = SCANNER_TEST_CHUNK_SIZE_VALUE
+        end
+        chunk_size = Integer((chunk_size_value || "1"), 10)
         InputsScanner.new(inputs,
                           @encoding,
                           @row_separator,
-                          chunk_size: SCANNER_TEST_CHUNK_SIZE)
+                          chunk_size: chunk_size)
       end
     else
       def build_scanner
@@ -826,6 +919,14 @@ class CSV
       end
     end
 
+    def validate_field_size(field)
+      return unless @max_field_size
+      return if field.size <= @max_field_size
+      ignore_broken_line
+      message = "Field size exceeded: #{field.size} > #{@max_field_size}"
+      raise MalformedCSVError.new(message, @lineno)
+    end
+
     def parse_no_quote(&block)
       @scanner.each_line(@row_separator) do |line|
         next if @skip_lines and skip_line?(line)
@@ -835,9 +936,16 @@ class CSV
         if line.empty?
           next if @skip_blanks
           row = []
+          quoted_fields = []
         else
           line = strip_value(line)
           row = line.split(@split_column_separator, -1)
+          quoted_fields = [false] * row.size
+          if @max_field_size
+            row.each do |column|
+              validate_field_size(column)
+            end
+          end
           n_columns = row.size
           i = 0
           while i < n_columns
@@ -846,7 +954,7 @@ class CSV
           end
         end
         @last_line = original_line
-        emit_row(row, &block)
+        emit_row(row, quoted_fields, &block)
       end
     end
 
@@ -868,31 +976,37 @@ class CSV
             next
           end
           row = []
+          quoted_fields = []
         elsif line.include?(@cr) or line.include?(@lf)
           @scanner.keep_back
           @need_robust_parsing = true
           return parse_quotable_robust(&block)
         else
           row = line.split(@split_column_separator, -1)
+          quoted_fields = []
           n_columns = row.size
           i = 0
           while i < n_columns
             column = row[i]
             if column.empty?
+              quoted_fields << false
               row[i] = nil
             else
               n_quotes = column.count(@quote_character)
               if n_quotes.zero?
+                quoted_fields << false
                 # no quote
               elsif n_quotes == 2 and
                    column.start_with?(@quote_character) and
                    column.end_with?(@quote_character)
+                quoted_fields << true
                 row[i] = column[1..-2]
               else
                 @scanner.keep_back
                 @need_robust_parsing = true
                 return parse_quotable_robust(&block)
               end
+              validate_field_size(row[i])
             end
             i += 1
           end
@@ -900,13 +1014,14 @@ class CSV
         @scanner.keep_drop
         @scanner.keep_start
         @last_line = original_line
-        emit_row(row, &block)
+        emit_row(row, quoted_fields, &block)
       end
       @scanner.keep_drop
     end
 
     def parse_quotable_robust(&block)
       row = []
+      quoted_fields = []
       skip_needless_lines
       start_row
       while true
@@ -916,32 +1031,39 @@ class CSV
         value = parse_column_value
         if value
           @scanner.scan_all(@strip_value) if @strip_value
-          if @field_size_limit and value.size >= @field_size_limit
-            ignore_broken_line
-            raise MalformedCSVError.new("Field size exceeded", @lineno)
-          end
+          validate_field_size(value)
         end
         if parse_column_end
           row << value
+          quoted_fields << @quoted_column_value
         elsif parse_row_end
           if row.empty? and value.nil?
-            emit_row([], &block) unless @skip_blanks
+            emit_row([], [], &block) unless @skip_blanks
           else
             row << value
-            emit_row(row, &block)
+            quoted_fields << @quoted_column_value
+            emit_row(row, quoted_fields, &block)
             row = []
+            quoted_fields = []
           end
           skip_needless_lines
           start_row
         elsif @scanner.eos?
           break if row.empty? and value.nil?
           row << value
-          emit_row(row, &block)
+          quoted_fields << @quoted_column_value
+          emit_row(row, quoted_fields, &block)
           break
         else
           if @quoted_column_value
+            if liberal_parsing? and (new_line = @scanner.check(@line_end))
+              message =
+                "Illegal end-of-line sequence outside of a quoted field " +
+                "<#{new_line.inspect}>"
+            else
+              message = "Any value after quoted field isn't allowed"
+            end
             ignore_broken_line
-            message = "Any value after quoted field isn't allowed"
             raise MalformedCSVError.new(message, @lineno)
           elsif @unquoted_column_value and
                 (new_line = @scanner.scan(@line_end))
@@ -1034,7 +1156,7 @@ class CSV
       if (n_quotes % 2).zero?
         quotes[0, (n_quotes - 2) / 2]
       else
-        value = quotes[0, (n_quotes - 1) / 2]
+        value = quotes[0, n_quotes / 2]
         while true
           quoted_value = @scanner.scan_all(@quoted_value)
           value << quoted_value if quoted_value
@@ -1058,11 +1180,9 @@ class CSV
           n_quotes = quotes.size
           if n_quotes == 1
             break
-          elsif (n_quotes % 2) == 1
-            value << quotes[0, (n_quotes - 1) / 2]
-            break
           else
             value << quotes[0, n_quotes / 2]
+            break if (n_quotes % 2) == 1
           end
         end
         value
@@ -1098,18 +1218,15 @@ class CSV
 
     def strip_value(value)
       return value unless @strip
-      return nil if value.nil?
+      return value if value.nil?
 
       case @strip
       when String
-        size = value.size
-        while value.start_with?(@strip)
-          size -= 1
-          value = value[1, size]
+        while value.delete_prefix!(@strip)
+          # do nothing
         end
-        while value.end_with?(@strip)
-          size -= 1
-          value = value[0, size]
+        while value.delete_suffix!(@strip)
+          # do nothing
         end
       else
         value.strip!
@@ -1132,22 +1249,22 @@ class CSV
       @scanner.keep_start
     end
 
-    def emit_row(row, &block)
+    def emit_row(row, quoted_fields, &block)
       @lineno += 1
 
       raw_row = row
       if @use_headers
         if @headers.nil?
-          @headers = adjust_headers(row)
+          @headers = adjust_headers(row, quoted_fields)
           return unless @return_headers
           row = Row.new(@headers, row, true)
         else
           row = Row.new(@headers,
-                        @fields_converter.convert(raw_row, @headers, @lineno))
+                        @fields_converter.convert(raw_row, @headers, @lineno, quoted_fields))
         end
       else
         # convert fields, if needed...
-        row = @fields_converter.convert(raw_row, nil, @lineno)
+        row = @fields_converter.convert(raw_row, nil, @lineno, quoted_fields)
       end
 
       # inject unconverted fields and accessor, if requested...
