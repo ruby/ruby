@@ -3725,6 +3725,7 @@ enum_product_inspect(VALUE obj)
 /*
  * call-seq:
  *   Enumerator.product(*enums) -> enumerator
+ *   Enumerator.product(*enums) { |elts| ... } -> enumerator
  *
  * Generates a new enumerator object that generates a Cartesian
  * product of given enumerable objects.  This is equivalent to
@@ -3733,6 +3734,9 @@ enum_product_inspect(VALUE obj)
  *   e = Enumerator.product(1..3, [4, 5])
  *   e.to_a #=> [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
  *   e.size #=> 6
+ *
+ * When a block is given, calls the block with each N-element array
+ * generated and returns +nil+.
  */
 static VALUE
 enumerator_s_product(int argc, VALUE *argv, VALUE klass)
@@ -3747,9 +3751,12 @@ enumerator_s_product(int argc, VALUE *argv, VALUE klass)
 
     VALUE obj = enum_product_initialize(argc, argv, enum_product_allocate(rb_cEnumProduct));
 
-    if (NIL_P(block)) return obj;
+    if (!NIL_P(block)) {
+        enum_product_run(obj, block);
+        return Qnil;
+    }
 
-    return enum_product_run(obj, block);
+    return obj;
 }
 
 /*

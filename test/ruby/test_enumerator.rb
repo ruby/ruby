@@ -964,7 +964,7 @@ class TestEnumerator < Test::Unit::TestCase
     # with a block
     elts = []
     ret = Enumerator.product(1..3) { |x| elts << x }
-    assert_instance_of(Enumerator::Product, ret)
+    assert_equal(nil, ret)
     assert_equal [[1], [2], [3]], elts
     assert_equal elts, Enumerator.product(1..3).to_a
 
