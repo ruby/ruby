@@ -23,6 +23,8 @@ until ARGV.empty?
 end
 
 class Removal
+  attr_reader :base
+
   def initialize(base = nil)
     @base = (File.join(base, "/") if base)
     @remove = {}
@@ -74,7 +76,7 @@ class Removal
 end
 
 srcdir = Removal.new(ARGV.shift)
-curdir = Removal.new
+curdir = !srcdir.base || File.identical?(srcdir.base, ".") ? srcdir : Removal.new
 
 srcdir.glob(".bundle/gems/*/") do |dir|
   unless srcdir.exist?("gems/#{File.basename(dir)}.gem")
@@ -131,5 +133,7 @@ end
 
 srcdir.each_file {|f| fu.rm_f(f)}
 srcdir.each_directory {|d| fu.rm_rf(d)}
-curdir.each_file {|f| fu.rm_f(f)}
-curdir.each_directory {|d| fu.rm_rf(d)}
+unless curdir.equal?(srcdir)
+  curdir.each_file {|f| fu.rm_f(f)}
+  curdir.each_directory {|d| fu.rm_rf(d)}
+end
