@@ -43,11 +43,14 @@
 // Fedora: dnf -y install capstone-devel
 #ifdef HAVE_LIBCAPSTONE
 #include <capstone/capstone.h>
+#endif
 
 // Return an array of [address, mnemonic, op_str]
 static VALUE
 dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
 {
+    VALUE result = rb_ary_new();
+#ifdef HAVE_LIBCAPSTONE
     // Prepare for calling cs_disasm
     static csh handle;
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK) {
@@ -59,7 +62,6 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
     // Call cs_disasm and convert results to a Ruby array
     cs_insn *insns;
     size_t count = cs_disasm(handle, (const uint8_t *)from_addr, to_addr - from_addr, from_addr, 0, &insns);
-    VALUE result = rb_ary_new_capa(count);
     for (size_t i = 0; i < count; i++) {
         VALUE vals = rb_ary_new_from_args(3, LONG2NUM(insns[i].address), rb_str_new2(insns[i].mnemonic), rb_str_new2(insns[i].op_str));
         rb_ary_push(result, vals);
@@ -68,15 +70,9 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
     // Free memory used by capstone
     cs_free(insns, count);
     cs_close(&handle);
+#endif
     return result;
 }
-#else
-static VALUE
-mjit_disasm(VALUE self, VALUE from, VALUE to)
-{
-    return rb_ary_new();
-}
-#endif
 
 #include "mjit_c.rbinc"
 
