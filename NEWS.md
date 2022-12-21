@@ -664,8 +664,8 @@ The following deprecated APIs are removed.
   [[Feature #18589]]
 * The cache-based optimization for Regexp matching is introduced.
   [[Feature #19104]]
-* Variable Width Allocation is now enabled by default.
-  [[Feature #18239]].
+* [Variable Width Allocation](https://shopify.engineering/ruby-variable-width-allocation)
+  is now enabled by default. [[Feature #18239]]
 * Added a new instance variable caching mechanism, called object shapes, which
   improves inline cache hits for most objects and allows us to generate very
   efficient JIT code. Objects whose instance variables are defined in a
