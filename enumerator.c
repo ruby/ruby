@@ -3434,7 +3434,7 @@ enumerator_plus(VALUE obj, VALUE eobj)
  *
  * The method used against each enumerable object is `each_entry`
  * instead of `each` so that the product of N enumerable objects
- * yields exactly N arguments in each iteration.
+ * yields an array of exactly N elements in each iteration.
  *
  * When no enumerator is given, it calls a given block once yielding
  * an empty argument list.
@@ -3627,7 +3627,7 @@ product_each(VALUE obj, struct product_state *pstate)
         rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
     }
     else {
-        rb_funcallv(pstate->block, id_call, pstate->argc, pstate->argv);
+        rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
     }
 
     return obj;
