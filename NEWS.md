@@ -713,89 +713,89 @@ The following deprecated APIs are removed.
 * Rename `--mjit-min-calls` to `--mjit-call-threshold`.
 * Change default `--mjit-max-cache` back from 10000 to 100.
 
-[Feature #12005]: https://bugs.ruby-lang.org/issues/12005
-[Feature #12084]: https://bugs.ruby-lang.org/issues/12084
-[Feature #12655]: https://bugs.ruby-lang.org/issues/12655
-[Feature #12737]: https://bugs.ruby-lang.org/issues/12737
-[Feature #13110]: https://bugs.ruby-lang.org/issues/13110
-[Feature #14332]: https://bugs.ruby-lang.org/issues/14332
-[Feature #15231]: https://bugs.ruby-lang.org/issues/15231
-[Feature #15357]: https://bugs.ruby-lang.org/issues/15357
-[Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
-[Feature #16122]: https://bugs.ruby-lang.org/issues/16122
-[Feature #16131]: https://bugs.ruby-lang.org/issues/16131
-[Bug #16466]:     https://bugs.ruby-lang.org/issues/16466
-[Feature #16663]: https://bugs.ruby-lang.org/issues/16663
-[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
-[Bug #16889]:     https://bugs.ruby-lang.org/issues/16889
-[Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
-[Feature #16989]: https://bugs.ruby-lang.org/issues/16989
-[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
-[Feature #17391]: https://bugs.ruby-lang.org/issues/17391
-[Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
-[Bug #17767]:     https://bugs.ruby-lang.org/issues/17767
-[Feature #17837]: https://bugs.ruby-lang.org/issues/17837
-[Feature #17881]: https://bugs.ruby-lang.org/issues/17881
-[Feature #18033]: https://bugs.ruby-lang.org/issues/18033
-[Feature #18159]: https://bugs.ruby-lang.org/issues/18159
-[Feature #18239]: https://bugs.ruby-lang.org/issues/18239#note-17
-[Feature #18351]: https://bugs.ruby-lang.org/issues/18351
-[Feature #18367]: https://bugs.ruby-lang.org/issues/18367
-[Bug #18435]:     https://bugs.ruby-lang.org/issues/18435
-[Feature #18462]: https://bugs.ruby-lang.org/issues/18462
-[Feature #18481]: https://bugs.ruby-lang.org/issues/18481
-[Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
-[Feature #18564]: https://bugs.ruby-lang.org/issues/18564
-[Feature #18571]: https://bugs.ruby-lang.org/issues/18571
-[Feature #18585]: https://bugs.ruby-lang.org/issues/18585
-[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
-[Feature #18595]: https://bugs.ruby-lang.org/issues/18595
-[Feature #18598]: https://bugs.ruby-lang.org/issues/18598
-[Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
-[Feature #18630]: https://bugs.ruby-lang.org/issues/18630
-[Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
-[Feature #18639]: https://bugs.ruby-lang.org/issues/18639
-[Feature #18685]: https://bugs.ruby-lang.org/issues/18685
-[Bug #18729]:     https://bugs.ruby-lang.org/issues/18729
-[Bug #18751]:     https://bugs.ruby-lang.org/issues/18751
-[Feature #18774]: https://bugs.ruby-lang.org/issues/18774
-[Feature #18776]: https://bugs.ruby-lang.org/issues/18776
-[Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
-[Feature #18788]: https://bugs.ruby-lang.org/issues/18788
-[Feature #18798]: https://bugs.ruby-lang.org/issues/18798
-[Feature #18809]: https://bugs.ruby-lang.org/issues/18809
-[Feature #18821]: https://bugs.ruby-lang.org/issues/18821
-[Feature #18822]: https://bugs.ruby-lang.org/issues/18822
-[Feature #18824]: https://bugs.ruby-lang.org/issues/18824
-[Feature #18832]: https://bugs.ruby-lang.org/issues/18832
-[Feature #18875]: https://bugs.ruby-lang.org/issues/18875
-[Feature #18925]: https://bugs.ruby-lang.org/issues/18925
-[Feature #18944]: https://bugs.ruby-lang.org/issues/18944
-[Feature #18949]: https://bugs.ruby-lang.org/issues/18949
-[Feature #18968]: https://bugs.ruby-lang.org/issues/18968
-[Feature #19008]: https://bugs.ruby-lang.org/issues/19008
-[Feature #19013]: https://bugs.ruby-lang.org/issues/19013
-[Feature #19026]: https://bugs.ruby-lang.org/issues/19026
-[Feature #19036]: https://bugs.ruby-lang.org/issues/19036
-[Feature #19060]: https://bugs.ruby-lang.org/issues/19060
-[Feature #19070]: https://bugs.ruby-lang.org/issues/19070
-[Feature #19071]: https://bugs.ruby-lang.org/issues/19071
-[Feature #19078]: https://bugs.ruby-lang.org/issues/19078
-[Bug #19087]:     https://bugs.ruby-lang.org/issues/19087
-[Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
-[Feature #19104]: https://bugs.ruby-lang.org/issues/19104
-[Feature #19135]: https://bugs.ruby-lang.org/issues/19135
-[Feature #19138]: https://bugs.ruby-lang.org/issues/19138
-[Feature #19194]: https://bugs.ruby-lang.org/issues/19194
-[Molinillo]:      https://github.com/CocoaPods/Molinillo
-[PubGrub]:        https://github.com/jhawthorn/pub_grub
+[Feature #12005]:     https://bugs.ruby-lang.org/issues/12005
+[Feature #12084]:     https://bugs.ruby-lang.org/issues/12084
+[Feature #12655]:     https://bugs.ruby-lang.org/issues/12655
+[Feature #12737]:     https://bugs.ruby-lang.org/issues/12737
+[Feature #13110]:     https://bugs.ruby-lang.org/issues/13110
+[Feature #14332]:     https://bugs.ruby-lang.org/issues/14332
+[Feature #15231]:     https://bugs.ruby-lang.org/issues/15231
+[Feature #15357]:     https://bugs.ruby-lang.org/issues/15357
+[Bug #15928]:         https://bugs.ruby-lang.org/issues/15928
+[Feature #16122]:     https://bugs.ruby-lang.org/issues/16122
+[Feature #16131]:     https://bugs.ruby-lang.org/issues/16131
+[Bug #16466]:         https://bugs.ruby-lang.org/issues/16466
+[Feature #16663]:     https://bugs.ruby-lang.org/issues/16663
+[Feature #16806]:     https://bugs.ruby-lang.org/issues/16806
+[Bug #16889]:         https://bugs.ruby-lang.org/issues/16889
+[Bug #16908]:         https://bugs.ruby-lang.org/issues/16908
+[Feature #16989]:     https://bugs.ruby-lang.org/issues/16989
+[Feature #17351]:     https://bugs.ruby-lang.org/issues/17351
+[Feature #17391]:     https://bugs.ruby-lang.org/issues/17391
+[Bug #17545]:         https://bugs.ruby-lang.org/issues/17545
+[Bug #17767]:         https://bugs.ruby-lang.org/issues/17767
+[Feature #17837]:     https://bugs.ruby-lang.org/issues/17837
+[Feature #17881]:     https://bugs.ruby-lang.org/issues/17881
+[Feature #18033]:     https://bugs.ruby-lang.org/issues/18033
+[Feature #18159]:     https://bugs.ruby-lang.org/issues/18159
+[Feature #18239]:     https://bugs.ruby-lang.org/issues/18239#note-17
+[Feature #18351]:     https://bugs.ruby-lang.org/issues/18351
+[Feature #18367]:     https://bugs.ruby-lang.org/issues/18367
+[Bug #18435]:         https://bugs.ruby-lang.org/issues/18435
+[Feature #18462]:     https://bugs.ruby-lang.org/issues/18462
+[Feature #18481]:     https://bugs.ruby-lang.org/issues/18481
+[Bug #18487]:         https://bugs.ruby-lang.org/issues/18487
+[Feature #18564]:     https://bugs.ruby-lang.org/issues/18564
+[Feature #18571]:     https://bugs.ruby-lang.org/issues/18571
+[Feature #18585]:     https://bugs.ruby-lang.org/issues/18585
+[Feature #18589]:     https://bugs.ruby-lang.org/issues/18589
+[Feature #18595]:     https://bugs.ruby-lang.org/issues/18595
+[Feature #18598]:     https://bugs.ruby-lang.org/issues/18598
+[Bug #18625]:         https://bugs.ruby-lang.org/issues/18625
+[Feature #18630]:     https://bugs.ruby-lang.org/issues/18630
+[Bug #18633]:         https://bugs.ruby-lang.org/issues/18633
+[Feature #18639]:     https://bugs.ruby-lang.org/issues/18639
+[Feature #18685]:     https://bugs.ruby-lang.org/issues/18685
+[Bug #18729]:         https://bugs.ruby-lang.org/issues/18729
+[Bug #18751]:         https://bugs.ruby-lang.org/issues/18751
+[Feature #18774]:     https://bugs.ruby-lang.org/issues/18774
+[Feature #18776]:     https://bugs.ruby-lang.org/issues/18776
+[Bug #18782]:         https://bugs.ruby-lang.org/issues/18782
+[Feature #18788]:     https://bugs.ruby-lang.org/issues/18788
+[Feature #18798]:     https://bugs.ruby-lang.org/issues/18798
+[Feature #18809]:     https://bugs.ruby-lang.org/issues/18809
+[Feature #18821]:     https://bugs.ruby-lang.org/issues/18821
+[Feature #18822]:     https://bugs.ruby-lang.org/issues/18822
+[Feature #18824]:     https://bugs.ruby-lang.org/issues/18824
+[Feature #18832]:     https://bugs.ruby-lang.org/issues/18832
+[Feature #18875]:     https://bugs.ruby-lang.org/issues/18875
+[Feature #18925]:     https://bugs.ruby-lang.org/issues/18925
+[Feature #18944]:     https://bugs.ruby-lang.org/issues/18944
+[Feature #18949]:     https://bugs.ruby-lang.org/issues/18949
+[Feature #18968]:     https://bugs.ruby-lang.org/issues/18968
+[Feature #19008]:     https://bugs.ruby-lang.org/issues/19008
+[Feature #19013]:     https://bugs.ruby-lang.org/issues/19013
+[Feature #19026]:     https://bugs.ruby-lang.org/issues/19026
+[Feature #19036]:     https://bugs.ruby-lang.org/issues/19036
+[Feature #19060]:     https://bugs.ruby-lang.org/issues/19060
+[Feature #19070]:     https://bugs.ruby-lang.org/issues/19070
+[Feature #19071]:     https://bugs.ruby-lang.org/issues/19071
+[Feature #19078]:     https://bugs.ruby-lang.org/issues/19078
+[Bug #19087]:         https://bugs.ruby-lang.org/issues/19087
+[Bug #19100]:         https://bugs.ruby-lang.org/issues/19100
+[Feature #19104]:     https://bugs.ruby-lang.org/issues/19104
+[Feature #19135]:     https://bugs.ruby-lang.org/issues/19135
+[Feature #19138]:     https://bugs.ruby-lang.org/issues/19138
+[Feature #19194]:     https://bugs.ruby-lang.org/issues/19194
+[Molinillo]:          https://github.com/CocoaPods/Molinillo
+[PubGrub]:            https://github.com/jhawthorn/pub_grub
 [GH-net-protocol-14]: https://github.com/ruby/net-protocol/pull/14
-[GH-pathname-20]: https://github.com/ruby/pathname/pull/20
-[GH-6791]:        https://github.com/ruby/ruby/pull/6791
-[GH-6868]:        https://github.com/ruby/ruby/pull/6868
-[GH-rubygems-5175]: https://github.com/rubygems/rubygems/pull/6149
-[sec-156615]:     https://hackerone.com/reports/156615
-[ruby-3-2-irb]:   https://st0012.dev/whats-new-in-ruby-3-2-irb
-[CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
-[wasm/README.md]: https://github.com/ruby/ruby/blob/master/wasm/README.md
-[ruby.wasm]:      https://github.com/ruby/ruby.wasm
+[GH-pathname-20]:     https://github.com/ruby/pathname/pull/20
+[GH-6791]:            https://github.com/ruby/ruby/pull/6791
+[GH-6868]:            https://github.com/ruby/ruby/pull/6868
+[GH-rubygems-5175]:   https://github.com/rubygems/rubygems/pull/6149
+[sec-156615]:         https://hackerone.com/reports/156615
+[ruby-3-2-irb]:       https://st0012.dev/whats-new-in-ruby-3-2-irb
+[CVE-2021-33621]:     https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
+[wasm/README.md]:     https://github.com/ruby/ruby/blob/master/wasm/README.md
+[ruby.wasm]:          https://github.com/ruby/ruby.wasm
