@@ -50,6 +50,26 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events)
   end
 
+  def test_c_return_no_binding
+    binding = :none
+    TracePoint.new(:c_return){|tp|
+      binding = tp.binding
+    }.enable{
+      1.object_id
+    }
+    assert_nil(binding)
+  end
+
+  def test_c_call_no_binding
+    binding = :none
+    TracePoint.new(:c_call){|tp|
+      binding = tp.binding
+    }.enable{
+      1.object_id
+    }
+    assert_nil(binding)
+  end
+
   def test_call
     events = []
     name = "#{self.class}\##{__method__}"
