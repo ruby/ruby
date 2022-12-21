@@ -524,8 +524,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
- *  - May have initialization via ordinary arguments (unless
- *    <tt>keyword_init: true</tt> is given), or via keyword arguments
+ *  - May have initialization via ordinary arguments, or via keyword arguments
  *
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
@@ -594,6 +593,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
  *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
  *
+ *      # Initialization with keyword arguments:
+ *      Foo.new(foo: 0)         # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(foo: 0, bar: 1) # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(foo: 0, bar: 1, baz: 2)
+ *      # Raises ArgumentError: unknown keywords: baz
+ *
  *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
  *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
@@ -608,20 +613,30 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  <b>Keyword Argument</b>
  *
  *  By default, the arguments for initializing an instance of the new subclass
- *  are ordinary arguments (not keyword arguments).
- *  With optional keyword argument <tt>keyword_init: true</tt>,
- *  the new subclass must be initialized with keyword arguments:
+ *  can be both positional and keyword arguments.
  *
- *    # Without keyword_init: true.
- *    Foo = Struct.new('Foo', :foo, :bar)
- *    Foo                     # => Struct::Foo
- *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
- *    # With keyword_init: true.
- *    Bar = Struct.new(:foo, :bar, keyword_init: true)
- *    Bar # =>                # => Bar(keyword_init: true)
- *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
- *    Bar.new(0, 1)           # Raises ArgumentError: wrong number of arguments
+ *  Optional keyword argument <tt>keyword_init:</tt> allows to force only one
+ *  type of arguments to be accepted:
  *
+ *    KeywordsOnly = Struct.new(:foo, :bar, keyword_init: true)
+ *    KeywordsOnly.new(bar: 1, foo: 0)
+ *    # => #<struct KeywordsOnly foo=0, bar=1>
+ *    KeywordsOnly.new(0, 1)
+ *    # Raises ArgumentError: wrong number of arguments
+ *
+ *    PositionalOnly = Struct.new(:foo, :bar, keyword_init: false)
+ *    PositionalOnly.new(0, 1)
+ *    # => #<struct PositionalOnly foo=0, bar=1>
+ *    PositionalOnly.new(bar: 1, foo: 0)
+ *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # Note that no error is raised, but arguments treated as one hash value
+ *
+ *    # Same as not providing keyword_init:
+ *    Any = Struct.new(:foo, :bar, keyword_init: nil)
+ *    Any.new(foo: 1, bar: 2)
+ *    # => #<struct Any foo=1, bar=2>
+ *    Any.new(1, 2)
+ *    # => #<struct Any foo=1, bar=2>
  */
 
 static VALUE
