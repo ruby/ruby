@@ -3434,7 +3434,7 @@ enumerator_plus(VALUE obj, VALUE eobj)
  *
  * The method used against each enumerable object is `each_entry`
  * instead of `each` so that the product of N enumerable objects
- * yields exactly N arguments in each iteration.
+ * yields an array of exactly N elements in each iteration.
  *
  * When no enumerator is given, it calls a given block once yielding
  * an empty argument list.
@@ -3627,7 +3627,7 @@ product_each(VALUE obj, struct product_state *pstate)
         rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
     }
     else {
-        rb_funcallv(pstate->block, id_call, pstate->argc, pstate->argv);
+        rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
     }
 
     return obj;
@@ -3725,6 +3725,7 @@ enum_product_inspect(VALUE obj)
 /*
  * call-seq:
  *   Enumerator.product(*enums) -> enumerator
+ *   Enumerator.product(*enums) { |elts| ... } -> enumerator
  *
  * Generates a new enumerator object that generates a Cartesian
  * product of given enumerable objects.  This is equivalent to
@@ -3733,6 +3734,9 @@ enum_product_inspect(VALUE obj)
  *   e = Enumerator.product(1..3, [4, 5])
  *   e.to_a #=> [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
  *   e.size #=> 6
+ *
+ * When a block is given, calls the block with each N-element array
+ * generated and returns +nil+.
  */
 static VALUE
 enumerator_s_product(int argc, VALUE *argv, VALUE klass)
@@ -3747,9 +3751,12 @@ enumerator_s_product(int argc, VALUE *argv, VALUE klass)
 
     VALUE obj = enum_product_initialize(argc, argv, enum_product_allocate(rb_cEnumProduct));
 
-    if (NIL_P(block)) return obj;
+    if (!NIL_P(block)) {
+        enum_product_run(obj, block);
+        return Qnil;
+    }
 
-    return enum_product_run(obj, block);
+    return obj;
 }
 
 /*

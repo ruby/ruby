@@ -2069,7 +2069,9 @@ fiber_storage_get(rb_fiber_t *fiber)
     return storage;
 }
 
-static void storage_access_must_be_from_same_fiber(VALUE self) {
+static void
+storage_access_must_be_from_same_fiber(VALUE self)
+{
     rb_fiber_t *fiber = fiber_ptr(self);
     rb_fiber_t *current = fiber_current();
     if (fiber != current) {
@@ -2323,7 +2325,7 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
  *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage,
  *  and it must be an instance of Hash.
  *
- *  Explicitly using `storage: true` is currently experimental and may
+ *  Explicitly using <tt>storage: true</tt> is currently experimental and may
  *  change in the future.
  */
 static VALUE

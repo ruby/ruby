@@ -817,9 +817,8 @@ class RubyVM::MJIT::Compiler
 
   # Interpret unsigned long as signed long (VALUE -> OFFSET)
   def cast_offset(offset)
-    bits = "%0#{8 * Fiddle::SIZEOF_VOIDP}d" % offset.to_s(2)
-    if bits[0] == '1' # negative
-      offset = -bits.chars.map { |i| i == '0' ? '1' : '0' }.join.to_i(2) - 1
+    if offset >= 1 << 8 * Fiddle::SIZEOF_VOIDP - 1 # negative
+      offset -= 1 << 8 * Fiddle::SIZEOF_VOIDP
     end
     offset
   end
