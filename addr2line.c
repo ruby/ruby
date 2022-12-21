@@ -161,10 +161,11 @@ typedef struct obj_info {
     struct dwarf_section debug_ranges;
     struct dwarf_section debug_rnglists;
     struct dwarf_section debug_str;
+    struct dwarf_section debug_line_str;
     struct obj_info *next;
 } obj_info_t;
 
-#define DWARF_SECTION_COUNT 6
+#define DWARF_SECTION_COUNT 7
 
 static struct dwarf_section *
 obj_dwarf_section_at(obj_info_t *obj, int n)
@@ -175,7 +176,8 @@ obj_dwarf_section_at(obj_info_t *obj, int n)
         &obj->debug_line,
         &obj->debug_ranges,
         &obj->debug_rnglists,
-        &obj->debug_str
+        &obj->debug_str,
+        &obj->debug_line_str
     };
     if (n < 0 || DWARF_SECTION_COUNT <= n) {
         abort();
@@ -1208,8 +1210,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         reader->p += v->size;
         break;
       case DW_FORM_line_strp:
-        set_uint_value(v, read_uint(reader));
-        /* *p = reader->file + reader->line->sh_offset + ret; */
+        set_cstrp_value(v, reader->obj->debug_line_str.ptr, read_uint(reader));
         break;
       case DW_FORM_ref_sig8:
         set_uint_value(v, read_uint64(&reader->p));
@@ -1847,7 +1848,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     ".debug_line",
                     ".debug_ranges",
                     ".debug_rnglists",
-                    ".debug_str"
+                    ".debug_str",
+                    ".debug_line_str"
                 };
 
                 for (j=0; j < DWARF_SECTION_COUNT; j++) {
@@ -2104,7 +2106,8 @@ found_mach_header:
                     "__debug_line",
                     "__debug_ranges",
                     "__debug_rnglists",
-                    "__debug_str"
+                    "__debug_str",
+                    "__debug_line_str",
                 };
                 struct LP(segment_command) *scmd = (struct LP(segment_command) *)lcmd;
                 if (strcmp(scmd->segname, "__TEXT") == 0) {
