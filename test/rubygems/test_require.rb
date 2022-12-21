@@ -666,6 +666,24 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  def test_require_does_not_crash_when_utilizing_bundler_version_finder
+    a1 = util_spec "a", "1.1", { "bundler" => ">= 0" }
+    a2 = util_spec "a", "1.2", { "bundler" => ">= 0" }
+    b1 = util_spec "bundler", "2.3.7"
+    b2 = util_spec "bundler", "2.3.24"
+    c = util_spec "c", "1", { "a" => [">= 1.1", "< 99.0"] }, "lib/test_gem_require_c.rb"
+
+    install_specs a1, a2, b1, b2, c
+
+    cmd = <<-RUBY
+      require "test_gem_require_c"
+      require "json"
+    RUBY
+    out = Gem::Util.popen({ "GEM_HOME" => @gemhome }, *ruby_with_rubygems_in_load_path, "-e", cmd)
+    puts out
+    assert $?.success?
+  end
+
   private
 
   def util_install_extension_file(name)

@@ -41,12 +41,12 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
-* `--ext=c`:
-  Add boilerplate for C extension code to the generated project. This behavior
+* `--ext=c`, `--ext=rust`
+  Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
 
 * `--no-ext`:
-  Do not add C extension code (overrides `--ext` specified in the global
+  Do not add extension code (overrides `--ext` specified in the global
   config).
 
 * `--mit`:

@@ -27,6 +27,17 @@ module Bundler
         remove_from_candidates(spec)
       end
 
+      @requirements = requirements
+      @packages = packages
+
+      root, logger = setup_solver
+
+      Bundler.ui.info "Resolving dependencies...", true
+
+      solve_versions(:root => root, :logger => logger)
+    end
+
+    def setup_solver
       root = Resolver::Root.new(name_for_explicit_dependency_source)
       root_version = Resolver::Candidate.new(0)
 
@@ -42,24 +53,27 @@ module Bundler
         end
       end
 
-      root_dependencies = prepare_dependencies(requirements, packages)
+      root_dependencies = prepare_dependencies(@requirements, @packages)
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = if package.root?
           { root_version => root_dependencies }
         else
           Hash.new do |versions, version|
-            versions[version] = to_dependency_hash(version.dependencies, packages)
+            versions[version] = to_dependency_hash(version.dependencies, @packages)
           end
         end
       end
 
       logger = Bundler::UI::Shell.new
       logger.level = debug? ? "debug" : "warn"
+
+      [root, logger]
+    end
+
+    def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(:source => self, :root => root, :logger => logger)
-      before_resolution
       result = solver.solve
-      after_resolution
       result.map {|package, version| version.to_specs(package) }.flatten.uniq
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
@@ -82,8 +96,15 @@ module Bundler
         end
       end
 
+      names_to_unlock.uniq!
+
       if names_to_unlock.any?
+        Bundler.ui.debug "Found conflicts with locked dependencies. Retrying with #{names_to_unlock.join(", ")} unlocked...", true
+
         @base.unlock_names(names_to_unlock)
+
+        root, logger = setup_solver
+
         retry
       end
 
@@ -144,14 +165,6 @@ module Bundler
         false
     end
 
-    def before_resolution
-      Bundler.ui.info "Resolving dependencies...", debug?
-    end
-
-    def after_resolution
-      Bundler.ui.info ""
-    end
-
     def incompatibilities_for(package, version)
       package_deps = @cached_dependencies[package]
       sorted_versions = @sorted_versions[package]
@@ -202,7 +215,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = @base[name] + @all_specs[name]
+      results = (@base[name] + @all_specs[name]).uniq(&:full_name)
       locked_requirement = base_requirements[name]
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 

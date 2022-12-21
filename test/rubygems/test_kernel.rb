@@ -118,6 +118,8 @@ class TestKernel < Gem::TestCase
   end
 
   def test_gem_bundler_inferred_bundler_version
+    require "rubygems/bundler_version_finder"
+
     Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       quick_gem "bundler", "1"
       quick_gem "bundler", "2.a"

@@ -31,6 +31,7 @@ module Bundler
       @extension = options[:ext]
 
       validate_ext_name if @extension
+      validate_rust_builder_rubygems_version if @extension == "rust"
       travis_removal_info
     end
 
@@ -73,6 +74,7 @@ module Bundler
         :git => use_git,
         :github_username => github_username.empty? ? "[USERNAME]" : github_username,
         :required_ruby_version => required_ruby_version,
+        :rust_builder_required_rubygems_version => rust_builder_required_rubygems_version,
         :minitest_constant_name => minitest_constant_name,
       }
       ensure_safe_gem_name(name, constant_array)
@@ -189,11 +191,20 @@ module Bundler
 
       templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
 
-      if extension
+      if extension == "c"
         templates.merge!(
-          "ext/newgem/extconf.rb.tt" => "ext/#{name}/extconf.rb",
+          "ext/newgem/extconf-c.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/newgem.h.tt" => "ext/#{name}/#{underscored_name}.h",
           "ext/newgem/newgem.c.tt" => "ext/#{name}/#{underscored_name}.c"
+        )
+      end
+
+      if extension == "rust"
+        templates.merge!(
+          "Cargo.toml.tt" => "Cargo.toml",
+          "ext/newgem/Cargo.toml.tt" => "ext/#{name}/Cargo.toml",
+          "ext/newgem/extconf-rust.rb.tt" => "ext/#{name}/extconf.rb",
+          "ext/newgem/src/lib.rs.tt" => "ext/#{name}/src/lib.rs",
         )
       end
 
@@ -415,6 +426,10 @@ module Bundler
       thor.run(%(#{editor} "#{file}"))
     end
 
+    def rust_builder_required_rubygems_version
+      "3.3.11"
+    end
+
     def required_ruby_version
       "2.6.0"
     end
@@ -427,7 +442,6 @@ module Bundler
       "1.3"
     end
 
-    #
     # TODO: remove at next minor release
     def travis_removal_info
       if options[:ci] == "travis"
@@ -437,6 +451,13 @@ module Bundler
 
       if Bundler.settings["gem.ci"] == "travis"
         Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator, but it is present in bundle config. Please configure another provider using `bundle config set gem.ci SERVICE` (where SERVICE is one of github/gitlab/circle) or unset configuration using `bundle config unset gem.ci`."
+        exit 1
+      end
+    end
+
+    def validate_rust_builder_rubygems_version
+      if Gem::Version.new(rust_builder_required_rubygems_version) > Gem.rubygems_version
+        Bundler.ui.error "Your RubyGems version (#{Gem.rubygems_version}) is too old to build Rust extension. Please update your RubyGems using `gem update --system` or any other way and try again."
         exit 1
       end
     end

@@ -37,7 +37,8 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   def build_env
     build_env = rb_config_env
     build_env["RUBY_STATIC"] = "true" if ruby_static? && ENV.key?("RUBY_STATIC")
-    build_env["RUSTFLAGS"] = "#{ENV["RUSTFLAGS"]} --cfg=rb_sys_gem".strip
+    cfg = "--cfg=rb_sys_gem --cfg=rubygems --cfg=rubygems_#{Gem::VERSION.tr(".", "_")}"
+    build_env["RUSTFLAGS"] = [ENV["RUSTFLAGS"], cfg].compact.join(" ")
     build_env
   end
 
@@ -47,6 +48,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
     cmd = []
     cmd += [cargo, "rustc"]
+    cmd += ["--crate-type", "cdylib"]
     cmd += ["--target", ENV["CARGO_BUILD_TARGET"]] if ENV["CARGO_BUILD_TARGET"]
     cmd += ["--target-dir", dest_path]
     cmd += ["--manifest-path", manifest]
@@ -103,12 +105,21 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   # We want to use the same linker that Ruby uses, so that the linker flags from
   # mkmf work properly.
   def linker_args
-    # Have to handle CC="cl /nologo" on mswin
     cc_flag = Shellwords.split(makefile_config("CC"))
     linker = cc_flag.shift
     link_args = cc_flag.flat_map {|a| ["-C", "link-arg=#{a}"] }
 
+    return mswin_link_args if linker == "cl"
+
     ["-C", "linker=#{linker}", *link_args]
+  end
+
+  def mswin_link_args
+    args = []
+    args += ["-l", makefile_config("LIBRUBYARG_SHARED").chomp(".lib")]
+    args += split_flags("LIBS").flat_map {|lib| ["-l", lib.chomp(".lib")] }
+    args += split_flags("LOCAL_LIBS").flat_map {|lib| ["-l", lib.chomp(".lib")] }
+    args
   end
 
   def libruby_args(dest_dir)

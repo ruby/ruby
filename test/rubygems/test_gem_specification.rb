@@ -2708,6 +2708,39 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_rust_extension_have_missing_cargo_toml_error
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["Cargo.toml"]
+      File.write File.join(@tempdir, "Cargo.toml"), ""
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_match(/but Cargo.lock is not part of the gem files/, e.message)
+    end
+  end
+
+  def test_validate_rust_extension_have_no_missing_cargo_toml_error
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["Cargo.toml"]
+      @a1.files << "Cargo.toml"
+      @a1.files << "Cargo.lock"
+      File.write File.join(@tempdir, "Cargo.toml"), ""
+      File.write File.join(@tempdir, "Cargo.lock"), ""
+
+      use_ui @ui do
+        @a1.validate
+      end
+    end
+  end
+
   def test_validate_description
     util_setup_validate
 

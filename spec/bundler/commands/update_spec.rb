@@ -1310,21 +1310,19 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo, :realworld do
-    skip "ruby-head has a default Bundler version too high for this spec to work" if RUBY_PATCHLEVEL == -1
-
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
       build_gem "rack", "1.0"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :env => { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
-    bundle :update, :bundler => true, :artifice => "vcr", :verbose => true
+    bundle :update, :bundler => true, :artifice => "vcr", :verbose => true, :env => { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
 
     # Only updates properly on modern RubyGems.
 
@@ -1356,15 +1354,13 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "errors if the explicit target version does not exist", :realworld do
-    skip "ruby-head has a default Bundler version too high for this spec to work" if RUBY_PATCHLEVEL == -1
-
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
       build_gem "rack", "1.0"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, :env => { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G

@@ -2,6 +2,7 @@
 
 require_relative "helper"
 require "rubygems/ext"
+require "open3"
 
 class TestGemExtCargoBuilder < Gem::TestCase
   def setup
@@ -20,25 +21,6 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     FileUtils.mkdir_p @dest_path
     FileUtils.cp_r(@fixture_dir.to_s, @ext)
-  end
-
-  def test_build_staticlib
-    skip_unsupported_platforms!
-    setup_rust_gem "rust_ruby_example"
-
-    content = @fixture_dir.join("Cargo.toml").read.gsub("cdylib", "staticlib")
-    File.write(File.join(@ext, "Cargo.toml"), content)
-
-    output = []
-
-    Dir.chdir @ext do
-      ENV.update(@rust_envs)
-      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-      builder = Gem::Ext::CargoBuilder.new(spec)
-      assert_raise(Gem::Ext::CargoBuilder::DylibNotFoundError) do
-        builder.build nil, @dest_path, output
-      end
-    end
   end
 
   def test_build_cdylib
@@ -60,6 +42,33 @@ class TestGemExtCargoBuilder < Gem::TestCase
     assert_match(/Finished/, output)
     assert_match(/release/, output)
     assert_ffi_handle bundle, "Init_rust_ruby_example"
+  rescue Exception => e
+    pp output if output
+
+    raise(e)
+  end
+
+  def test_rubygems_cfg_passed_to_rustc
+    skip_unsupported_platforms!
+    setup_rust_gem "rust_ruby_example"
+    version_slug = Gem::VERSION.tr(".", "_")
+    output = []
+
+    replace_in_rust_file("src/lib.rs", "rubygems_x_x_x", "rubygems_#{version_slug}")
+
+    Dir.chdir @ext do
+      ENV.update(@rust_envs)
+      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
+      builder = Gem::Ext::CargoBuilder.new(spec)
+      builder.build nil, @dest_path, output
+    end
+
+    output = output.join "\n"
+    bundle = File.join(@dest_path, "release/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
+
+    assert_ffi_handle bundle, "hello_from_rubygems"
+    assert_ffi_handle bundle, "hello_from_rubygems_version"
+    refute_ffi_handle bundle, "should_never_exist"
   rescue Exception => e
     pp output if output
 
@@ -140,7 +149,6 @@ class TestGemExtCargoBuilder < Gem::TestCase
   def skip_unsupported_platforms!
     pend "jruby not supported" if java_platform?
     pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
-    pend "mswin not supported (yet)" if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS")
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
     pend "cargo not present" unless $?.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?
@@ -150,5 +158,16 @@ class TestGemExtCargoBuilder < Gem::TestCase
     require "fiddle"
     dylib_handle = Fiddle.dlopen bundle
     assert_nothing_raised { dylib_handle[name] }
+  end
+
+  def refute_ffi_handle(bundle, name)
+    require "fiddle"
+    dylib_handle = Fiddle.dlopen bundle
+    assert_raise { dylib_handle[name] }
+  end
+
+  def replace_in_rust_file(name, from, to)
+    content = @fixture_dir.join(name).read.gsub(from, to)
+    File.write(File.join(@ext, name), content)
   end
 end

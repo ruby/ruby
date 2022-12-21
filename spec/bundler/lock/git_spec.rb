@@ -52,6 +52,44 @@ RSpec.describe "bundle lock with git gems" do
     expect(err).to be_empty
   end
 
+  it "properly fetches a git source locked to an unreachable ref" do
+    # Create a commit and make it unreachable
+    git "checkout -b foo ", lib_path("foo-1.0")
+    unreachable_sha = update_git("foo").ref_for("HEAD")
+    git "checkout main ", lib_path("foo-1.0")
+    git "branch -D foo ", lib_path("foo-1.0")
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem 'foo', :git => "#{lib_path("foo-1.0")}"
+    G
+
+    lockfile <<-L
+      GIT
+        remote: #{lib_path("foo-1.0")}
+        revision: #{unreachable_sha}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(err).to be_empty
+  end
+
   it "provides correct #full_gem_path" do
     run <<-RUBY
       puts Bundler.rubygems.find_name('foo').first.full_gem_path

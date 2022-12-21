@@ -752,5 +752,94 @@ RSpec.describe "bundle lock" do
           version solving has failed.
       ERR
     end
+
+    it "is able to display some explanation on crazy irresolvable cases" do
+      build_repo4 do
+        build_gem "activeadmin", "2.13.1" do |s|
+          s.add_dependency "ransack", "= 3.1.0"
+        end
+
+        # Activemodel is missing as a dependency in lockfile
+        build_gem "ransack", "3.1.0" do |s|
+          s.add_dependency "activemodel", ">= 6.0.4"
+          s.add_dependency "activesupport", ">= 6.0.4"
+        end
+
+        %w[6.0.4 7.0.2.3 7.0.3.1 7.0.4].each do |version|
+          build_gem "activesupport", version
+
+          # Activemodel is only available on 6.0.4
+          if version == "6.0.4"
+            build_gem "activemodel", version do |s|
+              s.add_dependency "activesupport", version
+            end
+          end
+
+          build_gem "rails", version do |s|
+            # Depednencies of Rails 7.0.2.3 are in reverse order
+            if version == "7.0.2.3"
+              s.add_dependency "activesupport", version
+              s.add_dependency "activemodel", version
+            else
+              s.add_dependency "activemodel", version
+              s.add_dependency "activesupport", version
+            end
+          end
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", ">= 7.0.2.3"
+        gem "activeadmin", "= 2.13.1"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            activeadmin (2.13.1)
+              ransack (= 3.1.0)
+            ransack (3.1.0)
+              activemodel (>= 6.0.4)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activeadmin (= 2.13.1)
+          ransack (= 3.1.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock", :raise_on_error => false
+
+      expect(err).to eq <<~ERR.strip
+        Could not find compatible versions
+
+            Because every version of activemodel depends on activesupport = 6.0.4
+              and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+              every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
+            And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+              rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
+        (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+              and rails >= 7.0.4 depends on activemodel = 7.0.4,
+              rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
+
+            Because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3
+              and rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1,
+              rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 or activesupport = 7.0.3.1.
+            And because rails >= 7.0.4 depends on activesupport = 7.0.4
+              and every version of activemodel depends on activesupport = 6.0.4,
+              activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
+            And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
+              rails >= 7.0.2.3 is forbidden.
+            So, because Gemfile depends on rails >= 7.0.2.3,
+              version solving has failed.
+      ERR
+    end
   end
 end
