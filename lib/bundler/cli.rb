@@ -10,7 +10,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
-    EXTENSIONS = ["c"].freeze
+    EXTENSIONS = ["c", "rust"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -762,7 +762,7 @@ module Bundler
       # when deprecated version of `--ext` is called
       # print out deprecation warning and pretend `--ext=c` was provided
       if deprecated_ext_value?(arguments)
-        SharedHelpers.major_deprecation 2, "Option `--ext` without explicit value is deprecated. Please pass value like `--ext=c` for C extension. Pretending `--ext=c` was used for now."
+        SharedHelpers.major_deprecation 2, "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
         arguments[arguments.index("--ext")] = "--ext=c"
       end
     end

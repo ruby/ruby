@@ -310,28 +310,28 @@ RSpec.describe "bundle gem" do
     expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext and --linter=rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext=c and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext=c --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --test=minitest, and --linter=rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext=c, --test=minitest, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext=c --test=minitest --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --test=rspec, and --linter=rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext=c, --test=rspec, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext=c --test=rspec --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
-  it "has no rubocop offenses when using --ext, --ext=test-unit, and --linter=rubocop flag", :readline do
+  it "has no rubocop offenses when using --ext=c, --test=test-unit, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext=c --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
@@ -342,6 +342,42 @@ RSpec.describe "bundle gem" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --linter=standard"
     bundle_exec_standardrb
+    expect(last_command).to be_success
+  end
+
+  it "has no rubocop offenses when using --ext=rust and --linter=rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
+
+    bundle "gem #{gem_name} --ext=rust --linter=rubocop"
+    bundle_exec_rubocop
+    expect(last_command).to be_success
+  end
+
+  it "has no rubocop offenses when using --ext=rust, --test=minitest, and --linter=rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
+
+    bundle "gem #{gem_name} --ext=rust --test=minitest --linter=rubocop"
+    bundle_exec_rubocop
+    expect(last_command).to be_success
+  end
+
+  it "has no rubocop offenses when using --ext=rust, --test=rspec, and --linter=rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
+
+    bundle "gem #{gem_name} --ext=rust --test=rspec --linter=rubocop"
+    bundle_exec_rubocop
+    expect(last_command).to be_success
+  end
+
+  it "has no rubocop offenses when using --ext=rust, --test=test-unit, and --linter=rubocop flag", :readline do
+    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
+
+    bundle "gem #{gem_name} --ext=rust --test=test-unit --linter=rubocop"
+    bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
@@ -1336,12 +1372,15 @@ RSpec.describe "bundle gem" do
       context "is deprecated", :bundler => "< 3" do
         it "prints deprecation when used after gem name" do
           bundle ["gem", "--ext", gem_name].compact.join(" ")
-          expect(err).to include "[DEPRECATED] Option `--ext` without explicit value is deprecated."
+          expect(err).to include "[DEPRECATED]"
+          expect(err).to include "`--ext` with no arguments has been deprecated"
           expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
         end
 
         it "prints deprecation when used before gem name" do
           bundle ["gem", gem_name, "--ext"].compact.join(" ")
+          expect(err).to include "[DEPRECATED]"
+          expect(err).to include "`--ext` with no arguments has been deprecated"
           expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
         end
       end
@@ -1364,8 +1403,11 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/#{gem_name}.c")).to exist
       end
 
-      it "includes rake-compiler" do
+      it "includes rake-compiler, but no Rust related changes" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
+
+        expect(bundled_app("#{gem_name}/Gemfile").read).to_not include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to_not include('spec.required_rubygems_version = ">= ')
       end
 
       it "depends on compile task for build" do
@@ -1382,6 +1424,64 @@ RSpec.describe "bundle gem" do
           end
 
           task default: %i[clobber compile]
+        RAKEFILE
+
+        expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+      end
+    end
+
+    context "--ext parameter set with rust and old RubyGems" do
+      it "fails in friendly way" do
+        if ::Gem::Version.new("3.3.11") <= ::Gem.rubygems_version
+          skip "RubyGems compatible with Rust builder"
+        end
+
+        expect do
+          bundle ["gem", gem_name, "--ext=rust"].compact.join(" ")
+        end.to raise_error(RuntimeError, /too old to build Rust extension/)
+      end
+    end
+
+    context "--ext parameter set with rust" do
+      let(:flags) { "--ext=rust" }
+
+      before do
+        skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
+
+        bundle ["gem", gem_name, flags].compact.join(" ")
+      end
+
+      it "is not deprecated" do
+        expect(err).not_to include "[DEPRECATED] Option `--ext` without explicit value is deprecated."
+      end
+
+      it "builds ext skeleton" do
+        expect(bundled_app("#{gem_name}/Cargo.toml")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/Cargo.toml")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/extconf.rb")).to exist
+        expect(bundled_app("#{gem_name}/ext/#{gem_name}/src/lib.rs")).to exist
+      end
+
+      it "includes rake-compiler, rb_sys gems and required_rubygems_version constraint" do
+        expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
+        expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.required_rubygems_version = ">= ')
+      end
+
+      it "depends on compile task for build" do
+        rakefile = strip_whitespace <<-RAKEFILE
+          # frozen_string_literal: true
+
+          require "bundler/gem_tasks"
+          require "rake/extensiontask"
+
+          task build: :compile
+
+          Rake::ExtensionTask.new("#{gem_name}") do |ext|
+            ext.lib_dir = "lib/#{gem_name}"
+          end
+
+          task default: :compile
         RAKEFILE
 
         expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)

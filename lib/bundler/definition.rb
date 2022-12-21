@@ -263,10 +263,10 @@ module Bundler
         @locked_specs
       elsif !unlocking? && nothing_changed?
         if deleted_deps.any?
-          Bundler.ui.debug("Some dependencies were deleted, using a subset of the resolution from the lockfile")
+          Bundler.ui.debug "Some dependencies were deleted, using a subset of the resolution from the lockfile"
           SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
         else
-          Bundler.ui.debug("Found no changes, using resolution from the lockfile")
+          Bundler.ui.debug "Found no changes, using resolution from the lockfile"
           if @locked_gems.may_include_redundant_platform_specific_gems?
             SpecSet.new(filter_specs(@locked_specs, @dependencies))
           else
@@ -274,7 +274,7 @@ module Bundler
           end
         end
       else
-        Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
+        Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
         start_resolution
       end
     end
@@ -806,12 +806,13 @@ module Bundler
           end
 
           new_spec = new_specs[s].first
-
-          # If the spec is no longer in the path source, unlock it. This
-          # commonly happens if the version changed in the gemspec
-          next unless new_spec
-
-          s.dependencies.replace(new_spec.dependencies)
+          if new_spec
+            s.dependencies.replace(new_spec.dependencies)
+          else
+            # If the spec is no longer in the path source, unlock it. This
+            # commonly happens if the version changed in the gemspec
+            @unlock[:gems] << s.name
+          end
         end
 
         if dep.nil? && requested_dependencies.find {|d| s.name == d.name }
