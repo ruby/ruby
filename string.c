@@ -4462,7 +4462,7 @@ static VALUE get_pat(VALUE);
  *    match(pattern, offset = 0) -> matchdata or nil
  *    match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
+ *  Returns a \MatchData object (or +nil+) based on +self+ and the given +pattern+.
  *
  *  Note: also updates Regexp@Special+global+variables.
  *
@@ -4518,7 +4518,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \Matchdata object,
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \MatchData object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
