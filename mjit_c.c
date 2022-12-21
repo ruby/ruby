@@ -41,11 +41,8 @@
 // macOS: brew install capstone
 // Ubuntu/Debian: apt-get install libcapstone-dev
 // Fedora: dnf -y install capstone-devel
-//#ifdef HAVE_LIBCAPSTONE
-#if 1
+#ifdef HAVE_LIBCAPSTONE
 #include <capstone/capstone.h>
-
-#define CODE "\x55\x48\x8b\x05\xb8\x13\x00\x00"
 
 // Return an array of [address, mnemonic, op_str]
 static VALUE
