@@ -413,7 +413,13 @@ module Net
   # Response class for <tt>Bad Request</tt> responses (status code 400).
   #
   # The server cannot or will not process the request due to an apparent client error.
-  # See {400 Bad Request}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#400].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-400-bad-request].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#400].
+  #
   class HTTPBadRequest < HTTPClientError
     HAS_BODY = true
   end
@@ -421,7 +427,13 @@ module Net
   # Response class for <tt>Unauthorized</tt> responses (status code 401).
   #
   # Authentication is required, but either was not provided or failed.
-  # See {401 Unauthorized}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#401].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-401-unauthorized].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#401].
+  #
   class HTTPUnauthorized < HTTPClientError
     HAS_BODY = true
   end
@@ -429,7 +441,13 @@ module Net
   # Response class for <tt>Payment Required</tt> responses (status code 402).
   #
   # Reserved for future use.
-  # See {402 Payment Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#402].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-402-payment-required].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#402].
+  #
   class HTTPPaymentRequired < HTTPClientError
     HAS_BODY = true
   end
@@ -438,7 +456,13 @@ module Net
   #
   # The request contained valid data and was understood by the server,
   # but the server is refusing action.
-  # See {403 Forbidden}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#403].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-403-forbidden].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#403].
+  #
   class HTTPForbidden < HTTPClientError
     HAS_BODY = true
   end
@@ -446,7 +470,13 @@ module Net
   # Response class for <tt>Not Found</tt> responses (status code 404).
   #
   # The requested resource could not be found but may be available in the future.
-  # See {404 Not Found}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#404].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-404-not-found].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#404].
+  #
   class HTTPNotFound < HTTPClientError
     HAS_BODY = true
   end
@@ -454,7 +484,13 @@ module Net
   # Response class for <tt>Method Not Allowed</tt> responses (status code 405).
   #
   # The request method is not supported for the requested resource.
-  # See {405 Method Not Allowed}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#405].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-405-method-not-allowed].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#405].
+  #
   class HTTPMethodNotAllowed < HTTPClientError
     HAS_BODY = true
   end
@@ -463,7 +499,13 @@ module Net
   #
   # The requested resource is capable of generating only content
   # that not acceptable according to the Accept headers sent in the request.
-  # See {406 Not Acceptable}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#406].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-406-not-acceptable].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#406].
+  #
   class HTTPNotAcceptable < HTTPClientError
     HAS_BODY = true
   end
@@ -471,7 +513,13 @@ module Net
   # Response class for <tt>Proxy Authentication Required</tt> responses (status code 407).
   #
   # The client must first authenticate itself with the proxy.
-  # See {407 Proxy Authentication Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#407].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/407].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-407-proxy-authentication-re].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#407].
+  #
   class HTTPProxyAuthenticationRequired < HTTPClientError
     HAS_BODY = true
   end
@@ -479,7 +527,13 @@ module Net
   # Response class for <tt>Request Timeout</tt> responses (status code 408).
   #
   # The server timed out waiting for the request.
-  # See {408 Request Timeout}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#408].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/408].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-408-request-timeout].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#408].
+  #
   class HTTPRequestTimeout < HTTPClientError
     HAS_BODY = true
   end
@@ -488,7 +542,13 @@ module Net
   # Response class for <tt>Conflict</tt> responses (status code 409).
   #
   # The request could not be processed because of conflict in the current state of the resource.
-  # See {409 Conflict}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#409].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-409-conflict].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#409].
+  #
   class HTTPConflict < HTTPClientError
     HAS_BODY = true
   end
@@ -497,7 +557,13 @@ module Net
   #
   # The resource requested was previously in use but is no longer available
   # and will not be available again.
-  # See {410 Gone}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#410].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-410-gone].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#410].
+  #
   class HTTPGone < HTTPClientError
     HAS_BODY = true
   end
@@ -506,7 +572,13 @@ module Net
   #
   # The request did not specify the length of its content,
   # which is required by the requested resource.
-  # See {411 Length Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#411].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-411-length-required].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#411].
+  #
   class HTTPLengthRequired < HTTPClientError
     HAS_BODY = true
   end
@@ -515,7 +587,13 @@ module Net
   #
   # The server does not meet one of the preconditions
   # specified in the request headers.
-  # See {412 Precondition Failed}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#412].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-412-precondition-failed].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#412].
+  #
   class HTTPPreconditionFailed < HTTPClientError
     HAS_BODY = true
   end
@@ -523,7 +601,13 @@ module Net
   # Response class for <tt>Payload Too Large</tt> responses (status code 413).
   #
   # The request is larger than the server is willing or able to process.
-  # See {413 Payload Too Large}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#413].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-413-content-too-large].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#413].
+  #
   class HTTPPayloadTooLarge < HTTPClientError
     HAS_BODY = true
   end
@@ -532,7 +616,13 @@ module Net
   # Response class for <tt>URI Too Long</tt> responses (status code 414).
   #
   # The URI provided was too long for the server to process.
-  # See {414 URI Too Long}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#414].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/414].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-414-uri-too-long].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#414].
+  #
   class HTTPURITooLong < HTTPClientError
     HAS_BODY = true
   end
@@ -542,7 +632,13 @@ module Net
   # Response class for <tt>Unsupported Media Type</tt> responses (status code 415).
   #
   # The request entity has a media type which the server or resource does not support.
-  # See {415 Unsupported Media Type}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#415].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-415-unsupported-media-type].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#415].
+  #
   class HTTPUnsupportedMediaType < HTTPClientError
     HAS_BODY = true
   end
@@ -550,7 +646,13 @@ module Net
   # Response class for <tt>Range Not Satisfiable</tt> responses (status code 416).
   #
   # The request entity has a media type which the server or resource does not support.
-  # See {416 Range Not Satisfiable}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#416].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/416].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-416-range-not-satisfiable].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#416].
+  #
   class HTTPRangeNotSatisfiable < HTTPClientError
     HAS_BODY = true
   end
@@ -559,7 +661,13 @@ module Net
   # Response class for <tt>Expectation Failed</tt> responses (status code 417).
   #
   # The server cannot meet the requirements of the Expect request-header field.
-  # See {417 Expectation Failed}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#417].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-417-expectation-failed].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#417].
+  #
   class HTTPExpectationFailed < HTTPClientError
     HAS_BODY = true
   end
@@ -572,7 +680,12 @@ module Net
   # Response class for <tt>Misdirected Request</tt> responses (status code 421).
   #
   # The request was directed at a server that is not able to produce a response.
-  # See {421 Misdirected Request}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#421].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-421-misdirected-request].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#421].
+  #
   class HTTPMisdirectedRequest < HTTPClientError
     HAS_BODY = true
   end
@@ -580,7 +693,13 @@ module Net
   # Response class for <tt>Unprocessable Entity</tt> responses (status code 422).
   #
   # The request was well-formed but had semantic errors.
-  # See {422 Unprocessable Entity}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#422].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-422-unprocessable-content].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#422].
+  #
   class HTTPUnprocessableEntity < HTTPClientError
     HAS_BODY = true
   end
@@ -588,7 +707,11 @@ module Net
   # Response class for <tt>Locked (WebDAV)</tt> responses (status code 423).
   #
   # The requested resource is locked.
-  # See {423 Locked (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#423].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#423].
+  #
   class HTTPLocked < HTTPClientError
     HAS_BODY = true
   end
@@ -597,6 +720,11 @@ module Net
   #
   # The request failed because it depended on another request and that request failed.
   # See {424 Failed Dependency (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#424].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#424].
+  #
   class HTTPFailedDependency < HTTPClientError
     HAS_BODY = true
   end
@@ -607,7 +735,13 @@ module Net
   # Response class for <tt>Upgrade Required</tt> responses (status code 426).
   #
   # The client should switch to the protocol given in the Upgrade header field.
-  # See {426 Upgrade Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#426].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/426].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-426-upgrade-required].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#426].
+  #
   class HTTPUpgradeRequired < HTTPClientError
     HAS_BODY = true
   end
@@ -615,7 +749,12 @@ module Net
   # Response class for <tt>Precondition Required</tt> responses (status code 428).
   #
   # The origin server requires the request to be conditional.
-  # See {428 Precondition Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#428].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/428].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#428].
+  #
   class HTTPPreconditionRequired < HTTPClientError
     HAS_BODY = true
   end
@@ -623,7 +762,12 @@ module Net
   # Response class for <tt>Too Many Requests</tt> responses (status code 429).
   #
   # The user has sent too many requests in a given amount of time.
-  # See {429 Too Many Requests}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#429].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#429].
+  #
   class HTTPTooManyRequests < HTTPClientError
     HAS_BODY = true
   end
@@ -632,7 +776,12 @@ module Net
   #
   # An individual header field is too large,
   # or all the header fields collectively, are too large.
-  # See {431 Request Header Fields Too Large}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#431].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/431].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#431].
+  #
   class HTTPRequestHeaderFieldsTooLarge < HTTPClientError
     HAS_BODY = true
   end
@@ -641,7 +790,12 @@ module Net
   #
   # A server operator has received a legal demand to deny access to a resource or to a set of resources
   # that includes the requested resource.
-  # See {451 Unavailable For Legal Reasons}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#451].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/451].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#451].
+  #
   class HTTPUnavailableForLegalReasons < HTTPClientError
     HAS_BODY = true
   end
