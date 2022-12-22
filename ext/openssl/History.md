@@ -1,3 +1,17 @@
+Version 3.0.2
+=============
+
+Merged changes in 2.2.3. Additionally, the following issues are fixed by this
+release.
+
+Bug fixes
+---------
+
+* Fix OpenSSL::PKey::EC#check_key not working correctly on OpenSSL 3.0.
+  [[GitHub #563]](https://github.com/ruby/openssl/issues/563)
+  [[GitHub #580]](https://github.com/ruby/openssl/pull/580)
+
+
 Version 3.0.1
 =============
 
