@@ -961,6 +961,11 @@ VALUE
 rb_tracearg_binding(rb_trace_arg_t *trace_arg)
 {
     rb_control_frame_t *cfp;
+    switch (trace_arg->event) {
+      case RUBY_EVENT_C_CALL:
+      case RUBY_EVENT_C_RETURN:
+        return Qnil;
+    }
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
     if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
