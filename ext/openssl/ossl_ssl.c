@@ -33,7 +33,6 @@
 } while (0)
 
 VALUE mSSL;
-static VALUE mSSLExtConfig;
 static VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
@@ -2591,16 +2590,6 @@ Init_ossl_ssl(void)
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
 
-    /* Document-module: OpenSSL::ExtConfig
-     *
-     * This module contains configuration information about the SSL extension,
-     * for example if socket support is enabled, or the host name TLS extension
-     * is enabled.  Constants in this module will always be defined, but contain
-     * +true+ or +false+ values depending on the configuration of your OpenSSL
-     * installation.
-     */
-    mSSLExtConfig = rb_define_module_under(mOSSL, "ExtConfig");
-
     /* Document-class: OpenSSL::SSL::SSLError
      *
      * Generic error class raised by SSLSocket and SSLContext.
@@ -2762,8 +2751,6 @@ Init_ossl_ssl(void)
      * and it can randomly cause deadlock on Ruby thread switching.
      */
     rb_attr(cSSLContext, rb_intern_const("session_remove_cb"), 1, 1, Qfalse);
-
-    rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
 
     /*
      * A callback invoked whenever a new handshake is initiated on an
@@ -2956,10 +2943,8 @@ Init_ossl_ssl(void)
      */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
 #ifdef OPENSSL_NO_SOCK
-    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qtrue);
     rb_define_method(cSSLSocket, "initialize", rb_f_notimplement, -1);
 #else
-    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qfalse);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_undef_method(cSSLSocket, "initialize_copy");
