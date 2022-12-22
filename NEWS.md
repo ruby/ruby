@@ -553,7 +553,7 @@ Note: We're only listing outstanding class updates.
     * typeprof 0.21.3
     * debug 1.7.0
 
-See GitHub releases [GH-logger-releases] or changelog for details of the default gems or bundled gems.
+See GitHub releases like [GH-logger-releases] or changelog for details of the default gems or bundled gems.
 
 ## Supported platforms
 
