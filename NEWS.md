@@ -641,9 +641,9 @@ The following APIs are updated.
 
 * PRNG update
 
-    `rb_random_interface_t` updated and versioned.
-    Extension libraries which use this interface and built for older versions.
-    Also `init_int32` function needs to be defined.
+    `rb_random_interface_t` in ruby/random.h updated and versioned.
+    Extension libraries which use this interface and built for older
+    versions need to rebuild with adding `init_int32` function.
 
 ### Added C APIs
 
