@@ -1124,6 +1124,20 @@ get_cstr_value(DebugInfoValue *v)
     }
 }
 
+static const char *
+resolve_strx(DebugInfoReader *reader, uint64_t idx)
+{
+    const char *p = reader->obj->debug_str_offsets.ptr + reader->current_str_offsets_base;
+    uint64_t off;
+    if (reader->format == 4) {
+        off = ((uint32_t *)p)[idx];
+    }
+    else {
+        off = ((uint64_t *)p)[idx];
+    }
+    return reader->obj->debug_str.ptr + off;
+}
+
 static void
 debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
 {
@@ -1236,7 +1250,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, 1);
         break;
       case DW_FORM_strx:
-        set_uint_value(v, uleb128(&reader->p));
+        set_cstr_value(v, resolve_strx(reader, uleb128(&reader->p)));
         break;
       case DW_FORM_addrx:
         set_addr_idx_value(v, uleb128(&reader->p));
@@ -1272,16 +1286,16 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uint64(&reader->p));
         break;
       case DW_FORM_strx1:
-        set_uint_value(v, read_uint8(&reader->p));
+        set_cstr_value(v, resolve_strx(reader, read_uint8(&reader->p)));
         break;
       case DW_FORM_strx2:
-        set_uint_value(v, read_uint16(&reader->p));
+        set_cstr_value(v, resolve_strx(reader, read_uint16(&reader->p)));
         break;
       case DW_FORM_strx3:
-        set_uint_value(v, read_uint24(&reader->p));
+        set_cstr_value(v, resolve_strx(reader, read_uint24(&reader->p)));
         break;
       case DW_FORM_strx4:
-        set_uint_value(v, read_uint32(&reader->p));
+        set_cstr_value(v, resolve_strx(reader, read_uint32(&reader->p)));
         break;
       case DW_FORM_addrx1:
         set_addr_idx_value(v, read_uint8(&reader->p));
