@@ -1521,14 +1521,14 @@ typedef struct {
 } ranges_t;
 
 static void
-ranges_set(ranges_t *ptr, DebugInfoValue *v)
+ranges_set(ranges_t *ptr, DebugInfoValue *v, addr_header_t *addr_header, uint64_t addr_base)
 {
     uint64_t n = 0;
     if (v->type == VAL_uint) {
         n = v->as.uint64;
     }
     else if (v->type == VAL_addr) {
-        n = 0; // Not implemented yet
+        n = read_addr(addr_header, addr_base, v->as.addr_idx);
     }
     switch (v->at) {
       case DW_AT_low_pc:
@@ -1567,7 +1567,7 @@ read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
 }
 
 static uintptr_t
-ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
+ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr, rnglists_header_t *rnglists_header)
 {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
@@ -1583,7 +1583,20 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
         bool base_valid = true;
         if (reader->current_version >= 5) {
-            p = reader->obj->debug_rnglists.ptr + ptr->ranges;
+            if (rnglists_header->offset_entry_count == 0) {
+                // DW_FORM_sec_offset
+                p = reader->obj->debug_rnglists.ptr + ptr->ranges + reader->current_rnglists_base;
+            }
+            else {
+                // DW_FORM_rnglistx
+                const char *offset_array = reader->obj->debug_rnglists.ptr + reader->current_rnglists_base;
+                if (rnglists_header->format == 4) {
+                    p = offset_array + ((uint32_t *)offset_array)[ptr->ranges];
+                }
+                else {
+                    p = offset_array + ((uint64_t *)offset_array)[ptr->ranges];
+                }
+            }
             for (;;) {
                 uint8_t rle = read_uint8(&p);
                 uintptr_t from = 0, to = 0;
@@ -1859,7 +1872,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
               case DW_AT_low_pc:
               case DW_AT_high_pc:
               case DW_AT_ranges:
-                ranges_set(&ranges, &v);
+                ranges_set(&ranges, &v, &addr_header, reader->current_addr_base);
                 break;
               case DW_AT_declaration:
                 goto skip_die;
@@ -1876,7 +1889,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
-            uintptr_t saddr = ranges_include(reader, &ranges, offset);
+            uintptr_t saddr = ranges_include(reader, &ranges, offset, &rnglists_header);
             if (saddr) {
                 /* fprintf(stdout, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
                 if (lines[i].sname) {
