@@ -13,7 +13,7 @@
 #   DISPATCH_ORIGINAL_INSN(): expanded in _mjit_compile_insn.erb
 #   THROW_EXCEPTION(): specially defined for JIT
 #   RESTORE_REGS(): specially defined for `leave`
-class RubyVM::MJIT::Compiler
+class RubyVM::MJIT::Compiler # :nodoc: all
   C = RubyVM::MJIT.const_get(:C, false)
   INSNS = RubyVM::MJIT.const_get(:INSNS, false)
   UNSUPPORTED_INSNS = [
