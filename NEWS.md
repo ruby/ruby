@@ -182,6 +182,7 @@ Note: We're only listing outstanding class updates.
         weight = Measure.new(amount: 50, unit: 'kg') #=> #<data Measure amount=50, unit="kg">
         weight.amount                                #=> 50
         weight.amount = 40                           #=> NoMethodError: undefined method `amount='
+        weight.with(amount: 40)                      #=> #<data Measure amount=40, unit="kg">
         ```
 
 * Encoding
