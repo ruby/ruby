@@ -1,3 +1,39 @@
+Version 3.1.0
+=============
+
+Ruby/OpenSSL 3.1 will be maintained for the lifetime of Ruby 3.2.
+
+Merged bug fixes in 2.2.3 and 3.0.2. Among the new features and changes are:
+
+Notable changes
+---------------
+
+* Add `OpenSSL::SSL::SSLContext#ciphersuites=` to allow setting TLS 1.3 cipher
+  suites.
+  [[GitHub #493]](https://github.com/ruby/openssl/pull/493)
+* Add `OpenSSL::SSL::SSLSocket#export_keying_material` for exporting keying
+  material of the session, as defined in RFC 5705.
+  [[GitHub #530]](https://github.com/ruby/openssl/pull/530)
+* Add `OpenSSL::SSL::SSLContext#keylog_cb=` for setting the TLS key logging
+  callback, which is useful for supporting NSS's SSLKEYLOGFILE debugging output.
+  [[GitHub #536]](https://github.com/ruby/openssl/pull/536)
+* Remove the default digest algorithm from `OpenSSL::OCSP::BasicResponse#sign`
+  and `OpenSSL::OCSP::Request#sign`. Omitting the 5th parameter of these
+  methods used to be equivalent of specifying SHA-1. This default value is now
+  removed and we will let the underlying OpenSSL library decide instead.
+  [[GitHub #507]](https://github.com/ruby/openssl/pull/507)
+* Add `OpenSSL::BN#mod_sqrt`.
+  [[GitHub #553]](https://github.com/ruby/openssl/pull/553)
+* Allow calling `OpenSSL::Cipher#update` with an empty string. This was
+  prohibited to workaround an ancient bug in OpenSSL.
+  [[GitHub #568]](https://github.com/ruby/openssl/pull/568)
+* Fix build on platforms without socket support, such as WASI. `OpenSSL::SSL`
+  will not be defined if OpenSSL is compiled with `OPENSSL_NO_SOCK`.
+  [[GitHub #558]](https://github.com/ruby/openssl/pull/558)
+* Improve support for recent LibreSSL versions. This includes HKDF support in
+  LibreSSL 3.6 and Ed25519 support in LibreSSL 3.7.
+
+
 Version 3.0.2
 =============
 
