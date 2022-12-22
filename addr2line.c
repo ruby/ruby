@@ -1794,7 +1794,7 @@ parse_ver5_debug_line_header(const char *p, int idx, uint8_t format, obj_info_t 
             if (dw_lnct == 2 /* DW_LNCT_directory_index */ && v.type == VAL_uint && out_directory_index)
                 *out_directory_index = v.as.uint64;
         }
-        if (i == idx) return 0;
+        if (j == idx) return 0;
     }
 
     return reader.p;
