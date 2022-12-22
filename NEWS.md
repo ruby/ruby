@@ -180,9 +180,9 @@ Note: We're only listing outstanding class updates.
         Measure = Data.define(:amount, :unit)
         distance = Measure.new(100, 'km')            #=> #<data Measure amount=100, unit="km">
         weight = Measure.new(amount: 50, unit: 'kg') #=> #<data Measure amount=50, unit="kg">
+        weight.with(amount: 40)                      #=> #<data Measure amount=40, unit="kg">
         weight.amount                                #=> 50
         weight.amount = 40                           #=> NoMethodError: undefined method `amount='
-        weight.with(amount: 40)                      #=> #<data Measure amount=40, unit="kg">
         ```
 
 * Encoding
