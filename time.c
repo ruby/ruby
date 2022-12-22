@@ -5012,7 +5012,9 @@ time_to_a(VALUE time)
  *    deconstruct_keys(array_of_names_or_nil) -> hash
  *
  *  Returns a hash of the name/value pairs, to use in pattern matching.
- *  Possible keys are the same as returned by #to_h.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:yday</tt>, <tt>:wday</tt>, <tt>:hour</tt>, <tt>:min</tt>, <tt>:sec</tt>,
+ *  <tt>:subsec</tt>, <tt>:dst</tt>, <tt>:zone</tt>.
  *
  *  Possible usages:
  *
