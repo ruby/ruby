@@ -179,7 +179,7 @@ module Kernel
   #    } #=> :ok
   def loop
     unless Primitive.block_given_p
-      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size)'
+      return enum_for(:loop) { Float::INFINITY }
     end
     while true
       yield

@@ -3940,12 +3940,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
-static VALUE
-rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
-{
-    return DBL2NUM(HUGE_VAL);
-}
-
 /*
  *  Document-class: Class
  *
