@@ -14,6 +14,7 @@ module RubyVM::YJIT
     Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
   end
 
+  # Check if --yjit-stats is used.
   def self.stats_enabled?
     Primitive.rb_yjit_stats_enabled_p
   end
@@ -209,7 +210,7 @@ module RubyVM::YJIT
     Primitive.rb_yjit_code_gc
   end
 
-  def self.simulate_oom!
+  def self.simulate_oom! # :nodoc:
     Primitive.rb_yjit_simulate_oom_bang
   end
 
@@ -224,7 +225,7 @@ module RubyVM::YJIT
   class << self
     private
 
-    def _dump_locations
+    def _dump_locations # :nodoc:
       return unless trace_exit_locations_enabled?
 
       filename = "yjit_exit_locations.dump"
@@ -234,7 +235,7 @@ module RubyVM::YJIT
     end
 
     # Format and print out counters
-    def _print_stats
+    def _print_stats # :nodoc:
       stats = runtime_stats
       return unless stats
 
@@ -291,7 +292,7 @@ module RubyVM::YJIT
       print_sorted_exit_counts(stats, prefix: "exit_")
     end
 
-    def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4)
+    def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4) # :nodoc:
       exits = []
       stats.each do |k, v|
         if k.start_with?(prefix)
@@ -322,7 +323,7 @@ module RubyVM::YJIT
       end
     end
 
-    def total_exit_count(stats, prefix: "exit_")
+    def total_exit_count(stats, prefix: "exit_") # :nodoc:
       total = 0
       stats.each do |k,v|
         total += v if k.start_with?(prefix)
@@ -330,7 +331,7 @@ module RubyVM::YJIT
       total
     end
 
-    def print_counters(counters, prefix:, prompt:)
+    def print_counters(counters, prefix:, prompt:) # :nodoc:
       $stderr.puts(prompt)
       counters = counters.filter { |key, _| key.start_with?(prefix) }
       counters.filter! { |_, value| value != 0 }
