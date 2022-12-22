@@ -860,7 +860,8 @@ enum {
     VAL_cstr = 1,
     VAL_data = 2,
     VAL_uint = 3,
-    VAL_int = 4
+    VAL_int = 4,
+    VAL_addr = 5
 };
 
 # define ABBREV_TABLE_SIZE 256
@@ -897,6 +898,7 @@ typedef struct {
         const char *ptr;
         uint64_t uint64;
         int64_t int64;
+        uint64_t addr_idx;
     } as;
     uint64_t off;
     uint64_t at;
@@ -1069,6 +1071,13 @@ di_read_debug_line_cu(DebugInfoReader *reader)
 }
 
 static void
+set_addr_idx_value(DebugInfoValue *v, uint64_t n)
+{
+    v->as.addr_idx = n;
+    v->type = VAL_addr;
+}
+
+static void
 set_uint_value(DebugInfoValue *v, uint64_t n)
 {
     v->as.uint64 = n;
@@ -1230,8 +1239,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_addrx:
-        /* TODO: read .debug_addr */
-        set_uint_value(v, uleb128(&reader->p));
+        set_addr_idx_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_ref_sup4:
         set_uint_value(v, read_uint32(&reader->p));
@@ -1276,16 +1284,16 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uint32(&reader->p));
         break;
       case DW_FORM_addrx1:
-        set_uint_value(v, read_uint8(&reader->p));
+        set_addr_idx_value(v, read_uint8(&reader->p));
         break;
       case DW_FORM_addrx2:
-        set_uint_value(v, read_uint16(&reader->p));
+        set_addr_idx_value(v, read_uint16(&reader->p));
         break;
       case DW_FORM_addrx3:
-        set_uint_value(v, read_uint24(&reader->p));
+        set_addr_idx_value(v, read_uint24(&reader->p));
         break;
       case DW_FORM_addrx4:
-        set_uint_value(v, read_uint32(&reader->p));
+        set_addr_idx_value(v, read_uint32(&reader->p));
         break;
       case 0:
         goto fail;
@@ -1425,22 +1433,29 @@ typedef struct {
 static void
 ranges_set(ranges_t *ptr, DebugInfoValue *v)
 {
+    uint64_t n = 0;
+    if (v->type == VAL_uint) {
+        n = v->as.uint64;
+    }
+    else if (v->type == VAL_addr) {
+        n = 0; // Not implemented yet
+    }
     switch (v->at) {
       case DW_AT_low_pc:
-        ptr->low_pc = v->as.uint64;
+        ptr->low_pc = n;
         ptr->low_pc_set = true;
         break;
       case DW_AT_high_pc:
         if (v->form == DW_FORM_addr) {
-            ptr->high_pc = v->as.uint64;
+            ptr->high_pc = n;
         }
         else {
-            ptr->high_pc = ptr->low_pc + v->as.uint64;
+            ptr->high_pc = ptr->low_pc + n;
         }
         ptr->high_pc_set = true;
         break;
       case DW_AT_ranges:
-        ptr->ranges = v->as.uint64;
+        ptr->ranges = n;
         ptr->ranges_set = true;
         break;
     }
