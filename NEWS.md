@@ -370,8 +370,8 @@ Note: We're only listing outstanding class updates.
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
       [[Bug #18487]]
     * TracePoint#enable `target_thread` keyword argument now defaults to the
-      current thread if `target` and `target_line` keyword arguments are not
-      passed. [[Bug #16889]]
+      current thread if a block is given and `target` and `target_line` keyword
+      arguments are not passed. [[Bug #16889]]
 
 * UnboundMethod
 
