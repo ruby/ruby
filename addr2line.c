@@ -871,6 +871,9 @@ typedef struct {
     uint8_t current_version;
     const char *current_cu;
     uint64_t current_low_pc;
+    uint64_t current_str_offsets_base;
+    uint64_t current_addr_base;
+    uint64_t current_rnglists_base;
     const char *debug_line_cu_end;
     uint8_t debug_line_format;
     uint16_t debug_line_version;
@@ -1014,6 +1017,9 @@ debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
     reader->pend = obj->debug_info.ptr + obj->debug_info.size;
     reader->debug_line_cu_end = obj->debug_line.ptr;
     reader->current_low_pc = 0;
+    reader->current_str_offsets_base = 0;
+    reader->current_addr_base = 0;
+    reader->current_rnglists_base = 0;
 }
 
 static void
@@ -1435,6 +1441,76 @@ di_skip_records(DebugInfoReader *reader)
     }
 }
 
+typedef struct addr_header {
+    const char *ptr;
+    uint64_t unit_length;
+    uint8_t format;
+    uint8_t address_size;
+    /* uint8_t segment_selector_size; */
+} addr_header_t;
+
+static void
+addr_header_init(obj_info_t *obj, addr_header_t *header) {
+    const char *p = obj->debug_addr.ptr;
+
+    header->ptr = p;
+
+    if (!p) return;
+
+    header->unit_length = *(uint32_t *)p;
+    p += sizeof(uint32_t);
+
+    header->format = 4;
+    if (header->unit_length == 0xffffffff) {
+        header->unit_length = *(uint64_t *)p;
+        p += sizeof(uint64_t);
+        header->format = 8;
+    }
+
+    p += 2; /* version */
+    header->address_size = *p++;
+    p++; /* segment_selector_size */
+}
+
+static uint64_t
+read_addr(addr_header_t *header, uint64_t addr_base, uint64_t idx) {
+    if (header->address_size == 4) {
+        return ((uint32_t*)(header->ptr + addr_base))[idx];
+    }
+    else {
+        return ((uint64_t*)(header->ptr + addr_base))[idx];
+    }
+}
+
+typedef struct rnglists_header {
+    uint64_t unit_length;
+    uint8_t format;
+    uint8_t address_size;
+    uint32_t offset_entry_count;
+} rnglists_header_t;
+
+static void
+rnglists_header_init(obj_info_t *obj, rnglists_header_t *header) {
+    const char *p = obj->debug_rnglists.ptr;
+
+    if (!p) return;
+
+    header->unit_length = *(uint32_t *)p;
+    p += sizeof(uint32_t);
+
+    header->format = 4;
+    if (header->unit_length == 0xffffffff) {
+        header->unit_length = *(uint64_t *)p;
+        p += sizeof(uint64_t);
+        header->format = 8;
+    }
+
+    p += 2; /* version */
+    header->address_size = *p++;
+    p++; /* segment_selector_size */
+    header->offset_entry_count = *(uint32_t *)p;
+}
+
 typedef struct {
     uint64_t low_pc;
     uint64_t high_pc;
@@ -1650,15 +1726,44 @@ di_read_cu(DebugInfoReader *reader)
             break;
         }
 
+        reader->current_str_offsets_base = 0;
+        reader->current_addr_base = 0;
+        reader->current_rnglists_base = 0;
+
+        DebugInfoValue low_pc = {{}};
         /* enumerate abbrev */
         for (;;) {
             DebugInfoValue v = {{}};
             if (!di_read_record(reader, &v)) break;
             switch (v.at) {
               case DW_AT_low_pc:
-                reader->current_low_pc = v.as.uint64;
+                // clang may output DW_AT_addr_base after DW_AT_low_pc.
+                // We need to resolve the DW_FORM_addr* after DW_AT_addr_base is parsed.
+                low_pc = v;
+                break;
+              case DW_AT_str_offsets_base:
+                reader->current_str_offsets_base = v.as.uint64;
+                break;
+              case DW_AT_addr_base:
+                reader->current_addr_base = v.as.uint64;
+                break;
+              case DW_AT_rnglists_base:
+                reader->current_rnglists_base = v.as.uint64;
                 break;
             }
+        }
+        // Resolve the DW_FORM_addr of DW_AT_low_pc
+        switch (low_pc.type) {
+            case VAL_uint:
+                reader->current_low_pc = low_pc.as.uint64;
+                break;
+            case VAL_addr:
+                {
+                    addr_header_t header;
+                    addr_header_init(reader->obj, &header);
+                    reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
+                }
+                break;
         }
     } while (0);
 #endif
@@ -1713,6 +1818,13 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_o
 static void
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
          line_info_t *lines, int offset) {
+
+    addr_header_t addr_header = {};
+    addr_header_init(reader->obj, &addr_header);
+
+    rnglists_header_t rnglists_header = {};
+    rnglists_header_init(reader->obj, &rnglists_header);
+
     while (reader->p < reader->cu_end) {
         DIE die;
         ranges_t ranges = {};
