@@ -543,7 +543,7 @@ Note: We're only listing outstanding class updates.
 *   The following bundled gems are updated.
 
     * minitest 5.16.3
-    * power_assert 2.0.2
+    * power_assert 2.0.3
     * test-unit 3.5.7
     * net-ftp 0.2.0
     * net-imap 0.3.2
