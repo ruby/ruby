@@ -1,12 +1,15 @@
 module RubyVM::MJIT
+  # Return true if MJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(mjit_enabled)'
   end
 
+  # Stop generating JITed code.
   def self.pause(wait: true)
     Primitive.cexpr! 'mjit_pause(RTEST(wait))'
   end
 
+  # Start generating JITed code again after pause.
   def self.resume
     Primitive.cexpr! 'mjit_resume()'
   end
@@ -20,7 +23,9 @@ if RubyVM::MJIT.enabled?
     return # miniruby doesn't support MJIT
   end
 
-  RubyVM::MJIT::C = Object.new # forward declaration for ruby_vm/mjit/compiler
+  # forward declaration for ruby_vm/mjit/compiler
+  RubyVM::MJIT::C = Object.new # :nodoc:
+
   require 'ruby_vm/mjit/c_type'
   require 'ruby_vm/mjit/instruction'
   require 'ruby_vm/mjit/compiler'
