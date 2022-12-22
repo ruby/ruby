@@ -3751,12 +3751,13 @@ set_timeout(rb_hrtime_t *hrt, VALUE timeout)
 }
 
 struct reg_init_args {
-    VALUE src, str, timeout;
+    VALUE str;
+    VALUE timeout;
     rb_encoding *enc;
     int flags;
 };
 
-static void reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
+static VALUE reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args);
 static VALUE reg_init_args(VALUE self, VALUE str, rb_encoding *enc, int flags);
 
 /*
@@ -3832,12 +3833,13 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static void
+static VALUE
 reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
 {
     int flags = 0;
     rb_encoding *enc = 0;
     VALUE str, src, opts = Qundef, n_flag = Qundef, kwargs;
+    VALUE re = Qnil;
 
     rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
 
@@ -3851,7 +3853,7 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
     }
 
     if (RB_TYPE_P(src, T_REGEXP)) {
-        VALUE re = src;
+        re = src;
 
         if (!NIL_P(opts)) {
             rb_warn("flags ignored");
@@ -3880,10 +3882,10 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
         }
         str = StringValue(src);
     }
-    args->src = src;
     args->str = str;
     args->enc = enc;
     args->flags = flags;
+    return re;
 }
 
 static VALUE
@@ -4243,15 +4245,10 @@ rb_reg_s_union_m(VALUE self, VALUE args)
 static VALUE
 rb_reg_s_linear_time_p(int argc, VALUE *argv, VALUE self)
 {
-    VALUE re;
     struct reg_init_args args;
+    VALUE re = reg_extract_args(argc, argv, &args);
 
-    reg_extract_args(argc, argv, &args);
-
-    if (RB_TYPE_P(args.src, T_REGEXP)) {
-        re = args.src;
-    }
-    else {
+    if (NIL_P(re)) {
         re = reg_init_args(rb_reg_alloc(), args.str, args.enc, args.flags);
     }
 
