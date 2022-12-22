@@ -804,7 +804,7 @@ The following deprecated APIs are removed.
 [GH-pathname-20]:     https://github.com/ruby/pathname/pull/20
 [GH-6791]:            https://github.com/ruby/ruby/pull/6791
 [GH-6868]:            https://github.com/ruby/ruby/pull/6868
-[GH-rubygems-5175]:   https://github.com/rubygems/rubygems/pull/6149
+[GH-rubygems-6149]:   https://github.com/rubygems/rubygems/pull/6149
 [sec-156615]:         https://hackerone.com/reports/156615
 [ruby-3-2-irb]:       https://st0012.dev/whats-new-in-ruby-3-2-irb
 [CVE-2021-33621]:     https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
