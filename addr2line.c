@@ -262,7 +262,7 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
     if (version >= 5) {
         const char *path;
         uint64_t directory_index = -1;
-        parse_ver5_debug_line_header(filenames, file + 1, format, obj, &path, &directory_index);
+        parse_ver5_debug_line_header(filenames, file, format, obj, &path, &directory_index);
         line->filename = path;
         parse_ver5_debug_line_header(include_directories, (int)directory_index, format, obj, &path, NULL);
         line->dirname = path;
