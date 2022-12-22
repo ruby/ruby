@@ -242,7 +242,7 @@ rb_ary_size_as_embedded(VALUE ary)
         real_size = ary_embed_size(ARY_HEAP_CAPA(ary));
     }
     else {
-        real_size = sizeof(struct RString);
+        real_size = sizeof(struct RArray);
     }
     return real_size;
 }
