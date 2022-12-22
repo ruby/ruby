@@ -509,6 +509,7 @@ module Bundler
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
+    method_option "path", :type => :string, :banner => "Open relative path of the gem source."
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run

@@ -2,10 +2,11 @@
 
 module Bundler
   class CLI::Open
-    attr_reader :options, :name
+    attr_reader :options, :name, :path
     def initialize(options, name)
       @options = options
       @name = name
+      @path = options[:path] unless options[:path].nil?
     end
 
     def run
@@ -15,10 +16,10 @@ module Bundler
       if spec.default_gem?
         Bundler.ui.info "Unable to open #{name} because it's a default gem, so the directory it would normally be installed to does not exist."
       else
-        path = spec.full_gem_path
-        Dir.chdir(path) do
+        root_path = spec.full_gem_path
+        Dir.chdir(root_path) do
           require "shellwords"
-          command = Shellwords.split(editor) + [path]
+          command = Shellwords.split(editor) << File.join([root_path, path].compact)
           Bundler.with_original_env do
             system(*command)
           end || Bundler.ui.info("Could not run '#{command.join(" ")}'")

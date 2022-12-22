@@ -7,7 +7,7 @@
 \fBbundle\-open\fR \- Opens the source directory for a gem in your bundle
 .
 .SH "SYNOPSIS"
-\fBbundle open\fR [GEM]
+\fBbundle open\fR [GEM] [\-\-path=PATH]
 .
 .SH "DESCRIPTION"
 Opens the source directory of the provided GEM in your editor\.
@@ -30,3 +30,23 @@ bundle open \'rack\'
 .
 .P
 Will open the source directory for the \'rack\' gem in your bundle\.
+.
+.IP "" 4
+.
+.nf
+
+bundle open \'rack\' \-\-path \'README\.md\'
+.
+.fi
+.
+.IP "" 0
+.
+.P
+Will open the README\.md file of the \'rack\' gem source in your bundle\.
+.
+.SH "OPTIONS"
+.
+.TP
+\fB\-\-path\fR
+Specify GEM source relative path to open\.
+
