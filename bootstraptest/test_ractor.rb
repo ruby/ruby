@@ -1472,21 +1472,6 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
-# enc_table
-assert_equal "100", %Q{
-  Ractor.new do
-    loop do
-      Encoding.find("test-enc-#{rand(5_000)}").inspect
-    rescue ArgumentError => e
-    end
-  end
-
-  src = Encoding.find("UTF-8")
-  100.times{|i|
-    src.replicate("test-enc-\#{i}")
-  }
-}
-
 # Generic ivtbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
