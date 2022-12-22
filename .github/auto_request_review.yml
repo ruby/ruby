@@ -1,9 +1,11 @@
 files:
   'yjit*': [team:yjit]
   'yjit/**/*': [team:yjit]
+  'yjit/src/cruby_bindings.inc.rs': []
   'doc/yjit/*': [team:yjit]
   'bootstraptest/test_yjit*': [team:yjit]
   'test/ruby/test_yjit*': [team:yjit]
   '.github/workflows/yjit*': [team:yjit]
 options:
   ignore_draft: true
+  last_files_match_only: true
