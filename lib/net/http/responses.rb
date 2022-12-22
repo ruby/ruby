@@ -807,7 +807,13 @@ module Net
   # Response class for <tt>Internal Server Error</tt> responses (status code 500).
   #
   # An unexpected condition was encountered and no more specific message is suitable.
-  # See {500 Internal Server Error}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#500].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-500-internal-server-error].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#500].
+  #
   class HTTPInternalServerError < HTTPServerError
     HAS_BODY = true
   end
@@ -816,7 +822,13 @@ module Net
   #
   # The server either does not recognize the request method,
   # or it lacks the ability to fulfil the request.
-  # See {501 Not Implemented}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#501].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/501].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-501-not-implemented].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#501].
+  #
   class HTTPNotImplemented < HTTPServerError
     HAS_BODY = true
   end
@@ -825,7 +837,13 @@ module Net
   #
   # The server was acting as a gateway or proxy
   # and received an invalid response from the upstream server.
-  # See {502 Bad Gateway}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#502].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-502-bad-gateway].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#502].
+  #
   class HTTPBadGateway < HTTPServerError
     HAS_BODY = true
   end
@@ -834,7 +852,13 @@ module Net
   #
   # The server cannot handle the request
   # (because it is overloaded or down for maintenance).
-  # See {503 Service Unavailable}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#503].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-503-service-unavailable].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#503].
+  #
   class HTTPServiceUnavailable < HTTPServerError
     HAS_BODY = true
   end
@@ -843,7 +867,13 @@ module Net
   #
   # The server was acting as a gateway or proxy
   # and did not receive a timely response from the upstream server.
-  # See {504 Gateway Timeout}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#504].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-504-gateway-timeout].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#504].
+  #
   class HTTPGatewayTimeout < HTTPServerError
     HAS_BODY = true
   end
@@ -852,7 +882,13 @@ module Net
   # Response class for <tt>HTTP Version Not Supported</tt> responses (status code 505).
   #
   # The server does not support the HTTP version used in the request.
-  # See {505 HTTP Version Not Supported}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#505].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/505].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-505-http-version-not-suppor].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#505].
+  #
   class HTTPVersionNotSupported < HTTPServerError
     HAS_BODY = true
   end
@@ -860,7 +896,12 @@ module Net
   # Response class for <tt>Variant Also Negotiates</tt> responses (status code 506).
   #
   # Transparent content negotiation for the request results in a circular reference.
-  # See {506 Variant Also Negotiates}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#506].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/506].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#506].
+  #
   class HTTPVariantAlsoNegotiates < HTTPServerError
     HAS_BODY = true
   end
@@ -868,7 +909,12 @@ module Net
   # Response class for <tt>Insufficient Storage (WebDAV)</tt> responses (status code 507).
   #
   # The server is unable to store the representation needed to complete the request.
-  # See {507 Insufficient Storage (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#507].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/507].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#507].
+  #
   class HTTPInsufficientStorage < HTTPServerError
     HAS_BODY = true
   end
@@ -876,7 +922,12 @@ module Net
   # Response class for <tt>Loop Detected (WebDAV)</tt> responses (status code 508).
   #
   # The server detected an infinite loop while processing the request.
-  # See {508 Loop Detected (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#508].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/508].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#508].
+  #
   class HTTPLoopDetected < HTTPServerError
     HAS_BODY = true
   end
@@ -885,7 +936,12 @@ module Net
   # Response class for <tt>Not Extended</tt> responses (status code 510).
   #
   # Further extensions to the request are required for the server to fulfill it.
-  # See {510 Not Extended}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#510].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/510].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#510].
+  #
   class HTTPNotExtended < HTTPServerError
     HAS_BODY = true
   end
@@ -893,7 +949,12 @@ module Net
   # Response class for <tt>Network Authentication Required</tt> responses (status code 511).
   #
   # The client needs to authenticate to gain network access.
-  # See {511 Network Authentication Required}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#511].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/511].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#511].
+  #
   class HTTPNetworkAuthenticationRequired < HTTPServerError
     HAS_BODY = true
   end
