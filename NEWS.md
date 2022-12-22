@@ -433,7 +433,15 @@ Note: We're only listing outstanding class updates.
 
 * IRB
 
-    * Added many of new commands and improvements. see [ruby-3-2-irb]
+    * debug.gem integration commands have been added: `debug`, `break`, `catch`,
+      `next`, `delete`, `step`, `continue`, `finish`, `backtrace`, `info`
+        * They work even if you don't have `gem "debug"` in your Gemfile.
+        * See also: [ruby-3-2-irb]
+    * More Pry-like commands and features have been added.
+        * `edit` and `show_cmds` (like Pry's `help`) are added.
+        * `ls` takes `-g` or `-G` option to filter out outputs.
+        * `show_source` is aliased from `$` and accepts unquoted inputs.
+        * `whereami` is aliased from `@`.
 
 * Net::Protocol
 
