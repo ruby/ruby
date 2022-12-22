@@ -16,53 +16,14 @@ The MJIT support for the following platforms is no longer maintained.
 * OS: Windows (mswin, MinGW), Solaris
 * Arch: SPARC, s390x
 
-### Architectures
+## Developing MJIT
 
-## Bindgen
+### Bindgen
 
 If you see an "MJIT bindgen" GitHub Actions failure, please commit the `git diff` shown on the failed job.
 
-Refer to the following instructions for doing the same thing locally.
-Similar to `make yjit-bindgen`, `make mjit-bindgen` requires libclang.
-See also: [mjit-bindgen.yml](../.github/workflows/mjit-bindgen.yml)
-
-macOS seems to have libclang by default, but I'm not sure how to deal with 32bit architectures.
-For now, you may generate c\_64.rb with a 64bit binary, and then manually modify c\_32.rb accordingly.
-
-### x86\_64-linux
-
-```sh
-sudo apt install \
-  build-essential \
-  libssl-dev libyaml-dev libreadline6-dev \
-  zlib1g-dev libncurses5-dev libffi-dev \
-  libclang1
-./autogen.sh
-./configure --enable-yjit=dev_nodebug --disable-install-doc
-make -j
-make mjit-bindgen
-```
-
-### i686-linux
-
-```sh
-sudo dpkg --add-architecture i386
-sudo apt install \
-  crossbuild-essential:i386 \
-  libssl-dev:i386 libyaml-dev:i386 libreadline6-dev:i386 \
-  zlib1g-dev:i386 libncurses5-dev:i386 libffi-dev:i386 \
-  libclang1:i386
-./autogen.sh
-./configure --disable-install-doc
-make -j
-make mjit-bindgen
-```
-
-Note that you cannot run x86\_64 bindgen with an i686 binary, and vice versa.
-Also, when you install libclang1:i386, libclang1 will be uninstalled.
-You can have only either of these at a time.
-
-## Local development
+For doing the same thing locally, run `make mjit-bindgen` after installing libclang.
+macOS seems to have libclang by default. On Ubuntu, you can install it with `apt install libclang1`.
 
 ### Always run make install
 
