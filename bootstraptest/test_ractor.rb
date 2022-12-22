@@ -502,7 +502,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-}
+} unless /mswin/ =~ RUBY_PLATFORM # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
