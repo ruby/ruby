@@ -1197,13 +1197,15 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_jit_failure
-    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
-    begin;
-      2.times do
-        class A
+    _, err = Dir.mktmpdir("jit_test_jit_failure") do |dir|
+      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
+      begin;
+        2.times do
+          class A
+          end
         end
-      end
-    end;
+      end;
+    end
     assert_match(/^MJIT warning: .+ unsupported instruction: defineclass/, err)
   end
 
