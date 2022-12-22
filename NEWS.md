@@ -716,7 +716,7 @@ The following deprecated APIs are removed.
 
 ### MJIT
 
-* The MJIT compiler is re-implemented in Ruby as a standard library `mjit`.
+* The MJIT compiler is re-implemented in Ruby as `ruby_vm/mjit/compiler`.
 * MJIT compiler is executed under a forked Ruby process instead of
   doing it in a native thread called MJIT worker. [[Feature #18968]]
     * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
