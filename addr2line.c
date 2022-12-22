@@ -159,13 +159,15 @@ typedef struct obj_info {
     struct dwarf_section debug_info;
     struct dwarf_section debug_line;
     struct dwarf_section debug_ranges;
+    struct dwarf_section debug_str_offsets;
+    struct dwarf_section debug_addr;
     struct dwarf_section debug_rnglists;
     struct dwarf_section debug_str;
     struct dwarf_section debug_line_str;
     struct obj_info *next;
 } obj_info_t;
 
-#define DWARF_SECTION_COUNT 7
+#define DWARF_SECTION_COUNT 9
 
 static struct dwarf_section *
 obj_dwarf_section_at(obj_info_t *obj, int n)
@@ -175,6 +177,8 @@ obj_dwarf_section_at(obj_info_t *obj, int n)
         &obj->debug_info,
         &obj->debug_line,
         &obj->debug_ranges,
+        &obj->debug_str_offsets,
+        &obj->debug_addr,
         &obj->debug_rnglists,
         &obj->debug_str,
         &obj->debug_line_str
@@ -1928,6 +1932,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     ".debug_info",
                     ".debug_line",
                     ".debug_ranges",
+                    ".debug_str_offsets",
+                    ".debug_addr",
                     ".debug_rnglists",
                     ".debug_str",
                     ".debug_line_str"
@@ -2186,6 +2192,8 @@ found_mach_header:
                     "__debug_info",
                     "__debug_line",
                     "__debug_ranges",
+                    "__debug_str_offsets",
+                    "__debug_addr",
                     "__debug_rnglists",
                     "__debug_str",
                     "__debug_line_str",
