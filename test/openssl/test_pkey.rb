@@ -47,6 +47,11 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
         raise "exit!" if cb_called.size == 3
       }
     }
+    if !cb_called && openssl?(3, 0, 0) && !openssl?(3, 0, 6)
+      # Errors in BN_GENCB were not properly handled. This special pend is to
+      # suppress failures on Ubuntu 22.04, which uses OpenSSL 3.0.2.
+      pend "unstable test on OpenSSL 3.0.[0-5]"
+    end
     assert_not_empty cb_called
   end
 
