@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_bad_socket

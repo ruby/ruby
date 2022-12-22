@@ -2,7 +2,7 @@
 require_relative 'utils'
 require_relative 'ut_eof'
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 module OpenSSL::SSLPairM
   def setup
