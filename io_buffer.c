@@ -1093,6 +1093,8 @@ rb_io_buffer_free(VALUE self)
     return self;
 }
 
+// Validate that access to the buffer is within bounds, assuming you want to
+// access length bytes from the specified offset.
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length)
 {
@@ -2510,7 +2512,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_validate_range(data, 0, length);
+    io_buffer_validate_range(data, offset, length);
 
     int descriptor = rb_io_descriptor(io);
 
@@ -2520,8 +2522,14 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 
     struct io_buffer_pread_internal_argument argument = {
         .descriptor = descriptor,
-        .base = base,
+
+        // Move the base pointer to the offset:
+        .base = (unsigned char*)base + offset,
+
+        // And the size to the length of data we want to read:
         .size = length,
+
+        // From the offset in the file we want to read from:
         .offset = from,
     };
 
@@ -2677,7 +2685,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_validate_range(data, 0, length);
+    io_buffer_validate_range(data, offset, length);
 
     int descriptor = rb_io_descriptor(io);
 
@@ -2687,8 +2695,14 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 
     struct io_buffer_pwrite_internal_argument argument = {
         .descriptor = descriptor,
-        .base = base,
+
+        // Move the base pointer to the offset:
+        .base = (unsigned char *)base + offset,
+
+        // And the size to the length of data we want to read:
         .size = length,
+
+        // And the offset in the file we want to write from:
         .offset = from,
     };
 
