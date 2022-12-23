@@ -3,7 +3,7 @@ module RubyVM::MJIT
   # cfp: rsi
   #  sp: rbx
   # scratch regs: rax
-  class InsnCompiler
+  class Codegen
     def putnil(asm)
       asm.mov([:rbx], Qnil)
       KeepCompiling

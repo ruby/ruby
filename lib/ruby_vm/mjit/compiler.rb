@@ -1,4 +1,4 @@
-require 'mjit/insn_compiler'
+require 'mjit/codegen'
 require 'mjit/instruction'
 require 'mjit/x86_assembler'
 
@@ -19,7 +19,7 @@ module RubyVM::MJIT
     def initialize(mem_block)
       @mem_block = mem_block
       @write_pos = 0
-      @insn_compiler = InsnCompiler.new
+      @codegen = Codegen.new
     end
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
@@ -77,8 +77,8 @@ module RubyVM::MJIT
 
     def compile_insn(asm, insn)
       case insn.name
-      when :putnil then @insn_compiler.putnil(asm)
-      #when :leave  then @insn_compiler.leave(asm)
+      when :putnil then @codegen.putnil(asm)
+      #when :leave  then @codegen.leave(asm)
       else CantCompile
       end
     end
