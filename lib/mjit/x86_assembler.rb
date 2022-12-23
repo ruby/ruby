@@ -27,7 +27,7 @@ module RubyVM::MJIT
     def add(dst, src)
       case [dst, src]
       # ADD r/m64, imm8
-      in [Symbol => dst_reg, Integer => src_imm] if r_reg?(dst_reg) && src_imm <= 0xff
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
         # REX.W + 83 /0 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -44,7 +44,7 @@ module RubyVM::MJIT
     def mov(dst, src)
       case [dst, src]
       # MOV r/m64, imm32 (Mod 00)
-      in [[Symbol => dst_reg], Integer => src_imm] if r_reg?(dst_reg)
+      in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg)
         # REX.W + C7 /0 id
         # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
         insn(
@@ -54,7 +54,7 @@ module RubyVM::MJIT
           imm: imm32(src_imm),
         )
       # MOV r/m64, imm32 (Mod 11)
-      in [Symbol => dst_reg, Integer => src_imm] if r_reg?(dst_reg)
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
         # REX.W + C7 /0 id
         # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
         insn(
@@ -63,8 +63,17 @@ module RubyVM::MJIT
           mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)), # Mod 11: reg
           imm: imm32(src_imm),
         )
+      # MOV r64, imm64
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm64?(src_imm)
+        # REX.W + B8+ rd io
+        # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
+        insn(
+          prefix: REX_W,
+          opcode: 0xb8 + reg_code(dst_reg),
+          imm: imm64(src_imm),
+        )
       # MOV r/m64, r64
-      in [[Symbol => dst_reg, Integer => dst_offset], Symbol => src_reg] if r_reg?(dst_reg) && r_reg?(src_reg) && dst_offset <= 0xff
+      in [[Symbol => dst_reg, Integer => dst_offset], Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg) && imm8?(dst_offset)
         # REX.W + 89 /r
         # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
         insn(
@@ -74,7 +83,7 @@ module RubyVM::MJIT
           disp: dst_offset,
         )
       # MOV r64, r/m64 (Mod 00)
-      in [Symbol => dst_reg, [Symbol => src_reg]] if r_reg?(dst_reg) && r_reg?(src_reg)
+      in [Symbol => dst_reg, [Symbol => src_reg]] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 8B /r
         # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
         insn(
@@ -83,7 +92,7 @@ module RubyVM::MJIT
           mod_rm: mod_rm(mod: 0b00, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 00: [reg]
         )
       # MOV r64, r/m64 (Mod 01)
-      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_offset]] if r_reg?(dst_reg) && r_reg?(src_reg) && src_offset <= 0xff
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_offset]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_offset)
         # REX.W + 8B /r
         # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
         insn(
@@ -166,27 +175,59 @@ module RubyVM::MJIT
 
     # ib: 1 byte
     def imm8(imm)
-      if imm > 0xff
+      unless imm8?(imm)
         raise ArgumentError, "unexpected imm8: #{imm}"
       end
-      [imm]
+      imm_bytes(imm, 1)
     end
 
     # id: 4 bytes
     def imm32(imm)
+      unless imm32?(imm)
+        raise ArgumentError, "unexpected imm32: #{imm}"
+      end
+      imm_bytes(imm, 4)
+    end
+
+    # io: 8 bytes
+    def imm64(imm)
+      unless imm64?(imm)
+        raise ArgumentError, "unexpected imm64: #{imm}"
+      end
+      imm_bytes(imm, 8)
+    end
+
+    def imm_bytes(imm, num_bytes)
       bytes = []
       bits = imm
-      4.times do
+      num_bytes.times do
         bytes << (bits & 0xff)
         bits >>= 8
       end
       if bits != 0
-        raise ArgumentError, "unexpected imm32: #{imm}"
+        raise ArgumentError, "unexpected imm with #{num_bytes} bytes: #{imm}"
       end
       bytes
     end
 
-    def r_reg?(reg)
+    def imm8?(imm)
+      # TODO: consider negative values
+      imm <= 0xff
+    end
+
+    def imm32?(imm)
+      # TODO: consider negative values
+      # TODO: consider rejecting small values
+      imm <= 0xffff_ffff
+    end
+
+    def imm64?(imm)
+      # TODO: consider negative values
+      # TODO: consider rejecting small values
+      imm <= 0xffff_ffff_ffff_ffff
+    end
+
+    def r64?(reg)
       reg.start_with?('r')
     end
   end

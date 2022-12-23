@@ -4,9 +4,6 @@ module RubyVM::MJIT
   #  sp: rbx
   # scratch regs: rax
   class InsnCompiler
-    # Ruby constants
-    Qnil = Fiddle::Qnil
-
     def putnil(asm)
       asm.mov([:rbx], Qnil)
       KeepCompiling

@@ -4,9 +4,13 @@ require 'mjit/x86_assembler'
 
 module RubyVM::MJIT
   # Compilation status
-  KeepCompiling = :keep_compiling
-  CantCompile = :cant_compile
-  EndBlock = :end_block
+  KeepCompiling = :KeepCompiling
+  CantCompile = :CantCompile
+  EndBlock = :EndBlock
+
+  # Ruby constants
+  Qnil = Fiddle::Qnil
+  Qundef = Fiddle::Qundef
 
   class Compiler
     attr_accessor :write_pos
@@ -36,32 +40,6 @@ module RubyVM::MJIT
 
     private
 
-    #  ec: rdi
-    # cfp: rsi
-    def compile_prologue(asm)
-      asm.mov(:rbx, [:rsi, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
-    end
-
-    def compile_block(asm, iseq)
-      index = 0
-      while index < iseq.body.iseq_size
-        insn = decode_insn(iseq.body.iseq_encoded[index])
-        status = compile_insn(asm, insn)
-        if status == EndBlock
-          break
-        end
-        index += insn.len
-      end
-    end
-
-    def compile_insn(asm, insn)
-      case insn.name
-      when :putnil then @insn_compiler.putnil(asm)
-      when :leave  then @insn_compiler.leave(asm)
-      else raise NotImplementedError, "insn '#{insn.name}' is not supported yet"
-      end
-    end
-
     def compile(asm)
       start_addr = write_addr
 
@@ -74,6 +52,48 @@ module RubyVM::MJIT
         dump_disasm(start_addr, end_addr)
       end
       start_addr
+    end
+
+    #  ec: rdi
+    # cfp: rsi
+    def compile_prologue(asm)
+      asm.mov(:rbx, [:rsi, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
+    end
+
+    def compile_block(asm, iseq)
+      index = 0
+      while index < iseq.body.iseq_size
+        insn = decode_insn(iseq.body.iseq_encoded[index])
+        case compile_insn(asm, insn)
+        when EndBlock
+          break
+        when CantCompile
+          compile_exit(asm, (iseq.body.iseq_encoded + index).to_i)
+          break
+        end
+        index += insn.len
+      end
+    end
+
+    def compile_insn(asm, insn)
+      case insn.name
+      when :putnil then @insn_compiler.putnil(asm)
+      #when :leave  then @insn_compiler.leave(asm)
+      else CantCompile
+      end
+    end
+
+    def compile_exit(asm, exit_pc)
+      # update pc
+      asm.mov(:rax, exit_pc) # rax = exit_pc
+      asm.mov([:rsi, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
+
+      # update sp (TODO: consider JIT state)
+      asm.add(:rbx, C.VALUE.size) # rbx += 1
+      asm.mov([:rsi, C.rb_control_frame_t.offsetof(:sp)], :rbx) # cfp->sp = rbx
+
+      asm.mov(:rax, Qundef)
+      asm.ret
     end
 
     def decode_insn(encoded)
