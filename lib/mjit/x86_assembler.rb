@@ -37,7 +37,7 @@ module RubyVM::MJIT
           imm: imm8(src_imm),
         )
       else
-        raise NotImplementedError, "add: not-implemented input: #{dst.inspect}, #{src.inspect}"
+        raise NotImplementedError, "add: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -102,7 +102,31 @@ module RubyVM::MJIT
           disp: src_offset,
         )
       else
-        raise NotImplementedError, "mov: not-implemented input: #{dst.inspect}, #{src.inspect}"
+        raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def push(src)
+      case src
+      # PUSH r64
+      in Symbol => src_reg if r64?(src_reg)
+        # 50+rd
+        # O: Operand 1: opcode + rd (r)
+        insn(opcode: 0x50 + reg_code(src_reg))
+      else
+        raise NotImplementedError, "push: not-implemented operands: #{src.inspect}"
+      end
+    end
+
+    def pop(dst)
+      case dst
+      # POP r64
+      in Symbol => dst_reg if r64?(dst_reg)
+        # 58+ rd
+        # O: Operand 1: opcode + rd (r)
+        insn(opcode: 0x58 + reg_code(dst_reg))
+      else
+        raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
       end
     end
 

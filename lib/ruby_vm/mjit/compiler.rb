@@ -58,8 +58,16 @@ module RubyVM::MJIT
 
     #  ec: rdi
     # cfp: rsi
+    #
+    # Callee-saved: rbx, rsp, rbp, r12, r13, r14, r15
+    # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
+    #
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_prologue(asm)
+      # Save callee-saved registers used by JITed code
+      asm.push(:rbx)
+
+      # Load sp to a register
       asm.mov(:rbx, [:rsi, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
     end
 
@@ -103,6 +111,9 @@ module RubyVM::MJIT
         asm.mov([:rsi, C.rb_control_frame_t.offsetof(:sp)], :rbx) # cfp->sp = rbx
       end
 
+      # Restore callee-saved registers
+      asm.pop(:rbx)
+
       asm.mov(:rax, Qundef)
       asm.ret
     end
@@ -115,6 +126,7 @@ module RubyVM::MJIT
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|
         puts "  0x#{"%p" % address}: #{mnemonic} #{op_str}"
       end
+      puts
     end
   end
 end

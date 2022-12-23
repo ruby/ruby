@@ -16,13 +16,18 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::X86Assembler]
     def leave(ctx, asm)
       assert_eq!(ctx.stack_size, 1)
+      # TODO: Check interrupts
 
-      # pop the current frame (ec->cfp++)
+      # Pop the current frame (ec->cfp++)
       asm.add(:rsi, C.rb_control_frame_t.size) # rsi = cfp + 1
       asm.mov([:rdi, C.rb_execution_context_t.offsetof(:cfp)], :rsi) # ec->cfp = rsi
 
-      # return a value
+      # Return a value
       asm.mov(:rax, [:rbx])
+
+      # Restore callee-saved registers
+      asm.pop(:rbx)
+
       asm.ret
       EndBlock
     end
