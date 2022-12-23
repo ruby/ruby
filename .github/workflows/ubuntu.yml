@@ -39,7 +39,6 @@ jobs:
           - test_task: check
             configure: "--enable-shared --enable-load-relative"
           - test_task: test-all TESTS=--repeat-count=2
-          - test_task: test-syntax-suggest
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
       fail-fast: false
