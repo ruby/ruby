@@ -233,8 +233,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in_with_webauthn_otp
     webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
-    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     response_fail = "You have enabled multifactor authentication"
+    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
     util_sign_in(proc do
       @call_count ||= 0
