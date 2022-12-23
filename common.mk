@@ -766,7 +766,8 @@ clean-spec: PHONY
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
 	-$(Q) $(RMALL) rubyspec_temp
 
-check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all $(DOT_WAIT) test-spec
+check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all \
+       $(DOT_WAIT) test-spec $(DOT_WAIT) test-syntax-suggest
 	$(ECHO) check succeeded
 	-$(Q) : : "run only on sh"; \
 	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
@@ -1463,8 +1464,9 @@ yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 
 RSPECOPTS =
 SYNTAX_SUGGEST_SPECS =
+PREPARE_SYNTAX_SUGGEST = yes-test-syntax-suggest-prepare
 test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
-yes-test-syntax-suggest: yes-test-syntax-suggest-prepare
+yes-test-syntax-suggest: $(PREPARE_SYNTAX_SUGGEST)
 	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
 no-test-syntax-suggest:
