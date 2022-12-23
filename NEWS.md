@@ -655,6 +655,7 @@ The following APIs are updated.
     * `RUBY_INTERNAL_THREAD_EVENT_RESUMED`
     * `RUBY_INTERNAL_THREAD_EVENT_SUSPENDED`
     * `RUBY_INTERNAL_THREAD_EVENT_EXITED`
+* `rb_debug_inspector_current_depth` `rb_debug_inspector_frame_depth` is added for debuggers.
 
 ### Removed C APIs
 
