@@ -2413,7 +2413,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, [length, [offset]]) -> numbytes
+ *  call-seq: read(io, [length, [offset]]) -> read length or -errno
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
  *  +offset+.
@@ -2532,7 +2532,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
 }
 
 /*
- *  call-seq: pread(io, from, length, [offset]) -> numbytes
+ *  call-seq: pread(io, from, length, [offset]) -> read length or -errno
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
  *  +from+, and put it in buffer starting from specified +offset+.
@@ -2631,7 +2631,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: write(io, length, [offset]) -> numbytes
+ *  call-seq: write(io, length, [offset]) -> written length or -errno
  *
  *  Writes +length+ bytes from buffer into +io+, starting at
  *  +offset+ in the buffer.
@@ -2738,7 +2738,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
 }
 
 /*
- *  call-seq: pwrite(io, from, length, [offset]) -> numbytes
+ *  call-seq: pwrite(io, from, length, [offset]) -> written length or -errno
  *
  *  Writes +length+ bytes from buffer into +io+, starting at
  *  +offset+ in the buffer.
