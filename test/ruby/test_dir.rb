@@ -544,6 +544,16 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  if Encoding.find("filesystem") == Encoding::UTF_8
+    # On Windows and macOS, file system encoding is always UTF-8.
+    def test_home_utf8
+      setup_envs
+
+      ENV["HOME"] = "/\u{e4}~\u{1f3e0}"
+      assert_equal("/\u{e4}~\u{1f3e0}", Dir.home)
+    end
+  end
+
   def test_symlinks_not_resolved
     Dir.mktmpdir do |dirname|
       Dir.chdir(dirname) do
