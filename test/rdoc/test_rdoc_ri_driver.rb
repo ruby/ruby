@@ -598,7 +598,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 1, out.scan(/-\n/).length
+    assert_equal 1, out.scan(/-\n/).length, out
 
     refute_match %r%Foo::Bar#blah%, out
   end
@@ -622,7 +622,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 6, out.scan(/-\n/).length
+    assert_equal 6, out.scan(/-\n/).length, out
 
     assert_match %r%Foo::Bar#blah%, out
   end
