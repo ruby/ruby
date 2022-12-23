@@ -2413,7 +2413,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, [length, [offset]]) -> self
+ *  call-seq: read(io, [length, [offset]]) -> numbytes
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
  *  +offset+.
@@ -2426,14 +2426,17 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
  *
  *  Example:
  *
- *    buffer = IO::Buffer.for('test')
- *    # =>
- *    # <IO::Buffer 0x00007fca40087c38+4 SLICE>
- *    # 0x00000000  74 65 73 74         test
- *    buffer.read(File.open('/dev/urandom', 'rb'), 4)
- *    # =>
- *    # <IO::Buffer 0x00007fca40087c38+4 SLICE>
- *    # 0x00000000  2a 0e 0e 0e         *...
+ *    IO::Buffer.for('test') do |buffer|
+ *      p buffer
+ *      # =>
+ *      # <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *      # 0x00000000  74 65 73 74         test
+ *      buffer.read(File.open('/dev/urandom', 'rb'), 2)
+ *      p buffer
+ *      # =>
+ *      # <IO::Buffer 0x00007f3bc65f2a58+4 EXTERNAL SLICE>
+ *      # 0x00000000  05 35 73 74         .5st
+ *    end
  */
 static VALUE
 io_buffer_read(int argc, VALUE *argv, VALUE self)
@@ -2528,6 +2531,31 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
     return rb_thread_io_blocking_region(io_buffer_pread_internal, &argument, descriptor);
 }
 
+/*
+ *  call-seq: pread(io, from, length, [offset]) -> numbytes
+ *
+ *  Read at most +length+ bytes from +io+ into the buffer, starting at
+ *  +from+, and put it in buffer starting from specified +offset+.
+ *
+ *  If +offset+ is not given, put it at the beginning of the buffer.
+ *
+ *  Example:
+ *
+ *    IO::Buffer.for('test') do |buffer|
+ *      p buffer
+ *      # =>
+ *      # <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *      # 0x00000000  74 65 73 74         test
+ *
+ *      # take 2 bytes from the beginning of urandom,
+ *      # put them in buffer starting from possition 2
+ *      buffer.pread(File.open('/dev/urandom', 'rb'), 0, 2, 2)
+ *      p buffer
+ *      # =>
+ *      # <IO::Buffer 0x00007f3bc65f2a58+4 EXTERNAL SLICE>
+ *      # 0x00000000  05 35 73 74         te.5
+ *    end
+ */
 static VALUE
 io_buffer_pread(int argc, VALUE *argv, VALUE self)
 {
@@ -2602,6 +2630,20 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     return rb_thread_io_blocking_region(io_buffer_write_internal, &argument, descriptor);
 }
 
+/*
+ *  call-seq: write(io, length, [offset]) -> numbytes
+ *
+ *  Writes +length+ bytes from buffer into +io+, starting at
+ *  +offset+ in the buffer.
+ *
+ *  If +offset+ is not given, the bytes are taken from the beginning
+ *  of the buffer.
+ *
+ *    out = File.open('buf.txt', 'wb')
+ *    IO::Buffer.for('1234567').write(out, 3)
+ *
+ *  This leads to +123+ being written into <tt>buf.txt</tt>
+ */
 static VALUE
 io_buffer_write(int argc, VALUE *argv, VALUE self)
 {
@@ -2695,6 +2737,21 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
     return rb_thread_io_blocking_region(io_buffer_pwrite_internal, &argument, descriptor);
 }
 
+/*
+ *  call-seq: pwrite(io, from, length, [offset]) -> numbytes
+ *
+ *  Writes +length+ bytes from buffer into +io+, starting at
+ *  +offset+ in the buffer.
+ *
+ *  If +offset+ is not given, the bytes are taken from the beginning
+ *  of the buffer.
+ *
+ *    out = File.open('buf.txt', File::RDWR) # open for read/write, no truncation
+ *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
+ *
+ *  This leads to +234+ (3 bytes, starting from position 1) being written into
+ *  <tt>buf.txt</tt>, starting from file position 2.
+ */
 static VALUE
 io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
 {
