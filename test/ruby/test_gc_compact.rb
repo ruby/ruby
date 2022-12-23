@@ -209,6 +209,54 @@ class TestGCCompact < Test::Unit::TestCase
     assert_equal([:call, :line], results)
   end
 
+  def test_updating_references_for_heap_allocated_shared_arrays
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = []
+      50.times { |i| ary << i }
+
+      # Pointer in slice should point to buffer of ary
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
+  def test_updating_references_for_embed_shared_arrays
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = Array.new(50)
+      50.times { |i| ary[i] = i }
+
+      # Ensure ary is embedded
+      assert_include(ObjectSpace.dump(ary), '"embedded":true')
+
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+    end;
+  end
+
   def test_updating_references_for_heap_allocated_frozen_shared_arrays
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -232,11 +280,37 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
+  def test_updating_references_for_embed_frozen_shared_arrays
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ary = Array.new(50)
+      50.times { |i| ary[i] = i }
+      # Frozen arrays can become shared root without RARRAY_SHARED_ROOT_FLAG
+      ary.freeze
+
+      # Ensure ary is embedded
+      assert_include(ObjectSpace.dump(ary), '"embedded":true')
+
+      slice = ary[10..40]
+
+      # Check that slice is pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
+
+      # Run compaction to re-embed ary
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      # Assert that slice is pointer to updated buffer in ary
+      assert_equal(10, slice[0])
+      # Check that slice is still pointing to buffer of ary
+      assert_include(ObjectSpace.dump(slice), '"shared":true')
     end;
   end
 
   def test_moving_arrays_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       ARY_COUNT = 500
