@@ -1111,14 +1111,14 @@ extern "C" {
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
     pub fn rb_shape_transition_shape_capa(
         shape: *mut rb_shape_t,
         new_capacity: u32,
     ) -> *mut rb_shape_t;
     pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
-    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
