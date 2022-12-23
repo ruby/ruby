@@ -496,6 +496,7 @@ backtrace(void **trace, int size)
 
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
+#  if defined(__x86_64__)
     while (unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
         trace[n++] = (void *)ip;
@@ -511,7 +512,6 @@ backtrace(void **trace, int size)
 darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
-#if defined(__x86_64__)
         ucontext_t *uctx;
         char vec[1];
         int r;
@@ -572,7 +572,6 @@ darwin_sigtramp:
             trace[n++] = (void *)ip;
             ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
         }
-#endif
 
         trace[n++] = (void *)ip;
         unw_set_reg(&cursor, UNW_REG_IP, ip);
@@ -582,6 +581,22 @@ darwin_sigtramp:
         trace[n++] = (void *)ip;
     }
     return n;
+
+#  else /* defined(__arm64__) */
+    /* Since Darwin arm64's _sigtramp is implemented as normal function,
+     * unwind can unwind frames without special code.
+     * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
+     */
+    while (unw_step(&cursor) > 0) {
+        unw_get_reg(&cursor, UNW_REG_IP, &ip);
+        // Strip Arm64's pointer authentication.
+        // https://developer.apple.com/documentation/security/preparing_your_app_to_work_with_pointer_authentication
+        // I wish I could use "ptrauth_strip()" but I get an error:
+        // "this target does not support pointer authentication"
+        trace[n++] = (void *)(ip & 0x7fffffffffffull);
+    }
+    return n;
+#  endif
 }
 # elif defined(BROKEN_BACKTRACE)
 #  undef USE_BACKTRACE
