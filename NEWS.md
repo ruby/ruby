@@ -546,12 +546,12 @@ Note: We're only listing outstanding class updates.
     * power_assert 2.0.3
     * test-unit 3.5.7
     * net-ftp 0.2.0
-    * net-imap 0.3.2
+    * net-imap 0.3.3
     * net-pop 0.1.2
     * net-smtp 0.3.3
-    * rbs 2.8.1
+    * rbs 2.8.2
     * typeprof 0.21.3
-    * debug 1.7.0
+    * debug 1.7.1
 
 See GitHub releases like [GH-logger-releases] or changelog for details of the default gems or bundled gems.
 
