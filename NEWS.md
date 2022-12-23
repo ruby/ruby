@@ -516,7 +516,7 @@ Note: We're only listing outstanding class updates.
     * pp 0.4.0
     * pstore 0.1.2
     * psych 5.0.1
-    * racc 1.6.1
+    * racc 1.6.2
     * rdoc 6.5.0
     * readline-ext 0.1.5
     * reline 0.3.2
