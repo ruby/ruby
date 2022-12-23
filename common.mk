@@ -1706,6 +1706,8 @@ info-arch: PHONY
 	@echo arch=$(arch)
 
 exam: check
+exam: $(DOT_WAIT) test-bundler-parallel
+exam: $(DOT_WAIT) test-bundled-gems
 
 love: sudo-precheck up all test exam install
 	@echo love is all you need
