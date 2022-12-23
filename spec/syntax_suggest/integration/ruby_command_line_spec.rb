@@ -3,6 +3,7 @@
 require_relative "../spec_helper"
 
 module SyntaxSuggest
+  ruby = ENV.fetch("RUBY", "ruby")
   RSpec.describe "Requires with ruby cli" do
     it "namespaces all monkeypatched methods" do
       Dir.mktmpdir do |dir|
@@ -16,9 +17,9 @@ module SyntaxSuggest
         api_only_methods_file = tmpdir.join("api_only_methods.txt")
         kernel_methods_file = tmpdir.join("kernel_methods.txt")
 
-        d_pid = Process.spawn("ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1 > #{syntax_suggest_methods_file}")
-        k_pid = Process.spawn("ruby #{script} 2>&1 >> #{kernel_methods_file}")
-        r_pid = Process.spawn("ruby -I#{lib_dir} -rsyntax_suggest/api #{script} 2>&1 > #{api_only_methods_file}")
+        d_pid = Process.spawn("#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1 > #{syntax_suggest_methods_file}")
+        k_pid = Process.spawn("#{ruby} #{script} 2>&1 >> #{kernel_methods_file}")
+        r_pid = Process.spawn("#{ruby} -I#{lib_dir} -rsyntax_suggest/api #{script} 2>&1 > #{api_only_methods_file}")
 
         Process.wait(k_pid)
         Process.wait(d_pid)
@@ -69,7 +70,7 @@ module SyntaxSuggest
           load "#{script.expand_path}"
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out).to include('>  5    it "flerg"').once
@@ -80,7 +81,7 @@ module SyntaxSuggest
       skip if ruby_core?
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
-      out = `ruby -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
+      out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
 
       expect($?.success?).to be_truthy
       expect(out).to include(lib_dir.join("syntax_suggest").join("core_ext.rb").to_s).once
@@ -106,7 +107,7 @@ module SyntaxSuggest
           end
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out).to include('>  5    it "flerg"').once
@@ -133,7 +134,7 @@ module SyntaxSuggest
           load "#{script.expand_path}"
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
 
         expect($?.success?).to be_truthy
         expect(out).to include("SyntaxSuggest is NOT loaded").once
@@ -149,7 +150,7 @@ module SyntaxSuggest
           eval("def lol")
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out).to include("(eval):1")
@@ -167,7 +168,7 @@ module SyntaxSuggest
           break
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest -e "require_relative '#{script}'" 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "require_relative '#{script}'" 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out.downcase).to_not include("syntax ok")
