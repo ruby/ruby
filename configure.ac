@@ -3053,14 +3053,9 @@ AC_SUBST(EXTOBJS)
 			: ${LDFLAGS=""}
 			: ${LIBPATHENV=DYLD_FALLBACK_LIBRARY_PATH}
 			: ${PRELOADENV=DYLD_INSERT_LIBRARIES}
-                        AS_IF([test x"$enable_shared" = xyes], [
-                            # Resolve symbols from libruby.dylib when --enable-shared
-                            EXTDLDFLAGS='$(LIBRUBYARG_SHARED)'
-                        ], [test "x$EXTSTATIC" = x], [
-                            # When building exts as bundles, a mach-o bundle needs to know its loader
-                            # program to bind symbols from the ruby executable
-                            EXTDLDFLAGS="-bundle_loader '\$(BUILTRUBY)'"
-			])
+                        # When building exts as bundles, a mach-o bundle needs to know its loader
+                        # program to bind symbols from the ruby executable
+                        EXTDLDFLAGS="-bundle_loader '\$(BUILTRUBY)' -Wl,-flat_namespace"
 			rb_cv_dlopen=yes],
         [aix*], [	: ${LDSHARED='$(CC)'}
 			AS_IF([test "$GCC" = yes], [
@@ -3354,7 +3349,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
   PREP='$(arch)-fake.rb'
-  AS_CASE(["$enable_shared:$EXTSTATIC:$target_os"], [no::darwin*], [
+  AS_CASE(["$target_os"], [darwin*], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
