@@ -2548,7 +2548,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
  *      # 0x00000000  74 65 73 74         test
  *
  *      # take 2 bytes from the beginning of urandom,
- *      # put them in buffer starting from possition 2
+ *      # put them in buffer starting from position 2
  *      buffer.pread(File.open('/dev/urandom', 'rb'), 0, 2, 2)
  *      p buffer
  *      # =>
