@@ -47,8 +47,6 @@ module SyntaxSuggest
     end
 
     it "detects require error and adds a message with auto mode" do
-      skip if ruby_core?
-
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
@@ -78,7 +76,6 @@ module SyntaxSuggest
     end
 
     it "gem can be tested when executing on Ruby with default gem included" do
-      skip if ruby_core?
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
       out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
@@ -88,7 +85,6 @@ module SyntaxSuggest
     end
 
     it "annotates a syntax error in Ruby 3.2+ when require is not used" do
-      skip if ruby_core?
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
       Dir.mktmpdir do |dir|
