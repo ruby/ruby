@@ -172,7 +172,7 @@ module SyntaxSuggest
 
         expect($?.success?).to be_falsey
         expect(out.downcase).to_not include("syntax ok")
-        puts out
+        expect(out).to include("Invalid break")
       end
     end
   end
