@@ -81,7 +81,7 @@ jobs:
             news.sub!(/^\*( +)The following default gems are now bundled gems\.\n+\K(?: \1\*( +).*\n)*/) do
               mark = "#{$1} *#{$2}"
               added.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
-            end or next if added
+            end or next unless added.empty?
             File.write("NEWS.md", news)
           end
         shell: ruby {0}
