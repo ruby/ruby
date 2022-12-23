@@ -2416,7 +2416,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
  *  call-seq: read(io, [length, [offset]]) -> read length or -errno
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
- *  +offset+.
+ *  +offset+. If an error occurs, return <tt>-errno</tt>.
  *
  *  If +length+ is not given, read until the end of the buffer.
  *
@@ -2536,6 +2536,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
  *  +from+, and put it in buffer starting from specified +offset+.
+ *  If an error occurs, return <tt>-errno</tt>.
  *
  *  If +offset+ is not given, put it at the beginning of the buffer.
  *
@@ -2634,7 +2635,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
  *  call-seq: write(io, length, [offset]) -> written length or -errno
  *
  *  Writes +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer.
+ *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
  *
  *  If +offset+ is not given, the bytes are taken from the beginning
  *  of the buffer.
@@ -2741,10 +2742,11 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
  *  call-seq: pwrite(io, from, length, [offset]) -> written length or -errno
  *
  *  Writes +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer.
+ *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning
- *  of the buffer.
+ *  If +offset+ is not given, the bytes are taken from the beginning of the
+ *  buffer. If the +offset+ is given and is beyond the end of the file, the
+ *  gap will be filled with null (0 value) bytes.
  *
  *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
  *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
