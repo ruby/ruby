@@ -509,7 +509,7 @@ Note: We're only listing outstanding class updates.
     * nkf 0.1.2
     * open-uri 0.3.0
     * open3 0.1.2
-    * openssl 3.1.0.pre
+    * openssl 3.1.0
     * optparse 0.3.1
     * ostruct 0.5.5
     * pathname 0.2.1
