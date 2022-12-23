@@ -2639,10 +2639,10 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
  *  If +offset+ is not given, the bytes are taken from the beginning
  *  of the buffer.
  *
- *    out = File.open('buf.txt', 'wb')
+ *    out = File.open('output.txt', 'wb')
  *    IO::Buffer.for('1234567').write(out, 3)
  *
- *  This leads to +123+ being written into <tt>buf.txt</tt>
+ *  This leads to +123+ being written into <tt>output.txt</tt>
  */
 static VALUE
 io_buffer_write(int argc, VALUE *argv, VALUE self)
@@ -2746,11 +2746,11 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
  *  If +offset+ is not given, the bytes are taken from the beginning
  *  of the buffer.
  *
- *    out = File.open('buf.txt', File::RDWR) # open for read/write, no truncation
+ *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
  *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
  *
  *  This leads to +234+ (3 bytes, starting from position 1) being written into
- *  <tt>buf.txt</tt>, starting from file position 2.
+ *  <tt>output.txt</tt>, starting from file position 2.
  */
 static VALUE
 io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
