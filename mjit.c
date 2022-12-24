@@ -1237,7 +1237,7 @@ static VALUE rb_mMJITHooks = 0;
 } while (0);
 
 // Hook MJIT when BOP is redefined.
-void
+MJIT_FUNC_EXPORTED void
 rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
     if (!mjit_enabled || !rb_mMJITHooks) return;
@@ -1247,7 +1247,7 @@ rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 }
 
 // Hook MJIT when CME is invalidated.
-void
+MJIT_FUNC_EXPORTED void
 rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
 {
     if (!mjit_enabled || !rb_mMJITHooks) return;
@@ -1279,7 +1279,7 @@ mjit_constant_state_changed(void *data)
 }
 
 // Hook MJIT when constant state is changed.
-void
+MJIT_FUNC_EXPORTED void
 rb_mjit_constant_state_changed(ID id)
 {
     if (!mjit_enabled || !rb_mMJITHooks) return;
@@ -1289,7 +1289,7 @@ rb_mjit_constant_state_changed(ID id)
 }
 
 // Hook MJIT when constant IC is updated.
-void
+MJIT_FUNC_EXPORTED void
 rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
 {
     if (!mjit_enabled || !rb_mMJITHooks) return;
@@ -1301,7 +1301,7 @@ rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx
 }
 
 // Hook MJIT when TracePoint is enabled.
-void
+MJIT_FUNC_EXPORTED void
 rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
     if (!mjit_enabled || !rb_mMJITHooks) return;
