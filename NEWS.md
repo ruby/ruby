@@ -475,11 +475,11 @@ Note: We're only listing outstanding class updates.
 
 *   The following default gems are updated.
 
-    * RubyGems 3.4.0.dev
+    * RubyGems 3.4.0
     * abbrev 0.1.1
     * benchmark 0.2.1
     * bigdecimal 3.1.3
-    * bundler 2.4.0.dev
+    * bundler 2.4.0
     * cgi 0.3.6
     * csv 3.2.6
     * date 3.3.3
