@@ -442,7 +442,7 @@ Note: We're only listing outstanding class updates.
     * debug.gem integration commands have been added: `debug`, `break`, `catch`,
       `next`, `delete`, `step`, `continue`, `finish`, `backtrace`, `info`
         * They work even if you don't have `gem "debug"` in your Gemfile.
-        * See also: [ruby-3-2-irb]
+        * See also: [What's new in Ruby 3.2's IRB?](https://st0012.dev/whats-new-in-ruby-3-2-irb)
     * More Pry-like commands and features have been added.
         * `edit` and `show_cmds` (like Pry's `help`) are added.
         * `ls` takes `-g` or `-G` option to filter out outputs.
@@ -451,11 +451,11 @@ Note: We're only listing outstanding class updates.
 
 * Net::Protocol
 
-    * Improve `Net::BufferedIO` performance. [GH-net-protocol-14]
+    * Improve `Net::BufferedIO` performance. [[GH-net-protocol-14]]
 
 * Pathname
 
-    * Added `Pathname#lutime`. [GH-pathname-20]
+    * Added `Pathname#lutime`. [[GH-pathname-20]]
 
 * Socket
 
@@ -559,7 +559,7 @@ Note: We're only listing outstanding class updates.
     * typeprof 0.21.3
     * debug 1.7.1
 
-See GitHub releases like [GH-logger-releases] or changelog for details of the default gems or bundled gems.
+See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
 ## Supported platforms
 
@@ -635,9 +635,9 @@ The following deprecated methods are removed.
 
     [[Feature #18571]]
 
-* Check cookie name/path/domain characters in `CGI::Cookie`. [CVE-2021-33621]
+* Check cookie name/path/domain characters in `CGI::Cookie`. [[CVE-2021-33621]]
 
-* `URI.parse` return empty string in host instead of nil. [sec-156615]
+* `URI.parse` return empty string in host instead of nil. [[sec-156615]]
 
 ## C API updates
 
@@ -815,8 +815,6 @@ The following deprecated APIs are removed.
 [GH-rubygems-6149]:   https://github.com/rubygems/rubygems/pull/6149
 [GH-rubygems-6167]:   https://github.com/rubygems/rubygems/pull/6167
 [sec-156615]:         https://hackerone.com/reports/156615
-[ruby-3-2-irb]:       https://st0012.dev/whats-new-in-ruby-3-2-irb
 [CVE-2021-33621]:     https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
 [wasm/README.md]:     https://github.com/ruby/ruby/blob/master/wasm/README.md
 [ruby.wasm]:          https://github.com/ruby/ruby.wasm
-[GH-logger-releases]: https://github.com/ruby/logger/releases
