@@ -19,11 +19,21 @@ class TestDir < Test::Unit::TestCase
         @dirs << File.join(i, "")
       end
     end
+    @envs = nil
   end
 
   def teardown
     $VERBOSE = @verbose
     FileUtils.remove_entry_secure @root if File.directory?(@root)
+    ENV.update(@envs) if @envs
+  end
+
+  def setup_envs(envs = %w"HOME LOGDIR")
+    @envs ||= {}
+    envs.each do |e, v|
+      @envs[e] = ENV.delete(e)
+      ENV[e] = v if v
+    end
   end
 
   def test_seek
@@ -88,10 +98,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_chdir
     pwd = Dir.pwd
-    env_home = ENV["HOME"]
-    env_logdir = ENV["LOGDIR"]
-    ENV.delete("HOME")
-    ENV.delete("LOGDIR")
+    setup_envs
 
     assert_raise(Errno::ENOENT) { Dir.chdir(@nodir) }
     assert_raise(ArgumentError) { Dir.chdir }
@@ -125,8 +132,6 @@ class TestDir < Test::Unit::TestCase
     rescue
       abort("cannot return the original directory: #{ pwd }")
     end
-    ENV["HOME"] = env_home
-    ENV["LOGDIR"] = env_logdir
   end
 
   def test_chdir_conflict
@@ -519,10 +524,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_home
-    env_home = ENV["HOME"]
-    env_logdir = ENV["LOGDIR"]
-    ENV.delete("HOME")
-    ENV.delete("LOGDIR")
+    setup_envs
 
     ENV["HOME"] = @nodir
     assert_nothing_raised(ArgumentError) do
@@ -540,9 +542,6 @@ class TestDir < Test::Unit::TestCase
     %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
       assert_raise_with_message(ArgumentError, /#{user}/) {Dir.home(user)}
     end
-  ensure
-    ENV["HOME"] = env_home
-    ENV["LOGDIR"] = env_logdir
   end
 
   def test_symlinks_not_resolved
