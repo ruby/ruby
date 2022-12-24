@@ -109,6 +109,13 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def mjit_cancel_all(reason)
+      Primitive.cstmt! %{
+        mjit_cancel_all(RSTRING_PTR(reason));
+        return Qnil;
+      }
+    end
+
     # Convert encoded VM pointers to insn BINs.
     def rb_vm_insn_decode(encoded)
       Primitive.cexpr! 'INT2NUM(rb_vm_insn_decode(NUM2PTR(encoded)))'
@@ -168,6 +175,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.VM_METHOD_TYPE_ISEQ
     Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
+  end
+
+  def C.RUBY_EVENT_CLASS
+    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_CLASS) }
   end
 
   def C.SHAPE_CAPACITY_CHANGE
