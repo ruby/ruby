@@ -30,6 +30,9 @@ module RubyVM::MJIT
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
     def call(iseq)
+      # TODO: Support has_opt
+      return if iseq.body.param.flags.has_opt
+
       asm = X86Assembler.new
       compile_prologue(asm)
       compile_block(asm, iseq)
