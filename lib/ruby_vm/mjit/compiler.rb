@@ -30,8 +30,6 @@ module RubyVM::MJIT
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
     def call(iseq)
-      return if iseq.body.location.label == '<main>'
-
       asm = X86Assembler.new
       compile_prologue(asm)
       compile_block(asm, iseq)
