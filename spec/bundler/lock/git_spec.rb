@@ -90,6 +90,42 @@ RSpec.describe "bundle lock with git gems" do
     expect(err).to be_empty
   end
 
+  it "properly fetches a git source locked to an annotated tag" do
+    # Create an annotated tag
+    git("tag -a v1.0 -m 'Annotated v1.0'", lib_path("foo-1.0"))
+    annotated_tag = git("rev-parse v1.0", lib_path("foo-1.0"))
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem 'foo', :git => "#{lib_path("foo-1.0")}"
+    G
+
+    lockfile <<-L
+      GIT
+        remote: #{lib_path("foo-1.0")}
+        revision: #{annotated_tag}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(err).to be_empty
+  end
+
   it "provides correct #full_gem_path" do
     run <<-RUBY
       puts Bundler.rubygems.find_name('foo').first.full_gem_path

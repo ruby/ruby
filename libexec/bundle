@@ -15,7 +15,7 @@ else
   require "bundler"
 end
 
-if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::Version.new("3.0.a") && !ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"]
+if Gem.rubygems_version < Gem::Version.new("3.2.3") && Gem.ruby_version < Gem::Version.new("2.7.a") && !ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"]
   Bundler.ui.warn \
     "Your RubyGems version (#{Gem::VERSION}) has a bug that prevents " \
     "`required_ruby_version` from working for Bundler. Any scripts that use " \
