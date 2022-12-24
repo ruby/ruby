@@ -13,6 +13,11 @@ module RubyVM::MJIT
   Qnil = Fiddle::Qnil
   Qundef = Fiddle::Qundef
 
+  # Fixed registers
+  EC  = :rdi # TODO: change this
+  CFP = :rsi # TODO: change this
+  SP  = :rbx
+
   class Compiler
     attr_accessor :write_pos
 
@@ -65,10 +70,10 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_prologue(asm)
       # Save callee-saved registers used by JITed code
-      asm.push(:rbx)
+      asm.push(SP)
 
       # Load sp to a register
-      asm.mov(:rbx, [:rsi, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
+      asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
     end
 
     # @param asm [RubyVM::MJIT::X86Assembler]
@@ -103,16 +108,16 @@ module RubyVM::MJIT
     def compile_exit(ctx, asm, exit_pc)
       # update pc
       asm.mov(:rax, exit_pc) # rax = exit_pc
-      asm.mov([:rsi, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
 
       # update sp
       if ctx.stack_size > 0
-        asm.add(:rbx, C.VALUE.size * ctx.stack_size) # rbx += stack_size
-        asm.mov([:rsi, C.rb_control_frame_t.offsetof(:sp)], :rbx) # cfp->sp = rbx
+        asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
       end
 
       # Restore callee-saved registers
-      asm.pop(:rbx)
+      asm.pop(SP)
 
       asm.mov(:rax, Qundef)
       asm.ret
