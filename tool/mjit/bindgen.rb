@@ -353,10 +353,11 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_ISEQ
     ],
     UINT: %w[
-      SHAPE_ID_NUM_BITS
+      RUBY_EVENT_CLASS
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
+      SHAPE_ID_NUM_BITS
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
       SHAPE_ROOT

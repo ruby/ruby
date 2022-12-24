@@ -5324,13 +5324,11 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
-#ifndef MJIT_HEADER
-    // MJIT and YJIT can't be on at the same time, so there is no need to
-    // notify YJIT about changes to the IC when running inside MJIT code.
+
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
     rb_yjit_constant_ic_update(iseq, ic, pos);
-#endif
+    rb_mjit_constant_ic_update(iseq, ic, pos);
 }
 
 static VALUE

@@ -11515,6 +11515,7 @@ ractor.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ractor.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ractor.$(OBJEXT): $(CCAN_DIR)/str/str.h
+ractor.$(OBJEXT): $(hdrdir)/ruby.h
 ractor.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/array.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -11710,6 +11711,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 ractor.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 ractor.$(OBJEXT): {$(VPATH)}method.h
 ractor.$(OBJEXT): {$(VPATH)}missing.h
+ractor.$(OBJEXT): {$(VPATH)}mjit.h
 ractor.$(OBJEXT): {$(VPATH)}node.h
 ractor.$(OBJEXT): {$(VPATH)}onigmo.h
 ractor.$(OBJEXT): {$(VPATH)}oniguruma.h

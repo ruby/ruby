@@ -69,10 +69,9 @@ jobs:
       - run: make incs
       - run: make
       - run: sudo make -s install
-      - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       # - name: Run test-all
@@ -82,7 +81,7 @@ jobs:
       #   timeout-minutes: 60
       - name: Run test-spec
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0

@@ -1177,6 +1177,18 @@ class TestMJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_cancel_by_bop_redefinition
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, call_threshold: 2)
+    begin;
+      class Integer
+        def <(x)
+          true
+        end
+      end
+      2.times {}
+    end;
+  end
+
   def test_caller_locations_without_catch_table
     out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2)
     begin;
