@@ -84,7 +84,7 @@ endif
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-tool test-ruby test-all \
-	test-spec test-syntax-suggest \
+	test-spec test-syntax-suggest-prepare test-syntax-suggest \
 	test-bundler-prepare test-bundler test-bundler-parallel \
 	test-bundled-gems-precheck test-bundled-gems-fetch \
 	test-bundled-gems-prepare test-bundled-gems-run \
