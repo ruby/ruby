@@ -311,7 +311,16 @@ module Bundler
     def prepare_dependencies(requirements, packages)
       to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
         name = dep_package.name
-        next if dep_package.platforms.empty?
+
+        # If a dependency is scoped to a platform different from the current
+        # one, we ignore it. However, it may reappear during resolution as a
+        # transitive dependency of another package, so we need to reset the
+        # package so the proper versions are considered if reintroduced later.
+        if dep_package.platforms.empty?
+          @packages.delete(name)
+          next
+        end
+
         next [dep_package, dep_constraint] if name == "bundler"
         next [dep_package, dep_constraint] unless versions_for(dep_package, dep_constraint.range).empty?
         next unless dep_package.current_platform?
