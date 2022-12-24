@@ -348,13 +348,6 @@ mjit_child_after_fork(void)
     // TODO: remove this
 }
 
-// Called by rb_vm_mark()
-void
-mjit_mark(void)
-{
-    // TODO: implement
-}
-
 void
 mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
@@ -390,6 +383,21 @@ rb_mjit_compile(const rb_iseq_t *iseq)
 
     mjit_call_p = original_call_p;
     RB_VM_LOCK_LEAVE();
+}
+
+// Called by rb_vm_mark()
+void
+mjit_mark(void)
+{
+    if (!mjit_enabled)
+        return;
+    RUBY_MARK_ENTER("mjit");
+
+    // Mark objects used by the MJIT compiler
+    rb_gc_mark(rb_MJITCompiler);
+    rb_gc_mark(rb_cMJITIseqPtr);
+
+    RUBY_MARK_LEAVE("mjit");
 }
 
 void
