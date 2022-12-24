@@ -1240,7 +1240,7 @@ static VALUE rb_mMJITHooks = 0;
 MJIT_FUNC_EXPORTED void
 rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_DISABLED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_bop_redefined"), 2, INT2NUM(redefined_flag), INT2NUM((int)bop));
     });
@@ -1250,7 +1250,7 @@ rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 MJIT_FUNC_EXPORTED void
 rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_DISABLED({
         VALUE cme_klass = rb_funcall(rb_mMJITC, rb_intern("rb_callable_method_entry_struct"), 0);
         VALUE cme_ptr = rb_funcall(cme_klass, rb_intern("new"), 1, SIZET2NUM((size_t)cme));
@@ -1262,7 +1262,7 @@ rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
 void
 rb_mjit_before_ractor_spawn(void)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_DISABLED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_ractor_spawn"), 0);
     });
@@ -1271,7 +1271,7 @@ rb_mjit_before_ractor_spawn(void)
 static void
 mjit_constant_state_changed(void *data)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     ID id = (ID)data;
     WITH_MJIT_DISABLED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_constant_state_changed"), 1, ID2SYM(id));
@@ -1282,7 +1282,7 @@ mjit_constant_state_changed(void *data)
 MJIT_FUNC_EXPORTED void
 rb_mjit_constant_state_changed(ID id)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     // Asynchronously hook the Ruby code since this is hooked during a "Ruby critical section".
     extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data);
     rb_workqueue_register(0, mjit_constant_state_changed, (void *)id);
@@ -1292,7 +1292,7 @@ rb_mjit_constant_state_changed(ID id)
 MJIT_FUNC_EXPORTED void
 rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_DISABLED({
         VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
         VALUE ic_ptr = rb_funcall(rb_cMJITICPtr, rb_intern("new"), 1, SIZET2NUM((size_t)ic));
@@ -1304,7 +1304,7 @@ rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx
 MJIT_FUNC_EXPORTED void
 rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
-    if (!mjit_enabled || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_DISABLED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });
