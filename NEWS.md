@@ -397,7 +397,13 @@ Note: We're only listing outstanding class updates.
 * Bundler
 
     * Bundler now uses [PubGrub] resolver instead of [Molinillo] for performance improvement.
-    * Add support for `bundle gem --ext=rust` command. [[GH-rubygems-6149]]
+    * Add --ext=rust support to bundle gem for creating simple gems with Rust extensions.
+      [[GH-rubygems-6149]]
+    * Make cloning git repos faster [[GH-rubygems-4475]]
+
+* RubyGems
+
+    * Add mswin support for cargo builder. [[GH-rubygems-6167]]
 
 * CGI
 
@@ -805,7 +811,9 @@ The following deprecated APIs are removed.
 [GH-pathname-20]:     https://github.com/ruby/pathname/pull/20
 [GH-6791]:            https://github.com/ruby/ruby/pull/6791
 [GH-6868]:            https://github.com/ruby/ruby/pull/6868
+[GH-rubygems-4475]:   https://github.com/rubygems/rubygems/pull/4475
 [GH-rubygems-6149]:   https://github.com/rubygems/rubygems/pull/6149
+[GH-rubygems-6167]:   https://github.com/rubygems/rubygems/pull/6167
 [sec-156615]:         https://hackerone.com/reports/156615
 [ruby-3-2-irb]:       https://st0012.dev/whats-new-in-ruby-3-2-irb
 [CVE-2021-33621]:     https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
