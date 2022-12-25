@@ -640,7 +640,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	-$(Q)$(RMALL) yjit/target
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit 2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
 	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || $(NULLCMD)
