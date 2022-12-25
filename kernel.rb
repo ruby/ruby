@@ -181,11 +181,14 @@ module Kernel
     unless Primitive.block_given_p
       return enum_for(:loop) { Float::INFINITY }
     end
-    while true
-      yield
+
+    begin
+      while true
+        yield
+      end
+    rescue StopIteration => e
+      e.result
     end
-  rescue StopIteration => e
-    e.result
   end
 
   #
