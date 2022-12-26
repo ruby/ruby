@@ -1440,64 +1440,6 @@ rb_yield_block(RB_BLOCK_CALL_FUNC_ARGLIST(val, arg))
                                rb_keyword_given_p());
 }
 
-static VALUE
-loop_i(VALUE _)
-{
-    for (;;) {
-        rb_yield_0(0, 0);
-    }
-    return Qnil;
-}
-
-static VALUE
-loop_stop(VALUE dummy, VALUE exc)
-{
-    return rb_attr_get(exc, id_result);
-}
-
-static VALUE
-rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
-{
-    return DBL2NUM(HUGE_VAL);
-}
-
-/*
- *  call-seq:
- *     loop { block }
- *     loop            -> an_enumerator
- *
- *  Repeatedly executes the block.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     loop do
- *       print "Input: "
- *       line = gets
- *       break if !line or line =~ /^q/i
- *       # ...
- *     end
- *
- *  StopIteration raised in the block breaks the loop.  In this case,
- *  loop returns the "result" value stored in the exception.
- *
- *     enum = Enumerator.new { |y|
- *       y << "one"
- *       y << "two"
- *       :ok
- *     }
- *
- *     result = loop {
- *       puts enum.next
- *     } #=> :ok
- */
-
-static VALUE
-rb_f_loop(VALUE self)
-{
-    RETURN_SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
-    return rb_rescue2(loop_i, (VALUE)0, loop_stop, (VALUE)0, rb_eStopIteration, (VALUE)0);
-}
-
 #if VMDEBUG
 static const char *
 vm_frametype_name(const rb_control_frame_t *cfp);
@@ -2579,8 +2521,6 @@ Init_vm_eval(void)
 
     rb_define_global_function("catch", rb_f_catch, -1);
     rb_define_global_function("throw", rb_f_throw, -1);
-
-    rb_define_global_function("loop", rb_f_loop, 0);
 
     rb_define_method(rb_cBasicObject, "instance_eval", rb_obj_instance_eval_internal, -1);
     rb_define_method(rb_cBasicObject, "instance_exec", rb_obj_instance_exec_internal, -1);

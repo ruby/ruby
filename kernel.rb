@@ -150,6 +150,47 @@ module Kernel
 
   module_function
 
+  # call-seq:
+  #    loop { block }
+  #    loop            -> an_enumerator
+  #
+  # Repeatedly executes the block.
+  #
+  # If no block is given, an enumerator is returned instead.
+  #
+  #    loop do
+  #      print "Input: "
+  #      line = gets
+  #      break if !line or line =~ /^q/i
+  #      # ...
+  #    end
+  #
+  # StopIteration raised in the block breaks the loop.  In this case,
+  # loop returns the "result" value stored in the exception.
+  #
+  #    enum = Enumerator.new { |y|
+  #      y << "one"
+  #      y << "two"
+  #      :ok
+  #    }
+  #
+  #    result = loop {
+  #      puts enum.next
+  #    } #=> :ok
+  def loop
+    unless Primitive.block_given_p
+      return enum_for(:loop) { Float::INFINITY }
+    end
+
+    begin
+      while true
+        yield
+      end
+    rescue StopIteration => e
+      e.result
+    end
+  end
+
   #
   #  call-seq:
   #     Float(arg, exception: true)    -> float or nil
