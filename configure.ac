@@ -2648,6 +2648,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         [i386-openbsd*], [
             coroutine_type=x86
         ],
+        [aarch64-openbsd*], [
+            coroutine_type=arm64
+        ],
         [*-openbsd*], [
             coroutine_type=pthread
         ],
