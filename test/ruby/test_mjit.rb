@@ -1191,6 +1191,7 @@ class TestMJIT < Test::Unit::TestCase
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, call_threshold: 2)
     begin;
       class Integer
+        alias < <
         def <(x)
           true
         end
