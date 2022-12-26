@@ -227,6 +227,12 @@ class TestAst < Test::Unit::TestCase
     assert_equal node.node_id, node_id
   end
 
+  def test_node_id_for_backtrace_location_raises_argument_error
+    bug19262 = '[ruby-core:111435]'
+
+    assert_raise(TypeError, bug19262) { RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(1) }
+  end
+
   def test_of_proc_and_method
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
