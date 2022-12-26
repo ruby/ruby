@@ -96,7 +96,7 @@ module Bundler
       handle_error if failed_specs.any?
       @specs
     ensure
-      worker_pool && worker_pool.stop
+      worker_pool&.stop
     end
 
     def check_for_unmet_dependencies

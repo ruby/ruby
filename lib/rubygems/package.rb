@@ -616,8 +616,7 @@ EOM
 
     verify_checksums @digests, @checksums
 
-    @security_policy.verify_signatures @spec, @digests, @signatures if
-      @security_policy
+    @security_policy&.verify_signatures @spec, @digests, @signatures
 
     true
   rescue Gem::Security::Exception
