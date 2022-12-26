@@ -15,6 +15,7 @@ Note: We're only listing outstanding class updates.
 
 *   The following default gems are updated.
 
+    * abbrev 0.1.1
 *   The following bundled gems are updated.
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
