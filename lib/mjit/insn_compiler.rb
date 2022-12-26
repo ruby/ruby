@@ -3,20 +3,28 @@ module RubyVM::MJIT
   # cfp: rsi
   #  sp: rbx
   # scratch regs: rax
-  class Codegen
+  class InsnCompiler
+    # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
-    def putnil(ctx, asm)
+    def putnil(jit, ctx, asm)
       asm.mov([SP], Qnil)
       ctx.stack_size += 1
       KeepCompiling
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
-    def leave(ctx, asm)
+    def leave(jit, ctx, asm)
       assert_eq!(ctx.stack_size, 1)
-      # TODO: Check interrupts
+
+      # Check interrupts
+      asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
+      asm.test(:eax, :eax)
+      asm.jz(not_interrupted = asm.new_label(:not_interrupted))
+      Compiler.compile_exit(jit, ctx, asm) # TODO: use ocb
+      asm.write_label(not_interrupted)
 
       # Pop the current frame (ec->cfp++)
       asm.add(CFP, C.rb_control_frame_t.size) # cfp = cfp + 1

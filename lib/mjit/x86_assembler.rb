@@ -2,6 +2,8 @@
 # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
 module RubyVM::MJIT
   class X86Assembler
+    class Label < Data.define(:id, :name); end
+
     ByteWriter = CType::Immediate.parse('char')
 
     ### prefix ###
@@ -10,9 +12,12 @@ module RubyVM::MJIT
 
     def initialize
       @bytes = []
+      @label_id = 0
+      @labels = {}
     end
 
     def compile(addr)
+      link_labels
       writer = ByteWriter.new(addr)
       # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
       # So writing byte by byte to avoid hitting that situation.
@@ -41,8 +46,25 @@ module RubyVM::MJIT
       end
     end
 
+    # JZ rel8
+    # @param [RubyVM::MJIT::X86Assembler::Label] label
+    def jz(label)
+      # 74 cb
+      insn(opcode: 0x74)
+      @bytes.push(label)
+    end
+
     def mov(dst, src)
       case [dst, src]
+      # MOV r32 r/m32 (Mod 01)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r32?(dst_reg) && imm8?(src_disp)
+        # 8B /r
+        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+        insn(
+          opcode: 0x8b,
+          mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
+          disp: src_disp,
+        )
       # MOV r/m64, imm32 (Mod 00)
       in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg)
         # REX.W + C7 /0 id
@@ -73,14 +95,14 @@ module RubyVM::MJIT
           imm: imm64(src_imm),
         )
       # MOV r/m64, r64
-      in [[Symbol => dst_reg, Integer => dst_offset], Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg) && imm8?(dst_offset)
+      in [[Symbol => dst_reg, Integer => dst_disp], Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg) && imm8?(dst_disp)
         # REX.W + 89 /r
         # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
         insn(
           prefix: REX_W,
           opcode: 0x89,
           mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
-          disp: dst_offset,
+          disp: dst_disp,
         )
       # MOV r64, r/m64 (Mod 00)
       in [Symbol => dst_reg, [Symbol => src_reg]] if r64?(dst_reg) && r64?(src_reg)
@@ -134,6 +156,30 @@ module RubyVM::MJIT
     def ret
       # Near return: A return to a procedure within the current code segment
       insn(opcode: 0xc3)
+    end
+
+    def test(left, right)
+      case [left, right]
+      # TEST r/m32, r32 (Mod 11)
+      in [Symbol => left_reg, Symbol => right_reg] if r32?(left_reg) && r32?(right_reg)
+        # 85 /r
+        # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
+        insn(
+          opcode: 0x85,
+          mod_rm: mod_rm(mod: 0b11, reg: reg_code(right_reg), rm: reg_code(left_reg)), # Mod 11: reg
+        )
+      else
+        raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
+    def new_label(name)
+      Label.new(id: @label_id += 1, name:)
+    end
+
+    # @param [RubyVM::MJIT::X86Assembler::Label] label
+    def write_label(label)
+      @labels[label] = @bytes.size
     end
 
     private
@@ -235,24 +281,40 @@ module RubyVM::MJIT
     end
 
     def imm8?(imm)
-      # TODO: consider negative values
-      imm <= 0xff
+      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
+      imm <= 0x7f # TODO: consider uimm
     end
 
     def imm32?(imm)
-      # TODO: consider negative values
+      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
       # TODO: consider rejecting small values
-      imm <= 0xffff_ffff
+      imm <= 0x7fff_ffff # TODO: consider uimm
     end
 
     def imm64?(imm)
-      # TODO: consider negative values
+      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
       # TODO: consider rejecting small values
-      imm <= 0xffff_ffff_ffff_ffff
+      imm <= 0x7fff_ffff_ffff_ffff # TODO: consider uimm
+    end
+
+    def r32?(reg)
+      reg.start_with?('e')
     end
 
     def r64?(reg)
       reg.start_with?('r')
+    end
+
+    def link_labels
+      @bytes.each_with_index do |byte, index|
+        if byte.is_a?(Label)
+          src_index = index + 1 # offset 1 byte for rel8 itself
+          dst_index = @labels.fetch(byte)
+          rel8 = dst_index - src_index
+          raise "unexpected offset: #{rel8}" unless imm8?(rel8)
+          @bytes[index] = rel8
+        end
+      end
     end
   end
 end

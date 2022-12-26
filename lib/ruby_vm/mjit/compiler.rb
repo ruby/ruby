@@ -1,6 +1,7 @@
-require 'mjit/codegen'
 require 'mjit/context'
+require 'mjit/insn_compiler'
 require 'mjit/instruction'
+require 'mjit/jit_state'
 require 'mjit/x86_assembler'
 
 module RubyVM::MJIT
@@ -21,11 +22,32 @@ module RubyVM::MJIT
   class Compiler
     attr_accessor :write_pos
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::X86Assembler]
+    def self.compile_exit(jit, ctx, asm)
+      # update pc
+      asm.mov(:rax, jit.pc) # rax = jit.pc
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
+
+      # update sp
+      if ctx.stack_size > 0
+        asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
+      end
+
+      # Restore callee-saved registers
+      asm.pop(SP)
+
+      asm.mov(:rax, Qundef)
+      asm.ret
+    end
+
     # @param mem_block [Integer] JIT buffer address
     def initialize(mem_block)
       @mem_block = mem_block
       @write_pos = 0
-      @codegen = Codegen.new
+      @insn_compiler = InsnCompiler.new
     end
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
@@ -79,49 +101,34 @@ module RubyVM::MJIT
 
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_block(asm, iseq)
+      jit = JITState.new
       ctx = Context.new
+
       index = 0
       while index < iseq.body.iseq_size
         insn = decode_insn(iseq.body.iseq_encoded[index])
-        case compile_insn(ctx, asm, insn)
+        jit.pc = (iseq.body.iseq_encoded + index).to_i
+
+        case compile_insn(jit, ctx, asm, insn)
         when EndBlock
           break
         when CantCompile
-          compile_exit(ctx, asm, (iseq.body.iseq_encoded + index).to_i)
+          self.class.compile_exit(jit, ctx, asm)
           break
         end
         index += insn.len
       end
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
-    def compile_insn(ctx, asm, insn)
+    def compile_insn(jit, ctx, asm, insn)
       case insn.name
-      when :putnil then @codegen.putnil(ctx, asm)
-      when :leave  then @codegen.leave(ctx, asm)
+      when :putnil then @insn_compiler.putnil(jit, ctx, asm)
+      when :leave  then @insn_compiler.leave(jit, ctx, asm)
       else CantCompile
       end
-    end
-
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
-    def compile_exit(ctx, asm, exit_pc)
-      # update pc
-      asm.mov(:rax, exit_pc) # rax = exit_pc
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
-
-      # update sp
-      if ctx.stack_size > 0
-        asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
-        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
-      end
-
-      # Restore callee-saved registers
-      asm.pop(SP)
-
-      asm.mov(:rax, Qundef)
-      asm.ret
     end
 
     def decode_insn(encoded)
@@ -130,7 +137,7 @@ module RubyVM::MJIT
 
     def dump_disasm(from, to)
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|
-        puts "  0x#{"%p" % address}: #{mnemonic} #{op_str}"
+        puts "  0x#{"%x" % address}: #{mnemonic} #{op_str}"
       end
       puts
     end
