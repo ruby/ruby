@@ -302,6 +302,15 @@ module SyncDefaultGems
       `git checkout ext/strscan/depend`
     when "racc"
       rm_rf(%w[lib/racc lib/racc.rb ext/racc test/racc])
+      parser_files = %w[
+        lib/racc/parser-text.rb
+      ]
+      Dir.chdir(upstream) do
+        `bundle install`
+        parser_files.each do |file|
+          `bundle exec rake #{file}`
+        end
+      end
       cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
       mkdir_p("ext/racc/cparse")
       cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
