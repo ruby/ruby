@@ -14,6 +14,10 @@ else
   end
 end
 
+unless GC::INTERNAL_CONSTANTS[:RB_BUG_INSTEAD_OF_RB_MEMERROR]
+  MSpec.enable_feature :no_memory_error
+end
+
 unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb
   mspec_lib = File.expand_path("../../mspec/lib", __FILE__)
   $LOAD_PATH << mspec_lib if File.directory?(mspec_lib)
