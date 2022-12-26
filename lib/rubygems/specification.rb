@@ -1041,7 +1041,7 @@ class Gem::Specification < Gem::BasicSpecification
       next if s.activated?
       s.contains_requirable_file? path
     end
-    stub && stub.to_spec
+    stub&.to_spec
   end
 
   def self.find_active_stub_by_path(path)
@@ -1626,7 +1626,7 @@ class Gem::Specification < Gem::BasicSpecification
         builder.build_extensions
       end
     ensure
-      ui.close if ui
+      ui&.close
       Gem::Specification.unresolved_deps.replace unresolved_deps
     end
   end

@@ -11,7 +11,7 @@ module Bundler
     def run
       Bundler.definition.validate_runtime!
       path_option = options["path"]
-      path_option = nil if path_option && path_option.empty?
+      path_option = nil if path_option&.empty?
       Bundler.settings.set_command_option :bin, path_option if options["path"]
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
       installer = Installer.new(Bundler.root, Bundler.definition)

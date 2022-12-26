@@ -1612,7 +1612,7 @@ class Object
       if val_or_callable.respond_to? :call
         val_or_callable.call(*args, &blk)
       else
-        blk.call(*block_args) if blk
+        blk&.call(*block_args)
         val_or_callable
       end
     end

@@ -33,7 +33,7 @@ module Bundler
     def default_gem_spec(gem_name)
       return unless Gem::Specification.respond_to?(:find_all_by_name)
       gem_spec = Gem::Specification.find_all_by_name(gem_name).last
-      return gem_spec if gem_spec && gem_spec.respond_to?(:default_gem?) && gem_spec.default_gem?
+      return gem_spec if gem_spec&.default_gem?
     end
 
     def spec_not_found(gem_name)
