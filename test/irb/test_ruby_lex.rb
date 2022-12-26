@@ -706,6 +706,69 @@ module TestIRB
       end
     end
 
+    def test_corresponding_token_depth_with_heredoc_and_embdoc
+      reference_code = <<~EOC.chomp
+        if true
+          hello
+          p(
+          )
+      EOC
+      code_with_heredoc = <<~EOC.chomp
+        if true
+          <<~A
+          A
+          p(
+          )
+      EOC
+      code_with_embdoc = <<~EOC.chomp
+        if true
+        =begin
+        =end
+          p(
+          )
+      EOC
+      [reference_code, code_with_heredoc, code_with_embdoc].each do |code|
+        lex = RubyLex.new
+        lines = code.lines
+        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
+        assert_equal 2, lex.check_corresponding_token_depth(lines, lines.size)
+      end
+    end
+
+    def test_find_prev_spaces_with_multiline_literal
+      lex = RubyLex.new
+      reference_code = <<~EOC.chomp
+        if true
+          1
+          hello
+          1
+          world
+        end
+      EOC
+      code_with_percent_string = <<~EOC.chomp
+        if true
+          %w[
+            hello
+          ]
+          world
+        end
+      EOC
+      code_with_quoted_string = <<~EOC.chomp
+        if true
+          '
+            hello
+          '
+          world
+        end
+      EOC
+      [reference_code, code_with_percent_string, code_with_quoted_string].each do |code|
+        lex = RubyLex.new
+        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
+        prev_spaces = (1..code.lines.size).map { |index| lex.find_prev_spaces index }
+        assert_equal [0, 2, 2, 2, 2, 0], prev_spaces
+      end
+    end
+
     private
 
     def build_context(local_variables = nil)

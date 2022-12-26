@@ -376,50 +376,6 @@ module TestIRB
       assert_match(/Please specify the file name./, out)
     end
 
-    def test_help
-      IRB.init_config(nil)
-      input = TestInputMethod.new([
-          "help 'String#gsub'\n",
-          "\n",
-        ])
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      out, err = capture_output do
-        irb.eval_input
-      end
-
-      # the former is what we'd get without document content installed, like on CI
-      # the latter is what we may get locally
-      possible_rdoc_output = [/Nothing known about String#gsub/, /Returns a copy of self with all occurrences of the given pattern/]
-      assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the help command to match one of the possible outputs")
-    ensure
-      # this is the only way to reset the redefined method without coupling the test with its implementation
-      load "irb/cmd/help.rb"
-    end
-
-    def test_help_without_rdoc
-      IRB.init_config(nil)
-      input = TestInputMethod.new([
-          "help 'String#gsub'\n",
-          "\n",
-        ])
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:VERBOSE] = false
-      irb = IRB::Irb.new(IRB::WorkSpace.new(self), input)
-      out, err = capture_output do
-        without_rdoc do
-          irb.eval_input
-        end
-      end
-
-      # if it fails to require rdoc, it only returns the command object
-      assert_match(/=> IRB::ExtendCommand::Help\n/, out)
-    ensure
-      # this is the only way to reset the redefined method without coupling the test with its implementation
-      load "irb/cmd/help.rb"
-    end
-
     def test_irb_load
       File.write("#{@tmpdir}/a.rb", "a = 'hi'\n")
       out, err = execute_lines(
