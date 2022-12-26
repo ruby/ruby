@@ -10,8 +10,8 @@ In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have a static type, and data themselves have
 types, so data will need to be converted between the languages.
 
-Data in Ruby are represented by the C type `VALUE'.  Each VALUE data
-has its data type.
+Objects in Ruby are represented by the C type `VALUE'.  Each VALUE
+data has its data type.
 
 To retrieve C data from a VALUE, you need to:
 
@@ -20,7 +20,7 @@ To retrieve C data from a VALUE, you need to:
 
 Converting to the wrong data type may cause serious problems.
 
-=== Data Types
+=== Ruby data types
 
 The Ruby interpreter has the following data types:
 
@@ -54,7 +54,7 @@ T_ZOMBIE    :: object awaiting finalization
 
 Most of the types are represented by C structures.
 
-=== Check Data Type of the VALUE
+=== Check type of the VALUE data
 
 The macro TYPE() defined in ruby.h shows the data type of the VALUE.
 TYPE() returns the constant number T_XXXX described above.  To handle
@@ -88,7 +88,7 @@ There are also faster check macros for fixnums and nil.
   FIXNUM_P(obj)
   NIL_P(obj)
 
-=== Convert VALUE into C Data
+=== Convert VALUE into C data
 
 The data for type T_NIL, T_FALSE, T_TRUE are nil, false, true
 respectively.  They are singletons for the data type.
@@ -143,7 +143,7 @@ Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
 interesting bugs.
 
-=== Convert C Data into VALUE
+=== Convert C data into VALUE
 
 To convert C data to Ruby values:
 
@@ -169,7 +169,7 @@ INT2NUM() :: for arbitrary sized integers.
 INT2NUM() converts an integer into a Bignum if it is out of the FIXNUM
 range, but is a bit slower.
 
-=== Manipulating Ruby Data
+=== Manipulating Ruby object
 
 As I already mentioned, it is not recommended to modify an object's
 internal structure.  To manipulate objects, use the functions supplied
@@ -636,7 +636,7 @@ The prototypes of the getter and setter functions are as follows:
   VALUE (*getter)(ID id);
   void (*setter)(VALUE val, ID id);
 
-=== Encapsulate C Data into a Ruby Object
+=== Encapsulate C data into a Ruby object
 
 Sometimes you need to expose your struct in the C world as a Ruby
 object.
@@ -762,7 +762,7 @@ You can allocate and wrap the structure in one step.
 
   TypedData_Make_Struct(klass, type, data_type, sval)
 
-This macro returns an allocated Data object, wrapping the pointer to
+This macro returns an allocated T_DATA object, wrapping the pointer to
 the structure, which is also allocated.  This macro works like:
 
   (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
@@ -773,7 +773,7 @@ be assigned to sval, which should be a pointer of the type specified.
 
 ==== Ruby object to C struct
 
-To retrieve the C pointer from the Data object, use the macro
+To retrieve the C pointer from the T_DATA object, use the macro
 TypedData_Get_Struct().
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
@@ -1225,7 +1225,7 @@ Data_Get_Struct(data, type, sval) ::
   This macro retrieves the pointer value from DATA, and assigns it to
   the variable sval.
 
-=== Checking Data Types
+=== Checking VALUE types
 
 RB_TYPE_P(value, type) ::
 
@@ -1255,7 +1255,7 @@ void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError
 
-=== Data Type Conversion
+=== VALUE type conversion
 
 FIX2INT(value), INT2FIX(i) ::
 
