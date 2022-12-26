@@ -177,12 +177,18 @@ Note: We're only listing outstanding class updates.
       lean and strict API. [[Feature #16122]]
 
         ```ruby
-        Measure = Data.define(:amount, :unit)
+        Measure = Data.define(:amount, :unit) do
+          # Custom method to present data
+          def value
+            "#{amount} #{unit}"
+          end
+        end
         distance = Measure.new(100, 'km')            #=> #<data Measure amount=100, unit="km">
         weight = Measure.new(amount: 50, unit: 'kg') #=> #<data Measure amount=50, unit="kg">
         weight.with(amount: 40)                      #=> #<data Measure amount=40, unit="kg">
         weight.amount                                #=> 50
         weight.amount = 40                           #=> NoMethodError: undefined method `amount='
+        weight.value                                 #=> "50 kg"
         ```
 
 * Encoding
