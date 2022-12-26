@@ -1820,10 +1820,12 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     arg.self = self;
     arg.unknown_keywords = Qnil;
     rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    // Freeze early before potentially raising, so that we don't leave an
+    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
+    OBJ_FREEZE_RAW(self);
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
-    OBJ_FREEZE_RAW(self);
     return Qnil;
 }
 
@@ -1875,22 +1877,9 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
         return self;
     }
 
-    VALUE copy = rb_obj_alloc(rb_obj_class(self));
-    rb_struct_init_copy(copy, self);
-
-    struct struct_hash_set_arg arg;
-    arg.self = copy;
-    arg.unknown_keywords = Qnil;
-    rb_hash_foreach(kwargs, struct_hash_set_i, (VALUE)&arg);
-    // Freeze early before potentially raising, so that we don't leave an
-    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
-    RB_OBJ_FREEZE_RAW(copy);
-
-    if (arg.unknown_keywords != Qnil) {
-        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
-    }
-
-    return copy;
+    VALUE h = rb_struct_to_h(self);
+    rb_hash_update_by(h, kwargs, NULL);
+    return rb_class_new_instance_kw(1, &h, rb_obj_class(self), TRUE);
 }
 
 /*
