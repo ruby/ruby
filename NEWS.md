@@ -178,7 +178,7 @@ Note: We're only listing outstanding class updates.
 
         ```ruby
         Measure = Data.define(:amount, :unit) do
-          # Custom method to present data
+          # Custom method to represent data
           def value
             "#{amount} #{unit}"
           end
