@@ -484,6 +484,9 @@ ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 matz: up
 	$(eval MINOR := $(shell expr $(MINOR) + 1))
 	$(eval message := Development of $(MAJOR).$(MINOR).0 started.)
-	$(eval file := include/ruby/version.h)
-	sed -i~ "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" $(srcdir)/$(file)
-	$(GIT) -C $(srcdir) commit -m "$(message)" $(file)
+	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
+	sed -i~ \
+	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
+	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
+	 $(files:%=$(srcdir)/%)
+	$(GIT) -C $(srcdir) commit -m "$(message)" $(files)
