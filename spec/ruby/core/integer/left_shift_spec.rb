@@ -191,7 +191,7 @@ describe "Integer#<< (with n << m)" do
       (0 << bignum_value).should == 0
     end
 
-    ruby_bug "#18518", ""..."3.3" do
+    ruby_bug "#18518", ""..."3.4" do
       it "raises NoMemoryError when m > 0 and n != 0" do
         coerce_long = mock("long")
         coerce_long.stub!(:to_int).and_return(2**40)
