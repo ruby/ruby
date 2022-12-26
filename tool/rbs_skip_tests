@@ -7,3 +7,5 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+
+test_replicate(EncodingTest) Encoding replicate has been removed since Ruby 3.3
