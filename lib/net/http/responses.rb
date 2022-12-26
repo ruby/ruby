@@ -142,7 +142,13 @@ module Net
   #
   # The +OK+ response indicates that the server has received
   # a request and has responded successfully.
-  # See {200 OK}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#200].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-200-ok].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#200].
+  #
   class HTTPOK < HTTPSuccess
     HAS_BODY = true
   end
@@ -151,7 +157,13 @@ module Net
   #
   # The +Created+ response indicates that the server has received
   # and has fulfilled a request to create a new resource.
-  # See {201 Created}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#201].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-201-created].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#201].
+  #
   class HTTPCreated < HTTPSuccess
     HAS_BODY = true
   end
@@ -160,7 +172,13 @@ module Net
   #
   # The +Accepted+ response indicates that the server has received
   # and is processing a request, but the processing has not yet been completed.
-  # See {202 Accepted}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#202].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-202-accepted].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#202].
+  #
   class HTTPAccepted < HTTPSuccess
     HAS_BODY = true
   end
@@ -171,7 +189,13 @@ module Net
   # is a transforming proxy (such as a Web accelerator)
   # that received a 200 OK response from its origin,
   # and is returning a modified version of the origin's response.
-  # See {203 Non-Authoritative Information}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#203].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/203].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-203-non-authoritative-infor].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#203].
+  #
   class HTTPNonAuthoritativeInformation < HTTPSuccess
     HAS_BODY = true
   end
@@ -180,7 +204,13 @@ module Net
   #
   # The <tt>No Content</tt> response indicates that the server
   # successfully processed the request, and is not returning any content.
-  # See {204 No Content}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#204].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-204-no-content].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#204].
+  #
   class HTTPNoContent < HTTPSuccess
     HAS_BODY = false
   end
@@ -190,7 +220,13 @@ module Net
   # The <tt>Reset Content</tt> response indicates that the server
   # successfully processed the request,
   # asks that the client reset its document view, and is not returning any content.
-  # See {205 Reset Content}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#205].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/205].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-205-reset-content].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#205].
+  #
   class HTTPResetContent < HTTPSuccess
     HAS_BODY = false
   end
@@ -200,7 +236,13 @@ module Net
   # The <tt>Partial Content</tt> response indicates that the server is delivering
   # only part of the resource (byte serving)
   # due to a Range header in the request.
-  # See {206 Partial Content}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#206].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-206-partial-content].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#206].
+  #
   class HTTPPartialContent < HTTPSuccess
     HAS_BODY = true
   end
@@ -210,7 +252,11 @@ module Net
   # The <tt>Multi-Status (WebDAV)</tt> response indicates that the server
   # has received the request,
   # and that the message body can contain a number of separate response codes.
-  # See {207 Multi-Status (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#207].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#207].
+  #
   class HTTPMultiStatus < HTTPSuccess
     HAS_BODY = true
   end
@@ -222,7 +268,11 @@ module Net
   # and that the members of a DAV binding have already been enumerated
   # in a preceding part of the (multi-status) response,
   # and are not being included again.
-  # See {208 Already Reported (WebDAV)}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#208].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#208].
+  #
   class HTTPAlreadyReported < HTTPSuccess
     HAS_BODY = true
   end
@@ -232,7 +282,11 @@ module Net
   # The <tt>IM Used</tt> response indicates that the server has fulfilled a request
   # for the resource, and the response is a representation of the result
   # of one or more instance-manipulations applied to the current instance.
-  # See {226 IM Used}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#226].
+  #
+  # References:
+  #
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#226].
+  #
   class HTTPIMUsed < HTTPSuccess
     HAS_BODY = true
   end
@@ -241,7 +295,13 @@ module Net
   #
   # The <tt>Multiple Choices</tt> response indicates that the server
   # offers multiple options for the resource from which the client may choose.
-  # See {300 Multiple Choices}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#300].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/300].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-300-multiple-choices].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#300].
+  #
   class HTTPMultipleChoices < HTTPRedirection
     HAS_BODY = true
   end
@@ -251,7 +311,13 @@ module Net
   #
   # The <tt>Moved Permanently</tt> response indicates that links or records
   # returning this response should be updated to use the given URL.
-  # See {301 Moved Permanently}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#301].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-301-moved-permanently].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#301].
+  #
   class HTTPMovedPermanently < HTTPRedirection
     HAS_BODY = true
   end
@@ -260,7 +326,13 @@ module Net
   #
   # The <tt>Found</tt> response indicates that the client
   # should look at (browse to) another URL.
-  # See {302 Found}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#302].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-302-found].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#302].
+  #
   class HTTPFound < HTTPRedirection
     HAS_BODY = true
   end
@@ -269,7 +341,13 @@ module Net
   # Response class for <tt>See Other</tt> responses (status code 303).
   #
   # The response to the request can be found under another URI using the GET method.
-  # See {303 See Other}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#303].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-303-see-other].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#303].
+  #
   class HTTPSeeOther < HTTPRedirection
     HAS_BODY = true
   end
@@ -278,7 +356,13 @@ module Net
   #
   # Indicates that the resource has not been modified since the version
   # specified by the request headers.
-  # See {304 Not Modified}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#304].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-304-not-modified].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#304].
+  #
   class HTTPNotModified < HTTPRedirection
     HAS_BODY = false
   end
@@ -287,7 +371,12 @@ module Net
   #
   # The requested resource is available only through a proxy,
   # whose address is provided in the response.
-  # See {305 Use Proxy}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#305].
+  #
+  # References:
+  #
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-305-use-proxy].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#305].
+  #
   class HTTPUseProxy < HTTPRedirection
     HAS_BODY = false
   end
@@ -296,7 +385,13 @@ module Net
   #
   # The request should be repeated with another URI;
   # however, future requests should still use the original URI.
-  # See {307 Temporary Redirect}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#307].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-307-temporary-redirect].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#307].
+  #
   class HTTPTemporaryRedirect < HTTPRedirection
     HAS_BODY = true
   end
@@ -304,7 +399,13 @@ module Net
   # Response class for <tt>Permanent Redirect</tt> responses (status code 308).
   #
   # This and all future requests should be directed to the given URI.
-  # See {308 Permanent Redirect}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#308].
+  #
+  # References:
+  #
+  # - {Mozilla}[https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308].
+  # - {RFC 9110}[https://www.rfc-editor.org/rfc/rfc9110.html#name-308-permanent-redirect].
+  # - {Wikipedia}[https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#308].
+  #
   class HTTPPermanentRedirect < HTTPRedirection
     HAS_BODY = true
   end

@@ -483,7 +483,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 #ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
-    EC_KEY *ec;
+    const EC_KEY *ec;
 
     GetPKey(self, pkey);
     GetEC(self, ec);
