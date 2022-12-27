@@ -26,11 +26,13 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
     def self.compile_exit(jit, ctx, asm)
-      # update pc
+      asm.comment("exit to interpreter")
+
+      # Update pc
       asm.mov(:rax, jit.pc) # rax = jit.pc
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
 
-      # update sp
+      # Update sp
       if ctx.stack_size > 0
         asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
@@ -45,6 +47,7 @@ module RubyVM::MJIT
 
     # @param mem_block [Integer] JIT buffer address
     def initialize(mem_block)
+      @comments = Hash.new { |h, k| h[k] = [] }
       @mem_block = mem_block
       @write_pos = 0
       @insn_compiler = InsnCompiler.new
@@ -56,6 +59,7 @@ module RubyVM::MJIT
       return if iseq.body.param.flags.has_opt
 
       asm = X86Assembler.new
+      asm.comment("Block: #{iseq.body.location.label}@#{iseq.body.location.pathobj}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, iseq)
       iseq.body.jit_func = compile(asm)
@@ -73,11 +77,20 @@ module RubyVM::MJIT
     def compile(asm)
       start_addr = write_addr
 
+      # Write machine code
       C.mjit_mark_writable
       @write_pos += asm.compile(start_addr)
       C.mjit_mark_executable
 
       end_addr = write_addr
+
+      # Convert comment indexes to addresses
+      asm.comments.each do |index, comments|
+        @comments[start_addr + index] += comments
+      end
+      asm.comments.clear
+
+      # Dump disasm if --mjit-dump-disasm
       if C.mjit_opts.dump_disasm && start_addr < end_addr
         dump_disasm(start_addr, end_addr)
       end
@@ -92,6 +105,8 @@ module RubyVM::MJIT
     #
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_prologue(asm)
+      asm.comment("MJIT entry")
+
       # Save callee-saved registers used by JITed code
       asm.push(SP)
 
@@ -124,6 +139,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_insn(jit, ctx, asm, insn)
+      asm.comment("Insn: #{insn.name}")
       case insn.name
       when :putnil then @insn_compiler.putnil(jit, ctx, asm)
       when :leave  then @insn_compiler.leave(jit, ctx, asm)
@@ -137,9 +153,16 @@ module RubyVM::MJIT
 
     def dump_disasm(from, to)
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|
+        @comments.fetch(address, []).each do |comment|
+          puts bold("  # #{comment}")
+        end
         puts "  0x#{"%x" % address}: #{mnemonic} #{op_str}"
       end
       puts
+    end
+
+    def bold(text)
+      "\e[1m#{text}\e[0m"
     end
   end
 end

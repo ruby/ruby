@@ -578,7 +578,7 @@ module RubyVM::MJIT # :nodoc: all
       pathobj: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), pathobj)"), true],
       base_label: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), base_label)"), true],
       label: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), label)"), true],
-      first_lineno: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), first_lineno)"), true],
+      first_lineno: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), first_lineno)")],
       node_id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), node_id)")],
       code_location: [self.rb_code_location_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), code_location)")],
     )

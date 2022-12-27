@@ -10,10 +10,13 @@ module RubyVM::MJIT
     # REX =   0100WR0B
     REX_W = 0b01001000
 
+    attr_reader :comments
+
     def initialize
       @bytes = []
-      @label_id = 0
       @labels = {}
+      @label_id = 0
+      @comments = Hash.new { |h, k| h[k] = [] }
     end
 
     def compile(addr)
@@ -171,6 +174,10 @@ module RubyVM::MJIT
       else
         raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
       end
+    end
+
+    def comment(message)
+      @comments[@bytes.size] << message
     end
 
     def new_label(name)

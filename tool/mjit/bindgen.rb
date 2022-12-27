@@ -423,7 +423,6 @@ generator = BindingGenerator.new(
   ruby_fields: {
     rb_iseq_location_struct: %w[
       base_label
-      first_lineno
       label
       pathobj
     ]

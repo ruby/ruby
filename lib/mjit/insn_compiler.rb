@@ -19,14 +19,14 @@ module RubyVM::MJIT
     def leave(jit, ctx, asm)
       assert_eq!(ctx.stack_size, 1)
 
-      # Check interrupts
+      asm.comment("RUBY_VM_CHECK_INTS(ec)")
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
       asm.jz(not_interrupted = asm.new_label(:not_interrupted))
       Compiler.compile_exit(jit, ctx, asm) # TODO: use ocb
       asm.write_label(not_interrupted)
 
-      # Pop the current frame (ec->cfp++)
+      asm.comment("pop stack frame")
       asm.add(CFP, C.rb_control_frame_t.size) # cfp = cfp + 1
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP) # ec->cfp = cfp
 
