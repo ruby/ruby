@@ -62,12 +62,12 @@ rb_fiddle_free(VALUE self, VALUE addr)
  *
  * Example:
  *
- *    >> x = Object.new
- *    => #<Object:0x0000000107c7d870>
- *    >> Fiddle.dlwrap(x)
- *    => 4425504880
- *    >> Fiddle.dlunwrap(_)
- *    => #<Object:0x0000000107c7d870>
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
+ *    Fiddle.dlunwrap(_)
+ *    # => #<Object:0x0000000107c7d870>
  */
 VALUE
 rb_fiddle_ptr2value(VALUE self, VALUE addr)
@@ -82,18 +82,18 @@ rb_fiddle_ptr2value(VALUE self, VALUE addr)
  *
  * Example:
  *
- *    >> x = Object.new
- *    => #<Object:0x0000000107c7d870>
- *    >> Fiddle.dlwrap(x)
- *    => 4425504880
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
  *
  * In the case +val+ is not a heap allocated object, this method will return
  * the tagged pointer value.
  *
  * Example:
  *
- *    >> Fiddle.dlwrap(123)
- *    => 247
+ *    Fiddle.dlwrap(123)
+ *    # => 247
  */
 static VALUE
 rb_fiddle_value2ptr(VALUE self, VALUE val)
