@@ -18,13 +18,9 @@ module OpenSSL
     # Return the hash value computed with _name_ Digest. _name_ is either the
     # long name or short name of a supported digest algorithm.
     #
-    # === Examples
+    # === Example
     #
     #   OpenSSL::Digest.digest("SHA256", "abc")
-    #
-    # which is equivalent to:
-    #
-    #   OpenSSL::Digest.digest('SHA256', "abc")
 
     def self.digest(name, data)
       super(data, name)
