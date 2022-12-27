@@ -212,6 +212,24 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
+    def test_heredoc_prompt_with_quotes
+      input_with_prompt = [
+        PromptRow.new("001:0:':* ", %q(<<~'A')),
+        PromptRow.new("002:0:':* ", %q(#{foobar})),
+        PromptRow.new("003:0: :> ", %q(A)),
+        PromptRow.new("004:0:`:* ", %q(<<~`A`)),
+        PromptRow.new("005:0:`:* ", %q(whoami)),
+        PromptRow.new("006:0: :> ", %q(A)),
+        PromptRow.new('007:0:":* ', %q(<<~"A")),
+        PromptRow.new('008:0:":* ', %q(foobar)),
+        PromptRow.new('009:0: :> ', %q(A)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_backtick_method
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(self.`(arg))),
