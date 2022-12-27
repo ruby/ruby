@@ -536,7 +536,7 @@ class RubyVM::MJIT::Compiler # :nodoc: all
       when /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
         dest = Regexp.last_match[:dest]
         if insn.name == :opt_case_dispatch # special case... TODO: use another macro to avoid checking name
-          hash_offsets = C.rb_hash_values(operands[0])
+          hash_offsets = C.rb_hash_values(operands[0]).uniq
           else_offset = cast_offset(operands[1])
           base_pos = pos + insn_len
 
