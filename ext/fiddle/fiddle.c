@@ -58,18 +58,16 @@ rb_fiddle_free(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlunwrap(addr)
  *
- * Returns the hexadecimal representation of a memory pointer address +addr+
+ * Returns the Ruby object stored at the memory address +addr+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
- *
- *   lib['strcpy'].to_s(16)
- *   => "7f59de6dd240"
- *
- *   Fiddle.dlunwrap(Fiddle.dlwrap(lib['strcpy'].to_s(16)))
- *   => "7f59de6dd240"
+ *    >> x = Object.new
+ *    => #<Object:0x0000000107c7d870>
+ *    >> Fiddle.dlwrap(x)
+ *    => 4425504880
+ *    >> Fiddle.dlunwrap(_)
+ *    => #<Object:0x0000000107c7d870>
  */
 VALUE
 rb_fiddle_ptr2value(VALUE self, VALUE addr)
@@ -80,15 +78,22 @@ rb_fiddle_ptr2value(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlwrap(val)
  *
- * Returns a memory pointer of a function's hexadecimal address location +val+
+ * Returns the memory address of the Ruby object stored at +val+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
+ *    >> x = Object.new
+ *    => #<Object:0x0000000107c7d870>
+ *    >> Fiddle.dlwrap(x)
+ *    => 4425504880
  *
- *   Fiddle.dlwrap(lib['strcpy'].to_s(16))
- *   => 25522520
+ * In the case +val+ is not a heap allocated object, this method will return
+ * the tagged pointer value.
+ *
+ * Example:
+ *
+ *    >> Fiddle.dlwrap(123)
+ *    => 247
  */
 static VALUE
 rb_fiddle_value2ptr(VALUE self, VALUE val)
