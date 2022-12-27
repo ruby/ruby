@@ -406,6 +406,7 @@ generator = BindingGenerator.new(
     rb_method_iseq_t
     rb_method_type_t
     rb_mjit_compile_info
+    rb_mjit_runtime_counters
     rb_mjit_unit
     rb_serial_t
     rb_shape

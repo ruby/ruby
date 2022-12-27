@@ -104,4 +104,12 @@ struct compile_status {
 
 extern uint8_t *rb_mjit_mem_block;
 
+#define MJIT_RUNTIME_COUNTERS(...) struct rb_mjit_runtime_counters { size_t __VA_ARGS__; };
+MJIT_RUNTIME_COUNTERS(
+    vm_insns_count,
+    mjit_insns_count
+)
+#undef MJIT_RUNTIME_COUNTERS
+extern struct rb_mjit_runtime_counters rb_mjit_counters;
+
 #endif /* MJIT_C_H */

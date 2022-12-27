@@ -57,11 +57,8 @@ module RubyVM::MJIT # :nodoc: all
           # Return the offset to a field
           define_singleton_method(:offsetof) { |field| members.fetch(field).last / 8 }
 
-          # Get the offset of a member named +name+
-          define_singleton_method(:offsetof) { |name|
-            _, offset = members.fetch(name)
-            offset / 8
-          }
+          # Return member names
+          define_singleton_method(:members) { members.keys }
 
           define_method(:initialize) do |addr = nil|
             if addr.nil? # TODO: get rid of this feature later

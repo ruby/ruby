@@ -34,7 +34,7 @@ module RubyVM::MJIT
 
     def add(dst, src)
       case [dst, src]
-      # ADD r/m64, imm8
+      # ADD r/m64, imm8 (Mod 11)
       in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
         # REX.W + 83 /0 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
@@ -42,6 +42,16 @@ module RubyVM::MJIT
           prefix: REX_W,
           opcode: 0x83,
           mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)),
+          imm: imm8(src_imm),
+        )
+      # ADD r/m64, imm8 (Mod 00)
+      in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+        # REX.W + 83 /0 ib
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: mod_rm(mod: 0b00, rm: reg_code(dst_reg)), # Mod 00: [reg]
           imm: imm8(src_imm),
         )
       else
@@ -187,6 +197,14 @@ module RubyVM::MJIT
     # @param [RubyVM::MJIT::X86Assembler::Label] label
     def write_label(label)
       @labels[label] = @bytes.size
+    end
+
+    def incr_counter(name)
+      if C.mjit_opts.stats
+        comment("increment counter #{name}")
+        mov(:rax, C.rb_mjit_counters[name].to_i)
+        add([:rax], 1) # TODO: lock
+      end
     end
 
     private

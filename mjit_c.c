@@ -38,6 +38,11 @@
 #define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
 #define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
 
+#if MJIT_STATS
+// Insn side exit counters
+static size_t mjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
+#endif // YJIT_STATS
+
 // macOS: brew install capstone
 // Ubuntu/Debian: apt-get install libcapstone-dev
 // Fedora: dnf -y install capstone-devel
@@ -72,6 +77,13 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
     cs_close(&handle);
 #endif
     return result;
+}
+
+// Same as `RubyVM::MJIT.enabled?`, but this is used before it's defined.
+static VALUE
+mjit_enabled_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(mjit_enabled);
 }
 
 #include "mjit_c.rbinc"

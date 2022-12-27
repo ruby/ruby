@@ -26,6 +26,12 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
     def self.compile_exit(jit, ctx, asm)
+      if C.mjit_opts.stats
+        insn = decode_insn(C.VALUE.new(jit.pc).*)
+        asm.comment("increment insn exit: #{insn.name}")
+        asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
+        asm.add([:rax], 1) # TODO: lock
+      end
       asm.comment("exit to interpreter")
 
       # Update pc
@@ -45,6 +51,10 @@ module RubyVM::MJIT
       asm.ret
     end
 
+    def self.decode_insn(encoded)
+      INSNS.fetch(C.rb_vm_insn_decode(encoded))
+    end
+
     # @param mem_block [Integer] JIT buffer address
     def initialize(mem_block)
       @comments = Hash.new { |h, k| h[k] = [] }
@@ -59,7 +69,7 @@ module RubyVM::MJIT
       return if iseq.body.param.flags.has_opt
 
       asm = X86Assembler.new
-      asm.comment("Block: #{iseq.body.location.label}@#{iseq.body.location.pathobj}:#{iseq.body.location.first_lineno}")
+      asm.comment("Block: #{iseq.body.location.label}@#{pathobj_path(iseq.body.location.pathobj)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, iseq)
       iseq.body.jit_func = compile(asm)
@@ -121,7 +131,7 @@ module RubyVM::MJIT
 
       index = 0
       while index < iseq.body.iseq_size
-        insn = decode_insn(iseq.body.iseq_encoded[index])
+        insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
 
         case compile_insn(jit, ctx, asm, insn)
@@ -139,7 +149,9 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
     def compile_insn(jit, ctx, asm, insn)
+      asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
+
       case insn.name
       when :putnil then @insn_compiler.putnil(jit, ctx, asm)
       when :leave  then @insn_compiler.leave(jit, ctx, asm)
@@ -147,22 +159,27 @@ module RubyVM::MJIT
       end
     end
 
-    def decode_insn(encoded)
-      INSNS.fetch(C.rb_vm_insn_decode(encoded))
-    end
-
     def dump_disasm(from, to)
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|
         @comments.fetch(address, []).each do |comment|
           puts bold("  # #{comment}")
         end
-        puts "  0x#{"%x" % address}: #{mnemonic} #{op_str}"
+        puts "  0x#{format("%x", address)}: #{mnemonic} #{op_str}"
       end
       puts
     end
 
     def bold(text)
       "\e[1m#{text}\e[0m"
+    end
+
+    # vm_core.h: pathobj_path
+    def pathobj_path(pathobj)
+      if pathobj.is_a?(String)
+        pathobj
+      else
+        pathobj.first
+      end
     end
   end
 end

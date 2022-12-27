@@ -15,6 +15,10 @@
 
 # if USE_MJIT
 
+#ifndef MJIT_STATS
+# define MJIT_STATS RUBY_DEBUG
+#endif
+
 #include "ruby.h"
 #include "vm_core.h"
 
@@ -53,6 +57,8 @@ struct mjit_options {
     bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int call_threshold;
+    // Collect MJIT statistics
+    bool stats;
     // Force printing info about MJIT work of level VERBOSE or
     // less. 0=silence, 1=medium, 2=verbose.
     int verbose;
@@ -117,6 +123,7 @@ void mjit_child_after_fork(void);
 extern void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 extern void rb_mjit_before_ractor_spawn(void);
 extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
+extern void rb_mjit_collect_vm_usage_insn(int insn);
 
 #  ifdef MJIT_HEADER
 #define mjit_enabled true
@@ -150,6 +157,7 @@ static inline void mjit_finish(bool close_handle_p){}
 static inline void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_mjit_before_ractor_spawn(void) {}
 static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
+static inline void rb_mjit_collect_vm_usage_insn(int insn) {}
 
 # endif // USE_MJIT
 #endif // RUBY_MJIT_H

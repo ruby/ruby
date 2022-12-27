@@ -4,7 +4,7 @@
 module RubyVM::MJIT # :nodoc: all
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/mjit/bindgen.rb instead.
-  class << C
+  class << C = Object.new
     #========================================================================================
     #
     # New stuff
@@ -23,6 +23,28 @@ module RubyVM::MJIT # :nodoc: all
         rb_yjit_mark_executable(rb_mjit_mem_block, MJIT_CODE_SIZE);
         return Qnil;
       }
+    end
+
+    def mjit_insn_exits
+      addr = Primitive.cstmt! %{
+        #if MJIT_STATS
+          return SIZET2NUM((size_t)mjit_insn_exits);
+        #else
+          return SIZET2NUM(0);
+        #endif
+      }
+      CType::Immediate.parse("size_t").new(addr)
+    end
+
+    def rb_mjit_counters
+      addr = Primitive.cstmt! %{
+        #if MJIT_STATS
+          return SIZET2NUM((size_t)&rb_mjit_counters);
+        #else
+          return SIZET2NUM(0);
+        #endif
+      }
+      rb_mjit_runtime_counters.new(addr)
     end
 
     # @param from [Integer] - From address
@@ -374,6 +396,7 @@ module RubyVM::MJIT # :nodoc: all
       debug_flags: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), debug_flags)")],
       wait: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), wait)")],
       call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), call_threshold)")],
+      stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), stats)")],
       verbose: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), verbose)")],
       max_cache_size: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), max_cache_size)")],
       pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), pause)")],
@@ -657,6 +680,14 @@ module RubyVM::MJIT # :nodoc: all
     )
   end
 
+  def C.rb_mjit_runtime_counters
+    @rb_mjit_runtime_counters ||= CType::Struct.new(
+      "rb_mjit_runtime_counters", Primitive.cexpr!("SIZEOF(struct rb_mjit_runtime_counters)"),
+      vm_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), vm_insns_count)")],
+      mjit_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), mjit_insns_count)")],
+    )
+  end
+
   def C.rb_mjit_unit
     @rb_mjit_unit ||= CType::Struct.new(
       "rb_mjit_unit", Primitive.cexpr!("SIZEOF(struct rb_mjit_unit)"),
@@ -835,4 +866,4 @@ module RubyVM::MJIT # :nodoc: all
   end
 
   ### MJIT bindgen end ###
-end if RubyVM::MJIT.enabled? && RubyVM::MJIT.const_defined?(:C) # not defined for miniruby
+end if Primitive.mjit_enabled_p

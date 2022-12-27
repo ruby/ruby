@@ -300,6 +300,9 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     else if (opt_match_arg(s, l, "call-threshold")) {
         mjit_opt->call_threshold = atoi(s + 1);
     }
+    else if (opt_match_noarg(s, l, "stats")) {
+        mjit_opt->stats = true;
+    }
     // --mjit=pause is an undocumented feature for experiments
     else if (opt_match_noarg(s, l, "pause")) {
         mjit_opt->pause = true;
@@ -320,10 +323,9 @@ const struct ruby_opt_message mjit_option_messages[] = {
     M("--mjit-wait",               "", "Wait until JIT compilation finishes every time (for testing)"),
     M("--mjit-save-temps",         "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
     M("--mjit-verbose=num",        "", "Print JIT logs of level num or less to stderr (default: 0)"),
-    M("--mjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: "
-      STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
-    M("--mjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: "
-      STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+    M("--mjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: " STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
+    M("--mjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+    M("--mjit-stats",              "", "Enable collecting MJIT statistics"),
     {0}
 };
 #undef M
@@ -370,6 +372,22 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 // JIT buffer
 uint8_t *rb_mjit_mem_block = NULL;
 
+#if MJIT_STATS
+
+struct rb_mjit_runtime_counters rb_mjit_counters = { 0 };
+
+// Basically mjit_opts.stats, but this becomes false during MJIT compilation.
+static bool mjit_stats_p = false;
+
+void
+rb_mjit_collect_vm_usage_insn(int insn)
+{
+    if (!mjit_stats_p) return;
+    rb_mjit_counters.vm_insns_count++;
+}
+
+#endif // YJIT_STATS
+
 void
 rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
@@ -398,10 +416,12 @@ rb_mjit_compile(const rb_iseq_t *iseq)
     rb_vm_barrier();
     bool original_call_p = mjit_call_p;
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
+    mjit_stats_p = false; // Avoid impacting JIT stats by itself
 
     VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
     rb_funcall(rb_MJITCompiler, rb_intern("call"), 1, iseq_ptr);
 
+    mjit_stats_p = mjit_opts.stats;
     mjit_call_p = original_call_p;
     RB_VM_LOCK_LEAVE();
 }
@@ -443,6 +463,7 @@ mjit_init(const struct mjit_options *opts)
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
 
     mjit_call_p = true;
+    mjit_stats_p = mjit_opts.stats;
 
     // Normalize options
     if (mjit_opts.call_threshold == 0)

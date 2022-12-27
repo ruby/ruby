@@ -23,7 +23,7 @@ if RubyVM::MJIT.enabled?
     return # miniruby doesn't support MJIT
   end
 
-  RubyVM::MJIT::C = Object.new # forward declaration for mjit/compiler
   require 'mjit/c_type'
   require 'mjit/compiler'
+  require 'mjit/stats'
 end
