@@ -370,7 +370,7 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 // JIT buffer
 uint8_t *rb_mjit_mem_block = NULL;
 
-MJIT_FUNC_EXPORTED void
+void
 rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
     if (!mjit_call_p) return;
@@ -379,6 +379,13 @@ rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 
 void
 rb_mjit_before_ractor_spawn(void)
+{
+    if (!mjit_call_p) return;
+    mjit_call_p = false;
+}
+
+void
+rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
     if (!mjit_call_p) return;
     mjit_call_p = false;

@@ -116,6 +116,7 @@ void mjit_child_after_fork(void);
 
 extern void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 extern void rb_mjit_before_ractor_spawn(void);
+extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
 
 #  ifdef MJIT_HEADER
 #define mjit_enabled true
@@ -148,6 +149,7 @@ static inline void mjit_finish(bool close_handle_p){}
 
 static inline void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_mjit_before_ractor_spawn(void) {}
+static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 
 # endif // USE_MJIT
 #endif // RUBY_MJIT_H
