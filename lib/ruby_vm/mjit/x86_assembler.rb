@@ -256,7 +256,7 @@ module RubyVM::MJIT
         @bytes.push(mod_rm)
       end
       if disp
-        if disp < 0 || disp > 0xff # TODO: support displacement in 2 or 4 bytes as well
+        unless imm8?(disp) # TODO: support displacement in 2 or 4 bytes as well
           raise NotImplementedError, "not-implemented disp: #{disp}"
         end
         @bytes.push(disp)
@@ -344,8 +344,7 @@ module RubyVM::MJIT
     end
 
     def imm8?(imm)
-      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
-      imm <= 0x7f # TODO: consider uimm
+      (-0x80..0x7f).include?(imm)
     end
 
     def imm32?(imm)

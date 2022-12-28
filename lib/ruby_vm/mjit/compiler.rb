@@ -155,6 +155,41 @@ module RubyVM::MJIT
       case insn.name
       when :putnil then @insn_compiler.putnil(jit, ctx, asm)
       when :leave  then @insn_compiler.leave(jit, ctx, asm)
+      # throw
+      # jump
+      # branchif
+      # branchunless
+      # branchnil
+      # once
+      # opt_case_dispatch
+      # opt_plus
+      # opt_minus
+      # opt_mult
+      # opt_div
+      # opt_mod
+      # opt_eq
+      # opt_neq
+      # opt_lt
+      # opt_le
+      # opt_gt
+      # opt_ge
+      # opt_ltlt
+      # opt_and
+      # opt_or
+      # opt_aref
+      # opt_aset
+      # opt_aset_with
+      # opt_aref_with
+      # opt_length
+      # opt_size
+      # opt_empty_p
+      # opt_succ
+      # opt_not
+      # opt_regexpmatch2
+      # invokebuiltin
+      # opt_invokebuiltin_delegate
+      # opt_invokebuiltin_delegate_leave
+      when :getlocal_WC_0 then @insn_compiler.getlocal_WC_0(jit, ctx, asm)
       else CantCompile
       end
     end
