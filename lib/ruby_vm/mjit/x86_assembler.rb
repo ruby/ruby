@@ -68,74 +68,87 @@ module RubyVM::MJIT
     end
 
     def mov(dst, src)
-      case [dst, src]
-      # MOV r32 r/m32 (Mod 01)
-      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r32?(dst_reg) && imm8?(src_disp)
-        # 8B /r
-        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
-        insn(
-          opcode: 0x8b,
-          mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
-          disp: src_disp,
-        )
-      # MOV r/m64, imm32 (Mod 00)
-      in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg)
-        # REX.W + C7 /0 id
-        # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
-        insn(
-          prefix: REX_W,
-          opcode: 0xc7,
-          mod_rm: mod_rm(mod: 0b00, rm: reg_code(dst_reg)), # Mod 00: [reg]
-          imm: imm32(src_imm),
-        )
-      # MOV r/m64, imm32 (Mod 11)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
-        # REX.W + C7 /0 id
-        # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
-        insn(
-          prefix: REX_W,
-          opcode: 0xc7,
-          mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)), # Mod 11: reg
-          imm: imm32(src_imm),
-        )
-      # MOV r64, imm64
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm64?(src_imm)
-        # REX.W + B8+ rd io
-        # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
-        insn(
-          prefix: REX_W,
-          opcode: 0xb8 + reg_code(dst_reg),
-          imm: imm64(src_imm),
-        )
-      # MOV r/m64, r64
-      in [[Symbol => dst_reg, Integer => dst_disp], Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg) && imm8?(dst_disp)
-        # REX.W + 89 /r
-        # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
-        insn(
-          prefix: REX_W,
-          opcode: 0x89,
-          mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
-          disp: dst_disp,
-        )
-      # MOV r64, r/m64 (Mod 00)
-      in [Symbol => dst_reg, [Symbol => src_reg]] if r64?(dst_reg) && r64?(src_reg)
-        # REX.W + 8B /r
-        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
-        insn(
-          prefix: REX_W,
-          opcode: 0x8b,
-          mod_rm: mod_rm(mod: 0b00, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 00: [reg]
-        )
-      # MOV r64, r/m64 (Mod 01)
-      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_offset]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_offset)
-        # REX.W + 8B /r
-        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
-        insn(
-          prefix: REX_W,
-          opcode: 0x8b,
-          mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
-          disp: src_offset,
-        )
+      case dst
+      in Symbol => dst_reg
+        case src
+        # MOV r64, r/m64 (Mod 00)
+        in [Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+          # REX.W + 8B /r
+          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x8b,
+            mod_rm: mod_rm(mod: 0b00, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 00: [reg]
+          )
+        # MOV r32 r/m32 (Mod 01)
+        in [Symbol => src_reg, Integer => src_disp] if r32?(dst_reg) && imm8?(src_disp)
+          # 8B /r
+          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+          insn(
+            opcode: 0x8b,
+            mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
+            disp: src_disp,
+          )
+        # MOV r64, r/m64 (Mod 01)
+        in [Symbol => src_reg, Integer => src_disp] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+          # REX.W + 8B /r
+          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x8b,
+            mod_rm: mod_rm(mod: 0b01, reg: reg_code(dst_reg), rm: reg_code(src_reg)), # Mod 01: [reg]+disp8
+            disp: src_disp,
+          )
+        # MOV r/m64, imm32 (Mod 11)
+        in Integer => src_imm if r64?(dst_reg) && imm32?(src_imm)
+          # REX.W + C7 /0 id
+          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+          insn(
+            prefix: REX_W,
+            opcode: 0xc7,
+            mod_rm: mod_rm(mod: 0b11, rm: reg_code(dst_reg)), # Mod 11: reg
+            imm: imm32(src_imm),
+          )
+        # MOV r64, imm64
+        in Integer => src_imm if r64?(dst_reg) && imm64?(src_imm)
+          # REX.W + B8+ rd io
+          # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
+          insn(
+            prefix: REX_W,
+            opcode: 0xb8 + reg_code(dst_reg),
+            imm: imm64(src_imm),
+          )
+        else
+          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+        end
+      in [Symbol => dst_reg]
+        case src
+        # MOV r/m64, imm32 (Mod 00)
+        in Integer => src_imm if r64?(dst_reg) && imm32?(src_imm)
+          # REX.W + C7 /0 id
+          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+          insn(
+            prefix: REX_W,
+            opcode: 0xc7,
+            mod_rm: mod_rm(mod: 0b00, rm: reg_code(dst_reg)), # Mod 00: [reg]
+            imm: imm32(src_imm),
+          )
+        end
+      in [Symbol => dst_reg, Integer => dst_disp]
+        # MOV r/m64, r64 (Mod 01)
+        case src
+        in Symbol => src_reg if r64?(dst_reg) && imm8?(dst_disp) && r64?(src_reg)
+          # REX.W + 89 /r
+          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x89,
+            mod_rm: mod_rm(mod: 0b01, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
+            disp: dst_disp,
+          )
+        else
+          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+        end
       else
         raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
