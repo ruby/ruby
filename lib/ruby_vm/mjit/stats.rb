@@ -27,12 +27,6 @@ module RubyVM::MJIT
     stats
   end
 
-  at_exit do
-    if C.mjit_opts.stats
-      print_stats
-    end
-  end
-
   class << self
     private
 

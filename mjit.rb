@@ -13,6 +13,10 @@ module RubyVM::MJIT
   def self.resume
     Primitive.cexpr! 'mjit_resume()'
   end
+
+  if Primitive.mjit_stats_enabled_p
+    at_exit { print_stats }
+  end
 end
 
 if RubyVM::MJIT.enabled?

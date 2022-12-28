@@ -125,11 +125,8 @@ extern void rb_mjit_before_ractor_spawn(void);
 extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
 extern void rb_mjit_collect_vm_usage_insn(int insn);
 
-#  ifdef MJIT_HEADER
-#define mjit_enabled true
-#  else // MJIT_HEADER
 extern bool mjit_enabled;
-#  endif // MJIT_HEADER
+extern bool mjit_stats_enabled;
 VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
 void mjit_finish(bool close_handle_p);
@@ -150,6 +147,7 @@ static inline void rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic
 static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 
 #define mjit_enabled false
+#define mjit_stats_enabled false
 static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
 static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
 static inline void mjit_finish(bool close_handle_p){}

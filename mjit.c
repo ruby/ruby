@@ -63,6 +63,7 @@ struct mjit_options mjit_opts;
 
 // true if MJIT is enabled.
 bool mjit_enabled = false;
+bool mjit_stats_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
@@ -392,6 +393,13 @@ void
 mjit_finish(bool close_handle_p)
 {
     // TODO: implement
+}
+
+// Same as `RubyVM::MJIT::C.enabled?`, but this is used before mjit_init.
+static VALUE
+mjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(mjit_stats_enabled);
 }
 
 #include "mjit.rbinc"
