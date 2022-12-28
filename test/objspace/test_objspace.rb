@@ -580,7 +580,14 @@ class TestObjSpace < Test::Unit::TestCase
     # This test makes assertions on the assignment to `str`, so we look for
     # the second appearance of /TEST STRING/ in the output
     test_string_in_dump_all = output.grep(/TEST2/)
-    assert_equal(2, test_string_in_dump_all.size, "number of strings")
+
+    begin
+      assert_equal(2, test_string_in_dump_all.size, "number of strings")
+    rescue Exception => e
+      STDERR.puts e.inspect
+      STDERR.puts test_string_in_dump_all
+      raise
+    end
 
     entry_hash = JSON.parse(test_string_in_dump_all[1])
 
