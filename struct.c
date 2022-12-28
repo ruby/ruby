@@ -1662,11 +1662,9 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   define(name, *symbols) -> class
  *   define(*symbols) -> class
  *
- *  Defines a new \Data class. If the first argument is a string, the class
- *  is stored in <tt>Data::<name></tt> constant.
+ *  Defines a new \Data class.
  *
  *     measure = Data.define(:amount, :unit)
  *     #=> #<Class:0x00007f70c6868498>
