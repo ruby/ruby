@@ -4,7 +4,7 @@ module RubyVM::MJIT
   #  sp: rbx
   # scratch regs: rax
   class InsnCompiler
-    # 3/101
+    # 4/101
 
     # nop
     # getlocal
@@ -34,7 +34,27 @@ module RubyVM::MJIT
     end
 
     # putself
-    # putobject
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::X86Assembler]
+    def putobject(jit, ctx, asm)
+      # Get operands
+      val = jit.operand(0)
+
+      # Push it to the stack
+      # TODO: GC offsets
+      if asm.imm32?(val)
+        asm.mov([SP, C.VALUE.size * ctx.stack_size], val)
+      else # 64-bit immediates can't be directly written to memory
+        asm.mov(:rax, val)
+        asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
+      end
+
+      ctx.stack_size += 1
+      KeepCompiling
+    end
+
     # putspecialobject
     # putstring
     # concatstrings

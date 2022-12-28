@@ -153,7 +153,66 @@ module RubyVM::MJIT
       asm.comment("Insn: #{insn.name}")
 
       case insn.name
+      # nop
+      # getlocal
+      # setlocal
+      # getblockparam
+      # setblockparam
+      # getblockparamproxy
+      # getspecial
+      # setspecial
+      # getinstancevariable
+      # setinstancevariable
+      # getclassvariable
+      # setclassvariable
+      # opt_getconstant_path
+      # getconstant
+      # setconstant
+      # getglobal
+      # setglobal
       when :putnil then @insn_compiler.putnil(jit, ctx, asm)
+      # putself
+      when :putobject then @insn_compiler.putobject(jit, ctx, asm)
+      # putspecialobject
+      # putstring
+      # concatstrings
+      # anytostring
+      # toregexp
+      # intern
+      # newarray
+      # newarraykwsplat
+      # duparray
+      # duphash
+      # expandarray
+      # concatarray
+      # splatarray
+      # newhash
+      # newrange
+      # pop
+      # dup
+      # dupn
+      # swap
+      # opt_reverse
+      # topn
+      # setn
+      # adjuststack
+      # defined
+      # checkmatch
+      # checkkeyword
+      # checktype
+      # defineclass
+      # definemethod
+      # definesmethod
+      # send
+      # opt_send_without_block
+      # objtostring
+      # opt_str_freeze
+      # opt_nil_p
+      # opt_str_uminus
+      # opt_newarray_max
+      # opt_newarray_min
+      # invokesuper
+      # invokeblock
       when :leave  then @insn_compiler.leave(jit, ctx, asm)
       # throw
       # jump

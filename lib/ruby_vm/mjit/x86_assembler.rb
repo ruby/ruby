@@ -245,6 +245,10 @@ module RubyVM::MJIT
       end
     end
 
+    def imm32?(imm)
+      (-0x8000_0000..0x7fff_ffff).include?(imm) # TODO: consider uimm
+    end
+
     private
 
     def insn(prefix: nil, opcode:, mod_rm: nil, disp: nil, imm: nil)
@@ -347,16 +351,8 @@ module RubyVM::MJIT
       (-0x80..0x7f).include?(imm)
     end
 
-    def imm32?(imm)
-      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
-      # TODO: consider rejecting small values
-      imm <= 0x7fff_ffff # TODO: consider uimm
-    end
-
     def imm64?(imm)
-      raise "negative imm not supported: #{imm}" if imm.negative? # TODO: support this
-      # TODO: consider rejecting small values
-      imm <= 0x7fff_ffff_ffff_ffff # TODO: consider uimm
+      (-0x8000_0000_0000_0000..0x7fff_ffff_ffff_ffff).include?(imm) # TODO: consider uimm
     end
 
     def r32?(reg)
