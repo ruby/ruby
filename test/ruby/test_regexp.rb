@@ -40,19 +40,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("a".gsub(/a\Z/, ""), "")
   end
 
-  def test_yoshidam_net_20041111_1
-    s = "[\xC2\xA0-\xC3\xBE]"
-    r = assert_deprecated_warning(/3\.3/) {Regexp.new(s, nil, "u")}
-    assert_match(r, "\xC3\xBE")
-  end
-
-  def test_yoshidam_net_20041111_2
-    assert_raise(RegexpError) do
-      s = "[\xFF-\xFF]".force_encoding("utf-8")
-      assert_warning(/3\.3/) {Regexp.new(s, nil, "u")}
-    end
-  end
-
   def test_ruby_dev_31309
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
   end
@@ -713,25 +700,6 @@ class TestRegexp < Test::Unit::TestCase
       assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
 
       assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
-    end
-
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n", timeout: 1).encoding)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(//n, Regexp.new("", nil, "n"))
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
     end
 
     assert_raise(RegexpError) { Regexp.new(")(") }
