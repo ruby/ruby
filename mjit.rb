@@ -23,7 +23,7 @@ if RubyVM::MJIT.enabled?
     return # miniruby doesn't support MJIT
   end
 
-  require 'mjit/c_type'
-  require 'mjit/compiler'
-  require 'mjit/stats'
+  require 'ruby_vm/mjit/c_type'
+  require 'ruby_vm/mjit/compiler'
+  require 'ruby_vm/mjit/stats'
 end

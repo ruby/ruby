@@ -1,8 +1,8 @@
-require 'mjit/context'
-require 'mjit/insn_compiler'
-require 'mjit/instruction'
-require 'mjit/jit_state'
-require 'mjit/x86_assembler'
+require 'ruby_vm/mjit/context'
+require 'ruby_vm/mjit/insn_compiler'
+require 'ruby_vm/mjit/instruction'
+require 'ruby_vm/mjit/jit_state'
+require 'ruby_vm/mjit/x86_assembler'
 
 module RubyVM::MJIT
   # Compilation status

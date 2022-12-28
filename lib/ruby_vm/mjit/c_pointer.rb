@@ -1,4 +1,4 @@
-module RubyVM::MJIT # :nodoc: all
+module RubyVM::MJIT
   # Every class under this namespace is a pointer. Even if the type is
   # immediate, it shouldn't be dereferenced until `*` is called.
   module CPointer
@@ -293,12 +293,12 @@ module RubyVM::MJIT # :nodoc: all
 
       # Dereference
       def *
-        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack1('c')
+        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
         if @width == 1
           bit = (1 & (byte >> @offset))
           bit == 1
         elsif @width <= 8 && @offset == 0
-          bitmask = @width.times.sum { |i| 1 << i }
+          bitmask = @width.times.map { |i| 1 << i }.sum
           byte & bitmask
         else
           raise NotImplementedError.new("not-implemented bit field access: width=#{@width} offset=#{@offset}")
