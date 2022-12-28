@@ -8,7 +8,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::X86Assembler]
     def putnil(jit, ctx, asm)
-      asm.mov([SP], Qnil)
+      asm.mov([SP, C.VALUE.size * ctx.stack_size], Qnil)
       ctx.stack_size += 1
       KeepCompiling
     end

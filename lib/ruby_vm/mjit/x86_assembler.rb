@@ -133,10 +133,35 @@ module RubyVM::MJIT
             mod_rm: mod_rm(mod: 0b00, rm: reg_code(dst_reg)), # Mod 00: [reg]
             imm: imm32(src_imm),
           )
+        # MOV r/m64, r64 (Mod 00)
+        in Symbol => src_reg if r64?(dst_reg) && r64?(src_reg)
+          # REX.W + 89 /r
+          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x89,
+            mod_rm: mod_rm(mod: 0b00, reg: reg_code(src_reg), rm: reg_code(dst_reg)), # Mod 00: [reg]
+          )
+        else
+          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
       in [Symbol => dst_reg, Integer => dst_disp]
-        # MOV r/m64, r64 (Mod 01)
+        # Optimize encoding when disp is 0
+        return mov([dst_reg], src) if dst_disp == 0
+
         case src
+        # MOV r/m64, imm32 (Mod 01)
+        in Integer => src_imm if r64?(dst_reg) && imm8?(dst_disp) && imm32?(src_imm)
+          # REX.W + C7 /0 id
+          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+          insn(
+            prefix: REX_W,
+            opcode: 0xc7,
+            mod_rm: mod_rm(mod: 0b01, rm: reg_code(dst_reg)), # Mod 01: [reg]+disp8
+            disp: dst_disp,
+            imm: imm32(src_imm),
+          )
+        # MOV r/m64, r64 (Mod 01)
         in Symbol => src_reg if r64?(dst_reg) && imm8?(dst_disp) && r64?(src_reg)
           # REX.W + 89 /r
           # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
