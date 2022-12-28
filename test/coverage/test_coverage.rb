@@ -174,6 +174,7 @@ class TestCoverage < Test::Unit::TestCase
 
   def test_coverage_supported
     assert Coverage.supported?(:lines)
+    assert Coverage.supported?(:oneshot_lines)
     assert Coverage.supported?(:branches)
     assert Coverage.supported?(:methods)
     assert Coverage.supported?(:eval)
