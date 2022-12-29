@@ -252,4 +252,12 @@ world"
 ]
     assert_equal(code, Ripper.tokenize(code).join(""), bug)
   end
+
+  def test_lexer_state_bracket
+    state = Ripper.lex("1 + 2").last.last
+    assert_equal(state[0], 2)
+    assert_equal(state[:to_int], 2)
+    assert_equal(state[1], "END")
+    assert_equal(state[:to_s], "END")
+  end
 end
