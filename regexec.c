@@ -615,7 +615,7 @@ init_cache_index_table(regex_t* reg, OnigCacheIndex *table)
 	if (reg->repeat_range[mem].lower == 0) {
 	  table->addr = pbegin;
 	  table->num = num - current_mem_num;
-	  table->outer_repeat = mem;
+	  table->outer_repeat = -1;
 	  num++;
 	  table++;
 	}
