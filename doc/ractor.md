@@ -393,7 +393,7 @@ TODO: `select` syntax of go-language uses round-robin technique to make fair sch
 
 * `Ractor#close_incoming/outgoing` close incoming/outgoing ports (similar to `Queue#close`).
 * `Ractor#close_incoming`
-  * `r.send(obj) ` where `r`'s incoming port is closed, will raise an exception.
+  * `r.send(obj)` where `r`'s incoming port is closed, will raise an exception.
   * When the incoming queue is empty and incoming port is closed, `Ractor.receive` raises an exception. If the incoming queue is not empty, it dequeues an object without exceptions.
 * `Ractor#close_outgoing`
   * `Ractor.yield` on a Ractor which closed the outgoing port, it will raise an exception.
