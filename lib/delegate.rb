@@ -343,11 +343,18 @@ class SimpleDelegator < Delegator
   end
 end
 
-def Delegator.delegating_block(mid) # :nodoc:
-  lambda do |*args, &block|
-    target = self.__getobj__
-    target.__send__(mid, *args, &block)
-  end.ruby2_keywords
+def Delegator.delegating_block(mid, arity = nil) # :nodoc:
+  if arity != 0
+    lambda do |*args, &block|
+      target = self.__getobj__
+      target.__send__(mid, *args, &block)
+    end.ruby2_keywords
+  else
+    lambda do |&block|
+      target = self.__getobj__
+      target.__send__(mid, &block)
+    end
+  end
 end
 
 #
@@ -411,11 +418,13 @@ def DelegateClass(superclass, &block)
       @delegate_dc_obj = obj
     end
     protected_instance_methods.each do |method|
-      define_method(method, Delegator.delegating_block(method))
+      arity = superclass.instance_method(method).arity
+      define_method(method, Delegator.delegating_block(method, arity))
       protected method
     end
     public_instance_methods.each do |method|
-      define_method(method, Delegator.delegating_block(method))
+      arity = superclass.instance_method(method).arity
+      define_method(method, Delegator.delegating_block(method, arity))
     end
   end
   klass.define_singleton_method :public_instance_methods do |all=true|
