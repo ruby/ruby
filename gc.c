@@ -11719,24 +11719,25 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 }
 
 static void
-gc_set_initial_pages(void)
+gc_set_initial_pages(rb_objspace_t *objspace)
 {
-    size_t min_pages;
-    rb_objspace_t *objspace = &rb_objspace;
-
     gc_rest(objspace);
-
-    min_pages = gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT;
-
-    size_t pages_per_class = (min_pages - heap_eden_total_pages(objspace)) / SIZE_POOL_COUNT;
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
 
-        heap_add_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool), pages_per_class);
+        if (gc_params.heap_init_slots > size_pool->eden_heap.total_slots) {
+            size_t slots = gc_params.heap_init_slots - size_pool->eden_heap.total_slots;
+            int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+            size_pool->allocatable_pages = slots * multiple / HEAP_PAGE_OBJ_LIMIT;
+        }
+        else {
+            /* We already have more slots than heap_init_slots allows, so
+             * prevent creating more pages. */
+            size_pool->allocatable_pages = 0;
+        }
     }
-
-    heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), min_pages - heap_eden_total_pages(objspace));
+    heap_pages_expand_sorted(objspace);
 }
 
 /*
@@ -11792,7 +11793,7 @@ ruby_gc_set_params(void)
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
     if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
-        gc_set_initial_pages();
+        gc_set_initial_pages(objspace);
     }
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);
