@@ -351,9 +351,8 @@ module Gem
         end
 
         def extensions_dir
-          Gem.default_ext_dir_for(base_dir) ||
-            File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM,
-                      Gem.extension_api_version)
+          @extensions_dir ||=
+            Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
       end
     end

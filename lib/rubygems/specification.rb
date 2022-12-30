@@ -531,13 +531,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :required_rubygems_version
 
   ##
-  # The version of RubyGems used to create this gem.
-  #
-  # Do not set this, it is set automatically when the gem is packaged.
-
-  attr_accessor :rubygems_version
-
-  ##
   # The key used to sign this gem.  See Gem::Security for details.
 
   attr_accessor :signing_key
@@ -722,6 +715,21 @@ class Gem::Specification < Gem::BasicSpecification
 
   def test_files=(files) # :nodoc:
     @test_files = Array files
+  end
+
+  ######################################################################
+  # :section: Read-only attributes
+
+  ##
+  # The version of RubyGems used to create this gem.
+
+  attr_accessor :rubygems_version
+
+  ##
+  # The path where this gem installs its extensions.
+
+  def extensions_dir
+    @extensions_dir ||= super
   end
 
   ######################################################################
