@@ -510,7 +510,7 @@ class Time
           (\d{2,})\s+
           (\d{2})\s*
           :\s*(\d{2})
-          (?:\s*:\s*(\d{2}))?\s+
+          (?:\s*:\s*(\d\d))?\s+
           ([+-]\d{4}|
            UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Z])/ix =~ date
         # Since RFC 2822 permit comments, the regexp has no right anchor.
