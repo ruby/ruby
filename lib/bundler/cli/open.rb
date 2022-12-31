@@ -10,6 +10,7 @@ module Bundler
     end
 
     def run
+      raise InvalidOption, "Cannot specify `--path` option without a value" if !@path.nil? && @path.empty?
       editor = [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? }
       return Bundler.ui.info("To open a bundled gem, set $EDITOR or $BUNDLER_EDITOR") unless editor
       return unless spec = Bundler::CLI::Common.select_spec(name, :regex_match)

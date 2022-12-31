@@ -73,6 +73,11 @@ RSpec.describe "bundle open" do
       expect(out).to include("editor #{default_bundle_path("gems", "activerecord-2.3.2")}/lib/active_record")
     end
 
+    it "requires value for --path arg" do
+      bundle "open activerecord --path", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, :raise_on_error => false
+      expect(err).to eq "Cannot specify `--path` option without a value"
+    end
+
     it "suggests alternatives for similar-sounding gems when using subpath" do
       bundle "open Rails --path README.md", :env => { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, :raise_on_error => false
       expect(err).to match(/did you mean rails\?/i)
