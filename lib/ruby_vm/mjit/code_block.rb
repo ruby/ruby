@@ -9,7 +9,7 @@ module RubyVM::MJIT
       @write_pos = 0
     end
 
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def write(asm)
       return 0 if @write_pos + asm.size >= @mem_size
 

@@ -3,9 +3,12 @@ module RubyVM::MJIT
   # cfp: rsi
   #  sp: rbx
   # scratch regs: rax
+  #
+  # 4/101
   class InsnCompiler
-    # 4/101
-    def initialize
+    # @param ocb [CodeBlock]
+    def initialize(ocb)
+      @ocb = ocb
       @exit_compiler = ExitCompiler.new
       freeze
     end
@@ -30,7 +33,7 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def putnil(jit, ctx, asm)
       asm.mov([SP, C.VALUE.size * ctx.stack_size], Qnil)
       ctx.stack_size += 1
@@ -41,7 +44,7 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def putobject(jit, ctx, asm)
       # Get operands
       val = jit.operand(0)
@@ -102,16 +105,14 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def leave(jit, ctx, asm)
       assert_eq!(ctx.stack_size, 1)
 
       asm.comment('RUBY_VM_CHECK_INTS(ec)')
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
-      asm.jz(not_interrupted = asm.new_label(:not_interrupted))
-      @exit_compiler.compile_exit(jit, ctx, asm) # TODO: use ocb
-      asm.write_label(not_interrupted)
+      asm.jnz(compile_side_exit(jit, ctx))
 
       asm.comment('pop stack frame')
       asm.add(CFP, C.rb_control_frame_t.size) # cfp = cfp + 1
@@ -164,7 +165,7 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def getlocal_WC_0(jit, ctx, asm)
       # Get operands
       idx = jit.operand(0)
@@ -194,6 +195,14 @@ module RubyVM::MJIT
       if left != right
         raise "'#{left.inspect}' was not '#{right.inspect}'"
       end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    def compile_side_exit(jit, ctx)
+      asm = Assembler.new
+      @exit_compiler.compile_exit(jit, ctx, asm)
+      @ocb.write(asm)
     end
   end
 end

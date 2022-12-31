@@ -1,10 +1,10 @@
+require 'ruby_vm/mjit/assembler'
 require 'ruby_vm/mjit/code_block'
 require 'ruby_vm/mjit/context'
 require 'ruby_vm/mjit/exit_compiler'
 require 'ruby_vm/mjit/insn_compiler'
 require 'ruby_vm/mjit/instruction'
 require 'ruby_vm/mjit/jit_state'
-require 'ruby_vm/mjit/x86_assembler'
 
 module RubyVM::MJIT
   # Compilation status
@@ -31,9 +31,10 @@ module RubyVM::MJIT
     # @param mem_block [Integer] JIT buffer address
     # @param mem_size  [Integer] JIT buffer size
     def initialize(mem_block, mem_size)
-      @cb = CodeBlock.new(mem_block:, mem_size:)
+      @cb = CodeBlock.new(mem_block: mem_block, mem_size: mem_size / 2)
+      @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2)
       @exit_compiler = ExitCompiler.new
-      @insn_compiler = InsnCompiler.new
+      @insn_compiler = InsnCompiler.new(@ocb)
     end
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
@@ -41,7 +42,7 @@ module RubyVM::MJIT
       # TODO: Support has_opt
       return if iseq.body.param.flags.has_opt
 
-      asm = X86Assembler.new
+      asm = Assembler.new
       asm.comment("Block: #{iseq.body.location.label}@#{pathobj_path(iseq.body.location.pathobj)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, iseq)
@@ -58,7 +59,7 @@ module RubyVM::MJIT
     # Callee-saved: rbx, rsp, rbp, r12, r13, r14, r15
     # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
     #
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def compile_prologue(asm)
       asm.comment("MJIT entry")
 
@@ -69,7 +70,7 @@ module RubyVM::MJIT
       asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
     end
 
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def compile_block(asm, iseq)
       jit = JITState.new
       ctx = Context.new
@@ -92,7 +93,7 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def compile_insn(jit, ctx, asm, insn)
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")

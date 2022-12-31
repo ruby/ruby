@@ -1,8 +1,13 @@
 # frozen_string_literal: true
-# https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
 module RubyVM::MJIT
-  class X86Assembler
+  # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
+  # Mostly an x86_64 assembler, but this also has some stuff that is useful for any architecture.
+  class Assembler
     class Label < Data.define(:id, :name); end
+
+    # rel32 is inserted as [Rel32, Rel32Pad..] and converted on #resolve_rel32
+    class Rel32 < Data.define(:addr); end
+    Rel32Pad = Object.new
 
     ByteWriter = CType::Immediate.parse('char')
 
@@ -18,7 +23,9 @@ module RubyVM::MJIT
     end
 
     def assemble(addr)
-      link_labels
+      resolve_rel32(addr)
+      resolve_labels
+
       writer = ByteWriter.new(addr)
       # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
       # So writing byte by byte to avoid hitting that situation.
@@ -65,12 +72,26 @@ module RubyVM::MJIT
       end
     end
 
-    # JZ rel8
-    # @param [RubyVM::MJIT::X86Assembler::Label] label
-    def jz(label)
-      # 74 cb
-      insn(opcode: 0x74)
-      @bytes.push(label)
+    def jnz(dst)
+      case dst
+      # JNZ rel32
+      in Integer => addr
+        # 0F 85 cd
+        insn(opcode: [0x0f, 0x85], imm: rel32(addr))
+      else
+        raise NotImplementedError, "jnz: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
+    def jz(dst)
+      case dst
+      # JZ rel8
+      in Label => label
+        # 74 cb
+        insn(opcode: 0x74, imm: label)
+      else
+        raise NotImplementedError, "jz: not-implemented operands: #{dst.inspect}"
+      end
     end
 
     def mov(dst, src)
@@ -244,7 +265,7 @@ module RubyVM::MJIT
       Label.new(id: @label_id += 1, name:)
     end
 
-    # @param [RubyVM::MJIT::X86Assembler::Label] label
+    # @param [RubyVM::MJIT::Assembler::Label] label
     def write_label(label)
       @labels[label] = @bytes.size
     end
@@ -267,7 +288,7 @@ module RubyVM::MJIT
       if prefix
         @bytes.push(prefix)
       end
-      @bytes.push(opcode)
+      @bytes.push(*Array(opcode))
       if mod_rm
         @bytes.push(mod_rm)
       end
@@ -375,7 +396,25 @@ module RubyVM::MJIT
       reg.start_with?('r')
     end
 
-    def link_labels
+    def rel32(addr)
+      [Rel32.new(addr), Rel32Pad, Rel32Pad, Rel32Pad]
+    end
+
+    def resolve_rel32(write_addr)
+      @bytes.each_with_index do |byte, index|
+        if byte.is_a?(Rel32)
+          src_addr = write_addr + index + 4 # offset 4 bytes for rel32 itself
+          dst_addr = byte.addr
+          rel32 = dst_addr - src_addr
+          raise "unexpected offset: #{rel32}" unless imm32?(rel32)
+          imm32(rel32).each_with_index do |rel_byte, rel_index|
+            @bytes[index + rel_index] = rel_byte
+          end
+        end
+      end
+    end
+
+    def resolve_labels
       @bytes.each_with_index do |byte, index|
         if byte.is_a?(Label)
           src_index = index + 1 # offset 1 byte for rel8 itself

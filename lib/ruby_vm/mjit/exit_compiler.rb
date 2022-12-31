@@ -4,7 +4,7 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
+    # @param asm [RubyVM::MJIT::Assembler]
     def compile_exit(jit, ctx, asm)
       if C.mjit_opts.stats
         insn = decode_insn(C.VALUE.new(jit.pc).*)
