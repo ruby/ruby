@@ -5,6 +5,10 @@ module RubyVM::MJIT
   # scratch regs: rax
   class InsnCompiler
     # 4/101
+    def initialize
+      @exit_compiler = ExitCompiler.new
+      freeze
+    end
 
     # nop
     # getlocal
@@ -106,7 +110,7 @@ module RubyVM::MJIT
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
       asm.jz(not_interrupted = asm.new_label(:not_interrupted))
-      Compiler.compile_exit(jit, ctx, asm) # TODO: use ocb
+      @exit_compiler.compile_exit(jit, ctx, asm) # TODO: use ocb
       asm.write_label(not_interrupted)
 
       asm.comment('pop stack frame')

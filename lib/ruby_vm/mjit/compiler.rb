@@ -1,4 +1,5 @@
 require 'ruby_vm/mjit/context'
+require 'ruby_vm/mjit/exit_compiler'
 require 'ruby_vm/mjit/insn_compiler'
 require 'ruby_vm/mjit/instruction'
 require 'ruby_vm/mjit/jit_state'
@@ -22,35 +23,6 @@ module RubyVM::MJIT
   class Compiler
     attr_accessor :write_pos
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::X86Assembler]
-    def self.compile_exit(jit, ctx, asm)
-      if C.mjit_opts.stats
-        insn = decode_insn(C.VALUE.new(jit.pc).*)
-        asm.comment("increment insn exit: #{insn.name}")
-        asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
-        asm.add([:rax], 1) # TODO: lock
-      end
-      asm.comment("exit to interpreter")
-
-      # Update pc
-      asm.mov(:rax, jit.pc) # rax = jit.pc
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
-
-      # Update sp
-      if ctx.stack_size > 0
-        asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
-        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
-      end
-
-      # Restore callee-saved registers
-      asm.pop(SP)
-
-      asm.mov(:rax, Qundef)
-      asm.ret
-    end
-
     def self.decode_insn(encoded)
       INSNS.fetch(C.rb_vm_insn_decode(encoded))
     end
@@ -60,6 +32,7 @@ module RubyVM::MJIT
       @comments = Hash.new { |h, k| h[k] = [] }
       @mem_block = mem_block
       @write_pos = 0
+      @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new
     end
 
@@ -138,7 +111,7 @@ module RubyVM::MJIT
         when EndBlock
           break
         when CantCompile
-          self.class.compile_exit(jit, ctx, asm)
+          @exit_compiler.compile_exit(jit, ctx, asm)
           break
         end
         index += insn.len
@@ -213,7 +186,7 @@ module RubyVM::MJIT
       # opt_newarray_min
       # invokesuper
       # invokeblock
-      when :leave  then @insn_compiler.leave(jit, ctx, asm)
+      when :leave then @insn_compiler.leave(jit, ctx, asm)
       # throw
       # jump
       # branchif
