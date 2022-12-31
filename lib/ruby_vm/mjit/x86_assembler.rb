@@ -10,8 +10,6 @@ module RubyVM::MJIT
     # REX =   0100WR0B
     REX_W = 0b01001000
 
-    attr_reader :comments
-
     def initialize
       @bytes = []
       @labels = {}
@@ -19,7 +17,7 @@ module RubyVM::MJIT
       @comments = Hash.new { |h, k| h[k] = [] }
     end
 
-    def compile(addr)
+    def assemble(addr)
       link_labels
       writer = ByteWriter.new(addr)
       # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
@@ -35,6 +33,10 @@ module RubyVM::MJIT
     def size
       @bytes.size
     end
+
+    #
+    # Instructions
+    #
 
     def add(dst, src)
       case [dst, src]
@@ -227,6 +229,12 @@ module RubyVM::MJIT
         raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
       end
     end
+
+    #
+    # Utilities
+    #
+
+    attr_reader :comments
 
     def comment(message)
       @comments[@bytes.size] << message

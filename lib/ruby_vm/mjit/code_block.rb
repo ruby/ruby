@@ -10,14 +10,14 @@ module RubyVM::MJIT
     end
 
     # @param asm [RubyVM::MJIT::X86Assembler]
-    def compile(asm)
+    def write(asm)
       return 0 if @write_pos + asm.size >= @mem_size
 
       start_addr = write_addr
 
       # Write machine code
       C.mjit_mark_writable
-      @write_pos += asm.compile(start_addr)
+      @write_pos += asm.assemble(start_addr)
       C.mjit_mark_executable
 
       end_addr = write_addr

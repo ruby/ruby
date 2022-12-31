@@ -37,7 +37,7 @@ module RubyVM::MJIT
     end
 
     # @param iseq [RubyVM::MJIT::CPointer::Struct]
-    def call(iseq)
+    def compile(iseq)
       # TODO: Support has_opt
       return if iseq.body.param.flags.has_opt
 
@@ -45,7 +45,7 @@ module RubyVM::MJIT
       asm.comment("Block: #{iseq.body.location.label}@#{pathobj_path(iseq.body.location.pathobj)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, iseq)
-      iseq.body.jit_func = @cb.compile(asm)
+      iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
