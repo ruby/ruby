@@ -14,9 +14,7 @@ module RubyVM::MJIT
     Rel32Pad = Object.new
 
     # A set of ModR/M values encoded on #insn
-    class ModRM < Data.define(:mod, :reg, :rm)
-      def initialize(mod:, reg: nil, rm: nil) = super
-    end
+    class ModRM < Data.define(:mod, :reg, :rm); end
     Mod00 = 0b00 # Mod 00: [reg]
     Mod01 = 0b01 # Mod 01: [reg]+disp8
     Mod10 = 0b10 # Mod 10: [reg]+disp16
@@ -33,9 +31,11 @@ module RubyVM::MJIT
       @labels = {}
       @label_id = 0
       @comments = Hash.new { |h, k| h[k] = [] }
+      @stubs = Hash.new { |h, k| h[k] = [] }
     end
 
     def assemble(addr)
+      set_stub_addrs(addr)
       resolve_rel32(addr)
       resolve_labels
 
@@ -67,7 +67,7 @@ module RubyVM::MJIT
         insn(
           prefix: REX_W,
           opcode: 0x83,
-          mod_rm: ModRM[mod: Mod11, rm: dst_reg],
+          mod_rm: ModRM[mod: Mod11, reg: 0, rm: dst_reg],
           imm: imm8(src_imm),
         )
       # ADD r/m64, imm8 (Mod 00: [reg])
@@ -77,7 +77,7 @@ module RubyVM::MJIT
         insn(
           prefix: REX_W,
           opcode: 0x83,
-          mod_rm: ModRM[mod: Mod00, rm: dst_reg],
+          mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
           imm: imm8(src_imm),
         )
       else
@@ -85,12 +85,34 @@ module RubyVM::MJIT
       end
     end
 
+    # @param addr [Integer]
+    def call(addr)
+      # CALL rel32
+      # E8 cd
+      insn(opcode: 0xe8, imm: rel32(addr))
+    end
+
+    def jmp(dst)
+      case dst
+      # JMP rel32
+      in Integer => dst_addr
+        # E9 cd
+        insn(opcode: 0xe9, imm: rel32(dst_addr))
+      # JMP r/m64 (Mod 11: reg)
+      in Symbol => dst_reg
+        # FF /4
+        insn(opcode: 0xff, mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg])
+      else
+        raise NotImplementedError, "jmp: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
     def jnz(dst)
       case dst
       # JNZ rel32
-      in Integer => addr
+      in Integer => dst_addr
         # 0F 85 cd
-        insn(opcode: [0x0f, 0x85], imm: rel32(addr))
+        insn(opcode: [0x0f, 0x85], imm: rel32(dst_addr))
       else
         raise NotImplementedError, "jnz: not-implemented operands: #{dst.inspect}"
       end
@@ -99,9 +121,9 @@ module RubyVM::MJIT
     def jz(dst)
       case dst
       # JZ rel8
-      in Label => label
+      in Label => dst_label
         # 74 cb
-        insn(opcode: 0x74, imm: label)
+        insn(opcode: 0x74, imm: dst_label)
       else
         raise NotImplementedError, "jz: not-implemented operands: #{dst.inspect}"
       end
@@ -155,7 +177,7 @@ module RubyVM::MJIT
           insn(
             prefix: REX_W,
             opcode: 0xc7,
-            mod_rm: ModRM[mod: Mod11, rm: dst_reg],
+            mod_rm: ModRM[mod: Mod11, reg: 0, rm: dst_reg],
             imm: imm32(src_imm),
           )
         # MOV r64, imm64
@@ -180,7 +202,7 @@ module RubyVM::MJIT
           insn(
             prefix: REX_W,
             opcode: 0xc7,
-            mod_rm: ModRM[mod: Mod00, rm: dst_reg],
+            mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
             imm: imm32(src_imm),
           )
         # MOV r/m64, r64 (Mod 00: [reg])
@@ -207,7 +229,7 @@ module RubyVM::MJIT
           insn(
             prefix: REX_W,
             opcode: 0xc7,
-            mod_rm: ModRM[mod: Mod01, rm: dst_reg],
+            mod_rm: ModRM[mod: Mod01, reg: 0, rm: dst_reg],
             disp: dst_disp,
             imm: imm32(src_imm),
           )
@@ -284,6 +306,10 @@ module RubyVM::MJIT
       @comments[@bytes.size] << message
     end
 
+    def stub(stub)
+      @stubs[@bytes.size] << stub
+    end
+
     def new_label(name)
       Label.new(id: @label_id += 1, name:)
     end
@@ -314,8 +340,8 @@ module RubyVM::MJIT
         opcode += reg_code(rd)
       end
       if mod_rm
-        prefix |= REX_R if mod_rm.reg && extended_reg?(mod_rm.reg)
-        prefix |= REX_B if mod_rm.rm && extended_reg?(mod_rm.rm)
+        prefix |= REX_R if mod_rm.reg.is_a?(Symbol) && extended_reg?(mod_rm.reg)
+        prefix |= REX_B if mod_rm.rm.is_a?(Symbol) && extended_reg?(mod_rm.rm)
       end
 
       # Encode insn
@@ -326,8 +352,8 @@ module RubyVM::MJIT
       if mod_rm
         mod_rm_byte = encode_mod_rm(
           mod: mod_rm.mod,
-          reg: mod_rm.reg ? reg_code(mod_rm.reg) : 0,
-          rm: mod_rm.rm ? reg_code(mod_rm.rm) : 0,
+          reg: mod_rm.reg.is_a?(Symbol) ? reg_code(mod_rm.reg) : mod_rm.reg,
+          rm: mod_rm.rm.is_a?(Symbol) ? reg_code(mod_rm.rm) : mod_rm.rm,
         )
         @bytes.push(mod_rm_byte)
       end
@@ -413,7 +439,7 @@ module RubyVM::MJIT
       unless imm32?(imm)
         raise ArgumentError, "unexpected imm32: #{imm}"
       end
-      imm_bytes(imm, 4)
+      [imm].pack('l').unpack('c*')
     end
 
     # io: 8 bytes
@@ -463,6 +489,15 @@ module RubyVM::MJIT
 
     def rel32(addr)
       [Rel32.new(addr), Rel32Pad, Rel32Pad, Rel32Pad]
+    end
+
+    def set_stub_addrs(write_addr)
+      @bytes.each_with_index do |byte, index|
+        @stubs.fetch(index, []).each do |stub|
+          stub.addr = write_addr + index
+          stub.freeze
+        end
+      end
     end
 
     def resolve_rel32(write_addr)

@@ -1,6 +1,9 @@
 module RubyVM::MJIT
   class ExitCompiler
-    def initialize = freeze
+    def initialize
+      # TODO: Use GC offsets
+      @gc_refs = []
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -12,25 +15,61 @@ module RubyVM::MJIT
         asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
         asm.add([:rax], 1) # TODO: lock
       end
-      asm.comment("exit to interpreter")
 
-      # Update pc
-      asm.mov(:rax, jit.pc) # rax = jit.pc
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
-
-      # Update sp
-      if ctx.stack_size > 0
-        asm.add(SP, C.VALUE.size * ctx.stack_size) # rbx += stack_size
-        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = rbx
-      end
+      # Fix pc/sp offsets for the interpreter
+      save_pc_and_sp(jit, ctx, asm)
 
       # Restore callee-saved registers
+      asm.comment('exit to interpreter')
       asm.pop(SP)
       asm.pop(EC)
       asm.pop(CFP)
 
       asm.mov(:rax, Qundef)
       asm.ret
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param asm [RubyVM::MJIT::Assembler]
+    # @param stub [RubyVM::MJIT::BlockStub]
+    def compile_jump_stub(jit, asm, stub)
+      case stub
+      when BlockStub
+        asm.comment("block stub hit: #{stub.iseq.body.location.label}@#{C.rb_iseq_path(stub.iseq)}:#{stub.iseq.body.location.first_lineno}")
+      else
+        raise "unexpected stub object: #{stub.inspect}"
+      end
+
+      # Call rb_mjit_stub_hit
+      asm.mov(:rdi, to_value(stub))
+      asm.call(C.rb_mjit_stub_hit)
+
+      # Jump to the address returned by rb_mjit_stub_hit
+      asm.jmp(:rax)
+    end
+
+    private
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def save_pc_and_sp(jit, ctx, asm)
+      # Update pc
+      asm.comment("save pc #{'and sp' if ctx.sp_offset != 0}")
+      asm.mov(:rax, jit.pc) # rax = jit.pc
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
+
+      # Update sp
+      if ctx.sp_offset != 0
+        asm.add(SP, C.VALUE.size * ctx.sp_offset) # sp += stack_size
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = sp
+        ctx.sp_offset = 0
+      end
+    end
+
+    def to_value(obj)
+      @gc_refs << obj
+      C.to_value(obj)
     end
   end
 end

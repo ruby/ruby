@@ -36,6 +36,13 @@ module RubyVM::MJIT # :nodoc: all
       CType::Immediate.parse("size_t").new(addr)
     end
 
+    def rb_mjit_stub_hit
+      Primitive.cstmt! %{
+        extern void *rb_mjit_stub_hit(VALUE stub);
+        return SIZET2NUM((size_t)rb_mjit_stub_hit);
+      }
+    end
+
     def rb_mjit_counters
       addr = Primitive.cstmt! %{
         #if MJIT_STATS
@@ -51,6 +58,11 @@ module RubyVM::MJIT # :nodoc: all
     # @param to [Integer]   - To address
     def dump_disasm(from, to)
       Primitive.dump_disasm(from, to)
+    end
+
+    # Convert a Ruby object to a VALUE in Integer
+    def to_value(obj)
+      Primitive.cexpr! 'SIZET2NUM((size_t)obj)'
     end
 
     #========================================================================================

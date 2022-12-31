@@ -130,6 +130,8 @@ static VALUE rb_mMJITC = 0;
 static VALUE rb_MJITCompiler = 0;
 // RubyVM::MJIT::CPointer::Struct_rb_iseq_t
 static VALUE rb_cMJITIseqPtr = 0;
+// RubyVM::MJIT::CPointer::Struct_rb_control_frame_t
+static VALUE rb_cMJITCfpPtr = 0;
 
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
@@ -334,11 +336,41 @@ rb_mjit_compile(const rb_iseq_t *iseq)
     mjit_stats_p = false; // Avoid impacting JIT stats by itself
 
     VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
-    rb_funcall(rb_MJITCompiler, rb_intern("compile"), 1, iseq_ptr);
+    VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
+    rb_funcall(rb_MJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
 
     mjit_stats_p = mjit_opts.stats;
     mjit_call_p = original_call_p;
     RB_VM_LOCK_LEAVE();
+}
+
+void *
+rb_mjit_stub_hit(VALUE branch_stub)
+{
+    VALUE result;
+
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+    mjit_stats_p = false; // Avoid impacting JIT stats by itself
+
+    rb_control_frame_t *cfp = GET_EC()->cfp;
+    // Given JIT's SP offset, temporarily update SP to preserve stack values.
+    // It's reset afterwards for consistency with the code without this stub.
+    unsigned int stack_max = cfp->iseq->body->stack_max;
+    cfp->sp += stack_max;
+
+    VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+    result = rb_funcall(rb_MJITCompiler, rb_intern("stub_hit"), 2, branch_stub, cfp_ptr);
+
+    cfp->sp -= stack_max;
+
+    mjit_stats_p = mjit_opts.stats;
+    mjit_call_p = original_call_p;
+    RB_VM_LOCK_LEAVE();
+
+    return (void *)NUM2SIZET(result);
 }
 
 // Called by rb_vm_mark()
@@ -352,6 +384,7 @@ mjit_mark(void)
     // Mark objects used by the MJIT compiler
     rb_gc_mark(rb_MJITCompiler);
     rb_gc_mark(rb_cMJITIseqPtr);
+    rb_gc_mark(rb_cMJITCfpPtr);
 
     RUBY_MARK_LEAVE("mjit");
 }
@@ -377,6 +410,7 @@ mjit_init(const struct mjit_options *opts)
     rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 2,
                                  SIZET2NUM((size_t)rb_mjit_mem_block), UINT2NUM(MJIT_CODE_SIZE));
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+    rb_cMJITCfpPtr = rb_funcall(rb_mMJITC, rb_intern("rb_control_frame_t"), 0);
 
     mjit_call_p = true;
     mjit_stats_p = mjit_opts.stats;

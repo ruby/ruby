@@ -1,7 +1,7 @@
 module RubyVM::MJIT
   # scratch regs: rax
   #
-  # 4/101
+  # 5/101
   class InsnCompiler
     # @param ocb [CodeBlock]
     def initialize(ocb)
@@ -33,7 +33,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def putnil(jit, ctx, asm)
       asm.mov([SP, C.VALUE.size * ctx.stack_size], Qnil)
-      ctx.stack_size += 1
+      ctx.stack_push(1)
       KeepCompiling
     end
 
@@ -55,7 +55,7 @@ module RubyVM::MJIT
         asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
       end
 
-      ctx.stack_size += 1
+      ctx.stack_push(1)
       KeepCompiling
     end
 
@@ -141,7 +141,18 @@ module RubyVM::MJIT
     # opt_mod
     # opt_eq
     # opt_neq
-    # opt_lt
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_lt(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+      CantCompile
+    end
+
     # opt_le
     # opt_gt
     # opt_ge
@@ -178,7 +189,7 @@ module RubyVM::MJIT
 
       # Push it to the stack
       asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
-      ctx.stack_size += 1
+      ctx.stack_push(1)
       KeepCompiling
     end
 
@@ -194,6 +205,27 @@ module RubyVM::MJIT
       if left != right
         raise "'#{left.inspect}' was not '#{right.inspect}'"
       end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def defer_compilation(jit, ctx, asm)
+      # Make a stub to compile the current insn
+      block_stub = BlockStub.new(
+        iseq: jit.iseq,
+        pc:   jit.pc,
+        ctx:  ctx.dup,
+      )
+
+      stub_hit = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_jump_stub(jit, ocb_asm, block_stub)
+        @ocb.write(ocb_asm)
+      end
+
+      asm.comment('defer_compilation: block stub')
+      asm.stub(block_stub)
+      asm.jmp(stub_hit)
     end
 
     # @param jit [RubyVM::MJIT::JITState]

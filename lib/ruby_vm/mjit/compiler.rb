@@ -1,4 +1,5 @@
 require 'ruby_vm/mjit/assembler'
+require 'ruby_vm/mjit/block_stub'
 require 'ruby_vm/mjit/code_block'
 require 'ruby_vm/mjit/context'
 require 'ruby_vm/mjit/exit_compiler'
@@ -38,31 +39,56 @@ module RubyVM::MJIT
       @insn_compiler = InsnCompiler.new(@ocb)
     end
 
-    # @param iseq [RubyVM::MJIT::CPointer::Struct]
-    def compile(iseq)
+    # Compile an ISEQ from its entry point.
+    # @param iseq `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
+    # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
+    def compile(iseq, cfp)
       # TODO: Support has_opt
       return if iseq.body.param.flags.has_opt
 
       asm = Assembler.new
-      asm.comment("Block: #{iseq.body.location.label}@#{pathobj_path(iseq.body.location.pathobj)}:#{iseq.body.location.first_lineno}")
+      asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
-      compile_block(asm, iseq)
+      compile_block(asm, jit: JITState.new(iseq:, cfp:))
       iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
 
+    # Continue compilation from a stub.
+    # @param stub [RubyVM::MJIT::BlockStub]
+    # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
+    # @return [Integer] The starting address of a compiled stub
+    def stub_hit(stub, cfp)
+      # Update cfp->pc for `jit.at_current_insn?`
+      cfp.pc = stub.pc
+
+      # Compile the jump target
+      new_addr = Assembler.new.then do |asm|
+        jit = JITState.new(iseq: stub.iseq, cfp:)
+        index = (stub.pc - stub.iseq.body.iseq_encoded.to_i) / C.VALUE.size
+        compile_block(asm, jit:, index:, ctx: stub.ctx)
+        @cb.write(asm)
+      end
+
+      # Re-generate the jump source
+      @cb.with_addr(stub.addr) do
+        asm = Assembler.new
+        asm.comment('regenerate block stub')
+        asm.jmp(new_addr)
+        @cb.write(asm)
+      end
+      new_addr
+    end
+
     private
 
-    #  ec: rdi
-    # cfp: rsi
-    #
     # Callee-saved: rbx, rsp, rbp, r12, r13, r14, r15
     # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
     #
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_prologue(asm)
-      asm.comment("MJIT entry")
+      asm.comment('MJIT entry')
 
       # Save callee-saved registers used by JITed code
       asm.push(CFP)
@@ -78,11 +104,8 @@ module RubyVM::MJIT
     end
 
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_block(asm, iseq)
-      jit = JITState.new
-      ctx = Context.new
-
-      index = 0
+    def compile_block(asm, jit:, index: 0, ctx: Context.new)
+      iseq = jit.iseq
       while index < iseq.body.iseq_size
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
@@ -181,7 +204,7 @@ module RubyVM::MJIT
       # opt_mod
       # opt_eq
       # opt_neq
-      # opt_lt
+      when :opt_lt then @insn_compiler.opt_lt(jit, ctx, asm)
       # opt_le
       # opt_gt
       # opt_ge
