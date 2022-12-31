@@ -1,3 +1,4 @@
+require 'ruby_vm/mjit/code_block'
 require 'ruby_vm/mjit/context'
 require 'ruby_vm/mjit/exit_compiler'
 require 'ruby_vm/mjit/insn_compiler'
@@ -28,10 +29,9 @@ module RubyVM::MJIT
     end
 
     # @param mem_block [Integer] JIT buffer address
-    def initialize(mem_block)
-      @comments = Hash.new { |h, k| h[k] = [] }
-      @mem_block = mem_block
-      @write_pos = 0
+    # @param mem_size  [Integer] JIT buffer size
+    def initialize(mem_block, mem_size)
+      @cb = CodeBlock.new(mem_block:, mem_size:)
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new
     end
@@ -45,40 +45,12 @@ module RubyVM::MJIT
       asm.comment("Block: #{iseq.body.location.label}@#{pathobj_path(iseq.body.location.pathobj)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, iseq)
-      iseq.body.jit_func = compile(asm)
+      iseq.body.jit_func = @cb.compile(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
 
-    def write_addr
-      @mem_block + @write_pos
-    end
-
     private
-
-    # @param asm [RubyVM::MJIT::X86Assembler]
-    def compile(asm)
-      start_addr = write_addr
-
-      # Write machine code
-      C.mjit_mark_writable
-      @write_pos += asm.compile(start_addr)
-      C.mjit_mark_executable
-
-      end_addr = write_addr
-
-      # Convert comment indexes to addresses
-      asm.comments.each do |index, comments|
-        @comments[start_addr + index] += comments
-      end
-      asm.comments.clear
-
-      # Dump disasm if --mjit-dump-disasm
-      if C.mjit_opts.dump_disasm && start_addr < end_addr
-        dump_disasm(start_addr, end_addr)
-      end
-      start_addr
-    end
 
     #  ec: rdi
     # cfp: rsi
@@ -224,20 +196,6 @@ module RubyVM::MJIT
       when :getlocal_WC_0 then @insn_compiler.getlocal_WC_0(jit, ctx, asm)
       else CantCompile
       end
-    end
-
-    def dump_disasm(from, to)
-      C.dump_disasm(from, to).each do |address, mnemonic, op_str|
-        @comments.fetch(address, []).each do |comment|
-          puts bold("  # #{comment}")
-        end
-        puts "  0x#{format("%x", address)}: #{mnemonic} #{op_str}"
-      end
-      puts
-    end
-
-    def bold(text)
-      "\e[1m#{text}\e[0m"
     end
 
     # vm_core.h: pathobj_path

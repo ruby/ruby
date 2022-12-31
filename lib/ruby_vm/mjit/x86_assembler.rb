@@ -32,6 +32,10 @@ module RubyVM::MJIT
       @bytes.clear
     end
 
+    def size
+      @bytes.size
+    end
+
     def add(dst, src)
       case [dst, src]
       # ADD r/m64, imm8 (Mod 11)

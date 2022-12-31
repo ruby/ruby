@@ -100,7 +100,7 @@ struct compile_status {
 //
 
 // TODO: Make it configurable
-#define MJIT_CODE_SIZE 16 * 1024 * 1024
+#define MJIT_CODE_SIZE 64 * 1024 * 1024
 
 extern uint8_t *rb_mjit_mem_block;
 

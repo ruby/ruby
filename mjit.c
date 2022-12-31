@@ -374,7 +374,8 @@ mjit_init(const struct mjit_options *opts)
     }
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
     VALUE rb_cMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
-    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 1, SIZET2NUM((size_t)rb_mjit_mem_block));
+    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 2,
+                                 SIZET2NUM((size_t)rb_mjit_mem_block), UINT2NUM(MJIT_CODE_SIZE));
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
 
     mjit_call_p = true;
