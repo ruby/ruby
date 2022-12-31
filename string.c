@@ -911,14 +911,20 @@ empty_str_alloc(VALUE klass)
     return str;
 }
 
+static void
+rb_str_negative_size_check(long len)
+{
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+}
+
 static VALUE
 str_new0(VALUE klass, const char *ptr, long len, int termlen)
 {
     VALUE str;
 
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
+    rb_str_negative_size_check(len);
 
     RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
@@ -1028,9 +1034,7 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
 {
     VALUE str;
 
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
+    rb_str_negative_size_check(len);
 
     if (!ptr) {
         rb_encoding *enc = rb_enc_get_from_index(encindex);
@@ -3030,9 +3034,7 @@ rb_str_set_len(VALUE str, long len)
 VALUE
 rb_str_resize(VALUE str, long len)
 {
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
+    rb_str_negative_size_check(len);
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
@@ -3144,9 +3146,7 @@ VALUE
 rb_str_cat(VALUE str, const char *ptr, long len)
 {
     if (len == 0) return str;
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
+    rb_str_negative_size_check(len);
     return str_buf_cat(str, ptr, len);
 }
 
@@ -3238,9 +3238,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         if (0 < len) res_cr = ENC_CODERANGE_UNKNOWN;
     }
 
-    if (len < 0) {
-        rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
+    rb_str_negative_size_check(len);
     str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
