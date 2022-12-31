@@ -26,6 +26,8 @@ module RubyVM::MJIT
 
       # Restore callee-saved registers
       asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
 
       asm.mov(:rax, Qundef)
       asm.ret

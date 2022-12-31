@@ -1,7 +1,4 @@
 module RubyVM::MJIT
-  #  ec: rdi
-  # cfp: rsi
-  #  sp: rbx
   # scratch regs: rax
   #
   # 4/101
@@ -123,6 +120,8 @@ module RubyVM::MJIT
 
       # Restore callee-saved registers
       asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
 
       asm.ret
       EndBlock

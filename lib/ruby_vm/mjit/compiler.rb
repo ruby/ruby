@@ -16,9 +16,10 @@ module RubyVM::MJIT
   Qnil = Fiddle::Qnil
   Qundef = Fiddle::Qundef
 
-  # Fixed registers
-  EC  = :rdi # TODO: change this
-  CFP = :rsi # TODO: change this
+  # Callee-saved registers
+  # TODO: support using r12/r13 here
+  EC  = :r14
+  CFP = :r15
   SP  = :rbx
 
   class Compiler
@@ -64,9 +65,15 @@ module RubyVM::MJIT
       asm.comment("MJIT entry")
 
       # Save callee-saved registers used by JITed code
+      asm.push(CFP)
+      asm.push(EC)
       asm.push(SP)
 
-      # Load sp to a register
+      # Move arguments EC and CFP to dedicated registers
+      asm.mov(EC, :rdi)
+      asm.mov(CFP, :rsi)
+
+      # Load sp to a dedicated register
       asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
     end
 
