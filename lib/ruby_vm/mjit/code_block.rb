@@ -2,11 +2,13 @@ module RubyVM::MJIT
   class CodeBlock
     # @param mem_block [Integer] JIT buffer address
     # @param mem_size  [Integer] JIT buffer size
-    def initialize(mem_block:, mem_size:)
+    # @param outliend  [TrueClass,FalseClass] true for outlined CodeBlock
+    def initialize(mem_block:, mem_size:, outlined: false)
       @comments  = Hash.new { |h, k| h[k] = [] }
       @mem_block = mem_block
       @mem_size  = mem_size
       @write_pos = 0
+      @outlined  = outlined
     end
 
     # @param asm [RubyVM::MJIT::Assembler]
@@ -44,11 +46,20 @@ module RubyVM::MJIT
     def dump_disasm(from, to)
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|
         @comments.fetch(address, []).each do |comment|
-          puts bold("  # #{comment}")
+          puts colorize("  # #{comment}", bold: true)
         end
-        puts "  0x#{format("%x", address)}: #{mnemonic} #{op_str}"
+        puts colorize("  0x#{format("%x", address)}: #{mnemonic} #{op_str}")
       end
       puts
+    end
+
+    def colorize(text, bold: false)
+      buf = +''
+      buf << "\e[1m" if bold
+      buf << "\e[34m" if @outlined
+      buf << text
+      buf << "\e[0m"
+      buf
     end
 
     def bold(text)

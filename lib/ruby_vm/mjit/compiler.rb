@@ -32,7 +32,7 @@ module RubyVM::MJIT
     # @param mem_size  [Integer] JIT buffer size
     def initialize(mem_block, mem_size)
       @cb = CodeBlock.new(mem_block: mem_block, mem_size: mem_size / 2)
-      @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2)
+      @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new(@ocb)
     end
