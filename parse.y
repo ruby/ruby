@@ -7028,6 +7028,14 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end, int
     }
 }
 
+static void
+set_lastline(struct parser_params *p, VALUE v)
+{
+    p->lex.pbeg = p->lex.pcur = RSTRING_PTR(v);
+    p->lex.pend = p->lex.pcur + RSTRING_LEN(v);
+    p->lex.lastline = v;
+}
+
 static int
 nextline(struct parser_params *p, int set_encoding)
 {
@@ -7065,10 +7073,8 @@ nextline(struct parser_params *p, int set_encoding)
 	p->heredoc_end = 0;
     }
     p->ruby_sourceline++;
-    p->lex.pbeg = p->lex.pcur = RSTRING_PTR(v);
-    p->lex.pend = p->lex.pcur + RSTRING_LEN(v);
+    set_lastline(p, v);
     token_flush(p);
-    p->lex.lastline = v;
     return 0;
 }
 
@@ -9850,6 +9856,7 @@ parser_yylex(struct parser_params *p)
 	/* fall through */
       case '\n':
 	p->token_seen = token_seen;
+	VALUE prevline = p->lex.lastline;
 	c = (IS_lex_state(EXPR_BEG|EXPR_CLASS|EXPR_FNAME|EXPR_DOT) &&
 	     !IS_lex_state(EXPR_LABELED));
 	if (c || IS_lex_state_all(EXPR_ARG|EXPR_LABELED)) {
@@ -9887,10 +9894,12 @@ parser_yylex(struct parser_params *p)
 	      default:
 		p->ruby_sourceline--;
 		p->lex.nextline = p->lex.lastline;
+		set_lastline(p, prevline);
 	      case -1:		/* EOF no decrement*/
 		lex_goto_eol(p);
 		if (c != -1) {
-		    p->lex.ptok = p->lex.pcur;
+		    token_flush(p);
+		    RUBY_SET_YYLLOC(*p->yylloc);
 		}
 		goto normal_newline;
 	    }

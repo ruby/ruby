@@ -995,4 +995,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal ['U'], scan('tstring_content', '/\\xU/') {|*e| err = e}
     assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
   end
+
+  def test_error_token
+    src = "{a:,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n""hello}"
+    err = scan('parse_error', src) {|*e| break e}
+    assert_equal "", err[2]
+  end
 end if ripper_test
