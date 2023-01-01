@@ -4644,19 +4644,21 @@ vm_get_special_object(const VALUE *const reg_ep,
 }
 
 static VALUE
+vm_concat_array_check(VALUE ary)
+{
+    VALUE result = rb_check_to_array(ary);
+    if (NIL_P(result)) {
+        result = rb_ary_new3(1, ary);
+    }
+    return result;
+}
+
+static VALUE
 vm_concat_array(VALUE ary1, VALUE ary2st)
 {
     const VALUE ary2 = ary2st;
-    VALUE tmp1 = rb_check_to_array(ary1);
-    VALUE tmp2 = rb_check_to_array(ary2);
-
-    if (NIL_P(tmp1)) {
-        tmp1 = rb_ary_new3(1, ary1);
-    }
-
-    if (NIL_P(tmp2)) {
-        tmp2 = rb_ary_new3(1, ary2);
-    }
+    VALUE tmp1 = vm_concat_array_check(ary1);
+    VALUE tmp2 = vm_concat_array_check(ary2);
 
     if (tmp1 == ary1) {
         tmp1 = rb_ary_dup(ary1);
