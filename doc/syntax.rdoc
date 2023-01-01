@@ -12,7 +12,7 @@ Assignment[rdoc-ref:syntax/assignment.rdoc] ::
   +if+, +unless+, +while+, +until+, +for+, +break+, +next+, +redo+
 
 {Pattern matching}[rdoc-ref:syntax/pattern_matching.rdoc] ::
-  Experimental structural pattern matching and variable binding syntax
+  Structural pattern matching and variable binding syntax
 
 Methods[rdoc-ref:syntax/methods.rdoc] ::
   Method and method argument syntax
