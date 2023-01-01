@@ -217,7 +217,6 @@ rb_warning_category_enabled_p(rb_warning_category_t category)
  *
  * +:experimental+ ::
  *   experimental features
- *   * Pattern matching
  *
  * +:performance+ ::
  *   performance hints
