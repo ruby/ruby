@@ -255,7 +255,7 @@ Again, the +then+ and +else+ are optional.
 The result value of a +case+ expression is the last value executed in the
 expression.
 
-Since Ruby 2.7, +case+ expressions also provide a more powerful experimental
+Since Ruby 2.7, +case+ expressions also provide a more powerful
 pattern matching feature via the +in+ keyword:
 
   case {a: 1, b: 2, c: 3}
