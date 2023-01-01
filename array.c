@@ -317,12 +317,12 @@ rb_ary_ptr_use_end(VALUE ary)
 #endif
 }
 
+static inline void memfill(register VALUE *mem, register long size, register VALUE val);
+
 void
 rb_mem_clear(VALUE *mem, long size)
 {
-    while (size--) {
-        *mem++ = Qnil;
-    }
+    memfill(mem, size, Qnil);
 }
 
 static void
