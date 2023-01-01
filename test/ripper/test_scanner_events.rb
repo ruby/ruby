@@ -113,11 +113,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[5, 0], :on_imaginary, "5.6ri", Ripper::EXPR_END],
                  ],
                  Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
-     assert_lex   [[[1, 0], :on_heredoc_beg, "<<~EOS", Ripper::EXPR_BEG],
-                   [[1, 6], :on_nl, "\n", Ripper::EXPR_BEG],
-                   [[2, 0], :on_ignored_sp, "  ", Ripper::EXPR_BEG],
-                   [[2, 2], :on_tstring_content, "heredoc\n", Ripper::EXPR_BEG],
-                   [[3, 0], :on_heredoc_end, "EOS", Ripper::EXPR_BEG]
+    assert_lex   [[[1, 0], :on_heredoc_beg, "<<~EOS", Ripper::EXPR_BEG],
+                  [[1, 6], :on_nl, "\n", Ripper::EXPR_BEG],
+                  [[2, 0], :on_ignored_sp, "  ", Ripper::EXPR_BEG],
+                  [[2, 2], :on_tstring_content, "heredoc\n", Ripper::EXPR_BEG],
+                  [[3, 0], :on_heredoc_end, "EOS", Ripper::EXPR_BEG]
                  ],
                  Ripper.lex("<<~EOS\n  heredoc\nEOS")
     assert_lex   [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
