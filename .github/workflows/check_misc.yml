@@ -32,7 +32,7 @@ jobs:
           done | grep -F .
         working-directory: include
 
-      - uses: actions/cache@c17f4bf4666a8001b1a45c09eb7a485c41aa64c3 # v3.2.0
+      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
         with:
           path: .downloaded-cache
           key: downloaded-cache-${{ github.sha }}
