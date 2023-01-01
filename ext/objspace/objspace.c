@@ -954,7 +954,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
  *
  * You need to <code>require 'objspace'</code> to use this extension module.
  *
- * Generally, you *SHOULD NOT* use this library if you do not know
+ * Generally, you *SHOULD* *NOT* use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
  * profiler developers and MRI developers who need to know about MRI
  * memory usage.
