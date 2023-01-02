@@ -37,20 +37,24 @@ module RubyVM::MJIT
       start_addr
     end
 
-    def with_addr(addr)
-      old_write_pos = @write_pos
+    def set_write_addr(addr)
       @write_pos = addr - @mem_block
-      @comments.delete(addr) # TODO: clean up old comments for all overwritten insns?
+      @comments.delete(addr) # TODO: clean up old comments for all the overwritten range?
+    end
+
+    def with_write_addr(addr)
+      old_write_pos = @write_pos
+      set_addr(addr)
       yield
     ensure
       @write_pos = old_write_pos
     end
 
-    private
-
     def write_addr
       @mem_block + @write_pos
     end
+
+    private
 
     def dump_disasm(from, to)
       C.dump_disasm(from, to).each do |address, mnemonic, op_str|

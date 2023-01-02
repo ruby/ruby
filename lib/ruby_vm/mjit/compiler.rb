@@ -63,22 +63,28 @@ module RubyVM::MJIT
       # Update cfp->pc for `jit.at_current_insn?`
       cfp.pc = stub.pc
 
-      # Compile the jump target
-      new_addr = Assembler.new.then do |asm|
+      # Prepare the jump target
+      new_asm = Assembler.new.tap do |asm|
         jit = JITState.new(iseq: stub.iseq, cfp:)
         index = (stub.pc - stub.iseq.body.iseq_encoded.to_i) / C.VALUE.size
         compile_block(asm, jit:, index:, ctx: stub.ctx)
-        @cb.write(asm)
       end
 
-      # Re-generate the jump source
-      @cb.with_addr(stub.addr) do
-        asm = Assembler.new
-        asm.comment('regenerate block stub')
-        asm.jmp(new_addr)
-        @cb.write(asm)
+      # Rewrite the stub
+      if @cb.write_addr == stub.end_addr
+        # If the stub jump is the last code, overwrite the jump with the new code.
+        @cb.set_write_addr(stub.start_addr)
+        @cb.write(new_asm)
+      else
+        # If the stub jump is old code, change the jump target to the new code.
+        new_addr = @cb.write(new_asm)
+        @cb.with_write_addr(stub.start_addr) do
+          asm = Assembler.new
+          asm.comment('regenerate block stub')
+          asm.jmp(new_addr)
+          @cb.write(asm)
+        end
       end
-      new_addr
     end
 
     private

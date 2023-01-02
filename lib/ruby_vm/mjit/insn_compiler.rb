@@ -224,8 +224,9 @@ module RubyVM::MJIT
       end
 
       asm.comment('defer_compilation: block stub')
-      asm.stub(block_stub)
-      asm.jmp(stub_hit)
+      asm.stub(block_stub) do
+        asm.jmp(stub_hit)
+      end
     end
 
     # @param jit [RubyVM::MJIT::JITState]

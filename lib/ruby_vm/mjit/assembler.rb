@@ -31,7 +31,8 @@ module RubyVM::MJIT
       @labels = {}
       @label_id = 0
       @comments = Hash.new { |h, k| h[k] = [] }
-      @stubs = Hash.new { |h, k| h[k] = [] }
+      @stub_starts = Hash.new { |h, k| h[k] = [] }
+      @stub_ends = Hash.new { |h, k| h[k] = [] }
     end
 
     def assemble(addr)
@@ -307,7 +308,10 @@ module RubyVM::MJIT
     end
 
     def stub(stub)
-      @stubs[@bytes.size] << stub
+      @stub_starts[@bytes.size] << stub
+      yield
+    ensure
+      @stub_ends[@bytes.size] << stub
     end
 
     def new_label(name)
@@ -492,9 +496,12 @@ module RubyVM::MJIT
     end
 
     def set_stub_addrs(write_addr)
-      @bytes.each_with_index do |byte, index|
-        @stubs.fetch(index, []).each do |stub|
-          stub.addr = write_addr + index
+      (@bytes.size + 1).times do |index|
+        @stub_starts.fetch(index, []).each do |stub|
+          stub.start_addr = write_addr + index
+        end
+        @stub_ends.fetch(index, []).each do |stub|
+          stub.end_addr = write_addr + index
           stub.freeze
         end
       end
