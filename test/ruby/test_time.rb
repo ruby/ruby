@@ -114,6 +114,9 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /two digits mday.*\b025\b/) {
       Time.new("2020-12-025 00:56:17 +0900")
     }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b5\b/) {
+      Time.new("2020-12-5 00:56:17 +0900")
+    }
     assert_raise_with_message(ArgumentError, /two digits mon.*\b012\b/) {
       Time.new("2020-012-25 00:56:17 +0900")
     }
