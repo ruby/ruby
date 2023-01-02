@@ -31,12 +31,13 @@ module RubyVM::MJIT
       @labels = {}
       @label_id = 0
       @comments = Hash.new { |h, k| h[k] = [] }
+      @blocks = Hash.new { |h, k| h[k] = [] }
       @stub_starts = Hash.new { |h, k| h[k] = [] }
       @stub_ends = Hash.new { |h, k| h[k] = [] }
     end
 
     def assemble(addr)
-      set_stub_addrs(addr)
+      set_code_addrs(addr)
       resolve_rel32(addr)
       resolve_labels
 
@@ -307,6 +308,12 @@ module RubyVM::MJIT
       @comments[@bytes.size] << message
     end
 
+    # Mark the starting address of a block
+    def block(block)
+      @blocks[@bytes.size] << block
+    end
+
+    # Mark the starting/ending addresses of a stub
     def stub(stub)
       @stub_starts[@bytes.size] << stub
       yield
@@ -495,8 +502,11 @@ module RubyVM::MJIT
       [Rel32.new(addr), Rel32Pad, Rel32Pad, Rel32Pad]
     end
 
-    def set_stub_addrs(write_addr)
+    def set_code_addrs(write_addr)
       (@bytes.size + 1).times do |index|
+        @blocks.fetch(index, []).each do |block|
+          block.start_addr = write_addr + index
+        end
         @stub_starts.fetch(index, []).each do |stub|
           stub.start_addr = write_addr + index
         end

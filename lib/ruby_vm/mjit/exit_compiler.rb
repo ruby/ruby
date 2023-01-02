@@ -5,16 +5,31 @@ module RubyVM::MJIT
       @gc_refs = []
     end
 
+    # Used for invalidating a block on entry.
+    # @param pc [Integer]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def compile_entry_exit(pc, asm, cause:)
+      # Increment per-insn exit counter
+      incr_insn_exit(pc)
+
+      # TODO: Saving pc and sp may be needed later
+
+      # Restore callee-saved registers
+      asm.comment("#{cause}: entry exit")
+      asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
+
+      asm.mov(:rax, Qundef)
+      asm.ret
+    end
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_exit(jit, ctx, asm)
-      if C.mjit_opts.stats
-        insn = decode_insn(C.VALUE.new(jit.pc).*)
-        asm.comment("increment insn exit: #{insn.name}")
-        asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
-        asm.add([:rax], 1) # TODO: lock
-      end
+    def compile_side_exit(jit, ctx, asm)
+      # Increment per-insn exit counter
+      incr_insn_exit(jit.pc)
 
       # Fix pc/sp offsets for the interpreter
       save_pc_and_sp(jit, ctx, asm)
@@ -50,11 +65,21 @@ module RubyVM::MJIT
 
     private
 
+    # @param pc [Integer]
+    def incr_insn_exit(pc)
+      if C.mjit_opts.stats
+        insn = decode_insn(C.VALUE.new(pc).*)
+        asm.comment("increment insn exit: #{insn.name}")
+        asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
+        asm.add([:rax], 1) # TODO: lock
+      end
+    end
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def save_pc_and_sp(jit, ctx, asm)
-      # Update pc
+      # Update pc (TODO: manage PC offset?)
       asm.comment("save pc #{'and sp' if ctx.sp_offset != 0}")
       asm.mov(:rax, jit.pc) # rax = jit.pc
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax

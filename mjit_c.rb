@@ -65,6 +65,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)obj)'
     end
 
+    def BASIC_OP_UNREDEFINED_P(op, klass)
+      Primitive.cexpr! 'RBOOL(BASIC_OP_UNREDEFINED_P(NUM2INT(op), NUM2INT(klass)))'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -239,6 +243,14 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.VM_METHOD_TYPE_ISEQ
     Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
+  end
+
+  def C.BOP_LT
+    Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
+  end
+
+  def C.INTEGER_REDEFINED_OP_FLAG
+    Primitive.cexpr! %q{ UINT2NUM(INTEGER_REDEFINED_OP_FLAG) }
   end
 
   def C.RUBY_EVENT_CLASS

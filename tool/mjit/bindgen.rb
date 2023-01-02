@@ -353,6 +353,8 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_ISEQ
     ],
     UINT: %w[
+      BOP_LT
+      INTEGER_REDEFINED_OP_FLAG
       RUBY_EVENT_CLASS
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT

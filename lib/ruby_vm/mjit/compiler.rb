@@ -1,10 +1,12 @@
 require 'ruby_vm/mjit/assembler'
+require 'ruby_vm/mjit/block'
 require 'ruby_vm/mjit/block_stub'
 require 'ruby_vm/mjit/code_block'
 require 'ruby_vm/mjit/context'
 require 'ruby_vm/mjit/exit_compiler'
 require 'ruby_vm/mjit/insn_compiler'
 require 'ruby_vm/mjit/instruction'
+require 'ruby_vm/mjit/invariants'
 require 'ruby_vm/mjit/jit_state'
 
 module RubyVM::MJIT
@@ -36,7 +38,7 @@ module RubyVM::MJIT
       @cb = CodeBlock.new(mem_block: mem_block, mem_size: mem_size / 2)
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
-      @insn_compiler = InsnCompiler.new(@ocb)
+      @insn_compiler = InsnCompiler.new(@ocb, @exit_compiler)
     end
 
     # Compile an ISEQ from its entry point.
@@ -66,8 +68,7 @@ module RubyVM::MJIT
       # Prepare the jump target
       new_asm = Assembler.new.tap do |asm|
         jit = JITState.new(iseq: stub.iseq, cfp:)
-        index = (stub.pc - stub.iseq.body.iseq_encoded.to_i) / C.VALUE.size
-        compile_block(asm, jit:, index:, ctx: stub.ctx)
+        compile_block(asm, jit:, pc: stub.pc, ctx: stub.ctx)
       end
 
       # Rewrite the stub
@@ -110,17 +111,24 @@ module RubyVM::MJIT
     end
 
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_block(asm, jit:, index: 0, ctx: Context.new)
+    def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
+      # Mark the block start address and prepare an exit code storage
+      jit.block = Block.new(pc:)
+      asm.block(jit.block)
+
+      # Compile each insn
       iseq = jit.iseq
+      index = (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size
       while index < iseq.body.iseq_size
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
 
         case @insn_compiler.compile(jit, ctx, asm, insn)
         when EndBlock
+          # TODO: pad nops if entry exit exists
           break
         when CantCompile
-          @exit_compiler.compile_exit(jit, ctx, asm)
+          @exit_compiler.compile_side_exit(jit, ctx, asm)
           break
         end
         index += insn.len

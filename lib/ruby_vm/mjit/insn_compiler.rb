@@ -4,9 +4,11 @@ module RubyVM::MJIT
   # 5/101
   class InsnCompiler
     # @param ocb [CodeBlock]
-    def initialize(ocb)
+    # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
+    def initialize(ocb, exit_compiler)
       @ocb = ocb
-      @exit_compiler = ExitCompiler.new
+      @exit_compiler = exit_compiler
+      @invariants = Invariants.new(ocb, exit_compiler)
       freeze
     end
 
@@ -265,6 +267,10 @@ module RubyVM::MJIT
         defer_compilation(jit, ctx, asm)
         return EndBlock
       end
+
+      unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
+        return CantCompile
+      end
       CantCompile
     end
 
@@ -350,7 +356,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     def compile_side_exit(jit, ctx)
       asm = Assembler.new
-      @exit_compiler.compile_exit(jit, ctx, asm)
+      @exit_compiler.compile_side_exit(jit, ctx, asm)
       @ocb.write(asm)
     end
   end
