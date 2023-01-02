@@ -25,6 +25,7 @@ Note: We're only listing outstanding class updates.
     * strscan 3.0.6
 *   The following bundled gems are updated.
 
+    *minitest 5.17.0
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
 ## Supported platforms
