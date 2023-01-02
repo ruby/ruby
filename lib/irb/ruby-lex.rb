@@ -96,7 +96,8 @@ class RubyLex
           if t.tok.include?("\n")
             t_str = t.tok
             t_str.each_line("\n") do |s|
-              code << s << "\n"
+              code << s
+              next unless s.include?("\n")
               ltype, indent, continue, code_block_open = check_state(code, partial_tokens, context: context)
               result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
               line_num_offset += 1

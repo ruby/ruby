@@ -661,6 +661,38 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
+    def test_dyanmic_prompt_with_double_newline_braking_code
+      input_with_prompt = [
+        PromptRow.new('001:1: :* ', %q(if true)),
+        PromptRow.new('002:1: :* ', %q(%)),
+        PromptRow.new('003:1: :* ', %q(;end)),
+        PromptRow.new('004:1: :* ', %q(;hello)),
+        PromptRow.new('005:0: :> ', %q(end)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_dyanmic_prompt_with_multiline_literal
+      input_with_prompt = [
+        PromptRow.new('001:1: :* ', %q(if true)),
+        PromptRow.new('002:1:]:* ', %q(  %w[)),
+        PromptRow.new('003:1:]:* ', %q(  a)),
+        PromptRow.new('004:1: :* ', %q(  ])),
+        PromptRow.new('005:1: :* ', %q(  b)),
+        PromptRow.new('006:1:]:* ', %q(  %w[)),
+        PromptRow.new('007:1:]:* ', %q(  c)),
+        PromptRow.new('008:1: :* ', %q(  ])),
+        PromptRow.new('009:0: :> ', %q(end)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_dyanmic_prompt_with_blank_line
       input_with_prompt = [
         PromptRow.new('001:0:]:* ', %q(%w[)),
