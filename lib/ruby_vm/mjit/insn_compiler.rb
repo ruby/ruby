@@ -10,6 +10,121 @@ module RubyVM::MJIT
       freeze
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    # @param insn `RubyVM::MJIT::Instruction`
+    def compile(jit, ctx, asm, insn)
+      asm.incr_counter(:mjit_insns_count)
+      asm.comment("Insn: #{insn.name}")
+
+      case insn.name
+      # nop
+      # getlocal
+      # setlocal
+      # getblockparam
+      # setblockparam
+      # getblockparamproxy
+      # getspecial
+      # setspecial
+      # getinstancevariable
+      # setinstancevariable
+      # getclassvariable
+      # setclassvariable
+      # opt_getconstant_path
+      # getconstant
+      # setconstant
+      # getglobal
+      # setglobal
+      when :putnil then putnil(jit, ctx, asm)
+      # putself
+      when :putobject then putobject(jit, ctx, asm)
+      # putspecialobject
+      # putstring
+      # concatstrings
+      # anytostring
+      # toregexp
+      # intern
+      # newarray
+      # newarraykwsplat
+      # duparray
+      # duphash
+      # expandarray
+      # concatarray
+      # splatarray
+      # newhash
+      # newrange
+      # pop
+      # dup
+      # dupn
+      # swap
+      # opt_reverse
+      # topn
+      # setn
+      # adjuststack
+      # defined
+      # checkmatch
+      # checkkeyword
+      # checktype
+      # defineclass
+      # definemethod
+      # definesmethod
+      # send
+      # opt_send_without_block
+      # objtostring
+      # opt_str_freeze
+      # opt_nil_p
+      # opt_str_uminus
+      # opt_newarray_max
+      # opt_newarray_min
+      # invokesuper
+      # invokeblock
+      when :leave then leave(jit, ctx, asm)
+      # throw
+      # jump
+      # branchif
+      # branchunless
+      # branchnil
+      # once
+      # opt_case_dispatch
+      # opt_plus
+      # opt_minus
+      # opt_mult
+      # opt_div
+      # opt_mod
+      # opt_eq
+      # opt_neq
+      when :opt_lt then opt_lt(jit, ctx, asm)
+      # opt_le
+      # opt_gt
+      # opt_ge
+      # opt_ltlt
+      # opt_and
+      # opt_or
+      # opt_aref
+      # opt_aset
+      # opt_aset_with
+      # opt_aref_with
+      # opt_length
+      # opt_size
+      # opt_empty_p
+      # opt_succ
+      # opt_not
+      # opt_regexpmatch2
+      # invokebuiltin
+      # opt_invokebuiltin_delegate
+      # opt_invokebuiltin_delegate_leave
+      when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
+      else CantCompile
+      end
+    end
+
+    private
+
+    #
+    # Insns
+    #
+
     # nop
     # getlocal
     # setlocal
@@ -199,7 +314,9 @@ module RubyVM::MJIT
     # putobject_INT2FIX_0_
     # putobject_INT2FIX_1_
 
-    private
+    #
+    # Helpers
+    #
 
     def assert_eq!(left, right)
       if left != right
