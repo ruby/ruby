@@ -2541,11 +2541,13 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
 #define peek(c) peek_n(c, 0)
 #define peekc_n(n) (peekable_p(n) ? (int)(unsigned char)ptr[n] : -1)
 #define peekc() peekc_n(0)
-#define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
+#define expect_two_digits(x, bits) \
+        (((unsigned int)(x = two_digits(ptr + 1, end, &ptr, #x)) > (1U << bits) - 1) ? \
+         rb_raise(rb_eArgError, #x" out of range") : (void)0)
         if (!peek('-')) break;
-        expect_two_digits(mon);
+        expect_two_digits(mon, 4);
         if (!peek('-')) break;
-        expect_two_digits(mday);
+        expect_two_digits(mday, 5);
         if (!peek(' ') && !peek('T')) break;
         const char *const time_part = ptr + 1;
         if (!ISDIGIT(peekc_n(1))) break;
@@ -2559,13 +2561,13 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             rb_raise(rb_eArgError, "missing " #x " part: %.*s", \
                      (int)(ptr + 1 - time_part), time_part); \
         }
-        expect_two_digits(hour);
+        expect_two_digits(hour, 5);
         nofraction(hour);
         need_colon(min);
-        expect_two_digits(min);
+        expect_two_digits(min, 6);
         nofraction(min);
         need_colon(sec);
-        expect_two_digits(sec);
+        expect_two_digits(sec, 6);
         if (peek('.')) {
             ptr++;
             for (ndigits = 0; ndigits < prec && ISDIGIT(peekc_n(ndigits)); ++ndigits);
