@@ -9913,10 +9913,8 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 #define COULD_MALLOC_REGION_START() \
     GC_ASSERT(during_gc); \
     VALUE _already_disabled = rb_gc_disable_no_rest(); \
-    during_gc = false;
 
 #define COULD_MALLOC_REGION_END() \
-    during_gc = true; \
     if (_already_disabled == Qfalse) rb_objspace_gc_enable(objspace);
 
 static VALUE
@@ -12216,7 +12214,7 @@ malloc_during_gc_p(rb_objspace_t *objspace)
      * (since ractors can run while another thread is sweeping) and when we
      * have the GVL (since if we don't have the GVL, we'll try to acquire the
      * GVL which will block and ensure the other thread finishes GC). */
-    return during_gc && !rb_multi_ractor_p() && ruby_thread_has_gvl_p();
+    return during_gc && !dont_gc_val() && !rb_multi_ractor_p() && ruby_thread_has_gvl_p();
 }
 
 static inline void *
