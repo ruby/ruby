@@ -116,8 +116,6 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 
-VALUE rb_gc_disable_no_rest(void);
-
 struct rb_thread_struct;
 
 size_t rb_size_pool_slot_size(unsigned char pool_id);
@@ -141,6 +139,8 @@ void rb_objspace_each_objects_without_setup(
     void *data);
 
 size_t rb_gc_obj_slot_size(VALUE obj);
+
+VALUE rb_gc_disable_no_rest(void);
 
 RUBY_SYMBOL_EXPORT_END
 
