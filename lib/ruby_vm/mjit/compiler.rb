@@ -16,6 +16,8 @@ module RubyVM::MJIT
   EndBlock = :EndBlock
 
   # Ruby constants
+  Qtrue = Fiddle::Qtrue
+  Qfalse = Fiddle::Qfalse
   Qnil = Fiddle::Qnil
   Qundef = Fiddle::Qundef
 
@@ -24,6 +26,8 @@ module RubyVM::MJIT
   EC  = :r14
   CFP = :r15
   SP  = :rbx
+
+  # Scratch registers: rax, rcx
 
   class Compiler
     attr_accessor :write_pos
@@ -132,15 +136,6 @@ module RubyVM::MJIT
           break
         end
         index += insn.len
-      end
-    end
-
-    # vm_core.h: pathobj_path
-    def pathobj_path(pathobj)
-      if pathobj.is_a?(String)
-        pathobj
-      else
-        pathobj.first
       end
     end
   end

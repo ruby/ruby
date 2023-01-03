@@ -32,10 +32,10 @@ module RubyVM::MJIT
       incr_insn_exit(jit.pc)
 
       # Fix pc/sp offsets for the interpreter
-      save_pc_and_sp(jit, ctx, asm)
+      save_pc_and_sp(jit, ctx.dup, asm) # dup to avoid sp_offset update
 
       # Restore callee-saved registers
-      asm.comment('exit to interpreter')
+      asm.comment("exit to interpreter on #{pc_to_insn(jit.pc).name}")
       asm.pop(SP)
       asm.pop(EC)
       asm.pop(CFP)
@@ -64,6 +64,10 @@ module RubyVM::MJIT
     end
 
     private
+
+    def pc_to_insn(pc)
+      Compiler.decode_insn(C.VALUE.new(pc).*)
+    end
 
     # @param pc [Integer]
     def incr_insn_exit(pc)

@@ -289,6 +289,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(INVALID_SHAPE_ID) }
   end
 
+  def C.RUBY_FIXNUM_FLAG
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
+  end
+
   def C.SHAPE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(SHAPE_MASK) }
   end

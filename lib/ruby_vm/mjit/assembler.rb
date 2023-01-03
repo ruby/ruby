@@ -6,7 +6,7 @@ module RubyVM::MJIT
     # A thin Fiddle wrapper to write bytes to memory
     ByteWriter = CType::Immediate.parse('char')
 
-    # Used for rel8 jumps
+    # rel8 jumps are made with labels
     class Label < Data.define(:id, :name); end
 
     # rel32 is inserted as [Rel32, Rel32Pad..] and converted on #resolve_rel32
@@ -20,7 +20,6 @@ module RubyVM::MJIT
     Mod10 = 0b10 # Mod 10: [reg]+disp16
     Mod11 = 0b11 # Mod 11: reg
 
-    ### prefix ###
     # REX =   0100WR0B
     REX_B = 0b01000001
     REX_R = 0b01000100
@@ -92,6 +91,50 @@ module RubyVM::MJIT
       # CALL rel32
       # E8 cd
       insn(opcode: 0xe8, imm: rel32(addr))
+    end
+
+    def cmovl(dst, src)
+      case [dst, src]
+      # CMOVL r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg]
+        # REX.W + 0F 4C /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x4c],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmovl: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def cmp(left, right)
+      case [left, right]
+      # CMP r/m64 r64 (Mod 01: [reg]+disp8)
+      in [[Symbol => left_reg, Integer => left_disp], Symbol => right_reg]
+        # REX.W + 39 /r
+        # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x39,
+          mod_rm: ModRM[mod: Mod01, reg: right_reg, rm: left_reg],
+          disp: left_disp,
+        )
+      else
+        raise NotImplementedError, "cmp: not-implemented operands: #{left.inspect}, #{right.inspect}"
+      end
+    end
+
+    def je(dst)
+      case dst
+      # JE rel32
+      in Integer => dst_addr
+        # 0F 84 cd
+        insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
+      else
+        raise NotImplementedError, "je: not-implemented operands: #{dst.inspect}"
+      end
     end
 
     def jmp(dst)
@@ -285,6 +328,16 @@ module RubyVM::MJIT
 
     def test(left, right)
       case [left, right]
+      # TEST r/m8*, imm8 (Mod 01: [reg]+disp8)
+      in [[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm)
+        # REX + F6 /0 ib
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          opcode: 0xf6,
+          mod_rm: ModRM[mod: Mod01, reg: 0, rm: left_reg],
+          disp: left_disp,
+          imm: imm8(right_imm),
+        )
       # TEST r/m32, r32 (Mod 11: reg)
       in [Symbol => left_reg, Symbol => right_reg] if r32?(left_reg) && r32?(right_reg)
         # 85 /r
@@ -294,7 +347,7 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
         )
       else
-        raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
+        raise NotImplementedError, "test: not-implemented operands: #{left.inspect}, #{right.inspect}"
       end
     end
 
@@ -442,7 +495,7 @@ module RubyVM::MJIT
       unless imm8?(imm)
         raise ArgumentError, "unexpected imm8: #{imm}"
       end
-      imm_bytes(imm, 1)
+      [imm].pack('c').unpack('c*') # TODO: consider uimm
     end
 
     # id: 4 bytes
@@ -450,7 +503,7 @@ module RubyVM::MJIT
       unless imm32?(imm)
         raise ArgumentError, "unexpected imm32: #{imm}"
       end
-      [imm].pack('l').unpack('c*')
+      [imm].pack('l').unpack('c*') # TODO: consider uimm
     end
 
     # io: 8 bytes

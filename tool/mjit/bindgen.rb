@@ -366,6 +366,7 @@ generator = BindingGenerator.new(
     ],
     ULONG: %w[
       INVALID_SHAPE_ID
+      RUBY_FIXNUM_FLAG
       SHAPE_MASK
     ],
     PTR: %w[

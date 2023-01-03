@@ -1,7 +1,4 @@
 module RubyVM::MJIT
-  # scratch regs: rax
-  #
-  # 5/101
   class InsnCompiler
     # @param ocb [CodeBlock]
     # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
@@ -20,6 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
+      # 5/101
       case insn.name
       # nop
       # getlocal
@@ -149,6 +147,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def putnil(jit, ctx, asm)
+      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
       asm.mov([SP, C.VALUE.size * ctx.stack_size], Qnil)
       ctx.stack_push(1)
       KeepCompiling
@@ -165,6 +164,7 @@ module RubyVM::MJIT
 
       # Push it to the stack
       # TODO: GC offsets
+      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
       if asm.imm32?(val)
         asm.mov([SP, C.VALUE.size * ctx.stack_size], val)
       else # 64-bit immediates can't be directly written to memory
@@ -226,7 +226,7 @@ module RubyVM::MJIT
       asm.comment('RUBY_VM_CHECK_INTS(ec)')
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
-      asm.jnz(compile_side_exit(jit, ctx))
+      asm.jnz(side_exit(jit, ctx))
 
       asm.comment('pop stack frame')
       asm.add(CFP, C.rb_control_frame_t.size) # cfp = cfp + 1
@@ -268,10 +268,38 @@ module RubyVM::MJIT
         return EndBlock
       end
 
-      unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
-        return CantCompile
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_obj  = jit.peek_at_stack(0)
+
+      if fixnum?(comptime_recv) && fixnum?(comptime_obj)
+        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
+          return CantCompile
+        end
+
+        raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+        recv_index = ctx.stack_size - 2
+        obj_index  = ctx.stack_size - 1
+
+        asm.comment('guard recv is fixnum');
+        asm.test([SP, C.VALUE.size * recv_index], C.RUBY_FIXNUM_FLAG)
+        asm.je(side_exit(jit, ctx))
+
+        asm.comment('guard obj is fixnum');
+        asm.test([SP, C.VALUE.size * obj_index], C.RUBY_FIXNUM_FLAG)
+        asm.je(side_exit(jit, ctx))
+
+        asm.mov(:rax, [SP, C.VALUE.size * obj_index])
+        asm.cmp([SP, C.VALUE.size * recv_index], :rax)
+        asm.mov(:rax, Qfalse)
+        asm.mov(:rcx, Qtrue)
+        asm.cmovl(:rax, :rcx)
+        asm.mov([SP, C.VALUE.size * recv_index], :rax)
+
+        ctx.stack_pop(1)
+        KeepCompiling
+      else
+        CantCompile # TODO: delegate to send
       end
-      CantCompile
     end
 
     # opt_le
@@ -330,6 +358,11 @@ module RubyVM::MJIT
       end
     end
 
+    def fixnum?(obj)
+      flag = C.RUBY_FIXNUM_FLAG
+      (C.to_value(obj) & flag) == flag
+    end
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -354,10 +387,13 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
-    def compile_side_exit(jit, ctx)
+    def side_exit(jit, ctx)
+      if side_exit = jit.side_exits[jit.pc]
+        return side_exit
+      end
       asm = Assembler.new
       @exit_compiler.compile_side_exit(jit, ctx, asm)
-      @ocb.write(asm)
+      jit.side_exits[jit.pc] = @ocb.write(asm)
     end
   end
 end
