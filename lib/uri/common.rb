@@ -314,17 +314,41 @@ module URI
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
 
-  # Encodes given +str+ to URL-encoded form data.
+  # Returns a URL-encoded string derived from the given string +str+.
   #
-  # This method doesn't convert *, -, ., 0-9, A-Z, _, a-z, but does convert SP
-  # (ASCII space) to + and converts others to %XX.
+  # The returned string:
   #
-  # If +enc+ is given, convert +str+ to the encoding before percent encoding.
+  # - Preserves:
   #
-  # This is an implementation of
-  # https://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
+  #   - Characters <tt>'*'</tt>, <tt>'.'</tt>, <tt>'-'</tt>, and <tt>'_'</tt>.
+  #   - Character in ranges <tt>'a'..'z'</tt>, <tt>'A'..'Z'</tt>,
+  #     and <tt>'0'..'9'</tt>.
   #
-  # See URI.decode_www_form_component, URI.encode_www_form.
+  #   Example:
+  #
+  #     URI.encode_www_form_component('*.-_azAZ09')
+  #     # => "*.-_azAZ09"
+  #
+  # - Converts:
+  #
+  #   - Character <tt>' '</tt> to character <tt>'+'</tt>.
+  #   - Any other character to "percent notation";
+  #     the percent notation for character <i>c</i> is <tt>'%%%X' % c.ord</tt>.
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form_component('Here are some punctuation characters: ,;?:')
+  #     # => "Here+are+some+punctuation+characters%3A+%2C%3B%3F%3A"
+  #
+  # Encoding:
+  #
+  # - If +str+ has encoding Encoding::ASCII_8BIT, argument +enc+ is ignored.
+  # - Otherwise +str+ is converted first to Encoding::UTF_8
+  #   (with suitable character replacements),
+  #   and then to encoding +enc+.
+  #
+  # In either case, the returned string has forced encoding Encoding::US_ASCII.
+  #
   def self.encode_www_form_component(str, enc=nil)
     _encode_uri_component(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_, str, enc)
   end
@@ -372,33 +396,98 @@ module URI
   end
   private_class_method :_decode_uri_component
 
-  # Generates URL-encoded form data from given +enum+.
+  # Returns a URL-encoded string derived from the given
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
+  # +enum+.
   #
-  # This generates application/x-www-form-urlencoded data defined in HTML5
-  # from given an Enumerable object.
+  # The result is suitable for use as form data
+  # for an \HTTP request whose <tt>Content-Type</tt> is
+  # <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # This internally uses URI.encode_www_form_component(str).
+  # The returned string consists of the elements of +enum+,
+  # each converted to one or more URL-encoded strings,
+  # and all joined with character <tt>'&'</tt>.
   #
-  # This method doesn't convert the encoding of given items, so convert them
-  # before calling this method if you want to send data as other than original
-  # encoding or mixed encoding data. (Strings which are encoded in an HTML5
-  # ASCII incompatible encoding are converted to UTF-8.)
+  # Simple examples:
   #
-  # This method doesn't handle files.  When you send a file, use
-  # multipart/form-data.
+  #   URI.encode_www_form([['foo', 0], ['bar', 1], ['baz', 2]])
+  #   # => "foo=0&bar=1&baz=2"
+  #   URI.encode_www_form({foo: 0, bar: 1, baz: 2})
+  #   # => "foo=0&bar=1&baz=2"
   #
-  # This refers https://url.spec.whatwg.org/#concept-urlencoded-serializer
+  # When +enum+ is Array-like, each element +ele+ is converted to a field:
   #
-  #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
-  #    #=> "q=ruby&lang=en"
-  #    URI.encode_www_form("q" => "ruby", "lang" => "en")
-  #    #=> "q=ruby&lang=en"
-  #    URI.encode_www_form("q" => ["ruby", "perl"], "lang" => "en")
-  #    #=> "q=ruby&q=perl&lang=en"
-  #    URI.encode_www_form([["q", "ruby"], ["q", "perl"], ["lang", "en"]])
-  #    #=> "q=ruby&q=perl&lang=en"
+  # - If +ele+ is an array of two or more elements,
+  #   the field is formed from its first two elements
+  #   (and any additional elements are ignored):
   #
-  # See URI.encode_www_form_component, URI.decode_www_form.
+  #     name = URI.encode_www_form_component(ele[0], enc)
+  #     value = URI.encode_www_form_component(ele[1], enc)
+  #     "#{name}=#{value}"
+  #
+  #   Examples:
+  #
+  #     URI.encode_www_form([%w[foo bar], %w[baz bat bah]])
+  #     # => "foo=bar&baz=bat"
+  #     URI.encode_www_form([['foo', 0], ['bar', :baz, 'bat']])
+  #     # => "foo=0&bar=baz"
+  #
+  # - If +ele+ is an array of one element,
+  #   the field is formed from <tt>ele[0]</tt>:
+  #
+  #     URI.encode_www_form_component(ele[0])
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form([['foo'], [:bar], [0]])
+  #     # => "foo&bar&0"
+  #
+  # - Otherwise the field is formed from +ele+:
+  #
+  #     URI.encode_www_form_component(ele)
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form(['foo', :bar, 0])
+  #     # => "foo&bar&0"
+  #
+  # The elements of an Array-like +enum+ may be mixture:
+  #
+  #   URI.encode_www_form([['foo', 0], ['bar', 1, 2], ['baz'], :bat])
+  #   # => "foo=0&bar=1&baz&bat"
+  #
+  # When +enum+ is Hash-like,
+  # each +key+/+value+ pair is converted to one or more fields:
+  #
+  # - If +value+ is
+  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
+  #   each element +ele+ in +value+ is paired with +key+ to form a field:
+  #
+  #     name = URI.encode_www_form_component(key, enc)
+  #     value = URI.encode_www_form_component(ele, enc)
+  #     "#{name}=#{value}"
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form({foo: [:bar, 1], baz: [:bat, :bam, 2]})
+  #     # => "foo=bar&foo=1&baz=bat&baz=bam&baz=2"
+  #
+  # - Otherwise, +key+ and +value+ are paired to form a field:
+  #
+  #     name = URI.encode_www_form_component(key, enc)
+  #     value = URI.encode_www_form_component(value, enc)
+  #     "#{name}=#{value}"
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form({foo: 0, bar: 1, baz: 2})
+  #     # => "foo=0&bar=1&baz=2"
+  #
+  # The elements of a Hash-like +enum+ may be mixture:
+  #
+  #   URI.encode_www_form({foo: [0, 1], bar: 2})
+  #   # => "foo=0&foo=1&bar=2"
+  #
   def self.encode_www_form(enum, enc=nil)
     enum.map do |k,v|
       if v.nil?
