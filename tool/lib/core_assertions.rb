@@ -249,6 +249,7 @@ module Test
           out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
         Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
+        Test::Unit::AutoRunner.need_auto_run = false if defined?(Test::Unit::AutoRunner)
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
