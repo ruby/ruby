@@ -280,11 +280,11 @@ module RubyVM::MJIT
         recv_index = ctx.stack_size - 2
         obj_index  = ctx.stack_size - 1
 
-        asm.comment('guard recv is fixnum');
+        asm.comment('guard recv is fixnum') # TODO: skip this with type information
         asm.test([SP, C.VALUE.size * recv_index], C.RUBY_FIXNUM_FLAG)
         asm.je(side_exit(jit, ctx))
 
-        asm.comment('guard obj is fixnum');
+        asm.comment('guard obj is fixnum') # TODO: skip this with type information
         asm.test([SP, C.VALUE.size * obj_index], C.RUBY_FIXNUM_FLAG)
         asm.je(side_exit(jit, ctx))
 

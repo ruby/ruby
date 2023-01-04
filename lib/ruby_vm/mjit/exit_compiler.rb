@@ -10,7 +10,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_entry_exit(pc, asm, cause:)
       # Increment per-insn exit counter
-      incr_insn_exit(pc)
+      incr_insn_exit(pc, asm)
 
       # TODO: Saving pc and sp may be needed later
 
@@ -29,7 +29,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_side_exit(jit, ctx, asm)
       # Increment per-insn exit counter
-      incr_insn_exit(jit.pc)
+      incr_insn_exit(jit.pc, asm)
 
       # Fix pc/sp offsets for the interpreter
       save_pc_and_sp(jit, ctx.dup, asm) # dup to avoid sp_offset update
@@ -70,9 +70,10 @@ module RubyVM::MJIT
     end
 
     # @param pc [Integer]
-    def incr_insn_exit(pc)
+    # @param asm [RubyVM::MJIT::Assembler]
+    def incr_insn_exit(pc, asm)
       if C.mjit_opts.stats
-        insn = decode_insn(C.VALUE.new(pc).*)
+        insn = Compiler.decode_insn(C.VALUE.new(pc).*)
         asm.comment("increment insn exit: #{insn.name}")
         asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
         asm.add([:rax], 1) # TODO: lock
