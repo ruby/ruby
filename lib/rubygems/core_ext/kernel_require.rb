@@ -13,12 +13,12 @@ module Kernel
 
   # Make sure we have a reference to Ruby's original Kernel#require
   unless defined?(gem_original_require)
+    # :stopdoc:
     alias gem_original_require require
     private :gem_original_require
+    # :startdoc:
   end
 
-  file = Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES ? "<internal:#{__FILE__}>" : __FILE__
-  module_eval <<'RUBY', file, __LINE__ + 1 # rubocop:disable Style/EvalWithLocation
   ##
   # When RubyGems is required, Kernel#require is replaced with our own which
   # is capable of loading gems on demand.
@@ -33,7 +33,7 @@ module Kernel
   # The normal <tt>require</tt> functionality of returning false if
   # that file has already been loaded is preserved.
 
-  def require(path)
+  def require(path) # :doc:
     if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
       monitor_owned = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
     end
@@ -168,7 +168,6 @@ module Kernel
       end
     end
   end
-RUBY
 
   private :require
 
