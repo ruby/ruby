@@ -68,16 +68,32 @@ module URI
   end
   private_constant :Schemes
 
+  # Registers the given +klass+ as the class to be instantiated
+  # when parsing a \URI with the given +scheme+:
   #
-  # Register the given +klass+ to be instantiated when parsing URLs with the given +scheme+.
-  # Note that currently only schemes which after .upcase are valid constant names
-  # can be registered (no -/+/. allowed).
+  #   URI.register_scheme('MS_SEARCH', URI::Generic) # => URI::Generic
+  #   URI.scheme_list['MS_SEARCH']                   # => URI::Generic
   #
+  # Note that after calling String#upcase on +scheme+, it must be a valid
+  # constant name.
   def self.register_scheme(scheme, klass)
     Schemes.const_set(scheme.to_s.upcase, klass)
   end
 
-  # Returns a Hash of the defined schemes.
+  # Returns a hash of the defined schemes:
+  #
+  #   URI.scheme_list
+  #   # =>
+  #   {"MAILTO"=>URI::MailTo,
+  #    "LDAPS"=>URI::LDAPS,
+  #    "WS"=>URI::WS,
+  #    "HTTP"=>URI::HTTP,
+  #    "HTTPS"=>URI::HTTPS,
+  #    "LDAP"=>URI::LDAP,
+  #    "FILE"=>URI::File,
+  #    "FTP"=>URI::FTP}
+  #
+  # Related: URI.register_scheme.
   def self.scheme_list
     Schemes.constants.map { |name|
       [name.to_s.upcase, Schemes.const_get(name)]
@@ -88,9 +104,21 @@ module URI
   private_constant :INITIAL_SCHEMES
   Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
 
+  # Returns a new object constructed from the given +scheme+, +arguments+,
+  # and +default+:
   #
-  # Construct a URI instance, using the scheme to detect the appropriate class
-  # from +URI.scheme_list+.
+  # - The new object is an instance of <tt>URI.scheme_list[scheme.upcase]</tt>.
+  # - The object is initialized by calling the class initializer
+  #   using +scheme+ and +arguments+.
+  #   See URI::Generic.new.
+  #
+  # Examples:
+  #
+  #   values = ['john.doe', 'www.example.com', '123', nil, '/forum/questions/', nil, 'tag=networking&order=newest', 'top']
+  #   URI.for('https', *values)
+  #   # => #<URI::HTTPS https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
+  #   URI.for('foo', *values, default: URI::HTTP)
+  #   # => #<URI::HTTP foo://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
   def self.for(scheme, *arguments, default: Generic)
     const_name = scheme.to_s.upcase
@@ -121,73 +149,37 @@ module URI
   #
   class BadURIError < Error; end
 
+  # Returns a 9-element array representing the parts of the \URI
+  # formed from the string +uri+;
+  # each array element is a string or +nil+:
   #
-  # == Synopsis
-  #
-  #   URI::split(uri)
-  #
-  # == Args
-  #
-  # +uri+::
-  #   String with URI.
-  #
-  # == Description
-  #
-  # Splits the string on following parts and returns array with result:
-  #
-  # * Scheme
-  # * Userinfo
-  # * Host
-  # * Port
-  # * Registry
-  # * Path
-  # * Opaque
-  # * Query
-  # * Fragment
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   URI.split("http://www.ruby-lang.org/")
-  #   # => ["http", nil, "www.ruby-lang.org", nil, nil, "/", nil, nil, nil]
+  #   names = %w[scheme userinfo host port registry path opaque query fragment]
+  #   values = URI.split('https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   names.zip(values)
+  #   # =>
+  #   [["scheme", "https"],
+  #    ["userinfo", "john.doe"],
+  #    ["host", "www.example.com"],
+  #    ["port", "123"],
+  #    ["registry", nil],
+  #    ["path", "/forum/questions/"],
+  #    ["opaque", nil],
+  #    ["query", "tag=networking&order=newest"],
+  #    ["fragment", "top"]]
   #
   def self.split(uri)
     RFC3986_PARSER.split(uri)
   end
 
+  # Returns a new \URI object constructed from the given string +uri+:
   #
-  # == Synopsis
+  #   URI.parse('https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   # => #<URI::HTTPS https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
+  #   URI.parse('http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   # => #<URI::HTTP http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
-  #   URI::parse(uri_str)
-  #
-  # == Args
-  #
-  # +uri_str+::
-  #   String with URI.
-  #
-  # == Description
-  #
-  # Creates one of the URI's subclasses instance from the string.
-  #
-  # == Raises
-  #
-  # URI::InvalidURIError::
-  #   Raised if URI given is not a correct one.
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   uri = URI.parse("http://www.ruby-lang.org/")
-  #   # => #<URI::HTTP http://www.ruby-lang.org/>
-  #   uri.scheme
-  #   # => "http"
-  #   uri.host
-  #   # => "www.ruby-lang.org"
-  #
-  # It's recommended to first ::escape the provided +uri_str+ if there are any
-  # invalid URI characters.
+  # It's recommended to first ::escape string +uri+
+  # if it may contain invalid URI characters.
   #
   def self.parse(uri)
     RFC3986_PARSER.parse(uri)
