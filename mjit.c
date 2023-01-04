@@ -289,12 +289,12 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 // JIT buffer
 uint8_t *rb_mjit_mem_block = NULL;
 
+// Basically mjit_opts.stats, but this becomes false during MJIT compilation.
+static bool mjit_stats_p = false;
+
 #if MJIT_STATS
 
 struct rb_mjit_runtime_counters rb_mjit_counters = { 0 };
-
-// Basically mjit_opts.stats, but this becomes false during MJIT compilation.
-static bool mjit_stats_p = false;
 
 void
 rb_mjit_collect_vm_usage_insn(int insn)
