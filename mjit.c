@@ -345,7 +345,7 @@ rb_mjit_compile(const rb_iseq_t *iseq)
 }
 
 void *
-rb_mjit_stub_hit(VALUE branch_stub)
+rb_mjit_stub_hit(VALUE branch_stub, int sp_offset)
 {
     VALUE result;
 
@@ -356,15 +356,12 @@ rb_mjit_stub_hit(VALUE branch_stub)
     mjit_stats_p = false; // Avoid impacting JIT stats by itself
 
     rb_control_frame_t *cfp = GET_EC()->cfp;
-    // Given JIT's SP offset, temporarily update SP to preserve stack values.
-    // It's reset afterwards for consistency with the code without this stub.
-    unsigned int stack_max = cfp->iseq->body->stack_max;
-    cfp->sp += stack_max;
+    cfp->sp += sp_offset; // preserve stack values, also using the actual sp_offset to make jit.peek_at_stack work
 
     VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
     result = rb_funcall(rb_MJITCompiler, rb_intern("stub_hit"), 2, branch_stub, cfp_ptr);
 
-    cfp->sp -= stack_max;
+    cfp->sp -= sp_offset; // reset for consistency with the code without the stub
 
     mjit_stats_p = mjit_opts.stats;
     mjit_call_p = original_call_p;

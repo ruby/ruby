@@ -215,6 +215,15 @@ module RubyVM::MJIT
             mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
             disp: src_disp,
           )
+        # MOV r32, imm32 (Mod 11: reg)
+        in Integer => src_imm if r32?(dst_reg) && imm32?(src_imm)
+          # B8+ rd id
+          # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
+          insn(
+            opcode: 0xb8,
+            rd: dst_reg,
+            imm: imm32(src_imm),
+          )
         # MOV r/m64, imm32 (Mod 11: reg)
         in Integer => src_imm if r64?(dst_reg) && imm32?(src_imm)
           # REX.W + C7 /0 id

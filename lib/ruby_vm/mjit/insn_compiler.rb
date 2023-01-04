@@ -375,7 +375,7 @@ module RubyVM::MJIT
       )
 
       stub_hit = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_jump_stub(jit, ocb_asm, block_stub)
+        @exit_compiler.compile_jump_stub(jit, ctx, ocb_asm, block_stub)
         @ocb.write(ocb_asm)
       end
 

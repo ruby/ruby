@@ -45,9 +45,10 @@ module RubyVM::MJIT
     end
 
     # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     # @param stub [RubyVM::MJIT::BlockStub]
-    def compile_jump_stub(jit, asm, stub)
+    def compile_jump_stub(jit, ctx, asm, stub)
       case stub
       when BlockStub
         asm.comment("block stub hit: #{stub.iseq.body.location.label}@#{C.rb_iseq_path(stub.iseq)}:#{stub.iseq.body.location.first_lineno}")
@@ -57,6 +58,7 @@ module RubyVM::MJIT
 
       # Call rb_mjit_stub_hit
       asm.mov(:rdi, to_value(stub))
+      asm.mov(:esi, ctx.sp_offset)
       asm.call(C.rb_mjit_stub_hit)
 
       # Jump to the address returned by rb_mjit_stub_hit
