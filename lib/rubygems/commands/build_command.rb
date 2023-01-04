@@ -26,6 +26,9 @@ class Gem::Commands::BuildCommand < Gem::Command
     add_option "-C PATH", "Run as if gem build was started in <PATH> instead of the current working directory." do |value, options|
       options[:build_path] = value
     end
+    deprecate_option "-C",
+                     version: "4.0",
+                     extra_msg: "-C is a global flag now. Use `gem -C PATH build GEMSPEC_FILE [options]` instead"
   end
 
   def arguments # :nodoc:

@@ -19,7 +19,7 @@ Bundler loads configuration settings in this order:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
-Executing `bundle config list` with will print a list of all bundler
+Executing `bundle config list` will print a list of all bundler
 configuration for the current bundle, and where that configuration
 was set.
 

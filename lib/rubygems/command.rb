@@ -630,7 +630,11 @@ RubyGems is a package manager for Ruby.
   Usage:
     gem -h/--help
     gem -v/--version
-    gem command [arguments...] [options...]
+    gem [global options...] command [arguments...] [options...]
+
+  Global options:
+    -C PATH                      run as if gem was started in <PATH>
+                                 instead of the current working directory
 
   Examples:
     gem install rake
