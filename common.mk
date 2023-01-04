@@ -1375,7 +1375,6 @@ update-config_files: PHONY
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
-prepare-gems: $(DOT_WAIT) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
 update-gems$(gnumake:yes=-sequential): PHONY
