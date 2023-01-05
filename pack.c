@@ -154,6 +154,7 @@ associated_pointer(VALUE associates, const char *t)
     UNREACHABLE_RETURN(Qnil);
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 unknown_directive(const char *mode, char type, VALUE fmt)
 {
