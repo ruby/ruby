@@ -31,7 +31,7 @@ describe :array_pack_basic_non_float, shared: true do
     # 2 additional directives ('a') are required for the X directive
     [@obj, @obj, @obj, @obj].pack("aa #{pack_format} # some comment \n#{pack_format}").should be_an_instance_of(String)
   end
-  
+
   ruby_version_is ""..."3.2" do
     it "warns in verbose mode that a directive is unknown" do
       # additional directive ('a') is required for the X directive
