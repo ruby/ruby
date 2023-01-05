@@ -150,7 +150,11 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
             // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
             // we can return that. Otherwise, we'll need to get a new shape
-            if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res)) {
+            VALUE lookup_result;
+            if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
+                res = (rb_shape_t *)lookup_result;
+            }
+            else {
                 *variation_created = had_edges;
 
                 rb_shape_t * new_shape = rb_shape_alloc(id, shape);
@@ -462,7 +466,12 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
         if (!next_shape->edges) {
             return NULL;
         }
-        if (!rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, (VALUE *)&next_shape)) {
+
+        VALUE lookup_result;
+        if (rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, &lookup_result)) {
+            next_shape = (rb_shape_t *)lookup_result;
+        }
+        else {
             return NULL;
         }
         break;
