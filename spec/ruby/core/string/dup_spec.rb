@@ -58,4 +58,8 @@ describe "String#dup" do
     orig.should == "c"
     copy.should == "b"
   end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").dup.encoding.should == Encoding::US_ASCII
+  end
 end

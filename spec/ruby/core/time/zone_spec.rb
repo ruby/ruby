@@ -52,14 +52,28 @@ describe "Time#zone" do
     end
 
     it "doesn't raise errors for a Time with a fixed offset" do
-      -> {
-        Time.new(2001, 1, 1, 0, 0, 0, "+05:00").zone
-      }.should_not raise_error
+      Time.new(2001, 1, 1, 0, 0, 0, "+05:00").zone.should == nil
     end
   end
 
   it "returns UTC when called on a UTC time" do
     Time.now.utc.zone.should == "UTC"
+    Time.now.gmtime.zone.should == "UTC"
+    Time.now.getgm.zone.should == "UTC"
+    Time.now.getutc.zone.should == "UTC"
+    Time.utc(2022).zone.should == "UTC"
+    Time.new(2022, 1, 1, 0, 0, 0, "UTC").zone.should == "UTC"
+    Time.new(2022, 1, 1, 0, 0, 0, "Z").zone.should == "UTC"
+    Time.now.localtime("UTC").zone.should == "UTC"
+    Time.now.localtime("Z").zone.should == "UTC"
+    Time.at(Time.now, in: 'UTC').zone.should == "UTC"
+    Time.at(Time.now, in: 'Z').zone.should == "UTC"
+
+    ruby_version_is "3.1" do
+      Time.new(2022, 1, 1, 0, 0, 0, "-00:00").zone.should == "UTC"
+      Time.now.localtime("-00:00").zone.should == "UTC"
+      Time.at(Time.now, in: '-00:00').zone.should == "UTC"
+    end
   end
 
   platform_is_not :aix, :windows do

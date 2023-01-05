@@ -388,6 +388,7 @@ module ModuleSpecs
   # empty modules
   module M1; end
   module M2; end
+  module M3; end
 
   module Autoload
     def self.use_ex1
