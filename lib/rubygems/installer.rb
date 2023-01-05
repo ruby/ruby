@@ -226,7 +226,8 @@ class Gem::Installer
       line = io.gets
       shebang = /^#!.*ruby/
 
-      if load_relative_enabled?
+      # TruffleRuby uses a bash prelude in default launchers
+      if load_relative_enabled? || RUBY_ENGINE == "truffleruby"
         until line.nil? || line =~ shebang do
           line = io.gets
         end
