@@ -147,17 +147,17 @@ module Kernel
     RUBYGEMS_ACTIVATION_MONITOR.exit
     return gem_original_require(path)
   rescue LoadError => load_error
-    RUBYGEMS_ACTIVATION_MONITOR.enter
+    if load_error.path == path
+      RUBYGEMS_ACTIVATION_MONITOR.enter
 
-    begin
-      if load_error.path == path and Gem.try_activate(path)
-        require_again = true
+      begin
+        require_again = Gem.try_activate(path)
+      ensure
+        RUBYGEMS_ACTIVATION_MONITOR.exit
       end
-    ensure
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-    end
 
-    return gem_original_require(path) if require_again
+      return gem_original_require(path) if require_again
+    end
 
     raise load_error
   ensure
