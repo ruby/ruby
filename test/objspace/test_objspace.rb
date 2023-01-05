@@ -358,6 +358,22 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_include(info, '"embedded":true')
   end
 
+  def test_dump_object
+    klass = Class.new
+
+    # Empty object
+    info = ObjectSpace.dump(klass.new)
+    assert_include(info, '"embedded":true')
+    assert_include(info, '"ivars":0')
+
+    # Non-embed object
+    obj = klass.new
+    5.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
+    info = ObjectSpace.dump(obj)
+    assert_not_include(info, '"embedded":true')
+    assert_include(info, '"ivars":5')
+  end
+
   def test_dump_control_char
     assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
     assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')
