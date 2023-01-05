@@ -11,6 +11,14 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Array
+
+    * `Array#pack` now raises ArgumentError for unknown directives. [[Bug #19150]]
+
+* String
+
+    * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
+
 ## Stdlib updates
 
 *   The following default gems are updated.
@@ -41,3 +49,5 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## Implementation improvements
 
 ## JIT
+
+[Bug #19150]:         https://bugs.ruby-lang.org/issues/19150

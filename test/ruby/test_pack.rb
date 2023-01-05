@@ -777,32 +777,32 @@ EXPECTED
   end
 
   def test_pack_garbage
-    assert_warn(%r%unknown pack directive '\*' in '\*U'$%) do
+    assert_raise(ArgumentError, %r%unknown pack directive '\*' in '\*U'$%) do
       assert_equal "\000", [0].pack("*U")
     end
   end
 
   def test_unpack_garbage
-    assert_warn(%r%unknown unpack directive '\*' in '\*U'$%) do
+    assert_raise(ArgumentError, %r%unknown unpack directive '\*' in '\*U'$%) do
       assert_equal [0], "\000".unpack("*U")
     end
   end
 
   def test_invalid_warning
-    assert_warning(/unknown pack directive ',' in ','/) {
+    assert_raise(ArgumentError, /unknown pack directive ',' in ','/) {
       [].pack(",")
     }
-    assert_warning(/\A[ -~]+\Z/) {
+    assert_raise(ArgumentError, /\A[ -~]+\Z/) {
       [].pack("\x7f")
     }
-    assert_warning(/\A(.* in '\u{3042}'\n)+\z/) {
+    assert_raise(ArgumentError, /\A(.* in '\u{3042}'\n)+\z/) {
       [].pack("\u{3042}")
     }
 
-    assert_warning(/\A.* in '.*U'\Z/) {
+    assert_raise(ArgumentError, /\A.* in '.*U'\Z/) {
       assert_equal "\000", [0].pack("\0U")
     }
-    assert_warning(/\A.* in '.*U'\Z/) {
+    assert_raise(ArgumentError, /\A.* in '.*U'\Z/) {
       "\000".unpack("\0U")
     }
   end
