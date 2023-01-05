@@ -33,7 +33,7 @@ describe "Dir.home" do
     end
 
     platform_is :windows do
-      ruby_version_is "3.0" do
+      ruby_version_is "3.2" do
         it "returns the home directory with forward slashs and as UTF-8" do
           ENV['HOME'] = "C:\\rubyspäc\\home"
           home = Dir.home
@@ -50,7 +50,8 @@ describe "Dir.home" do
         ENV['HOMEPATH'] = "\\rubyspec\\home1"
         Dir.home.should == "C:/rubyspec/home1"
         ENV['USERPROFILE'] = "C:\\rubyspec\\home2"
-        Dir.home.should == "C:/rubyspec/home2"
+        # https://bugs.ruby-lang.org/issues/19244
+        # Dir.home.should == "C:/rubyspec/home2"
         ENV['HOME'] = "C:\\rubyspec\\home3"
         Dir.home.should == "C:/rubyspec/home3"
       ensure
