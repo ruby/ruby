@@ -5171,7 +5171,7 @@ rb_ary_times(VALUE ary, VALUE times)
 
     len = NUM2LONG(times);
     if (len == 0) {
-        ary2 = ary_new(rb_cArray, 0);
+        ary2 = rb_ary_new_capa(0);
         goto out;
     }
     if (len < 0) {
@@ -5182,7 +5182,7 @@ rb_ary_times(VALUE ary, VALUE times)
     }
     len *= RARRAY_LEN(ary);
 
-    ary2 = ary_new(rb_cArray, len);
+    ary2 = rb_ary_new_capa(len);
     ARY_SET_LEN(ary2, len);
 
     ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
