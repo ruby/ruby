@@ -118,14 +118,14 @@ module GC
   #  [time]
   #    The total time spent in garbage collections (in milliseconds)
   #  [heap_allocated_pages]
-  #    The total number of `:heap_eden_pages` + `:heap_tomb_pages`
+  #    The total number of +:heap_eden_pages+ + +:heap_tomb_pages+
   #  [heap_sorted_length]
   #    The number of pages that can fit into the buffer that holds references to
   #    all pages
   #  [heap_allocatable_pages]
   #    The total number of pages the application could allocate without additional \GC
   #  [heap_available_slots]
-  #    The total number of slots in all `:heap_allocated_pages`
+  #    The total number of slots in all +:heap_allocated_pages+
   #  [heap_live_slots]
   #    The total number of slots which contain live objects
   #  [heap_free_slots]
@@ -149,7 +149,7 @@ module GC
   #  [malloc_increase_bytes]
   #    Amount of memory allocated on the heap for objects. Decreased by any \GC
   #  [malloc_increase_bytes_limit]
-  #    When `:malloc_increase_bytes` crosses this limit, \GC is triggered
+  #    When +:malloc_increase_bytes+ crosses this limit, \GC is triggered
   #  [minor_gc_count]
   #    The total number of minor garbage collections run since process start
   #  [major_gc_count]
@@ -164,16 +164,16 @@ module GC
   #  [remembered_wb_unprotected_objects]
   #    The total number of objects without write barriers
   #  [remembered_wb_unprotected_objects_limit]
-  #    When `:remembered_wb_unprotected_objects` crosses this limit,
+  #    When +:remembered_wb_unprotected_objects+ crosses this limit,
   #    major \GC is triggered
   #  [old_objects]
   #    Number of live, old objects which have survived at least 3 garbage collections
   #  [old_objects_limit]
-  #    When `:old_objects` crosses this limit, major \GC is triggered
+  #    When +:old_objects+ crosses this limit, major \GC is triggered
   #  [oldmalloc_increase_bytes]
   #    Amount of memory allocated on the heap for objects. Decreased by major \GC
   #  [oldmalloc_increase_bytes_limit]
-  #    When `:old_malloc_increase_bytes` crosses this limit, major \GC is triggered
+  #    When +:old_malloc_increase_bytes+ crosses this limit, major \GC is triggered
   #
   #  If the optional argument, hash, is given,
   #  it is overwritten and returned.
