@@ -544,6 +544,10 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_OBJECT:
+        if (FL_TEST(obj, ROBJECT_EMBED)) {
+            dump_append(dc, ", \"embedded\":true");
+        }
+
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
         if (rb_shape_obj_too_complex(obj)) {
