@@ -7,9 +7,7 @@ Foo [bar]
 
 [1]: /url/  "Title"
 
-
 With [embedded [brackets]] [b].
-
 
 Indented [once][].
 
@@ -26,7 +24,6 @@ Indented [four][] times.
    [thrice]: /url
 
     [four]: /url
-
 
 [b]: /url/
 
@@ -58,7 +55,6 @@ Backslashing should suppress \[this] and [this\].
 
 [this]: foo
 
-
 * * *
 
 Here's one where the [link
@@ -66,6 +62,5 @@ breaks] across lines.
 
 Here's another where the [link 
 breaks] across lines, but with a line-ending space.
-
 
 [link breaks]: /url/

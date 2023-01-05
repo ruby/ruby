@@ -1010,7 +1010,6 @@ FindFreeChildSlot(void)
     return NULL;
 }
 
-
 /*
   ruby -lne 'BEGIN{$cmds = Hash.new(0); $mask = 1}'
    -e '$cmds[$_.downcase] |= $mask' -e '$mask <<= 1 if ARGF.eof'
@@ -2562,7 +2561,6 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #endif
 static inline ioinfo* _pioinfo(int);
 
-
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
@@ -2854,7 +2852,6 @@ rb_w32_strerror(int e)
 //
 // various stubs
 //
-
 
 // Ownership
 //
@@ -3439,7 +3436,6 @@ rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
     }
     return r;
 }
-
 
 #undef getpeername
 
@@ -6189,7 +6185,6 @@ rb_w32_times(struct tms *tmbuf)
     return 0;
 }
 
-
 /* License: Ruby's */
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
@@ -6335,7 +6330,6 @@ rb_w32_getpid(void)
 {
     return GetCurrentProcessId();
 }
-
 
 /* License: Ruby's */
 rb_pid_t
@@ -7155,7 +7149,6 @@ constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
     return len;
 }
 
-
 /* License: Ruby's */
 int
 rb_w32_close(int fd)
@@ -7358,7 +7351,6 @@ rb_w32_read(int fd, void *buf, size_t size)
     }
     if (read == 0)
         _set_osflags(fd, _osfile(fd) | FEOFLAG);
-
 
     rb_acrt_lowio_unlock_fh(fd);
 

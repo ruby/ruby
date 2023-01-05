@@ -97,7 +97,6 @@ here - something
     c = comment <<-COMMENT
 Signature
 
-
   method_<here>(args)
 
 here - something

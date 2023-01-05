@@ -66,7 +66,6 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(StopIteration){e.next}
   end
 
-
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
     assert_raise(ArgumentError) {

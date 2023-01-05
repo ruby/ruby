@@ -292,7 +292,6 @@ module Racc
 
   end
 
-
   class GrammarFileScanner
 
     def initialize(str, filename = '-')

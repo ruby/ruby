@@ -15,4 +15,3 @@ def factR(n):
 
 for i in range(10000):
 	factR(100)
-

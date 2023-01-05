@@ -41,7 +41,6 @@
 extern "C" {
 #endif
 
-
 /*
  * Import u_intXX_t size_t type definitions from system headers.  You
  * may need to change this, or define these things yourself in this
@@ -73,7 +72,6 @@ extern "C" {
 #endif /* SHA2_USE_INTTYPES_H */
 #endif /* RUBY */
 
-
 /*** SHA-256/384/512 Various Length Definitions ***********************/
 #define SHA256_BLOCK_LENGTH		64
 #define SHA256_DIGEST_LENGTH		32
@@ -84,7 +82,6 @@ extern "C" {
 #define SHA512_BLOCK_LENGTH		128
 #define SHA512_DIGEST_LENGTH		64
 #define SHA512_DIGEST_STRING_LENGTH	(SHA512_DIGEST_LENGTH * 2 + 1)
-
 
 /*** SHA-256/384/512 Context Structures *******************************/
 /* NOTE: If your architecture does not define either u_intXX_t types or
@@ -131,7 +128,6 @@ typedef struct _SHA512_CTX {
 } SHA512_CTX;
 
 typedef SHA512_CTX SHA384_CTX;
-
 
 /*** SHA-256/384/512 Function Prototypes ******************************/
 #ifdef RUBY
@@ -222,4 +218,3 @@ char* SHA512_Data();
 #endif /* __cplusplus */
 
 #endif /* __SHA2_H__ */
-

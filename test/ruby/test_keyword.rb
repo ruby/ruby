@@ -17,7 +17,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { f1("string") }
   end
 
-
   def f2(x, str: "foo", num: 424242)
     [x, str, num]
   end
@@ -26,7 +25,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([:xyz, "foo", 424242], f2(:xyz))
     assert_raise(ArgumentError) { f2("bar"=>42) }
   end
-
 
   def f3(str: "foo", num: 424242, **h)
     [str, num, h]
@@ -41,7 +39,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { f3("string") }
   end
 
-
   define_method(:f4) {|str: "foo", num: 424242| [str, num] }
 
   def test_f4
@@ -53,7 +50,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(ArgumentError) { f4("string") }
   end
 
-
   define_method(:f5) {|str: "foo", num: 424242, **h| [str, num, h] }
 
   def test_f5
@@ -64,7 +60,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {:check=>true}], f5(str: "bar", check: true))
     assert_raise(ArgumentError) { f5("string") }
   end
-
 
   def f6(str: "foo", num: 424242, **h, &blk)
     [str, num, h, blk]
@@ -3461,7 +3456,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["foo", 424242], p1["string"] )
   end
 
-
   def p2
     Proc.new do |x, str: "foo", num: 424242|
       [x, str, num]
@@ -3472,7 +3466,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([nil, "foo", 424242], p2[])
     assert_equal([:xyz, "foo", 424242], p2[:xyz])
   end
-
 
   def p3
     Proc.new do |str: "foo", num: 424242, **h|
@@ -3488,7 +3481,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {:check=>true}], p3[str: "bar", check: true])
     assert_equal(["foo", 424242, {}], p3["string"])
   end
-
 
   def p4
     Proc.new do |str: "foo", num: 424242, **h, &blk|
@@ -3506,7 +3498,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["foo", 424242, {}], a[0, 3])
     assert_equal(43, a.last.call(1))
   end
-
 
   def p5
     Proc.new do |*r, str: "foo", num: 424242, **h|
@@ -3526,7 +3517,6 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[1, 2], "bar", 424242, {}], p5[1, 2, str: "bar"])
     assert_equal([[1, 2, 3], "bar", 424242, {}], p5[1, 2, 3, str: "bar"])
   end
-
 
   def p6
     Proc.new do |o1, o2=42, *args, p, k: :key, **kw, &b|

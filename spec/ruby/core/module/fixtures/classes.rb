@@ -261,7 +261,6 @@ module ModuleSpecs
     end
   end
 
-
   module ReopeningModule
     def foo; true; end
     module_function :foo

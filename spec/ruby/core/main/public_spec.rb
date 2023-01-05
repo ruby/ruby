@@ -44,7 +44,6 @@ describe "main#public" do
     end
   end
 
-
   it "raises a NameError when given an undefined name" do
     -> do
       eval "public :main_undefined_method", TOPLEVEL_BINDING

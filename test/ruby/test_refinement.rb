@@ -2121,7 +2121,6 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
 
-
     class NonProc
       def call
         ToProc.call(&self)

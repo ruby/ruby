@@ -1791,7 +1791,6 @@ AS_IF([test "$ac_cv_header_net_socket_h" = yes], [
     ac_cv_header_sys_socket_h=${ac_cv_header_sys_socket_h=yes}
 ])
 
-
 AC_TYPE_SIZE_T
 RUBY_CHECK_SIGNEDNESS(size_t, [AC_MSG_ERROR(size_t is signed)], [],
 		      [@%:@include <sys/types.h>])
@@ -1985,7 +1984,6 @@ AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [])
 AC_CHECK_HEADERS(sys/pstat.h)
-
 
 AC_DEFINE(HAVE_SIGNBIT)         # C99; backward compatibility
 

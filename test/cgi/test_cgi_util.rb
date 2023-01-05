@@ -4,7 +4,6 @@ require 'cgi'
 require 'stringio'
 require_relative 'update_env'
 
-
 class CGIUtilTest < Test::Unit::TestCase
   include CGI::Util
   include UpdateEnv
@@ -245,7 +244,6 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt;", escape_element('<BR><A HREF="url"></A>', "A", "IMG"))
     assert_equal("<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt;", escape_element('<BR><A HREF="url"></A>', ["A", "IMG"]))
   end
-
 
   def test_cgi_unescapeElement
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescapeElement(escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG"))

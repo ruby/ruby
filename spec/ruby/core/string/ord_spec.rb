@@ -9,7 +9,6 @@ describe "String#ord" do
     'a'.ord.should == 97
   end
 
-
   it "ignores subsequent characters" do
     "\u{287}a".ord.should == "\u{287}".ord
   end

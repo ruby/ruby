@@ -36,7 +36,6 @@ def create_win32ole_makefile
   end
 end
 
-
 case RUBY_PLATFORM
 when /mswin/
   $CFLAGS.sub!(/((?:\A|\s)[-\/])W\d(?=\z|\s)/, '\1W3') or

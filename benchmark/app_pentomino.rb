@@ -1,7 +1,6 @@
 #!/usr/local/bin/ruby
 # This program is contributed by Shin Nishiyama
 
-
 # modified by K.Sasada
 
 NP = 5

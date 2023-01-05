@@ -515,4 +515,3 @@ class Reline::KeyActor::ViCommand < Reline::KeyActor::Base
     # EOF
   ]
 end
-

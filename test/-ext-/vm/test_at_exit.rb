@@ -16,4 +16,3 @@ class TestVM < Test::Unit::TestCase
     end;
   end
 end
-

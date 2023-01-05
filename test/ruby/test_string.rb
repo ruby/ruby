@@ -34,7 +34,6 @@ class TestString < Test::Unit::TestCase
     assert_equal(src, S(src))
     assert_equal(Encoding::EUC_JP, S(src).encoding)
 
-
     assert_equal("", S(encoding: "euc-jp"))
     assert_equal(Encoding::EUC_JP, S(encoding: "euc-jp").encoding)
 
@@ -766,7 +765,6 @@ CODE
 
     assert_raise(ArgumentError) { S("foo").delete! }
   end
-
 
   def test_downcase
     assert_equal(S("hello"), S("helLO").downcase)
@@ -2361,7 +2359,6 @@ CODE
     assert_equal([ 255, 66, 67 ], S("\377BC").unpack("C*"))
     assert_equal([ 65, 66, 67 ],  S("ABC").unpack("c3"))
     assert_equal([ -1, 66, 67 ],  S("\377BC").unpack("c*"))
-
 
     assert_equal([S("4142"), S("0a"), S("1")], S("AB\n\x10").unpack(S("H4H2H1")))
     assert_equal([S("1424"), S("a0"), S("2")], S("AB\n\x02").unpack(S("h4h2h1")))

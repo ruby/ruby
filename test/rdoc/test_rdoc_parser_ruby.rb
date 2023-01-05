@@ -1379,7 +1379,6 @@ EOF
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
 
-
     util_parser "\n"
 
     tk = @parser.get_tk
@@ -2418,7 +2417,6 @@ end
     assert_equal 2, x.method_list.length
     a = x.method_list.first
 
-
     expected = [
       {
         :line_no => 2, :char_no => 1, :kind => :on_comment,
@@ -3163,7 +3161,6 @@ end
     assert_equal 'A#a', m_a.full_name
     assert_equal 'A#b', m_b.full_name
   end
-
 
   def test_parse_symbol_in_paren_arg
     util_parser <<RUBY

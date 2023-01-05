@@ -172,7 +172,6 @@ const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me)
 static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
 static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
 
-
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
@@ -2271,7 +2270,6 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
         return;
     }
 
-
     VALUE v;
 
     if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
@@ -2824,7 +2822,6 @@ rb_respond_to(VALUE obj, ID id)
 {
     return rb_obj_respond_to(obj, id, FALSE);
 }
-
 
 /*
  *  call-seq:

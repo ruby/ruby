@@ -36,7 +36,6 @@ VALUE exception_spec_rb_set_errinfo(VALUE self, VALUE exc) {
   return Qnil;
 }
 
-
 VALUE exception_spec_rb_make_exception(VALUE self, VALUE ary) {
   int argc = RARRAY_LENINT(ary);
   VALUE *argv = RARRAY_PTR(ary);

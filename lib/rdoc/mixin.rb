@@ -118,4 +118,3 @@ class RDoc::Mixin < RDoc::CodeObject
   end
 
 end
-

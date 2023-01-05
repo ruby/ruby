@@ -310,7 +310,6 @@ assert_equal 'ok', %q{
   $x
 }, '[ruby-core:17164]'
 
-
 assert_equal 'ok', %q{
    def def9
       lambda {|a| $x = :ok; a[]; $x = :ng }.call(Proc.new { return })
@@ -467,4 +466,3 @@ assert_equal 'ok', %q{
   end
   eval('yield', m)
 }, '[Bug #5634]'
-

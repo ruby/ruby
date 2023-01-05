@@ -95,7 +95,6 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-
 #define SAVE_ROOT_JMPBUF(th, stmt) do \
   if (true) { \
       stmt; \

@@ -67,7 +67,6 @@
 #define R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
 #define R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
 
-
 typedef union {
     uint8_t c[64];
     uint32_t l[16];
@@ -195,7 +194,6 @@ void SHA1_Transform(uint32_t state[5], const uint8_t buffer[64])
     a = b = c = d = e = 0;
 }
 
-
 /*
  * SHA1_Init - Initialize new context
  */
@@ -213,7 +211,6 @@ int SHA1_Init(SHA1_CTX *context)
     context->count[0] = context->count[1] = 0;
     return 1;
 }
-
 
 /*
  * Run your data through this.
@@ -240,7 +237,6 @@ void SHA1_Update(SHA1_CTX *context, const uint8_t *data, size_t len)
     }
     (void)memcpy(&context->buffer[j], &data[i], len - i);
 }
-
 
 /*
  * Add padding and return the message digest.

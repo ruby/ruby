@@ -231,7 +231,6 @@ if defined?(WIN32OLE)
       assert_match(/^IFileSystem/, tobj.name)
     end
 
-
     def test_invoke_hash_key_non_str_sym
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       begin

@@ -205,5 +205,3 @@ class CGI
 
   end # class Cookie
 end
-
-

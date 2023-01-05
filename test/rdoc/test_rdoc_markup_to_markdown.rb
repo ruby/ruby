@@ -343,7 +343,6 @@ words words words words
 
         * second
 
-
     EXPECTED
 
     assert_equal expected, @to.end_accepting
@@ -387,4 +386,3 @@ words words words words
   end
 
 end
-

@@ -463,7 +463,6 @@ assert_normal_exit %q{
   Thread.new { GC.start }.join
 }, '[ruby-dev:32604]'
 
-
 assert_equal '[nil, []]', %q{
   def m() yield nil,[] end
   l = lambda {|*v| v}

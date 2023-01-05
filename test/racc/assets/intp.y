@@ -329,7 +329,6 @@ module Intp
 
   end
 
-
   class Node
 
     def initialize(fname, lineno)
@@ -356,7 +355,6 @@ module Intp
 
   end
 
-
   class RootNode < Node
 
     def initialize(tree)
@@ -369,7 +367,6 @@ module Intp
     end
 
   end
-
 
   class DefNode < Node
 
@@ -434,7 +431,6 @@ module Intp
 
   end
 
-
   class IfNode < Node
 
     def initialize(fname, lineno, cond, tstmt, fstmt)
@@ -469,7 +465,6 @@ module Intp
     end
 
   end
-
 
   class AssignNode < Node
 

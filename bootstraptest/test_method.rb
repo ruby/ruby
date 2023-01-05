@@ -540,7 +540,6 @@ def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2)
 end
 ; m(1, 2, 3, 4, 5, 6)}
 
-
 #
 # super
 #
@@ -658,7 +657,6 @@ C1.new.m(1,2,3,4,5,6,7,8,9)
 
 ###
 }
-
 
 tests.each{|setup, methods| setup = setup.dup; setup.strip!
   setup = BASE.gsub(/<TEST>/){setup}

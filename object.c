@@ -887,7 +887,6 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     }
 }
 
-
 static VALUE
 class_search_ancestor(VALUE cl, VALUE c)
 {
@@ -907,7 +906,6 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
     c = class_or_module_required(c);
     return class_search_ancestor(cl, RCLASS_ORIGIN(c));
 }
-
 
 /*
  * Document-method: inherited
@@ -1255,7 +1253,6 @@ rb_obj_frozen_p(VALUE obj)
     return RBOOL(OBJ_FROZEN(obj));
 }
 
-
 /*
  * Document-class: NilClass
  *
@@ -1346,7 +1343,6 @@ nil_match(VALUE obj1, VALUE obj2)
  *  <code>true</code> to be used in logical expressions.
  */
 
-
 /*
  * call-seq:
  *   true.to_s   ->  "true"
@@ -1359,7 +1355,6 @@ rb_true_to_s(VALUE obj)
 {
     return rb_cTrueClass_to_s;
 }
-
 
 /*
  *  call-seq:
@@ -1397,7 +1392,6 @@ true_or(VALUE obj, VALUE obj2)
     return Qtrue;
 }
 
-
 /*
  *  call-seq:
  *     true ^ obj   -> !obj
@@ -1412,7 +1406,6 @@ true_xor(VALUE obj, VALUE obj2)
 {
     return rb_obj_not(obj2);
 }
-
 
 /*
  *  Document-class: FalseClass
@@ -1452,7 +1445,6 @@ false_and(VALUE obj, VALUE obj2)
 {
     return Qfalse;
 }
-
 
 /*
  *  call-seq:
@@ -1501,7 +1493,6 @@ rb_true(VALUE obj)
  *    nil.nil?          #=> true
  */
 
-
 MJIT_FUNC_EXPORTED VALUE
 rb_false(VALUE obj)
 {
@@ -1522,7 +1513,6 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
     VALUE result = rb_funcall(obj1, id_match, 1, obj2);
     return rb_obj_not(result);
 }
-
 
 /*
  *  call-seq:
@@ -1725,7 +1715,6 @@ rb_mod_lt(VALUE mod, VALUE arg)
     if (mod == arg) return Qfalse;
     return rb_class_inherited_p(mod, arg);
 }
-
 
 /*
  * call-seq:
@@ -3744,7 +3733,6 @@ rb_String(VALUE val)
     return tmp;
 }
 
-
 /*
  *  call-seq:
  *    String(object) -> object or new_string
@@ -4000,7 +3988,6 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *    obj--->OtherClass---------->(OtherClass)-----------...
  *
  */
-
 
 /*  Document-class: BasicObject
  *

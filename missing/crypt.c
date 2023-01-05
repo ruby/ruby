@@ -600,7 +600,6 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 		} while (--loop_count != 0);
 		kp -= (ks_inc*KS_SIZE);
 
-
 		/* swap L and R */
 		L0 ^= R0;  L1 ^= R1;
 		R0 ^= L0;  R1 ^= L1;

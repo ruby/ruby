@@ -4,7 +4,6 @@
 
 require 'racc/raccs'
 
-
 class ScanError < StandardError; end
 
 def testdata( dir, argv )
@@ -16,7 +15,6 @@ def testdata( dir, argv )
     argv.collect {|i| dir + '/' + i }
   end
 end
-
 
 if ARGV.delete '--print' then
   $raccs_print_type = true

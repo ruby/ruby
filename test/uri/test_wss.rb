@@ -5,7 +5,6 @@ require 'uri/wss'
 
 module URI
 
-
 class TestWSS < Test::Unit::TestCase
   def setup
   end
@@ -66,6 +65,5 @@ class TestWSS < Test::Unit::TestCase
     end
   end
 end
-
 
 end

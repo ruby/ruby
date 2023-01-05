@@ -74,7 +74,6 @@ module NetFTPSpecs
       @thread.join
     end
 
-
     ##
     def handle(sym, &block)
       @handlers[sym] = block

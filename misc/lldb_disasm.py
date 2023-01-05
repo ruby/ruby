@@ -16,7 +16,6 @@
 #    0011 defineclass( ID: 0x56eb, (rb_iseq_t *)0x101063b58, 2 )
 #    0015 leave
 
-
 import lldb
 import os
 import shlex
@@ -228,7 +227,6 @@ class IseqDisassembler:
             if "insns_address_table" in symbol.name and symbol.GetType() == lldb.eSymbolTypeData:
                 print(f"found symbol {symbol.name}")
                 return symbol
-
 
 def disasm(debugger, command, result, internal_dict):
     disassembler = IseqDisassembler(debugger, command, result, internal_dict)

@@ -1100,7 +1100,6 @@ static VALUE ossl_ec_group_to_text(VALUE self)
     return str;
 }
 
-
 /*
  * OpenSSL::PKey::EC::Point
  */
@@ -1590,7 +1589,6 @@ void Init_ossl_ec(void)
     rb_define_alias(cEC, "to_pem", "export");
     rb_define_method(cEC, "to_der", ossl_ec_key_to_der, 0);
 
-
     rb_define_alloc_func(cEC_GROUP, ossl_ec_group_alloc);
     rb_define_method(cEC_GROUP, "initialize", ossl_ec_group_initialize, -1);
     rb_define_method(cEC_GROUP, "initialize_copy", ossl_ec_group_initialize_copy, 1);
@@ -1621,11 +1619,9 @@ void Init_ossl_ec(void)
 
 /* check* */
 
-
     rb_define_method(cEC_GROUP, "to_pem", ossl_ec_group_to_pem, 0);
     rb_define_method(cEC_GROUP, "to_der", ossl_ec_group_to_der, 0);
     rb_define_method(cEC_GROUP, "to_text", ossl_ec_group_to_text, 0);
-
 
     rb_define_alloc_func(cEC_POINT, ossl_ec_point_alloc);
     rb_define_method(cEC_POINT, "initialize", ossl_ec_point_initialize, -1);

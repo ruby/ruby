@@ -876,7 +876,6 @@ typedef struct rb_objspace {
 #endif
 } rb_objspace_t;
 
-
 #ifndef HEAP_PAGE_ALIGN_LOG
 /* default tiny heap size: 64KiB */
 #define HEAP_PAGE_ALIGN_LOG 16
@@ -1404,7 +1403,6 @@ tick(void)
     __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (val));
     return val;
 }
-
 
 #elif defined(_WIN32) && defined(_MSC_VER)
 #include <intrin.h>
@@ -3768,7 +3766,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
-
 #define OBJ_ID_INCREMENT (sizeof(RVALUE) / 2)
 #define OBJ_ID_INITIAL (OBJ_ID_INCREMENT * 2)
 
@@ -4778,7 +4775,6 @@ nonspecial_obj_id_(VALUE obj)
 {
     return nonspecial_obj_id(obj);
 }
-
 
 VALUE
 rb_memory_id(VALUE obj)
@@ -6784,7 +6780,6 @@ static void each_stack_location(rb_objspace_t *objspace, const rb_execution_cont
                                  const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE));
 
 #if defined(__wasm__)
-
 
 static VALUE *rb_stack_range_tmp[2];
 
@@ -11367,7 +11362,6 @@ rb_gc_stat(VALUE key)
     }
 }
 
-
 enum gc_stat_heap_sym {
     gc_stat_heap_sym_slot_size,
     gc_stat_heap_sym_heap_allocatable_pages,
@@ -13320,7 +13314,6 @@ getrusage_time(void)
         return 0.0;
     }
 }
-
 
 static inline void
 gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)

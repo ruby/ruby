@@ -193,7 +193,6 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     return cb;
 }
 
-
 /*
  * call-seq:
  *    X509::Store.new => store

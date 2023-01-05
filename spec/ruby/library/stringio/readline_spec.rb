@@ -1,7 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-
 describe "StringIO#readline when passed [separator]" do
   before :each do
     @io = StringIO.new("this>is>an>example")

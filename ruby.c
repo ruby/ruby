@@ -745,7 +745,6 @@ ruby_init_loadpath(void)
     rb_const_set(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"), ruby_prefix_path);
 }
 
-
 static void
 add_modules(VALUE *req_list, const char *mod)
 {
@@ -1743,7 +1742,6 @@ rb_f_chop(VALUE _)
     rb_lastline_set(str);
     return str;
 }
-
 
 /*
  *  call-seq:

@@ -98,7 +98,6 @@ static char **readline_attempted_completion_function(const char *text,
     (str) = rb_str_conv_enc((str), rb_enc_get(str), rb_locale_encoding());\
 } while (0)\
 
-
 /*
  * Document-class: Readline
  *

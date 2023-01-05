@@ -112,4 +112,3 @@ class TSortTest < Test::Unit::TestCase # :nodoc:
     assert_equal([['4'], ['2', '3'], ['1']], r)
   end
 end
-

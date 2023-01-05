@@ -638,4 +638,3 @@ module Rinda
   end
 
 end
-

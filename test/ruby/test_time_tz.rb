@@ -103,7 +103,6 @@ class TestTimeTZ < Test::Unit::TestCase
     t.to_s
   end
 
-
   def assert_time_constructor(tz, expected, method, args, message=nil)
     m = message ? "#{message}\n" : ""
     m << "TZ=#{tz} Time.#{method}(#{args.map {|arg| arg.inspect }.join(', ')})"

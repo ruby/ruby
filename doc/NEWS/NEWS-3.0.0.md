@@ -309,7 +309,6 @@ Outstanding ones only.
       use `Kernel.rand`/`Random.rand` directly, or create a `Random` instance with `Random.new` instead.
       [[Feature #17351]]
 
-
 * String
 
     * The following methods now return or yield String instances

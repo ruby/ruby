@@ -26,4 +26,3 @@ end
 ts.write([:name, :RingEcho, RingEcho.new(DRb.uri), ''], renewer)
 
 DRb.thread.join
-

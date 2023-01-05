@@ -375,7 +375,6 @@ class CGI
     output.print content unless "HEAD" == env_table['REQUEST_METHOD']
   end
 
-
   # Print an argument or list of arguments to the default output stream
   #
   #   cgi = CGI.new

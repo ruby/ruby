@@ -13,5 +13,4 @@
 
 extern VALUE mPsych;
 
-
 #endif

@@ -6,7 +6,6 @@ require 'pathname'
 require 'fileutils'
 require 'tmpdir'
 
-
 class TestPathname < Test::Unit::TestCase
   def self.define_assertion(name, linenum, &block)
     name = "test_#{name}_#{linenum}"

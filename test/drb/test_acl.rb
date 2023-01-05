@@ -35,7 +35,6 @@ class SampleHosts
   attr_reader(:hostlist, :hosts)
 end
 
-
 class ACLEntryTest < Test::Unit::TestCase
   HOSTS = SampleHosts.new
 

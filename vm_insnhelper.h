@@ -138,7 +138,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /* deal with control flow 3: exception                    */
 /**********************************************************/
 
-
 /**********************************************************/
 /* deal with stack canary                                 */
 /**********************************************************/

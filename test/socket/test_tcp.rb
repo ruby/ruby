@@ -6,7 +6,6 @@ begin
 rescue LoadError
 end
 
-
 class TestSocket_TCPSocket < Test::Unit::TestCase
   def test_inspect
     TCPServer.open("localhost", 0) {|server|

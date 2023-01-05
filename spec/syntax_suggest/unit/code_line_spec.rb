@@ -155,7 +155,6 @@ module SyntaxSuggest
     it "doesn't count empty lines as having an indentation" do
       code_lines = CodeLine.from_source(<<~EOM)
 
-
       EOM
 
       expect(code_lines.map(&:indent)).to eq([0, 0])

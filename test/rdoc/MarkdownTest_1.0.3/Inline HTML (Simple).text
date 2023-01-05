@@ -66,4 +66,3 @@ Hr's:
 <hr class="foo" id="bar"/>
 
 <hr class="foo" id="bar" >
-

@@ -11,5 +11,3 @@ lmax = 400_000 / tmax
     }
   }
 }.each{|t| t.join}
-
-

@@ -559,7 +559,6 @@ enum_filter_map(VALUE obj)
     return ary;
 }
 
-
 static VALUE
 reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
@@ -2065,7 +2064,6 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    min                  -> element
@@ -2784,7 +2782,6 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
-
 /*
  *  call-seq:
  *    reverse_each(*args) {|element| ... } ->  self
@@ -2833,7 +2830,6 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 
     return obj;
 }
-
 
 static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
@@ -3337,7 +3333,6 @@ enum_take(VALUE obj, VALUE n)
     return result;
 }
 
-
 static VALUE
 take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
@@ -3424,7 +3419,6 @@ enum_drop(VALUE obj, VALUE n)
     rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)memo);
     return result;
 }
-
 
 static VALUE
 drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
@@ -3759,7 +3753,6 @@ enum_chunk(VALUE enumerable)
     return enumerator;
 }
 
-
 struct slicebefore_arg {
     VALUE sep_pred;
     VALUE sep_pat;
@@ -3995,7 +3988,6 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
     rb_block_call(enumerator, idInitialize, 0, 0, slicebefore_i, enumerator);
     return enumerator;
 }
-
 
 struct sliceafter_arg {
     VALUE pat;
@@ -4689,7 +4681,6 @@ enum_compact(VALUE obj)
 
     return ary;
 }
-
 
 /*
  * == What's Here

@@ -38,4 +38,3 @@ if __FILE__ == $0
   puts DRb.uri
   DRb.thread.join
 end
-

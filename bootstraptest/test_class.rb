@@ -21,7 +21,6 @@ assert_equal 'nil',     %q( Object.__send__(:remove_const, :NilClass)
                             GC.start
                             nil.inspect)
 
-
 # inherited class
 assert_equal 'true',    %q( class A; end
                             class C < A; end
@@ -121,7 +120,6 @@ assert_equal 'String',  %q( class A; ::C = "OK"; end;  C.class )
 # class/module dup
 assert_equal 'Class',   %q( class C; end;  C.dup.class )
 assert_equal 'Module',  %q( module M; end;  M.dup.class )
-
 
 assert_equal "ok", %q{
   module Foo

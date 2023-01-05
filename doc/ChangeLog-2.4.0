@@ -5349,7 +5349,6 @@ Mon May  2 20:59:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 	* re.c (rb_reg_prepare_re): avoid duplicated allocation of
 	  onig_errmsg_buffer.
 
-
 Mon May  2 12:34:52 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_refinement.rb (test_inspect): Use Integer instead of
@@ -7705,18 +7704,15 @@ Tue Mar  8 00:27:53 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 	* ext/tk/lib/tkextlib/tcllib/tablelist_tile.rb: fix method name typo.
 	  [ruby-core:72513] [Bug #11893] The patch provided by Akira Matsuda.
 
-
 Tue Mar  8 00:25:08 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tcllib/toolbar.rb: fix method name typo.
 	  [ruby-core:72511] [Bug #11891] The patch provided by Akira Matsuda.
 
-
 Tue Mar  8 00:21:58 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/blt/tree.rb: fix method name typo.
 	  [ruby-core:72510] [Bug #11890] The patch provided by Akira Matsuda.
-
 
 Tue Mar  8 00:11:47 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
@@ -9467,7 +9463,6 @@ Fri Dec 25 08:23:22 2015  Tadashi Saito  <tad.a.digger@gmail.com>
 
 	* compile.c, cont.c, doc, man: fix common misspelling.
 	  [ruby-core:72466] [Bug #11870]
-
 
 For the changes before 2.3.0, see doc/ChangeLog-2.3.0
 For the changes before 2.2.0, see doc/ChangeLog-2.2.0

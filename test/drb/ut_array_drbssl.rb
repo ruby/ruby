@@ -36,4 +36,3 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
   DRb.thread.join
   es.stop_service if es.alive?
 end
-

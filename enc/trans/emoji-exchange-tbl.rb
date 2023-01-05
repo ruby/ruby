@@ -8404,4 +8404,3 @@ EMOJI_EXCHANGE_TBL['UTF-8']['UTF8-SoftBank'] = [
   ["f09f918e", "ee90a1"], # [THUMBS DOWN SIGN] U+1F44E -> U+E421
   ["f09f9190", "ee90a2"], # [OPEN HANDS SIGN] U+1F450 -> U+E422
 ]
-

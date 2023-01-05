@@ -93,7 +93,6 @@ describe "Fiber#raise" do
   end
 end
 
-
 ruby_version_is ""..."3.0" do
   describe "Fiber#raise" do
     it "raises a FiberError if invoked on a transferring Fiber" do

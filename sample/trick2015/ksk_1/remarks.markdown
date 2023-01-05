@@ -11,7 +11,6 @@ It has been confirmed to be run on
   ruby 2.2.3p173 (2015-08-18 revision 51636) [x86_64-linux]
 ```
 
-
 ### Description
 
 The program prints a Collatz sequence started with a given number,
@@ -25,7 +24,6 @@ until the number becomes 1.  Collatz conjectured that no matter from
 the process starts it always eventually terminates.  This is still
 an open problem, hence the program may not terminate for some
 numbers.  It is known that there is no such exception below 2<sup>60</sup>.
-
 
 ### Internals
 
@@ -95,7 +93,6 @@ One may notice that the string `3x+1` in the code could be other
 four-character words.  I chose it because the Collatz conjecture is
 also called the 3x+1 problem.
 
-
 ### Variant
 
 The Collatz conjecture is equivalently stated as,
@@ -109,12 +106,9 @@ case of n = 1.  It can be obtained by replacing the regular expression
 is simply `/=/` and removing a padding `",,,,,"`.  The program no
 longer terminates, though.
 
-
 ### Limitation
 
 The implementation requires to manipulate long strings even for some
 small starting numbers.  For example, starting from 1,819, the number
 will reach up to 1,276,936 which causes SystemStackError on Ruby 1.9.3.
 The program works on Ruby 2.0.0 and 2.2.3, though.
-
-

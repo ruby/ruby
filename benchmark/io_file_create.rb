@@ -10,4 +10,3 @@ max.times{
   f.close#(true)
 }
 File.unlink(file)
-

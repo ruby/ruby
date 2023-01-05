@@ -8,7 +8,6 @@ class Ring
     @next_ring = n
   end
 
-
   def size
     s = 1
     ring = self

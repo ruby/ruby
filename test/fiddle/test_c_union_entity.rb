@@ -5,7 +5,6 @@ begin
 rescue LoadError
 end
 
-
 module Fiddle
   class TestCUnionEntity < TestCase
     def test_class_size

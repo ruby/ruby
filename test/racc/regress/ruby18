@@ -6,7 +6,6 @@
 
 require 'racc/parser.rb'
 
-
 require 'parser'
 
 module Parser
@@ -6994,7 +6993,6 @@ module_eval(<<'.,.,', 'ruby18.y', 322)
                           lparen_t, args, rparen_t = val[3]
                       result = @builder.call_method(val[0], val[1], val[2],
                                   lparen_t, args, rparen_t)
-
 
     result
   end

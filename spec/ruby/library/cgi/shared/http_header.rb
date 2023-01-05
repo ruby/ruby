@@ -12,7 +12,6 @@ describe :cgi_http_header, shared: true do
       ENV['REQUEST_METHOD'] = @old_request_method
     end
 
-
     it "returns a HTTP header specifying the Content-Type as text/html" do
       @cgi.send(@method).should == "Content-Type: text/html\r\n\r\n"
     end
@@ -33,7 +32,6 @@ describe :cgi_http_header, shared: true do
       ENV['REQUEST_METHOD'] = @old_request_method
     end
 
-
     it "returns a HTTP header specifying the Content-Type as the passed String's content" do
       @cgi.send(@method, "text/plain").should == "Content-Type: text/plain\r\n\r\n"
     end
@@ -53,7 +51,6 @@ describe :cgi_http_header, shared: true do
     after :each do
       ENV['REQUEST_METHOD'] = @old_request_method
     end
-
 
     it "returns a HTTP header based on the Hash's key/value pairs" do
       header = @cgi.send(@method, "type" => "text/plain")

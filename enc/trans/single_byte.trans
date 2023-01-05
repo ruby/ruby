@@ -86,4 +86,3 @@ TRANS_INIT(single_byte)
 {
 <%= transcode_register_code %>
 }
-

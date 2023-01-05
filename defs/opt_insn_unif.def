@@ -23,5 +23,3 @@ getlocal getlocal
 
 # from tak, ackermann
 getlocal putobject
-
-

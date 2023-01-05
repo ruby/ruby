@@ -3,7 +3,6 @@
 #![allow(clippy::too_many_arguments)] // :shrug:
 #![allow(clippy::identity_op)] // Sometimes we do it for style
 
-
 mod asm;
 mod backend;
 mod codegen;

@@ -86,4 +86,3 @@ class RDoc::Markup::ToTableOfContents < RDoc::Markup::Formatter
   # :startdoc:
 
 end
-

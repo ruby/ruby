@@ -409,4 +409,3 @@ class Reline::Config::Test < Reline::TestCase
     ENV['HOME'] = home_backup
   end
 end
-

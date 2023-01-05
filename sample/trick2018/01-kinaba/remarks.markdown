@@ -23,7 +23,6 @@ The source code of entry.rb consists only of reserved words of Ruby,
 and all the reserved words are used in the code, in a way that the code
 forms a valid Ruby program. No compile error, no warning, or no runtime error.
 
-
 ### Internals
 
 Difficult (and interesting) points of the theme are:
@@ -47,7 +46,6 @@ Tricks used in the code are:
 * "void value expression" can be avoided by using `or` or `and`.
   `if begin return end then true end` is a syntax error, but
   `if begin false or return end then true end` is not.
-
 
 ### Limitation
 

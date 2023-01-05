@@ -5670,7 +5670,6 @@ Wed Aug  6 03:17:34 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 	* lib/net/http.rb (Net::HTTP#begin_transport): move trivial handling
 	  to Net::HTTP::GenericRequest#update_uri.
 
-
 Wed Aug  6 02:16:43 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/generic_request.rb
@@ -9999,7 +9998,6 @@ Fri Mar 14 14:58:38 2014  NARUSE, Yui  <naruse@ruby-lang.org>
 	  is, dladdr may fail to detect the main function but detect
 	  as _start function. Therefore it must be after scanning
 	  the symbol table and getting correct name.
-
 
 Fri Mar 14 12:07:46 2014  Zachary Scott  <e@zzak.io>
 

@@ -6,7 +6,6 @@
 
 require 'racc/parser.rb'
 
-
 require 'set'
 
 # Error classes

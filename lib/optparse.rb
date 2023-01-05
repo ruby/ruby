@@ -8,7 +8,6 @@
 # See OptionParser for documentation.
 #
 
-
 #--
 # == Developer Documentation (not for RDoc output)
 #
@@ -494,14 +493,12 @@ class OptionParser
     end
   end
 
-
   #
   # Map from option/keyword string to object with completion.
   #
   class OptionMap < Hash
     include Completion
   end
-
 
   #
   # Individual switch class.  Not important to the user.
@@ -1019,7 +1016,6 @@ class OptionParser
   DefaultList = List.new
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
-
 
   COMPSYS_HEADER = <<'XXX'      # :nodoc:
 

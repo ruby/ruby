@@ -97,7 +97,6 @@ module Digest
     end
     private :finish
 
-
     # call-seq:
     #   digest_obj.block_length -> Integer
     #

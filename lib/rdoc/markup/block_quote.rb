@@ -12,4 +12,3 @@ class RDoc::Markup::BlockQuote < RDoc::Markup::Raw
   end
 
 end
-

@@ -24,7 +24,6 @@ class TestKconv < Test::Unit::TestCase
 \x52\x75\x62\x79".force_encoding('ISO-2022-JP')
   end
 
-
   def test_eucjp
     assert(@euc_str.iseuc)
     assert_equal(::Kconv::EUC, Kconv.guess(@euc_str))

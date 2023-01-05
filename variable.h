@@ -25,5 +25,4 @@ int rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **);
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
 
-
 #endif /* RUBY_TOPLEVEL_VARIABLE_H */

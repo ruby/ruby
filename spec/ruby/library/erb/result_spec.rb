@@ -3,7 +3,6 @@ require_relative '../../spec_helper'
 
 describe "ERB#result" do
 
-
   it "return the result of compiled ruby code" do
     input = <<'END'
 <ul>
@@ -29,7 +28,6 @@ END
     actual.should == expected
   end
 
-
   it "share local variables" do
     input = "<% var = 456 %>"
     expected = 456
@@ -38,14 +36,12 @@ END
     var.should == expected
   end
 
-
   it "is not able to h() or u() unless including ERB::Util" do
     input = "<%=h '<>' %>"
     -> {
       ERB.new(input).result()
     }.should raise_error(NameError)
   end
-
 
   it "is able to h() or u() if ERB::Util is included" do
     myerb1 = Class.new do
@@ -59,7 +55,6 @@ END
     actual = myerb1.new.main()
     actual.should == expected
   end
-
 
   it "use TOPLEVEL_BINDING if binding is not passed" do
     myerb2 = Class.new do

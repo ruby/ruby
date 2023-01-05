@@ -27,7 +27,6 @@
 #define HELP_OUTPUT stdout
 #endif
 
-
 /* Compatibility definitions */
 
 #ifdef nkf_char

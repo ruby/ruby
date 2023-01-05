@@ -324,4 +324,3 @@ module Rinda
   end
 
 end
-

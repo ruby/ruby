@@ -209,7 +209,6 @@ platform_is_not :windows do
     end
   end
 
-
   describe "File.expand_path when HOME is not set" do
     before :each do
       @home = ENV["HOME"]

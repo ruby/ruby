@@ -91,4 +91,3 @@ TRANS_INIT(escape)
 <%= transcode_register_code %>
     rb_register_transcoder(&rb_escape_xml_attr_quote);
 }
-

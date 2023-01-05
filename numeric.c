@@ -937,7 +937,6 @@ num_negative_p(VALUE num)
     return RBOOL(rb_num_negative_int_p(num));
 }
 
-
 /********************************************************************
  *
  *  Document-class: Float
@@ -4053,7 +4052,6 @@ rb_int_minus(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '-');
 }
 
-
 #define SQRT_LONG_MAX HALF_LONG_MSB
 /*tests if N*N would overflow*/
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
@@ -5206,7 +5204,6 @@ rb_fix_aref(VALUE fix, VALUE idx)
         return INT2FIX(1);
     return INT2FIX(0);
 }
-
 
 /* copied from "r_less" in range.c */
 /* compares _a_ and _b_ and returns:

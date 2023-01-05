@@ -98,10 +98,7 @@ i_object_class, i_array_class, i_decimal_class, i_key_p,
 i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
 i_leftshift, i_new, i_try_convert, i_freeze, i_uminus;
 
-
 #line 125 "parser.rl"
-
-
 
 enum {JSON_object_start = 1};
 enum {JSON_object_first_final = 27};
@@ -128,9 +125,7 @@ static const char MAYBE_UNUSED(_JSON_object_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 167 "parser.rl"
-
 
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
@@ -144,13 +139,11 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 	*result = NIL_P(object_class) ? rb_hash_new() : rb_class_new_instance(0, 0, object_class);
 
-
 	{
 		cs = (int)JSON_object_start;
 	}
 
 	#line 182 "parser.rl"
-
 
 	{
 		if ( p == pe )
@@ -737,7 +730,6 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 	#line 183 "parser.rl"
 
-
 	if (cs >= JSON_object_first_final) {
 		if (json->create_additions) {
 			VALUE klassname;
@@ -758,8 +750,6 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 		return NULL;
 	}
 }
-
-
 
 enum {JSON_value_start = 1};
 enum {JSON_value_first_final = 29};
@@ -786,21 +776,17 @@ static const char MAYBE_UNUSED(_JSON_value_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 283 "parser.rl"
-
 
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
 	int cs = EVIL;
-
 
 	{
 		cs = (int)JSON_value_start;
 	}
 
 	#line 290 "parser.rl"
-
 
 	{
 		if ( p == pe )
@@ -1410,7 +1396,6 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
 	#line 291 "parser.rl"
 
-
 	if (json->freeze) {
 		OBJ_FREEZE(*result);
 	}
@@ -1421,7 +1406,6 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
 		return NULL;
 	}
 }
-
 
 enum {JSON_integer_start = 1};
 enum {JSON_integer_first_final = 3};
@@ -1445,14 +1429,11 @@ static const char MAYBE_UNUSED(_JSON_integer_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 311 "parser.rl"
-
 
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
 	int cs = EVIL;
-
 
 	{
 		cs = (int)JSON_integer_start;
@@ -1562,7 +1543,6 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 
 	#line 320 "parser.rl"
 
-
 	if (cs >= JSON_integer_first_final) {
 		long len = p - json->memo;
 		fbuffer_clear(json->fbuffer);
@@ -1574,7 +1554,6 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 		return NULL;
 	}
 }
-
 
 enum {JSON_float_start = 1};
 enum {JSON_float_first_final = 8};
@@ -1599,14 +1578,11 @@ static const char MAYBE_UNUSED(_JSON_float_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 345 "parser.rl"
-
 
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
 	int cs = EVIL;
-
 
 	{
 		cs = (int)JSON_float_start;
@@ -1837,7 +1813,6 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
 	#line 354 "parser.rl"
 
-
 	if (cs >= JSON_float_first_final) {
 		VALUE mod = Qnil;
 		ID method_id = 0;
@@ -1885,8 +1860,6 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 	}
 }
 
-
-
 enum {JSON_array_start = 1};
 enum {JSON_array_first_final = 17};
 enum {JSON_array_error = 0};
@@ -1911,9 +1884,7 @@ static const char MAYBE_UNUSED(_JSON_array_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 432 "parser.rl"
-
 
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
@@ -1925,13 +1896,11 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
 	}
 	*result = NIL_P(array_class) ? rb_ary_new() : rb_class_new_instance(0, 0, array_class);
 
-
 	{
 		cs = (int)JSON_array_start;
 	}
 
 	#line 445 "parser.rl"
-
 
 	{
 		if ( p == pe )
@@ -2344,7 +2313,6 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
 	#line 446 "parser.rl"
 
-
 	if(cs >= JSON_array_first_final) {
 		return p + 1;
 	} else {
@@ -2499,7 +2467,6 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
 	return result;
 }
 
-
 enum {JSON_string_start = 1};
 enum {JSON_string_first_final = 8};
 enum {JSON_string_error = 0};
@@ -2523,9 +2490,7 @@ static const char MAYBE_UNUSED(_JSON_string_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 612 "parser.rl"
-
 
 static int
 match_i(VALUE regexp, VALUE klass, VALUE memo)
@@ -2543,7 +2508,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 {
 	int cs = EVIL;
 	VALUE match_string;
-
 
 	{
 		cs = (int)JSON_string_start;
@@ -2739,7 +2703,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 	#line 634 "parser.rl"
 
-
 	if (json->create_additions && RTEST(match_string = json->match_string)) {
 		VALUE klass;
 		VALUE memo = rb_ary_new2(2);
@@ -2925,7 +2888,6 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
 }
 
-
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -2949,9 +2911,7 @@ static const char MAYBE_UNUSED(_JSON_nfa_pop_trans)[] = {
 	0, 0
 };
 
-
 #line 835 "parser.rl"
-
 
 /*
 * call-seq: parse()
@@ -2966,7 +2926,6 @@ static VALUE cParser_parse(VALUE self)
 	int cs = EVIL;
 	VALUE result = Qnil;
 	GET_PARSER;
-
 
 	{
 		cs = (int)JSON_start;
@@ -3220,7 +3179,6 @@ static VALUE cParser_parse(VALUE self)
 	}
 
 	#line 854 "parser.rl"
-
 
 	if (cs >= JSON_first_final && p == pe) {
 		return result;

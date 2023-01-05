@@ -182,7 +182,6 @@ unsigned int if_nametoindex(const char *);
  */
 #define pseudo_AF_FTIP pseudo_AF_RTIP
 
-
 #ifndef NI_MAXHOST
 #  define NI_MAXHOST 1025
 #endif

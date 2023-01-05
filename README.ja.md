@@ -28,7 +28,6 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
     Haikuなどの上でも動く cf.
     https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
 
-
 ## 入手法
 
 サードパーティーツールを使った方法を含むRubyのインストール方法の一覧は
@@ -59,7 +58,6 @@ Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git に�
 他のブランチの一覧は次のコマンドで見られます．
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
-
 
 ## ホームページ
 
@@ -136,14 +134,12 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
     *   `${DESTDIR}${prefix}/share/man/man1`
     *   `${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system`
 
-
     RubyのAPIバージョンが'*x.y.z*'であれば，`${MAJOR}`は
     '*x*'で，`${MINOR}`は'*y*'，`${TEENY}`は'*z*'です．
 
     **注意**: APIバージョンの `teeny` は，Rubyプログラムのバージョンとは異なることがあります．
 
     `root` で作業する必要があるかもしれません．
-
 
 もし，コンパイル時にエラーが発生した場合にはエラーのログとマシン，OSの種類を含むできるだけ詳しいレポートを作者に送って下さると他の方のためにもなります．
 

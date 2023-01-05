@@ -223,12 +223,10 @@ Each Ractor has _incoming-port_ and _outgoing-port_. Incoming-port is connected 
                  |           Ractor.receive                  |
                  +-------------------------------------------+
 
-
 Connection example: r2.send obj on r1、Ractor.receive on r2
   +----+     +----+
   * r1 |---->* r2 *
   +----+     +----+
-
 
 Connection example: Ractor.yield(obj) on r1, r1.take on r2
   +----+     +----+
@@ -605,8 +603,6 @@ Ractor.new do
 end.take
 ```
 
-
-
 ```ruby
 shared = Ractor.new{}
 shared.instance_variable_set(:@iv, 'str')
@@ -638,7 +634,6 @@ r = Ractor.new do
     p @@cv
   end
 end
-
 
 begin
   r.take

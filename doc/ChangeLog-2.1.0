@@ -2249,7 +2249,6 @@ Tue Nov 19 09:33:52 2013  Eric Hodel  <drbrain@segment7.net>
 	  and other gems that calculate full require paths.
 	  [ruby-trunk - Bug #9106]
 
-
 Tue Nov 19 07:21:56 2013  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (LOCALTIME_OVERFLOW_PROBLEM): Define it for cross
@@ -4245,7 +4244,6 @@ Wed Oct  9 09:18:14 2013  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/-test-/debug/profile_frames.c,
 	  test/-ext-/debug/test_profile_frames.rb: fix a test for this change.
-
 
 Wed Oct  9 00:55:51 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -9912,7 +9910,6 @@ Thu Jun 27 20:03:13 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 	* test/openssl/test_ssl.rb (test_verify_certificate_identity): test for
 	  above.
 
-
 Thu Jun 27 00:23:57 2013  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_pow): Retry if y is a Bignum and it is
@@ -13404,7 +13401,6 @@ Tue May 14 19:58:17 2013  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 	* ext/fiddle/function.c (function_call): check tainted when $SAFE > 0.
 	* test/fiddle/test_func.rb (module Fiddle): add test for above.
 
-
 Tue May 14 14:51:52 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (INTPTR_MAX, INTPTR_MIN, UINTPTR_MAX): split
@@ -14126,7 +14122,6 @@ Mon Apr 29 17:02:30 2013  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/nkf/nkf-utf8/nkf.h: Bionic libc doesn't have locale.
 	  [Feature #8338]
 
-
 Mon Apr 29 06:58:30 2013  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_initialize): no need of alloca for
@@ -14470,7 +14465,6 @@ Wed Apr 24 13:45:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 Wed Apr 24 12:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 
 	* ext/socket/lib/socket.rb: Doc typos by @vipulnsward [Fixes GH-292]
-
 
 Wed Apr 24 12:54:00 2013  Zachary Scott  <zachary@zacharyscott.net>
 

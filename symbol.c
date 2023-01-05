@@ -1134,7 +1134,6 @@ rb_get_symbol_id(VALUE name)
     }
 }
 
-
 VALUE
 rb_check_symbol(volatile VALUE *namep)
 {

@@ -229,7 +229,6 @@ if defined?(WIN32OLE_EVENT)
         }
       end
 
-
       def test_on_event_with_outargs
         ev = WIN32OLE_EVENT.new(@db)
         @db.connectionString = 'XXX' # set illegal connection string

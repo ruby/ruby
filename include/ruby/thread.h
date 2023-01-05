@@ -218,7 +218,6 @@ rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
         rb_internal_thread_event_callback func, rb_event_flag_t events,
         void *data);
 
-
 /**
  * Unregister the passed hook.
  *

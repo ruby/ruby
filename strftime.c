@@ -698,13 +698,11 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			continue;
 #endif
 
-
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
 			STRFTIME("%e-%^b-%4Y");
 			continue;
 #endif
-
 
 #ifdef POSIX2_DATE
 		case 'C':
@@ -770,7 +768,6 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                         }
 
 #endif /* ISO_DATE_EXT */
-
 
 		case 'L':
 			w = 3;
@@ -964,7 +961,6 @@ isleap(long year)
 {
 	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
 }
-
 
 static void
 vtm2tm_noyear(const struct vtm *vtm, struct tm *result)

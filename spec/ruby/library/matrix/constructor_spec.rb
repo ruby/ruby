@@ -38,7 +38,6 @@ ruby_version_is ""..."3.1" do
       Matrix[array, [3,4] ].should == Matrix[ [1,2], [3,4] ]
     end
 
-
     it "returns a Matrix object" do
       Matrix[ [1] ].should be_an_instance_of(Matrix)
     end

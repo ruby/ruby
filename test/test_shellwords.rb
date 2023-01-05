@@ -96,7 +96,6 @@ class TestShellwords < Test::Unit::TestCase
       assert_equal [token], shellescape(token).shellsplit
     }
 
-
     assert_equal tokens, shelljoin(tokens).shellsplit
   end
 

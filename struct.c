@@ -1413,7 +1413,6 @@ recursive_equal(VALUE s, VALUE s2, int recur)
     return Qtrue;
 }
 
-
 /*
  *  call-seq:
  *    self == other -> true or false
@@ -1750,7 +1749,6 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
  */
 
 #define rb_data_s_members_m rb_struct_s_members_m
-
 
 /*
  * call-seq:

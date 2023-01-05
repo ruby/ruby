@@ -366,7 +366,6 @@ then matches a literal <i>)</i>:
 
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '()'
 
-
     /\A(?<paren>\(\g<paren>*\))*\z/ =~ '(())' #=> 0
     # ^1
     #      ^2

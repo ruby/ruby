@@ -1,6 +1,5 @@
 require_relative '../spec_helper'
 
-
 describe 'Addrinfo#inspect_sockaddr' do
   describe 'using an IPv4 address' do
     it 'returns a String containing the IP address and port number' do

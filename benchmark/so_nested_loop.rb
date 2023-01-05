@@ -20,5 +20,3 @@ n.times do
     end
 end
 # puts x
-
-

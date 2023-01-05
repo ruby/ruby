@@ -45,7 +45,6 @@ module IRB # :nodoc:
       [:quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
     ]
 
-
     @EXTEND_COMMANDS = [
       [
         :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
@@ -194,7 +193,6 @@ module IRB # :nodoc:
         [:show_cmds, NO_OVERRIDE],
       ]
     ]
-
 
     @@commands = []
 

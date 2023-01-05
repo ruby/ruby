@@ -7,7 +7,6 @@ require 'mspec/helpers/tmp'
 require 'mspec/runner/actions/filter'
 require 'mspec/runner/actions/timer'
 
-
 class MSpecMain < MSpecScript
   def initialize
     super

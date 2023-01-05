@@ -42,7 +42,6 @@ module ObjectSpace
     ret
   end
 
-
   # call-seq:
   #   ObjectSpace.dump_all([output: :file]) -> #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
   #   ObjectSpace.dump_all(output: :stdout) -> nil

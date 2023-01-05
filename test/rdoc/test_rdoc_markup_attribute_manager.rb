@@ -393,4 +393,3 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
 end
-

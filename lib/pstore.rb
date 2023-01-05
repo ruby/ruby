@@ -713,7 +713,6 @@ class PStore
     file.truncate(data.bytesize)
   end
 
-
   # This method is just a wrapped around Marshal.dump
   # to allow subclass overriding used in YAML::Store.
   def dump(table)  # :nodoc:

@@ -1335,7 +1335,6 @@ underflow:
 	return rb_float_new(0.0);
 }
 
-
 /* Converts a BigDecimal to a Rational.
  */
 static VALUE
@@ -6705,7 +6704,6 @@ VpToFString(Real *a, char *buf, size_t buflen, size_t fFmt, int fPlus)
     p += n; \
     plen -= n; \
 } while (0)
-
 
     if (BIGDECIMAL_NEGATIVE_P(a)) {
         *p = '-';

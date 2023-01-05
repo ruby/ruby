@@ -44,7 +44,6 @@ class CGI
       nOE_element(__callee__, attributes, &block)
     end
 
-
     # Generate code for an element for which the end (and possibly the
     # start) tag is optional.
     #
@@ -64,7 +63,6 @@ class CGI
 
   end # TagMaker
 
-
   # Mixin module providing HTML generation methods.
   #
   # For example,
@@ -77,7 +75,6 @@ class CGI
   # See class CGI for a detailed example.
   #
   module HtmlExtension
-
 
     # Generate an Anchor element as a string.
     #
@@ -140,7 +137,6 @@ class CGI
       super(attributes)
     end
 
-
     # Generate a Table Caption element as a string.
     #
     # +align+ can be a string, giving the alignment of the caption
@@ -159,7 +155,6 @@ class CGI
                    end
       super(attributes)
     end
-
 
     # Generate a Checkbox Input element as a string.
     #
@@ -251,7 +246,6 @@ class CGI
       }.join
     end
 
-
     # Generate an File Upload Input element as a string.
     #
     # The attributes of the element can be specified as three arguments,
@@ -284,7 +278,6 @@ class CGI
       attributes["MAXLENGTH"] = maxlength.to_s if maxlength
       input(attributes)
     end
-
 
     # Generate a Form element as a string.
     #
@@ -457,7 +450,6 @@ class CGI
       input(attributes)
     end
 
-
     # Generate an Image element as a string.
     #
     # +src+ is the URL of the image.  +alt+ is the alternative text for
@@ -481,7 +473,6 @@ class CGI
       attributes["HEIGHT"] = height.to_s if height
       super(attributes)
     end
-
 
     # Generate a Form element with multipart encoding as a String.
     #
@@ -518,7 +509,6 @@ class CGI
         form(attributes)
       end
     end
-
 
     # Generate a Password Input element as a string.
     #
@@ -817,7 +807,6 @@ class CGI
 
   end # HtmlExtension
 
-
   # Mixin module for HTML version 3 generation methods.
   module Html3 # :nodoc:
     include TagMaker
@@ -856,7 +845,6 @@ class CGI
 
   end # Html3
 
-
   # Mixin module for HTML version 4 generation methods.
   module Html4 # :nodoc:
     include TagMaker
@@ -894,7 +882,6 @@ class CGI
     end
 
   end # Html4
-
 
   # Mixin module for HTML version 4 transitional generation methods.
   module Html4Tr # :nodoc:
@@ -936,7 +923,6 @@ class CGI
 
   end # Html4Tr
 
-
   # Mixin module for generating HTML version 4 with framesets.
   module Html4Fr # :nodoc:
     include TagMaker
@@ -962,7 +948,6 @@ class CGI
     end
 
   end # Html4Fr
-
 
   # Mixin module for HTML version 5 generation methods.
   module Html5 # :nodoc:

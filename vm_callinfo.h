@@ -229,7 +229,6 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
     return ci;
 }
 
-
 static inline const struct rb_callinfo *
 vm_ci_new_runtime_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {

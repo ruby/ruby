@@ -47,7 +47,6 @@
     object or Array object, fine grain lock must be locked every time.
  */
 
-
 /*
  * FD_SET, FD_CLR and FD_ISSET have a small sanity check when using glibc
  * 2.15 or later and set _FORTIFY_SOURCE > 0.
@@ -995,7 +994,6 @@ rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc)
     };
     return thread_create_core(rb_thread_alloc(rb_cThread), &params);
 }
-
 
 struct join_arg {
     struct rb_waiting_list *waiter;
@@ -2554,7 +2552,6 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *     thr.exit        -> thr
@@ -2624,7 +2621,6 @@ rb_thread_s_kill(VALUE obj, VALUE th)
     return rb_thread_kill(th);
 }
 
-
 /*
  *  call-seq:
  *     Thread.exit   -> thread
@@ -2643,7 +2639,6 @@ rb_thread_exit(VALUE _)
     rb_thread_t *th = GET_THREAD();
     return rb_thread_kill(th->self);
 }
-
 
 /*
  *  call-seq:
@@ -2686,7 +2681,6 @@ rb_thread_wakeup_alive(VALUE thread)
     return thread;
 }
 
-
 /*
  *  call-seq:
  *     thr.run   -> thr
@@ -2715,7 +2709,6 @@ rb_thread_run(VALUE thread)
     rb_thread_schedule();
     return thread;
 }
-
 
 VALUE
 rb_thread_stop(void)
@@ -2824,7 +2817,6 @@ rb_thread_s_main(VALUE klass)
     return rb_thread_main();
 }
 
-
 /*
  *  call-seq:
  *     Thread.abort_on_exception   -> true or false
@@ -2850,7 +2842,6 @@ rb_thread_s_abort_exc(VALUE _)
 {
     return RBOOL(GET_THREAD()->vm->thread_abort_on_exception);
 }
-
 
 /*
  *  call-seq:
@@ -2889,7 +2880,6 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
     return val;
 }
 
-
 /*
  *  call-seq:
  *     thr.abort_on_exception   -> true or false
@@ -2911,7 +2901,6 @@ rb_thread_abort_exc(VALUE thread)
     return RBOOL(rb_thread_ptr(thread)->abort_on_exception);
 }
 
-
 /*
  *  call-seq:
  *     thr.abort_on_exception= boolean   -> true or false
@@ -2931,7 +2920,6 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
     rb_thread_ptr(thread)->abort_on_exception = RTEST(val);
     return val;
 }
-
 
 /*
  *  call-seq:
@@ -2981,7 +2969,6 @@ rb_thread_s_report_exc(VALUE _)
     return RBOOL(GET_THREAD()->vm->thread_report_on_exception);
 }
 
-
 /*
  *  call-seq:
  *     Thread.report_on_exception= boolean   -> true or false
@@ -3019,7 +3006,6 @@ rb_thread_s_report_exc_set(VALUE self, VALUE val)
     return val;
 }
 
-
 /*
  *  call-seq:
  *     Thread.ignore_deadlock -> true or false
@@ -3036,7 +3022,6 @@ rb_thread_s_ignore_deadlock(VALUE _)
 {
     return RBOOL(GET_THREAD()->vm->thread_ignore_deadlock);
 }
-
 
 /*
  *  call-seq:
@@ -3065,7 +3050,6 @@ rb_thread_s_ignore_deadlock_set(VALUE self, VALUE val)
     return val;
 }
 
-
 /*
  *  call-seq:
  *     thr.report_on_exception   -> true or false
@@ -3088,7 +3072,6 @@ rb_thread_report_exc(VALUE thread)
     return RBOOL(rb_thread_ptr(thread)->report_on_exception);
 }
 
-
 /*
  *  call-seq:
  *     thr.report_on_exception= boolean   -> true or false
@@ -3108,7 +3091,6 @@ rb_thread_report_exc_set(VALUE thread, VALUE val)
     rb_thread_ptr(thread)->report_on_exception = RTEST(val);
     return val;
 }
-
 
 /*
  *  call-seq:
@@ -3147,7 +3129,6 @@ rb_threadptr_dead(rb_thread_t *th)
 {
     return th->status == THREAD_KILLED;
 }
-
 
 /*
  *  call-seq:
@@ -3198,7 +3179,6 @@ rb_thread_status(VALUE thread)
         return rb_str_new2(thread_status_name(target_th, FALSE));
     }
 }
-
 
 /*
  *  call-seq:
@@ -3767,7 +3747,6 @@ rb_thread_priority(VALUE thread)
 {
     return INT2NUM(rb_thread_ptr(thread)->priority);
 }
-
 
 /*
  *  call-seq:
@@ -4762,7 +4741,6 @@ thgroup_list(VALUE group)
     return ary;
 }
 
-
 /*
  *  call-seq:
  *     thgrp.enclose   -> thgrp
@@ -4790,7 +4768,6 @@ thgroup_enclose(VALUE group)
     return group;
 }
 
-
 /*
  *  call-seq:
  *     thgrp.enclosed?   -> true or false
@@ -4806,7 +4783,6 @@ thgroup_enclosed_p(VALUE group)
     TypedData_Get_Struct(group, struct thgroup, &thgroup_data_type, data);
     return RBOOL(data->enclosed);
 }
-
 
 /*
  *  call-seq:

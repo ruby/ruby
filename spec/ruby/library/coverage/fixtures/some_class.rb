@@ -13,4 +13,3 @@ class SomeClass
 end
 
 # Trailing comment and extra blank line
-

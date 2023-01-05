@@ -353,4 +353,3 @@ assert_normal_exit %q{
     RubyVM::InstructionSequence.compile("p:hello")
   end
 }, 'check escaping the internal value th->base_block'
-

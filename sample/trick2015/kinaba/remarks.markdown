@@ -8,7 +8,6 @@ I confirmed the following implementation/platform:
 
 - ruby 2.2.3p173 (2015-08-18 revision 51636) [x64-mingw32]
 
-
 ### Description
 
 The program is a [Piphilology](https://en.wikipedia.org/wiki/Piphilology#Examples_in_English)
@@ -26,7 +25,6 @@ The program also tells you the first 10000 digits of Pi, by running.
 
     $ ruby entry.rb
     31415926535897932384626433832795028841971693993751058209749445923078164062862...
-
 
 ### Internals
 
@@ -57,7 +55,6 @@ Random notes on what you might think interesting:
   program (quoted below), which is embeddable to the first 242 tokens of Pi.
   Though the remaining 165 tokens are just no-op fillers, it's not so bad compared to
   the 1000/3 = 333x blowup mentioned above.
-
 
     big, temp = Array 100000000**0x04e2
     srand big

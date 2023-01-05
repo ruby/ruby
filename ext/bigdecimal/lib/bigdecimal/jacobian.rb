@@ -41,7 +41,6 @@ module Jacobian
     end
   end
 
-
   # Computes the derivative of +f[i]+ at +x[i]+.
   # +fx+ is the value of +f+ at +x+.
   def dfdxi(f,fx,x,i)

@@ -17,7 +17,6 @@ first,second,third
     CSV
   end
 
-
   def test_custom
     row = CSV.parse_line("Numbers,:integer,1,:float,3.015",
                          converters:         [:numeric, @custom],

@@ -59,4 +59,3 @@ by accepting an optional argument +start+, whose value may be:
 
     d = Date.new(1752, 9, 14, Date::GREGORIAN)
     d.prev_day.gregorian? # => true
-

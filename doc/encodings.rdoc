@@ -385,7 +385,6 @@ These keyword-value pairs specify encoding options:
     "\x80".encode('UTF-8', 'ASCII-8BIT') # Raises Encoding::UndefinedConversionError.
     s.encode('UTF-8', 'ASCII-8BIT', undef: :replace) # => "�foo�"
 
-
 - Replacement string:
 
   - <tt>:replace: nil</tt> (default): Set replacement string to default value:
@@ -457,7 +456,6 @@ These keyword-value pairs specify encoding options:
     s = 'foo"<&>"bar' + "\u3042"
     s.encode('ASCII', xml: :text) # => "foo\"&lt;&amp;&gt;\"bar&#x3042;"
     s.encode('ASCII', xml: :attr) # => "\"foo&quot;&lt;&amp;&gt;&quot;bar&#x3042;\""
-
 
 - Newlines:
 

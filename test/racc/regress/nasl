@@ -6,7 +6,6 @@
 
 require 'racc/parser.rb'
 
-
 require 'nasl/parser/tree'
 
 require 'nasl/parser/argument'
@@ -2544,5 +2543,3 @@ end
 
   end   # class Grammar
 end   # module Nasl
-
-

@@ -10,7 +10,6 @@
 # All rights reserved.  You can redistribute and/or modify it under the same
 # terms as Ruby.
 
-
 ##
 # This library provides the Set class, which deals with a collection
 # of unordered values with no duplicates.  It is a hybrid of Array's

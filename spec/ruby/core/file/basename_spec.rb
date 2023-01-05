@@ -153,7 +153,6 @@ describe "File.basename" do
     end
   end
 
-
   it "returns the extension for a multibyte filename" do
     File.basename('/path/Офис.m4a').should == "Офис.m4a"
   end

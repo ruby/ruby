@@ -155,4 +155,3 @@ class TestRDocRIPaths < RDoc::TestCase
   end
 
 end
-

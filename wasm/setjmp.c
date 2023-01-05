@@ -107,7 +107,6 @@ _rb_wasm_longjmp(rb_wasm_jmp_buf* env, int value)
     asyncify_start_unwind(&env->longjmp_buf);
 }
 
-
 enum try_catch_phase {
   TRY_CATCH_PHASE_MAIN   = 0,
   TRY_CATCH_PHASE_RESCUE = 1,

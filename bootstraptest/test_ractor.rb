@@ -953,7 +953,6 @@ assert_equal "can not get unshareable values from instance variables of classes/
     end
   end
 
-
   begin
     r.take
   rescue Ractor::RemoteError => e
@@ -1077,7 +1076,6 @@ assert_equal '333', %q{
   f = Ractor.new do
     M.fstr.to_i
   end.take
-
 
   # 1 + 10 + 100 + 2 + 20 + 200
   a + b + c + d + e + f

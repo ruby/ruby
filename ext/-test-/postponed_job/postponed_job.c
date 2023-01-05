@@ -97,4 +97,3 @@ Init_postponed_job(VALUE self)
     rb_define_module_function(mBug, "postponed_job_register_in_c_thread", pjob_register_in_c_thread, 1);
 #endif
 }
-

@@ -33,4 +33,3 @@ mutex.synchronize do
   p seq.next_value
   p seq.next_value
 end
-

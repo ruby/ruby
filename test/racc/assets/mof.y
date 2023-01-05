@@ -130,7 +130,6 @@ rule
 	| referenceDeclaration /* must have association qualifier */
         ;
 
-
   qualifierList_opt
 	: /* empty */
 	| qualifierList
@@ -230,7 +229,6 @@ rule
 	: ":" className
 	  { result = val[1] }
         ;
-
 
   propertyDeclaration
 	: qualifierList_opt dataType propertyName array_opt defaultValue_opt ";"

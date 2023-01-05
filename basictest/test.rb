@@ -454,7 +454,6 @@ test_ok(f.call(   99) == [42,99] )
 test_ok(f.call(43,99) == [43,99] )
 test_ok(f.call(43,99) == [43,99] )
 
-
 a,=*[1]
 test_ok(a == 1)
 a,=*[[1]]
@@ -729,7 +728,6 @@ until i>4
   i+=1
 end
 test_ok(i>4)
-
 
 # exception handling
 test_check "exception";
@@ -1524,7 +1522,6 @@ nan_test(nan, -1.0/0);
 f = 3.7517675036461267e+17
 test_ok(f == sprintf("%.16e", f).to_f)
 
-
 test_check "bignum"
 def fact(n)
   return 1 if n == 0
@@ -2035,7 +2032,6 @@ test_ok([TEST1,TEST2,TEST3,TEST4] == [1,2,3,4])
 include Const2
 STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
 test_ok([TEST1,TEST2,TEST3,TEST4] == [1,2,6,8])
-
 
 test_ok((String <=> Object) == -1)
 test_ok((Object <=> String) == 1)

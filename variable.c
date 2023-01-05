@@ -2029,7 +2029,6 @@ rb_const_missing(VALUE klass, VALUE name)
     return value;
 }
 
-
 /*
  * call-seq:
  *    mod.const_missing(sym)    -> obj

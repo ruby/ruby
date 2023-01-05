@@ -33,7 +33,6 @@ static rb_random_data_type_t random_loop_type = {
     RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-
 static VALUE
 loop_alloc(VALUE klass)
 {

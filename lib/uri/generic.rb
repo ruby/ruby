@@ -1410,7 +1410,6 @@ module URI
 =begin
 =end
 
-
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
       component.collect do |x|

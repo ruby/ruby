@@ -602,7 +602,6 @@ module Racc
 
   end   # class StateTable
 
-
   # A LALR state.
   class State
 
@@ -757,7 +756,6 @@ module Racc
 
   end   # class State
 
-
   #
   # Represents a transition on the grammar.
   # "Real goto" means a transition by nonterminal,
@@ -782,7 +780,6 @@ module Racc
     end
   end
 
-
   # LALR item.  A set of rule and its lookahead tokens.
   class Item
     def initialize(rule, la)
@@ -804,7 +801,6 @@ module Racc
       end
     end
   end
-
 
   # The table of LALR actions. Actions are either of
   # Shift, Reduce, Accept and Error.
@@ -876,7 +872,6 @@ module Racc
 
   end
 
-
   class Shift
     def initialize(goto)
       @goto_state = goto
@@ -892,7 +887,6 @@ module Racc
       "<shift #{@goto_state.ident}>"
     end
   end
-
 
   class Reduce
     def initialize(rule)

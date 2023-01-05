@@ -915,7 +915,6 @@ encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP
 	$(ECHO) making $@
 	$(Q) $(MAKE) $(MAKE_ENC) $@
 
-
 libenc enc: {$(VPATH)}encdb.h
 libtrans trans: {$(VPATH)}transdb.h
 
@@ -1320,7 +1319,6 @@ run.gdb:
 	echo 'if $$_exitcode != -999'         >> run.gdb
 	echo '  quit'                         >> run.gdb
 	echo end                              >> run.gdb
-
 
 gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)

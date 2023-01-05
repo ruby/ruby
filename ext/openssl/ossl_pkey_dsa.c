@@ -253,7 +253,6 @@ ossl_dsa_to_der(VALUE self)
         return ossl_pkey_export_spki(self, 1);
 }
 
-
 /*
  *  call-seq:
  *    dsa.params -> hash

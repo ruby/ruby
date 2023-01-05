@@ -151,7 +151,6 @@ class TestDateNew < Test::Unit::TestCase
     assert_equal([-4712, 1, 1, 0, 0, 0, 9.to_r/24],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
 
-
     d = DateTime.civil(2001,2,3 + 1.to_r/2)
     assert_equal([2001, 2, 3, 12, 0, 0, 0],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])

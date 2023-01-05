@@ -19,4 +19,3 @@ puts "last IO: #{last[0].inspect}"
 nr.times do
   IO.select nil, last
 end
-

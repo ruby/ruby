@@ -14,5 +14,3 @@ while i<10
   end
 end
 # puts hello.length
-
-

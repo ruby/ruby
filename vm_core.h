@@ -612,7 +612,6 @@ typedef struct rb_hook_list_struct {
     bool is_local;
 } rb_hook_list_t;
 
-
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 

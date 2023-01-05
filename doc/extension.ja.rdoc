@@ -783,7 +783,6 @@ RUBY_TYPED_WB_PROTECTED ::
   ライトバリアについてはdoc/extension.ja.rdocのAppendix D
   "世代別GC"も参照してください．
 
-
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
 ロとして以下のものが提供されています．
 
@@ -1862,7 +1861,6 @@ Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組み
 
 Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
 support」を参照してください。
-
 
 :enddoc: Local variables:
 :enddoc: fill-column: 60

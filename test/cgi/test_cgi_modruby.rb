@@ -3,10 +3,8 @@ require 'test/unit'
 require 'cgi'
 require_relative 'update_env'
 
-
 class CGIModrubyTest < Test::Unit::TestCase
   include UpdateEnv
-
 
   def setup
     @environ = {}
@@ -21,12 +19,10 @@ class CGIModrubyTest < Test::Unit::TestCase
     #@req = Apache.request
   end
 
-
   def teardown
     ENV.update(@environ)
     CGI.class_eval { remove_const(:MOD_RUBY) }
   end
-
 
   def test_cgi_modruby_simple
     req = Apache.request
@@ -38,7 +34,6 @@ class CGIModrubyTest < Test::Unit::TestCase
     assert_equal('text/html', req.content_type)
     assert(req._send_http_header_invoked?)
   end
-
 
   def test_cgi_modruby_complex
     req = Apache.request
@@ -66,7 +61,6 @@ class CGIModrubyTest < Test::Unit::TestCase
     assert(req._send_http_header_invoked?)
   end
 
-
   def test_cgi_modruby_location
     req = Apache.request
     cgi = CGI.new
@@ -80,7 +74,6 @@ class CGIModrubyTest < Test::Unit::TestCase
     assert_equal('http://www.example.com/', req.headers_out['location'])
   end
 
-
   def test_cgi_modruby_requestparams
     req = Apache.request
     req.args = 'a=foo&b=bar'
@@ -89,14 +82,11 @@ class CGIModrubyTest < Test::Unit::TestCase
     assert_equal('bar', cgi['b'])
   end
 
-
   instance_methods.each do |method|
     private method if method =~ /^test_(.*)/ && $1 != ENV['TEST']
   end if ENV['TEST']
 
 end
-
-
 
 ## dummy class for mod_ruby
 class Apache  #:nodoc:

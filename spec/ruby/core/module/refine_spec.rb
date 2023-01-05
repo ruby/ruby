@@ -378,7 +378,6 @@ describe "Module#refine" do
     end
   end
 
-
   # methods in a subclass have priority over refinements in a superclass
   it "does not override methods in subclasses" do
     refined_class = ModuleSpecs.build_refined_class
@@ -753,7 +752,6 @@ describe "Module#refine" do
           end
         end
       end
-
 
       Module.new do
         using refinement

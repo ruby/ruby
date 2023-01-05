@@ -14,4 +14,3 @@ parser.on('-z', 'Whether to Z') do |value|
 end
 # Parse the command line and return pared-down ARGV.
 p parser.parse!
-

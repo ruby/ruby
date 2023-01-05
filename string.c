@@ -224,7 +224,6 @@ str_enc_fastpath(VALUE str)
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
-
 static inline long
 str_embed_capa(VALUE str)
 {
@@ -2940,7 +2939,6 @@ rb_str_freeze(VALUE str)
     return rb_obj_freeze(str);
 }
 
-
 /*
  * call-seq:
  *   +string -> new_string or self
@@ -3920,7 +3918,6 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
     return strseq_core(str_ptr, str_ptr_end, str_len, sub_ptr, sub_len, offset, enc);
 }
 
-
 /*
  *  call-seq:
  *    index(substring, offset = 0) -> integer or nil
@@ -4304,7 +4301,6 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
     return str_rindex(str, sub, s, enc);
 }
 
-
 /*
  *  call-seq:
  *    byterindex(substring, offset = self.bytesize) -> integer or nil
@@ -4453,9 +4449,7 @@ rb_str_match(VALUE x, VALUE y)
     }
 }
 
-
 static VALUE get_pat(VALUE);
-
 
 /*
  *  call-seq:
@@ -4722,7 +4716,6 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
     return NEIGHBOR_WRAPPED;
 }
 
-
 static VALUE str_succ(VALUE str);
 
 /*
@@ -4879,7 +4872,6 @@ str_succ(VALUE str)
     rb_enc_str_coderange(str);
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -5182,7 +5174,6 @@ rb_str_aref(VALUE str, VALUE indx)
     return str_substr(str, idx, 1, FALSE);
 }
 
-
 /*
  *  call-seq:
  *    string[index] -> new_string or nil
@@ -5479,7 +5470,6 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
     return str;
 }
 
-
 /*
  *  call-seq:
  *    slice!(index)               -> new_string or nil
@@ -5658,7 +5648,6 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
     }
 }
 
-
 /*
  *  call-seq:
  *    sub!(pattern, replacement)   -> self or nil
@@ -5780,7 +5769,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     }
     return Qnil;
 }
-
 
 /*
  *  call-seq:
@@ -5926,7 +5914,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     return str;
 }
 
-
 /*
  *  call-seq:
  *     gsub!(pattern, replacement)   -> self or nil
@@ -5951,7 +5938,6 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
     return str_gsub(argc, argv, str, 1);
 }
 
-
 /*
  *  call-seq:
  *     gsub(pattern, replacement)   -> new_string
@@ -5973,7 +5959,6 @@ rb_str_gsub(int argc, VALUE *argv, VALUE str)
 {
     return str_gsub(argc, argv, str, 0);
 }
-
 
 /*
  *  call-seq:
@@ -6383,7 +6368,6 @@ rb_str_reverse(VALUE str)
     return rev;
 }
 
-
 /*
  *  call-seq:
  *    reverse! -> self
@@ -6422,7 +6406,6 @@ rb_str_reverse_bang(VALUE str)
     return str;
 }
 
-
 /*
  *  call-seq:
  *    include? other_string -> true or false
@@ -6446,7 +6429,6 @@ rb_str_include(VALUE str, VALUE arg)
 
     return RBOOL(i != -1);
 }
-
 
 /*
  *  call-seq:
@@ -6491,7 +6473,6 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
     return rb_str_to_inum(str, base, FALSE);
 }
 
-
 /*
  *  call-seq:
  *    to_f -> float
@@ -6516,7 +6497,6 @@ rb_str_to_f(VALUE str)
 {
     return DBL2NUM(rb_str_to_dbl(str, FALSE));
 }
-
 
 /*
  *  call-seq:
@@ -7433,7 +7413,6 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    upcase(*options) -> string
@@ -7535,7 +7514,6 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    downcase(*options) -> string
@@ -7577,7 +7555,6 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     return ret;
 }
 
-
 /*
  *  call-seq:
  *    capitalize!(*options) -> self or nil
@@ -7617,7 +7594,6 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    capitalize(*options) -> string
@@ -7656,7 +7632,6 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
     return ret;
 }
 
-
 /*
  *  call-seq:
  *    swapcase!(*options) -> self or nil
@@ -7694,7 +7669,6 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
 }
-
 
 /*
  *  call-seq:
@@ -8044,7 +8018,6 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    tr!(selector, replacements) -> self or nil
@@ -8059,7 +8032,6 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 {
     return tr_trans(str, src, repl, 0);
 }
-
 
 /*
  *  call-seq:
@@ -8173,7 +8145,6 @@ tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
     }
 }
 
-
 static int
 tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
@@ -8266,7 +8237,6 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    delete(*selectors) -> new_string
@@ -8288,7 +8258,6 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
     rb_str_delete_bang(argc, argv, str);
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -8373,7 +8342,6 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    squeeze(*selectors) -> new_string
@@ -8399,7 +8367,6 @@ rb_str_squeeze(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
-
 /*
  *  call-seq:
  *    tr_s!(selector, replacements) -> self or nil
@@ -8415,7 +8382,6 @@ rb_str_tr_s_bang(VALUE str, VALUE src, VALUE repl)
 {
     return tr_trans(str, src, repl, 1);
 }
-
 
 /*
  *  call-seq:
@@ -8439,7 +8405,6 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
     tr_trans(str, src, repl, 1);
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -9442,7 +9407,6 @@ rb_str_chop_bang(VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    chop -> new_string
@@ -9615,7 +9579,6 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     return rb_str_chomp_string(str, rs);
 }
 
-
 /*
  *  call-seq:
  *    chomp(line_sep = $/) -> new_string
@@ -9686,7 +9649,6 @@ rb_str_lstrip_bang(VALUE str)
     }
     return Qnil;
 }
-
 
 /*
  *  call-seq:
@@ -9774,7 +9736,6 @@ rb_str_rstrip_bang(VALUE str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    rstrip -> new_string
@@ -9804,7 +9765,6 @@ rb_str_rstrip(VALUE str)
     if (roffset <= 0) return str_duplicate(rb_cString, str);
     return rb_str_subseq(str, 0, olen-roffset);
 }
-
 
 /*
  *  call-seq:
@@ -9841,7 +9801,6 @@ rb_str_strip_bang(VALUE str)
     }
     return Qnil;
 }
-
 
 /*
  *  call-seq:
@@ -9923,7 +9882,6 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *    scan(string_or_regexp) -> array
@@ -9996,7 +9954,6 @@ rb_str_scan(VALUE str, VALUE pat)
     return str;
 }
 
-
 /*
  *  call-seq:
  *    hex -> integer
@@ -10020,7 +9977,6 @@ rb_str_hex(VALUE str)
 {
     return rb_str_to_inum(str, 16, FALSE);
 }
-
 
 /*
  *  call-seq:
@@ -10177,7 +10133,6 @@ rb_str_crypt(VALUE str, VALUE salt)
     CRYPT_END();
     return result;
 }
-
 
 /*
  *  call-seq:
@@ -10348,7 +10303,6 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     return res;
 }
 
-
 /*
  *  call-seq:
  *    ljust(size, pad_string = ' ') -> new_string
@@ -10380,7 +10334,6 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 {
     return rb_str_justify(argc, argv, str, 'r');
 }
-
 
 /*
  *  call-seq:
@@ -10715,7 +10668,6 @@ rb_fs_setter(VALUE val, ID id, VALUE *var)
     }
     *var = val;
 }
-
 
 /*
  *  call-seq:
@@ -11390,7 +11342,6 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  * - #upcase: Returns symbol with all characters upcased.
  *
  */
-
 
 /*
  *  call-seq:

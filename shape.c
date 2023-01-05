@@ -425,7 +425,6 @@ rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t s
     return shape;
 }
 
-
 rb_shape_t *
 rb_shape_alloc(ID edge_name, rb_shape_t * parent)
 {

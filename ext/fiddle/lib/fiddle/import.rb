@@ -257,7 +257,6 @@ module Fiddle
       return ptr
     end
 
-
     # The Fiddle::CompositeHandler instance
     #
     # Will raise an error if no handlers are open.

@@ -38,4 +38,3 @@ puts "You Navigated the URLs ..."
 $urls.each_with_index do |url, i|
   puts "(#{i+1}) #{url}"
 end
-

@@ -196,7 +196,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 * pack/unpack (Array/String)
   * j and J directives for pointer width integer type.  [Feature #11215]
 
-
 === Stdlib updates (outstanding ones only)
 
 * Logger

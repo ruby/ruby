@@ -233,7 +233,6 @@ rb_hash(VALUE obj)
     return LONG2FIX(any_hash(obj, obj_any_hash));
 }
 
-
 /* Here is a hash function for 64-bit key.  It is about 5 times faster
    (2 times faster when uint128 type is absent) on Haswell than
    tailored Spooky or City hash function can be.  */
@@ -241,7 +240,6 @@ rb_hash(VALUE obj)
 /* Here we two primes with random bit generation.  */
 static const uint64_t prime1 = ((uint64_t)0x2e0bb864 << 32) | 0xe9ea7df5;
 static const uint32_t prime2 = 0x830fcab9;
-
 
 static inline uint64_t
 mult_and_mix(uint64_t m1, uint64_t m2)
@@ -7448,7 +7446,6 @@ Init_Hash(void)
     envtbl = TypedData_Wrap_Struct(rb_cObject, &env_data_type, NULL);
     rb_extend_object(envtbl, rb_mEnumerable);
     FL_SET_RAW(envtbl, RUBY_FL_SHAREABLE);
-
 
     rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);

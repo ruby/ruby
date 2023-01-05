@@ -778,7 +778,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
-
   # Create NULL byte SAN certificate
   def create_null_byte_SAN_certificate(critical = false)
     ef = OpenSSL::X509::ExtensionFactory.new

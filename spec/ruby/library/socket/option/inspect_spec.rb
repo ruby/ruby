@@ -1,7 +1,6 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-
 describe 'Socket::Option#inspect' do
   it 'correctly returns SO_LINGER value' do
     value = Socket::Option.linger(nil, 0).inspect

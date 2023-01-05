@@ -469,7 +469,6 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     BT_STATE.error += 1
   end
 
-
   def show_progress(message = '')
     if BT.quiet || BT.wn > 1
       # do nothing

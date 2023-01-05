@@ -27,7 +27,6 @@ Configs = OPTIONS.map{|opt|
 
 pp Configs if $DEBUG
 
-
 def exec_cmd(cmd)
   puts cmd
   unless system(cmd)
@@ -155,4 +154,3 @@ ARGV.each{|cmd|
     raise
   end
 }
-

@@ -1,6 +1,5 @@
 module UnboundMethodSpecs
 
-
   class SourceLocation
     def self.location # This needs to be on this line
       :location       # for the spec to pass

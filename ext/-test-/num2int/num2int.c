@@ -133,4 +133,3 @@ Init_num2int(void)
     rb_define_module_function(mNum2int, "FIX2LONG", test_fix2long, 1);
     rb_define_module_function(mNum2int, "FIX2ULONG", test_fix2ulong, 1);
 }
-

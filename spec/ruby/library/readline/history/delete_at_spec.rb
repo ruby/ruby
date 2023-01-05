@@ -14,7 +14,6 @@ with_feature :readline do
       Readline::HISTORY.delete_at(0).should == "1"
       Readline::HISTORY.size.should == 0
 
-
       Readline::HISTORY.push("1", "2", "3", "4")
 
       Readline::HISTORY.delete_at(-2).should == "3"

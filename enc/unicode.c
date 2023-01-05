@@ -196,7 +196,6 @@ onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncodi
   return onig_is_in_code_range((UChar* )CodeRanges[ctype], code);
 }
 
-
 extern int
 onigenc_unicode_ctype_code_range(int ctype, const OnigCodePoint* ranges[])
 {
@@ -599,7 +598,6 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       }
     }
   }
-
 
   if ((flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     p += len;

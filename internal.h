@@ -76,7 +76,6 @@
 #define rb_funcallv(...) rb_nonexistent_symbol(__VA_ARGS__)
 #define rb_method_basic_definition_p(...) rb_nonexistent_symbol(__VA_ARGS__)
 
-
 /* MRI debug support */
 
 /* gc.c */

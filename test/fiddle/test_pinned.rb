@@ -25,4 +25,3 @@ module Fiddle
     end
   end
 end
-

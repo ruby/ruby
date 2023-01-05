@@ -33,7 +33,6 @@ Notable changes
 * Improve support for recent LibreSSL versions. This includes HKDF support in
   LibreSSL 3.6 and Ed25519 support in LibreSSL 3.7.
 
-
 Version 3.0.2
 =============
 
@@ -46,7 +45,6 @@ Bug fixes
 * Fix OpenSSL::PKey::EC#check_key not working correctly on OpenSSL 3.0.
   [[GitHub #563]](https://github.com/ruby/openssl/issues/563)
   [[GitHub #580]](https://github.com/ruby/openssl/pull/580)
-
 
 Version 3.0.1
 =============
@@ -70,7 +68,6 @@ Bug fixes
   [[GitHub #540]](https://github.com/ruby/openssl/pull/540)
 * Restore error checks in OpenSSL::PKey::EC#{to_der,to_pem}.
   [[GitHub #541]](https://github.com/ruby/openssl/pull/541)
-
 
 Version 3.0.0
 =============
@@ -113,7 +110,6 @@ Compatibility notes
   read/wrote unencrypted data to the underlying socket directly in that case.
   [[GitHub #9]](https://github.com/ruby/openssl/issues/9)
   [[GitHub #469]](https://github.com/ruby/openssl/pull/469)
-
 
 Notable changes
 ---------------
@@ -173,7 +169,6 @@ Notable changes
   - `OpenSSL::Config` uses native OpenSSL API to parse config files.
     [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
 
-
 Version 2.2.3
 =============
 
@@ -188,12 +183,10 @@ Bug fixes
   [[GitHub #564]](https://github.com/ruby/openssl/pull/564)
 * Fix build with LibreSSL 3.5 or later.
 
-
 Version 2.2.2
 =============
 
 Merged changes in 2.1.4.
-
 
 Version 2.2.1
 =============
@@ -211,7 +204,6 @@ Bug fixes
   where `time_t` has a different size from `long`.
   [[GitHub #454]](https://github.com/ruby/openssl/pull/454)
 
-
 Version 2.2.0
 =============
 
@@ -223,7 +215,6 @@ Compatibility notes
   [[GitHub #266]](https://github.com/ruby/openssl/pull/266)
 * Deprecate `OpenSSL::Config#add_value` and `#[]=` for future removal.
   [[GitHub #322]](https://github.com/ruby/openssl/pull/322)
-
 
 Notable changes
 ---------------
@@ -288,7 +279,6 @@ Notable changes
   `public_to_der` and `public_to_pem`.
   [[GitHub #297]](https://github.com/ruby/openssl/pull/297)
 
-
 Version 2.1.4
 =============
 
@@ -297,7 +287,6 @@ Bug fixes
 
 * Do not use pkg-config if --with-openssl-dir option is specified.
  [[GitHub #486]](https://github.com/ruby/openssl/pull/486)
-
 
 Version 2.1.3
 =============
@@ -334,18 +323,15 @@ Bug fixes
   [[GitHub #464]](https://github.com/ruby/openssl/issues/464)
   [[GitHub #465]](https://github.com/ruby/openssl/pull/465)
 
-
 Version 2.1.2
 =============
 
 Merged changes in 2.0.9.
 
-
 Version 2.1.1
 =============
 
 Merged changes in 2.0.8.
-
 
 Version 2.1.0
 =============
@@ -403,7 +389,6 @@ Notable changes
   OpenSSL::PKey::EC::Point.new can now take String as the second argument.
   [[GitHub #177]](https://github.com/ruby/openssl/pull/177)
 
-
 Version 2.0.9
 =============
 
@@ -426,7 +411,6 @@ Bug fixes
   [[GitHub #200]](https://github.com/ruby/openssl/issues/200)
   [[GitHub #211]](https://github.com/ruby/openssl/pull/211)
 
-
 Version 2.0.8
 =============
 
@@ -439,7 +423,6 @@ Bug fixes
 * Fixed build with LibreSSL 2.7.
   [[GitHub #192]](https://github.com/ruby/openssl/issues/192)
   [[GitHub #193]](https://github.com/ruby/openssl/pull/193)
-
 
 Version 2.0.7
 =============
@@ -454,7 +437,6 @@ Bug fixes
   passed.
   [[Bug #14087]](https://bugs.ruby-lang.org/issues/14087)
   [[GitHub #168]](https://github.com/ruby/openssl/pull/168)
-
 
 Version 2.0.6
 =============
@@ -475,7 +457,6 @@ Bug fixes
   of OpenSSL (before 1.1.0) or LibreSSL.
   [[GitHub #155]](https://github.com/ruby/openssl/pull/155)
 
-
 Version 2.0.5
 =============
 
@@ -488,7 +469,6 @@ Bug fixes
 * Broken length check in the PEM passphrase callback is fixed.
 * It failed to compile when OpenSSL is configured without TLS 1.0 support.
 
-
 Version 2.0.4
 =============
 
@@ -499,7 +479,6 @@ Bug fixes
 * A workaround for the error queue leak of X509_load_cert_crl_file() that
   causes random errors is added.
   [[Bug #11033]](https://bugs.ruby-lang.org/issues/11033)
-
 
 Version 2.0.3
 =============
@@ -513,7 +492,6 @@ Bug fixes
   [[Bug #13080]](https://bugs.ruby-lang.org/issues/13080)
 * OpenSSL::X509::Name#eql? which was broken by 2.0.0 is fixed.
 
-
 Version 2.0.2
 =============
 
@@ -522,7 +500,6 @@ Bug fixes
 
 * Fix build with early 0.9.8 series which did not have SSL_CTX_clear_options().
   [ruby-core:78693]
-
 
 Version 2.0.1
 =============
@@ -534,7 +511,6 @@ Bug fixes
   [[ruby/openssl#87]](https://github.com/ruby/openssl/issues/87)
 * OpenSSL::ASN1 now parses BER encoding of GeneralizedTime without seconds.
   [[ruby/openssl#88]](https://github.com/ruby/openssl/pull/88)
-
 
 Version 2.0.0
 =============

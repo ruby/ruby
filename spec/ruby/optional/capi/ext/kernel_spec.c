@@ -71,7 +71,6 @@ VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("map"), 0, NULL, (rb_block_call_func_t)NULL, Qnil);
 }
 
-
 VALUE kernel_spec_rb_frame_this_func(VALUE self) {
   return ID2SYM(rb_frame_this_func());
 }

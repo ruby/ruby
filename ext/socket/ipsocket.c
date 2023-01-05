@@ -64,7 +64,6 @@ init_inetsock_internal(VALUE v)
                                      family, SOCK_STREAM,
                                      (type == INET_SERVER) ? AI_PASSIVE : 0);
 
-
     /*
      * Maybe also accept a local address
      */

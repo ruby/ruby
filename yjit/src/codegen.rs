@@ -1945,8 +1945,6 @@ fn gen_set_ivar(
     KeepCompiling
 }
 
-
-
 // Codegen for getting an instance variable.
 // Preconditions:
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
@@ -3279,7 +3277,6 @@ fn gen_opt_succ(
     // Delegate to send, call the method on the recv
     gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
-
 
 fn gen_opt_str_freeze(
     jit: &mut JITState,
@@ -4982,7 +4979,6 @@ fn gen_send_iseq(
         }
     }
 
-
     if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
         // zsuper methods are super calls without any arguments.
         // They are also marked as splat, but don't actually have an array
@@ -5008,7 +5004,6 @@ fn gen_send_iseq(
     let opts_filled = argc - required_num - kw_arg_num;
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     let opts_missing: i32 = opt_num - opts_filled;
-
 
     if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
         gen_counter_incr!(asm, send_iseq_splat_with_opt);
@@ -6020,7 +6015,6 @@ fn gen_send_general(
         }
     }
 }
-
 
 /// Shifts the stack for send in order to remove the name of the method
 /// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
@@ -7195,7 +7189,6 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {

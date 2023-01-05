@@ -35,7 +35,6 @@ require 'stringio'
 #                                  changes the values of these derived variables. This variable is local to the
 #                                  current scope. [thread]
 
-
 describe "Predefined global $~" do
   it "is set to contain the MatchData object of the last match if successful" do
     md = /foo/.match 'foo'

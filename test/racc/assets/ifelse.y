@@ -11,4 +11,3 @@ rule
     : tSOMETHING '+' tSOMETHING
     | tSOMETHING '-' tSOMETHING
     ;
-

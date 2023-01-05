@@ -44,5 +44,3 @@ n.times do
     mm = mmult(size, size, m1, m2)
 end
 # puts "#{mm[0][0]} #{mm[2][3]} #{mm[3][2]} #{mm[4][4]}"
-
-

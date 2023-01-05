@@ -817,7 +817,6 @@ dummy
                nil)))
     EXP
 
-
     assert_error_tolerant(<<~STR, <<~EXP)
       case
       when a == 1
@@ -833,7 +832,6 @@ dummy
                      (LIST@2:10-2:11 (LIT@2:10-2:11 1) nil)) nil)
                (BEGIN@2:11-2:11 nil) nil)))
     EXP
-
 
     assert_error_tolerant(<<~STR, <<~EXP)
       case a

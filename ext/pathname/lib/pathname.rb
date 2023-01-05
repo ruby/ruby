@@ -26,7 +26,6 @@ class Pathname
     proc {|a, b| a == b}
   end
 
-
   if File::ALT_SEPARATOR
     SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
     SEPARATOR_PAT = /[#{SEPARATOR_LIST}]/
@@ -550,7 +549,6 @@ class Pathname
   end
 end
 
-
 class Pathname    # * Find *
   #
   # Iterates over the directory tree in a depth first manner, yielding a
@@ -577,7 +575,6 @@ class Pathname    # * Find *
   end
 end
 
-
 autoload(:FileUtils, 'fileutils')
 
 class Pathname    # * FileUtils *
@@ -601,4 +598,3 @@ class Pathname    # * FileUtils *
     nil
   end
 end
-

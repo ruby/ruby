@@ -10,7 +10,6 @@
 extern "C" {
 #endif
 
-
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #  define ST2NUM(x) ULONG2NUM(x)
 #else

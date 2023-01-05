@@ -858,7 +858,6 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
     return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
 }
 
-
 /*!
  * \internal
  * calls the specified method.

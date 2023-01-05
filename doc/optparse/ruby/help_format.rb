@@ -20,6 +20,3 @@ parser.on(
   'nec, pellentesque eu, pretium quis, sem.',
   )
 parser.parse!
-
-
-

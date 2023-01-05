@@ -270,7 +270,6 @@ mod sys {
 #[cfg(not(test))]
 pub(crate) use sys::*;
 
-
 #[cfg(test)]
 pub mod tests {
     use crate::utils::IntoUsize;

@@ -202,7 +202,6 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     }
 }
 
-
 %%{
     machine JSON_value;
     include JSON_common;
@@ -398,7 +397,6 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         return NULL;
     }
 }
-
 
 %%{
     machine JSON_array;

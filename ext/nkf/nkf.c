@@ -177,7 +177,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     return tmp;
 }
 
-
 /*
  *  call-seq:
  *     NKF.guess(str)  => encoding
@@ -201,7 +200,6 @@ rb_nkf_guess(VALUE obj, VALUE src)
 
     return rb_enc_from_encoding(rb_nkf_enc_get(get_guessed_code()));
 }
-
 
 /*
  *  NKF - Ruby extension for Network Kanji Filter

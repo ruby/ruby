@@ -24,7 +24,6 @@
   citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS") +
   citrus_decode_mapsrc("euc", 0x8000, "JISX0213-2/UCS@BMP,JISX0213-2/UCS@SIP")
 
-
   transcode_tblgen "UTF-8", "EUC-JP",
   [["{00-7f}", :nomap]] +
   citrus_decode_mapsrc("euc", 0x8080, "UCS/JISX0208:1990") +

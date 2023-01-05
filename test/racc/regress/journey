@@ -6,7 +6,6 @@
 
 require 'racc/parser.rb'
 
-
 require 'journey/parser_extras'
 module Journey
   class Parser < Racc::Parser

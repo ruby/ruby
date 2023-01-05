@@ -33,8 +33,6 @@
 #error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
-
-
 /* 'NEWLINE': [[:NEWLINE:]] */
 static const OnigCodePoint CR_NEWLINE[] = {
 	1,

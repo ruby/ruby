@@ -365,7 +365,6 @@ impl Assembler
             }
         }
 
-
         fn emit_csel(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd)) {
             if out != truthy {
                 mov(cb, out.into(), truthy.into());

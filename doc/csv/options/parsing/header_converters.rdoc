@@ -40,4 +40,3 @@ The value may be a \Proc custom converter
   table.headers # => ["NAME", "VALUE"]
 
 See also {Custom Header Converters}[#class-CSV-label-Custom+Header+Converters]
-

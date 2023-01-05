@@ -858,7 +858,6 @@ describe "C-API String function" do
       s.encoding.should == Encoding::BINARY
     end
 
-
 #     it "transcodes a String to Encoding.default_internal if it is set" do
 #       Encoding.default_internal = Encoding::EUC_JP
 #

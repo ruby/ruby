@@ -1082,7 +1082,6 @@ describe "The defined? keyword for super" do
   end
 end
 
-
 describe "The defined? keyword for instance variables" do
   it "returns 'instance-variable' if assigned" do
     @assigned_ivar = "some value"

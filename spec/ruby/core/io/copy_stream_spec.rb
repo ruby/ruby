@@ -280,7 +280,6 @@ describe "IO.copy_stream" do
 
   end
 
-
   describe "with a destination that does partial reads" do
     before do
       @from_out, @from_in = IO.pipe

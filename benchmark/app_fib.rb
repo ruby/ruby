@@ -7,4 +7,3 @@ def fib n
 end
 
 fib(34)
-

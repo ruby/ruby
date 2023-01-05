@@ -863,7 +863,6 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 #endif
 }
 
-
 /** stack **/
 #define INVALID_STACK_INDEX   -1
 
@@ -981,8 +980,6 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   MATCH_ARG_FREE_CACHE_MATCH_OPT(msa);\
 } while (0)
 #endif /* USE_COMBINATION_EXPLOSION_CHECK */
-
-
 
 #define MAX_PTR_NUM 100
 
@@ -1117,7 +1114,6 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }\
   else (v) = 0;\
 } while(0)
-
 
 # define ELSE_IF_STATE_CHECK_MARK(stk) \
   else if ((stk)->type == STK_STATE_CHECK_MARK) { \
@@ -1444,7 +1440,6 @@ reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* m
   STACK_INC;\
 } while(0)
 
-
 #ifdef ONIG_DEBUG
 # define STACK_BASE_CHECK(p, at) \
   if ((p) < stk_base) {\
@@ -1759,7 +1754,6 @@ reset_match_cache(regex_t* reg, UChar* pbegin, UChar* pend, long pos, uint8_t* m
   }\
 } while(0)
 
-
 #define STRING_CMP(s1,s2,len) do {\
   while (len-- > 0) {\
     if (*s1++ != *s2++) goto fail;\
@@ -1814,7 +1808,6 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
     is_fail = 0; \
 } while(0)
 
-
 #define IS_EMPTY_STR           (str == end)
 #define ON_STR_BEGIN(s)        ((s) == str)
 #define ON_STR_END(s)          ((s) == end)
@@ -1831,7 +1824,6 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 # define DATA_ENSURE_CONTINUE(n) if (s + (n) > end) continue
 # define ABSENT_END_POS        end
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
-
 
 #ifdef USE_CAPTURE_HISTORY
 static int
@@ -1949,7 +1941,6 @@ static int backref_match_at_nested_level(regex_t* reg,
 }
 #endif /* USE_BACKREF_WITH_LEVEL */
 
-
 #ifdef ONIG_DEBUG_STATISTICS
 
 # ifdef _WIN32
@@ -2040,7 +2031,6 @@ onig_print_statistics(FILE* f)
 # define MOP_IN(opcode)
 # define MOP_OUT
 #endif /* ONIG_DEBUG_STATISTICS */
-
 
 #ifdef ONIG_DEBUG_MATCH
 static char *
@@ -2299,7 +2289,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # define JUMP continue; break
 #endif /* USE_TOKEN_THREADED_VM */
 
-
 #ifdef USE_SUBEXP_CALL
 /* Stack #0 is used to store the pattern itself and used for (?R), \g<0>,
    etc. Additional space is required. */
@@ -2345,7 +2334,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   s = (UChar* )sstart;
   pkeep = (UChar* )sstart;
 
-
 #ifdef ONIG_DEBUG_MATCH
 # define OPCODE_EXEC_HOOK                                               \
     if (s) {                                                            \
@@ -2376,7 +2364,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #else
 # define OPCODE_EXEC_HOOK ((void) 0)
 #endif
-
 
   VM_LOOP {
     CASE(OP_END)  MOP_IN(OP_END);
@@ -3948,7 +3935,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   return ONIGERR_UNEXPECTED_BYTECODE;
 }
 
-
 static UChar*
 slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
 	    const UChar* text, const UChar* text_end, UChar* text_range)
@@ -4888,7 +4874,6 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
   return 0; /* fail */
 }
 
-
 extern OnigPosition
 onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	    const UChar* start, const UChar* range, OnigRegion* region, OnigOptionType option)
@@ -4921,7 +4906,6 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   }
 
   if (start > end || start < str) goto mismatch_no_msa;
-
 
 #ifdef USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
 # ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
@@ -4968,7 +4952,6 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   }
 # endif /* USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE */
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
-
 
   /* anchor optimize: resume search range */
   if (reg->anchor != 0 && str < end) {

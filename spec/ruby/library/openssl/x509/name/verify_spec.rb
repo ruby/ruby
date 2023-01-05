@@ -53,7 +53,6 @@ describe "OpenSSL::X509::Name.verify" do
     root_cert.add_extension(ef.create_extension("authorityKeyIdentifier","keyid:always",false))
     root_cert.sign(root_key, OpenSSL::Digest.new('SHA256'))
 
-
     key = OpenSSL::PKey::RSA.new 2048
     cert = OpenSSL::X509::Certificate.new
     cert.version = 2

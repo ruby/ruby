@@ -196,7 +196,6 @@ pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, id
             .insert(id);
     }
 
-
     for i in 0.. {
         match unsafe { *idlist.offset(i) } {
             0 => break, // End of NULL terminated list

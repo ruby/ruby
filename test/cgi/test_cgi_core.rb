@@ -4,7 +4,6 @@ require 'cgi'
 require 'stringio'
 require_relative 'update_env'
 
-
 class CGICoreTest < Test::Unit::TestCase
   include UpdateEnv
 
@@ -64,7 +63,6 @@ class CGICoreTest < Test::Unit::TestCase
     assert_equal('', cgi['*notfound*'])    # [ruby-dev:30740]
     assert_equal([], cgi.params['*notfound*'])
   end
-
 
   def test_cgi_core_params_POST
     query_str = 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F'
@@ -131,7 +129,6 @@ class CGICoreTest < Test::Unit::TestCase
     $stdin = STDIN
   end
 
-
   def test_cgi_core_cookie
     update_env(
       'REQUEST_METHOD'  => 'GET',
@@ -155,7 +152,6 @@ class CGICoreTest < Test::Unit::TestCase
     end
   end
 
-
   def test_cgi_core_maxcontentlength
     update_env(
       'REQUEST_METHOD'  => 'POST',
@@ -166,7 +162,6 @@ class CGICoreTest < Test::Unit::TestCase
     end
     assert_equal("too large post data.", ex.message)
   end if CGI.const_defined?(:MAX_CONTENT_LENGTH)
-
 
   def test_cgi_core_out
     update_env(
@@ -211,7 +206,6 @@ class CGICoreTest < Test::Unit::TestCase
     assert_equal(expected, actual)
   end
 
-
   def test_cgi_core_print
     update_env(
       'REQUEST_METHOD'  => 'GET',
@@ -224,7 +218,6 @@ class CGICoreTest < Test::Unit::TestCase
     actual = $stdout.string
     assert_equal(expected, actual)
   end
-
 
   def test_cgi_core_environs
     update_env(
@@ -263,7 +256,6 @@ class CGICoreTest < Test::Unit::TestCase
     assert_equal('name2=val2', cgi.raw_cookie2)
   end
 
-
   def test_cgi_core_htmltype_header
     update_env(
       'REQUEST_METHOD' => 'GET',
@@ -298,7 +290,6 @@ class CGICoreTest < Test::Unit::TestCase
     assert_equal(expected, cgi.doctype)
     assert_match(/^<HEADER><\/HEADER>$/i,cgi.header)
   end
-
 
   instance_methods.each do |method|
     private method if method =~ /^test_(.*)/ && $1 != ENV['TEST']

@@ -517,7 +517,6 @@ module Reline
   def_instance_delegators self, :readline
   private :readline
 
-
   #--------------------------------------------------------
   # Undocumented API
   #--------------------------------------------------------

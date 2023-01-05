@@ -151,7 +151,6 @@ class TestObjSpace < Test::Unit::TestCase
     end;
   end
 
-
   def test_reachable_objects_from_root
     root_objects = ObjectSpace.reachable_objects_from_root
 

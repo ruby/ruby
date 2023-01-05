@@ -10,7 +10,6 @@ module DRbTests
 
 if Object.const_defined?("UNIXServer")
 
-
 class DRbUNIXService < DRbService
   %w(ut_drb_drbunix.rb ut_array_drbunix.rb).each do |nm|
     add_service_command(nm)
@@ -53,7 +52,6 @@ class TestDRbUNIXAry < Test::Unit::TestCase
     setup_service 'ut_array_drbunix.rb'
   end
 end
-
 
 end
 

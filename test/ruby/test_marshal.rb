@@ -121,7 +121,6 @@ class TestMarshal < Test::Unit::TestCase
     }
   end
 
-
   def test_userdef_encoding
     s1 = "\xa4\xa4".force_encoding("euc-jp")
     o1 = C.new(s1)

@@ -19,4 +19,3 @@ class TestPathnameRactor < Test::Unit::TestCase
     end;
   end
 end
-

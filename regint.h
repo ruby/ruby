@@ -147,7 +147,6 @@
 #define USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 /* #define USE_COMBINATION_EXPLOSION_CHECK */     /* (X*)* */
 
-
 #ifndef xmalloc
 # define xmalloc     malloc
 # define xrealloc    realloc
@@ -385,7 +384,6 @@ typedef unsigned int  BitStatusType;
     (stats) |= (1 << (n));\
 } while (0)
 
-
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
 #define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
@@ -539,7 +537,6 @@ typedef struct _BBuf {
 } while (0)
 
 #define BBUF_GET_BYTE(buf, pos) (buf)->p[(pos)]
-
 
 #define ANCHOR_BEGIN_BUF        (1<<0)
 #define ANCHOR_BEGIN_LINE       (1<<1)
@@ -700,7 +697,6 @@ typedef void* PointerType;
 #define SIZE_CODE_POINT       (int )sizeof(OnigCodePoint)
 #define SIZE_POINTER          (int )sizeof(PointerType)
 
-
 #define GET_RELADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, RelAddrType)
 #define GET_ABSADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, AbsAddrType)
 #define GET_LENGTH_INC(len,p)      PLATFORM_GET_INC(len,    p, LengthType)
@@ -716,7 +712,6 @@ typedef void* PointerType;
   byte = *(p);\
   (p)++;\
 } while(0)
-
 
 /* op-code + arg size */
 #define SIZE_OP_ANYCHAR_STAR            SIZE_OPCODE
@@ -773,7 +768,6 @@ typedef void* PointerType;
   ((code) == MC_ESC(syn) && \
    !IS_SYNTAX_OP2((syn), ONIG_SYN_OP2_INEFFECTIVE_ESCAPE))
 
-
 #define SYN_POSIX_COMMON_OP \
  ( ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_POSIX_BRACKET | \
    ONIG_SYN_OP_DECIMAL_BACKREF | \
@@ -798,7 +792,6 @@ typedef void* PointerType;
   ( ONIG_SYN_CONTEXT_INDEP_ANCHORS | ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS | \
     ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS | ONIG_SYN_ALLOW_INVALID_INTERVAL | \
     ONIG_SYN_BACKSLASH_ESCAPE_IN_CC | ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC )
-
 
 #define NCCLASS_FLAGS(cc)           ((cc)->flags)
 #define NCCLASS_FLAG_SET(cc,flag)    (NCCLASS_FLAGS(cc) |= (flag))
@@ -913,7 +906,6 @@ typedef struct {
 #endif
 } OnigMatchArg;
 
-
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))
 
@@ -924,7 +916,6 @@ typedef struct OnigEndCallListItem {
 
 extern void onig_add_end_call(void (*func)(void));
 
-
 #ifdef ONIG_DEBUG
 
 typedef struct {
@@ -934,7 +925,6 @@ typedef struct {
 } OnigOpInfoType;
 
 extern OnigOpInfoType OnigOpInfo[];
-
 
 extern void onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar* bpend, UChar** nextp, OnigEncoding enc);
 

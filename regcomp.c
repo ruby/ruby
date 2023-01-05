@@ -45,7 +45,6 @@ onig_set_default_case_fold_flag(OnigCaseFoldType case_fold_flag)
   return 0;
 }
 
-
 #ifndef PLATFORM_UNALIGNED_WORD_ACCESS
 static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 #endif
@@ -176,7 +175,6 @@ onig_bbuf_init(BBuf* buf, OnigDistance size)
   return 0;
 }
 
-
 #ifdef USE_SUBEXP_CALL
 
 static int
@@ -219,7 +217,6 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
   return 0;
 }
 #endif /* USE_SUBEXP_CALL */
-
 
 static int
 add_opcode(regex_t* reg, int opcode)
@@ -331,7 +328,6 @@ add_opcode_option(regex_t* reg, int opcode, OnigOptionType option)
 
 static int compile_length_tree(Node* node, regex_t* reg);
 static int compile_tree(Node* node, regex_t* reg);
-
 
 #define IS_NEED_STR_LEN_OP_EXACT(op) \
    ((op) == OP_EXACTN    || (op) == OP_EXACTMB2N ||\
@@ -479,7 +475,6 @@ add_compile_string(UChar* s, int mb_len, OnigDistance byte_len,
   add_bytes(reg, s, byte_len);
   return 0;
 }
-
 
 static int
 compile_length_string_node(Node* node, regex_t* reg)
@@ -3103,7 +3098,6 @@ subexp_recursive_check(Node* node)
   return r;
 }
 
-
 static int
 subexp_recursive_check_trav(Node* node, ScanEnv* env)
 {
@@ -3389,7 +3383,6 @@ next_setup(Node* node, Node* next_node, regex_t* reg)
   }
   return 0;
 }
-
 
 static int
 update_string_node_case_fold(regex_t* reg, Node *node)
@@ -3736,7 +3729,6 @@ expand_case_fold_string(Node* node, regex_t* reg)
   onig_node_free(top_root);
   return r;
 }
-
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
 
@@ -4407,7 +4399,6 @@ typedef struct {
   OptMapInfo   map;   /* boundary */
 } NodeOptInfo;
 
-
 static int
 map_position_value(OnigEncoding enc, int i)
 {
@@ -4483,7 +4474,6 @@ is_equal_mml(MinMaxLen* a, MinMaxLen* b)
 {
   return (a->min == b->min && a->max == b->max) ? 1 : 0;
 }
-
 
 static void
 set_mml(MinMaxLen* mml, OnigDistance min, OnigDistance max)
@@ -4969,7 +4959,6 @@ alt_merge_node_opt_info(NodeOptInfo* to, NodeOptInfo* add, OptEnv* env)
 
   alt_merge_mml(&to->len, &add->len);
 }
-
 
 #define MAX_NODE_OPT_INFO_REF_COUNT    5
 
@@ -5644,7 +5633,6 @@ print_optimize_info(FILE* f, regex_t* reg)
 }
 #endif /* ONIG_DEBUG_COMPILE || ONIG_DEBUG_MATCH */
 
-
 extern void
 onig_free_body(regex_t* reg)
 {
@@ -6045,7 +6033,6 @@ onig_init(void)
   return 0;
 }
 
-
 static OnigEndCallListItemType* EndCallTop;
 
 extern void onig_add_end_call(void (*func)(void))
@@ -6152,7 +6139,6 @@ onig_is_code_in_cc(OnigEncoding enc, OnigCodePoint code, CClassNode* cc)
   }
   return onig_is_code_in_cc_len(len, code, cc);
 }
-
 
 #ifdef ONIG_DEBUG
 

@@ -175,7 +175,6 @@ describe "Proc.new without a block" do
       -> { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/Capturing the given block using Proc.new is deprecated/)
     end
 
-
     it "can be create when called with no block" do
       def some_method
         Proc.new

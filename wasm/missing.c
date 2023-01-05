@@ -166,7 +166,6 @@ kill(rb_pid_t pid, int sig)
     return -1;
 }
 
-
 WASM_MISSING_LIBC_FUNC
 void
 tzset(void)

@@ -29,7 +29,6 @@ describe "Complex#**" do
       (Complex(3, 4) ** 2).should == Complex(-7, 24)
       (Complex(3, 4) ** -2).should be_close(Complex(-0.0112, -0.0384), TOLERANCE)
 
-
       (Complex(2, 1) ** 2.5).should be_close(Complex(2.99179707178602, 6.85206901006896), TOLERANCE)
       (Complex(3, 4) ** 2.5).should be_close(Complex(-38.0, 41.0), TOLERANCE)
       (Complex(3, 4) ** -2.5).should be_close(Complex(-0.01216, -0.01312), TOLERANCE)

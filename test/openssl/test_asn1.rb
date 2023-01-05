@@ -18,7 +18,6 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     cert = OpenSSL::TestUtils.issue_cert(
       subj, key, s, exts, nil, nil, digest: dgst, not_before: now, not_after: now+3600)
 
-
     asn1 = OpenSSL::ASN1.decode(cert)
     assert_equal(OpenSSL::ASN1::Sequence, asn1.class)
     assert_equal(3, asn1.value.size)

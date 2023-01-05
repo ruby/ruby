@@ -47,7 +47,6 @@ describe "Struct.new" do
     Struct.const_defined?("Animal2").should be_false
   end
 
-
   it "fails with invalid constant name as first argument" do
     -> { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)
   end

@@ -451,7 +451,6 @@ describe "Module#define_method" do
     klass.new.should respond_to(:bar)
   end
 
-
   it "allows an UnboundMethod of a Kernel method retrieved from Object to defined on a BasicObject subclass" do
     klass = Class.new(BasicObject) do
       define_method :instance_of?, ::Object.instance_method(:instance_of?)

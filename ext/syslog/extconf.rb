@@ -10,4 +10,3 @@ have_header("syslog.h") &&
   have_func("openlog") &&
   have_func("setlogmask") &&
   create_makefile("syslog")
-

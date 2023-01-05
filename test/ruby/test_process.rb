@@ -1482,7 +1482,6 @@ class TestProcess < Test::Unit::TestCase
     assert_equal(-1, ret.pid)
   end
 
-
   def test_status_wait
     IO.popen([RUBY, "-e", "gets"], "w") do |io|
       pid = io.pid

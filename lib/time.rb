@@ -721,4 +721,3 @@ class Time
   end
   alias iso8601 xmlschema
 end
-

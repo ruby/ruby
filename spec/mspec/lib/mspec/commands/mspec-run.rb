@@ -6,7 +6,6 @@ require 'mspec/version'
 require 'mspec/utils/options'
 require 'mspec/utils/script'
 
-
 class MSpecRun < MSpecScript
   def initialize
     super

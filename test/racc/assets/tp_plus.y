@@ -37,7 +37,6 @@ rule
     |
     ;
 
-
   statements
     : statement terminator              {
                                           result = [val[0]]
@@ -185,7 +184,6 @@ rule
     : var
     | indirect_thing
     ;
-
 
   jump
     : JUMP label                       { result = JumpNode.new(val[1]) }
@@ -385,7 +383,6 @@ rule
     : WORD COLON COLON                 { result = val[0] }
     ;
 
-
   expression
     : unary_expression
     | binary_expression
@@ -471,7 +468,6 @@ rule
     | ualm
     | sreg
     ;
-
 
   sreg
     : SREG LBRACK DIGIT RBRACK               { result = StringRegisterNode.new(val[2].to_i) }
@@ -584,7 +580,6 @@ rule
   array_value
     : hash_value
     ;
-
 
 end
 

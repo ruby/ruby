@@ -78,7 +78,6 @@ describe "Socket.getaddrinfo" do
       res.should == expected
     end
 
-
     it "accepts empty addresses for IPv6 passive sockets" do
       res = Socket.getaddrinfo(nil, "discard",
                                Socket::AF_INET6,

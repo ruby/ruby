@@ -61,7 +61,6 @@ when 'server'
   puts DRb.uri
   DRb.thread.join
 
-
 else
   uri = (cmd == 'quit') ? ARGV.shift : cmd
 
@@ -77,4 +76,3 @@ else
     s.service('itest2').stop_service
   end
 end
-

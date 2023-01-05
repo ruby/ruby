@@ -475,7 +475,6 @@ static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
 static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data);
 
-
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
@@ -1696,8 +1695,6 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
 
-
-
 static void
 iseq_calc_param_size(rb_iseq_t *iseq)
 {
@@ -2053,7 +2050,6 @@ cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
     rb_hash_aset(data->hash, key, INT2FIX(lobj->position - (data->pos+data->len)));
     return ST_CONTINUE;
 }
-
 
 static inline VALUE
 get_ivar_ic_value(rb_iseq_t *iseq,ID id)
@@ -3854,7 +3850,6 @@ new_unified_insn(rb_iseq_t *iseq,
     int i, argc = 0;
     VALUE *operands = 0, *ptr = 0;
 
-
     /* count argc */
     for (i = 0; i < size; i++) {
         iobj = (INSN *)list;
@@ -3995,7 +3990,6 @@ label_set_sc_state(LABEL *lobj, int state)
 
     return state;
 }
-
 
 #endif
 
@@ -5256,7 +5250,6 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
             CHECK(compile_massign_lhs(iseq, pre, rhs, lhs, post, splatn, state, 1 + state->lhs_level));
         }
     }
-
 
     if (!state->nested) {
         NO_CHECK(COMPILE(rhs, "normal masgn rhs", rhsn));
@@ -6992,7 +6985,6 @@ iseq_compile_pattern_constant(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     }
     return COMPILE_OK;
 }
-
 
 static int
 iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache)
@@ -10110,8 +10102,6 @@ opobj_inspect(VALUE obj)
     return rb_inspect(obj);
 }
 
-
-
 static VALUE
 insn_data_to_s_detail(INSN *iobj)
 {
@@ -12500,7 +12490,6 @@ ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_heade
 
     rb_raise(rb_eArgError, "ibf_load_object_class: unknown class (%d)", (int)cindex);
 }
-
 
 static void
 ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)

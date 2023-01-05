@@ -316,7 +316,6 @@ EOT
     assert_raise(ArgumentError) { eval("# encoding:utf-16be\nfoo") }
   end
 
-
   def test_is_mbc_newline
     sl = "f\0o\0o\0\n\0b\0a\0r\0\n\0b\0a\0z\0\n\0".force_encoding("utf-16le")
     sb = "\0f\0o\0o\0\n\0b\0a\0r\0\n\0b\0a\0z\0\n".force_encoding("utf-16be")

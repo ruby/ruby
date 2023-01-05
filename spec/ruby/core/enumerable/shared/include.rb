@@ -18,7 +18,6 @@ describe :enumerable_include, shared: true do
     EnumerableSpecs::Numerous.new(*elements).send(@method,'11').should == true
   end
 
-
   it "returns true if any member of enum equals obj when == compare different classes (legacy rubycon)" do
     # equality is tested with ==
     EnumerableSpecs::Numerous.new(2,4,6,8,10).send(@method, 2.0).should == true

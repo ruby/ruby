@@ -103,7 +103,6 @@ ole_type_from_itypeinfo(ITypeInfo *pTypeInfo)
     return type;
 }
 
-
 /*
  *   call-seq:
  *      WIN32OLE_TYPE.ole_classes(typelib)
@@ -424,7 +423,6 @@ foletype_progid(VALUE self)
     ITypeInfo *pTypeInfo = itypeinfo(self);
     return ole_type_progid(pTypeInfo);
 }
-
 
 static VALUE
 ole_type_visible(ITypeInfo *pTypeInfo)

@@ -44,7 +44,6 @@ describe "UNIXSocket#recvfrom" do
   end
 end
 
-
 with_feature :unix_socket do
   describe 'UNIXSocket#recvfrom' do
     describe 'using a socket pair' do

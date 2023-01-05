@@ -1388,7 +1388,6 @@ xstring_contents: none
                     }
                 | backref
 
-
           symbol: tSYMBEG sym
                     {
                       result = new_sym(val[1])

@@ -133,7 +133,6 @@ f_abs(VALUE x)
     return rb_funcall(x, id_abs, 0);
 }
 
-
 inline static int
 f_integer_p(VALUE x)
 {
@@ -1774,7 +1773,6 @@ nurat_hash(VALUE self)
     return ST2FIX(rb_rational_hash(self));
 }
 
-
 static VALUE
 f_format(VALUE self, VALUE (*func)(VALUE))
 {
@@ -2024,7 +2022,6 @@ numeric_denominator(VALUE self)
 {
     return f_denominator(f_to_r(self));
 }
-
 
 /*
  *  call-seq:
@@ -2675,7 +2672,6 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     else {
         a2 = nurat_int_value(a2);
     }
-
 
     return nurat_s_canonicalize_internal(klass, a1, a2);
 }

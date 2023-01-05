@@ -357,7 +357,6 @@ rb_binding_alloc(VALUE klass)
     return obj;
 }
 
-
 /* :nodoc: */
 static VALUE
 binding_dup(VALUE self)
@@ -1029,7 +1028,6 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
     return rb_proc_call_with_block_kw(self, argc, argv, passed_procval, RB_NO_KEYWORDS);
 }
 
-
 /*
  *  call-seq:
  *     prc.arity -> integer
@@ -1469,7 +1467,6 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
 
-
 /*
  *  call-seq:
  *    to_proc
@@ -1649,7 +1646,6 @@ respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
     if (rb_method_basic_definition_p(klass, rmiss)) return 0;
     return RTEST(rb_funcall(obj, rmiss, 2, sym, RBOOL(!scope)));
 }
-
 
 static VALUE
 mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
@@ -2445,7 +2441,6 @@ method_clone(VALUE self)
  *        # ...
  *      end
  */
-
 
 /*  Document-method: Method#[]
  *
@@ -4262,7 +4257,6 @@ proc_ruby2_keywords(VALUE procval)
  *
  * Numbered parameters were introduced in Ruby 2.7.
  */
-
 
 void
 Init_Proc(void)

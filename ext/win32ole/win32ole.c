@@ -339,7 +339,6 @@ static HRESULT ( STDMETHODCALLTYPE GetTypeInfo )(
     return E_NOTIMPL;
 }
 
-
 static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(
     IDispatch __RPC_FAR * This,
     /* [in] */ REFIID riid,
@@ -615,7 +614,6 @@ set_ole_codepage(UINT cp)
     }
     cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
 }
-
 
 static UINT
 ole_init_cp(void)
@@ -1361,7 +1359,6 @@ ole_set_member(VALUE self, IDispatch *dispatch)
     pole->pDispatch = dispatch;
     return self;
 }
-
 
 static VALUE
 fole_s_allocate(VALUE klass)

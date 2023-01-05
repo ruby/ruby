@@ -15,7 +15,6 @@ describe "Math.cos" do
     Math.cos(2*Math::PI).should be_close(1.0, TOLERANCE)
   end
 
-
   it "raises a TypeError unless the argument is Numeric and has #to_f" do
     -> { Math.cos("test") }.should raise_error(TypeError)
   end

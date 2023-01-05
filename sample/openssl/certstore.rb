@@ -1,7 +1,6 @@
 require 'c_rehash'
 require 'crlstore'
 
-
 class CertStore
   attr_reader :self_signed_ca
   attr_reader :other_ca
@@ -151,7 +150,6 @@ private
     cert.subject.to_s == cert.issuer.to_s
   end
 end
-
 
 if $0 == __FILE__
   c = CertStore.new("trust_certs")

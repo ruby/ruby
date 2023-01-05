@@ -379,7 +379,6 @@ module IRB
 
   @CONF = {}
 
-
   # Displays current configuration.
   #
   # Modifying the configuration is achieved by sending a message to IRB.conf.

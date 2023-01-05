@@ -5,7 +5,6 @@ require 'uri/https'
 
 module URI
 
-
 class TestHTTP < Test::Unit::TestCase
   def setup
   end
@@ -74,7 +73,6 @@ class TestHTTP < Test::Unit::TestCase
     assert_equal('a.b.c', URI.parse('http://a.b.c:80/').authority)
   end
 
-
   def test_origin
     assert_equal('http://a.b.c', URI.parse('http://a.b.c/').origin)
     assert_equal('http://a.b.c:8081', URI.parse('http://a.b.c:8081/').origin)
@@ -82,6 +80,5 @@ class TestHTTP < Test::Unit::TestCase
     assert_equal('https://a.b.c', URI.parse('https://a.b.c/').origin)
   end
 end
-
 
 end

@@ -859,7 +859,6 @@ rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval)
     void *pnew = RBIMPL_CAST((void *)newval);
     return atomic_cas_ptr(ptr, pold, pnew);
 
-
 #else
     RBIMPL_STATIC_ASSERT(sizeof_voidp, sizeof *ptr == sizeof(size_t));
 

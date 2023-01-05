@@ -47,4 +47,3 @@ ruby$target:::cmethod-return
     end
   end
 end if defined?(DTrace::TestCase)
-

@@ -43,7 +43,6 @@
 
 #define CASE_FOLD_IS_APPLIED_INSIDE_NEGATIVE_CCLASS
 
-
 const OnigSyntaxType OnigSyntaxRuby = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
      ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
@@ -118,7 +117,6 @@ extern void onig_set_verb_warn_func(OnigWarnFunc f)
 
 static void CC_DUP_WARN(ScanEnv *env, OnigCodePoint from, OnigCodePoint to);
 
-
 static unsigned int ParseDepthLimit = DEFAULT_PARSE_DEPTH_LIMIT;
 
 extern unsigned int
@@ -136,7 +134,6 @@ onig_set_parse_depth_limit(unsigned int depth)
     ParseDepthLimit = depth;
   return 0;
 }
-
 
 static void
 bbuf_free(BBuf* bbuf)
@@ -179,7 +176,6 @@ bbuf_clone(BBuf** rto, BBuf* from)
     if (r) return r;\
   }\
 } while (0)
-
 
 #define BITSET_SET_BIT_CHKDUP(bs, pos) do { \
   if (BITSET_AT(bs, pos)) CC_DUP_WARN(env, pos, pos); \
@@ -357,7 +353,6 @@ strcat_capa_from_static(UChar* dest, UChar* dest_end,
   return r;
 }
 
-
 #ifdef USE_ST_LIBRARY
 
 # ifdef RUBY
@@ -454,7 +449,6 @@ onig_st_insert_strend(hash_table_type* table, const UChar* str_key,
 }
 
 #endif /* USE_ST_LIBRARY */
-
 
 #ifdef USE_NAMED_GROUP
 
@@ -627,7 +621,6 @@ onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
   }
   return 0;
 }
-
 
 extern int
 onig_number_of_names(const regex_t* reg)
@@ -986,7 +979,6 @@ onig_noname_group_capture_is_active(const regex_t* reg)
   return 1;
 }
 
-
 #define INIT_SCANENV_MEMNODES_ALLOC_SIZE   16
 
 static void
@@ -1066,7 +1058,6 @@ scan_env_set_mem_node(ScanEnv* env, int num, Node* node)
     return ONIGERR_PARSER_BUG;
   return 0;
 }
-
 
 extern void
 onig_node_free(Node* node)
@@ -1650,7 +1641,6 @@ scan_unsigned_octal_number(UChar** src, UChar* end, int maxlen,
   return num;
 }
 
-
 #define BBUF_WRITE_CODE_POINT(bbuf,pos,code) \
     BBUF_WRITE(bbuf, pos, &(code), SIZE_CODE_POINT)
 
@@ -2189,7 +2179,6 @@ popular_quantifier_num(QtfrNode* q)
   return -1;
 }
 
-
 enum ReduceType {
   RQ_ASIS = 0, /* as is */
   RQ_DEL  = 1, /* delete parent */
@@ -2252,7 +2241,6 @@ onig_reduce_nested_quantifier(Node* pnode, Node* cnode)
   c->target = NULL_NODE;
   onig_node_free(cnode);
 }
-
 
 enum TokenSyms {
   TK_EOT      = 0,   /* end of token */
@@ -2326,7 +2314,6 @@ typedef struct {
     } prop;
   } u;
 } OnigToken;
-
 
 static int
 fetch_range_quantifier(UChar** src, UChar* end, OnigToken* tok, ScanEnv* env)
@@ -2841,7 +2828,6 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
   }
 }
 #endif /* USE_NAMED_GROUP */
-
 
 #ifdef PRINTF_ARGS
 PRINTF_ARGS(static void onig_syntax_warn(ScanEnv *env, const char *fmt, ...), 2, 3);
@@ -4403,7 +4389,6 @@ parse_char_property(Node** np, OnigToken* tok, UChar** src, UChar* end,
   return r;
 }
 
-
 enum CCSTATE {
   CCS_VALUE,
   CCS_RANGE,
@@ -5474,7 +5459,6 @@ set_quantifier(Node* qnode, Node* target, int group, ScanEnv* env)
   return 0;
 }
 
-
 #ifndef CASE_FOLD_IS_APPLIED_INSIDE_NEGATIVE_CCLASS
 static int
 clear_not_flag_cclass(CClassNode* cc, OnigEncoding enc)
@@ -6114,7 +6098,6 @@ is_onechar_cclass(CClassNode* cc, OnigCodePoint* code)
   /* the character class contains no char. */
   return 0;
 }
-
 
 static int
 parse_exp(Node** np, OnigToken* tok, int term,

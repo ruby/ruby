@@ -1188,7 +1188,6 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
 }
 #endif
 
-
 /*
  * call-seq:
  *   sockopt.inspect => string

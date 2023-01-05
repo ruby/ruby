@@ -572,7 +572,6 @@ class HeapPageIter:
         else:
             raise StopIteration
 
-
 def dump_page_internal(page, target, process, thread, frame, result, debugger, highlight=None):
     if not ('RUBY_Qfalse' in globals()):
         lldb_init(debugger)
@@ -588,7 +587,6 @@ def dump_page_internal(page, target, process, thread, frame, result, debugger, h
         obj_addr = lldb.SBAddress(fl_start, target)
         obj = target.CreateValueFromAddress("object", obj_addr, tRVALUE)
         fl_start = obj.GetChildMemberWithName("as").GetChildMemberWithName("free").GetChildMemberWithName("next").GetValueAsUnsigned()
-
 
     page_iter = HeapPageIter(page, target)
     if page_iter.is_valid():
@@ -617,8 +615,6 @@ def dump_page_internal(page, target, process, thread, frame, result, debugger, h
     else:
         print("%s is not a valid heap page" % page, file=result)
 
-
-
 def dump_page(debugger, command, result, internal_dict):
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
@@ -630,7 +626,6 @@ def dump_page(debugger, command, result, internal_dict):
     page = page.Cast(tHeapPageP)
 
     dump_page_internal(page, target, process, thread, frame, result, debugger)
-
 
 def dump_page_rvalue(debugger, command, result, internal_dict):
     target = debugger.GetSelectedTarget()
@@ -644,8 +639,6 @@ def dump_page_rvalue(debugger, command, result, internal_dict):
     page.Cast(page_type)
 
     dump_page_internal(page, target, process, thread, frame, result, debugger, highlight=val.GetValueAsUnsigned())
-
-
 
 def rb_type(flags, ruby_types):
     flType = flags & RUBY_T_MASK
@@ -714,7 +707,6 @@ def rb_id2str(debugger, command, result, internal_dict):
         lldb_inspect(debugger, target, result, id_str)
 # END FUNCTION STYLE DECLS
 
-
 load_dir, _ = os.path.split(os.path.realpath(__file__))
 
 for fname in glob.glob(f"{load_dir}/lldb_rb/commands/*_command.py"):
@@ -730,7 +722,6 @@ def __lldb_init_module(debugger, internal_dict):
         if inspect.isclass(mem):
             for sclass in mem.__subclasses__():
                 sclass.register_lldb_command(debugger, f"{__name__}.{sclass.__module__}")
-
 
     ## FUNCTION INITS - These should be removed when converted to class commands
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")

@@ -45,7 +45,6 @@ class RDoc::RDoc
 
   TEST_SUITE_DIRECTORY_NAMES = %w[spec test].freeze
 
-
   ##
   # Generator instance used for creating output
 

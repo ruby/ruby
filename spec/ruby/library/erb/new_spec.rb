@@ -71,7 +71,6 @@ END
     ERBSpecs.new_erb(input, trim_mode: '-').result.should == expected
   end
 
-
   it "does not support '<%-= expr %> even when trim_mode is '-'" do
 
     input = <<'END'
@@ -95,12 +94,10 @@ END
     ERBSpecs.new_erb(@eruby_str2, trim_mode: '%>').result.should == expected
   end
 
-
   it "regard lines starting with '%' as '<% ... %>' and remove \"\\n\" when trim_mode is '%<>'" do
     expected = "<ul>\n  <li>1\n  \n  <li>2\n  \n  <li>3\n  \n</ul>\n%%\n"
     ERBSpecs.new_erb(@eruby_str2, trim_mode: '%<>').result.should == expected
   end
-
 
   it "regard lines starting with '%' as '<% ... %>' and spaces around '<%- -%>' when trim_mode is '%-'" do
     expected = "<ul>\n<li>1</li>\n<li>2</li>\n</ul>\n%%\n"
@@ -122,7 +119,6 @@ END
     match_buf = ERB.new(input, trim_mode: nil, eoutvar: 'buf').src
     match_erbout.gsub("_erbout", "buf").should == match_buf
   end
-
 
   it "ignores '<%# ... %>'" do
     input = <<'END'

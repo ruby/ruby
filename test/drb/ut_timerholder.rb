@@ -69,6 +69,4 @@ class TimerIdConvTest < Test::Unit::TestCase
   end
 end
 
-
 end
-

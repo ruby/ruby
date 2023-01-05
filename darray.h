@@ -50,7 +50,6 @@
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
-
 // Last element of the array
 //
 #define rb_darray_back(ary) ((ary)->data[(ary)->meta.size - 1])

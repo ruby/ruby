@@ -5,4 +5,3 @@ benchmark:
       Thread.pass
     end
 loop_count: 50_000
-

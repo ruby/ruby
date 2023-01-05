@@ -305,14 +305,12 @@ rule
 
 end
 
-
 ---- header
 #
 # mailp for test
 #
 
 require 'tmail/mails'
-
 
 module TMail
 
@@ -333,11 +331,9 @@ module TMail
     @yydebug
   end
 
-
   def Mailp.parse( str, obj, ident )
     new.parse( str, obj, ident )
   end
-
 
   NATIVE_ROUTINE = {
     'TMail::MsgidH' => :msgid_parse,
@@ -369,9 +365,7 @@ module TMail
     end
   end
 
-
   private
-
 
   def next_token
     if @first then
@@ -387,8 +381,6 @@ module TMail
     raise ParseError,
       "\nparse error in '#{@field.name}' header, on token #{val.inspect}"
   end
-
-
 
   def refs_parse( str )
     arr = []
@@ -419,7 +411,6 @@ module TMail
     str.strip!
     arr.push unless str.empty?
   end
-
 
   def msgid_parse( str )
     if mdata = ::TMail::MSGID.match( str ) then

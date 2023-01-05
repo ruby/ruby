@@ -86,7 +86,6 @@ static ENC_INFO Info[] = {
   { KOI8_R,      "KOI8_R" }
 };
 
-
 static int IsAlpha(int enc, int c)
 {
   if (enc == ASCII)
@@ -332,7 +331,6 @@ static int IsCntrl(int enc, int c)
   case KOI8:
     if (c >= 0x7f && c <= 0x9F) return 1;
     break;
-
 
   case KOI8_R:
     if (c == 0x7f) return 1;

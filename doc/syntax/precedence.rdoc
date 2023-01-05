@@ -61,4 +61,3 @@ statements}[control_expressions.rdoc#label-Modifier+Statements].
 <code>do ... end</code> blocks have lower priority.
 
 All other words in the precedence table above are keywords.
-

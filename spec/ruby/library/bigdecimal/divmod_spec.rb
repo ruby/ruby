@@ -118,7 +118,6 @@ describe "BigDecimal#divmod" do
     values << BigDecimal('2E-5555')
     values << BigDecimal('-2E-5555')
 
-
     values_and_zeroes = values + @zeroes
     values_and_zeroes.each do |val1|
       values.each do |val2|

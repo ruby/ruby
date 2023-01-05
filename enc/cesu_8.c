@@ -401,7 +401,6 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
   }
 }
 
-
 static int
 get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
 		     const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
@@ -409,7 +408,6 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
   *sb_out = 0x80;
   return onigenc_unicode_ctype_code_range(ctype, ranges);
 }
-
 
 static UChar*
 left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc ARG_UNUSED)

@@ -158,4 +158,3 @@ a.ping(foo)
 
 DRb.thread.join
 =end
-

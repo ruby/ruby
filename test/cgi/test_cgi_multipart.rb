@@ -5,7 +5,6 @@ require 'tempfile'
 require 'stringio'
 require_relative 'update_env'
 
-
 ##
 ## usage:
 ##   boundary = 'foobar1234'  # or nil
@@ -102,11 +101,8 @@ class MultiPart
 
 end
 
-
-
 class CGIMultipartTest < Test::Unit::TestCase
   include UpdateEnv
-
 
   def setup
     @environ = {}
@@ -189,14 +185,12 @@ class CGIMultipartTest < Test::Unit::TestCase
     end
   end
 
-
   def _read(basename)
     filename = File.join(File.dirname(__FILE__), 'testdata', basename)
     s = File.open(filename, 'rb') {|f| f.read() }
 
     return s
   end
-
 
   def test_cgi_multipart_stringio
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
@@ -213,7 +207,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     _test_multipart()
   end
 
-
   def test_cgi_multipart_tempfile
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
@@ -229,7 +222,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     _test_multipart()
   end
 
-
   def _set_const(klass, name, value)
     old = nil
     klass.class_eval do
@@ -239,7 +231,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     end
     return old
   end
-
 
   def test_cgi_multipart_maxmultipartlength
     @data = [
@@ -255,7 +246,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     end
   end
 
-
   def test_cgi_multipart_maxmultipartlength_lambda
     @data = [
       {:name=>'image1', :value=>_read('large.png'),
@@ -269,7 +259,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     ensure
     end
   end
-
 
   def test_cgi_multipart_maxmultipartcount
     @data = [
@@ -288,7 +277,6 @@ class CGIMultipartTest < Test::Unit::TestCase
       #_set_const(CGI, :MAX_MULTIPART_COUNT, original)
     end
   end if CGI.const_defined?(:MAX_MULTIPART_COUNT)
-
 
   def test_cgi_multipart_badbody   ## [ruby-dev:28470]
     @data = [
@@ -317,7 +305,6 @@ class CGIMultipartTest < Test::Unit::TestCase
     end
     assert_equal("bad content body", ex.message)
   end
-
 
   def test_cgi_multipart_quoteboundary  ## [JVN#84798830]
     @boundary = '(.|\n)*'

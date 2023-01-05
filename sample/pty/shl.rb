@@ -57,7 +57,6 @@ $reader = Thread.new {
 
 # $reader.raise(nil)
 
-
 while true
   print ">> "
   STDOUT.flush

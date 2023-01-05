@@ -87,7 +87,6 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
     return DBL2NUM(atan2(dy, dx));
 }
 
-
 /*
  *  call-seq:
  *    Math.cos(x) -> float
@@ -141,7 +140,6 @@ math_sin(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(sin(Get_Double(x)));
 }
-
 
 /*
  *  call-seq:
@@ -1018,7 +1016,6 @@ math_lgamma(VALUE unused_obj, VALUE x)
     return rb_assoc_new(v, INT2FIX(sign));
 }
 
-
 #define exp1(n) \
 VALUE \
 rb_math_##n(VALUE x)\
@@ -1044,7 +1041,6 @@ exp1(sinh)
 exp1(sqrt)
 #endif
 
-
 /*
  *  Document-class: Math::DomainError
  *
@@ -1067,7 +1063,6 @@ exp1(sqrt)
  *  :include: doc/math/math.rdoc
  *
  */
-
 
 void
 InitVM_Math(void)

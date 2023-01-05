@@ -534,7 +534,6 @@ def save( board_string)
   end
 end
 
-
 ##
 ## MAIN BODY :)
 ##

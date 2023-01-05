@@ -47,7 +47,6 @@
 #define _DIAGASSERT(cond)	assert(cond)
 #endif
 
-
 /********************************************************************/
 
 /* macro definitions */

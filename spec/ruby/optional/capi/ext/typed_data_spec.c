@@ -84,7 +84,6 @@ static const rb_data_type_t sample_typed_wrapped_struct_other_data_type = {
   },
 };
 
-
 VALUE sdaf_alloc_typed_func(VALUE klass) {
   struct sample_typed_wrapped_struct* bar;
   bar = (struct sample_typed_wrapped_struct *) malloc(sizeof(struct sample_typed_wrapped_struct));
@@ -186,4 +185,3 @@ void Init_typed_data_spec(void) {
 #ifdef __cplusplus
 }
 #endif
-

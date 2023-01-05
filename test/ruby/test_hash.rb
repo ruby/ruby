@@ -256,7 +256,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil,      h1['nil'])
     assert_equal(:default, h1['koala'])
 
-
   end
 
   def test_ASET # '[]='

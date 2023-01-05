@@ -85,7 +85,6 @@ static rb_encoding *global_enc_ascii,
     GLOBAL_ENC_TABLE_LEAVE(); \
 } while (0)
 
-
 #define ENC_DUMMY_FLAG (1<<24)
 #define ENC_INDEX_MASK (~(~0U<<24))
 
@@ -1147,7 +1146,6 @@ rb_enc_copy(VALUE obj1, VALUE obj2)
 {
     rb_enc_associate_index(obj1, rb_enc_get_index(obj2));
 }
-
 
 /*
  *  call-seq:

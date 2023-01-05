@@ -20,4 +20,3 @@ ary = []
     ary << c if mandelbrot?(c)
   }
 }
-

@@ -8,4 +8,3 @@ double cbrt(double x)
     else
         return pow(x, 1/3.0);
 }
-

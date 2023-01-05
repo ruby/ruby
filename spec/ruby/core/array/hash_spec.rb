@@ -46,7 +46,6 @@ describe "Array#hash" do
 
     ary.hash
 
-
     hash = mock('1')
     hash.should_receive(:to_int).and_return(1.hash)
 

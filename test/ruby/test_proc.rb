@@ -537,7 +537,6 @@ class TestProc < Test::Unit::TestCase
     assert_equal nil, r
   end
 
-
   def test_proc_args_rest
     pr = proc {|a,b,c,*d|
       [a,b,c,d]
@@ -1362,7 +1361,6 @@ class TestProc < Test::Unit::TestCase
   def pmk6(a, b = nil, c, **o) nil && o end
   def pmk7(a, b = nil, *c, d, **o) nil && o end
 
-
   def test_bound_parameters
     assert_equal([], method(:pm0).to_proc.parameters)
     assert_equal([[:req, :a]], method(:pm1).to_proc.parameters)
@@ -1725,7 +1723,6 @@ class TestProc < Test::Unit::TestCase
       Proc.new{yield}.isolate
     end
 
-
     name = "\u{2603 26a1}"
     assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
       eval("#{name} = :#{name}; Proc.new {p #{name}}").isolate
@@ -1838,4 +1835,3 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
   end
 end
-

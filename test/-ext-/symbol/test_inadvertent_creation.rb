@@ -141,7 +141,6 @@ module Test_Symbol
       assert_not_interned_error(c, :remove_class_variable, cv, feature5079)
     end
 
-
     def test_undefined_const
       feature5079 = Feature5079
       c = Class.new

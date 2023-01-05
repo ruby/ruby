@@ -35,7 +35,6 @@ class PiDigitSpigot
     end
 end
 
-
 class Transformation
     attr_reader :q, :r, :s, :t
     def initialize(q, r, s, t)
@@ -67,9 +66,7 @@ class Transformation
         self
     end
 
-
 end
-
 
 WIDTH = 10
 n = 2_500 # Integer(ARGV[0])
@@ -89,4 +86,3 @@ while n > 0
     puts "\t:"+j.to_s
     n -= WIDTH
 end
-

@@ -35,8 +35,6 @@ end
 
 opt.parse!
 
-
-
 h = {}
 COMMENTS = Hash.new { |h, name| h[name] = name }
 

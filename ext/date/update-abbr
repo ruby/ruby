@@ -13,7 +13,6 @@ doc.css('#tz-abb tbody tr').each do |tr|
   next if offset.include?('/') # skip ambiguous timezones
   next if offset.empty?
 
-
   hour, min = offset.split(':', 2)
   offset = (Integer(hour) * 60 + (Integer(min || 0)))*60
   if h.has_key?(abbr)

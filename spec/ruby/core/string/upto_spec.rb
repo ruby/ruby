@@ -57,7 +57,6 @@ describe "String#upto" do
     -> { "abc".upto(mock('x')){ } }.should raise_error(TypeError)
   end
 
-
   it "does not work with symbols" do
     -> { "a".upto(:c).to_a }.should raise_error(TypeError)
   end

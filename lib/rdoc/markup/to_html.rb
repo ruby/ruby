@@ -445,4 +445,3 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
 end
-

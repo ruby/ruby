@@ -15,7 +15,6 @@ module Fiddle
     RBasic = struct ['void * flags',
                      'void * klass' ]
 
-
     RObject = struct [
       { 'basic' => RBasic },
       { 'as'    => union([
@@ -24,7 +23,6 @@ module Fiddle
                                               'void * iv_index_tbl' ]) },
                              'void *ary[3]' ])}
     ]
-
 
     def test_basic_embedded_members
       assert_equal 0, RObject.offsetof("basic.flags")

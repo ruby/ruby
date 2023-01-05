@@ -4063,7 +4063,6 @@ block_param_def	: '|' opt_bv_decl '|'
 		    }
 		;
 
-
 opt_bv_decl	: opt_nl
 		    {
 			$$ = 0;
@@ -4675,7 +4674,6 @@ p_find		: p_rest ',' p_args_post ',' p_rest
 			$$ = new_find_pattern_tail(p, $1, $3, $5, &@$);
 		    }
 		;
-
 
 p_rest		: tSTAR tIDENTIFIER
 		    {
@@ -5714,7 +5712,6 @@ f_arg		: f_arg_item
 		    }
 		;
 
-
 f_label 	: tLABEL
 		    {
 			arg_var(p, formal_argument(p, $1));
@@ -5778,7 +5775,6 @@ f_block_kwarg	: f_block_kw
 		    /*% ripper: rb_ary_push($1, get_value($3)) %*/
 		    }
 		;
-
 
 f_kwarg		: f_kw
 		    {

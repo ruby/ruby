@@ -76,7 +76,6 @@ a3EqpAIEAKUDAgET
 -----END SSL SESSION PARAMETERS-----
 __EOS__
 
-
   def test_session_time
     sess = OpenSSL::SSL::Session.new(DUMMY_SESSION_NO_EXT)
     sess.time = (now = Time.now)

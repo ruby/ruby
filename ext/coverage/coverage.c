@@ -363,7 +363,6 @@ rb_coverage_peek_result(VALUE klass)
     return ncoverages;
 }
 
-
 static int
 clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
 {
@@ -435,7 +434,6 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     }
     return ncoverages;
 }
-
 
 /*
  *  call-seq:

@@ -435,7 +435,6 @@ class RDoc::Parser::C < RDoc::Parser
     end
   end
 
-
   ##
   # Scans #content for rb_include_module
 
@@ -1032,7 +1031,6 @@ class RDoc::Parser::C < RDoc::Parser
                             args = (1..p_count).map { |i| "p#{i}" }
                             "(#{args.join ', '})"
                           end
-
 
         meth_obj.record_location @top_level
 

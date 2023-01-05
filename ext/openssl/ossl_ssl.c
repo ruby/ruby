@@ -1507,7 +1507,6 @@ ossl_sslctx_get_session_cache_stats(VALUE self)
     return hash;
 }
 
-
 /*
  *  call-seq:
  *     ctx.flush_sessions(time) -> self
@@ -3078,7 +3077,6 @@ Init_ossl_ssl(void)
     /* Deprecated in OpenSSL 1.1.0. */
     rb_define_const(mSSL, "OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG", ULONG2NUM(SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG));
 
-
     /*
      * SSL/TLS version constants. Used by SSLContext#min_version= and
      * #max_version=
@@ -3097,7 +3095,6 @@ Init_ossl_ssl(void)
     /* TLS 1.3 */
     rb_define_const(mSSL, "TLS1_3_VERSION", INT2NUM(TLS1_3_VERSION));
 #endif
-
 
     sym_exception = ID2SYM(rb_intern_const("exception"));
     sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));

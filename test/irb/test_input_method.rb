@@ -76,4 +76,3 @@ module TestIRB
     end
   end
 end
-

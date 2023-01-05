@@ -159,4 +159,3 @@ while::
 yield::
   Starts execution of the block sent to the current method.  See
   {methods}[rdoc-ref:syntax/methods.rdoc]
-

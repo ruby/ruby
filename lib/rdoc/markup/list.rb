@@ -99,4 +99,3 @@ class RDoc::Markup::List
   end
 
 end
-

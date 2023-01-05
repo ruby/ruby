@@ -125,7 +125,6 @@ a,b,c
     CSV
   end
 
-
   if respond_to?(:ractor)
     ractor
     def test_append_row_in_ractor

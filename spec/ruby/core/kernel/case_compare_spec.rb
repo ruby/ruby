@@ -1,7 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-
 module Specs
   module Kernel
 
@@ -31,7 +30,6 @@ module Specs
     end
   end
 end
-
 
 describe "Kernel#=== for a class with default #== and #equal?" do
   before :each do

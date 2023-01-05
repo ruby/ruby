@@ -189,7 +189,6 @@ class CGI
     end
     private :create_new_id
 
-
     # Create a new file to store the session data.
     #
     # This file will be created if it does not exist, or opened if it

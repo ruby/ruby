@@ -25,5 +25,3 @@ gets
 
 p it.bar('2') {|n| n * 3}
 gets
-
-

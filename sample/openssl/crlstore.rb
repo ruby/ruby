@@ -5,7 +5,6 @@ rescue LoadError
 end
 require 'c_rehash'
 
-
 class CrlStore
   def initialize(c_store)
     @c_store = c_store

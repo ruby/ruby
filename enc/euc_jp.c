@@ -419,7 +419,6 @@ is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc ARG_
     return FALSE;
 }
 
-
 static const OnigCodePoint CR_Hiragana[] = {
   1,
 #ifdef ENC_EUC_JIS_2004
@@ -557,7 +556,6 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
     return 0;
   }
 }
-
 
 OnigEncodingDefine(euc_jp, EUC_JP) = {
   mbc_enc_len,

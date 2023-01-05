@@ -53,4 +53,3 @@ end
 n.times do
     ntoggle = NthToggle.new 1, 3
 end
-

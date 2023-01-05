@@ -5527,7 +5527,6 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
     UNREACHABLE_RETURN(Qundef);
 }
 
-
 /*
  *  Document-class: File::Stat
  *

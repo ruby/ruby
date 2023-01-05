@@ -237,7 +237,6 @@ describe "String#%" do
 
     ("%*.*f" % [w, p, 1]).should == "   1.00000"
 
-
     w = mock('10')
     w.should_receive(:to_int).and_return(10)
 

@@ -4,7 +4,6 @@
   </a>
 </p>
 
-
 YJIT - Yet Another Ruby JIT
 ===========================
 

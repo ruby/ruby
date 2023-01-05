@@ -151,7 +151,6 @@ class TestCase < Test::Unit::TestCase
     end
   end
 
-
   def test_deoptimize_nil
     assert_equal :not_nil, NilEqqClass.new.eqq(nil)
   end

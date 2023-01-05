@@ -680,7 +680,6 @@ rb_singleton_class_internal_p(VALUE sklass)
 #define ENSURE_EIGENCLASS(klass) \
     (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
 
-
 /*!
  * Creates a metaclass of \a klass
  * \param klass     a class
@@ -738,7 +737,6 @@ make_singleton_class(VALUE obj)
     SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
     return klass;
 }
-
 
 static VALUE
 boot_defclass(const char *name, VALUE super)
@@ -853,7 +851,6 @@ Init_class_hierarchy(void)
     ENSURE_EIGENCLASS(rb_cRefinement);
 }
 
-
 /*!
  * \internal
  * Creates a new *singleton class* for an object.
@@ -886,7 +883,6 @@ rb_define_class_id(ID id, VALUE super)
 
     return klass;
 }
-
 
 /*!
  * Calls Class#inherited.
@@ -2315,7 +2311,6 @@ unknown_keyword_error(VALUE hash, const ID *table, int keywords)
     }
     rb_keyword_error("unknown", rb_hash_keys(hash));
 }
-
 
 static int
 separate_symbol(st_data_t key, st_data_t value, st_data_t arg)

@@ -32,7 +32,6 @@ while line = ARGF.gets
         end
       end
 
-
       if /__NEXT_INSN__/ !~ line && /\[end  \] (\w+)/ =~ line
         ename = $1
         if name != ename

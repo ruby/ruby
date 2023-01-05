@@ -83,7 +83,6 @@ describe "Enumerable#one?" do
     end
   end
 
-
   describe 'when given a pattern argument' do
     it "calls `===` on the pattern the return value " do
       pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }

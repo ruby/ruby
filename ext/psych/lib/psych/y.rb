@@ -7,4 +7,3 @@ module Kernel
   end
   private :y
 end
-

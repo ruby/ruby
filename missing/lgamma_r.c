@@ -47,7 +47,6 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
                 + 0.5 * LOG_2PI - log(v) - x + (x - 0.5) * log(x);
 }
 
-
 #ifdef __MINGW_ATTRIB_PURE
 /* get rid of bugs in math.h of mingw */
 #define modf(_X, _Y) __extension__ ({\

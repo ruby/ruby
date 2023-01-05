@@ -164,7 +164,6 @@ describe "IO#external_encoding" do
         Encoding.default_internal = Encoding::IBM866
       end
 
-
       it "returns the external encoding specified when the instance was created" do
         @io = new_io @name, "r:utf-8"
         Encoding.default_external = Encoding::IBM437

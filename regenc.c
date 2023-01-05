@@ -583,7 +583,6 @@ onigenc_get_case_fold_codes_by_str_with_map(int map_size,
   return 0;
 }
 
-
 extern int
 onigenc_not_support_get_ctype_code_range(OnigCtype ctype ARG_UNUSED,
 	 OnigCodePoint* sb_out ARG_UNUSED,

@@ -40,4 +40,3 @@ n.step(n - 2, -1) do |exponent|
   count = sieve(m)
   printf "Primes up to %8d %8d\n", m, count
 end
-

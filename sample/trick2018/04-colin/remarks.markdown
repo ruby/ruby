@@ -52,7 +52,6 @@ It has been tested with the following Ruby versions:
 * ruby 2.3.0p0 (2015-12-25 revision 53290) [x86_64-darwin15]
 * If you replace `b&.[]` with `b&&b[]` it will work with ruby 2.0.0 as well, but it will be one character longer.
 
-
 ### Description
 
 The goal was to create a testing library where the test files looked good and the output looked good in as few characters as possible. The result is 68 characters and has one method to handle everything.

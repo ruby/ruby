@@ -338,7 +338,6 @@ _end_of_pem_
     fac.serial_number = 1
     fac.allowed_digests = ["sha1"]
 
-
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       fac.create_timestamp(ee_key, intermediate_cert, req)
     end

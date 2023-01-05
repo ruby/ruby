@@ -50,5 +50,4 @@
 # endif
 #endif /* STATIC_ASSERT */
 
-
 #endif /* BIGDECIMAL_STATIC_ASSERT_H */

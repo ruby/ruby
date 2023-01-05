@@ -1691,7 +1691,6 @@ EOT
     }
   end
 
-
   def test_binmode_decode_universal_newline
     with_tmpdir {
       generate_file("t.txt", "a\n")

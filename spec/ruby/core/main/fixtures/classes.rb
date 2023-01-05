@@ -8,7 +8,6 @@ module MainSpecs
   DATA = {}
 end
 
-
 def main_public_method
 end
 public :main_public_method

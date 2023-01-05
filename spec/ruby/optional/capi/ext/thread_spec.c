@@ -119,7 +119,6 @@ static VALUE thread_spec_rb_thread_wait_for(VALUE self, VALUE s, VALUE ms) {
   return Qnil;
 }
 
-
 VALUE thread_spec_call_proc(void *arg_ptr) {
   VALUE arg_array = (VALUE)arg_ptr;
   VALUE arg = rb_ary_pop(arg_array);

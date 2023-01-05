@@ -892,7 +892,6 @@ load_unlock(rb_vm_t *vm, const char *ftptr, int done)
     }
 }
 
-
 /*
  *  call-seq:
  *     require(name)    -> true or false

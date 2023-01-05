@@ -72,4 +72,3 @@ When the interpreter calls to a YJIT-optimised method again, control will return
 When YJIT has compiled an ISEQ and is running it later, sometimes it will hit an unexpected condition. It might see a parameter of a different type than before, or square-brackets might be used on a hash when they were first used on an array. In those cases, the generated code will contain a call to return to the interpreter at runtime, called a “side exit.”
 
 Side exits are generated as out-of-line code.
-

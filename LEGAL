@@ -48,7 +48,6 @@ mentioned below.
 
 	@(#)subr_prf.c	8.3 (Berkeley) 1/21/94
 
-
 [ccan/build_assert/build_assert.h]
 [ccan/check_type/check_type.h]
 [ccan/container_of/container_of.h]
@@ -303,7 +302,6 @@ mentioned below.
     Copyright (C) 2001-2002:: International Business Machines
                               Corporation and others.  All Rights Reserved.
 
-
 [configure]
 
   This file is free software.
@@ -505,7 +503,6 @@ mentioned below.
     LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
     NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 
     Any feedback is very welcome.
     http://www.math.keio.ac.jp/matumoto/emt.html

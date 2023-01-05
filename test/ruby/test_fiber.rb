@@ -379,7 +379,6 @@ class TestFiber < Test::Unit::TestCase
     }
   end
 
-
   def test_fork_from_fiber
     omit 'fork not supported' unless Process.respond_to?(:fork)
     pid = nil

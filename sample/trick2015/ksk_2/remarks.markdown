@@ -14,7 +14,6 @@ format (see Description for detail).  It has been confirmed to be run on
 For particular inputs, the program works differently on these environments
 (see Limitation).
 
-
 ### Description
 
 The program is a very small SAT solver with 194 bytes making use of a
@@ -64,7 +63,6 @@ The program is very small with no other external libraries thanks to
 the wealth of string manipulations in Ruby.  It is much smaller than
 existing small SAT solvers like [minisat](http://minisat.se/) and
 [picosat](http://fmv.jku.at/picosat/)!
-
 
 ### Internals
 
@@ -132,7 +130,6 @@ which should be translated into a string ``1 2 -3``.  The golfed code simply
 does it by `eval(x+?1)*i-=1` where ``x`` is matched string ``"x"`` or ``""``
 and ``i`` be a negated index.
 
-
 ### Data files
 
 The submission includes some input files in the DIMACS CNF format for
@@ -149,7 +146,6 @@ testing the program.
   where a single clause may be on multiple lines.
 
 * [uf20-01.cnf](uf20-01.cnf) : an example, with 20 variables and 91 clauses, from [SATLIB benchmark suite](http://www.cs.ubc.ca/~hoos/SATLIB/benchm.html).  The last two lines are removed from the original because they are illegal in the DIMACS CNF format (all examples in 'Uniform Random-3-SAT' of the linked page need this modification).
-
 
 ### Limitation
 

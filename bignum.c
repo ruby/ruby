@@ -2932,7 +2932,6 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
     }
 }
 
-
 #ifndef BIGNUM_DEBUG
 # define BIGNUM_DEBUG (0+RUBY_DEBUG)
 #endif
@@ -3516,7 +3515,6 @@ rb_absint_singlebit_p(VALUE val)
     d = *dp;
     return POW2_P(d);
 }
-
 
 /*
  * Export an integer into a buffer.
@@ -5431,7 +5429,6 @@ rb_integer_float_eq(VALUE x, VALUE y)
     return rb_big_eq(x, y);
 }
 
-
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
 {
@@ -6069,7 +6066,6 @@ bigdivmod(VALUE x, VALUE y, volatile VALUE *divp, volatile VALUE *modp)
         *modp = mod;
     }
 }
-
 
 static VALUE
 rb_big_divide(VALUE x, VALUE y, ID op)

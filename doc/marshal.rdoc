@@ -310,4 +310,3 @@ containing the data.
 
 Upon loading a new instance must be allocated and +marshal_load+ must be
 called on the instance with the data.
-

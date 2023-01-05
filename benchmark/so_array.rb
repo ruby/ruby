@@ -19,5 +19,3 @@ n.times{|bi|
   end
 end
 # puts "#{y.first} #{y.last}"
-
-

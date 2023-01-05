@@ -1375,7 +1375,6 @@ rb_szqueue_empty_p(VALUE self)
     return RBOOL(queue_length(self, &sq->q) == 0);
 }
 
-
 /* ConditionalVariable */
 struct rb_condvar {
     struct ccan_list_head waitq;

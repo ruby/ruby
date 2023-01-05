@@ -61,4 +61,3 @@ if __FILE__ == $0
   end
   DRb.thread.join
 end
-

@@ -23,4 +23,3 @@ RSpec.describe BeEmptyMatcher do
     expect(matcher.negative_failure_message).to eq(["Expected \"\"", "not to be empty"])
   end
 end
-

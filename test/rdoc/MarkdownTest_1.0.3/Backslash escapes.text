@@ -32,8 +32,6 @@ Plus: \+
 
 Minus: \-
 
-
-
 These should not, because they occur within a code block:
 
 	Backslash: \\
@@ -68,7 +66,6 @@ These should not, because they occur within a code block:
 
 	Minus: \-
 
-
 Nor should these, which occur in code spans:
 
 Backslash: `\\`
@@ -102,7 +99,6 @@ Bang: `\!`
 Plus: `\+`
 
 Minus: `\-`
-
 
 These should get escaped, even though they're matching pairs for
 other Markdown constructs:

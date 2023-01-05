@@ -85,5 +85,3 @@ if __FILE__ == $0
     t.join
   end
 end
-
-

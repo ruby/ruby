@@ -28,7 +28,6 @@ typedef struct {
     char *bits;  /* used for d_isdir and d_isrep */
 } DIR;
 
-
 DIR*           rb_w32_opendir(const char*);
 DIR*           rb_w32_uopendir(const char*);
 struct direct* rb_w32_readdir(DIR *, rb_encoding *);

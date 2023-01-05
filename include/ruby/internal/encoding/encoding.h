@@ -402,7 +402,6 @@ VALUE rb_enc_associate(VALUE obj, rb_encoding *enc);
  */
 void rb_enc_copy(VALUE dst, VALUE src);
 
-
 /**
  * Identical to rb_find_encoding(),  except it takes an  encoding index instead
  * of a Ruby object.
@@ -592,7 +591,6 @@ rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
      * We choose the most portable one here.
      */
 }
-
 
 /**
  * Identical to rb_enc_codepoint(),  except it assumes the  passed character is

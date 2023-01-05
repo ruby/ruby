@@ -4,10 +4,8 @@ require 'cgi'
 require 'stringio'
 require_relative 'update_env'
 
-
 class CGITagHelperTest < Test::Unit::TestCase
   include UpdateEnv
-
 
   def setup
     @environ = {}
@@ -19,12 +17,10 @@ class CGITagHelperTest < Test::Unit::TestCase
     #ENV.update(@environ)
   end
 
-
   def teardown
     ENV.update(@environ)
     $stdout = STDOUT
   end
-
 
   def test_cgi_tag_helper_html3
     update_env(

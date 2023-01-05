@@ -896,7 +896,6 @@ Init_Foo(void) {
     assert_equal "a comment for class Foo", klass.comment.text
   end
 
-
   def test_find_class_comment_initvm
     content = <<-EOF
 /*
@@ -2068,4 +2067,3 @@ void Init_Blah(void) {
   end
 
 end
-

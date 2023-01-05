@@ -120,7 +120,6 @@ assert_equal '[1, 2]',          'def nil.to_a; [2]; end; [1, *nil]'
 assert_equal '[1, 2]',          'def nil.to_a; [1, 2]; end; [*nil]'
 assert_equal '[0, 1, {2=>3}]',  '[0, *[1], 2=>3]', "[ruby-dev:31592]"
 
-
 # hash
 assert_equal 'Hash',            '{}.class'
 assert_equal '{}',              '{}.inspect'

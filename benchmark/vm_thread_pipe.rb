@@ -14,4 +14,3 @@ r, w = IO.pipe
   }
   p "r:exit"
 }].each{|t| t.join}
-

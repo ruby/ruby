@@ -26,4 +26,3 @@
 #else
 #define FFI_HIDDEN
 #endif
-

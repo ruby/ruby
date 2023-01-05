@@ -22,5 +22,4 @@ VALUE ossl_bn_new(const BIGNUM *);
 BIGNUM *ossl_bn_value_ptr(volatile VALUE *);
 void Init_ossl_bn(void);
 
-
 #endif /* _OSS_BN_H_ */

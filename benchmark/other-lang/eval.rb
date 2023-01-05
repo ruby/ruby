@@ -63,4 +63,3 @@ Bench.each_with_index{|b, bi|
   print b, "\t"
   puts Result[bi].map{|e| e[1]}.join("\t")
 }
-

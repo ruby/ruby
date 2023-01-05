@@ -14,4 +14,3 @@ end
   ans = ts.take(['ans', DRb.uri, n, nil])
   p [ans[2], ans[3]]
 end
-

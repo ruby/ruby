@@ -392,7 +392,6 @@ Executions:
   $ ruby explicit_array_values.rb -x baz
   explicit_array_values.rb:9:in `<main>': invalid argument: -x baz (OptionParser::InvalidArgument)
 
-
 ===== Explicit Values in Hash
 
 You can specify explicit argument values in a hash with string keys.

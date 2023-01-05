@@ -262,7 +262,6 @@ class DBM < ::DBM
         a
     end
 
-
     # :call-seq:
     #   ydbm.to_hash -> hash
     #

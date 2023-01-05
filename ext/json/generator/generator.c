@@ -1351,7 +1351,6 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
     return Qnil;
 }
 
-
 /*
 * call-seq: check_circular?
 *

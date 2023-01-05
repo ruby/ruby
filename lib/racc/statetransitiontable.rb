@@ -59,7 +59,6 @@ module Racc
     end
   end
 
-
   class StateTransitionTableGenerator
 
     def initialize(states)
@@ -256,7 +255,6 @@ module Racc
     end
 
   end
-
 
   class ParserClassGenerator
 

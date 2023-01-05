@@ -1,7 +1,6 @@
 require 'date'
 require_relative '../../spec_helper'
 
-
 describe "Date#new_start" do
   it "converts a date object into another with a new calendar reform" do
     Date.civil(1582, 10, 14, Date::ENGLAND).new_start.should == Date.civil(1582, 10, 24)

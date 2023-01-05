@@ -14,4 +14,3 @@ ARGF.each{|line|
     puts '%-40s 0x%08x %8d %8d' % [src, addr, retired, ticks]
   end
 }
-

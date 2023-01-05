@@ -59,7 +59,6 @@
  *
  */
 
-
 /*** SHA-256/384/512 Machine Architecture Definitions *****************/
 /*
  * BYTE_ORDER NOTE:
@@ -120,13 +119,11 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 
 #endif /* SHA2_USE_INTTYPES_H */
 
-
 /*** SHA-256/384/512 Various Length Definitions ***********************/
 /* NOTE: Most of these are in sha2.h */
 #define SHA256_SHORT_BLOCK_LENGTH	(SHA256_BLOCK_LENGTH - 8)
 #define SHA384_SHORT_BLOCK_LENGTH	(SHA384_BLOCK_LENGTH - 16)
 #define SHA512_SHORT_BLOCK_LENGTH	(SHA512_BLOCK_LENGTH - 16)
-
 
 #if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(__GNUC__) || defined(__IBMC__)
 #define ULL(number)	number##ULL
@@ -189,7 +186,6 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 #define MEMCPY_BCOPY(d,s,l)	bcopy((s), (d), (l))
 #endif
 
-
 /*** THE SIX LOGICAL FUNCTIONS ****************************************/
 /*
  * Bit shifting and rotation (used by the six SHA-XYZ logical functions:
@@ -230,7 +226,6 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 void SHA512_Last(SHA512_CTX*);
 void SHA256_Transform(SHA256_CTX*, const sha2_word32*);
 void SHA512_Transform(SHA512_CTX*, const sha2_word64*);
-
 
 /*** SHA-XYZ INITIAL HASH VALUES AND CONSTANTS ************************/
 /* Hash constant words K for SHA-256: */
@@ -339,7 +334,6 @@ static const sha2_word64 sha512_initial_hash_value[8] = {
  */
 static const char *sha2_hex_digits = "0123456789abcdef";
 
-
 /*** SHA-256: *********************************************************/
 int SHA256_Init(SHA256_CTX* context) {
 	if (context == (SHA256_CTX*)0) {
@@ -364,7 +358,6 @@ int SHA256_Init(SHA256_CTX* context) {
 	(d) += T1; \
 	(h) = T1 + Sigma0_256(a) + Maj((a), (b), (c)); \
 	j++
-
 
 #else /* BYTE_ORDER == LITTLE_ENDIAN */
 
@@ -670,7 +663,6 @@ char* SHA256_Data(const sha2_byte* data, size_t len, char digest[SHA256_DIGEST_S
 	return SHA256_End(&context, digest);
 }
 
-
 /*** SHA-512: *********************************************************/
 int SHA512_Init(SHA512_CTX* context) {
 	if (context == (SHA512_CTX*)0) {
@@ -694,7 +686,6 @@ int SHA512_Init(SHA512_CTX* context) {
 	(d) += T1, \
 	(h) = T1 + Sigma0_512(a) + Maj((a), (b), (c)), \
 	j++
-
 
 #else /* BYTE_ORDER == LITTLE_ENDIAN */
 
@@ -1003,7 +994,6 @@ char* SHA512_Data(const sha2_byte* data, size_t len, char digest[SHA512_DIGEST_S
 	return SHA512_End(&context, digest);
 }
 
-
 /*** SHA-384: *********************************************************/
 int SHA384_Init(SHA384_CTX* context) {
 	if (context == (SHA384_CTX*)0) {
@@ -1078,4 +1068,3 @@ char* SHA384_Data(const sha2_byte* data, size_t len, char digest[SHA384_DIGEST_S
 	SHA384_Update(&context, data, len);
 	return SHA384_End(&context, digest);
 }
-

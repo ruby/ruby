@@ -564,4 +564,3 @@ TRANS_INIT(iso2022)
     rb_register_transcoder(&rb_cp50220_encoder);
     rb_register_transcoder(&rb_cp50221_encoder);
 }
-

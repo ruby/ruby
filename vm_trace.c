@@ -1246,7 +1246,6 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     n += rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line, target_bmethod);
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
-
     if (n == 0) {
         rb_raise(rb_eArgError, "can not enable any hooks");
     }

@@ -48,7 +48,6 @@ NOINLINE(void _rb_wasm_longjmp(rb_wasm_jmp_buf *env, int payload));
 // Used by the top level Asyncify handling in wasm/runtime.c
 void *rb_wasm_handle_jmp_unwind(void);
 
-
 //
 // POSIX-compatible declarations
 //
@@ -57,7 +56,6 @@ typedef rb_wasm_jmp_buf jmp_buf;
 
 #define setjmp(env) rb_wasm_setjmp(env)
 #define longjmp(env, payload) rb_wasm_longjmp(env, payload)
-
 
 typedef void (*rb_wasm_try_catch_func_t)(void *ctx);
 

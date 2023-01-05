@@ -602,7 +602,6 @@ module Racc
 
   end   # class Grammar
 
-
   class Rule
 
     def initialize(target, syms, act)
@@ -723,7 +722,6 @@ module Racc
 
   end   # class Rule
 
-
   class UserAction
 
     def UserAction.source_text(src)
@@ -771,7 +769,6 @@ module Racc
 
   end
 
-
   class OrMark
     def initialize(lineno)
       @lineno = lineno
@@ -785,7 +782,6 @@ module Racc
 
     attr_reader :lineno
   end
-
 
   class Prec
     def initialize(symbol, lineno)
@@ -802,7 +798,6 @@ module Racc
     attr_reader :symbol
     attr_reader :lineno
   end
-
 
   #
   # A set of rule and position in it's RHS.
@@ -864,7 +859,6 @@ module Racc
     end
 
   end   # class LocationPointer
-
 
   class SymbolTable
 
@@ -966,7 +960,6 @@ module Racc
     end
 
   end   # class SymbolTable
-
 
   # Stands terminal and nonterminal symbols.
   class Sym

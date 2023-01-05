@@ -124,4 +124,3 @@ class TestRDocMarkupToTableOfContents < RDoc::Markup::FormatterTestCase
   end
 
 end
-

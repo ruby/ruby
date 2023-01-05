@@ -112,7 +112,6 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
-
   it "creates a new file when use File::WRONLY|File::TRUNC mode" do
     @fh = File.new(@file, File::WRONLY|File::TRUNC)
     @fh.should be_kind_of(File)

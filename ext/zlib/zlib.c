@@ -357,7 +357,6 @@ raise_zlib_error(int err, const char *msg)
     rb_exc_raise(exc);
 }
 
-
 /*--- Warning (in finalizer) ---*/
 
 static void
@@ -367,7 +366,6 @@ finalizer_warn(const char *msg)
     fprintf(stderr, "zlib(finalizer): %s\n", msg);
 #endif
 }
-
 
 /*-------- module Zlib --------*/
 
@@ -554,8 +552,6 @@ rb_zlib_crc_table(VALUE obj)
     }
     return dst;
 }
-
-
 
 /*-------- zstream - internal APIs --------*/
 
@@ -1312,7 +1308,6 @@ get_zstream(VALUE obj)
     return z;
 }
 
-
 /* ------------------------------------------------------------------------- */
 
 /*
@@ -1548,7 +1543,6 @@ rb_zstream_closed_p(VALUE obj)
     return ZSTREAM_IS_READY(z) ? Qfalse : Qtrue;
 }
 
-
 /* ------------------------------------------------------------------------- */
 
 /*
@@ -1567,7 +1561,6 @@ rb_zstream_closed_p(VALUE obj)
 #define ARG_MEMLEVEL(val)  FIXNUMARG((val), DEF_MEM_LEVEL)
 #define ARG_STRATEGY(val)  FIXNUMARG((val), Z_DEFAULT_STRATEGY)
 #define ARG_FLUSH(val)     FIXNUMARG((val), Z_NO_FLUSH)
-
 
 static VALUE
 rb_deflate_s_allocate(VALUE klass)
@@ -1924,7 +1917,6 @@ rb_deflate_set_dictionary(VALUE obj, VALUE dic)
 
     return dic;
 }
-
 
 /* ------------------------------------------------------------------------- */
 
@@ -2293,8 +2285,6 @@ rb_inflate_set_dictionary(VALUE obj, VALUE dic)
     return dic;
 }
 
-
-
 #if GZIP_SUPPORT
 
 /* NOTE: Features for gzip files of Ruby/zlib are written from scratch
@@ -2341,8 +2331,6 @@ rb_inflate_set_dictionary(VALUE obj, VALUE dic)
 
 static ID id_write, id_readpartial, id_flush, id_seek, id_close, id_path, id_input;
 static VALUE cGzError, cNoFooter, cCRCError, cLengthError;
-
-
 
 /*-------- gzfile internal APIs --------*/
 
@@ -3110,7 +3098,6 @@ get_gzfile(VALUE obj)
     return gz;
 }
 
-
 /* ------------------------------------------------------------------------- */
 
 /*
@@ -3149,7 +3136,6 @@ get_gzfile(VALUE obj)
  * (due to internal structure, documentation may appear under Zlib::GzipReader
  * or Zlib::GzipWriter)
  */
-
 
 typedef struct {
     int argc;
@@ -3773,8 +3759,6 @@ rb_gzwriter_putc(VALUE obj, VALUE ch)
     return ch;
 }
 
-
-
 /*
  * Document-method: <<
  * Same as IO.
@@ -3795,7 +3779,6 @@ rb_gzwriter_putc(VALUE obj, VALUE ch)
  * Same as IO.
  */
 #define rb_gzwriter_puts  rb_io_puts
-
 
 /* ------------------------------------------------------------------------- */
 

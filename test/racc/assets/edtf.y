@@ -59,7 +59,6 @@ rule
 
   negative_date :  '-' positive_date { result = -val[1] }
 
-
   date_time : date T time {
     result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2])
     result.skip_timezone = (val[2].length == 3)
@@ -81,7 +80,6 @@ rule
   positive_zone_offset : zone_offset_hour
                        | '0' '0' ':' '0' '0' { result = 0 }
                        ;
-
 
   zone_offset_hour : d01_13 ':' minute   { result = Rational(val[0] * 60 + val[2], 1440) }
                    | '1' '4' ':' '0' '0' { result = Rational(840, 1440) }
@@ -114,7 +112,6 @@ rule
 
   # Completely covered by level_1_interval
   # level_0_interval : date '/' date { result = Interval.new(val[0], val[1]) }
-
 
   # ---- Level 1 Extension Rules ----
 
@@ -156,7 +153,6 @@ rule
     result = Date.new(val[0]).unspecified!([:day,:month])
   }
 
-
   level_1_interval : level_1_start '/' level_1_end {
     result = Interval.new(val[0], val[2])
   }
@@ -164,7 +160,6 @@ rule
   level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified | UNKNOWN
 
   level_1_end : level_1_start | OPEN
-
 
   long_year_simple :
     LONGYEAR long_year
@@ -186,7 +181,6 @@ rule
     | long_year digit { result = 10 * val[0] + val[1] }
     ;
 
-
   season : year '-' season_number ua {
     result = Season.new(val[0], val[2])
     val[3].each { |ua| result.send(ua) }
@@ -197,7 +191,6 @@ rule
                 | '2' '3' { result = 23 }
                 | '2' '4' { result = 24 }
                 ;
-
 
   # ---- Level 2 Extension Rules ----
 
@@ -212,9 +205,7 @@ rule
                      | long_year_scientific
                      ;
 
-
   season_qualified : season '^' { result = val[0]; result.qualifier = val[1] }
-
 
   long_year_scientific :
     long_year_simple E integer
@@ -231,9 +222,7 @@ rule
     }
     ;
 
-
   date_and_calendar : date '^' { result = val[0]; result.calendar = val[1] }
-
 
   masked_precision :
     digit digit digit X
@@ -247,7 +236,6 @@ rule
       result = EDTF::Century.new(d)
     }
     ;
-
 
   choice_list : '[' list ']'   { result = val[1].choice! }
 
@@ -317,7 +305,6 @@ rule
       result.unspecified!(:month)
     }
     ;
-
 
   partial_uncertain_or_approximate : pua_base
     | '(' pua_base ')' UA { result = uoa(val[1], val[3]) }
@@ -459,8 +446,6 @@ rule
           | integer digit  { result = 10 * val[0] + val[1] }
           ;
 
-
-
 ---- header
 require 'strscan'
 
@@ -578,6 +563,5 @@ require 'strscan'
       [:UNMATCHED, @src.rest]
     end
   end
-
 
 # -*- racc -*-

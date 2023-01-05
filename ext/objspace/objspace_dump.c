@@ -368,7 +368,6 @@ dump_append_id(struct dump_config *dc, ID id)
     }
 }
 
-
 static void
 dump_object(VALUE obj, struct dump_config *dc)
 {

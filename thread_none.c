@@ -188,7 +188,6 @@ ubf_timer_disarm(void)
 {
 }
 
-
 // No timer thread because thread switching won't happen
 #define TIMER_THREAD_CREATED_P() (1)
 inline static void

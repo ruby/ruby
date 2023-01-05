@@ -49,4 +49,3 @@ class RDoc::Require < RDoc::CodeObject
   end
 
 end
-

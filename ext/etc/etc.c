@@ -518,7 +518,6 @@ group_ensure(VALUE _)
     return Qnil;
 }
 
-
 static VALUE
 group_iterate(VALUE _)
 {

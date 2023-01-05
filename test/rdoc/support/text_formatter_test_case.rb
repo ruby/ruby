@@ -112,4 +112,3 @@ class RDoc::Markup::TextFormatterTestCase < RDoc::Markup::FormatterTestCase
   end
 
 end
-

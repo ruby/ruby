@@ -71,7 +71,6 @@ module URI
       URI.for(*self.split(uri), self)
     end
 
-
     def join(*uris) # :nodoc:
       uris[0] = convert_to_uri(uris[0])
       uris.inject :merge

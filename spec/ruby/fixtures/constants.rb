@@ -22,7 +22,6 @@
 # methods should behave no differently than instance methods) but is useful
 # for ensuring compliance in implementations.
 
-
 # This constant breaks the rule of defining all constants, classes, modules
 # inside a module namespace for the particular specs, however, it is needed
 # for completeness. No other constant of this name should be defined in the

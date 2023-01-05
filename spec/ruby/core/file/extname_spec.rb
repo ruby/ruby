@@ -68,7 +68,6 @@ describe "File.extname" do
     -> { File.extname("foo.bar", "foo.baz") }.should raise_error(ArgumentError)
   end
 
-
   it "returns the extension for a multibyte filename" do
     File.extname('Имя.m4a').should == ".m4a"
   end

@@ -22,7 +22,6 @@ describe :proc_call, shared: true do
   end
 end
 
-
 describe :proc_call_on_proc_new, shared: true do
   it "replaces missing arguments with nil" do
     Proc.new { |a, b| [a, b] }.send(@method).should == [nil, nil]

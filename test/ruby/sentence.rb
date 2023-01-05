@@ -666,4 +666,3 @@ class Sentence
   # :startdoc:
 
 end
-

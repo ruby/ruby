@@ -565,14 +565,12 @@ describe "Marshal.dump" do
       -> { Marshal.dump("test", obj) }.should raise_error(TypeError)
     end
 
-
     it "calls binmode when it's defined" do
       obj = mock('test')
       obj.should_receive(:write).at_least(1)
       obj.should_receive(:binmode).at_least(1)
       Marshal.dump("test", obj)
     end
-
 
   end
 

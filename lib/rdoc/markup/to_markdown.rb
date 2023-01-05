@@ -189,4 +189,3 @@ class RDoc::Markup::ToMarkdown < RDoc::Markup::ToRdoc
   end
 
 end
-

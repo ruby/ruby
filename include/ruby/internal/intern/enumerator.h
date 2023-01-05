@@ -208,7 +208,6 @@ RBIMPL_SYMBOL_EXPORT_END()
             return SIZED_ENUMERATOR(obj, argc, argv, size_fn);          \
     } while (0)
 
-
 /**
  * Identical  to  #RETURN_SIZED_ENUMERATOR(), except  you  can  specify how  to
  * handle the last element of the given array.

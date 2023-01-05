@@ -38,4 +38,3 @@ class RDoc::Markup::RegexpHandling
   end
 
 end
-

@@ -991,7 +991,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
-
   def test_expand_path_remove_trailing_alternative_data
     assert_equal File.join(rootdir, "aaa"), File.expand_path("#{rootdir}/aaa::$DATA")
     assert_equal File.join(rootdir, "aa:a"), File.expand_path("#{rootdir}/aa:a:$DATA")

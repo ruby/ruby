@@ -33,7 +33,6 @@ static VALUE array_spec_RARRAY_PTR_assign(VALUE self, VALUE array, VALUE value) 
   return Qnil;
 }
 
-
 static VALUE array_spec_RARRAY_PTR_memcpy(VALUE self, VALUE array1, VALUE array2) {
   VALUE *ptr1, *ptr2;
   long size;

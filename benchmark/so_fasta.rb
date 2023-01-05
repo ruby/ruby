@@ -72,10 +72,8 @@ def make_random_fasta(id, desc, table, n)
     end
 end
 
-
 n = (ARGV[0] or 250_000).to_i
 
 make_repeat_fasta('ONE', 'Homo sapiens alu', alu, n*2)
 make_random_fasta('TWO', 'IUB ambiguity codes', iub, n*3)
 make_random_fasta('THREE', 'Homo sapiens frequency', homosapiens, n*5)
-

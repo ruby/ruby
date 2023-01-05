@@ -65,7 +65,6 @@ typedef struct {
   OnigCodePoint to;
 } OnigPairCaseFoldCodes;
 
-
 #ifndef NULL
 # define NULL   ((void* )0)
 #endif
@@ -115,7 +114,6 @@ typedef struct {
   ((ctype) == ONIGENC_CTYPE_WORD || (ctype) == ONIGENC_CTYPE_GRAPH ||\
    (ctype) == ONIGENC_CTYPE_PRINT)
 
-
 typedef struct {
   short int len;
   const UChar name[6];
@@ -135,7 +133,6 @@ typedef struct {
 /* #define USE_UNICODE_CASE_FOLD_TURKISH_AZERI */
 /* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTS #18 */
 
-
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
 
 /* for encoding system implementation (internal) */
@@ -146,7 +143,6 @@ ONIG_EXTERN int onigenc_get_case_fold_codes_by_str_with_map(int map_size, const 
 ONIG_EXTERN int onigenc_not_support_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], OnigEncoding enc);
 ONIG_EXTERN int onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc);
 ONIG_EXTERN int    onigenc_single_byte_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc);
-
 
 /* methods for single byte encoding */
 ONIG_EXTERN int onigenc_ascii_mbc_case_fold(OnigCaseFoldType flag, const UChar** p, const UChar* end, UChar* lower, OnigEncoding enc);
@@ -173,7 +169,6 @@ ONIG_EXTERN int onigenc_mb4_is_code_ctype(OnigEncoding enc, OnigCodePoint code, 
 
 ONIG_EXTERN int onigenc_unicode_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc);
 
-
 /* in enc/unicode.c */
 ONIG_EXTERN int onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc);
 ONIG_EXTERN int onigenc_utf16_32_get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out, const OnigCodePoint* ranges[], OnigEncoding enc);
@@ -181,7 +176,6 @@ ONIG_EXTERN int onigenc_unicode_ctype_code_range(int ctype, const OnigCodePoint*
 ONIG_EXTERN int onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc, OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[]);
 ONIG_EXTERN int onigenc_unicode_mbc_case_fold(OnigEncoding enc, OnigCaseFoldType flag, const UChar** pp, const UChar* end, UChar* fold);
 ONIG_EXTERN int onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag, OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc);
-
 
 #define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
 #define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
@@ -225,7 +219,6 @@ ONIG_EXTERN const unsigned short OnigEncAsciiCtypeTable[];
 /* Check if the code is in the range. (from <= code && code <= to) */
 #define ONIGENC_IS_IN_RANGE(code, from, to) \
   ((OnigCodePoint )((code) - (from)) <= (OnigCodePoint )((to) - (from)))
-
 
 #ifdef ONIG_ENC_REGISTER
 extern int ONIG_ENC_REGISTER(const char *, OnigEncoding);

@@ -130,7 +130,6 @@ ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 #define ONIGENC_CASE_FOLD_MIN      INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR
 #define ONIGENC_CASE_FOLD_DEFAULT  OnigDefaultCaseFoldFlag
 
-
 #define ONIGENC_MAX_COMP_CASE_FOLD_CODE_LEN       3
 #define ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM      13
 /* 13 => Unicode:0x1ffc */
@@ -284,7 +283,6 @@ ONIG_EXTERN const OnigEncodingType OnigEncodingGB18030;
 ONIG_EXTERN
 int onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc);
 
-
 /* work size */
 #define ONIGENC_CODE_TO_MBC_MAXLEN       7
 #define ONIGENC_MBC_CASE_FOLD_MAXLEN    18
@@ -325,7 +323,6 @@ int onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, c
    onigenc_ascii_is_code_ctype( \
 	ONIGENC_MBC_TO_CODE(enc,s,end),ONIGENC_CTYPE_WORD,enc)
 #define ONIGENC_IS_UNICODE(enc)        ((enc)->flags & ONIGENC_FLAG_UNICODE)
-
 
 #define ONIGENC_NAME(enc)                      ((enc)->name)
 
@@ -406,7 +403,6 @@ int onigenc_mbclen(const OnigUChar* p,const OnigUChar* e, const struct OnigEncod
 ONIG_EXTERN
 OnigUChar* onigenc_step_back(OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end, int n);
 
-
 /* encoding API */
 ONIG_EXTERN
 int onigenc_init(void);
@@ -428,8 +424,6 @@ ONIG_EXTERN
 int onigenc_strlen_null(OnigEncoding enc, const OnigUChar* p);
 ONIG_EXTERN
 int onigenc_str_bytelen_null(OnigEncoding enc, const OnigUChar* p);
-
-
 
 /* PART: regular expression */
 
@@ -695,7 +689,6 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 /* errors related to thread */
 /* #define ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT                -1001 */
 
-
 /* must be smaller than BIT_STATUS_BITS_NUM (unsigned int * 8) */
 #define ONIG_MAX_CAPTURE_HISTORY_GROUP   31
 #define ONIG_IS_CAPTURE_HISTORY_GROUP(r, i) \
@@ -729,7 +722,6 @@ struct re_registers {
 #define ONIG_TRAVERSE_CALLBACK_AT_LAST    2
 #define ONIG_TRAVERSE_CALLBACK_AT_BOTH \
   ( ONIG_TRAVERSE_CALLBACK_AT_FIRST | ONIG_TRAVERSE_CALLBACK_AT_LAST )
-
 
 #define ONIG_REGION_NOTPOS            -1
 
@@ -811,7 +803,6 @@ typedef OnigRegexType*  OnigRegex;
 #ifndef ONIG_ESCAPE_REGEX_T_COLLISION
 typedef OnigRegexType  regex_t;
 #endif
-
 
 typedef struct {
   int             num_of_elements;

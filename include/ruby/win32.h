@@ -440,14 +440,12 @@ extern char *rb_w32_strerror(int);
 #define LOCK_NB 4
 #define LOCK_UN 8
 
-
 #ifndef SIGINT
 #define SIGINT 2
 #endif
 #ifndef SIGKILL
 #define SIGKILL	9
 #endif
-
 
 /* #undef va_start */
 /* #undef va_end */

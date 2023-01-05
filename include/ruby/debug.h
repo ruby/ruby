@@ -585,7 +585,6 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
 
-
 /** @} */
 
 /**

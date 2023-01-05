@@ -4,10 +4,8 @@ require 'cgi'
 require 'time'
 require_relative 'update_env'
 
-
 class CGIHeaderTest < Test::Unit::TestCase
   include UpdateEnv
-
 
   def setup
     @environ = {}
@@ -18,11 +16,9 @@ class CGIHeaderTest < Test::Unit::TestCase
     )
   end
 
-
   def teardown
     ENV.update(@environ)
   end
-
 
   def test_cgi_http_header_simple
     cgi = CGI.new
@@ -43,7 +39,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     actual = cgi.http_header('charset'=>'utf8')
     assert_equal(expected, actual)
   end
-
 
   def test_cgi_http_header_complex
     cgi = CGI.new
@@ -71,7 +66,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     assert_equal(expected, actual)
   end
 
-
   def test_cgi_http_header_argerr
     cgi = CGI.new
     expected = ArgumentError
@@ -80,7 +74,6 @@ class CGIHeaderTest < Test::Unit::TestCase
       cgi.http_header(nil)
     end
   end
-
 
   def test_cgi_http_header_cookie
     cgi = CGI.new
@@ -108,7 +101,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     assert_equal(expected, actual)
   end
 
-
   def test_cgi_http_header_output_cookies
     cgi = CGI.new
     ## output cookies
@@ -127,7 +119,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     actual = cgi.http_header('type'=>'text/html', 'charset'=>'utf8')
     assert_equal(expected, actual)
   end
-
 
   def test_cgi_http_header_nph
     time_start = Time.now.to_i
@@ -175,7 +166,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     ENV.delete('SERVER_SOFTWARE')
   end
 
-
   def test_cgi_http_header_crlf_injection
     cgi = CGI.new
     assert_raise(RuntimeError) { cgi.http_header("text/xhtml\r\nBOO") }
@@ -183,7 +173,6 @@ class CGIHeaderTest < Test::Unit::TestCase
     assert_raise(RuntimeError) { cgi.http_header("status" => "200 OK\r\nBOO") }
     assert_raise(RuntimeError) { cgi.http_header("location" => "text/xhtml\r\nBOO") }
   end
-
 
   instance_methods.each do |method|
     private method if method =~ /^test_(.*)/ && $1 != ENV['TEST']

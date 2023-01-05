@@ -9,8 +9,6 @@
 #
 #       Documentation by James Edward Gray II and Gavin Sinclair
 
-
-
 # The Forwardable module provides delegation of specified
 # methods to a designated object, using the methods #def_delegator
 # and #def_delegators.

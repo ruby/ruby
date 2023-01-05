@@ -550,7 +550,6 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
         act = NUM2LONG(act_value);
         goto act_fixed;
 
-
       handle_act:
         if (act > 0 && act < v->shift_n) {
             D_puts("shift");
@@ -585,13 +584,11 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
     }
     /* not reach */
 
-
   accept:
     if (v->debug) rb_funcall(v->parser, id_d_accept, 0);
     v->retval = rb_ary_entry(v->vstack, 0);
     v->fin = CP_FIN_ACCEPT;
     return;
-
 
   error:
     D_printf("error detected, status=%ld\n", v->errstatus);

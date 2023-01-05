@@ -90,4 +90,3 @@ class HTTPRequestTest < Test::Unit::TestCase
   end if Net::HTTP::HAVE_ZLIB
 
 end
-

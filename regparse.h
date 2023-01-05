@@ -86,8 +86,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define NCAR(node)         (NCONS(node)->car)
 #define NCDR(node)         (NCONS(node)->cdr)
 
-
-
 #define ANCHOR_ANYCHAR_STAR_MASK (ANCHOR_ANYCHAR_STAR | ANCHOR_ANYCHAR_STAR_ML)
 #define ANCHOR_END_BUF_MASK      (ANCHOR_END_BUF | ANCHOR_SEMI_END_BUF)
 
@@ -279,7 +277,6 @@ typedef struct _Node {
   } u;
 } Node;
 
-
 #define NULL_NODE  ((Node* )0)
 
 #define SCANENV_MEMNODES_SIZE               8
@@ -325,7 +322,6 @@ typedef struct {
   int sourceline;
 #endif
 } ScanEnv;
-
 
 #define IS_SYNTAX_OP(syn, opm)    (((syn)->op  & (opm)) != 0)
 #define IS_SYNTAX_OP2(syn, opm)   (((syn)->op2 & (opm)) != 0)

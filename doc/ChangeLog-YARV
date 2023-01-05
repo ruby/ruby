@@ -8,11 +8,9 @@ Sun Dec 31 18:01:50 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* bin/* : ruby/trunk/bin 11437
 
-
 Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : remove old Kernel#funcall definition
-
 
 2006-12-30(Sat) 07:59:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -48,7 +46,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_eval.rb : use __send! instead of __send__
 
-
 2006-12-19(Tue) 11:46:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* doc/* : added
@@ -73,13 +70,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test2.rb : removed
 
-
 2006-12-15(Fri) 09:42:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : remove obsolete codes
 
 	* insns.def : fix a comment of getconstant
-
 
 2006-12-13(Wed) 16:26:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -89,7 +84,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	vm_dump.c, vm_evalbody.ci,  vm_opts.h.base,  yarv.h,
 	yarv_version.h, yarvcore.c, yarvcore.h :
 	add a header includes copyright
-
 
 2006-12-12(Tue) 13:13:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -116,7 +110,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_win32.ci : ditto
 
-
 2006-11-10(Fri) 21:29:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix to compile arguments
@@ -129,12 +122,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* sample/test.rb : fix to catch up Ruby HEAD (fix to remove test about
 	module duplicate)
 
-
 2006-11-10(Fri) 12:49:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def : fix to inherit visibility on
 	NODE_SUPER method invocation
-
 
 2006-11-10(Fri) 09:13:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -160,7 +151,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_syntax.rb : add a test about case/when
 
-
 2006-11-09(Thu) 10:22:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* call_cfunc.h -> call_cfunc.ci : renamed
@@ -178,7 +168,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : fix rules for above changes
 
-
 2006-11-08(Wed) 17:23:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c : show C level backtrace (pointer only) with
@@ -189,7 +178,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c : add NSDR method (show C level backtrace)
 
 	* error.c : fix indent
-
 
 2006-11-07(Tue) 13:17:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -205,7 +193,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/dbm, gdbm, io, logger, net, readline, sdbm, soap,
 	  webrick, win32ole, wsdl, xsd : added
-
 
 2006-11-06(Mon) 22:32:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -251,7 +238,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c : add "const"
 
-
 2006-11-06(Mon) 16:36:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_proc.c : remove "static" from external global variables
@@ -270,13 +256,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* template/vm.inc.tmpl : ditto (remove String#each_with_index)
 
-
 2006-11-06(Mon) 13:22:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c : fixed GC debugging outputs
 
 	* rb/parse.rb : fixed output format
-
 
 2006-11-04(Sat) 09:46:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -298,7 +282,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_string.rb : ditto
 
-
 2006-11-03(Fri) 20:58:36 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/nkf/nkf-utf8/utf8tbl.h : missed to add
@@ -318,7 +301,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/strscan/test_stringscanner.rb : ditto
 
 	* test/testunit/collector/test_dir.rb : ditto
-
 
 2006-11-03(Fri) 20:22:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -459,7 +441,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/*
 
-
 2006-10-31(Tue) 22:47:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y : fix NEWHEAP bugs (import HEAD)
@@ -469,12 +450,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/ir.rb : add check mode
 
-
 2006-09-01(Fri) 22:05:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix a bug of peephole optimization and enable
 	regexp optimization
-
 
 2006-08-21(Mon) 05:27:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -483,7 +462,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* opt_insn_unif.def : unset opt setting
 
 	* opt_operand.def : ditto
-
 
 2006-08-18(Fri) 17:55:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -494,7 +472,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* thread.c : remove some line break
 
 	* yarvcore.c : reorder initialize sequence to mark main thread
-
 
 2006-08-18(Fri) 16:51:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -508,7 +485,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add a cast to remove warning
 
-
 2006-08-18(Fri) 02:07:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix to return rhs value on ATTRASGIN
@@ -517,16 +493,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_bin.rb : add tests for above
 
-
 2006-08-17(Thu) 22:46:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : clear callee_id ([yarv-dev:1073])
 
-
 2006-08-17(Thu) 22:14:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.h : fix error message
-
 
 2006-08-17(Thu) 12:23:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -542,18 +515,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_class.rb : add a test for last commit
 
-
 2006-08-17(Thu) 11:02:16 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (clone_method) : check undef-ed method ([yarv-dev:1068])
-
 
 2006-08-15(Tue) 15:07:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix opt_plus routine ([yarv-dev-en:149])
 
 	* yarvtest/test_opts.rb : add tests for above
-
 
 2006-08-06(Sun) 06:24:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -587,23 +557,19 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_opts.rb : added
 
-
 2006-07-20(Thu) 04:10:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix [yarv-dev:1041] problem (raise TypeError)
 
 	* eval.c : rb_funcall2 send as NOEX_PRIVATE and check scope
 
-
 2006-07-20(Thu) 03:38:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix [yarv-dev:1040] bug
 
-
 2006-07-18(Tue) 18:45:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* some files : set property "svn:eol-style" as native
-
 
 2006-07-18(Tue) 18:35:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -614,7 +580,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
         * yarvcore.c : add a comment
 
 	* some files : set property "svn:eol-style" as native
-
 
 2006-07-18(Tue) 16:48:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -628,13 +593,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : use compile instead of parse method
 
-
 2006-07-12(Wed) 15:18:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv_version.h : 0.4.1
 
 	* Changes : ditto
-
 
 2006-07-12(Wed) 13:38:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -659,7 +622,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
         * yarvtest/test_eval.rb : remove output
 
-
 2006-07-12(Wed) 05:01:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : undef alloc funcs
@@ -680,21 +642,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* template/insnstbl.html : hide mail addr
 
-
 2006-07-11(Tue) 21:34:29 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_dir.rb: new test test_JVN_13947696.
-
 
 2006-07-11(Tue) 21:26:41 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_alias.rb: new test test_JVN_83768862.
 
-
 2006-07-11(Tue) 11:33:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix compile error on C90
-
 
 2006-07-11(Tue) 10:40:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -744,11 +702,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : add a type yarv_compile_option_t
 
-
 2006-07-06(Thu) 13:45:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/yasm.rb : pass builder object if block arity == 1
-
 
 2006-07-05(Wed) 11:23:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -756,13 +712,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (th_set_top_stack) : check toplevel or not
 
-
 2006-07-04(Tue) 20:05:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/compile.rb : added
 
 	* yarvtest/yarvtest.rb : disable load/store test
-
 
 2006-07-04(Tue) 18:17:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -780,7 +734,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : add iseq load/store tests
 	(to enable this, remove comment)
-
 
 2006-07-03(Mon) 01:54:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -805,7 +758,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_proc.rb : add a tests for above
 
-
 2006-06-21(Wed) 09:19:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : remove yarv_iseq_t#catch_table_ary and
@@ -821,12 +773,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : add rb_gc_mark_threads() (from eval_thread.c)
 
-
 2006-05-31(Wed) 21:26:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
         * parse.y : prohibit tail call optimization to mark vparsr
 	object
-
 
 2006-05-25(Thu) 15:37:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -846,11 +796,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h.base : change default option
 
-
 2006-05-18(Thu) 16:00:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* intern.h : fix prototype declarations for last re.c change
-
 
 2006-05-18(Thu) 12:12:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -858,7 +806,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_alone) : check if vm->living_threads
 	is available
-
 
 2006-05-18(Thu) 12:05:35 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -870,12 +817,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : mark machine registers on thread_mark
 
-
 2006-05-17(Wed) 18:09:20 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (sys_warning): should not call a vararg function
 	  rb_sys_warning() indirectly.  [ruby-core:07886]
-
 
 2006-05-17(Wed) 16:41:41 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -890,7 +835,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* dir.c (dir_close): should not close untainted dir stream.
 
 	* dir.c (GetDIR): add tainted/frozen check for each dir operation.
-
 
 2006-05-07(Sun) 21:06:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -909,7 +853,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/webrick/server.rb : add experimental implementation
 	using thraeds pool
 
-
 2006-05-05(Fri) 13:59:00 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_signal.rb : disable a test
@@ -917,7 +860,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* thread.c : do trylock before lock on mutex_lock
 
 	* thread_win32.h : use CriticalSection instead of Mutex
-
 
 2006-05-05(Fri) 03:03:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -943,7 +885,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_thread.rb : restore last change
 
-
 2006-05-04(Thu) 18:11:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_thread.c : remove rb_thread_interrupt
@@ -964,11 +905,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_thread.rb : decrease threads to test
 
-
 2006-05-04(Thu) 00:26:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.h : experimental support of thread cache
-
 
 2006-04-25(Tue) 22:30:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -990,7 +929,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : change th_set_top_stack() prototype
 
-
 2006-04-18(Tue) 18:37:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, disasm.c : support export/import exception
@@ -998,7 +936,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : change "struct catch_table_entry" member variable
 	order
-
 
 2006-04-13(Thu) 17:11:30 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1130,11 +1067,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/win32.c : ditto
 
-
 2006-04-11(Tue) 11:26:53 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/yasm.rb : move to lib/yasm.rb
-
 
 2006-04-09(Sun) 03:04:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1145,13 +1080,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/yasm.rb : change some interfaces
 
-
 2006-04-07(Fri) 20:25:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix miss about range of catch "next"
 
 	* eval.c : add braces
-
 
 2006-04-07(Fri) 11:09:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1174,19 +1107,16 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : remove unused externals
 
-
 2006-03-08(Wed) 10:31:29 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/delegate.rb (DelegateClass): do not delegate #send and
 	  #funcall.
-
 
 2006-02-27(Mon) 22:39:17 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/thread.rb: last commit causes busy loop, revert it. [yarv-dev:990]
 
 	* lib/thread.rb: non_block=true wrongly caused ThreadError.
-
 
 2006-02-27(Mon) 21:33:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1224,18 +1154,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix to propagete throw state
 
-
 2006-02-27(Mon) 13:54:47 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/syslog: imported from Ruby CVS trunk HEAD.
 
 	* ext/racc: ditto.
 
-
 2006-02-27(Mon) 12:47:10 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: follow coding style change.
-
 
 2006-02-27(Mon) 11:53:07 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -1251,7 +1178,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/rinda: ditto.
 
-
 2006-02-27(Mon) 11:27:19 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/thread.rb (Queue#pop): faster code. [yarv-dev:973]
@@ -1259,11 +1185,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/thread.rb (Queue#pop): avoid to push same thread in to
 	  @waiting.
 
-
 2006-02-23(Thu) 23:32:53 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/open3.rb: imported from Ruby CVS trunk HEAD (rev 1.12).
-
 
 2006-02-23(Thu) 15:10:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1278,7 +1202,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm.c (th_invoke_proc) : fix to set special cref always
 
 	* yarvtest/test_proc.rb : add a test for above
-
 
 2006-02-22(Wed) 23:33:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1308,23 +1231,19 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : change bootstrap
 
-
 2006-02-22(Wed) 19:27:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/win32ole/.cvsignore : removed
 
 	* ext/win32ole/.document : ditto
 
-
 2006-02-22(Wed) 18:17:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : set Binding as YARVCore::VM::Binding
 
-
 2006-02-22(Wed) 12:54:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* ChangeLog : remove needless line
-
 
 2006-02-22(Wed) 12:49:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1344,11 +1263,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* Changes : ditto
 
-
 2006-02-22(Wed) 11:36:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test.rb : removed
-
 
 2006-02-22(Wed) 11:12:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1357,7 +1274,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* version.c : fixed version message
 
 	* yarvext/ : removed
-
 
 2006-02-22(Wed) 10:33:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1384,16 +1300,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : ditto
 
-
 2006-02-22(Wed) 06:32:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* configure.in : remove last commit
 
-
 2006-02-22(Wed) 06:18:53 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* configure.in : add default program prefix "-yarv"
-
 
 2006-02-22(Wed) 06:11:36 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1411,7 +1324,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : ditto
 
-
 2006-02-22(Wed) 04:50:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : change to rewind C level control frame
@@ -1421,11 +1333,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : remove last commit
 
-
 2006-02-22(Wed) 03:25:56 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : initialize each stack of thread
-
 
 2006-02-22(Wed) 00:02:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1433,7 +1343,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	and some synchornization error
 
 	* thread_pthread.h : add debug helper function
-
 
 2006-02-21(Tue) 20:54:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1465,7 +1374,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : remove yarv_vm_t#thread_critical, etc
 
-
 2006-02-21(Tue) 12:42:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_thread.c : remove unused function rb_thread_schedule()
@@ -1483,18 +1391,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_thread.rb : separate assertions to tests
 
-
 2006-02-21(Tue) 02:13:33 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_arglist): should set command_start = Qtrue for
 	  command body.  [ruby-talk:180648]
 
-
 2006-02-20(Mon) 20:41:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : fix to synchronize signal_thread_list access
 	and fix typo
-
 
 2006-02-20(Mon) 17:54:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1504,7 +1409,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c : support Proc#dup/clone, Binding#dup/clone
 
 	* sample/test.rb : remove unsupported features (Proc as Binding)
-
 
 2006-02-20(Mon) 16:28:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1516,13 +1420,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_jump.h : use local variable
 
-
 2006-02-20(Mon) 15:13:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm3_thread_create_join.rb : added
 
 	* test/yaml/test_yaml.rb : imported from Ruby CVS trunk HEAD
-
 
 2006-02-20(Mon) 14:49:46 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -1531,7 +1433,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/yaml: ditto.
 
 	* ext/syck: ditto.
-
 
 2006-02-20(Mon) 13:58:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1567,16 +1468,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : remove unused functions
 
-
 2006-02-20(Mon) 11:22:31 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_eval.rb: now Object#funcall is defined.
 
-
 2006-02-20(Mon) 11:04:32 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/irb/lc/ja/CVS: removed.
-
 
 2006-02-20(Mon) 10:55:59 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -1596,11 +1494,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/drb: ditto.
 
-
 2006-02-20(Mon) 10:49:31 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* yarvcore.c (Init_yarvcore): fix typo (duo -> dup).
-
 
 2006-02-19(Sun) 01:27:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1612,26 +1508,22 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : remove unused function yarv_yield_values()
 
-
 2006-02-18(Sat) 03:19:36 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, insns.def : fix passing value when thread killed
 
 	* yarvtest/test_thread.rb : add tests for above
-
 
 2006-02-19(Sun) 01:19:42 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/thread.rb (SizedQueue): didn't work.  This patch was
 	  contributed by yukimizake. [yarv-dev:916]
 
-
 2006-02-18(Sat) 03:19:36 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, insns.def : fix passing value when thread killed
 
 	* yarvtest/test_thread.rb : add tests for above
-
 
 2006-02-18(Sat) 02:40:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1639,7 +1531,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	([yarv-dev:914])
 
 	* yarvtest/test_class.rb : add a test for above
-
 
 2006-02-17(Fri) 23:59:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1665,7 +1556,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* benchmark/bm_app_answer.rb : added
 
 	* vm_opts.h.base : add optimize option
-
 
 2006-02-17(Fri) 13:37:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1909,12 +1799,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/zlib/test_zlib.rb : ditto
 
-
 2006-02-17(Fri) 09:41:35 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (sleep_timeval): sleep should always sleep for
 	  specified amount of time.  [ruby-talk:180067]
-
 
 2006-02-17(Fri) 02:20:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1947,7 +1835,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : remove unused functions
 
-
 2006-02-17(Fri) 01:08:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def : remove a setspecial second unused operand
@@ -1965,11 +1852,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix some functions
 
-
 2006-02-16(Thu) 22:58:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, vm.c : use th_yield_setup_args at yield and Proc#call
-
 
 2006-02-16(Thu) 19:51:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -1987,7 +1872,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : fix syntax error (for non GCC)
 
-
 2006-02-15(Wed) 22:34:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_method.h : move rb_clear_cache_by_id position
@@ -1998,11 +1882,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_signal.rb : ditto and enable timeout
 
-
 2006-02-15(Wed) 22:13:29 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/runit: forgot to commit.
-
 
 2006-02-15(Wed) 22:12:25 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -2015,7 +1897,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/thread.rb: ditto.
 
 	* test/inlinetest.rb: forgot to commit.
-
 
 2006-02-15(Wed) 21:34:17 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -2037,18 +1918,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/testunit: ditto.
 
-
 2006-02-15(Wed) 20:03:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_method.h : duplicate NODE_METHOD at make an alias
 
 	* yarvtest/test_method.rb : add a test for above
 
-
 2006-02-15(Wed) 19:48:59 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/rss: imported from Ruby CVS trunk HEAD.
-
 
 2006-02-15(Wed) 19:47:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2056,7 +1934,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	instructions and make new insn definemethod
 
 	* yarvcore.c : set toplevel visibility to private
-
 
 2006-02-15(Wed) 17:39:16 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2083,7 +1960,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : raise exception at join if illegal local jump
 
-
 2006-02-15(Wed) 14:21:45 +900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ChangeLog: add local variables line to support Emacs.
@@ -2098,7 +1974,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* eval.c (rb_obj_instance_eval): should be no singleton classes for
 	  true, false, and nil.  [ruby-dev:28186]
 
-
 2006-02-14(Tue) 19:30:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c : fix indent
@@ -2111,7 +1986,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm.c : fix to raise error if th_yield doesn't have block given
 
 	* yarvcore.c : fix to skip iseq mark array at ObjectSpace.each_object
-
 
 2006-02-14(Tue) 18:15:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2227,7 +2101,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/win32.c : ditto
 
-
 2006-02-14(Tue) 16:40:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, eval_proc.c : fix rb_proc_arity
@@ -2267,7 +2140,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/uri/test_ldap.rb : ditto
 
 	* test/uri/test_mailto.rb : ditto
-
 
 2006-02-14(Tue) 15:59:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2343,7 +2215,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/webrick/version.rb : ditto
 
-
 2006-02-14(Tue) 14:55:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def : support "defined?($1)", ...
@@ -2354,7 +2225,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix to handle break from proc
 
-
 2006-02-14(Tue) 12:42:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : fix rb_iterate hook
@@ -2362,7 +2232,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvtest/test_block.rb : add a tests for above
 
 	* vm.c : remove unused comment
-
 
 2006-02-14(Tue) 12:01:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2375,7 +2244,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/runner.rb : GC.stress (comment out)
 
 	* vm.c : fix indnet
-
 
 2006-02-14(Tue) 08:04:33 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -2398,7 +2266,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_signal.rb: turn off a test to avoid unknown error
 	  (tmp).
 
-
 2006-02-14(Tue) 07:52:03 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/digest: imported from ruby CVS trunk HEAD.
@@ -2410,7 +2277,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/erb: ditto.
 
 	* test/optparse: ditto.
-
 
 2006-02-14(Tue) 06:26:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2424,12 +2290,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (preexe) : remove instruction "preexe"
 
-
 2006-02-14(Tue) 05:53:56 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (ruby_cleanup): th->errinfo contains a NODE while
 	  break'ing, check it before referring klass.
-
 
 2006-02-14(Tue) 05:45:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2437,13 +2301,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* sample/test.rb : remove SEGV causing code
 
-
 2006-02-14(Tue) 02:24:21 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_module.rb: list order is not a matter.
 
 	* test/csv: imported from ruby CVS trunk HEAD.
-
 
 2006-02-14(Tue) 02:06:25 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -2458,41 +2320,34 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_file.rb: new file (imported from ruby CVS trunk
 	  HEAD).
 
-
 2006-02-14(Tue) 01:42:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* error.c : fix include file position
 
 	* test/ruby/test_signal.rb : skip test_exit_action on cygwin
 
-
 2006-02-14(Tue) 01:36:57 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_class.rb: new file (imported from rubicon).
 
-
 2006-02-14(Tue) 01:32:23 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_module.rb: ignore PP mixins.
-
 
 2006-02-14(Tue) 01:24:56 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_lambda.rb: removed (->(){...} syntax is
 	  obsolete).
 
-
 2006-02-14(Tue) 01:20:54 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_module.rb: import many tests from rubicon.
-
 
 2006-02-14(Tue) 01:06:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix to avoid stack consistency error
 
 	* yarvtest/test_exception.rb : add a test for above
-
 
 2006-02-14(Tue) 00:42:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2502,13 +2357,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_class.rb : add a test for above
 
-
 2006-02-14(Tue) 00:31:24 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_eval.rb: fix typo.
 
 	* test/ruby/test_signal.rb: unlock tests.
-
 
 2006-02-13(Mon) 23:53:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2518,7 +2371,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.h : add VM_CALL_SUPER definition
 
 	* yarvtest/test_method.rb : add a test of Module#private_class_method
-
 
 2006-02-13(Mon) 22:49:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2530,13 +2382,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c : fix to prohibit double segv handler kicked
 
-
 2006-02-13(Mon) 22:09:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support NODE_DECL, NODE_CLASS with NODE_CLON3 prefix
 
 	* yarvtest/test_class.rb : add tests for above
-
 
 2006-02-13(Mon) 21:20:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2544,20 +2394,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix to prohibit "redo" from eval expression
 
-
 2006-02-13(Mon) 20:36:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix constant search bug ([yarv-dev:788])
 
 	* yarvtest/test_class.rb : add a test of [yarv-dev:788]
 
-
 2006-02-13(Mon) 18:09:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_clone.rb : enable tests with Class#clone
 
 	* test/ruby/test_marshal.rb : ditto
-
 
 2006-02-13(Mon) 17:42:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2578,7 +2425,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* rb/mklog.rb : add default message
 
 	* vm_macro.def : support NODE_ZSUPER as method type
-
 
 2006-02-13(Mon) 00:11:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2604,7 +2450,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : ditto
 
-
 2006-02-13(Mon) 02:32:34 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_const.rb: show better message.
@@ -2612,7 +2457,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_eval.rb: ditto.
 
 	* test/ruby/test_module.rb: new file.
-
 
 2006-02-12(Sun) 22:22:35 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2735,7 +2579,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* variable.c : ditto
 
 	* version.c : ditto
-
 
 2006-02-12(Sun) 21:33:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -2924,7 +2767,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c : ditto
 
 	* yarvcore.h : ditto
-
 
 2006-02-12(Sun) 15:53:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3116,13 +2958,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_jump.c : removed
 
-
 2006-02-12(Sun) 15:39:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y : fix to remove including env.h
 
 	* yarvtest/test_exception.rb : fix syntax (add 'end')
-
 
 2006-02-12(Sun) 15:14:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3147,7 +2987,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb : fix typo
 
-
 2006-02-12(Sun) 05:05:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, eval_intern.h, eval_load.c, eval_proc.c, node.h,
@@ -3155,20 +2994,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	change cref data structure and unify ruby_class and ruby_cbase
 	and some refoctoring
 
-
 2006-02-11(Sat) 23:41:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (methoddef) : fix method declaration in method
 
 	* thread.c : Thread.critical to show warning (no effect)
 
-
 2006-02-11(Sat) 20:20:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix [yarv-dev:831]
 
 	* yarvtest/test_class.rb : add a test for above
-
 
 2006-02-11(Sat) 14:29:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3292,7 +3128,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/open-uri.rb : ditto
 
-
 2006-02-10(Fri) 08:07:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def, yarvcore.h : support defined?(private_method) and
@@ -3348,7 +3183,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : fix to remove using ARGV
 
-
 2006-02-10(Fri) 01:04:58 +0900  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): turn on during_gc while
@@ -3356,11 +3190,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_gc_finalize_deferred): ditto.
 
-
 2006-02-08(Wed) 23:17:44 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_proc.rb: method names were wrongly duplicated.
-
 
 2006-02-08(Wed) 21:30:01 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3388,12 +3220,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/nkf/test_nkf.rb: new file (rev 1.1).
 
-
 2006-02-08(Wed) 21:07:36 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/find.rb: new file (imported from ruby CVS trunk HEAD,
 	  rev 1.15).
-
 
 2006-02-07(Tue) 17:58:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3416,7 +3246,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c (vm_free) : VM object should not free by GC
 
-
 2006-02-07(Tue) 14:42:25 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, eval_load.c : remove rb_thread_start_1()
@@ -3434,28 +3263,23 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	RValue includes three values in itself.  RValue is used as
 	svar
 
-
 2006-02-06(Mon) 23:51:41 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_hash.rb: import many tests from rubicon.
 
-
 2006-02-04(Sat) 18:36:41 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_array.rb: import many tests from rubicon.
-
 
 2006-02-04(Sat) 17:47:44 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_signal.rb (test_exit_action): lib/timeout.rb is
 	  not implemented yet.
 
-
 2006-02-04(Sat) 17:42:31 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_readpartial.rb: lib/timeout.rb is not implemented
 	  yet.
-
 
 2006-02-04(Sat) 16:22:38 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3463,7 +3287,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_signal.rb: turn off the test case which causes
 	  segmentation fault (tmp).
-
 
 2006-02-04(Sat) 08:19:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3505,11 +3328,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_thread.rb : added
 
-
 2006-02-03(Fri) 00:08:09 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_string.rb: import many tests from rubicon.
-
 
 2006-02-02(Thu) 23:20:13 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3575,11 +3396,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/ut_eof.rb: ditto.
 
-
 2006-02-02(Thu) 22:53:44 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_proc.rb: test [yarv-dev:777].
-
 
 2006-02-01(Wed) 03:51:39 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3588,7 +3407,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* insns.def : support method definition in method
 
 	* yarvtest/test_method.rb : add tests for above
-
 
 2006-01-29(Sun) 11:40:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3603,7 +3421,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* thread_win32.h : fix [yarv-dev-en:23]
 
 	* vm.c (th_call0) : add YARV_CHECK_INTS()
-
 
 2006-01-09(Mon) 11:56:34 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3621,7 +3438,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c: remove useless prototypes.
 
-
 2006-01-09(Mon) 10:25:12 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* eval_thread.c: rb_thread_join is required to build ruby on
@@ -3631,11 +3447,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c: ditto.
 
-
 2006-01-06(Fri) 09:21:34 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* vm.c: coding style change only.
-
 
 2006-01-04(Wed) 14:12:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3662,7 +3476,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c (Init_yarvcore) : set yarv_thread_t#running_thread
 
 	* yarvcore.h : fix yarv_thread_t members
-
 
 2006-01-03(Tue) 22:25:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3693,12 +3506,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix mark functions around yarv_stored_klass_t
 
-
 2006-01-01(Sun) 05:14:26 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/benchmark.rb: new file (imported from original ruby, rev
 	  1.10).
-
 
 2006-01-01(Sun) 03:51:10 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3710,7 +3521,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv.h: ditto.
 
-
 2006-01-01(Sun) 03:43:33 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* variable.c: add prototype.
@@ -3718,7 +3528,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* eval.c: ditto.
 
 	* eval_load.c: ditto.
-
 
 2006-01-01(Sun) 02:41:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3733,7 +3542,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_method.rb : fix indent, spacing
 	and add a test for alias
-
 
 2005-12-31(Sat) 12:42:05 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3751,7 +3559,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c (thread_eval) : remove unused function
 
-
 2005-12-31(Sat) 06:05:00 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (eval_search_super_klass) : pass block to method missing
@@ -3759,7 +3566,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm_macro.def (macro_eval_invoke_method) : ditto
 
 	* yarvtest/test_method.rb : add a test for above
-
 
 2005-12-31(Sat) 03:11:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3783,7 +3589,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/mklog.rb : use external diff command and show function name
 
-
 2005-12-30(Fri) 19:07:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, yarvcore.h, eval.c, eval_proc.c : support
@@ -3793,12 +3598,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_eval.rb : add tests for above
 
-
 2005-12-30(Fri) 13:12:28 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_eval.rb: more tests for
 	  module_eval/instance_eval.
-
 
 2005-12-30(Fri) 05:06:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3812,12 +3615,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_proc.rb :
 
-
 2005-12-29(Thu) 12:27:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h :
 	remove needless yarv_iseq_t#rewind_frame_size
-
 
 2005-12-29(Thu) 11:17:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3838,20 +3639,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (exec_under) : replace block#self ([yarv-dev:751])
 
-
 2005-12-29(Thu) 01:56:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix setting of Proc cref ([yarv-dev:741])
 
 	* yarvcore.c : fix indent
 
-
 2005-12-29(Thu) 00:17:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : show (block) local variable simple (not as symbol)
 
 	* gc.c : fix syntax error
-
 
 2005-12-28(Wed) 23:35:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3871,7 +3669,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : change yarv_iseq_t layout
 
-
 2005-12-28(Wed) 16:49:55 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_eval.rb: add TODO comment.
@@ -3882,7 +3679,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_lambda.rb: use assert_fail.
 
 	* test/ruby/test_proc.rb: ditto.
-
 
 2005-12-28(Wed) 16:28:35 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -3896,7 +3692,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/ruby/test_proc.rb: turn off tests for |&b|.
 
 	* test/ruby/test_proc.rb: turn off tests for $SAFE setter.
-
 
 2005-12-28(Wed) 15:31:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3913,7 +3708,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvtest/test_method.rb : fix a test for above
 
 	* vm.c : fix backtrace generate algorithm
-
 
 2005-12-28(Wed) 10:36:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3950,7 +3744,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvtest/test_class.rb : add tests for above
 
 	* yarvtest/test_method.rb : fix comments
-
 
 2005-12-27(Tue) 01:52:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -3989,21 +3782,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_class.rb : add tests for above
 
-
 2005-12-26(Mon) 20:44:38 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_basicinstructions.rb: new file.
-
 
 2005-12-26(Mon) 08:40:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (eval_get_ev_const) : fix to skip nil
 
-
 2005-12-26(Mon) 08:27:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.h : fix GET_CVAR_EV_KLASS [yarv-dev:703]
-
 
 2005-12-26(Mon) 07:51:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4011,7 +3800,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	and optimize it if it's not needed
 
 	* yarvtest/test_flow.rb : add a test for above
-
 
 2005-12-26(Mon) 07:08:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4026,11 +3814,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_flow.rb : add tests for above
 
-
 2005-12-26(Mon) 02:15:02 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_alias.rb: do not use unimplemented defined?.
-
 
 2005-12-26(Mon) 02:00:11 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -4078,7 +3864,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_whileuntil.rb: new file.
 
-
 2005-12-25(Sun) 07:40:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c, compile.c : fix block inlining
@@ -4087,7 +3872,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	with operands unification
 
 	* vm_dump.c : fix to print Qundef on stack dump
-
 
 2005-12-25(Sun) 01:45:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4101,13 +3885,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* Merry Xmas :)
 
-
 2005-12-24(Sat) 19:34:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h : fix ADD_CATCH_ENTRY and add LABEL#sp
 
 	* eval_jump.h : fix catch to remove illegal error
-
 
 2005-12-24(Sat) 09:05:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4136,11 +3918,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c : use ADD_CALL instead of ADD_SEND for
 	NODE_X(D)STR, NODE_CONST (func)
 
-
 2005-12-22(Thu) 02:45:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv_version.h, Changes : 0.3.3
-
 
 2005-12-20(Tue) 04:04:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4148,20 +3928,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_bin.rb : add a test for above
 
-
 2005-12-20(Tue) 01:52:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix to expand VALUES value
 
 	* yarvtest/test_massign.rb : add a test for above
 
-
 2005-12-20(Tue) 01:32:35 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, insnhelper.h : fix cvar in singleton method/class
 
 	* yarvtest/test_bin.rb : add tests for above
-
 
 2005-12-20(Tue) 01:03:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4173,7 +3950,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/* : update all
 
-
 2005-12-17(Sat) 10:46:08 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* vm_macro.def: fix printf type mismatch for LP64 system (again).
@@ -4181,12 +3957,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* parse.y: introduce descriptive macro for special values of
 	  lvtbl->dvars.
 
-
 2005-12-17(Sat) 09:39:27 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* vm_macro.def (macro_eval_invoke_method): fix printf type mismatch
 	  for LP64 system.
-
 
 2005-12-14(Wed) 03:49:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4204,7 +3978,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_bin.rb : comment out 2 assertions
 
-
 2005-12-13(Tue) 03:55:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_proc.c : fix indent
@@ -4217,7 +3990,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/un.rb : added
 
 	* template/*.tmpl : fix typo
-
 
 2005-12-13(Mon) 01:38:17 +0900  Minero Aoki  <aamine@loveruby.net>
 
@@ -4254,7 +4026,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_thread.c: ditto.
 
-
 2005-12-11(Sun) 22:00:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : call "inherited" method when a class is inherited
@@ -4271,7 +4042,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* configure : re-autoconf
 
-
 2005-12-10(Sat) 03:57:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : fix blockinlining.o build rule
@@ -4285,7 +4055,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c : support NODE_ZSUPER with optargs, restarg
 
 	* yarvtest/test_class.rb : add tests for above
-
 
 2005-12-09(Fri) 01:13:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4317,7 +4086,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add proc_arity
 
-
 2005-12-05(Mon) 03:58:30 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, blockinlining.c : support block inlining for Array#each
@@ -4335,12 +4103,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_flow.rb : add tests for above
 
-
 2005-12-03(Sat) 22:27:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* blockinlining.c, compile.c, yarvcore.c, yarvcore.h,
 	numeric.c, range.c : collect block inlining logic to blockinlining.c
-
 
 2005-12-03(Sat) 20:24:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4379,7 +4145,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : remove tempfile explicitly
 
-
 2005-11-30(Wed) 01:13:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : add vm_opts.h rule
@@ -4387,12 +4152,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm.c, insns.def : fix proc creation under class and block
 	environment
 
-
 2005-11-29(Tue) 16:39:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, eval_proc.c, vm.c, vm_macro.def :
 	support define_method and invoke NODE_BMETHOD method
-
 
 2005-11-29(Tue) 13:18:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4415,7 +4178,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix proc_mark, env_mark around iseq mark
 
-
 2005-11-28(Mon) 09:02:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def, vm_evalbody.h : support super
@@ -4436,12 +4198,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def : refactoring
 
-
 2005-11-21(Mon) 21:21:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h, yarvcore.c : remove "iseqobj"
 	variables and rename to "iseq"
-
 
 2005-11-21(Mon) 07:31:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4453,21 +4213,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_sieve.rb : fix parameter
 
-
-
 2005-11-21(Mon) 03:47:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : optimize condition in literal
 
 	* thread_win32.h : fix win32 thread function prototype
 
-
 2005-11-20(Sun) 17:58:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix NODE_AND/OR bug
 
 	* eval.c : support rb_frame_this_func()
-
 
 2005-11-20(Sun) 12:32:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4482,16 +4238,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix make_proc_from_block
 
-
 2005-11-19(Sat) 14:55:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* import ruby 1.9.0 (2005-11-18)
 
-
 2005-11-19(Sat) 06:08:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/test : added
-
 
 2005-11-19(Sat) 05:48:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4513,7 +4266,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_syn.rb : add a test for all condition combination
 
-
 2005-11-15(Tue) 05:52:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/forwardable.rb : added
@@ -4534,12 +4286,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_method.rb : add tests for above
 
-
 2005-11-15(Tue) 00:42:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : support rb_frame_pop() and rb_frame_callee(),
 	add rb_sourcefile(), rb_sourceline(),
-
 
 	* compile.c : support postposition while/until,
 	fix block parameter index
@@ -4559,7 +4309,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : permit re-open class when superclass is same
 
-
 2005-11-11(Fri) 01:20:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : add "allload" rule
@@ -4577,7 +4326,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h.base : set default off
 
-
 2005-11-01(Tue) 08:28:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/other-lang/eval.rb : fix path
@@ -4585,12 +4333,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* lib/English.rb, lib/cgi.rb, lib/complex.rb, lib/delegate.rb :
 	added
 
-
 2005-11-01(Tue) 08:18:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : push and pop values after checkincludearray for
 	stack caching
-
 
 2005-10-31(Mon) 15:37:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4641,11 +4387,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : use tempfile instead of popen
 
-
 2005-10-28(Fri) 09:11:53 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_method.rb : fix test
-
 
 2005-10-28(Fri) 08:43:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4675,21 +4419,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : fix rb_obj_is_proc to use yarv_obj_is_proc()
 
-
 2005-10-27(Thu) 11:50:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* some files : import from ruby 1.9.0 (2005-10-12)
-
 
 2005-10-16(Sun) 14:50:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, compile.c, yarvcore.h, yarvcore.c : add insns "bitblt" and "answer"
 
-
 2005-10-11(Tue) 17:01:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv_version.h, Changes : 0.3.2
-
 
 2005-10-11(Tue) 13:35:25 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4704,11 +4444,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : remove "\r" from answer
 
-
 2005-10-07(Fri) 09:36:36 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : add member variable "interrupt_flag" to yarv_thread_t
-
 
 2005-10-05(Wed) 21:20:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4723,14 +4461,12 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix some mark/free routine
 
-
 2005-10-05(Wed) 09:08:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, eval_intern.h, vm.c, eval_jump.h, yarvcore.h :
 	re-define PUSH/POP/EXEC/JUMP_TAG to use thread local tag
 
 	* inits.c, yarvcore.c : fix bootstrap
-
 
 2005-10-03(Mon) 22:28:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4746,16 +4482,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix to mark each threads
 
-
 2005-10-02(Sun) 05:55:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.h : add "system_working" global variable
 
-
 2005-10-02(Sun) 01:23:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : add raw gets (for test), and fix indent
-
 
 2005-10-01(Sat) 23:06:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4775,7 +4508,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : fix VM#living_threads data type to st_table
 
-
 2005-10-01(Sat) 00:25:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, yarvcore.h : rename GIL (Global Interpreter Lock) to
@@ -4783,13 +4515,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.h : fix pthread mutex initialize
 
-
 2005-09-30(Fri) 20:11:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c : support join with timeout
 
 	* yarvcore.h : use GET_VM()
-
 
 2005-09-30(Fri) 14:59:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4802,7 +4532,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv.h : add GET_VM() macro
 
-
 2005-09-29(Thu) 22:43:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_intern.h, eval_thread.c : move thread_status to eval_intern.h
@@ -4811,13 +4540,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : add some parameter to yarv_thread_t
 
-
 2005-09-29(Thu) 01:52:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h : add line number on last end instruction
 
 	* vm.c : fix line no detection
-
 
 2005-09-28(Wed) 00:02:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4827,11 +4554,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_proc.c : fix typo
 
-
 2005-09-27(Tue) 16:45:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : remove debug print
-
 
 2005-09-27(Tue) 16:41:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4842,7 +4567,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : fix typo of YARV_PREVIOUS_CONTROL_FRAME
 
-
 2005-09-26(Mon) 18:51:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, compile.c, parse.y, vm.c, yarvcore.h :
@@ -4851,7 +4575,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm.c : add th_set_eval_stack
 
 	* yarvtest/test_syn.rb : remove an assert "defined?(local_var)"
-
 
 2005-09-25(Sun) 19:30:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4872,7 +4595,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c, yarvcore.h, eval.c : yarv_thread_t#ifuncnode -> passed_block,
 	and add yarv_proc_t#safe_level
 
-
 2005-09-25(Sun) 11:01:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* some files : import from ruby 1.9.0 (2005-09-25)
@@ -4884,11 +4606,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.h, insnhelper.h : move some macro from insnhelper.h to yarvcore.h
 	to use these in eval.c
 
-
 2005-09-24(Sat) 15:51:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval* : remove dependency to ruby_dyna_vars and ruby_class
-
 
 2005-09-23(Fri) 20:39:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4898,13 +4618,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y : remove dependency to ruby_dyna_vars and ruby_scope
 
-
 2005-09-15(Thu) 16:51:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h : fix "for" scope
 
 	* yarvtest/test_block.rb : add tests for above
-
 
 2005-09-14(Wed) 06:11:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4914,13 +4632,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h : fix default options
 
-
 2005-09-10(Sat) 14:10:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h : added
 
 	* yarvcore.h, rb/insns2vm.h : use vm_opts.h
-
 
 2005-09-10(Sat) 04:53:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4936,13 +4652,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : add rule "runtest"
 
-
 2005-09-09(Fri) 19:32:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, compile.c : add splatarray
 
 	* yarvtest/test_massign.rb : add tests for above
-
 
 2005-08-31(Wed) 22:55:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4950,13 +4664,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv_version.h, Changes : 0.3.1
 
-
 2005-08-20(Sat) 10:19:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/ir.rb : add some check
 
 	* import today's ruby HEAD
-
 
 2005-08-18(Thu) 23:29:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4968,13 +4680,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* import today's ruby HEAD
 
-
 2005-08-18(Thu) 12:59:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk : rule test -> test2, test1 -> test
 
 	* compile.c : fix when clause bug and splat argument
-
 
 2005-08-17(Wed) 05:22:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -4987,18 +4697,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_bin.rb : add tests for above
 
-
 2005-08-16(Tue) 19:51:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support nested massign
 
 	* yarvtest/test_massign.rb : add tests for above
 
-
 2005-08-16(Tue) 10:25:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : support rb_yield_0 with 0 args
-
 
 2005-08-16(Tue) 09:09:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5007,7 +4714,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* insns.def : fix yield argument (same as last commit)
 
 	* yarvtest/test_yield.rb : add tests for above
-
 
 2005-08-16(Tue) 08:29:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5021,14 +4727,12 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_yield.rb : added for above
 
-
 2005-08-16(Tue) 06:00:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix to set klass_nest_stack on singleton
 	method definition
 
 	* yarvtest/test_method.rb : add a test for above
-
 
 2005-08-16(Tue) 05:34:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5038,11 +4742,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/test_exception.rb : add tests for above
 
-
 2005-08-16(Tue) 04:26:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* base ruby : ruby 1.9.0 (2005-08-15)
-
 
 2005-08-16(Tue) 03:54:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5052,11 +4754,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvtest/yarvtest.rb : fix to compare output last value
 
-
 2005-08-15(Mon) 18:27:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* Changes : 0.3.0
-
 
 2005-08-15(Mon) 17:56:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5064,11 +4764,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* all files : propset svn:eol-style native
 
-
 2005-08-15(Mon) 10:48:53 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c : support rb_load
-
 
 2005-08-15(Mon) 09:42:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5087,7 +4785,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* eval.c : remove unused functions
 
 	* eval.c : support Kernel.eval, some schemes (same as evalc.patch)
-
 
 2005-08-15(Mon) 00:53:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5112,7 +4809,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* inits.c : fix to kick Init_yarvcore
 
-
 2005-08-14(Sun) 02:05:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* README : add description
@@ -5125,7 +4821,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* make yarvext/ to build as extension
 
-
 2005-08-13(Sat) 09:36:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* evalc.patch, insns.def, compile.c : fix to support current
@@ -5133,11 +4828,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* 0.2.3
 
-
 2005-08-08(Mon) 19:13:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h, Changes : 0.2.2
-
 
 2005-08-08(Mon) 17:17:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5148,7 +4841,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm_evalbody.h, vm.h, extconf.rb, version.h :
 	support call threaded code (incomplete)
 
-
 2005-08-01(Mon) 05:26:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : support yield with multiple values
@@ -5156,7 +4848,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c : fix dynavars
 
 	* yarvcore.h : fix to mark defined method
-
 
 2005-07-31(Sun) 23:27:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5166,7 +4857,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def : fix rest, opt arguments
 
-
 2005-07-31(Sun) 14:52:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def : fix block parameter
@@ -5175,14 +4865,12 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : add orphan check when return
 
-
 2005-07-31(Sun) 03:25:05 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, compile.c, yarvcore.h, insns.def :
 	support jump from rescue/ensure/class/module
 
 	* test/test_flow.rb : add tests for above fix
-
 
 2005-07-30(Sat) 04:44:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5203,7 +4891,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c, vm_macro.def : add tail-call/tail-recursion optimization
 	(experimental)
 
-
 2005-07-29(Fri) 20:14:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : make_name_for_block and make_name_with_str
@@ -5216,7 +4903,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm.c : add th_backtrace_each and fix backtrace notation
 
 	* yarvcore.c : set top level iseq name to "<main>"
-
 
 2005-07-29(Fri) 13:20:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5239,7 +4925,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : Integer#times uses yarv specific version
 
-
 2005-07-28(Thu) 21:35:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add another mark function for thread/stack
@@ -5247,7 +4932,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* vm_evalbody.h : fix register allocation for x86_64
 
 	* vm.h : use asm for tc on x86_64
-
 
 2005-07-28(Thu) 20:17:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5258,7 +4942,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_evalbody.h : fix register allocation
 
-
 2005-07-28(Thu) 02:00:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, etc : change VM stack structure. re-write all
@@ -5266,31 +4949,25 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_macro.def : added
 
-
 2005-07-08(Fri) 01:36:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : don't use fmod on AMD64
-
 
 2005-07-08(Fri) 00:14:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* Changes : added
 
-
 2005-07-07(Thu) 23:54:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.3.0
-
 
 2005-07-07(Thu) 23:52:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* 0.2.1 : released
 
-
 2005-07-07(Thu) 23:50:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.2.1
-
 
 2005-07-07(Thu) 23:47:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5298,7 +4975,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	and --disable-opts
 
 	* vm.h : DISPATCH_ARCH_DEPEND_WAY is only enabled on GCC 3.x
-
 
 2005-07-06(Wed) 13:20:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5308,7 +4984,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/other-lang/* : added
 
-
 2005-07-04(Mon) 04:02:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h. yarvcore.c : add idDIV, idMOD, idEq, idLength
@@ -5316,7 +4991,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c, insns.def : add specialized insn for above method id
 
 	* test/test_bin.rb : add tests for above
-
 
 2005-07-03(Sun) 20:31:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5326,7 +5000,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	thread_object#stack_mark_poinetr
 
 	* depend, rb/eval.rb : BOPT, TOPT -> OPT
-
 
 2005-07-03(Sun) 13:53:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5341,11 +5014,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : remove unused variable from send
 
-
 2005-07-02(Sat) 04:19:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : add GC protect for opt_aset
-
 
 2005-07-02(Sat) 03:49:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5355,7 +5026,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_bin.rb : add tests for aset, aref
 
-
 2005-07-02(Sat) 03:05:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : fix output
@@ -5364,13 +5034,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/asm_parse.rb : fix to shor size and length
 
-
 2005-07-02(Sat) 02:56:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : move specialized instruction point (new_insn_send)
 
 	* insns.def : add opt_aref, opt_aset
-
 
 2005-07-01(Fri) 11:04:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5380,7 +5048,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix getdynamic argument (0 == Qfalse -> I2F(0))
 
-
 2005-06-30(Thu) 23:34:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/eval.rb : add and fix some rules
@@ -5388,7 +5055,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* rb/insns2vm.rb : generate all
 
 	* benchmark/run.rb : add -r (ruby only) option
-
 
 2005-06-30(Thu) 23:25:23 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5406,13 +5072,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : fix file select
 
-
 2005-06-30(Thu) 06:07:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : add collect-usage-analysis option
 
 	* opt_operand.def, opt_insn_unif.def : add some rules
-
 
 2005-06-29(Wed) 23:28:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5425,7 +5089,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/eval.rb : added for YARV evaluation
 
-
 2005-06-29(Wed) 16:16:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : fix output format
@@ -5434,21 +5097,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h : add sign by asm statement
 
-
 2005-06-28(Tue) 22:28:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix method search
-
 
 2005-06-28(Tue) 22:26:34 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : fix options
 
-
 2005-06-28(Tue) 21:50:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : fix output format
-
 
 2005-06-28(Tue) 21:34:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5456,13 +5115,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : fix output format
 
-
 2005-06-28(Tue) 21:15:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix opt_case_dispatch instruction
 
 	* benchmark/run.rb : output all usertimes when exit benchmark
-
 
 2005-06-28(Tue) 20:35:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5475,13 +5132,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : add BOPT to tbench rule
 
-
 2005-06-27(Mon) 23:31:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : add gdb rule
 
 	* vm.h : use inline assembler for x86 (to support gcc 3.4.x)
-
 
 2005-06-27(Mon) 20:04:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5497,7 +5152,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_evalbody.inc : rename to vm_evalbody.h
 
-
 2005-06-27(Mon) 16:50:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns2vm.rb : fix generating unif insn
@@ -5505,7 +5159,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c : add useless pop/swap insn elimination with stack caching
 
 	* depend : remove compiled.o dependency
-
 
 2005-06-26(Sun) 14:06:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5517,13 +5170,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add verify_list function and fix unification logic
 
-
 2005-06-22(Wed) 12:58:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c, insns.def,  compile.c : add mult optimization
 
 	* test/test_bin.rb : add test_fact
-
 
 2005-06-21(Tue) 22:34:07 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5533,7 +5184,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : add separator
 
-
 2005-06-14(Tue) 07:48:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support "for" statement
@@ -5542,19 +5192,16 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.[ch] : add global id idEach
 
-
 2005-06-08(Wed) 22:30:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add if/unless(L1) jump (L2) :L1 => unless/if(L2)
 	optimize (condition reversal) and fix typo
-
 
 2005-06-07(Tue) 08:29:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : fix to remove compiler warning
 
 	* version.h : 0.2.1
-
 
 2005-06-07(Tue) 08:16:22 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5565,7 +5212,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.c : use double linked list instead of array
 	for intermediate representation
 
-
 2005-06-06(Mon) 15:38:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c : add link structure to insn and label object
@@ -5573,21 +5219,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* compile.h, compile.c : remove some variables in function top scope
 	of iseq_compile_each and some optimization (now working)
 
-
 2005-06-04(Sat) 16:12:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix previous commit
-
 
 2005-06-04(Sat) 15:56:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix stack caching (after jump state)
 
-
 2005-06-04(Sat) 09:12:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix some point for previous commit
-
 
 2005-06-04(Sat) 07:31:21 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5599,7 +5241,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_syn.rb : add test for above
 
-
 2005-06-04(Sat) 03:41:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c : add some temporary variable test
@@ -5607,11 +5248,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : NODE_CASE optimize (use topn instead of dup/swap)
 
-
 2005-06-03(Fri) 00:54:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : apply flow optimization for while/until statement
-
 
 2005-03-04(Fri) 19:34:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5619,11 +5258,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : remove space between target name and colon
 
-
 2005-03-04(Fri) 15:55:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* tmpl/yarvarch.ja : fix typo
-
 
 2005-03-04(Fri) 13:30:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5633,11 +5270,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.2.0
 
-
 2005-03-03(Thu) 08:35:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : remove vm_evalbody.inc call_cfunc.inc from clean target
-
 
 2005-03-03(Thu) 00:54:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5645,11 +5280,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : store th->pc to current pc
 
-
 2005-03-03(Thu) 00:31:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* tmpl/yarvarch.ja, doc/yarv.rb : write current architecture of yarv
-
 
 2005-03-01(Tue) 13:50:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5662,7 +5295,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* depend : add rule for yasmdata.rb
 
 	* rb/yasm.rb : support top-level and method-level assemble
-
 
 2005-02-26(Sat) 08:09:57 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5678,16 +5310,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : YARVCore::InstructionSequence::Instruction#make added
 
-
 2005-02-24(Thu) 07:45:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/yasm.rb : added
 
-
 2005-02-24(Thu) 01:13:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : remove useless statements
-
 
 2005-02-24(Thu) 00:46:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5701,11 +5330,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_bin.rb : add tests for above
 
-
 2005-02-23(Wed) 09:17:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, yarvcore.c : thread_svar added and fix svar location
-
 
 2005-02-21(Mon) 08:38:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5713,16 +5340,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : iseq_object#insn_info_ary to iseq_object#insn_info_tbl
 
-
 2005-02-21(Mon) 05:24:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c (compile_string) : remove null check of node
 
-
 2005-02-19(Sat) 03:52:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.1.1
-
 
 2005-02-18(Fri) 20:57:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5738,7 +5362,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : opt_ltlt and
 
-
 2005-02-18(Fri) 08:54:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/runc.rb : added
@@ -5746,19 +5369,16 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* benchmark/contrib/pentomino.rb : added opt_ltlt
 	and Float, String plus specialization
 
-
 2005-02-18(Fri) 07:49:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : remove debug print
 
 	* rb/aotcompile.rb : skip if yarvcore.so is not created
 
-
 2005-02-18(Fri) 06:46:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix block passing
 	and block argument
-
 
 2005-02-18(Fri) 05:52:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5778,7 +5398,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.h : CALL_ARGS_SPLAT is removed
 
-
 2005-02-16(Wed) 13:32:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : fix ID to String method
@@ -5790,7 +5409,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/test_syn.rb : add a test
 
 	* test/test_jump.rb : add a test
-
 
 2005-02-16(Wed) 06:07:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5812,7 +5430,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : add rules for compiled.o
 
-
 2005-02-14(Mon) 13:09:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.h, yarvcore.h: move YARV_METHOD_NODE to yarvcore.h
@@ -5825,7 +5442,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* insns.def : insn opt_call_native_compiled added
 
 	* jitcompile.c : added
-
 
 2005-02-12(Sat) 05:38:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5842,7 +5458,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : add option --(enable|disable)-opt-insns-unification
 
-
 2005-02-11(Fri) 12:14:39 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, vm.c, insns.def : permit to access svar from
@@ -5850,11 +5465,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_method.rb : add tests for above
 
-
 2005-02-09(Wed) 19:31:06 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* ite.rb : added (ruby -rite [script file])
-
 
 2005-02-09(Wed) 02:25:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5864,18 +5477,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, extconf.rb : support __goto__ and __label__ statement
 
-
 2005-01-25(Tue) 12:49:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_block.rb : add break test to test_times
-
 
 2005-01-25(Tue) 03:34:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : check ruby version if yarv patch is applied or not
 
 	* evalc.patch : fixed for rb_call_super and above check
-
 
 2005-01-25(Tue) 03:21:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5899,22 +5509,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* ToDo : write todo things on wiki
 
-
-
 2005-01-18(Tue) 23:44:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : check ENV['RUBY'] to use ruby binary
-
 
 2005-01-10(Mon) 08:44:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.1.0
 
-
 2005-01-09(Sun) 22:01:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* repository : svn propset svn:eol-style native *.c *.h tmpl/*.tmpl
-
 
 2005-01-09(Sun) 21:48:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5941,7 +5546,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/allload.rb : added
 
-
 2005-01-09(Sun) 08:30:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c (yarv_yield_values) : added
@@ -5963,7 +5567,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (yield): raise error if argc > expected argc
 
-
 2005-01-08(Sat) 16:07:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : add descrioptions
@@ -5973,12 +5576,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c : initial value of yarvGlobalStateVersion
 	to 1
 
-
 2005-01-08(Sat) 14:39:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, vm.c, evalc.patch : support making backtrace
 	(incompatible with current ruby interpreter)
-
 
 2005-01-08(Sat) 11:25:46 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -5986,7 +5587,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, compile.c, insns.def : MC to IC (inline cache),
 	and changed to using IC by set/getinlinecache
-
 
 2005-01-08(Sat) 10:04:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6018,11 +5618,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_bin.rb (test_xstr) : remove `ls` test
 
-
 2005-01-06(Thu) 21:35:18 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv : trying to support NODE_IFUNC (rb_iterate)
-
 
 2005-01-05(Wed) 06:50:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6037,7 +5635,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add option string
 
-
 2005-01-04(Tue) 17:15:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, compile.c : add compile_array and duparray insn
@@ -6045,16 +5642,13 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_array.rb : added
 
-
 2005-01-04(Tue) 10:02:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* README : fix version
 
-
 2005-01-04(Tue) 09:57:25 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* ToDo : reflect current status
-
 
 2005-01-04(Tue) 09:43:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6063,7 +5657,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/test_massign.rb : add tests for above
 
 	* benchmark/bm_swap.rb : added
-
 
 2005-01-04(Tue) 06:25:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6075,7 +5668,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_massign.rb : added
 
-
 2005-01-03(Mon) 21:20:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : store block when create proc
@@ -6084,21 +5676,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add global function "once"
 
-
 2005-01-02(Sun) 00:40:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_super.rb : fix bug (remove infinite loop)
-
 
 2005-01-01(Sat) 23:45:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_z?super.rb : added
 
-
 2005-01-01(Sat) 23:37:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bmx_so_object.rb : rename to benchmark/bm_so_object.rb
-
 
 2005-01-01(Sat) 23:19:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6112,7 +5700,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_class.rb : add test for super, zsuper
 
-
 2005-01-01(Sat) 20:39:29 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support NODE_MATCH
@@ -6120,7 +5707,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.c : fix yarv_svar bug (fix condition boundary)
 
 	* insnhelper.h : save cfp/lfp/dfp vars to thread_object (th)
-
 
 2005-01-01(Sat) 20:03:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6140,13 +5726,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_bin.rb : add test for dsym, cvar, backref
 
-
 2005-01-01(Sat) 09:09:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : add getspecial insn
 
 	* compile.c : support NODE_NTH_REF, NODE_BACK_REF
-
 
 2005-01-01(Sat) 06:53:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6155,7 +5739,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/test_method.rb : test for above
 
 	* rb/insns2vm.rb : fix enbug
-
 
 2005-01-01(Sat) 06:00:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6170,18 +5753,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/insns2vm.rb : remove unnecessary each
 
-
 2004-12-17(Fri) 18:56:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix newhash
-
 
 2004-12-15(Wed) 13:29:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add version string
 
 	* compile.c : fix rescure clause bug
-
 
 2004-12-14(Tue) 22:46:30 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6191,13 +5771,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/insns2vm.rb, compile.c : fix stack caching bugs
 
-
 2004-12-14(Tue) 00:51:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns2vm.rb, compile.c, tmpl/opt_sc.inc.tmpl : fix bugs
 
 	* rb/mixc-asm.rb : added
-
 
 2004-12-14(Tue) 00:17:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6210,11 +5788,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : support restrore register for pc
 
-
 2004-12-13(Mon) 16:53:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/insns2vm.rb : add macro INSN_IS_SC()
-
 
 2004-12-11(Sat) 10:51:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6222,25 +5798,21 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_method.rb : add test for above
 
-
 2004-12-11(Sat) 03:17:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/*.rb : modify
 
 	* extconf.rb : add $cleanfiles
 
-
 2004-12-08(Wed) 13:01:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def : change to disable stack caching
-
 
 2004-12-07(Tue) 19:37:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/insns2vm.rb : add default after
 
 	* insns.def : fix to work on stack caching
-
 
 2004-12-07(Tue) 15:07:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6256,11 +5828,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : fix option selection
 
-
 2004-12-06(Mon) 11:20:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* extconf.rb : add vm.asm target if compiler is gcc
-
 
 2004-12-06(Mon) 09:56:24 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6276,17 +5846,14 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : move enter point in send
 
-
 2004-12-06(Mon) 04:53:51 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, opt_operand.def, rb/insns2vm.rb, depend :
 	support operand unification
 
-
 2004-12-05(Sun) 03:16:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, insns.def : speed up throw/catch scheme
-
 
 2004-12-05(Sun) 01:47:05 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6294,17 +5861,14 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_jump.rb : test_complex_jump added
 
-
 2004-12-03(Fri) 20:39:05 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/contrib/mcq.rb : added
 	(from URABE Syouhei)
 
-
 2004-12-03(Fri) 20:35:28 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : support break in rb_yield block
-
 
 2004-12-03(Fri) 14:26:35 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6313,11 +5877,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : support attr_* (patch from Kent Sibilev)
 
-
 2004-12-02(Thu) 21:04:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* opt_operand.def : added
-
 
 2004-12-02(Thu) 13:20:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6328,7 +5890,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb : run each benchmark on another process
 
-
 2004-12-01(Wed) 10:26:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : yield check block is given
@@ -6338,13 +5899,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : opt_* support other type calc
 
-
 2004-11-30(Tue) 16:14:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_so_array.rb : added
 
 	* benchmark/bm_so_matrix.rb : added
-
 
 2004-11-30(Tue) 14:11:30 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6352,18 +5911,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : add YARVCore::REV, YARVCore::DATE constant
 
-
 2004-11-30(Tue) 13:05:42 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support NODE_OP_ASGN1 (incomplete)
 
 	* insns.def : add dupn
 
-
 2004-11-30(Tue) 08:52:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : 0.0.0.f
-
 
 2004-11-30(Tue) 08:43:59 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6386,7 +5942,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarv.h, yarvcore.c : remove yarv_funcall
 
-
 2004-11-29(Mon) 11:37:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test/test_proc.rb : add test test_nestproc
@@ -6405,22 +5960,18 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* evalc.patch : added
 
-
 2004-11-27(Sat) 00:19:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c : free -> ruby_xfree
-
 
 2004-11-26(Fri) 02:11:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm,c : fix bug
 
-
 2004-11-22(Mon) 11:19:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_ackermann.rb, bm_proc.rb, bm_simpleiter.rb,
 	bm_so_exception.rb, bm_wc.rb, wc.input added
-
 
 2004-11-22(Mon) 02:31:56 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6446,18 +5997,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.h : add GET_ISEQOBJ(cfp) macro
 
-
 2004-11-21(Sun) 07:25:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : support Proc#call
 
 	* test/test_proc.rb : added
 
-
 2004-11-19(Fri) 18:04:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, vm.c : support creating Proc object
-
 
 2004-11-15(Mon) 14:19:27 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6466,7 +6014,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : block represent data shares lfp, dfp with frame data
 
-
 2004-11-13(Sat) 18:19:41 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, insns.def : add VM_CALL_ARGS_SPLAT_BIT and
@@ -6474,17 +6021,14 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h : add ADD_SEND, ADD_SEND_R
 
-
 2004-11-10(Wed) 08:26:25 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* add "vm_" prefix to (block_object, proc_object, env_object)
-
 
 2004-11-03(Wed) 15:52:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c, disasm.c, compile.c, insns.def, vm.c :
 	fix to move x86_64 (illegal cast, etc)
-
 
 2004-11-01(Mon) 04:45:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6500,12 +6044,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : change some targets
 
-
 2004-10-25(Mon) 19:57:58 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : push exception iseq to iseqobj->iseq_mark_ary
 	to mark for GC
-
 
 2004-10-10(Sun) 16:25:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6519,7 +6061,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.h : add arg_block field to iseq_object
 	and init -1 as default value
 
-
 2004-09-30(Thu) 19:50:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def : support passing splat argument
@@ -6530,24 +6071,20 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_method.rb : add tests for above
 
-
 2004-09-29(Wed) 10:50:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix rescue clause popped
 
 	* benchmark/bm_random.rb : move to benchmark/bmx_random.rb
 
-
 2004-09-29(Wed) 01:25:35 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* many many files: change stack frame design
-
 
 2004-09-16(Thu) 08:51:37 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h : support 'return' from method
 	in ensure clause
-
 
 2004-09-13(Mon) 21:56:40 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6556,19 +6093,16 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* depend : add 'vtest' rule(verbose test)
 
-
 2004-09-13(Mon) 10:58:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, yarvcore.h : support redo/next/break in
 	while/until
-
 
 2004-09-13(Mon) 08:50:19 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_jump.rb : added(correctly)
 
 	* benchamark/bm_(ensure|rescue|simplereturn).rb added
-
 
 2004-09-12(Sun) 23:30:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6584,7 +6118,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* ToDo : added
 
-
 2004-09-08(Wed) 12:34:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h, yarvcore.c : add idThrow*
@@ -6592,23 +6125,19 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* insns.def, compile.c, vm.c : support retry, break,
 	next, redo, return(incomplete)
 
-
 2004-09-03(Fri) 13:40:08 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add nop after rescue body
 
 	* insns.def, vm.c : support stack rewind when thrown
 
-
 2004-09-01(Wed) 17:31:01 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_exception.rb : added
 
-
 2004-09-01(Wed) 13:15:14 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, insns.def : implementing exception handling
-
 
 2004-09-01(Wed) 00:18:54 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6618,20 +6147,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c, yarvcore.h : add 'catch_table' to iseq_struct
 
-
 2004-08-30(Mon) 19:06:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.h : NEW_ISEQOBJ don't pass self as parent
 
 	* compile.c : use NEW_CHILD_ISEQOBJ explicitly
 
-
 2004-08-29(Sun) 21:09:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : trying to implement rescue/ensure
 
 	* insns.def : fix yield bug(lfp, dfp link)
-
 
 2004-08-28(Sat) 13:52:15 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6641,13 +6167,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def, insnhelper.h : remove unused source code
 
-
 2004-08-28(Sat) 08:51:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support NODE_DASGN
 
 	* test/test_block.rb : add test
-
 
 2004-08-28(Sat) 08:13:04 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6657,11 +6181,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_block.rb : added
 
-
 2004-08-28(Sat) 07:48:43 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_block.rb : fix block parameter name
-
 
 2004-08-28(Sat) 07:27:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6673,7 +6195,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* test/test_block.rb : added
 
 	* vm.c : fix block parameter stack dump
-
 
 2004-08-27(Fri) 23:56:47 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6688,7 +6209,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def(classdef) : fix bug
 
-
 2004-08-27(Fri) 04:53:13 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : support setconstant, getconstant, classdef,
@@ -6700,11 +6220,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_class.rb : added
 
-
 2004-08-25(Wed) 17:51:50 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : fix getconstant/setconstant/classdef
-
 
 2004-08-25(Wed) 14:27:10 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6721,7 +6239,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* and others...
 
-
 2004-08-18(Wed) 20:16:45 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix case/when statement with empty else clause
@@ -6734,13 +6251,11 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* tmpl/yarvarch.ja : update documents
 
-
 2004-05-22(Sat) 01:30:44 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvutil.rb : add eval_in_wrap
 
 	* test/test_*.rb : change to use eval_in_wrap
-
 
 2004-05-20(Thu) 02:50:32 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6752,11 +6267,9 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add debugi(...)
 
-
 2004-05-19(Wed) 23:19:38 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* test/test_method.rb : added
-
 
 2004-05-19(Wed) 22:56:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6767,7 +6280,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* extconf.rb : use --enable/disable-xxx
 
 	* version.h : ditto(don't touch to change yarv options)
-
 
 2004-05-19(Wed) 21:18:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6786,7 +6298,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_regexp.rb : added
 
-
 2004-05-19(Wed) 13:57:31 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : add compile_dstr(self, node)
@@ -6795,18 +6306,15 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : add toregexp
 
-
 2004-05-18(Tue) 10:12:20 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : support NODE_XDSTR
 
 	* test/test_bin.rb : add test for above change
 
-
 2004-05-18(Tue) 09:46:33 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def(send) : store regs before call_cfunc
-
 
 2004-05-18(Tue) 08:55:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6822,28 +6330,23 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.h : add 'extern ID idBackquote'
 
-
 2004-05-18(Tue) 00:09:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h : add USE_OPTIMIZED_BASIC_OPERATION
 
 	* yarvcore.h(struct thread_object) : add 'VALUE stat_insn_usage'
 
-
 2004-05-17(Mon) 11:28:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h, insns.def, yarvcore.c : add FAKE_INLINE_METHOD_CACHE
-
 
 2004-05-17(Mon) 09:05:53 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c : fix generating opt_* insn process
 
-
 2004-05-17(Mon) 08:58:49 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/(bm_tarai.rb, bm_fib.rb) : added
-
 
 2004-05-17(Mon) 08:20:12 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6855,7 +6358,6 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* yarvcore.c(iseq_init) : add parameter 'parent'
 
-
 2004-05-17(Mon) 01:49:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run.rb, bm_factorial.rb, bm_whileloop.rb : added
@@ -6866,21 +6368,17 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def(send) : check stack overflow
 
-
 2004-05-16(Sun) 08:00:55 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* change frame structure(debugging)
-
 
 2004-05-14(Fri) 15:06:02 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns2vm.rb : support file name arguments
 
-
 2004-05-14(Fri) 04:33:09 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def : support (easy) constant
-
 
 2004-05-12(Wed) 01:51:48 +0900  Koichi Sasada  <ko1@atdot.net>
 
@@ -6888,22 +6386,18 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : fix bug
 
-
 2004-05-12(Wed) 00:00:17 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h, compiler.h, version.h : move *DEBUG defs to version.h
-
 
 2004-05-11(Tue) 23:00:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h, version.h, yarvcore.h : move gcc ver check to version.h
 	and include version.h from yarvcore.h
 
-
 2004-05-11(Tue) 19:16:26 +0900  Koichi Sasada  <ko1@atdot.net>
 
 	* 0.0.0.d : imported
-
 
 Local variables:
 add-log-time-format: (lambda ()

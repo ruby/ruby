@@ -24,7 +24,6 @@
 #   define UINTPTR2NUM UINT2NUM
 #endif
 
-
 #define STRUCT_ALIGNOF(T, result) do { \
     (result) = RUBY_ALIGNOF(T); \
 } while(0)

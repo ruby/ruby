@@ -42,6 +42,5 @@ def list_comments(debugger, command, result, internal_dict):
         comment_offset = mem_addr + comment.GetChildMemberWithName("offset").GetValueAsUnsigned()
         print("%0#x %s" % (comment_offset, string.GetSummary()), file = result)
 
-
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_yjit.list_comments lc")

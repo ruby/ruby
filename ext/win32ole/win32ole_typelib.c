@@ -361,7 +361,6 @@ oletypelib_search_registry2(VALUE self, VALUE args)
     return found;
 }
 
-
 /*
  * call-seq:
  *    WIN32OLE_TYPELIB.new(typelib [, version1, version2]) -> WIN32OLE_TYPELIB object
@@ -786,7 +785,6 @@ typelib_file(VALUE ole)
     }
     return typelib_file_from_typelib(ole);
 }
-
 
 /*
  *  call-seq:

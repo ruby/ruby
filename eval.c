@@ -1481,7 +1481,6 @@ mod_using(VALUE self, VALUE module)
     return self;
 }
 
-
 /*
  *  call-seq:
  *     refinements -> array

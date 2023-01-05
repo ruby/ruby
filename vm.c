@@ -304,7 +304,6 @@ vm_cref_dup(const rb_cref_t *cref)
     return new_cref;
 }
 
-
 rb_cref_t *
 rb_vm_cref_dup_without_refinements(const rb_cref_t *cref)
 {
@@ -2150,7 +2149,6 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                     bmethod_return_value = THROW_DATA_VAL(err);
                 }
 
-
                 EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, bmethod_return_value);
                 if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
                     rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
@@ -2980,7 +2978,6 @@ static const rb_data_type_t vm_data_type = {
     {0, 0, vm_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
-
 
 static VALUE
 vm_default_params(void)
@@ -4322,7 +4319,6 @@ usage_analysis_clear(VALUE self, ID usage_hash)
 
     return Qtrue;
 }
-
 
 /* :nodoc: */
 static VALUE

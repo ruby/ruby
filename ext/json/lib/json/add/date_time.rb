@@ -46,5 +46,3 @@ class DateTime
     as_json.to_json(*args)
   end
 end
-
-

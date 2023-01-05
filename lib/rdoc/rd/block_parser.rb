@@ -15,7 +15,6 @@ class RDoc::RD
 
 class BlockParser < Racc::Parser
 
-
 # :stopdoc:
 
 MARK_TO_LEVEL = {

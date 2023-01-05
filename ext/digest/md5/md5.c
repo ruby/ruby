@@ -95,7 +95,6 @@ main(void)
 }
 #endif /* TEST */
 
-
 /*
  * For reference, here is the program that computed the T values.
  */
@@ -193,7 +192,6 @@ main(void)
 #define T62 /* 0xbd3af235 */ (T_MASK ^ 0x42c50dca)
 #define T63    0x2ad7d2bb
 #define T64 /* 0xeb86d391 */ (T_MASK ^ 0x14792c6e)
-
 
 static void
 md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)

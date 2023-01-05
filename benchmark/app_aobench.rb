@@ -56,7 +56,6 @@ class Vec
   end
 end
 
-
 class Sphere
   def initialize(center, radius)
     @center = center

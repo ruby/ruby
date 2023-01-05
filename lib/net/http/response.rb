@@ -715,4 +715,3 @@ class Net::HTTPResponse
   end
 
 end
-

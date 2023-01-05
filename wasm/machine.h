@@ -11,7 +11,6 @@ void rb_wasm_scan_locals(rb_wasm_scan_func scan);
 // Get base address of userland C-stack memory space in WebAssembly. Used by conservative GC
 void *rb_wasm_stack_get_base(void);
 
-
 // Get the current stack pointer
 void *rb_wasm_get_stack_pointer(void);
 

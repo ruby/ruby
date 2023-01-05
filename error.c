@@ -309,7 +309,6 @@ rb_warning_warn(VALUE mod, VALUE str)
     return rb_funcallv(mod, id_warn, 1, &str);
 }
 
-
 static int
 rb_warning_warn_arity(void)
 {
@@ -816,7 +815,6 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
 
     die();
 }
-
 
 void
 rb_bug_errno(const char *mesg, int errno_arg)
@@ -1703,7 +1701,6 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
     return exc;
 }
 
-
 /*
  * call-seq:
  *   system_exit.status   -> integer
@@ -1716,7 +1713,6 @@ exit_status(VALUE exc)
 {
     return rb_attr_get(exc, id_status);
 }
-
 
 /*
  * call-seq:
@@ -2327,7 +2323,6 @@ no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-
 /*
  * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
@@ -2537,7 +2532,6 @@ syserr_eqq(VALUE self, VALUE exc)
     e = rb_const_get(self, id_Errno);
     return RBOOL(FIXNUM_P(num) ? num == e : rb_equal(num, e));
 }
-
 
 /*
  *  Document-class: StandardError

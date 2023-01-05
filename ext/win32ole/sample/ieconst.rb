@@ -30,4 +30,3 @@ end
 
 puts WIN32OLE::VERSION
 ie.quit
-

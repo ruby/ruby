@@ -100,7 +100,6 @@ VALUE rb_define_class_id_under(VALUE outer, ID id, VALUE super);
  */
 VALUE rb_module_new(void);
 
-
 /**
  * Creates a new, anonymous refinement.
  *
@@ -199,7 +198,6 @@ VALUE rb_class_descendants(VALUE klass);
  * @internal
  */
 VALUE rb_class_subclasses(VALUE klass);
-
 
 /**
  *  Returns the attached object for a singleton class.

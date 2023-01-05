@@ -72,7 +72,6 @@ describe "String#slice! with index" do
     "hello".slice!(obj).should == ?e
   end
 
-
   it "returns the character given by the character index" do
     "hellö there".slice!(1).should == "e"
     "hellö there".slice!(4).should == "ö"
@@ -235,7 +234,6 @@ describe "String#slice! Range" do
     a.slice!(range_incl).should == "OO"
   end
 
-
   it "returns the substring given by the character offsets of the range" do
     "hellö there".slice!(1..1).should == "e"
     "hellö there".slice!(1..3).should == "ell"
@@ -245,7 +243,6 @@ describe "String#slice! Range" do
     "hellö there".slice!(5..-1).should == " there"
     "hellö there".slice!(5...-1).should == " ther"
   end
-
 
   it "raises a FrozenError on a frozen instance that is modified" do
     -> { "hello".freeze.slice!(1..3)  }.should raise_error(FrozenError)

@@ -126,7 +126,6 @@ module_eval(<<'...end edtf.y/module_eval...', 'edtf.y', 468)
     end
   end
 
-
 # -*- racc -*-
 ...end edtf.y/module_eval...
 ##### State transition tables begin ###

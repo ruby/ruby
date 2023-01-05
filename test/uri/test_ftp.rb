@@ -4,7 +4,6 @@ require 'uri/ftp'
 
 module URI
 
-
 class TestFTP < Test::Unit::TestCase
   def setup
   end
@@ -62,6 +61,5 @@ class TestFTP < Test::Unit::TestCase
     end
   end
 end
-
 
 end

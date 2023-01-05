@@ -763,7 +763,6 @@ class TestModule < Test::Unit::TestCase
     sc.prepend m1
     assert_equal([:m, :m0, :m1, :sc, :m0, :m1, :c], sc.new.m)
 
-
     c = Class.new{def m; [:c] end}
     sc = Class.new(c){def m; [:sc] + super end}
     m0 = Module.new{def m; [:m0] + super end}
@@ -1720,7 +1719,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal(:bClass3, b.__send__(:bClass3))
   end
 
-
   def test_nonascii_name
     c = eval("class ::C\u{df}; self; end")
     assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
@@ -1729,7 +1727,6 @@ class TestModule < Test::Unit::TestCase
     c = Module.new.module_eval("class X\u{df} < Module; self; end")
     assert_match(/::X\u{df}:/, c.new.to_s)
   end
-
 
   def test_const_added
     eval(<<~RUBY)

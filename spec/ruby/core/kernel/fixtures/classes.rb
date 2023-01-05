@@ -209,7 +209,6 @@ module KernelSpecs
     end
   end
 
-
   module BlockGiven
     def self.accept_block
       block_given?

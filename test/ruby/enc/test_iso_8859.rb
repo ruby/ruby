@@ -163,4 +163,3 @@ class TestISO8859 < Test::Unit::TestCase
     eval("# encoding: iso8859-16\n" + ASSERTS.gsub(/ENCODING/m, "iso8859-16"))
   end
 end
-

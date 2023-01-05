@@ -7,14 +7,12 @@
 
   % ruby holderc.rb druby://yourhost:1234
 
-
 ==  without timeridconv:
   % ruby holders.rb
   druby://yourhost:1234
 
   % ruby holderc.rb druby://yourhost:1234
 =end
-
 
 require 'drb/drb'
 

@@ -2452,7 +2452,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 }
 #endif
 
-
 /*
  *  String-specific code
  */

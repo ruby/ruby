@@ -9,7 +9,6 @@ Markdown: Basics
     <li><a href="/projects/markdown/dingus" title="Online Markdown Web Form">Dingus</a></li>
 </ul>
 
-
 Getting the Gist of Markdown's Formatting Syntax
 ------------------------------------------------
 
@@ -30,7 +29,6 @@ can [see the source for it by adding '.text' to the URL] [src].
   [s]: /projects/markdown/syntax  "Markdown Syntax"
   [d]: /projects/markdown/dingus  "Markdown Dingus"
   [src]: /projects/markdown/basics.text
-
 
 ## Paragraphs, Headers, Blockquotes ##
 
@@ -71,7 +69,6 @@ Markdown:
     >
     > ## This is an H2 in a blockquote
 
-
 Output:
 
     <h1>A First Level Header</h1>
@@ -95,8 +92,6 @@ Output:
         <h2>This is an H2 in a blockquote</h2>
     </blockquote>
 
-
-
 ### Phrase Emphasis ###
 
 Markdown uses asterisks and underscores to indicate spans of emphasis.
@@ -117,7 +112,6 @@ Output:
     <p>Use two asterisks for <strong>strong emphasis</strong>.
     Or, if you prefer, <strong>use two underscores instead</strong>.</p>
    
-
 
 ## Lists ##
 
@@ -183,7 +177,6 @@ Output:
     </ul>
     
 
-
 ### Links ###
 
 Markdown supports two styles for creating links: *inline* and
@@ -239,7 +232,6 @@ Output:
     <p>I start my morning with a cup of coffee and
     <a href="http://www.nytimes.com/">The New York Times</a>.</p>
 
-
 ### Images ###
 
 Image syntax is very much like link syntax.
@@ -257,8 +249,6 @@ Reference-style:
 Both of the above examples produce the same output:
 
     <img src="/path/to/img.jpg" alt="alt text" title="Title" />
-
-
 
 ### Code ###
 
@@ -280,7 +270,6 @@ Output:
     <p>I wish SmartyPants used named entities like
     <code>&amp;mdash;</code> instead of decimal-encoded
     entities like <code>&amp;#8212;</code>.</p>
-
 
 To specify an entire block of pre-formatted code, indent every line of
 the block by 4 spaces or 1 tab. Just like with code spans, `&`, `<`,

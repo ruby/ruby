@@ -39,4 +39,3 @@ class RDoc::ERBIO < ERB
   end
 
 end
-

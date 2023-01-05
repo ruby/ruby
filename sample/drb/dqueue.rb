@@ -8,4 +8,3 @@ require 'drb/drb'
 DRb.start_service(nil, Thread::Queue.new)
 puts DRb.uri
 DRb.thread.join
-

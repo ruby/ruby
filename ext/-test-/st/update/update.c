@@ -31,4 +31,3 @@ Init_update(void)
     VALUE st = rb_define_class_under(rb_define_module("Bug"), "StTable", rb_cHash);
     rb_define_method(st, "st_update", test_st_update, 1);
 }
-

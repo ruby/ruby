@@ -117,7 +117,6 @@ module WEBrick
     end
   end
 
-
   ##
   #--
   # Adds SSL functionality to WEBrick::HTTPServer

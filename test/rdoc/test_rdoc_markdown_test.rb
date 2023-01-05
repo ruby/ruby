@@ -1422,7 +1422,6 @@ foo
         para("Because link names may contain spaces, this shortcut even works for\n" +
             "multiple words in the link text:"),
 
-
         verb("Visit [Daring Fireball][] for more information.\n"),
 
         para("And then define the link:"),

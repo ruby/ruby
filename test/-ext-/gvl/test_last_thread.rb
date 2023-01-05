@@ -19,4 +19,3 @@ class TestLastThread < Test::Unit::TestCase
     end;
   end
 end
-

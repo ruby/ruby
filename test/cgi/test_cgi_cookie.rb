@@ -4,10 +4,8 @@ require 'cgi'
 require 'stringio'
 require_relative 'update_env'
 
-
 class CGICookieTest < Test::Unit::TestCase
   include UpdateEnv
-
 
   def setup
     @environ = {}
@@ -23,7 +21,6 @@ class CGICookieTest < Test::Unit::TestCase
     ENV.update(@environ)
   end
 
-
   def test_cgi_cookie_new_simple
     cookie = CGI::Cookie.new('name1', 'val1', '&<>"', @str1)
     assert_equal('name1', cookie.name)
@@ -35,7 +32,6 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal(false, cookie.httponly)
     assert_equal("name1=val1&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93; path=", cookie.to_s)
   end
-
 
   def test_cgi_cookie_new_complex
     t = Time.gm(2030, 12, 31, 23, 59, 59)
@@ -59,7 +55,6 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal('name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; domain=www.example.com; path=/cgi-bin/myapp/; expires=Tue, 31 Dec 2030 23:59:59 GMT; secure; HttpOnly', cookie.to_s)
   end
 
-
   def test_cgi_cookie_new_with_domain
     h = {'name'=>'name1', 'value'=>'value1'}
     cookie = CGI::Cookie.new(h.merge('domain'=>'a.example.com'))
@@ -80,7 +75,6 @@ class CGICookieTest < Test::Unit::TestCase
     }
   end
 
-
   def test_cgi_cookie_scriptname
     cookie = CGI::Cookie.new('name1', 'value1')
     assert_equal('', cookie.path)
@@ -93,7 +87,6 @@ class CGICookieTest < Test::Unit::TestCase
     cookie = CGI::Cookie.new('name'=>'name1', 'value'=>'value1')
     assert_equal('/cgi-bin/app/', cookie.path)
   end
-
 
   def test_cgi_cookie_parse
     ## ';' separator
@@ -138,7 +131,6 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal(['A', 'B', 'C'], cookie.collect{|e| e.upcase})
   end
 
-
   def test_cgi_cookie_domain_injection_into_name
     name = "a=b; domain=example.com;"
     path = "/"
@@ -150,7 +142,6 @@ class CGICookieTest < Test::Unit::TestCase
                       'path' => path)
     end
   end
-
 
   def test_cgi_cookie_newline_injection_into_name
     name = "a=b;\r\nLocation: http://example.com#"
@@ -164,7 +155,6 @@ class CGICookieTest < Test::Unit::TestCase
     end
   end
 
-
   def test_cgi_cookie_multibyte_injection_into_name
     name = "a=b;\u3042"
     path = "/"
@@ -176,7 +166,6 @@ class CGICookieTest < Test::Unit::TestCase
                       'path' => path)
     end
   end
-
 
   def test_cgi_cookie_injection_into_path
     name = "name"
@@ -190,7 +179,6 @@ class CGICookieTest < Test::Unit::TestCase
     end
   end
 
-
   def test_cgi_cookie_injection_into_domain
     name = "name"
     path = "/"
@@ -202,7 +190,6 @@ class CGICookieTest < Test::Unit::TestCase
                       'path' => path)
     end
   end
-
 
   instance_methods.each do |method|
     private method if method =~ /^test_(.*)/ && $1 != ENV['TEST']

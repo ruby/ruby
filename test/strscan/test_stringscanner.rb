@@ -255,7 +255,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil           s.scan(/\w+/)
     assert_nil           s.scan(/\w+/)
 
-
     str = 'stra strb strc'.dup
     s = create_string_scanner(str, false)
     tmp = s.scan(/\w+/)
@@ -450,7 +449,6 @@ class TestStringScanner < Test::Unit::TestCase
     s.scan(/./)
     assert_nil           s[0]
     assert_nil           s[0]
-
 
     s = create_string_scanner("\244\242".dup.force_encoding("euc-jp"))
     s.getch

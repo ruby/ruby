@@ -62,8 +62,6 @@ $ ruby vertical.rb
 
 Can you tell how they work? Enjoy analyzing!
 
-
-
 ---
 Code reading tips (spoiler)
 

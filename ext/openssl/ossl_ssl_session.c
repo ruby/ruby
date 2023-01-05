@@ -270,10 +270,8 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-
 	return ossl_membio2str(out);
 }
-
 
 /*
  * call-seq:

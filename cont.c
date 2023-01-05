@@ -229,7 +229,6 @@ typedef struct rb_context_struct {
     struct rb_jit_cont *jit_cont; // Continuation contexts for JITs
 } rb_context_t;
 
-
 /*
  * Fiber status:
  *    [Fiber.new] ------> FIBER_CREATED
@@ -1787,7 +1786,6 @@ lookup_rollback_func(e_proc *ensure_func)
         return (e_proc *) val;
     return (e_proc *) Qundef;
 }
-
 
 static inline void
 rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *target)

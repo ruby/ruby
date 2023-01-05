@@ -151,7 +151,6 @@ struct rb_ractor_struct {
     } *mfd;
 }; // rb_ractor_t is defined in vm_core.h
 
-
 static inline VALUE
 rb_ractor_self(const rb_ractor_t *r)
 {

@@ -27,7 +27,6 @@ class TestNetHTTP < Test::Unit::TestCase
 
     assert_not_predicate http, :proxy_from_env?
 
-
     proxy_class = Net::HTTP.Proxy 'proxy.example'
     assert_equal 'proxy.example', proxy_class.proxy_address
     assert_equal 80,              proxy_class.proxy_port
@@ -617,7 +616,6 @@ module TestNetHTTP_version_1_1_methods
     th.join
   end
 end
-
 
 module TestNetHTTP_version_1_2_methods
 

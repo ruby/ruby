@@ -568,7 +568,6 @@ class TestSyslogLogger < TestSyslogRootLogger
 
 end if defined?(Syslog)
 
-
 # Create test class for each available facility
 
 Syslog::Facility.constants.each do |facility_symb|

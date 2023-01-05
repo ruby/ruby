@@ -42,4 +42,3 @@ end
 
 N = 9 # (ARGV[0] || 1).to_i
 puts "Pfannkuchen(#{N}) = #{fannkuch(N)}"
-

@@ -149,4 +149,3 @@ class Child < Parent
 end
 
 XREF_DATA
-

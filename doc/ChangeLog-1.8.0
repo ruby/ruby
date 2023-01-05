@@ -6957,7 +6957,6 @@ Mon Sep  9 11:21:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c (strio_reopen): added.
 
-
 Sun Sep  8 21:29:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c (time_free): prototype; struct time_object -> void *.
@@ -17189,7 +17188,6 @@ Fri Jun  2 11:24:48 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  block.  old behavior was back.
 
 Fri Jun  2 00:42:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
 
 	* eval.c (rb_thread_cleanup): should clear priority for thread
 	  termination.

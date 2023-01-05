@@ -1771,7 +1771,6 @@ regexp_contents: # nothing
                     }
                 | backref
 
-
           symbol: tSYMBOL
                     {
                       result = @builder.symbol(val[0])

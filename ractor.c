@@ -2224,7 +2224,6 @@ struct obj_traverse_data {
     VALUE rec_hash;
 };
 
-
 struct obj_traverse_callback_data {
     bool stop;
     struct obj_traverse_data *data;
@@ -2618,7 +2617,6 @@ ractor_reset_belonging(VALUE obj)
 #endif
     return obj;
 }
-
 
 /// traverse and replace function
 

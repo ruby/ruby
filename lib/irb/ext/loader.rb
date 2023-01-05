@@ -10,7 +10,6 @@
 #
 #
 
-
 module IRB # :nodoc:
   # Raised in the event of an exception in a file loaded from an Irb session
   class LoadAbort < Exception;end

@@ -71,4 +71,3 @@ class RDoc::NormalModule < RDoc::ClassModule
   end
 
 end
-

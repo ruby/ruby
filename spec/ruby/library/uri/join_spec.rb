@@ -39,7 +39,6 @@ describe "URI.join" do
   end
 end
 
-
 # assert_equal(URI.parse('http://foo/bar'), URI.join('http://foo/bar'))
 # assert_equal(URI.parse('http://foo/bar'), URI.join('http://foo', 'bar'))
 # assert_equal(URI.parse('http://foo/bar/'), URI.join('http://foo', 'bar/'))

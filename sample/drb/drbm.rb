@@ -46,7 +46,6 @@ class Bar < Foo
   end
 end
 
-
 if __FILE__ == $0
   foo = Foo.new
   s1 = DRb::DRbServer.new('druby://:7640', foo)
@@ -57,4 +56,3 @@ if __FILE__ == $0
   s1.thread.join
   s2.thread.join
 end
-

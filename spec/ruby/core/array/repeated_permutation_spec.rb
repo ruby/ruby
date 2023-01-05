@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 
-
 describe "Array#repeated_permutation" do
 
   before :each do

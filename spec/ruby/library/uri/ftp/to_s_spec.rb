@@ -1,7 +1,6 @@
 require_relative '../../../spec_helper'
 require 'uri'
 
-
 describe "URI::FTP#to_s" do
   before :each do
     @url = URI.parse('ftp://example.com')

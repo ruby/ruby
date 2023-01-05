@@ -166,7 +166,6 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::RSAError){ key.private_encrypt(plain0, 666) }
   end
 
-
   def test_verify_empty_rsa
     rsa = OpenSSL::PKey::RSA.new
     assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {

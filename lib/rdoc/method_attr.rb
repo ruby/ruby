@@ -68,7 +68,6 @@ class RDoc::MethodAttr < RDoc::CodeObject
 
   attr_reader :param_seq
 
-
   ##
   # Creates a new MethodAttr from token stream +text+ and method or attribute
   # name +name+.
@@ -416,4 +415,3 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
 end
-

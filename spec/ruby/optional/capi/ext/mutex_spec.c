@@ -29,7 +29,6 @@ VALUE mutex_spec_rb_mutex_sleep(VALUE self, VALUE mutex, VALUE timeout) {
   return rb_mutex_sleep(mutex, timeout);
 }
 
-
 VALUE mutex_spec_rb_mutex_callback(VALUE arg) {
   return rb_funcall(arg, rb_intern("call"), 0);
 }
@@ -52,4 +51,3 @@ void Init_mutex_spec(void) {
 #ifdef __cplusplus
 }
 #endif
-

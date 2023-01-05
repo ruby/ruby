@@ -724,7 +724,6 @@ rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 
-
 // If true, the iseq is leaf and it can be replaced by a single C call.
 bool
 rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)

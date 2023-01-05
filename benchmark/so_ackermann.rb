@@ -15,5 +15,3 @@ end
 
 NUM = 9
 ack(3, NUM)
-
-

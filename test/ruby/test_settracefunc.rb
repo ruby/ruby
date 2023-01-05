@@ -2369,7 +2369,6 @@ CODE
     end
     assert_equal [1, :tp, 2, 3], events
 
-
     e = assert_raise(ArgumentError) do
       TracePoint.new(:line){}.enable(target_line: 10){}
     end

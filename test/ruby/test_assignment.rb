@@ -187,7 +187,6 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal([:x1, :y1, :x2, [:[], 1, 2, 3], :x3, [:[], 4], :r1, :r2], ord)
     assert_equal({:A=>:r1, :B=>[6, 7], :C=>:r2}, constants)
 
-
     ord, constants = test_mod_class.run(
       "x1.y1::A, *x2[1, 2, 3]::B, x3[4]::C, x4::D = r1, 6, 7, r2, 8"
     )

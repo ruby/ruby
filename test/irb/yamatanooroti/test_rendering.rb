@@ -103,7 +103,6 @@ begin
         (a)
           &.b()
 
-
         class A def b; self; end; def c; true; end; end;
         a = A.new
         a

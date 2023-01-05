@@ -60,7 +60,6 @@ ossl_hmac_alloc(VALUE klass)
     return obj;
 }
 
-
 /*
  *  call-seq:
  *     HMAC.new(key, digest) -> hmac

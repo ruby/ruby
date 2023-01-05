@@ -6,7 +6,6 @@ begin
 rescue LoadError
 end
 
-
 class TestSocket_UDPSocket < Test::Unit::TestCase
   def test_open
     assert_nothing_raised { UDPSocket.open {} }

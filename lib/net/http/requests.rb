@@ -392,4 +392,3 @@ class Net::HTTP::Unlock < Net::HTTPRequest
   REQUEST_HAS_BODY = true
   RESPONSE_HAS_BODY = true
 end
-

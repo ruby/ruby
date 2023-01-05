@@ -4,13 +4,11 @@ require_relative '../fixtures/classes'
 
 describe "ERB::DefMethod.def_erb_method" do
 
-
   input = <<'END'
 <% for item in @items %>
 <b><%= item %></b>
 <% end %>
 END
-
 
   it "define method to render eRuby file as an instance method of current module" do
     expected = <<'END'
@@ -40,7 +38,6 @@ END
 
   end
 
-
   it "define method to render eRuby object as an instance method of current module" do
     expected = <<'END'
 <b>10</b>
@@ -59,6 +56,5 @@ END
     end
     MyClass4ForErb.new([10,20,30]).render().should == expected
   end
-
 
 end

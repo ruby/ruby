@@ -1252,7 +1252,6 @@ timegmw(struct vtm *vtm)
 
     timew = timegmw_noleapsecond(vtm);
 
-
     if (number_of_leap_seconds_known == 0) {
         /* When init_leap_second_info() is executed, the timezone doesn't have
          * leap second information. Disable leap second for calculating gmtime.
@@ -5463,7 +5462,6 @@ time_mload(VALUE time, VALUE str)
 
         usec = (long)(s & 0xfffff);
         nsec = usec * 1000;
-
 
         vtm.subsecx = mulquov(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000));
         if (nano_num != Qnil) {

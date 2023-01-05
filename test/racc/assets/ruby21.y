@@ -1852,7 +1852,6 @@ regexp_contents: # nothing
                     }
                 | backref
 
-
           symbol: tSYMBOL
                     {
                       result = @builder.symbol(val[0])
@@ -1999,7 +1998,6 @@ keyword_variable: kNIL
                       @lexer.in_kwarg = val[0]
                       result = @builder.args(nil, val[1], nil)
                     }
-
 
        args_tail: f_kwarg tCOMMA f_kwrest opt_f_block_arg
                     {

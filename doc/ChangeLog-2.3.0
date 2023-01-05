@@ -402,7 +402,6 @@ Wed Dec 16 20:32:43 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
 
-
 Wed Dec 16 19:30:56 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm.c (vm_make_proc_from_block): should convert a Symbol to a Proc.
@@ -7125,7 +7124,6 @@ Sun Jun 21 05:31:41 2015  Shota Fukumori  <her@sorah.jp>
 	  Based patch by Kohei Suzuki (eagletmt). [ruby-core:69692] [Bug #11291]
 
 	* test/objspace/test_objspace.rb(test_dump_special_consts): Test for above fix.
-
 
 Sat Jun 20 03:56:58 2015  Yusuke Endoh  <mame@ruby-lang.org>
 

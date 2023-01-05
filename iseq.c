@@ -3873,7 +3873,6 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
 }
 #endif
 
-
 /*
  *  call-seq:
  *     iseq.script_lines -> array or nil

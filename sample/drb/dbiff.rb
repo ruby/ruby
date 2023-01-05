@@ -48,4 +48,3 @@ def main
 end
 
 main
-

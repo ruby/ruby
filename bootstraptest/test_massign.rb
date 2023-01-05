@@ -160,7 +160,6 @@ assert_equal 'ok', %q{
         a, b, *c, d, e, f = *ary; [a, b, c, d, e, f]
       }
 
-
 #
 assert_equal 'ok', %q{
   a,s=[],"aaa"

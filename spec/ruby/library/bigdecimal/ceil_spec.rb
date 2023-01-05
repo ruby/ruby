@@ -38,7 +38,6 @@ describe "BigDecimal#ceil" do
     @zero_pos.ceil.should == @zero_pos
     @zero_neg.ceil.should == @zero_neg
 
-
     BigDecimal('2.3').ceil.should == 3
     BigDecimal('2.5').ceil.should == 3
     BigDecimal('2.9999').ceil.should == 3

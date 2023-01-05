@@ -32,7 +32,6 @@ describe "BigDecimal#<=>" do
     @nan = BigDecimal("NaN")
   end
 
-
   it "returns 0 if a == b" do
     (@pos_int <=> @pos_int).should == 0
     (@neg_int <=> @neg_int).should == 0

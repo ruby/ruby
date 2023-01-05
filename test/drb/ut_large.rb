@@ -59,4 +59,3 @@ if __FILE__ == $0
   DRb.thread.join
   es.stop_service if es.alive?
 end
-

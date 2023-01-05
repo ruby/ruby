@@ -21,7 +21,6 @@ TagAction: specs tagged with 'fails':
 Tag#me errors
 Tag#me érròrs in unicode
 
-
 1)
 Tag#me errors FAILED
 Expected 1 == 2

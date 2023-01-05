@@ -2103,7 +2103,6 @@ class Resolv
 
         attr_reader :altitude
 
-
         def encode_rdata(msg) # :nodoc:
           msg.put_bytes(@version)
           msg.put_bytes(@ssize.scalar)
@@ -2907,4 +2906,3 @@ class Resolv
   AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 
 end
-

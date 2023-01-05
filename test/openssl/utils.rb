@@ -72,7 +72,6 @@ module OpenSSL::TestUtils
     cert
   end
 
-
   def issue_cert(dn, key, serial, extensions, issuer, issuer_key,
                  not_before: nil, not_after: nil, digest: "sha256")
     cert = generate_cert(dn, key, serial, issuer,

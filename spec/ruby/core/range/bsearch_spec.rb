@@ -329,7 +329,6 @@ describe "Range#bsearch" do
     end
   end
 
-
   context "with beginless ranges and Integer values" do
     context "with a block returning true or false" do
       it "returns the smallest element for which block returns true" do

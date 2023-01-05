@@ -62,7 +62,6 @@
     SET_SIN6_LEN(init_sockaddr_ptr, init_sockaddr_len); \
   } while (0)
 
-
 /* for strict-aliasing rule */
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 #  ifdef HAVE_STRUCT_SOCKADDR_IN_SUN_LEN

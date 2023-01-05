@@ -81,7 +81,6 @@ module TestIRB
       assert_equal(nil, workspace.code_around_binding)
     end
 
-
     def test_toplevel_binding_local_variables
       pend if RUBY_ENGINE == 'truffleruby'
       bug17623 = '[ruby-core:102468]'

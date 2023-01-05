@@ -326,7 +326,6 @@ module WEBrick
       end
     end
 
-
     ##
     # Sends the headers on +socket+
 

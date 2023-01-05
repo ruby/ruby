@@ -170,4 +170,3 @@ class TestTupleBag < Test::Unit::TestCase
   end
 
 end
-

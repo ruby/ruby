@@ -73,4 +73,3 @@ class TestMethodCache < Test::Unit::TestCase
     assert_equal :c0, c0.new.foo
   end
 end
-

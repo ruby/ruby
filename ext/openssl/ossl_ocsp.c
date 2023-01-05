@@ -971,7 +971,6 @@ ossl_ocspbres_get_responses(VALUE self)
     return ret;
 }
 
-
 /*
  * call-seq:
  *   basic_response.find_response(certificate_id) -> SingleResponse | nil
@@ -1399,7 +1398,6 @@ ossl_ocspsres_to_der(VALUE self)
 
     return str;
 }
-
 
 /*
  * OCSP::CertificateId

@@ -616,7 +616,6 @@ dir_check(VALUE dir)
 
 #define GetDIR(obj, dirp) ((dirp) = dir_check(obj))
 
-
 /*
  *  call-seq:
  *     dir.inspect -> string
@@ -2990,7 +2989,6 @@ dir_open_dir(int argc, VALUE *argv)
     rb_check_typeddata(dir, &dir_data_type);
     return dir;
 }
-
 
 /*
  *  call-seq:

@@ -94,7 +94,6 @@ class Huia::Parser
     indented_wo_stmts: indent outdent                   { return val[0] }
     outdent:           OUTDENT { return pop_scope }
 
-
     indent_w_args:     indent_pipe indent_args PIPE nlq INDENT { return val[0] }
     indent_pipe:       PIPE   { return push_scope }
     indent_wo_args:    INDENT { return push_scope }

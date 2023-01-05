@@ -10,4 +10,3 @@ def tak x, y, z
 end
 
 tak(18, 9, 0)
-

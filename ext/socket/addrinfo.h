@@ -71,7 +71,6 @@
 
 /* special compatibility hack -- end*/
 
-
 /*
  * Error return codes from getaddrinfo()
  */

@@ -261,5 +261,3 @@ class TestNum2int < Test::Unit::TestCase
   end
 
 end
-
-

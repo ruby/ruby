@@ -32,7 +32,6 @@
 # Suggested ICU specific alias information
 #<icu:alias>                  "glibc-BIG5HKSCS_VPUA"
 
-
 # The following was the generated state table.
 # This does not account for unassigned characters
 #<icu:state>                  0-80, 88-8b:1, 8d-fe:1

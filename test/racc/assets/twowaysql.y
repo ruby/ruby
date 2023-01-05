@@ -143,7 +143,6 @@ embed_var      : EMBED_VARIABLE IDENT
 
 end
 
-
 ---- inner
 
 require 'strscan'
@@ -159,7 +158,6 @@ def initialize(opts={})
   @preserve_comment = opts[:preserve_comment]
   @num_questions = 0
 end
-
 
 PAREN_EXAMPLE                = '\([^\)]+\)'
 BEGIN_BIND_VARIABLE          = '(\/|\#)\*([^\*]+)\*\1'
@@ -186,7 +184,6 @@ ELSE_PATTERN            = /\A\-{2,}\s*ELSE\s*/
 AND_PATTERN             = /\A(\ *AND)\b/i
 OR_PATTERN              = /\A(\ *OR)\b/i
 
-
 def parse( io )
   @q = []
   io.each_line(nil) do |whole|
@@ -201,12 +198,10 @@ def parse( io )
   do_parse
 end
 
-
 ## called by racc
 def next_token
   @q.shift
 end
-
 
 def scan_str
   until @s.eos? do
@@ -255,7 +250,6 @@ def scan_str
   end
 end
 
-
 ## override racc's default on_error method
 def on_error(t, v, vstack)
   ## cursor in value-stack is an array of two items,
@@ -268,7 +262,6 @@ def on_error(t, v, vstack)
   rest = @s.string[pos .. -1]
   raise Racc::ParseError, "syntax error at or near line:[#{line}], str:[#{rest}]"
 end
-
 
 def line_no(pos)
   lines = 0

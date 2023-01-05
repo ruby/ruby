@@ -1079,7 +1079,6 @@ rb_vm_bugreport(const void *ctx)
             "-------------------------------------------\n");
     rb_print_backtrace();
 
-
     fprintf(stderr, "\n");
 #endif /* USE_BACKTRACE */
 

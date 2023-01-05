@@ -208,7 +208,6 @@ module Fiddle
                                                 ])
       assert_equal LIBC::StructNestedStruct.size, mesh_struct.size
 
-
       keyboard_event_struct = Fiddle::Importer.struct(['unsigned int state', 'char key'])
       mouse_event_struct    = Fiddle::Importer.struct(['unsigned int button', 'unsigned short x', 'unsigned short y'])
       event_union           = Fiddle::Importer.union([{ keboard: keyboard_event_struct, mouse: mouse_event_struct}])

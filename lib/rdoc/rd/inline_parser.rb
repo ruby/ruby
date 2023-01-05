@@ -16,7 +16,6 @@ class RDoc::RD
 
 class InlineParser < Racc::Parser
 
-
 # :stopdoc:
 
 EM_OPEN = '((*'

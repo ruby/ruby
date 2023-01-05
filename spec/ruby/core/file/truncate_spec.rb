@@ -84,7 +84,6 @@ describe "File.truncate" do
   end
 end
 
-
 describe "File#truncate" do
   before :each do
     @name = tmp("test.txt")

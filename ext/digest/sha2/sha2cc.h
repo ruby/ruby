@@ -14,7 +14,6 @@ static DEFINE_FINISH_FUNC_FROM_FINAL(SHA384)
 static DEFINE_UPDATE_FUNC_FOR_UINT(SHA512)
 static DEFINE_FINISH_FUNC_FROM_FINAL(SHA512)
 
-
 #undef SHA256_Update
 #undef SHA256_Finish
 #define SHA256_Update rb_digest_SHA256_update

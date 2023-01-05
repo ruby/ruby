@@ -122,7 +122,6 @@ static VALUE evs_delete(long i);
 static VALUE evs_entry(long i);
 static long  evs_length(void);
 
-
 static const rb_data_type_t oleevent_datatype = {
     "win32ole_event",
     {NULL, oleevent_free, oleevent_size,},
@@ -862,7 +861,6 @@ ole_delete_event(VALUE ary, VALUE ev)
         rb_ary_delete_at(ary, at);
     }
 }
-
 
 static void
 oleevent_free(void *ptr)

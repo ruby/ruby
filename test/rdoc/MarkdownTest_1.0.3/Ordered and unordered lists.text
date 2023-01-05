@@ -6,7 +6,6 @@ Asterisks tight:
 *	asterisk 2
 *	asterisk 3
 
-
 Asterisks loose:
 
 *	asterisk 1
@@ -23,7 +22,6 @@ Pluses tight:
 +	Plus 2
 +	Plus 3
 
-
 Pluses loose:
 
 +	Plus 1
@@ -34,13 +32,11 @@ Pluses loose:
 
 * * *
 
-
 Minuses tight:
 
 -	Minus 1
 -	Minus 2
 -	Minus 3
-
 
 Minuses loose:
 
@@ -49,7 +45,6 @@ Minuses loose:
 -	Minus 2
 
 -	Minus 3
-
 
 ## Ordered
 
@@ -64,7 +59,6 @@ and:
 1. One
 2. Two
 3. Three
-
 
 Loose using tabs:
 
@@ -93,8 +87,6 @@ Multiple paragraphs:
 
 3.	Item 3.
 
-
-
 ## Nested
 
 *	Tab
@@ -120,7 +112,6 @@ Same thing but with paragraphs:
 	* Foe
 
 3. Third
-
 
 This was an error in Markdown 1.0.1:
 

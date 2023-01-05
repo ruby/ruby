@@ -290,8 +290,6 @@ const OnigSyntaxType OnigSyntaxPython = {
   }
 };
 
-
-
 extern int
 onig_set_default_syntax(const OnigSyntaxType* syntax)
 {

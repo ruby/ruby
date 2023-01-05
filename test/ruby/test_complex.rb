@@ -407,7 +407,6 @@ class Complex_Test < Test::Unit::TestCase
     end;
   end
 
-
   def test_mul_with_redefining_rational_mult
     assert_in_out_err([], <<-'end;', ['true'], [])
       class Rational

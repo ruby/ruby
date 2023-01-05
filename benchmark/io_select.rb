@@ -6,4 +6,3 @@ nr = 1000000
 nr.times {
   IO.select nil, w
 }
-

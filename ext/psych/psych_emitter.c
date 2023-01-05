@@ -152,7 +152,6 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     yaml_version_directive_t version_directive;
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
-
     Check_Type(version, T_ARRAY);
 
     if(RARRAY_LEN(version) > 0) {

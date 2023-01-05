@@ -22,4 +22,3 @@ rb_wasm_set_stack_pointer:
 	local.get	0
 	global.set	__stack_pointer
 	end_function
-

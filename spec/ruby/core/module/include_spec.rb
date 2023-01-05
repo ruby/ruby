@@ -263,7 +263,6 @@ describe "Module#include" do
     foo.call.should == 'm'
   end
 
-
   it "updates the method when a module included after a call is later updated" do
     m_module = Module.new
     a_class = Class.new do

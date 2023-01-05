@@ -4,7 +4,6 @@ require 'mspec/version'
 require 'mspec/utils/options'
 require 'mspec/utils/script'
 
-
 class MSpecTag < MSpecScript
   def initialize
     super
@@ -130,4 +129,3 @@ class MSpecTag < MSpecScript
     exit MSpec.exit_code
   end
 end
-

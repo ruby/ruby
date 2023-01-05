@@ -319,7 +319,6 @@ transient_heap_block_alloc(struct transient_heap* theap)
     return block;
 }
 
-
 static struct transient_heap_block *
 transient_heap_allocatable_block(struct transient_heap* theap)
 {
@@ -515,7 +514,6 @@ transient_header_managed_ptr_p(struct transient_heap* theap, const void *ptr)
         return FALSE;
     }
 }
-
 
 int
 rb_transient_heap_managed_ptr_p(const void *ptr)

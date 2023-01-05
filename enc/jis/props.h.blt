@@ -214,4 +214,3 @@ onig_jis_property (register const char *str, register size_t len)
   return 0;
 }
 #line 52 "enc/jis/props.kwd"
-

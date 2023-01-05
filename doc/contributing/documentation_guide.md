@@ -23,7 +23,6 @@ make html
 Then you can preview your changes by opening
 `{build folder}/.ext/html/index.html` file in your browser.
 
-
 ## Goal
 
 The goal of Ruby documentation is to impart the most important

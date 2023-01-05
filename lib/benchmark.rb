@@ -182,7 +182,6 @@ module Benchmark
     $stdout.sync = sync unless sync.nil?
   end
 
-
   # A simple interface to the #benchmark method, #bm generates sequential
   # reports with labels. +label_width+ and +labels+ parameters have the same
   # meaning as for #benchmark.
@@ -207,7 +206,6 @@ module Benchmark
   def bm(label_width = 0, *labels, &blk) # :yield: report
     benchmark(CAPTION, label_width, FORMAT, *labels, &blk)
   end
-
 
   # Sometimes benchmark results are skewed because code executed
   # earlier encounters different garbage collection overheads than
@@ -385,8 +383,6 @@ module Benchmark
     # An array of Benchmark::Tms objects representing each item.
     attr_reader :list
   end
-
-
 
   #
   # A data object, representing the times associated with a benchmark

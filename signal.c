@@ -1504,7 +1504,6 @@ ruby_sig_finalize(void)
     }
 }
 
-
 int ruby_enable_coredump = 0;
 
 /*

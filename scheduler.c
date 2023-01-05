@@ -493,7 +493,6 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
     return rb_check_funcall(scheduler, id_io_read, 4, arguments);
 }
 
-
 /*
  *  Document-method: Fiber::Scheduler#io_read
  *  call-seq: io_pread(io, buffer, from, length, offset) -> read length or -errno

@@ -16,6 +16,5 @@ Here's an inline [link](/script?foo=1&bar=2).
 
 Here's an inline [link](</script?foo=1&bar=2>).
 
-
 [1]: http://example.com/?foo=1&bar=2
 [2]: http://att.com/  "AT&T"

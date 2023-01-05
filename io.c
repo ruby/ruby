@@ -2307,7 +2307,6 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
  *
  */
 
-
 VALUE
 rb_io_addstr(VALUE io, VALUE str)
 {
@@ -5770,7 +5769,6 @@ io_close(VALUE io)
  *  Related: IO#close_read, IO#close_write, IO#close.
  */
 
-
 static VALUE
 rb_io_closed(VALUE io)
 {
@@ -8812,7 +8810,6 @@ rb_f_putc(VALUE recv, VALUE ch)
     return forward(r_stdout, rb_intern("putc"), 1, &ch);
 }
 
-
 int
 rb_str_end_with_asciichar(VALUE str, int c)
 {
@@ -9357,7 +9354,6 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     struct stat st;
 #endif
 
-
     argc = rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
     rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
@@ -9532,7 +9528,6 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
     }
     return rb_class_new_instance_kw(argc, argv, klass, RB_PASS_CALLED_KEYWORDS);
 }
-
 
 /*
  *  call-seq:
@@ -10304,7 +10299,6 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
     }
     return forward(argf, rb_intern("readline"), argc, argv);
 }
-
 
 /*
  *  call-seq:
@@ -12220,7 +12214,6 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
     if (NIL_P(opt)) opt = rb_hash_new();
     else opt = rb_hash_dup(opt);
-
 
     if (NIL_P(rb_hash_aref(opt,sym_mode))) {
        int mode = O_WRONLY|O_CREAT;

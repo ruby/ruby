@@ -31,7 +31,6 @@ describe :stringio_codepoints, shared: true do
     -> { io.send(@method).to_a }.should raise_error(IOError)
   end
 
-
   it "calls the given block" do
     r  = []
     @io.send(@method){|c| r << c }

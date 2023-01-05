@@ -156,7 +156,6 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
     assert_instance_of Test::Unit::Runner, Test::Unit::Runner.runner
   end
 
-
   def test_passed_eh_teardown_good
     test_class = Class.new Test::Unit::TestCase do
       def teardown; assert true; end

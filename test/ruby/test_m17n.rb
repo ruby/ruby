@@ -334,7 +334,6 @@ class TestM17N < Test::Unit::TestCase
       u("\xf8\x80\x80\x80 "),
       u("\xfc\x80\x80\x80\x80 "),
 
-
       e("\xa1\x8f\xa1\xa1"),
 
       s("\x81."),

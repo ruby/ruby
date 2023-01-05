@@ -1841,7 +1841,6 @@ do{\
 
     OSSL_ASN1_DEFINE_CLASS(EndOfContent, Data);
 
-
     /* Document-class: OpenSSL::ASN1::ObjectId
      *
      * Represents the primitive object id for OpenSSL::ASN1

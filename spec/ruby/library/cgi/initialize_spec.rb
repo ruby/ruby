@@ -81,7 +81,6 @@ describe "CGI#initialize when passed type" do
     ENV['REQUEST_METHOD'] = @old_request_method
   end
 
-
   it "extends self with CGI::QueryExtension" do
     @cgi.send(:initialize, "test")
     @cgi.should be_kind_of(CGI::QueryExtension)

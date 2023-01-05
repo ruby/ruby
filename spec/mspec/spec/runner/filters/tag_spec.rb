@@ -17,7 +17,6 @@ RSpec.describe TagFilter, "#load" do
     @filter.load
   end
 
-
   it "registers itself with MSpec for the :include action" do
     filter = TagFilter.new(:include)
     expect(MSpec).to receive(:register).with(:include, filter)

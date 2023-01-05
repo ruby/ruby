@@ -23,4 +23,3 @@ File.write('t.rus', russian)
 f = File.new('t.dat', 'wb:UTF-16')
 f.write(data)
 f.close
-

@@ -1885,7 +1885,6 @@ Init_stringio(void)
     rb_define_method(StringIO, "lineno", strio_get_lineno, 0);
     rb_define_method(StringIO, "lineno=", strio_set_lineno, 1);
 
-
     /* call-seq: strio.binmode -> true */
     rb_define_method(StringIO, "binmode", strio_binmode, 0);
     rb_define_method(StringIO, "close", strio_close, 0);

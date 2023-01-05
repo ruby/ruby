@@ -163,5 +163,3 @@ module RDoc::Parser::RubyTools
   end
 
 end
-
-

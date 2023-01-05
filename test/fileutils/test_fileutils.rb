@@ -183,7 +183,6 @@ class TestFileUtils < Test::Unit::TestCase
     my_rm_rf @tmproot
   end
 
-
   TARGETS = %w( data/a data/all data/random data/zero )
 
   def prepare_data_file
@@ -1357,7 +1356,6 @@ class TestFileUtils < Test::Unit::TestCase
     }
 
   end if have_file_perm?
-
 
   def test_chmod_R
     check_singleton :chmod_R

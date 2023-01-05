@@ -477,7 +477,6 @@ rb_reg_desc(const char *s, long len, VALUE re)
     return str;
 }
 
-
 /*
  *  call-seq:
  *    source -> string
@@ -720,7 +719,6 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
     rb_exc_raise(rb_reg_error_desc(str, options, err));
 }
 
-
 /*
  *  call-seq:
  *    casefold?-> true or false
@@ -740,7 +738,6 @@ rb_reg_casefold_p(VALUE re)
     rb_reg_check(re);
     return RBOOL(RREGEXP_PTR(re)->options & ONIG_OPTION_IGNORECASE);
 }
-
 
 /*
  *  call-seq:
@@ -906,7 +903,6 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
     }
     return rp;
 }
-
 
 /*
  *  Document-class: MatchData
@@ -1104,7 +1100,6 @@ match_init_copy(VALUE obj, VALUE orig)
     return obj;
 }
 
-
 /*
  *  call-seq:
  *    regexp -> regexp
@@ -1289,7 +1284,6 @@ match_byteoffset(VALUE match, VALUE n)
     return rb_assoc_new(LONG2NUM(BEG(i)), LONG2NUM(END(i)));
 }
 
-
 /*
  *  call-seq:
  *    begin(n) -> integer
@@ -1314,7 +1308,6 @@ match_begin(VALUE match, VALUE n)
     update_char_offset(match);
     return LONG2NUM(RMATCH(match)->rmatch->char_offset[i].beg);
 }
-
 
 /*
  *  call-seq:
@@ -1888,7 +1881,6 @@ rb_reg_last_match(VALUE match)
     return rb_reg_nth_match(0, match);
 }
 
-
 /*
  *  call-seq:
  *    pre_match -> string
@@ -1919,7 +1911,6 @@ rb_reg_match_pre(VALUE match)
     str = rb_str_subseq(RMATCH(match)->str, 0, BEG(0));
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -2022,7 +2013,6 @@ match_array(VALUE match, int start)
     return ary;
 }
 
-
 /*
  *  call-seq:
  *    to_a -> array
@@ -2042,7 +2032,6 @@ match_to_a(VALUE match)
 {
     return match_array(match, 0);
 }
-
 
 /*
  *  call-seq:
@@ -2254,7 +2243,6 @@ match_values_at(int argc, VALUE *argv, VALUE match)
     }
     return result;
 }
-
 
 /*
  *  call-seq:
@@ -3318,7 +3306,6 @@ reg_hash(VALUE re)
     return rb_hash_end(hashval);
 }
 
-
 /*
  *  call-seq:
  *    regexp == object -> true or false
@@ -3542,7 +3529,6 @@ rb_reg_eqq(VALUE re, VALUE str)
     return RBOOL(start >= 0);
 }
 
-
 /*
  *  call-seq:
  *    ~ rxp -> integer or nil
@@ -3572,7 +3558,6 @@ rb_reg_match2(VALUE re)
     start = rb_str_sublen(line, start);
     return LONG2FIX(start);
 }
-
 
 /*
  *  call-seq:
@@ -3990,7 +3975,6 @@ rb_reg_quote(VALUE str)
     rb_str_resize(tmp, t - RSTRING_PTR(tmp));
     return tmp;
 }
-
 
 /*
  *  call-seq:

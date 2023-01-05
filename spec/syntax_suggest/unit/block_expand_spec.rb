@@ -9,7 +9,6 @@ module SyntaxSuggest
         def foo
           Foo.call
 
-
             puts "lol"
 
             # hidden
@@ -27,7 +26,6 @@ module SyntaxSuggest
 
       expect(block.to_s).to eq(<<~EOM.indent(4))
 
-
         puts "lol"
 
       EOM
@@ -37,7 +35,6 @@ module SyntaxSuggest
       source_string = <<~EOM
         def foo
           Foo.call
-
 
             puts "lol"
 
@@ -51,7 +48,6 @@ module SyntaxSuggest
       block = expansion.call(block)
 
       expect(block.to_s).to eq(<<~EOM.indent(4))
-
 
         puts "lol"
 

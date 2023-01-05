@@ -97,7 +97,6 @@ describe "String#tr_s" do
     str.tr_s(a, b).should == "椎名深夏"
   end
 
-
 end
 
 describe "String#tr_s!" do

@@ -42,4 +42,3 @@ void Init_complex_spec(void) {
 #ifdef __cplusplus
 }
 #endif
-

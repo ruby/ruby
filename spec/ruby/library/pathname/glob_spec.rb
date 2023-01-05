@@ -46,7 +46,6 @@ describe 'Pathname.glob' do
   end
 end
 
-
 describe 'Pathname#glob' do
   before :all  do
     @dir = tmp('pathname_glob') + '/'

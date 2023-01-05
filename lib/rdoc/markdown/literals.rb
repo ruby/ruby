@@ -19,8 +19,6 @@ class RDoc::Markdown::Literals
       setup_parser(str, debug)
     end
 
-
-
     # Prepares for parsing +str+.  If you define a custom initialize you must
     # call this method before #parse
     def setup_parser(str, debug=false)
@@ -109,8 +107,6 @@ class RDoc::Markdown::Literals
       lstart = no > 0 ? loff[no-1] : 0
       string[lstart..lend]
     end
-
-
 
     def get_text(start)
       @string[start..@pos-1]
@@ -396,7 +392,6 @@ class RDoc::Markdown::Literals
     def self.rule_info(name, rendered)
       RuleInfo.new(name, rendered)
     end
-
 
   # :startdoc:
   # :stopdoc:

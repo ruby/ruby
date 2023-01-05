@@ -25,7 +25,6 @@ class Integer < Numeric
   end
 end
 
-
 class Float < Numeric
   # call-seq:
   #     float.to_d             -> bigdecimal
@@ -52,7 +51,6 @@ class Float < Numeric
   end
 end
 
-
 class String
   # call-seq:
   #     str.to_d  -> bigdecimal
@@ -73,7 +71,6 @@ class String
     BigDecimal.interpret_loosely(self)
   end
 end
-
 
 class BigDecimal < Numeric
   # call-seq:
@@ -112,7 +109,6 @@ class BigDecimal < Numeric
   end
 end
 
-
 class Rational < Numeric
   # call-seq:
   #     rat.to_d(precision)  -> bigdecimal
@@ -133,7 +129,6 @@ class Rational < Numeric
     BigDecimal(self, precision)
   end
 end
-
 
 class Complex < Numeric
   # call-seq:
@@ -166,7 +161,6 @@ class Complex < Numeric
     self.real.to_d(*args)
   end
 end
-
 
 class NilClass
   # call-seq:

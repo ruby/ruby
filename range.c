@@ -147,7 +147,6 @@ recursive_equal(VALUE range, VALUE obj, int recur)
     return RBOOL(EXCL(range) == EXCL(obj));
 }
 
-
 /*
  *  call-seq:
  *    self == other -> true or false
@@ -722,7 +721,6 @@ range_bsearch(VALUE range)
         return satisfied; \
     } while (0)
 
-
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
@@ -1014,7 +1012,6 @@ range_begin(VALUE range)
     return RANGE_BEG(range);
 }
 
-
 /*
  *  call-seq:
  *    self.end -> object
@@ -1028,13 +1025,11 @@ range_begin(VALUE range)
  *  Related: Range#begin, Range#last.
  */
 
-
 static VALUE
 range_end(VALUE range)
 {
     return RANGE_END(range);
 }
-
 
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
@@ -1198,7 +1193,6 @@ range_last(int argc, VALUE *argv, VALUE range)
     return rb_ary_last(argc, argv, rb_Array(range));
 }
 
-
 /*
  *  call-seq:
  *    min -> object
@@ -1278,7 +1272,6 @@ range_last(int argc, VALUE *argv, VALUE range)
  *
  *  Related: Range#max, Range#minmax.
  */
-
 
 static VALUE
 range_min(int argc, VALUE *argv, VALUE range)
@@ -1670,7 +1663,6 @@ inspect_range(VALUE range, VALUE dummy, int recur)
  *
  */
 
-
 static VALUE
 range_inspect(VALUE range)
 {
@@ -1727,7 +1719,6 @@ range_eqq(VALUE range, VALUE val)
     if (!UNDEF_P(ret)) return ret;
     return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
-
 
 /*
  *  call-seq:
@@ -1994,7 +1985,6 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     if (!NIL_P(val_beg) && !NIL_P(val_end) && r_less(val_beg, val_end) > (EXCL(val) ? -1 : 0)) return FALSE;
     if (!NIL_P(val_beg) && !r_cover_p(range, beg, end, val_beg)) return FALSE;
 
-
     if (!NIL_P(val_end) && !NIL_P(end)) {
         VALUE r_cmp_end = rb_funcall(end, id_cmp, 1, val_end);
         if (NIL_P(r_cmp_end)) return FALSE;
@@ -2003,7 +1993,6 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     else {
         cmp_end = r_less(end, val_end);
     }
-
 
     if (EXCL(range) == EXCL(val)) {
         return cmp_end >= 0;

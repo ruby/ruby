@@ -13,4 +13,3 @@ ro.log(123)
 ro.log("hello")
 sleep 2
 ro.log("wakeup")
-

@@ -61,4 +61,3 @@ class TestRDocRdInline < RDoc::TestCase
   end
 
 end
-

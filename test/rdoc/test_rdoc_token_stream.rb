@@ -55,4 +55,3 @@ class TestRDocTokenStream < RDoc::TestCase
     assert_equal "foo 'bar'", foo.tokens_to_s
   end
 end
-

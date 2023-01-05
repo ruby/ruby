@@ -260,12 +260,9 @@ A,B,C
   def test_skip_blanks
     @data = <<-CSV
 
-
 A,B,C
 
 1,2,3
-
-
 
     CSV
 

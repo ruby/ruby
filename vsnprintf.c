@@ -128,7 +128,6 @@ struct __sbuf {
 	size_t	_size;
 };
 
-
 /*
  * stdio state variables.
  *
@@ -173,7 +172,6 @@ typedef	struct __sFILE {
 	const char *(*vextra)(struct __sFILE*, size_t, void*, long*, int);
 } FILE;
 
-
 #define	__SLBF	0x0001		/* line buffered */
 #define	__SNBF	0x0002		/* unbuffered */
 #define	__SRD	0x0004		/* OK to read */
@@ -190,9 +188,7 @@ typedef	struct __sFILE {
 #define	__SOFF	0x1000		/* set if and only if _offset is in fact correct */
 #define	__SMOD	0x2000		/* true => fgetln modified _p text */
 
-
 #define	EOF	(-1)
-
 
 #define	BSD__sfeof(p)	(((p)->_flags & __SEOF) != 0)
 #define	BSD__sferror(p)	(((p)->_flags & __SERR) != 0)
@@ -209,7 +205,6 @@ typedef	struct __sFILE {
 #ifndef _ANSI_SOURCE
 #define	fileno(p)	BSD__sfileno(p)
 #endif
-
 
 /*
  * I/O descriptors for __sfvwrite().
@@ -321,7 +316,6 @@ BSD__sprint(FILE *fp, register struct __suio *uio)
 	return (err);
 }
 
-
 /*
  * Helper function for `fprintf to unbuffered unix file': creates a
  * temporary buffer.  We only work on write-only files; this avoids
@@ -333,7 +327,6 @@ BSD__sbprintf(register FILE *fp, const char *fmt, va_list ap)
 /* We don't support files. */
 	return 0;
 }
-
 
 /*
  * Macros for converting digits to letters and vice versa

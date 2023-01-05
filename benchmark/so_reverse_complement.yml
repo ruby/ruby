@@ -74,7 +74,6 @@ prelude: |
       end
   end
 
-
   n = (ARGV[0] or 250_000).to_i
 
   make_repeat_fasta('ONE', 'Homo sapiens alu', alu, n*2)

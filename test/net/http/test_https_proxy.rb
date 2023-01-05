@@ -44,4 +44,3 @@ class HTTPSProxyTest < Test::Unit::TestCase
     }
   end
 end if defined?(OpenSSL)
-

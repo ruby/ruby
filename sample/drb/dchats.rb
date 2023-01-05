@@ -25,7 +25,6 @@ class ChatEntry
   end
 end
 
-
 class ChatServer
   def initialize
     @mutex = Thread::Mutex.new

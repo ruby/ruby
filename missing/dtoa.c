@@ -3358,7 +3358,6 @@ ret1:
 #define dmanh_get(u) ((uint32_t)(word0(u) & Frac_mask))
 #define dmanl_get(u) ((uint32_t)word1(u))
 
-
 /*
  * This procedure converts a double-precision number in IEEE format
  * into a string of hexadecimal digits and an exponent of 2.  Its

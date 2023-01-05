@@ -33,7 +33,6 @@
 	   - ccan_container_off(containing_type, member))		\
 	  + ccan_check_types_match(*(member_ptr), ((containing_type *)0)->member))
 
-
 /**
  * ccan_container_of_or_null - get pointer to enclosing structure, or NULL
  * @member_ptr: pointer to the structure member

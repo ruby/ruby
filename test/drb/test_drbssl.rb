@@ -10,7 +10,6 @@ module DRbTests
 
 if Object.const_defined?("OpenSSL")
 
-
 class DRbSSLService < DRbService
   %w(ut_drb_drbssl.rb ut_array_drbssl.rb).each do |nm|
     add_service_command(nm)
@@ -73,7 +72,6 @@ class TestDRbSSLAry < Test::Unit::TestCase
     setup_service 'ut_array_drbssl.rb'
   end
 end
-
 
 end
 

@@ -62,7 +62,6 @@ describe "ARGF.read" do
     end
   end
 
-
   before :each do
     @external = Encoding.default_external
     @internal = Encoding.default_internal

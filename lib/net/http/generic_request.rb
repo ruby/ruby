@@ -335,4 +335,3 @@ class Net::HTTPGenericRequest
   end
 
 end
-

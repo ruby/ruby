@@ -106,5 +106,4 @@ describe "BigDecimal#div" do
     @infinity_minus.div(@infinity, 1).should.nan?
   end
 
-
 end

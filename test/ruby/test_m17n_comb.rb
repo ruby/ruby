@@ -1260,7 +1260,6 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
-
   def test_str_to_f
     STRINGS.each {|s|
       assert_nothing_raised { s.to_f }

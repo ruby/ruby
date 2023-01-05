@@ -336,7 +336,6 @@ See also:
 
 * {%s: Symbol Literals}[#label-25s-3A+Symbol+Literals]
 
-
 == \Array Literals
 
 An array is created using the objects between <tt>[</tt> and <tt>]</tt>:

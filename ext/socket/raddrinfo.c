@@ -821,7 +821,6 @@ get_addrinfo(VALUE self)
     return rai;
 }
 
-
 static rb_addrinfo_t *
 alloc_addrinfo(void)
 {
@@ -1015,7 +1014,6 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
     rb_freeaddrinfo(res);
     return ret;
 }
-
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 static void

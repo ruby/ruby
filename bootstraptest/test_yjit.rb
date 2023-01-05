@@ -67,7 +67,6 @@ assert_normal_exit %q{
   p foo.bar.bar("s".__send__(:to_s))
 }
 
-
 assert_equal '[nil, nil, nil, nil, nil, nil]', %q{
   [NilClass, TrueClass, FalseClass, Integer, Float, Symbol].each do |klass|
     klass.class_eval("def foo = @foo")
@@ -1088,7 +1087,6 @@ assert_equal '[42, 100]', %q{
     val.foo
   end
 
-
   h = {}
   h.foo = 100
   obj = A.new
@@ -1813,7 +1811,6 @@ assert_equal '[:Forward, :SecondTerminus]', %q{
   module SecondTerminus
     def foo = :SecondTerminus
   end
-
 
   module Forward
     def foo = [:Forward, super]
@@ -2947,7 +2944,6 @@ assert_equal 'new', %q{
   def bar
     :bar
   end
-
 
   test
   test

@@ -109,7 +109,6 @@ can be used like this:
     Bundler.clean_system('brew install wget')
     Bundler.clean_exec('brew install wget')
 
-
 ## RUBYGEMS PLUGINS
 
 At present, the Rubygems plugin system requires all files

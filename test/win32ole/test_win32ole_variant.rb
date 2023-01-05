@@ -110,7 +110,6 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(0, obj.value)
       assert_equal(WIN32OLE::VARIANT::VT_UI4, obj.vartype)
 
-
       if defined?(WIN32OLE::VARIANT::VT_I8)
         obj = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_I8)
         assert_equal(0, obj.value)
@@ -462,7 +461,6 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(WIN32OLE::VARIANT::VT_ARRAY|WIN32OLE::VARIANT::VT_VARIANT, obj.vartype)
     end
 
-
     def test_create_vt_nested_array
       obj = WIN32OLE_VARIANT.new([[1.2, "a", "b"], [3.4, "C", "D"]], WIN32OLE::VARIANT::VT_ARRAY)
       assert_equal([[1.2, "a", "b"], [3.4, "C", "D"]], obj.value)
@@ -719,4 +717,3 @@ if defined?(WIN32OLE_VARIANT)
 
   end
 end
-

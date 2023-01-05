@@ -74,4 +74,3 @@ assert_equal '[1, 2]', %q{
     [1, 2]
   end
 }, '[ruby-dev:44005] [Ruby 1.9 - Bug #4950]'
-

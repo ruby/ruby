@@ -42,5 +42,3 @@ class RDoc::Stats::Verbose < RDoc::Stats::Normal
   end
 
 end
-
-

@@ -56,7 +56,6 @@ module Net # :nodoc:
     end
   end
 
-
   class ProtocolError          < StandardError; end
   class ProtoSyntaxError       < ProtocolError; end
   class ProtoFatalError        < ProtocolError; end
@@ -110,7 +109,6 @@ module Net # :nodoc:
       msg
     end
   end
-
 
   class BufferedIO   #:nodoc: internal use only
     def initialize(io, read_timeout: 60, write_timeout: 60, continue_timeout: nil, debug_output: nil)
@@ -359,7 +357,6 @@ module Net # :nodoc:
     end
   end
 
-
   class InternetMessageIO < BufferedIO   #:nodoc: internal use only
     def initialize(*, **)
       super
@@ -479,7 +476,6 @@ module Net # :nodoc:
     end
   end
 
-
   #
   # The writer adapter class
   #
@@ -512,7 +508,6 @@ module Net # :nodoc:
     end
   end
 
-
   class ReadAdapter   #:nodoc: internal use only
     def initialize(block)
       @block = block
@@ -535,7 +530,6 @@ module Net # :nodoc:
       yield str
     end
   end
-
 
   module NetPrivate   #:nodoc: obsolete
     Socket = ::Net::InternetMessageIO

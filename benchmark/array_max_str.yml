@@ -27,4 +27,3 @@ benchmark:
   ary100000.max: ary100000.max
 
 loop_count: 10000
-

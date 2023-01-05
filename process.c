@@ -562,7 +562,6 @@ proc_get_ppid(VALUE _)
     return get_ppid();
 }
 
-
 /*********************************************************************
  *
  * Document-class: Process::Status
@@ -790,7 +789,6 @@ pst_message_status(VALUE str, int status)
     return str;
 }
 
-
 /*
  *  call-seq:
  *     stat.to_s   -> string
@@ -816,7 +814,6 @@ pst_to_s(VALUE st)
     pst_message(str, pid, status);
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -848,7 +845,6 @@ pst_inspect(VALUE st)
     return str;
 }
 
-
 /*
  *  call-seq:
  *     stat == other   -> true or false
@@ -863,7 +859,6 @@ pst_equal(VALUE st1, VALUE st2)
     if (st1 == st2) return Qtrue;
     return rb_equal(pst_to_i(st1), st2);
 }
-
 
 /*
  *  call-seq:
@@ -885,7 +880,6 @@ pst_bitand(VALUE st1, VALUE st2)
     return INT2NUM(status);
 }
 
-
 /*
  *  call-seq:
  *     stat >> num   -> integer
@@ -906,7 +900,6 @@ pst_rshift(VALUE st1, VALUE st2)
     return INT2NUM(status);
 }
 
-
 /*
  *  call-seq:
  *     stat.stopped?   -> true or false
@@ -923,7 +916,6 @@ pst_wifstopped(VALUE st)
 
     return RBOOL(WIFSTOPPED(status));
 }
-
 
 /*
  *  call-seq:
@@ -943,7 +935,6 @@ pst_wstopsig(VALUE st)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *     stat.signaled?   -> true or false
@@ -959,7 +950,6 @@ pst_wifsignaled(VALUE st)
 
     return RBOOL(WIFSIGNALED(status));
 }
-
 
 /*
  *  call-seq:
@@ -980,7 +970,6 @@ pst_wtermsig(VALUE st)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *     stat.exited?   -> true or false
@@ -997,7 +986,6 @@ pst_wifexited(VALUE st)
 
     return RBOOL(WIFEXITED(status));
 }
-
 
 /*
  *  call-seq:
@@ -1027,7 +1015,6 @@ pst_wexitstatus(VALUE st)
     return Qnil;
 }
 
-
 /*
  *  call-seq:
  *     stat.success?   -> true, false or nil
@@ -1045,7 +1032,6 @@ pst_success_p(VALUE st)
         return Qnil;
     return RBOOL(WEXITSTATUS(status) == EXIT_SUCCESS);
 }
-
 
 /*
  *  call-seq:
@@ -1534,7 +1520,6 @@ proc_m_wait(int c, VALUE *v, VALUE _)
     return proc_wait(c, v);
 }
 
-
 /*
  *  call-seq:
  *     Process.wait2(pid=-1, flags=0)      -> [pid, status]
@@ -1558,7 +1543,6 @@ proc_wait2(int argc, VALUE *argv, VALUE _)
     if (NIL_P(pid)) return Qnil;
     return rb_assoc_new(pid, rb_last_status_get());
 }
-
 
 /*
  *  call-seq:
@@ -1631,7 +1615,6 @@ rb_detach_process(rb_pid_t pid)
     RBASIC_SET_CLASS(watcher, rb_cWaiter);
     return watcher;
 }
-
 
 /*
  *  call-seq:
@@ -2874,7 +2857,6 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 
     return ST_CONTINUE;
 }
-
 
 static long run_exec_dup2_tmpbuf_size(long n);
 
@@ -5225,7 +5207,6 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
     return TIMET2NUM(end);
 }
 
-
 #if (defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)) || defined(HAVE_GETPGID)
 /*
  *  call-seq:
@@ -5257,7 +5238,6 @@ proc_getpgrp(VALUE _)
 #define proc_getpgrp rb_f_notimplement
 #endif
 
-
 #if defined(HAVE_SETPGID) || (defined(HAVE_SETPGRP) && defined(SETPGRP_VOID))
 /*
  *  call-seq:
@@ -5285,7 +5265,6 @@ proc_setpgrp(VALUE _)
 #define proc_setpgrp rb_f_notimplement
 #endif
 
-
 #if defined(HAVE_GETPGID)
 /*
  *  call-seq:
@@ -5310,7 +5289,6 @@ proc_getpgid(VALUE obj, VALUE pid)
 #define proc_getpgid rb_f_notimplement
 #endif
 
-
 #ifdef HAVE_SETPGID
 /*
  *  call-seq:
@@ -5334,7 +5312,6 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 #else
 #define proc_setpgid rb_f_notimplement
 #endif
-
 
 #ifdef HAVE_GETSID
 /*
@@ -5365,7 +5342,6 @@ proc_getsid(int argc, VALUE *argv, VALUE _)
 #else
 #define proc_getsid rb_f_notimplement
 #endif
-
 
 #if defined(HAVE_SETSID) || (defined(HAVE_SETPGRP) && defined(TIOCNOTTY))
 #if !defined(HAVE_SETSID)
@@ -5424,7 +5400,6 @@ ruby_setsid(void)
 #define proc_setsid rb_f_notimplement
 #endif
 
-
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
@@ -5459,7 +5434,6 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
 #else
 #define proc_getpriority rb_f_notimplement
 #endif
-
 
 #ifdef HAVE_GETPRIORITY
 /*
@@ -5846,7 +5820,6 @@ check_gid_switch(void)
     }
 }
 
-
 #if defined(HAVE_PWD_H)
 /**
  * Best-effort attempt to obtain the name of the login user, if any,
@@ -6086,7 +6059,6 @@ rb_getpwdiruid(void)
 }
 #endif /* HAVE_PWD_H */
 
-
 /*********************************************************************
  * Document-class: Process::Sys
  *
@@ -6274,7 +6246,6 @@ p_sys_setuid(VALUE obj, VALUE id)
 #define p_sys_setuid rb_f_notimplement
 #endif
 
-
 #if defined HAVE_SETRUID
 /*
  *  call-seq:
@@ -6296,7 +6267,6 @@ p_sys_setruid(VALUE obj, VALUE id)
 #define p_sys_setruid rb_f_notimplement
 #endif
 
-
 #if defined HAVE_SETEUID
 /*
  *  call-seq:
@@ -6317,7 +6287,6 @@ p_sys_seteuid(VALUE obj, VALUE id)
 #else
 #define p_sys_seteuid rb_f_notimplement
 #endif
-
 
 #if defined HAVE_SETREUID
 /*
@@ -6346,7 +6315,6 @@ p_sys_setreuid(VALUE obj, VALUE rid, VALUE eid)
 #else
 #define p_sys_setreuid rb_f_notimplement
 #endif
-
 
 #if defined HAVE_SETRESUID
 /*
@@ -6377,7 +6345,6 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 #define p_sys_setresuid rb_f_notimplement
 #endif
 
-
 /*
  *  call-seq:
  *     Process.uid           -> integer
@@ -6395,7 +6362,6 @@ proc_getuid(VALUE obj)
     rb_uid_t uid = getuid();
     return UIDT2NUM(uid);
 }
-
 
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRUID) || defined(HAVE_SETUID)
 /*
@@ -6435,7 +6401,6 @@ proc_setuid(VALUE obj, VALUE id)
 #else
 #define proc_setuid rb_f_notimplement
 #endif
-
 
 /********************************************************************
  *
@@ -6631,8 +6596,6 @@ p_uid_change_privilege(VALUE obj, VALUE id)
     return id;
 }
 
-
-
 #if defined HAVE_SETGID
 /*
  *  call-seq:
@@ -6653,7 +6616,6 @@ p_sys_setgid(VALUE obj, VALUE id)
 #else
 #define p_sys_setgid rb_f_notimplement
 #endif
-
 
 #if defined HAVE_SETRGID
 /*
@@ -6676,7 +6638,6 @@ p_sys_setrgid(VALUE obj, VALUE id)
 #define p_sys_setrgid rb_f_notimplement
 #endif
 
-
 #if defined HAVE_SETEGID
 /*
  *  call-seq:
@@ -6697,7 +6658,6 @@ p_sys_setegid(VALUE obj, VALUE id)
 #else
 #define p_sys_setegid rb_f_notimplement
 #endif
-
 
 #if defined HAVE_SETREGID
 /*
@@ -6752,7 +6712,6 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 #define p_sys_setresgid rb_f_notimplement
 #endif
 
-
 #if defined HAVE_ISSETUGID
 /*
  *  call-seq:
@@ -6775,7 +6734,6 @@ p_sys_issetugid(VALUE obj)
 #define p_sys_issetugid rb_f_notimplement
 #endif
 
-
 /*
  *  call-seq:
  *     Process.gid           -> integer
@@ -6793,7 +6751,6 @@ proc_getgid(VALUE obj)
     rb_gid_t gid = getgid();
     return GIDT2NUM(gid);
 }
-
 
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
@@ -6832,7 +6789,6 @@ proc_setgid(VALUE obj, VALUE id)
 #else
 #define proc_setgid rb_f_notimplement
 #endif
-
 
 #if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
@@ -6878,8 +6834,6 @@ maxgroups(void)
     return _maxgroups;
 }
 #endif
-
-
 
 #ifdef HAVE_GETGROUPS
 /*
@@ -6936,7 +6890,6 @@ proc_getgroups(VALUE obj)
 #define proc_getgroups rb_f_notimplement
 #endif
 
-
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
@@ -6984,7 +6937,6 @@ proc_setgroups(VALUE obj, VALUE ary)
 #else
 #define proc_setgroups rb_f_notimplement
 #endif
-
 
 #ifdef HAVE_INITGROUPS
 /*
@@ -7336,7 +7288,6 @@ p_gid_change_privilege(VALUE obj, VALUE id)
     return id;
 }
 
-
 /*
  *  call-seq:
  *     Process.euid           -> integer
@@ -7437,7 +7388,6 @@ rb_seteuid_core(rb_uid_t euid)
     return euid;
 }
 
-
 /*
  *  call-seq:
  *     Process::UID.grant_privilege(user)   -> integer
@@ -7458,7 +7408,6 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
     rb_seteuid_core(OBJ2UID(id));
     return id;
 }
-
 
 /*
  *  call-seq:
@@ -7567,7 +7516,6 @@ rb_setegid_core(rb_gid_t egid)
     return egid;
 }
 
-
 /*
  *  call-seq:
  *     Process::GID.grant_privilege(group)    -> integer
@@ -7589,7 +7537,6 @@ p_gid_grant_privilege(VALUE obj, VALUE id)
     return id;
 }
 
-
 /*
  *  call-seq:
  *     Process::UID.re_exchangeable?   -> true or false
@@ -7610,7 +7557,6 @@ p_uid_exchangeable(VALUE _)
     return Qfalse;
 #endif
 }
-
 
 /*
  *  call-seq:
@@ -7651,7 +7597,6 @@ p_uid_exchange(VALUE obj)
     return UIDT2NUM(uid);
 }
 
-
 /*
  *  call-seq:
  *     Process::GID.re_exchangeable?   -> true or false
@@ -7672,7 +7617,6 @@ p_gid_exchangeable(VALUE _)
     return Qfalse;
 #endif
 }
-
 
 /*
  *  call-seq:
@@ -7734,7 +7678,6 @@ p_uid_have_saved_id(VALUE _)
 #endif
 }
 
-
 #if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
 static VALUE
 p_uid_sw_ensure(VALUE i)
@@ -7744,7 +7687,6 @@ p_uid_sw_ensure(VALUE i)
     id = rb_seteuid_core(id);
     return UIDT2NUM(id);
 }
-
 
 /*
  *  call-seq:
@@ -7827,7 +7769,6 @@ p_uid_switch(VALUE obj)
 }
 #endif
 
-
 /* [MG] :FIXME: Is this correct? I'm not sure how to phrase this. */
 
 /*
@@ -7858,7 +7799,6 @@ p_gid_sw_ensure(VALUE i)
     id = rb_setegid_core(id);
     return GIDT2NUM(id);
 }
-
 
 /*
  *  call-seq:
@@ -7940,7 +7880,6 @@ p_gid_switch(VALUE obj)
     }
 }
 #endif
-
 
 #if defined(HAVE_TIMES)
 static long
@@ -8771,7 +8710,6 @@ VALUE rb_mProcess;
 static VALUE rb_mProcUID;
 static VALUE rb_mProcGID;
 static VALUE rb_mProcID_Syscall;
-
 
 /*
  *  The Process module is a collection of methods used to

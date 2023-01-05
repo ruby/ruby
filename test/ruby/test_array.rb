@@ -1241,7 +1241,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal("ABC",      @cls[ 65, 66, 67 ].pack("c3"))
     assert_equal("\377BC",   @cls[ -1, 66, 67 ].pack("c*"))
 
-
     assert_equal("AB\n\x10",  @cls["4142", "0a", "12"].pack("H4H2H1"))
     assert_equal("AB\n\x02",  @cls["1424", "a0", "21"].pack("h4h2h1"))
 
@@ -1252,7 +1251,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(",:&5L;&\\*:&5L;&\\*\n",  @cls["hello\nhello\n"].pack("u"))
 
     assert_equal("\u{a9 42 2260}", @cls[0xa9, 0x42, 0x2260].pack("U*"))
-
 
     format = "c2x5CCxsdils_l_a6";
     # Need the expression in here to force ary[5] to be numeric.  This avoids

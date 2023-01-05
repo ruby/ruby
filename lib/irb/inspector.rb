@@ -13,7 +13,6 @@
 
 module IRB # :nodoc:
 
-
   # Convenience method to create a new Inspector, using the given +inspect+
   # proc, and optional +init+ proc and passes them to Inspector.new
   #

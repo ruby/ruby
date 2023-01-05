@@ -64,7 +64,6 @@ Public Class ComSrvTest
 End Class
 =end
 
-
 if defined?(WIN32OLE_RECORD)
   def rbcomtest_exist?
     WIN32OLE.new(PROGID_RBCOMTEST)

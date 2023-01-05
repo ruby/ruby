@@ -252,7 +252,6 @@ describe "Break inside a while loop" do
   end
 end
 
-
 # TODO: Rewrite all the specs from here to the end of the file in the style
 # above.
 describe "Executing break from within a block" do

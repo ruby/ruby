@@ -254,7 +254,6 @@ rb_ary_size_as_embedded(VALUE ary)
     return real_size;
 }
 
-
 #if ARRAY_DEBUG
 #define ary_verify(ary) ary_verify_(ary, __FILE__, __LINE__)
 
@@ -3756,7 +3755,6 @@ rb_ary_bsearch_index(VALUE ary)
     return INT2FIX(low);
 }
 
-
 static VALUE
 sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
 {
@@ -3801,7 +3799,6 @@ rb_ary_sort_by_bang(VALUE ary)
     return ary;
 }
 
-
 /*
  *  call-seq:
  *    array.map {|element| ... } -> new_array
@@ -3835,7 +3832,6 @@ rb_ary_collect(VALUE ary)
     }
     return collect;
 }
-
 
 /*
  *  call-seq:
@@ -3978,7 +3974,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
     RB_GC_GUARD(ary);
     return result;
 }
-
 
 /*
  *  call-seq:
@@ -4564,7 +4559,6 @@ take_items(VALUE obj, long n)
                  rb_obj_class(obj));
     return result;
 }
-
 
 /*
  *  call-seq:
@@ -5673,7 +5667,6 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     return ary_diff;
 }
 
-
 /*
  *  call-seq:
  *    array & other_array -> new_array
@@ -5690,7 +5683,6 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *
  *  Related: Array#intersection.
  */
-
 
 static VALUE
 rb_ary_and(VALUE ary1, VALUE ary2)

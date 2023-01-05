@@ -23,7 +23,6 @@ static const VALUE DATA_VISIBLE_BITS = FL_FREEZE | ~(FL_USER0 - 1);
 #error "unsupported"
 #endif
 
-
 #ifndef RUBY_VERSION_IS_3_1
 VALUE rbasic_spec_taint_flag(VALUE self) {
   return VALUE2NUM(RUBY_FL_TAINT);

@@ -40,7 +40,6 @@
 #endif
 #include <assert.h>
 
-
 /* state of output_mode and input_mode
 
    c2           0 means ASCII
@@ -79,7 +78,6 @@ enum byte_order {
 #define         SS2     0x8e
 #define         SS3     0x8f
 #define         CRLF    0x0D0A
-
 
 /* encodings */
 
@@ -274,7 +272,6 @@ static const struct {
 #define	    DEFAULT_ENCIDX UTF_8
 #endif
 
-
 #define		is_alnum(c)  \
     (('a'<=c && c<='z')||('A'<= c && c<='Z')||('0'<=c && c<='9'))
 
@@ -311,10 +308,8 @@ static const struct {
 #define         DEFAULT_J       'B'
 #define         DEFAULT_R       'B'
 
-
 #define         GETA1   0x22
 #define         GETA2   0x2e
-
 
 /* MIME preprocessor */
 
@@ -580,7 +575,6 @@ static const unsigned char cv[]= {
     0x25,0x6f,0x25,0x73,0x21,0x2b,0x21,0x2c,
     0x00,0x00};
 
-
 /* X0201 kana conversion table for dakuten */
 /* 90-9F A0-DF */
 static const unsigned char dv[]= {
@@ -644,7 +638,6 @@ static const unsigned char ev_x0213[]= {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00};
 
-
 /* X0208 kigou conversion table */
 /* 0x8140 - 0x819e */
 static const unsigned char fv[] = {
@@ -662,8 +655,6 @@ static const unsigned char fv[] = {
     0x24,0x00,0x00,0x25,0x23,0x26,0x2a,0x40,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 } ;
-
-
 
 static int option_mode = 0;
 static int             file_out_f = FALSE;
@@ -1559,7 +1550,6 @@ x0212_shift(nkf_char c)
     }
     return ret;
 }
-
 
 static nkf_char
 x0212_unshift(nkf_char c)
@@ -3418,7 +3408,6 @@ h_conv(FILE *f, nkf_char c1, nkf_char c2)
 	set_iconv(TRUE, result->iconv_func);
     }
 
-
     /** now,
      ** 1) EOF is detected, or
      ** 2) Code is established, or
@@ -4152,7 +4141,6 @@ z_conv(nkf_char c2, nkf_char c1)
     (*o_zconv)(c2,c1);
 }
 
-
 #define rot13(c)  ( \
 		   ( c < 'A') ? c: \
 		   (c <= 'M')  ? (c + 13): \
@@ -4216,7 +4204,6 @@ hira_conv(nkf_char c2, nkf_char c1)
     (*o_hira_conv)(c2,c1);
 }
 
-
 static void
 iso2022jp_check_conv(nkf_char c2, nkf_char c1)
 {
@@ -4265,7 +4252,6 @@ iso2022jp_check_conv(nkf_char c2, nkf_char c1)
     (*o_iso2022jp_check_conv)(c2,c1);
 }
 
-
 /* This converts  =?ISO-2022-JP?B?HOGE HOGE?= */
 
 static const unsigned char *mime_pattern[] = {
@@ -4283,7 +4269,6 @@ static const unsigned char *mime_pattern[] = {
     (const unsigned char *)"\075?US-ASCII?Q?",
     NULL
 };
-
 
 /* 該当するコードの優先度を上げるための目印 */
 static nkf_char (*const mime_priority_func[])(nkf_char c2, nkf_char c1, nkf_char c0) = {
@@ -4311,7 +4296,6 @@ static const nkf_char mime_encode_method[] = {
     'Q',
     0
 };
-
 
 /* MIME preprocessor fifo */
 
@@ -4790,7 +4774,6 @@ nfc_ungetc(nkf_char c, FILE *f)
 }
 #endif /* UNICODE_NORMALIZATION */
 
-
 static nkf_char
 base64decode(nkf_char c)
 {
@@ -4925,7 +4908,6 @@ mime_getc(FILE *f)
 	mime_decode_mode = FALSE;
 	return (*i_mgetc)(f);
     }
-
 
     /* Base64 encoding */
     /*
@@ -5577,7 +5559,6 @@ nkf_iconv_convert(nkf_iconv_t *converter, FILE *input)
     return invalid;
 }
 
-
 static void
 nkf_iconv_close(nkf_iconv_t *convert)
 {
@@ -5586,7 +5567,6 @@ nkf_iconv_close(nkf_iconv_t *convert)
     iconv_close(converter->cd);
 }
 #endif
-
 
 static void
 reinit(void)

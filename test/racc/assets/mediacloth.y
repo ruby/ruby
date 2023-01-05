@@ -39,7 +39,6 @@ token TEXT BOLD_START BOLD_END ITALIC_START ITALIC_END LINK_START LINK_END LINKS
     TABLE_START TABLE_END ROW_START ROW_END HEAD_START HEAD_END CELL_START CELL_END
     KEYWORD TEMPLATE_START TEMPLATE_END CATEGORY PASTE_START PASTE_END
 
-
 rule
 
 wiki:
@@ -198,7 +197,6 @@ tag_attributes:
         }
     ;
 
-
 link_contents:
       TEXT
         {
@@ -211,7 +209,6 @@ link_contents:
         }
     ;
 
-
 link_repeated_contents:
       repeated_contents
         {
@@ -223,7 +220,6 @@ link_repeated_contents:
             result += val[2] if val[2]
         }
     ;
-
 
 intlink_repeated_contents:
         {
@@ -365,7 +361,6 @@ row_contents:
             end
             result
         }
-
 
 element:
       TEXT

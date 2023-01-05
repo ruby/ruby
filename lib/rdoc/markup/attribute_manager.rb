@@ -400,4 +400,3 @@ class RDoc::Markup::AttributeManager
   end
 
 end
-

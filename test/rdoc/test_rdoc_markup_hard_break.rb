@@ -29,4 +29,3 @@ class TestRDocMarkupHardBreak < RDoc::TestCase
   end
 
 end
-

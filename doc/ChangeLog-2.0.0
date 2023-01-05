@@ -11664,7 +11664,6 @@ Thu Jun 28 09:27:09 2012  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 	* test/ruby/test_module.rb (test_prepend_instance_methods_false): add
 	  a test for it.
 
-
 Thu Jun 28 06:12:42 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_ancestors): fix ancestors order.
@@ -12326,7 +12325,6 @@ Thu Jun 14 10:44:41 2012  Yuki Yugui Sonoda  <yugui@google.com>
 	  (ruby_compile_main_from_file, ruby_compile_main_from_string) new API
 	  (ruby_set_script_name): new API.
 
-
 Thu Jun 14 10:39:48 2012  Yuki Yugui Sonoda  <yugui@google.com>
 
 	* eval.c: Add doxygen comments.
@@ -12786,7 +12784,6 @@ Sun Jun 10 03:09:41 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 	  Add/extend existing documentation. Examples now also cover RSA
 	  signatures and PBKDF2.
 	  [ruby-core: 45154][ruby-trunk - Bug #6475]
-
 
 Sun Jun 10 01:41:45 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 

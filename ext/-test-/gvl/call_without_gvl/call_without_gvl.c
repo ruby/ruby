@@ -10,7 +10,6 @@ native_sleep_callback(void *data)
     return NULL;
 }
 
-
 static VALUE
 thread_runnable_sleep(VALUE thread, VALUE timeout)
 {

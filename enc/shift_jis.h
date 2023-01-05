@@ -432,7 +432,6 @@ is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc ARG_
   return (SJIS_ISMB_TRAIL(c) ? FALSE : TRUE);
 }
 
-
 static const OnigCodePoint CR_Hiragana[] = {
   1,
   0x829f, 0x82f1

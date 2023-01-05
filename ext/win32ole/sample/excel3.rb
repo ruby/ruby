@@ -18,4 +18,3 @@ gets
 
 application.ActiveWorkbook.Close(0);
 application.Quit();
-
