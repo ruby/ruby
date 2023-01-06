@@ -18,6 +18,7 @@ use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int, c_uint};
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -695,7 +696,7 @@ pub fn gen_single_block(
     let mut ctx = limit_block_versions(blockid, start_ctx);
 
     verify_blockid(blockid);
-    assert!(!(blockid.idx == 0 && ctx.get_stack_size() > 0));
+    assert!(!(blockid.idx == 0 && ctx.get_stack_size() > 0) || ctx.caller_ctx.is_some());
 
     // Instruction sequence to compile
     let iseq = blockid.iseq;
@@ -769,7 +770,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&insn_name(opcode));
+            asm.comment(&format!("Insn: {}", insn_name(opcode)));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -1004,10 +1005,13 @@ fn gen_putself(
 
     // Write it on the stack
     let stack_top = ctx.stack_push_self();
-    asm.mov(
-        stack_top,
+    let self_opnd = if let Some((_, caller_ctx)) = &ctx.caller_ctx {
+        // When inlined, the receiver is put right above the caller_ctx's stack.
+        caller_ctx.stack_opnd(-1)
+    } else {
         Opnd::mem((8 * SIZEOF_VALUE) as u8, CFP, RUBY_OFFSET_CFP_SELF)
-    );
+    };
+    asm.mov(stack_top, self_opnd);
 
     KeepCompiling
 }
@@ -4774,6 +4778,7 @@ fn gen_return_branch(
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
         BranchShape::Default => {
+            asm.comment("update cfp->jit_return");
             asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
         }
     }
@@ -4888,6 +4893,34 @@ fn gen_send_bmethod(
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
     gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
+}
+
+// Return true if gen_send_iseq should inline a given ISEQ. Currently, it returns true
+// only for "simple methods" that meet all the following conditions:
+//   * All instructions never side-exit (when inlined)
+//   * All instructions are "leaf" (i.e. don't call any methods)
+fn can_inline_iseq(iseq: *const rb_iseq_t) -> bool {
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    let mut insn_idx: c_uint = 0;
+    while insn_idx < iseq_size {
+        // Get the current pc and opcode
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        let opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }.try_into().unwrap();
+
+        match opcode as ruby_vminsn_type {
+            YARVINSN_putnil |
+            YARVINSN_putobject |
+            YARVINSN_putobject_INT2FIX_0_ |
+            YARVINSN_putobject_INT2FIX_1_ |
+            YARVINSN_putself |
+            // Leave normally side-exits on RUBY_VM_CHECK_INTS, but skips it when inlined
+            YARVINSN_leave => {},
+            _ => return false,
+        }
+
+        insn_idx += insn_len(opcode);
+    }
+    true
 }
 
 fn gen_send_iseq(
@@ -5143,8 +5176,14 @@ fn gen_send_iseq(
     // Number of locals that are not parameters
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
 
-    // Check for interrupts
-    gen_check_ints(asm, side_exit);
+    // Inline ISEQ if possible. Captured operands are not supported yet, which require ep.
+    let inline_method = captured_opnd.is_none() && can_inline_iseq(iseq);
+    incr_counter!(inlined_block_count);
+
+    if !inline_method {
+        // Check for interrupts
+        gen_check_ints(asm, side_exit);
+    }
 
     match block_arg_type {
         Some(Type::Nil) => {
@@ -5210,13 +5249,15 @@ fn gen_send_iseq(
     // Stack overflow check
     // Note that vm_push_frame checks it against a decremented cfp, hence the multiply by 2.
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
-    asm.comment("stack overflow check");
-    let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
-    let locals_offs =
-        (SIZEOF_VALUE as i32) * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
-    let stack_limit = asm.lea(ctx.sp_opnd(locals_offs as isize));
-    asm.cmp(CFP, stack_limit);
-    asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).as_side_exit());
+    if !inline_method {
+        asm.comment("stack overflow check");
+        let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
+        let locals_offs =
+            (SIZEOF_VALUE as i32) * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
+        let stack_limit = asm.lea(ctx.sp_opnd(locals_offs as isize));
+        asm.cmp(CFP, stack_limit);
+        asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).as_side_exit());
+    }
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -5378,45 +5419,47 @@ fn gen_send_iseq(
     let captured_self = captured_opnd.is_some();
     let sp_offset = (argc as isize) + if captured_self { 0 } else { 1 };
 
-    // Store the updated SP on the current frame (pop arguments and receiver)
-    asm.comment("store caller sp");
-    let caller_sp = asm.lea(ctx.sp_opnd((SIZEOF_VALUE as isize) * -sp_offset));
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
-
-    // Store the next PC in the current frame
-    jit_save_pc(jit, asm);
-
-    // Adjust the callee's stack pointer
-    let offs =
-        (SIZEOF_VALUE as isize) * (3 + (num_locals as isize) + if doing_kw_call { 1 } else { 0 });
-    let callee_sp = asm.lea(ctx.sp_opnd(offs));
-
-    let specval = if let Some(prev_ep) = prev_ep {
-        // We've already side-exited if the callee expects a block, so we
-        // ignore any supplied block here
-        SpecVal::PrevEP(prev_ep)
-    } else if let Some(captured_opnd) = captured_opnd {
-        let ep_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32)); // captured->ep
-        SpecVal::PrevEPOpnd(ep_opnd)
-    } else if block_arg_type == Some(Type::BlockParamProxy) {
-        SpecVal::BlockParamProxy
-    } else if let Some(block_val) = block {
-        SpecVal::BlockISeq(block_val)
-    } else {
-        SpecVal::None
-    };
-
     // Setup the new frame
-    gen_push_frame(jit, ctx, asm, true, ControlFrame {
-        frame_type,
-        specval,
-        cme,
-        recv,
-        sp: callee_sp,
-        iseq: Some(iseq),
-        pc: None, // We are calling into jitted code, which will set the PC as necessary
-        local_size: num_locals
-    });
+    if !inline_method {
+        // Store the updated SP on the current frame (pop arguments and receiver)
+        asm.comment("store caller sp");
+        let caller_sp = asm.lea(ctx.sp_opnd((SIZEOF_VALUE as isize) * -sp_offset));
+        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
+
+        // Store the next PC in the current frame
+        jit_save_pc(jit, asm);
+
+        // Adjust the callee's stack pointer
+        let offs =
+            (SIZEOF_VALUE as isize) * (3 + (num_locals as isize) + if doing_kw_call { 1 } else { 0 });
+        let callee_sp = asm.lea(ctx.sp_opnd(offs));
+
+        let specval = if let Some(prev_ep) = prev_ep {
+            // We've already side-exited if the callee expects a block, so we
+            // ignore any supplied block here
+            SpecVal::PrevEP(prev_ep)
+        } else if let Some(captured_opnd) = captured_opnd {
+            let ep_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32)); // captured->ep
+            SpecVal::PrevEPOpnd(ep_opnd)
+        } else if block_arg_type == Some(Type::BlockParamProxy) {
+            SpecVal::BlockParamProxy
+        } else if let Some(block_val) = block {
+            SpecVal::BlockISeq(block_val)
+        } else {
+            SpecVal::None
+        };
+
+        gen_push_frame(jit, ctx, asm, true, ControlFrame {
+            frame_type,
+            specval,
+            cme,
+            recv,
+            sp: callee_sp,
+            iseq: Some(iseq),
+            pc: None, // We are calling into jitted code, which will set the PC as necessary
+            local_size: num_locals
+        });
+    }
 
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
@@ -5430,14 +5473,26 @@ fn gen_send_iseq(
     };
 
     // Create a context for the callee
-    let mut callee_ctx = Context::default();
+    let mut callee_ctx = if inline_method {
+        // Reuse the context to keep arguments and a receiver on the stack
+        let mut callee_ctx = ctx.clone();
+        callee_ctx.clear_self_type(); // self's type could be changed to something incompatible
+        callee_ctx
+    } else {
+        let mut callee_ctx = Context::default();
 
-    // Set the argument types in the callee's context
-    for arg_idx in 0..argc {
-        let stack_offs: u16 = (argc - arg_idx - 1).try_into().unwrap();
-        let arg_type = ctx.get_opnd_type(StackOpnd(stack_offs));
-        callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
-    }
+        // Set the argument types in the callee's context
+        for arg_idx in 0..argc {
+            let stack_offs: u16 = (argc - arg_idx - 1).try_into().unwrap();
+            let arg_type = ctx.get_opnd_type(StackOpnd(stack_offs));
+            callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
+        }
+
+        // The callee might change locals through Kernel#binding and other means.
+        ctx.clear_local_types();
+
+        callee_ctx
+    };
 
     let recv_type = if captured_self {
         Type::Unknown // we don't track the type information of captured->self for now
@@ -5446,29 +5501,32 @@ fn gen_send_iseq(
     };
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
 
-    // The callee might change locals through Kernel#binding and other means.
-    ctx.clear_local_types();
-
-    // Pop arguments and receiver in return context, push the return value
-    // After the return, sp_offset will be 1. The codegen for leave writes
-    // the return value in case of JIT-to-JIT return.
+    // Pop arguments and receiver in return context
     let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
-    return_ctx.stack_push(Type::Unknown);
-    return_ctx.set_sp_offset(1);
     return_ctx.reset_chain_depth();
 
-    // Write the JIT return address on the callee frame
-    gen_branch(
-        jit,
-        asm,
-        ocb,
-        return_block,
-        &return_ctx,
-        None,
-        None,
-        gen_return_branch,
-    );
+    if inline_method {
+        // The return value will be pushed to return_ctx on gen_leave.
+        callee_ctx.caller_ctx = Some((return_block, Rc::new(return_ctx)));
+    } else {
+        // Push the return value. After the return, sp_offset will be 1.
+        // The codegen for leave writes the return value in case of JIT-to-JIT return.
+        return_ctx.stack_push(Type::Unknown);
+        return_ctx.set_sp_offset(1);
+
+        // Write the JIT return address on the callee frame
+        gen_branch(
+            jit,
+            asm,
+            ocb,
+            return_block,
+            &return_ctx,
+            None,
+            None,
+            gen_return_branch,
+        );
+    }
 
     //print_str(cb, "calling Ruby func:");
     //print_str(cb, rb_id2name(vm_ci_mid(ci)));
@@ -6316,6 +6374,25 @@ fn gen_leave(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
+    if let Some((return_block, mut caller_ctx)) = ctx.caller_ctx.as_ref().map(|(block, ctx)| (block.clone(), ctx.as_ref().clone())) {
+        // Pop the return value from the callee's stack top
+        let val_type = ctx.get_opnd_type(StackOpnd(0));
+        let val_opnd = ctx.stack_pop(1);
+
+        // Push the return value to the caller's stack top
+        let return_opnd = caller_ctx.stack_push(val_type);
+        asm.mov(return_opnd, val_opnd);
+
+        asm.comment("jump to inlining caller");
+        gen_direct_jump(
+            jit,
+            &caller_ctx,
+            return_block,
+            asm,
+        );
+        return EndBlock
+    }
+
     // Only the return value should be on the stack
     assert_eq!(1, ctx.get_stack_size());
 
@@ -7204,7 +7281,6 @@ impl CodegenGlobals {
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
             use std::cell::RefCell;
-            use std::rc::Rc;
 
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 

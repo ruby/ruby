@@ -262,6 +262,7 @@ module RubyVM::YJIT
       $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
       $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
       $stderr.puts "compiled_branch_count: " + ("%10d" % stats[:compiled_branch_count])
+      $stderr.puts "inlined_block_count:   " + ("%10d" % stats[:inlined_block_count])
       $stderr.puts "block_next_count:      " + ("%10d" % stats[:block_next_count])
       $stderr.puts "defer_count:           " + ("%10d" % stats[:defer_count])
       $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])

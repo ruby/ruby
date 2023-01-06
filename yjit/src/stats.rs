@@ -278,6 +278,7 @@ make_counters! {
     compiled_iseq_count,
     compiled_block_count,
     compiled_branch_count,
+    inlined_block_count,
     compilation_failure,
     block_next_count,
     defer_count,

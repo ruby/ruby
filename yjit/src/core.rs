@@ -299,6 +299,9 @@ pub struct Context {
 
     // Mapping of temp stack entries to types we track
     temp_mapping: [TempMapping; MAX_TEMP_TYPES],
+
+    // The caller's block and context for inlined contexts
+    pub caller_ctx: Option<(BlockId, Rc<Context>)>,
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -511,11 +514,14 @@ impl IseqPayload {
 
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
+#[cfg(not(test))]
 pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
     let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
     unsafe { payload.as_mut() }
 }
+#[cfg(test)]
+pub fn get_iseq_payload(_iseq: IseqPtr) -> Option<&'static mut IseqPayload> { None }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
 pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
@@ -786,7 +792,12 @@ fn get_num_versions(blockid: BlockId) -> usize {
             payload
                 .version_map
                 .get(insn_idx)
-                .map(|versions| versions.len())
+                .map(|versions|
+                    // Skip inlined blocks from block version count
+                    versions.iter().filter(|version|
+                        version.borrow().ctx.caller_ctx.is_none()
+                    ).count()
+                )
                 .unwrap_or(0)
         }
         None => 0,
@@ -884,7 +895,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let block = blockref.borrow();
 
     // Function entry blocks must have stack size 0
-    assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0));
+    assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0) || block.ctx.caller_ctx.is_some());
 
     let version_list = get_or_create_version_list(block.blockid);
 
@@ -1341,6 +1352,10 @@ impl Context {
         self.local_types = [Type::default(); MAX_LOCAL_TYPES];
     }
 
+    pub fn clear_self_type(&mut self) {
+        self.self_type = Type::default();
+    }
+
     /// Compute a difference score for two context objects
     /// Returns 0 if the two contexts are the same
     /// Returns > 0 if different but compatible
@@ -1416,6 +1431,17 @@ impl Context {
             }
 
             diff += temp_diff;
+        }
+
+        // Check inlining context
+        if src.caller_ctx.is_some() != dst.caller_ctx.is_some() {
+            return usize::MAX;
+        }
+        if let (Some((src_block_id, src_caller_ctx)), Some((dst_block_id, dst_caller_ctx))) = (&src.caller_ctx, &dst.caller_ctx) {
+            if *src_block_id != *dst_block_id {
+                return usize::MAX;
+            }
+            diff += src_caller_ctx.diff(&dst_caller_ctx);
         }
 
         return diff;
@@ -2114,6 +2140,7 @@ pub fn defer_compilation(
     set_branch_target(0, blockid, &next_ctx, &branch_rc, &mut branch, ocb);
 
     // Call the branch generation function
+    asm.comment("defer_compilation");
     asm.mark_branch_start(&branch_rc);
     if let Some(dst_addr) = branch.get_target_address(0) {
         gen_jump_branch(asm, dst_addr, None, BranchShape::Default);

@@ -3456,3 +3456,30 @@ assert_equal 'ok', %q{
 
   cw(4)
 }
+
+# inlined method calls
+assert_equal 'nil', %q{
+  def inlined = nil
+  def foo = inlined
+  foo.inspect
+}
+assert_equal '1', %q{
+  def inlined = 1
+  def foo = inlined
+  foo
+}
+assert_equal '1', %q{
+  def inlined(_unused_arg1) = 1
+  def foo = inlined(nil)
+  foo
+}
+assert_equal 'main', %q{
+  def inlined = self
+  def foo = inlined
+  foo
+}
+assert_equal 'main', %q{
+  def inlined(_unused_arg) = self
+  def foo = inlined(nil)
+  foo
+}
