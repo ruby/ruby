@@ -536,7 +536,7 @@ The following objects are shareable.
 
 Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
 
-To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively travasible objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
+To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
 
 ## Language changes to isolate unshareable objects between Ractors
 
@@ -705,8 +705,8 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 
 * none: Do nothing. Same as: `CONST = expr`
 * literal:
-  * if `expr` is consites of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
-  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?}`.
+  * if `expr` consists of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
+  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?(o)}`.
 * experimental_everything: replaced to `CONST = Ractor.make_shareable(expr)`.
 * experimental_copy: replaced to `CONST = Ractor.make_shareable(expr, copy: true)`.
 
