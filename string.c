@@ -312,14 +312,18 @@ rb_str_make_embedded(VALUE str)
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
-    char *buf = RSTRING_PTR(str);
-    long len = RSTRING_LEN(str);
+    char *buf = RSTRING(str)->as.heap.ptr;
+    long len = RSTRING(str)->as.heap.len;
 
     STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, len);
 
-    memmove(RSTRING_PTR(str), buf, len);
-    ruby_xfree(buf);
+    if (len > 0) {
+        memcpy(RSTRING_PTR(str), buf, len);
+        ruby_xfree(buf);
+    }
+
+    TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
 }
 
 void
