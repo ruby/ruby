@@ -2276,7 +2276,7 @@ fn gen_setinstancevariable(
 
         asm.comment("guard shape");
         asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-        let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic).into();
         jit_chain_guard(
             JCC_JNE,
             jit,

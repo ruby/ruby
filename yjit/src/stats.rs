@@ -256,6 +256,7 @@ make_counters! {
     setivar_name_not_mapped,
     setivar_not_object,
     setivar_frozen,
+    setivar_megamorphic,
 
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
