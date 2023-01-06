@@ -7,7 +7,7 @@ jobs:
         test_task: [check] # to make job names consistent
         jit_opts: [--jit-wait]
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     env:
       TESTOPTS: '-q --tty=no'
