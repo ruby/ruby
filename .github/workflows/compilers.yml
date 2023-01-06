@@ -154,7 +154,7 @@ jobs:
           - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
 
     name: ${{ matrix.entry.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/ruby/ruby-ci-image:latest
     if: "!contains(github.event.head_commit.message, '[ci skip]')"
     steps:
