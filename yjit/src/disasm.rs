@@ -175,13 +175,20 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
 
     // For each instruction in this block
     for insn in insns.as_ref() {
+        // Colorize outlined code in blue
+        let (prefix, suffix) = if cb.outlined {
+            ("\x1b[34m", "\x1b[0m")
+        } else {
+            ("", "")
+        };
+
         // Comments for this block
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
-                writeln!(&mut out, "  \x1b[1m# {}\x1b[0m", comment).unwrap();
+                writeln!(&mut out, "  \x1b[1m{prefix}# {comment}{suffix}\x1b[0m").unwrap();
             }
         }
-        writeln!(&mut out, "  {}", insn).unwrap();
+        writeln!(&mut out, "  {prefix}{insn}{suffix}").unwrap();
     }
 
     return out;
