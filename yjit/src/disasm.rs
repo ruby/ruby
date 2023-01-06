@@ -173,22 +173,23 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
+    // Colorize outlined code in blue
+    if cb.outlined {
+        write!(&mut out, "\x1b[34m").unwrap();
+    }
     // For each instruction in this block
     for insn in insns.as_ref() {
-        // Colorize outlined code in blue
-        let (prefix, suffix) = if cb.outlined {
-            ("\x1b[34m", "\x1b[0m")
-        } else {
-            ("", "")
-        };
-
         // Comments for this block
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
-                writeln!(&mut out, "  \x1b[1m{prefix}# {comment}{suffix}\x1b[0m").unwrap();
+                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
             }
         }
-        writeln!(&mut out, "  {prefix}{insn}{suffix}").unwrap();
+        writeln!(&mut out, "  {insn}").unwrap();
+    }
+    // Disable blue color
+    if cb.outlined {
+        write!(&mut out, "\x1b[0m").unwrap();
     }
 
     return out;
