@@ -52,7 +52,7 @@ class IPAddr
   # Regexp _internally_ used for parsing IPv4 address.
   RE_IPV4ADDRLIKE = %r{
     \A
-    (\d+) \. (\d+) \. (\d+) \. (\d+)
+    \d+ \. \d+ \. \d+ \. \d+
     \z
   }x
 
@@ -669,8 +669,8 @@ class IPAddr
     when Array
       octets = addr
     else
-      m = RE_IPV4ADDRLIKE.match(addr) or return nil
-      octets = m.captures
+      RE_IPV4ADDRLIKE.match?(addr) or return nil
+      octets = addr.split('.')
     end
     octets.inject(0) { |i, s|
       (n = s.to_i) < 256 or raise InvalidAddressError, "invalid address: #{@addr}"
