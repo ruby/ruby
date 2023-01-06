@@ -586,7 +586,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
     if get_option_ref!(dump_disasm).is_some() {
-        asm.comment(&format!("YJIT entry: {}", iseq_get_location(iseq, 0)));
+        asm.comment(&format!("YJIT entry point: {}", iseq_get_location(iseq, 0)));
     } else {
         asm.comment("YJIT entry");
     }
