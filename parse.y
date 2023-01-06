@@ -9813,7 +9813,7 @@ parser_yylex(struct parser_params *p)
 #endif
 	/* Set location for end-of-input because dispatch_scan_event is not called. */
 	RUBY_SET_YYLLOC(*p->yylloc);
-	return 0;
+	return END_OF_INPUT;
 
 	/* white spaces */
       case '\r':
@@ -9986,7 +9986,7 @@ parser_yylex(struct parser_params *p)
 		    c = nextc(p);
 		    if (c == -1) {
 			compile_error(p, "embedded document meets end of file");
-			return 0;
+			return END_OF_INPUT;
 		    }
 		    if (c == '=' && word_match_p(p, "end", 3)) {
 			break;
@@ -10466,13 +10466,11 @@ parser_yylex(struct parser_params *p)
 	if (was_bol(p) && whole_match_p(p, "__END__", 7, 0)) {
 	    p->ruby__end__seen = 1;
 	    p->eofp = 1;
-#ifndef RIPPER
-	    return -1;
-#else
+#ifdef RIPPER
             lex_goto_eol(p);
             dispatch_scan_event(p, k__END__);
-            return 0;
 #endif
+            return END_OF_INPUT;
 	}
 	newtok(p);
 	break;
@@ -10504,7 +10502,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 
     if (has_delayed_token(p))
 	dispatch_delayed_token(p, t);
-    else if (t != 0)
+    else if (t != END_OF_INPUT)
 	dispatch_scan_event(p, t);
 
     return t;

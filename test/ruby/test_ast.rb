@@ -624,6 +624,27 @@ dummy
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
+  def test_keep_tokens_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_tokens: true)
+    1.times do
+    end
+    __END__
+    dummy
+    END
+
+    expected = [
+      [:tINTEGER, "1"],
+      [:".", "."],
+      [:tIDENTIFIER, "times"],
+      [:tSP, " "],
+      [:keyword_do, "do"],
+      [:tIGNORED_NL, "\n"],
+      [:keyword_end, "end"],
+      [:nl, "\n"],
+    ]
+    assert_equal(expected, node.all_tokens.map { [_2, _3]})
+  end
+
   def test_encoding_with_keep_script_lines
     # Stop a warning "possibly useless use of a literal in void context"
     verbose_bak, $VERBOSE = $VERBOSE, nil
