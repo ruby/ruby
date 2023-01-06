@@ -1163,8 +1163,9 @@ extern "C" {
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
+    pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
-    pub fn rb_iseq_method_name(iseq: *const rb_iseq_t) -> VALUE;
+    pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_vm_barrier();
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
