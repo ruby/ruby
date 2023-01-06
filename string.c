@@ -1787,6 +1787,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         else {
             RSTRING(dup)->as.heap.len = RSTRING_LEN(str);
             RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
+            FL_SET(root, STR_SHARED_ROOT);
             RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
             flags |= RSTRING_NOEMBED | STR_SHARED;
         }
