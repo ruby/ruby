@@ -36,10 +36,17 @@ module RubyVM::MJIT # :nodoc: all
       CType::Immediate.parse("size_t").new(addr)
     end
 
-    def rb_mjit_stub_hit
+    def rb_mjit_block_stub_hit
       Primitive.cstmt! %{
-        extern void *rb_mjit_stub_hit(VALUE stub);
-        return SIZET2NUM((size_t)rb_mjit_stub_hit);
+        extern void *rb_mjit_block_stub_hit(VALUE block_stub, int sp_offset);
+        return SIZET2NUM((size_t)rb_mjit_block_stub_hit);
+      }
+    end
+
+    def rb_mjit_branch_stub_hit
+      Primitive.cstmt! %{
+        extern void *rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int branch_target_p);
+        return SIZET2NUM((size_t)rb_mjit_branch_stub_hit);
       }
     end
 
@@ -67,6 +74,11 @@ module RubyVM::MJIT # :nodoc: all
 
     def BASIC_OP_UNREDEFINED_P(op, klass)
       Primitive.cexpr! 'RBOOL(BASIC_OP_UNREDEFINED_P(NUM2INT(op), NUM2INT(klass)))'
+    end
+
+    def rb_iseq_line_no(iseq, pos)
+      _iseq_addr = iseq.to_i
+      Primitive.cexpr! 'UINT2NUM(rb_iseq_line_no((const rb_iseq_t *)NUM2SIZET(_iseq_addr), NUM2SIZET(pos)))'
     end
 
     #========================================================================================

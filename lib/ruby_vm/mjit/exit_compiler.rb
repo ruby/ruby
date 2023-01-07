@@ -47,19 +47,30 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    # @param stub [RubyVM::MJIT::BlockStub]
-    def compile_jump_stub(jit, ctx, asm, stub)
-      case stub
-      when BlockStub
-        asm.comment("block stub hit: #{stub.iseq.body.location.label}@#{C.rb_iseq_path(stub.iseq)}:#{stub.iseq.body.location.first_lineno}")
-      else
-        raise "unexpected stub object: #{stub.inspect}"
-      end
-
-      # Call rb_mjit_stub_hit
-      asm.mov(:rdi, to_value(stub))
+    # @param block_stub [RubyVM::MJIT::BlockStub]
+    def compile_block_stub(jit, ctx, asm, block_stub)
+      # Call rb_mjit_block_stub_hit
+      asm.comment("block stub hit: #{block_stub.iseq.body.location.label}@#{C.rb_iseq_path(block_stub.iseq)}:#{iseq_lineno(block_stub.iseq, block_stub.pc)}")
+      asm.mov(:rdi, to_value(block_stub))
       asm.mov(:esi, ctx.sp_offset)
-      asm.call(C.rb_mjit_stub_hit)
+      asm.call(C.rb_mjit_block_stub_hit)
+
+      # Jump to the address returned by rb_mjit_stub_hit
+      asm.jmp(:rax)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    # @param branch_stub [RubyVM::MJIT::BranchStub]
+    # @param branch_target_p [TrueClass,FalseClass]
+    def compile_branch_stub(jit, ctx, asm, branch_stub, branch_target_p)
+      # Call rb_mjit_branch_stub_hit
+      asm.comment("branch stub hit: #{branch_stub.iseq.body.location.label}@#{C.rb_iseq_path(branch_stub.iseq)}:#{iseq_lineno(branch_stub.iseq, branch_target_p ? branch_stub.branch_target_pc : branch_stub.fallthrough_pc)}")
+      asm.mov(:rdi, to_value(branch_stub))
+      asm.mov(:esi, ctx.sp_offset)
+      asm.mov(:edx, branch_target_p ? 1 : 0)
+      asm.call(C.rb_mjit_branch_stub_hit)
 
       # Jump to the address returned by rb_mjit_stub_hit
       asm.jmp(:rax)
@@ -102,6 +113,10 @@ module RubyVM::MJIT
     def to_value(obj)
       @gc_refs << obj
       C.to_value(obj)
+    end
+
+    def iseq_lineno(iseq, pc)
+      C.rb_iseq_line_no(iseq, (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size)
     end
   end
 end

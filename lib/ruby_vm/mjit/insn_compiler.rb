@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 5/101
+      # 6/101
       case insn.name
       # nop
       # getlocal
@@ -83,7 +83,7 @@ module RubyVM::MJIT
       # throw
       # jump
       # branchif
-      # branchunless
+      when :branchunless then branchunless(jit, ctx, asm)
       # branchnil
       # once
       # opt_case_dispatch
@@ -247,7 +247,61 @@ module RubyVM::MJIT
     # throw
     # jump
     # branchif
-    # branchunless
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def branchunless(jit, ctx, asm)
+      # TODO: check ints for backward branches
+      # TODO: skip check for known truthy
+
+      # This `test` sets ZF only for Qnil and Qfalse, which let jz jump.
+      asm.test([SP, C.VALUE.size * (ctx.stack_size - 1)], ~Qnil)
+      ctx.stack_pop(1)
+
+      # Set stubs
+      # TODO: reuse already-compiled blocks
+      branch_stub = BranchStub.new(
+        iseq: jit.iseq,
+        ctx:  ctx.dup,
+        branch_target_pc: jit.pc + (jit.insn.len + jit.operand(0)) * C.VALUE.size,
+        fallthrough_pc:   jit.pc + jit.insn.len * C.VALUE.size,
+      )
+      branch_stub.branch_target_addr = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, true)
+        @ocb.write(ocb_asm)
+      end
+      branch_stub.fallthrough_addr = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, false)
+        @ocb.write(ocb_asm)
+      end
+
+      # Prepare codegen for all cases
+      branch_stub.branch_target_next = proc do |branch_asm|
+        branch_asm.stub(branch_stub) do
+          branch_asm.comment('branch_target_next')
+          branch_asm.jnz(branch_stub.fallthrough_addr)
+        end
+      end
+      branch_stub.fallthrough_next = proc do |branch_asm|
+        branch_asm.stub(branch_stub) do
+          branch_asm.comment('fallthrough_next')
+          branch_asm.jz(branch_stub.branch_target_addr)
+        end
+      end
+      branch_stub.neither_next = proc do |branch_asm|
+        branch_asm.stub(branch_stub) do
+          branch_asm.comment('neither_next')
+          branch_asm.jz(branch_stub.branch_target_addr)
+          branch_asm.jmp(branch_stub.fallthrough_addr)
+        end
+      end
+
+      # Just jump to stubs
+      branch_stub.neither_next.call(asm)
+      EndBlock
+    end
+
     # branchnil
     # once
     # opt_case_dispatch
@@ -370,12 +424,12 @@ module RubyVM::MJIT
       # Make a stub to compile the current insn
       block_stub = BlockStub.new(
         iseq: jit.iseq,
-        pc:   jit.pc,
         ctx:  ctx.dup,
+        pc:   jit.pc,
       )
 
       stub_hit = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_jump_stub(jit, ctx, ocb_asm, block_stub)
+        @exit_compiler.compile_block_stub(jit, ctx, ocb_asm, block_stub)
         @ocb.write(ocb_asm)
       end
 

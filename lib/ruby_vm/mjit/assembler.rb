@@ -169,6 +169,10 @@ module RubyVM::MJIT
       in Label => dst_label
         # 74 cb
         insn(opcode: 0x74, imm: dst_label)
+      # JZ rel32
+      in Integer => dst_addr
+        # 0F 84 cd
+        insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
       else
         raise NotImplementedError, "jz: not-implemented operands: #{dst.inspect}"
       end
@@ -338,7 +342,7 @@ module RubyVM::MJIT
     def test(left, right)
       case [left, right]
       # TEST r/m8*, imm8 (Mod 01: [reg]+disp8)
-      in [[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm)
+      in [[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm) && right_imm >= 0
         # REX + F6 /0 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -346,6 +350,17 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod01, reg: 0, rm: left_reg],
           disp: left_disp,
           imm: imm8(right_imm),
+        )
+      # TEST r/m64, imm32 (Mod 01: [reg]+disp8)
+      in [[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm32?(right_imm)
+        # REX.W + F7 /0 id
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0xf7,
+          mod_rm: ModRM[mod: Mod01, reg: 0, rm: left_reg],
+          disp: left_disp,
+          imm: imm32(right_imm),
         )
       # TEST r/m32, r32 (Mod 11: reg)
       in [Symbol => left_reg, Symbol => right_reg] if r32?(left_reg) && r32?(right_reg)
@@ -574,7 +589,6 @@ module RubyVM::MJIT
         end
         @stub_ends.fetch(index, []).each do |stub|
           stub.end_addr = write_addr + index
-          stub.freeze
         end
       end
     end

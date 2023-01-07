@@ -44,7 +44,7 @@ module RubyVM::MJIT
 
     def with_write_addr(addr)
       old_write_pos = @write_pos
-      set_addr(addr)
+      set_write_addr(addr)
       yield
     ensure
       @write_pos = old_write_pos
@@ -52,6 +52,10 @@ module RubyVM::MJIT
 
     def write_addr
       @mem_block + @write_pos
+    end
+
+    def include?(addr)
+      (@mem_block...(@mem_block + @mem_size)).include?(addr)
     end
 
     private

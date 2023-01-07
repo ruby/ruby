@@ -8,6 +8,10 @@ module RubyVM::MJIT
   )
     def initialize(side_exits: {}, **) = super
 
+    def insn
+      Compiler.decode_insn(C.VALUE.new(pc).*)
+    end
+
     def operand(index)
       C.VALUE.new(pc)[index + 1]
     end
