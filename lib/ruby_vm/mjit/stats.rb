@@ -38,7 +38,7 @@ module RubyVM::MJIT
       $stderr.puts "total_insns_count:     #{format('%10d', stats[:total_insns_count])}" if stats.key?(:total_insns_count)
       $stderr.puts "vm_insns_count:        #{format('%10d', stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)
       $stderr.puts "mjit_insns_count:      #{format('%10d', stats[:mjit_insns_count])}"
-      $stderr.puts "ratio_in_yjit:         #{format('%9.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
+      $stderr.puts "ratio_in_mjit:         #{format('%9.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
 
       print_exit_counts(stats)
     end

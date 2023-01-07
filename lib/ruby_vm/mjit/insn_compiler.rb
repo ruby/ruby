@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 6/101
+      # 7/101
       case insn.name
       # nop
       # getlocal
@@ -37,7 +37,7 @@ module RubyVM::MJIT
       # getglobal
       # setglobal
       when :putnil then putnil(jit, ctx, asm)
-      # putself
+      when :putself then putself(jit, ctx, asm)
       when :putobject then putobject(jit, ctx, asm)
       # putspecialobject
       # putstring
@@ -153,7 +153,16 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # putself
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def putself(jit, ctx, asm)
+      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
+      ctx.stack_push(1)
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -260,7 +269,7 @@ module RubyVM::MJIT
       ctx.stack_pop(1)
 
       # Set stubs
-      # TODO: reuse already-compiled blocks
+      # TODO: reuse already-compiled blocks jumped from different blocks
       branch_stub = BranchStub.new(
         iseq: jit.iseq,
         ctx:  ctx.dup,
