@@ -215,7 +215,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + @all_specs[name]).uniq(&:full_name)
+      results = (@base[name] + @all_specs[name]).uniq {|spec| [spec.version.hash, spec.platform] }
       locked_requirement = base_requirements[name]
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
