@@ -213,7 +213,7 @@ describe "Integer#>> (with n >> m)" do
       (0 >> -bignum_value).should == 0
     end
 
-    it "raises RangeError or NoMemoryError when m < 0 and n != 0" do
+    it "raises RangeError when m < 0 and n != 0" do
       # https://bugs.ruby-lang.org/issues/18518#note-9
       limit = RUBY_ENGINE == 'ruby' ? 2**67 : 2**32
 
@@ -221,21 +221,14 @@ describe "Integer#>> (with n >> m)" do
       coerce_long.stub!(:to_int).and_return(-limit)
       coerce_bignum = mock("bignum")
       coerce_bignum.stub!(:to_int).and_return(-bignum_value)
-      exps = [-limit, -bignum_value, coerce_long, coerce_bignum]
-
-      matcher = raise_error(Exception) do |exc|
-        if RangeError === exc
-          exc.message.should == 'shift width too big'
-        else
-          exc.should.is_a?(NoMemoryError)
-        end
-      end
+      exps = [-limit, coerce_long]
+      exps << -bignum_value << coerce_bignum if bignum_value >= limit
 
       exps.each { |exp|
-        -> { (1 >> exp) }.should matcher
-        -> { (-1 >> exp) }.should matcher
-        -> { (bignum_value >> exp) }.should matcher
-        -> { (-bignum_value >> exp) }.should matcher
+        -> { (1 >> exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (-1 >> exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (bignum_value >> exp) }.should raise_error(RangeError, 'shift width too big')
+        -> { (-bignum_value >> exp) }.should raise_error(RangeError, 'shift width too big')
       }
     end
   end
