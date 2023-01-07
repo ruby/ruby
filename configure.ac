@@ -3102,9 +3102,16 @@ AS_IF([test "$rb_cv_dlopen" = yes], [
     AS_CASE(["$target_os"],
     [darwin*], [
         AC_SUBST(ADDITIONAL_DLDFLAGS, "")
+        # Xcode 14+ will warn if -undefined dynamic_lookup is used without disabling chained fixups.
+        # Older linkers may not support the -no_fixup_chains flag.
+        dynamic_lookup_flag="-undefined dynamic_lookup"
+        flag="-no_fixup_chains"
+        test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
+        RUBY_TRY_LDFLAGS([$flag], [dynamic_lookup_flag="-no_fixup_chains $dynamic_lookup_flag"])
+
 	for flag in \
 	  "-multiply_defined suppress" \
-	  "-undefined dynamic_lookup" \
+	  "$dynamic_lookup_flag" \
 	  ; do
             test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
             RUBY_TRY_LDFLAGS([$flag], [], [flag=])
