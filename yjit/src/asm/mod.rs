@@ -356,6 +356,13 @@ impl CodeBlock {
         self.asm_comments.get(&pos)
     }
 
+    pub fn remove_comments(&mut self, start_addr: CodePtr, end_addr: CodePtr) {
+        #[cfg(feature = "disasm")]
+        for addr in start_addr.into_usize()..end_addr.into_usize() {
+            self.asm_comments.remove(&addr);
+        }
+    }
+
     pub fn clear_comments(&mut self) {
         #[cfg(feature = "disasm")]
         self.asm_comments.clear();

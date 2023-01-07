@@ -1609,6 +1609,11 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     }
     */
 
+    // Remove old comments
+    if let (Some(start_addr), Some(end_addr)) = (branch.start_addr, branch.end_addr) {
+        cb.remove_comments(start_addr, end_addr)
+    }
+
     let mut block = branch.block.borrow_mut();
     let branch_terminates_block = branch.end_addr == block.end_addr;
 
