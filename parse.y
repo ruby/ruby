@@ -1242,7 +1242,15 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
     token_info_drop(p, "def", loc->beg_pos);
 }
 
-#define debug_token_line(p, name, line) if (p->debug) rb_parser_printf(p, name ":%d (%d: %ld|%ld|%ld)\n", line, p->ruby_sourceline, p->lex.ptok - p->lex.pbeg, p->lex.pcur - p->lex.ptok, p->lex.pend - p->lex.pcur)
+#define debug_token_line(p, name, line) do { \
+	if (p->debug) { \
+	    const char *const pcur = p->lex.pcur; \
+	    const char *const ptok = p->lex.ptok; \
+	    rb_parser_printf(p, name ":%d (%d: %"PRIdPTRDIFF"|%"PRIdPTRDIFF"|%"PRIdPTRDIFF")\n", \
+			     line, p->ruby_sourceline, \
+			     ptok - p->lex.pbeg, pcur - ptok, p->lex.pend - pcur); \
+	} \
+    } while (0)
 
 #ifndef RIPPER
 # define Qnone 0
@@ -6186,8 +6194,13 @@ ripper_yylval_id(struct parser_params *p, ID x)
 static bool
 parser_has_token(struct parser_params *p)
 {
-    if (p->keep_tokens && (p->lex.pcur < p->lex.ptok)) rb_bug("lex.pcur < lex.ptok. (line: %d) %ld|%ld|%ld", p->ruby_sourceline, p->lex.ptok - p->lex.pbeg, p->lex.pcur - p->lex.ptok, p->lex.pend - p->lex.pcur);
-    return p->lex.pcur > p->lex.ptok;
+    const char *const pcur = p->lex.pcur;
+    const char *const ptok = p->lex.ptok;
+    if (p->keep_tokens && (pcur < ptok)) {
+	rb_bug("lex.pcur < lex.ptok. (line: %d) %"PRIdPTRDIFF"|%"PRIdPTRDIFF"|%"PRIdPTRDIFF"",
+	       p->ruby_sourceline, ptok - p->lex.pbeg, pcur - ptok, p->lex.pend - pcur);
+    }
+    return pcur > ptok;
 }
 
 static VALUE
