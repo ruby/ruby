@@ -168,7 +168,7 @@ module RubyVM::MJIT
     #
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_prologue(asm)
-      asm.comment('MJIT entry')
+      asm.comment('MJIT entry point')
 
       # Save callee-saved registers used by JITed code
       asm.push(CFP)

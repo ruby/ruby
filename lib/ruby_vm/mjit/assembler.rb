@@ -17,7 +17,7 @@ module RubyVM::MJIT
     class ModRM < Data.define(:mod, :reg, :rm); end
     Mod00 = 0b00 # Mod 00: [reg]
     Mod01 = 0b01 # Mod 01: [reg]+disp8
-    Mod10 = 0b10 # Mod 10: [reg]+disp16
+    Mod10 = 0b10 # Mod 10: [reg]+disp32
     Mod11 = 0b11 # Mod 11: reg
 
     # REX =   0100WR0B
@@ -211,6 +211,16 @@ module RubyVM::MJIT
             opcode: 0x8b,
             mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
             disp: src_disp,
+          )
+        # MOV r64, r/m64 (Mod 10: [reg]+disp16)
+        in [Symbol => src_reg, Integer => src_disp] if r64?(dst_reg) && r64?(src_reg) && imm32?(src_disp)
+          # REX.W + 8B /r
+          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x8b,
+            mod_rm: ModRM[mod: Mod10, reg: dst_reg, rm: src_reg],
+            disp: imm32(src_disp),
           )
         # MOV r64, r/m64 (Mod 11: reg)
         in Symbol => src_reg if r64?(dst_reg) && r64?(src_reg)
@@ -473,10 +483,7 @@ module RubyVM::MJIT
         @bytes.push(mod_rm_byte)
       end
       if disp
-        unless imm8?(disp) # TODO: support displacement in 2 or 4 bytes as well
-          raise NotImplementedError, "not-implemented disp: #{disp}"
-        end
-        @bytes.push(disp)
+        @bytes.push(*Array(disp))
       end
       if imm
         @bytes.push(*imm)
@@ -583,7 +590,7 @@ module RubyVM::MJIT
     end
 
     def imm64?(imm)
-      (-0x8000_0000_0000_0000..0x7fff_ffff_ffff_ffff).include?(imm) # TODO: consider uimm
+      (-0x8000_0000_0000_0000..0xffff_ffff_ffff_ffff).include?(imm)
     end
 
     def r32?(reg)
