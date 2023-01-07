@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 9/101
+      # 10/101
       case insn.name
       # nop
       # getlocal
@@ -88,7 +88,7 @@ module RubyVM::MJIT
       # once
       # opt_case_dispatch
       # opt_plus
-      # opt_minus
+      when :opt_minus then opt_minus(jit, ctx, asm)
       # opt_mult
       # opt_div
       # opt_mod
@@ -316,7 +316,50 @@ module RubyVM::MJIT
     # once
     # opt_case_dispatch
     # opt_plus
-    # opt_minus
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_minus(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_obj  = jit.peek_at_stack(0)
+
+      if fixnum?(comptime_recv) && fixnum?(comptime_obj)
+        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_MINUS)
+          return CantCompile
+        end
+
+        raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+        recv_index = ctx.stack_size - 2
+        obj_index  = ctx.stack_size - 1
+
+        asm.comment('guard recv is fixnum') # TODO: skip this with type information
+        asm.test([SP, C.VALUE.size * recv_index], C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit(jit, ctx))
+
+        asm.comment('guard obj is fixnum') # TODO: skip this with type information
+        asm.test([SP, C.VALUE.size * obj_index], C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit(jit, ctx))
+
+        asm.mov(:rax, [SP, C.VALUE.size * recv_index])
+        asm.mov(:rcx, [SP, C.VALUE.size * obj_index])
+        asm.sub(:rax, :rcx)
+        asm.jo(side_exit(jit, ctx))
+        asm.add(:rax, 1)
+        asm.mov([SP, C.VALUE.size * recv_index], :rax)
+
+        ctx.stack_pop(1)
+        KeepCompiling
+      else
+        CantCompile # TODO: delegate to send
+      end
+    end
+
     # opt_mult
     # opt_div
     # opt_mod
@@ -346,11 +389,11 @@ module RubyVM::MJIT
 
         asm.comment('guard recv is fixnum') # TODO: skip this with type information
         asm.test([SP, C.VALUE.size * recv_index], C.RUBY_FIXNUM_FLAG)
-        asm.je(side_exit(jit, ctx))
+        asm.jz(side_exit(jit, ctx))
 
         asm.comment('guard obj is fixnum') # TODO: skip this with type information
         asm.test([SP, C.VALUE.size * obj_index], C.RUBY_FIXNUM_FLAG)
-        asm.je(side_exit(jit, ctx))
+        asm.jz(side_exit(jit, ctx))
 
         asm.mov(:rax, [SP, C.VALUE.size * obj_index])
         asm.cmp([SP, C.VALUE.size * recv_index], :rax)

@@ -163,6 +163,17 @@ module RubyVM::MJIT
       end
     end
 
+    def jo(dst)
+      case dst
+      # JO rel32
+      in Integer => dst_addr
+        # 0F 80 cd
+        insn(opcode: [0x0f, 0x80], imm: rel32(dst_addr))
+      else
+        raise NotImplementedError, "jo: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
     def jz(dst)
       case dst
       # JZ rel8
@@ -333,10 +344,26 @@ module RubyVM::MJIT
       end
     end
 
-    # RET
     def ret
+      # RET
       # Near return: A return to a procedure within the current code segment
       insn(opcode: 0xc3)
+    end
+
+    def sub(dst, src)
+      case [dst, src]
+      # SUB r/m64, r64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+        # REX.W + 29 /r
+        # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x29,
+          mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
+        )
+      else
+        raise NotImplementedError, "sub: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
     end
 
     def test(left, right)

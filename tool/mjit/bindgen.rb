@@ -354,6 +354,7 @@ generator = BindingGenerator.new(
     ],
     UINT: %w[
       BOP_LT
+      BOP_MINUS
       INTEGER_REDEFINED_OP_FLAG
       RUBY_EVENT_CLASS
       SHAPE_CAPACITY_CHANGE
