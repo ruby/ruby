@@ -66,9 +66,13 @@ if SyntaxError.method_defined?(:detailed_message)
 else
   autoload :Pathname, "pathname"
 
+  #--
   # Monkey patch kernel to ensure that all `require` calls call the same
   # method
+  #++
   module Kernel
+    # :stopdoc:
+
     module_function
 
     alias_method :syntax_suggest_original_require, :require
