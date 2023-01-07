@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 7/101
+      # 9/101
       case insn.name
       # nop
       # getlocal
@@ -115,6 +115,10 @@ module RubyVM::MJIT
       # opt_invokebuiltin_delegate
       # opt_invokebuiltin_delegate_leave
       when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
+      # setlocal_WC_0
+      # setlocal_WC_1
+      when :putobject_INT2FIX_0_ then putobject_INT2FIX_0_(jit, ctx, asm)
+      when :putobject_INT2FIX_1_ then putobject_INT2FIX_1_(jit, ctx, asm)
       else CantCompile
       end
     end
@@ -167,10 +171,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def putobject(jit, ctx, asm)
-      # Get operands
-      val = jit.operand(0)
-
+    def putobject(jit, ctx, asm, val: jit.operand(0))
       # Push it to the stack
       # TODO: GC offsets
       raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
@@ -408,8 +409,20 @@ module RubyVM::MJIT
     # getlocal_WC_1
     # setlocal_WC_0
     # setlocal_WC_1
-    # putobject_INT2FIX_0_
-    # putobject_INT2FIX_1_
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def putobject_INT2FIX_0_(jit, ctx, asm)
+      putobject(jit, ctx, asm, val: C.to_value(0))
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def putobject_INT2FIX_1_(jit, ctx, asm)
+      putobject(jit, ctx, asm, val: C.to_value(1))
+    end
 
     #
     # Helpers
