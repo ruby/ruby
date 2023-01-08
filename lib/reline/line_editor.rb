@@ -52,6 +52,7 @@ class Reline::LineEditor
   MenuInfo = Struct.new('MenuInfo', :target, :list)
 
   PROMPT_LIST_CACHE_TIMEOUT = 0.5
+  MINIMUM_SCROLLBAR_HEIGHT = 1
 
   def initialize(config, encoding)
     @config = config
@@ -715,7 +716,7 @@ class Reline::LineEditor
       moving_distance = (dialog_render_info.contents.size - height) * 2
       position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
       bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
-      bar_height = 1 if bar_height.zero?
+      bar_height = MINIMUM_SCROLLBAR_HEIGHT if bar_height < MINIMUM_SCROLLBAR_HEIGHT
       dialog.scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
     else
       dialog.scrollbar_pos = nil
