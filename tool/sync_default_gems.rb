@@ -540,11 +540,22 @@ module SyncDefaultGems
       end
       next if skipped
 
+      case gem
+      when "rubygems"
+        %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
+          if File.exist?(rem)
+            system("git", "reset", rem)
+            rm_rf(rem)
+          end
+        end
+        system(*%w[git add spec/bundler])
+      end
+
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
         result = pipe_readlines(%W"git status --porcelain -z")
-        result.map! {|line| line[/\A(?:.U|AA) (.*)/, 1]}
+        result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         result.compact!
         ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
         unless ignore.empty?
