@@ -3,9 +3,6 @@ module RubyVM::MJIT
   # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
   # Mostly an x86_64 assembler, but this also has some stuff that is useful for any architecture.
   class Assembler
-    # A thin Fiddle wrapper to write bytes to memory
-    ByteWriter = CType::Immediate.parse('char')
-
     # rel8 jumps are made with labels
     class Label < Data.define(:id, :name); end
 
@@ -40,12 +37,8 @@ module RubyVM::MJIT
       resolve_rel32(addr)
       resolve_labels
 
-      writer = ByteWriter.new(addr)
-      # If you pack bytes containing \x00, Ruby fails to recognize bytes after \x00.
-      # So writing byte by byte to avoid hitting that situation.
-      @bytes.each_with_index do |byte, index|
-        writer[index] = byte
-      end
+      write_bytes(addr)
+
       @bytes.size
     ensure
       @bytes.clear
@@ -651,6 +644,10 @@ module RubyVM::MJIT
           @bytes[index] = rel8
         end
       end
+    end
+
+    def write_bytes(addr)
+      Fiddle::Pointer.new(addr)[0, @bytes.size] = @bytes.pack('c*')
     end
   end
 end
