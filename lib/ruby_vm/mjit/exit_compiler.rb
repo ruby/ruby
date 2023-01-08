@@ -24,6 +24,17 @@ module RubyVM::MJIT
       asm.ret
     end
 
+    # @param ocb [CodeBlock]
+    def compile_leave_exit(asm)
+      # Restore callee-saved registers
+      asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
+
+      # :rax is written by #leave
+      asm.ret
+    end
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -44,11 +55,10 @@ module RubyVM::MJIT
       asm.ret
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     # @param block_stub [RubyVM::MJIT::BlockStub]
-    def compile_block_stub(jit, ctx, asm, block_stub)
+    def compile_block_stub(ctx, asm, block_stub)
       # Call rb_mjit_block_stub_hit
       asm.comment("block stub hit: #{block_stub.iseq.body.location.label}@#{C.rb_iseq_path(block_stub.iseq)}:#{iseq_lineno(block_stub.iseq, block_stub.pc)}")
       asm.mov(:rdi, to_value(block_stub))
@@ -98,7 +108,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def save_pc_and_sp(jit, ctx, asm)
       # Update pc (TODO: manage PC offset?)
-      asm.comment("save pc #{'and sp' if ctx.sp_offset != 0}")
+      asm.comment("save PC#{' and SP' if ctx.sp_offset != 0} to CFP")
       asm.mov(:rax, jit.pc) # rax = jit.pc
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
 

@@ -6,7 +6,7 @@ module RubyVM::MJIT
       @ocb = ocb
       @exit_compiler = exit_compiler
       @invariants = Invariants.new(ocb, exit_compiler)
-      freeze
+      # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 10/101
+      # 11/101
       case insn.name
       # nop
       # getlocal
@@ -70,7 +70,7 @@ module RubyVM::MJIT
       # definemethod
       # definesmethod
       # send
-      # opt_send_without_block
+      when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       # objtostring
       # opt_str_freeze
       # opt_nil_p
@@ -217,7 +217,16 @@ module RubyVM::MJIT
     # definemethod
     # definesmethod
     # send
-    # opt_send_without_block
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    # @param cd `RubyVM::MJIT::CPointer::Struct_rb_call_data`
+    def opt_send_without_block(jit, ctx, asm)
+      cd = C.rb_call_data.new(jit.operand(0))
+      compile_send_general(jit, ctx, asm, cd)
+    end
+
     # objtostring
     # opt_str_freeze
     # opt_nil_p
@@ -233,24 +242,23 @@ module RubyVM::MJIT
     def leave(jit, ctx, asm)
       assert_eq!(ctx.stack_size, 1)
 
-      asm.comment('RUBY_VM_CHECK_INTS(ec)')
-      asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
-      asm.test(:eax, :eax)
-      asm.jnz(side_exit(jit, ctx))
+      compile_check_ints(jit, ctx, asm)
 
       asm.comment('pop stack frame')
-      asm.add(CFP, C.rb_control_frame_t.size) # cfp = cfp + 1
-      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP) # ec->cfp = cfp
+      asm.lea(:rax, [CFP, C.rb_control_frame_t.size])
+      asm.mov(CFP, :rax)
+      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], :rax)
 
-      # Return a value
+      # Return a value (for compile_leave_exit)
       asm.mov(:rax, [SP])
 
-      # Restore callee-saved registers
-      asm.pop(SP)
-      asm.pop(EC)
-      asm.pop(CFP)
+      # Set caller's SP and push a value to its stack (for JIT)
+      asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)])
+      asm.mov([SP], :rax)
 
-      asm.ret
+      # Jump to cfp->jit_return
+      asm.jmp([CFP, -C.rb_control_frame_t.size + C.rb_control_frame_t.offsetof(:jit_return)])
+
       EndBlock
     end
 
@@ -471,6 +479,161 @@ module RubyVM::MJIT
     # Helpers
     #
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def compile_check_ints(jit, ctx, asm)
+      asm.comment('RUBY_VM_CHECK_INTS(ec)')
+      asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
+      asm.test(:eax, :eax)
+      asm.jnz(side_exit(jit, ctx))
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    # @param cd `RubyVM::MJIT::CPointer::Struct_rb_call_data`
+    def compile_send_general(jit, ctx, asm, cd)
+      ci = cd.ci
+      argc = C.vm_ci_argc(ci)
+      mid = C.vm_ci_mid(ci)
+      flags = C.vm_ci_flag(ci)
+
+      if flags & C.VM_CALL_KW_SPLAT != 0
+        return CantCompile
+      end
+
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      recv_depth = argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1)
+      recv_index = ctx.stack_size - 1 - recv_depth
+
+      comptime_recv = jit.peek_at_stack(recv_depth)
+      comptime_recv_klass = C.rb_class_of(comptime_recv)
+
+      # Guard known class
+      if comptime_recv_klass.singleton_class?
+        asm.comment('guard known object with singleton class')
+        asm.mov(:rax, C.to_value(comptime_recv))
+        asm.cmp([SP, C.VALUE.size * recv_index], :rax)
+        asm.jne(side_exit(jit, ctx))
+      else
+        return CantCompile
+      end
+
+      # Do method lookup
+      cme = C.rb_callable_method_entry(comptime_recv_klass, mid)
+      if cme.nil?
+        return CantCompile
+      end
+
+      case C.METHOD_ENTRY_VISI(cme)
+      when C.METHOD_VISI_PUBLIC
+        # You can always call public methods
+      when C.METHOD_VISI_PRIVATE
+        if flags & C.VM_CALL_FCALL == 0
+          # VM_CALL_FCALL: Callsites without a receiver of an explicit `self` receiver
+          return CantCompile
+        end
+      when C.METHOD_VISI_PROTECTED
+        return CantCompile # TODO: support this
+      else
+        raise 'cmes should always have a visibility'
+      end
+
+      # TODO: assume_method_lookup_stable
+
+      if flags & C.VM_CALL_ARGS_SPLAT != 0 && cme.def.type != C.VM_METHOD_TYPE_ISEQ
+        return CantCompile
+      end
+
+      case cme.def.type
+      when C.VM_METHOD_TYPE_ISEQ
+        iseq = def_iseq_ptr(cme.def)
+        frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
+        compile_send_iseq(jit, ctx, asm, iseq, ci, frame_type, cme, flags, argc)
+      else
+        return CantCompile
+      end
+    end
+
+    def compile_send_iseq(jit, ctx, asm, iseq, ci, frame_type, cme, flags, argc)
+      # TODO: check a bunch of CantCompile cases
+
+      compile_check_ints(jit, ctx, asm)
+
+      # TODO: stack overflow check
+
+      # TODO: more flag checks
+
+      # Pop arguments and a receiver for the current caller frame
+      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      sp_index = ctx.stack_size - argc - 1 # arguments and receiver
+      asm.comment('save SP to caller CFP')
+      asm.lea(:rax, [SP, sp_index])
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
+      # TODO: do something about ctx.sp_index
+
+      asm.comment('save PC to CFP')
+      next_pc = jit.pc + jit.insn.len * C.VALUE.size
+      asm.mov(:rax, next_pc)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
+
+      # TODO: push cme, specval, frame type
+      # TODO: push callee control frame
+
+      asm.comment('switch to new CFP')
+      asm.lea(:rax, [CFP, -C.rb_control_frame_t.size])
+      asm.mov(CFP, :rax);
+      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], :rax)
+
+      asm.comment('save SP to callee CFP')
+      num_locals = 0 # TODO
+      sp_offset = C.VALUE.size * (3 + num_locals + ctx.stack_size)
+      asm.add(SP, sp_offset)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+
+      asm.comment('save ISEQ to callee CFP')
+      asm.mov(:rax, iseq.to_i)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:iseq)], :rax)
+
+      asm.comment('save EP to callee CFP')
+      asm.lea(:rax, [SP, -C.VALUE.size])
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:ep)], :rax)
+
+      asm.comment('set frame type')
+      asm.mov([SP, C.VALUE.size * -1], C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL)
+
+      asm.comment('set specval')
+      asm.mov([SP, C.VALUE.size * -2], C.VM_BLOCK_HANDLER_NONE)
+
+      # Stub the return destination from the callee
+      # TODO: set up return ctx correctly
+      jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: ctx.dup)
+      jit_return = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_block_stub(ctx, ocb_asm, jit_return_stub)
+        @ocb.write(ocb_asm)
+      end
+
+      jit_return_stub.change_block = proc do |jump_asm, new_addr|
+        jump_asm.comment('update cfp->jit_return')
+        jump_asm.stub(jit_return_stub) do
+          jump_asm.mov(:rax, new_addr)
+          jump_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+        end
+      end
+      jit_return_stub.change_block.call(asm, jit_return)
+
+      callee_ctx = Context.new
+      compile_block_stub(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
+
+      EndBlock
+    end
+
     def assert_eq!(left, right)
       if left != right
         raise "'#{left.inspect}' was not '#{right.inspect}'"
@@ -487,21 +650,24 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def defer_compilation(jit, ctx, asm)
       # Make a stub to compile the current insn
-      block_stub = BlockStub.new(
-        iseq: jit.iseq,
-        ctx:  ctx.dup,
-        pc:   jit.pc,
-      )
+      compile_block_stub(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation: block stub')
+    end
+
+    def compile_block_stub(iseq, pc, ctx, asm, comment: 'block stub')
+      block_stub = BlockStub.new(iseq:, pc:, ctx: ctx.dup)
 
       stub_hit = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_block_stub(jit, ctx, ocb_asm, block_stub)
+        @exit_compiler.compile_block_stub(ctx, ocb_asm, block_stub)
         @ocb.write(ocb_asm)
       end
 
-      asm.comment('defer_compilation: block stub')
-      asm.stub(block_stub) do
-        asm.jmp(stub_hit)
+      block_stub.change_block = proc do |jump_asm, new_addr|
+        jump_asm.comment(comment)
+        jump_asm.stub(block_stub) do
+          jump_asm.jmp(new_addr)
+        end
       end
+      block_stub.change_block.call(asm, stub_hit)
     end
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -513,6 +679,10 @@ module RubyVM::MJIT
       asm = Assembler.new
       @exit_compiler.compile_side_exit(jit, ctx, asm)
       jit.side_exits[jit.pc] = @ocb.write(asm)
+    end
+
+    def def_iseq_ptr(cme_def)
+      C.rb_iseq_check(cme_def.body.iseq.iseqptr)
     end
   end
 end

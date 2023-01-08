@@ -44,6 +44,11 @@ module RubyVM::MJIT
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new(@ocb, @exit_compiler)
+
+      @leave_exit = Assembler.new.then do |asm|
+        @exit_compiler.compile_leave_exit(asm)
+        @ocb.write(asm)
+      end
     end
 
     # Compile an ISEQ from its entry point.
@@ -86,10 +91,10 @@ module RubyVM::MJIT
         new_addr = @cb.write(new_asm)
         @cb.with_write_addr(block_stub.start_addr) do
           asm = Assembler.new
-          asm.comment('regenerate block stub')
-          asm.jmp(new_addr)
+          block_stub.change_block.call(asm, new_addr)
           @cb.write(asm)
         end
+        new_addr
       end
     end
 
@@ -181,6 +186,10 @@ module RubyVM::MJIT
 
       # Load sp to a dedicated register
       asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
+
+      # Setup cfp->jit_return
+      asm.mov(:rax, @leave_exit)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
     end
 
     # @param asm [RubyVM::MJIT::Assembler]

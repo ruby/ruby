@@ -20,9 +20,9 @@ module RubyVM::MJIT
       pc == cfp.pc.to_i
     end
 
-    def peek_at_stack(offset_from_top)
+    def peek_at_stack(depth_from_top)
       raise 'not at current insn' unless at_current_insn?
-      offset = -(1 + offset_from_top)
+      offset = -(1 + depth_from_top)
       value = (cfp.sp + offset).*
       C.to_ruby(value)
     end

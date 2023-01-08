@@ -81,6 +81,21 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'UINT2NUM(rb_iseq_line_no((const rb_iseq_t *)NUM2SIZET(_iseq_addr), NUM2SIZET(pos)))'
     end
 
+    def rb_class_of(obj)
+      Primitive.cexpr! 'rb_class_of(obj)'
+    end
+
+    def rb_callable_method_entry(klass, mid)
+      cme_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_callable_method_entry(klass, NUM2UINT(mid)))'
+      return nil if cme_addr == 0
+      rb_callable_method_entry_struct.new(cme_addr)
+    end
+
+    def METHOD_ENTRY_VISI(cme)
+      _cme_addr = cme.to_i
+      Primitive.cexpr! 'UINT2NUM(METHOD_ENTRY_VISI((const rb_callable_method_entry_t *)NUM2SIZET(_cme_addr)))'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -140,6 +155,11 @@ module RubyVM::MJIT # :nodoc: all
     def vm_ci_flag(ci)
       _ci_addr = ci.to_i
       Primitive.cexpr! 'UINT2NUM(vm_ci_flag((CALL_INFO)NUM2PTR(_ci_addr)))'
+    end
+
+    def vm_ci_mid(ci)
+      _ci_addr = ci.to_i
+      Primitive.cexpr! 'UINT2NUM(vm_ci_mid((CALL_INFO)NUM2PTR(_ci_addr)))'
     end
 
     def rb_splat_or_kwargs_p(ci)
@@ -233,30 +253,6 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
   end
 
-  def C.VM_CALL_KW_SPLAT
-    Primitive.cexpr! %q{ INT2NUM(VM_CALL_KW_SPLAT) }
-  end
-
-  def C.VM_CALL_KW_SPLAT_bit
-    Primitive.cexpr! %q{ INT2NUM(VM_CALL_KW_SPLAT_bit) }
-  end
-
-  def C.VM_CALL_TAILCALL
-    Primitive.cexpr! %q{ INT2NUM(VM_CALL_TAILCALL) }
-  end
-
-  def C.VM_CALL_TAILCALL_bit
-    Primitive.cexpr! %q{ INT2NUM(VM_CALL_TAILCALL_bit) }
-  end
-
-  def C.VM_METHOD_TYPE_CFUNC
-    Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_CFUNC) }
-  end
-
-  def C.VM_METHOD_TYPE_ISEQ
-    Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
-  end
-
   def C.BOP_LT
     Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
   end
@@ -267,6 +263,18 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.INTEGER_REDEFINED_OP_FLAG
     Primitive.cexpr! %q{ UINT2NUM(INTEGER_REDEFINED_OP_FLAG) }
+  end
+
+  def C.METHOD_VISI_PRIVATE
+    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PRIVATE) }
+  end
+
+  def C.METHOD_VISI_PROTECTED
+    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PROTECTED) }
+  end
+
+  def C.METHOD_VISI_PUBLIC
+    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PUBLIC) }
   end
 
   def C.RUBY_EVENT_CLASS
@@ -299,6 +307,54 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.SHAPE_ROOT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
+  end
+
+  def C.VM_BLOCK_HANDLER_NONE
+    Primitive.cexpr! %q{ UINT2NUM(VM_BLOCK_HANDLER_NONE) }
+  end
+
+  def C.VM_CALL_ARGS_BLOCKARG
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_ARGS_BLOCKARG) }
+  end
+
+  def C.VM_CALL_ARGS_SPLAT
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_ARGS_SPLAT) }
+  end
+
+  def C.VM_CALL_FCALL
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_FCALL) }
+  end
+
+  def C.VM_CALL_KW_SPLAT
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KW_SPLAT) }
+  end
+
+  def C.VM_CALL_KW_SPLAT_bit
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KW_SPLAT_bit) }
+  end
+
+  def C.VM_CALL_TAILCALL
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL) }
+  end
+
+  def C.VM_CALL_TAILCALL_bit
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL_bit) }
+  end
+
+  def C.VM_ENV_FLAG_LOCAL
+    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_FLAG_LOCAL) }
+  end
+
+  def C.VM_FRAME_MAGIC_METHOD
+    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_MAGIC_METHOD) }
+  end
+
+  def C.VM_METHOD_TYPE_CFUNC
+    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_CFUNC) }
+  end
+
+  def C.VM_METHOD_TYPE_ISEQ
+    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ISEQ) }
   end
 
   def C.INVALID_SHAPE_ID

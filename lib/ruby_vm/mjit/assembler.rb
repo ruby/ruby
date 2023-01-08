@@ -136,12 +136,27 @@ module RubyVM::MJIT
       in Integer => dst_addr
         # E9 cd
         insn(opcode: 0xe9, imm: rel32(dst_addr))
+      # JMP r/m64 (Mod 01: [reg]+disp8)
+      in [Symbol => dst_reg, Integer => dst_disp] if imm8?(dst_disp)
+        # FF /4
+        insn(opcode: 0xff, mod_rm: ModRM[mod: Mod01, reg: 4, rm: dst_reg], disp: dst_disp)
       # JMP r/m64 (Mod 11: reg)
       in Symbol => dst_reg
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg])
       else
         raise NotImplementedError, "jmp: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
+    def jne(dst)
+      case dst
+      # JNE rel32
+      in Integer => dst_addr
+        # 0F 85 cd
+        insn(opcode: [0x0f, 0x85], imm: rel32(dst_addr))
+      else
+        raise NotImplementedError, "jne: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -179,6 +194,23 @@ module RubyVM::MJIT
         insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
       else
         raise NotImplementedError, "jz: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
+    def lea(dst, src)
+      case [dst, src]
+      # LEA r64,m (Mod 01: [reg]+disp8)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+        # REX.W + 8D /r
+        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x8d,
+          mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
+          disp: src_disp,
+        )
+      else
+        raise NotImplementedError, "lea: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
