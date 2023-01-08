@@ -44,11 +44,6 @@ env:
     --without-jemalloc
     --without-gmp
 
-  UPDATE_UNICODE: >-
-    UNICODE_FILES=.
-    UNICODE_PROPERTY_FILES=.
-    UNICODE_AUXILIARY_FILES=.
-    UNICODE_EMOJI_FILES=.
   CONFIGURE_TTY: never
   GITPULLOPTIONS: --no-tags origin ${{github.ref}}
   RUBY_DEBUG: ci rgengc

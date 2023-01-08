@@ -37,7 +37,6 @@ jobs:
       CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe"
       CPPFLAGS: "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
       LDFLAGS:  "-pipe"
-      UPDATE_UNICODE: "UNICODE_FILES=. UNICODE_PROPERTY_FILES=. UNICODE_AUXILIARY_FILES=. UNICODE_EMOJI_FILES=."
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     strategy:
       matrix:
