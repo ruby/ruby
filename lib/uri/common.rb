@@ -422,8 +422,8 @@ module URI
   # The returned string is formed using method URI.encode_www_form_component,
   # which converts certain characters:
   #
-  #   URI.encode_www_form('f#o': '/', 'b-r': '$')
-  #   # => "f%23o=%2F&b-r=%24"
+  #   URI.encode_www_form('f#o': '/', 'b-r': '$', 'b z': '@')
+  #   # => "f%23o=%2F&b-r=%24&b+z=%40"
   #
   # When +enum+ is Array-like, each element +ele+ is converted to a field:
   #
@@ -518,22 +518,39 @@ module URI
     end.join('&')
   end
 
-  # Decodes URL-encoded form data from given +str+.
+  # Returns name/value pairs derived from the given string +str+,
+  # which must be an ASCII string.
   #
-  # This decodes application/x-www-form-urlencoded data
-  # and returns an array of key-value arrays.
+  # The method may be used to decode the body of Net::HTTPResponse object +res+
+  # for which <tt>res['Content-Type']</tt> is <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # This refers http://url.spec.whatwg.org/#concept-urlencoded-parser,
-  # so this supports only &-separator, and doesn't support ;-separator.
+  # The returned data is an array of 2-element subarrays;
+  # each subarray is a name/value pair (both are strings).
+  # Each returned string has encoding +enc+,
+  # and has had invalid characters removed via
+  # {String#scrub}[rdoc-ref:String#scrub].
   #
-  #    ary = URI.decode_www_form("a=1&a=2&b=3")
-  #    ary                   #=> [['a', '1'], ['a', '2'], ['b', '3']]
-  #    ary.assoc('a').last   #=> '1'
-  #    ary.assoc('b').last   #=> '3'
-  #    ary.rassoc('a').last  #=> '2'
-  #    Hash[ary]             #=> {"a"=>"2", "b"=>"3"}
+  # A simple example:
   #
-  # See URI.decode_www_form_component, URI.encode_www_form.
+  #   URI.decode_www_form('foo=0&bar=1&baz')
+  #   # => [["foo", "0"], ["bar", "1"], ["baz", ""]]
+  #
+  # The returned strings have certain conversions,
+  # similar to those performed in URI.decode_www_form_component:
+  #
+  #   URI.decode_www_form('f%23o=%2F&b-r=%24&b+z=%40')
+  #   # => [["f#o", "/"], ["b-r", "$"], ["b z", "@"]]
+  #
+  # The given string may contain consecutive separators:
+  #
+  #   URI.decode_www_form('foo=0&&bar=1&&baz=2')
+  #   # => [["foo", "0"], ["", ""], ["bar", "1"], ["", ""], ["baz", "2"]]
+  #
+  # A different separator may be specified:
+  #
+  #   URI.decode_www_form('foo=0--bar=1--baz', separator: '--')
+  #   # => [["foo", "0"], ["bar", "1"], ["baz", ""]]
+  #
   def self.decode_www_form(str, enc=Encoding::UTF_8, separator: '&', use__charset_: false, isindex: false)
     raise ArgumentError, "the input of #{self.name}.#{__method__} must be ASCII only string" unless str.ascii_only?
     ary = []
