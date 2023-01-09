@@ -95,7 +95,7 @@ module Bundler
     def serialized_exception_for(e)
       <<-EOS.gsub(/^ {8}/, "")
         #{e.class}: #{e.message}
-          #{e.backtrace && e.backtrace.join("\n          ").chomp}
+          #{e.backtrace&.join("\n          ")&.chomp}
       EOS
     end
 

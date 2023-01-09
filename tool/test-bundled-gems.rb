@@ -34,7 +34,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "typeprof"
 
   when "rbs"
-    test_command << " stdlib_test validate"
+    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests"
     first_timeout *= 3
 
   when "debug"

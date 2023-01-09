@@ -611,6 +611,18 @@ describe "Module#prepend" do
     ScratchPad.recorded.should == [[:prepend_features, c], [:prepended, c]]
   end
 
+  it "prepends a module if it is included in a super class" do
+    module ModuleSpecs::M3
+      module M; end
+      class A; include M; end
+      class B < A; prepend M; end
+
+      all = [A, B, M]
+
+      (B.ancestors.filter { |a| all.include?(a) }).should == [M, B, A, M]
+    end
+  end
+
   it "detects cyclic prepends" do
     -> {
       module ModuleSpecs::P

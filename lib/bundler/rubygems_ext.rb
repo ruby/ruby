@@ -16,6 +16,7 @@ require "rubygems/specification"
 require "rubygems/source"
 
 require_relative "match_metadata"
+require_relative "force_platform"
 require_relative "match_platform"
 
 # Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
@@ -153,12 +154,16 @@ module Gem
   end
 
   class Dependency
+    include ::Bundler::ForcePlatform
+
     attr_accessor :source, :groups
 
     alias_method :eql?, :==
 
     def force_ruby_platform
-      false
+      return @force_ruby_platform if defined?(@force_ruby_platform) && !@force_ruby_platform.nil?
+
+      @force_ruby_platform = default_force_ruby_platform
     end
 
     def encode_with(coder)
@@ -276,6 +281,10 @@ module Gem
 
         without_gnu_nor_abi_modifiers
       end
+    end
+
+    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
     end
   end
 

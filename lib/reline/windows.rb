@@ -53,7 +53,7 @@ class Reline::Windows
   end
 
   if defined? JRUBY_VERSION
-    require 'win32api'
+    require 'Win32API'
   else
     class Win32API
       DLL = {}

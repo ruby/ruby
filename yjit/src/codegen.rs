@@ -586,7 +586,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
     if get_option_ref!(dump_disasm).is_some() {
-        asm.comment(&format!("YJIT entry: {}", iseq_get_location(iseq)));
+        asm.comment(&format!("YJIT entry point: {}", iseq_get_location(iseq, 0)));
     } else {
         asm.comment("YJIT entry");
     }
@@ -720,7 +720,7 @@ pub fn gen_single_block(
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
-        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid_idx));
+        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx));
     }
 
     // For each instruction to compile
@@ -2276,7 +2276,7 @@ fn gen_setinstancevariable(
 
         asm.comment("guard shape");
         asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-        let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic).into();
         jit_chain_guard(
             JCC_JNE,
             jit,
@@ -4455,19 +4455,6 @@ fn gen_push_frame(
     };
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
 
-    // Arm requires another register to load the immediate value of Qnil before storing it.
-    // So doing this after releasing the register for specval to avoid register spill.
-    let num_locals = frame.local_size;
-    if num_locals > 0 {
-        asm.comment("initialize locals");
-
-        // Initialize local variables to Qnil
-        for i in 0..num_locals {
-            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
-            asm.store(Opnd::mem(64, sp, offs), Qnil.into());
-        }
-    }
-
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -1), frame.frame_type.into());
@@ -4504,6 +4491,20 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), iseq);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+
+    // This Qnil fill snippet potentially requires 2 more registers on Arm, one for Qnil and
+    // another for calculating the address in case there are a lot of local variables. So doing
+    // this after releasing the register for specval and the receiver to avoid register spill.
+    let num_locals = frame.local_size;
+    if num_locals > 0 {
+        asm.comment("initialize locals");
+
+        // Initialize local variables to Qnil
+        for i in 0..num_locals {
+            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
+            asm.store(Opnd::mem(64, sp, offs), Qnil.into());
+        }
+    }
 
     if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
@@ -4777,8 +4778,6 @@ fn gen_return_branch(
         }
     }
 }
-
-
 
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments

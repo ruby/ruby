@@ -154,6 +154,7 @@ associated_pointer(VALUE associates, const char *t)
     UNREACHABLE_RETURN(Qnil);
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 unknown_directive(const char *mode, char type, VALUE fmt)
 {
@@ -167,7 +168,7 @@ unknown_directive(const char *mode, char type, VALUE fmt)
         snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
     }
     fmt = rb_str_quote_unprintable(fmt);
-    rb_warn("unknown %s directive '%s' in '%"PRIsVALUE"'",
+    rb_raise(rb_eArgError, "unknown %s directive '%s' in '%"PRIsVALUE"'",
             mode, unknown, fmt);
 }
 

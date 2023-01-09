@@ -221,6 +221,18 @@ describe "Signal.trap" do
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
 
+    it "raises ArgumentError when passed unknown signal" do
+      -> { Signal.trap(300) { } }.should raise_error(ArgumentError, "invalid signal number (300)")
+      -> { Signal.trap("USR10") { } }.should raise_error(ArgumentError, "unsupported signal `SIGUSR10'")
+      -> { Signal.trap("SIGUSR10") { } }.should raise_error(ArgumentError, "unsupported signal `SIGUSR10'")
+    end
+
+    it "raises ArgumentError when passed signal is not Integer, String or Symbol" do
+      -> { Signal.trap(nil) { } }.should raise_error(ArgumentError, "bad signal type NilClass")
+      -> { Signal.trap(100.0) { } }.should raise_error(ArgumentError, "bad signal type Float")
+      -> { Signal.trap(Rational(100)) { } }.should raise_error(ArgumentError, "bad signal type Rational")
+    end
+
     # See man 2 signal
     %w[KILL STOP].each do |signal|
       it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do

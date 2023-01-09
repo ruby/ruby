@@ -305,6 +305,11 @@ class TestGc < Test::Unit::TestCase
 
   def test_gc_parameter
     env = {
+      "RUBY_GC_HEAP_INIT_SLOTS" => "100"
+    }
+    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[Bug #19284]")
+
+    env = {
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
       "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
     }

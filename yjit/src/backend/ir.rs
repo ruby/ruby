@@ -973,11 +973,11 @@ impl Assembler
 
             // Dump insns along with live registers
             for (insn_idx, insn) in insns.iter().enumerate() {
-                print!("{:3} ", if spill_index == insn_idx { "==>" } else { "" });
+                eprint!("{:3} ", if spill_index == insn_idx { "==>" } else { "" });
                 for reg in 0..=num_regs {
-                    print!("{:1}", if reg < live_regs[insn_idx] { "|" } else { "" });
+                    eprint!("{:1}", if reg < live_regs[insn_idx] { "|" } else { "" });
                 }
-                println!(" [{:3}] {:?}", insn_idx, insn);
+                eprintln!(" [{:3}] {:?}", insn_idx, insn);
             }
         }
 

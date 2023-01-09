@@ -1409,10 +1409,13 @@ rb_grow_iv_list(VALUE obj)
     uint32_t len = initial_shape->capacity;
     RUBY_ASSERT(len > 0);
     uint32_t newsize = (uint32_t)(len * 2);
-    rb_ensure_iv_list_size(obj, len, newsize);
 
     rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape, newsize);
+
+    rb_ensure_iv_list_size(obj, len, newsize);
+
     rb_shape_set_shape(obj, res);
+
     return res;
 }
 

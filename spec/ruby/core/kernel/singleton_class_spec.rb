@@ -1,3 +1,5 @@
+require_relative '../../spec_helper'
+
 describe "Kernel#singleton_class" do
   it "returns class extended from an object" do
     x = Object.new

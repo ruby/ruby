@@ -609,6 +609,11 @@ describe "Regexp with character classes" do
     "루비(Ruby)".match(/\p{Hangul}+/u).to_a.should == ["루비"]
   end
 
+  it "supports negated property condition" do
+    "a".match(/\P{L}/).should be_nil
+    "1".match(/\P{N}/).should be_nil
+  end
+
   ruby_bug "#17340", ''...'3.0' do
     it "raises a RegexpError for an unterminated unicode property" do
       -> { Regexp.new('\p{') }.should raise_error(RegexpError)

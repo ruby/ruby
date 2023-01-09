@@ -51,6 +51,10 @@ describe "IO#readline" do
     it "returns an empty string when passed 0 as a limit" do
       @io.readline(0).should == ""
     end
+
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.readline(2**128) }.should raise_error(RangeError)
+    end
   end
 
   describe "when passed separator and limit" do

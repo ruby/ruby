@@ -176,7 +176,10 @@ RSpec.describe "bundle lock" do
         build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "foo", %w[2.0.0.pre] do |s|
+          s.add_dependency "bar"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 2.1.2.pre 3.0.0 3.1.0.pre 4.0.0.pre]
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
@@ -209,6 +212,32 @@ RSpec.describe "bundle lock" do
       bundle "lock --update --minor --strict"
 
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
+    end
+
+    context "pre" do
+      it "defaults to major" do
+        bundle "lock --update --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+
+      it "patch preferred" do
+        bundle "lock --update --patch --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+      end
+
+      it "minor preferred" do
+        bundle "lock --update --minor --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+      end
+
+      it "major preferred" do
+        bundle "lock --update --major --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
     end
   end
 
@@ -683,6 +712,134 @@ RSpec.describe "bundle lock" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+    end
+
+    it "properly shows resolution errors including OR requirements" do
+      build_repo4 do
+        build_gem "activeadmin", "2.13.1" do |s|
+          s.add_dependency "railties", ">= 6.1", "< 7.1"
+        end
+        build_gem "actionpack", "6.1.4"
+        build_gem "actionpack", "7.0.3.1"
+        build_gem "actionpack", "7.0.4"
+        build_gem "railties", "6.1.4" do |s|
+          s.add_dependency "actionpack", "6.1.4"
+        end
+        build_gem "rails", "7.0.3.1" do |s|
+          s.add_dependency "railties", "7.0.3.1"
+        end
+        build_gem "rails", "7.0.4" do |s|
+          s.add_dependency "railties", "7.0.4"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", ">= 7.0.3.1"
+        gem "activeadmin", "2.13.1"
+      G
+
+      bundle "lock", :raise_on_error => false
+
+      expect(err).to eq <<~ERR.strip
+        Could not find compatible versions
+
+        Because rails >= 7.0.4 depends on railties = 7.0.4
+          and rails < 7.0.4 depends on railties = 7.0.3.1,
+          railties = 7.0.3.1 OR = 7.0.4 is required.
+        So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+          version solving has failed.
+      ERR
+    end
+
+    it "is able to display some explanation on crazy irresolvable cases" do
+      build_repo4 do
+        build_gem "activeadmin", "2.13.1" do |s|
+          s.add_dependency "ransack", "= 3.1.0"
+        end
+
+        # Activemodel is missing as a dependency in lockfile
+        build_gem "ransack", "3.1.0" do |s|
+          s.add_dependency "activemodel", ">= 6.0.4"
+          s.add_dependency "activesupport", ">= 6.0.4"
+        end
+
+        %w[6.0.4 7.0.2.3 7.0.3.1 7.0.4].each do |version|
+          build_gem "activesupport", version
+
+          # Activemodel is only available on 6.0.4
+          if version == "6.0.4"
+            build_gem "activemodel", version do |s|
+              s.add_dependency "activesupport", version
+            end
+          end
+
+          build_gem "rails", version do |s|
+            # Depednencies of Rails 7.0.2.3 are in reverse order
+            if version == "7.0.2.3"
+              s.add_dependency "activesupport", version
+              s.add_dependency "activemodel", version
+            else
+              s.add_dependency "activemodel", version
+              s.add_dependency "activesupport", version
+            end
+          end
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", ">= 7.0.2.3"
+        gem "activeadmin", "= 2.13.1"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            activeadmin (2.13.1)
+              ransack (= 3.1.0)
+            ransack (3.1.0)
+              activemodel (>= 6.0.4)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activeadmin (= 2.13.1)
+          ransack (= 3.1.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock", :raise_on_error => false
+
+      expect(err).to eq <<~ERR.strip
+        Could not find compatible versions
+
+            Because every version of activemodel depends on activesupport = 6.0.4
+              and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+              every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
+            And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+              rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
+        (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+              and rails >= 7.0.4 depends on activemodel = 7.0.4,
+              rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
+
+            Because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3
+              and rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1,
+              rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 or activesupport = 7.0.3.1.
+            And because rails >= 7.0.4 depends on activesupport = 7.0.4
+              and every version of activemodel depends on activesupport = 6.0.4,
+              activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
+            And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
+              rails >= 7.0.2.3 is forbidden.
+            So, because Gemfile depends on rails >= 7.0.2.3,
+              version solving has failed.
+      ERR
     end
   end
 end

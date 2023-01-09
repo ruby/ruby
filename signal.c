@@ -1383,7 +1383,7 @@ reserved_signal_p(int signo)
  *     Signal.trap("CLD")  { puts "Child died" }
  *     fork && Process.wait
  *
- * produces:
+ * <em>produces:</em>
  *     Terminating: 27461
  *     Child died
  *     Terminating: 27460
@@ -1535,10 +1535,10 @@ int ruby_enable_coredump = 0;
  *     # ...
  *     Process.kill("TERM", pid)
  *
- * produces:
+ * <em>produces:</em>
  *     Debug now: true
  *     Debug now: false
- *    Terminating...
+ *     Terminating...
  *
  * The list of available signal names and their interpretation is
  * system dependent. Signal delivery semantics may also vary between

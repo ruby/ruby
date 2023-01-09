@@ -33,9 +33,11 @@ class Colorize
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
   }
 
+  NO_COLOR = (nc = ENV['NO_COLOR']) && !nc.empty?
+
   # colorize.decorate(str, name = color_name)
   def decorate(str, name = @color)
-    if @colors and color = (@colors[name] || DEFAULTS[name])
+    if !NO_COLOR and @colors and color = (@colors[name] || DEFAULTS[name])
       "#{@beg}#{color}m#{str}#{@reset}"
     else
       str

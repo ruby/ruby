@@ -18,6 +18,7 @@ gc.rb
 io.rb
 kernel.rb
 marshal.rb
+mjit.rb
 numeric.rb
 nilclass.rb
 pack.rb
@@ -28,6 +29,7 @@ timev.rb
 thread_sync.rb
 trace_point.rb
 warning.rb
+yjit.rb
 
 # the lib/ directory (which has its own .document file)
 lib

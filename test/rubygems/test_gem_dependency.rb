@@ -358,6 +358,8 @@ class TestGemDependency < Gem::TestCase
 
     assert_equal [b, b_1], dep.to_specs
 
+    require "rubygems/bundler_version_finder"
+
     Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       assert_equal [b_1, b], dep.to_specs
     end

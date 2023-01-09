@@ -34,7 +34,7 @@ class Psych_Unit_Tests < Psych::TestCase
 
     # [ruby-core:34969]
     def test_regexp_with_n
-        assert_cycle(Regexp.new('',0,'n'))
+        assert_cycle(Regexp.new('',Regexp::NOENCODING))
     end
 	#
 	# Tests modified from 00basic.t in Psych.pm

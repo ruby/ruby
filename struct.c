@@ -524,8 +524,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
- *  - May have initialization via ordinary arguments (unless
- *    <tt>keyword_init: true</tt> is given), or via keyword arguments
+ *  - May have initialization via ordinary arguments, or via keyword arguments
  *
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
@@ -594,6 +593,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
  *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
  *
+ *      # Initialization with keyword arguments:
+ *      Foo.new(foo: 0)         # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(foo: 0, bar: 1) # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(foo: 0, bar: 1, baz: 2)
+ *      # Raises ArgumentError: unknown keywords: baz
+ *
  *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
  *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
@@ -608,20 +613,30 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  <b>Keyword Argument</b>
  *
  *  By default, the arguments for initializing an instance of the new subclass
- *  are ordinary arguments (not keyword arguments).
- *  With optional keyword argument <tt>keyword_init: true</tt>,
- *  the new subclass must be initialized with keyword arguments:
+ *  can be both positional and keyword arguments.
  *
- *    # Without keyword_init: true.
- *    Foo = Struct.new('Foo', :foo, :bar)
- *    Foo                     # => Struct::Foo
- *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
- *    # With keyword_init: true.
- *    Bar = Struct.new(:foo, :bar, keyword_init: true)
- *    Bar # =>                # => Bar(keyword_init: true)
- *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
- *    Bar.new(0, 1)           # Raises ArgumentError: wrong number of arguments
+ *  Optional keyword argument <tt>keyword_init:</tt> allows to force only one
+ *  type of arguments to be accepted:
  *
+ *    KeywordsOnly = Struct.new(:foo, :bar, keyword_init: true)
+ *    KeywordsOnly.new(bar: 1, foo: 0)
+ *    # => #<struct KeywordsOnly foo=0, bar=1>
+ *    KeywordsOnly.new(0, 1)
+ *    # Raises ArgumentError: wrong number of arguments
+ *
+ *    PositionalOnly = Struct.new(:foo, :bar, keyword_init: false)
+ *    PositionalOnly.new(0, 1)
+ *    # => #<struct PositionalOnly foo=0, bar=1>
+ *    PositionalOnly.new(bar: 1, foo: 0)
+ *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # Note that no error is raised, but arguments treated as one hash value
+ *
+ *    # Same as not providing keyword_init:
+ *    Any = Struct.new(:foo, :bar, keyword_init: nil)
+ *    Any.new(foo: 1, bar: 2)
+ *    # => #<struct Any foo=1, bar=2>
+ *    Any.new(1, 2)
+ *    # => #<struct Any foo=1, bar=2>
  */
 
 static VALUE
@@ -1647,11 +1662,9 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   define(name, *symbols) -> class
  *   define(*symbols) -> class
  *
- *  Defines a new \Data class. If the first argument is a string, the class
- *  is stored in <tt>Data::<name></tt> constant.
+ *  Defines a new \Data class.
  *
  *     measure = Data.define(:amount, :unit)
  *     #=> #<Class:0x00007f70c6868498>
@@ -1829,6 +1842,63 @@ rb_data_init_copy(VALUE copy, VALUE s)
 {
     copy = rb_struct_init_copy(copy, s);
     RB_OBJ_FREEZE_RAW(copy);
+    return copy;
+}
+
+/*
+ *  call-seq:
+ *   with(**kwargs) -> instance
+ *
+ *  Returns a shallow copy of +self+ --- the instance variables of
+ *  +self+ are copied, but not the objects they reference.
+ *
+ *  If the method is supplied any keyword arguments, the copy will
+ *  be created with the respective field values updated to use the
+ *  supplied keyword argument values. Note that it is an error to
+ *  supply a keyword that the Data class does not have as a member.
+ *
+ *    Point = Data.define(:x, :y)
+ *
+ *    origin = Point.new(x: 0, y: 0)
+ *
+ *    up = origin.with(x: 1)
+ *    right = origin.with(y: 1)
+ *    up_and_right = up.with(y: 1)
+ *
+ *    p origin       # #<data Point x=0, y=0>
+ *    p up           # #<data Point x=1, y=0>
+ *    p right        # #<data Point x=0, y=1>
+ *    p up_and_right # #<data Point x=1, y=1>
+ *
+ *    out = origin.with(z: 1) # ArgumentError: unknown keyword: :z
+ *    some_point = origin.with(1, 2) # ArgumentError: expected keyword arguments, got positional arguments
+ *
+ */
+
+static VALUE
+rb_data_with(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE kwargs;
+    rb_scan_args(argc, argv, "0:", &kwargs);
+    if (NIL_P(kwargs)) {
+        return self;
+    }
+
+    VALUE copy = rb_obj_alloc(rb_obj_class(self));
+    rb_struct_init_copy(copy, self);
+
+    struct struct_hash_set_arg arg;
+    arg.self = copy;
+    arg.unknown_keywords = Qnil;
+    rb_hash_foreach(kwargs, struct_hash_set_i, (VALUE)&arg);
+    // Freeze early before potentially raising, so that we don't leave an
+    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
+    RB_OBJ_FREEZE_RAW(copy);
+
+    if (arg.unknown_keywords != Qnil) {
+        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
+    }
+
     return copy;
 }
 
@@ -2205,6 +2275,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cData, "deconstruct", rb_data_deconstruct, 0);
     rb_define_method(rb_cData, "deconstruct_keys", rb_data_deconstruct_keys, 1);
+
+    rb_define_method(rb_cData, "with", rb_data_with, -1);
 }
 
 #undef rb_intern

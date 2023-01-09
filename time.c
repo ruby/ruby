@@ -1790,6 +1790,7 @@ PACKED_STRUCT_UNALIGNED(struct time_object {
      (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
      (tobj1)->vtm.zone = (tobj2)->vtm.zone)
 
+static int zone_localtime(VALUE zone, VALUE time);
 static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
   do { \
@@ -1801,10 +1802,20 @@ static VALUE time_get_tm(VALUE, struct time_object *);
     do { \
         MAKE_TM(time, tobj); \
         if (!(cond)) { \
-            VALUE zone = (tobj)->vtm.zone; \
-            if (!NIL_P(zone)) zone_localtime(zone, (time)); \
+            force_make_tm(time, tobj); \
         } \
     } while (0)
+
+static inline void
+force_make_tm(VALUE time, struct time_object *tobj)
+{
+    VALUE zone = tobj->vtm.zone;
+    if (!NIL_P(zone) && zone != str_empty && zone != str_utc) {
+        if (zone_localtime(zone, time)) return;
+    }
+    tobj->tm_got = 0;
+    time_get_tm(time, tobj);
+}
 
 static void
 time_mark(void *ptr)
@@ -2070,19 +2081,20 @@ vtm_add_day(struct vtm *vtm, int day)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = subv(vtm->year, INT2FIX(1));
-                vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
+                if (vtm->yday != 0)
+                    vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
                 const int8_t *days_in_month = days_in_month_in_v(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
             else {
                 vtm->mday--;
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
-            vtm->wday = (vtm->wday + 6) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 6) % 7;
         }
         else {
             int leap = leap_year_v_p(vtm->year);
@@ -2095,13 +2107,13 @@ vtm_add_day(struct vtm *vtm, int day)
             else if (vtm->mday == days_in_month_of(leap)[vtm->mon-1]) {
                 vtm->mon++;
                 vtm->mday = 1;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
             else {
                 vtm->mday++;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
-            vtm->wday = (vtm->wday + 1) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 1) % 7;
         }
     }
 }
@@ -2449,6 +2461,7 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
 
     if (utc == UTC_ZONE) {
         tobj->timew = timegmw(&vtm);
+        vtm.isdst = 0; /* No DST in UTC */
         vtm_day_wraparound(&vtm);
         tobj->vtm = vtm;
         tobj->tm_got = 1;
@@ -2528,11 +2541,13 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
 #define peek(c) peek_n(c, 0)
 #define peekc_n(n) (peekable_p(n) ? (int)(unsigned char)ptr[n] : -1)
 #define peekc() peekc_n(0)
-#define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
+#define expect_two_digits(x, bits) \
+        (((unsigned int)(x = two_digits(ptr + 1, end, &ptr, #x)) > (1U << bits) - 1) ? \
+         rb_raise(rb_eArgError, #x" out of range") : (void)0)
         if (!peek('-')) break;
-        expect_two_digits(mon);
+        expect_two_digits(mon, 4);
         if (!peek('-')) break;
-        expect_two_digits(mday);
+        expect_two_digits(mday, 5);
         if (!peek(' ') && !peek('T')) break;
         const char *const time_part = ptr + 1;
         if (!ISDIGIT(peekc_n(1))) break;
@@ -2546,13 +2561,13 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             rb_raise(rb_eArgError, "missing " #x " part: %.*s", \
                      (int)(ptr + 1 - time_part), time_part); \
         }
-        expect_two_digits(hour);
+        expect_two_digits(hour, 5);
         nofraction(hour);
         need_colon(min);
-        expect_two_digits(min);
+        expect_two_digits(min, 6);
         nofraction(min);
         need_colon(sec);
-        expect_two_digits(sec);
+        expect_two_digits(sec, 6);
         if (peek('.')) {
             ptr++;
             for (ndigits = 0; ndigits < prec && ISDIGIT(peekc_n(ndigits)); ++ndigits);
@@ -3193,7 +3208,7 @@ static const bool debug_guessrange =
 static inline void
 debug_report_guessrange(time_t guess_lo, time_t guess_hi)
 {
-    unsigned_time_t guess_diff = (unsigned_time_t)(guess_hi-guess_lo);
+    time_t guess_diff = guess_hi - guess_lo;
     fprintf(stderr, "find time guess range: %"PRI_TIMET_PREFIX"d - "
             "%"PRI_TIMET_PREFIX"d : %"PRI_TIMET_PREFIX"u\n",
             guess_lo, guess_hi, guess_diff);
@@ -4897,7 +4912,7 @@ time_yday(VALUE time)
  *    t.zone                     # => "Central Daylight Time"
  *    t.dst?                     # => true
  *
- *    Time#isdst is an alias for Time#dst?.
+ *  Time#isdst is an alias for Time#dst?.
  */
 
 static VALUE
@@ -5012,7 +5027,9 @@ time_to_a(VALUE time)
  *    deconstruct_keys(array_of_names_or_nil) -> hash
  *
  *  Returns a hash of the name/value pairs, to use in pattern matching.
- *  Possible keys are the same as returned by #to_h.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:yday</tt>, <tt>:wday</tt>, <tt>:hour</tt>, <tt>:min</tt>, <tt>:sec</tt>,
+ *  <tt>:subsec</tt>, <tt>:dst</tt>, <tt>:zone</tt>.
  *
  *  Possible usages:
  *

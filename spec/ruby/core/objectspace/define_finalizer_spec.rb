@@ -169,4 +169,26 @@ describe "ObjectSpace.define_finalizer" do
 
     ruby_exe(code).lines.sort.should == ["finalized1\n", "finalized2\n"]
   end
+
+  ruby_version_is "3.1" do
+    describe "when $VERBOSE is not nil" do
+      it "warns if an exception is raised in finalizer" do
+        code = <<-RUBY
+          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+        RUBY
+
+        ruby_exe(code, args: "2>&1").should include("warning: Exception in finalizer", "finalizing")
+      end
+    end
+
+    describe "when $VERBOSE is nil" do
+      it "does not warn even if an exception is raised in finalizer" do
+        code = <<-RUBY
+          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+        RUBY
+
+        ruby_exe(code, args: "2>&1", options: "-W0").should == ""
+      end
+    end
+  end
 end

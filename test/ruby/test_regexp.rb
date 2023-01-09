@@ -42,14 +42,14 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_yoshidam_net_20041111_1
     s = "[\xC2\xA0-\xC3\xBE]"
-    r = assert_deprecated_warning(/ignored/) {Regexp.new(s, nil, "u")}
+    r = assert_deprecated_warning(/3\.3/) {Regexp.new(s, nil, "u")}
     assert_match(r, "\xC3\xBE")
   end
 
   def test_yoshidam_net_20041111_2
     assert_raise(RegexpError) do
       s = "[\xFF-\xFF]".force_encoding("utf-8")
-      assert_warning(/ignored/) {Regexp.new(s, nil, "u")}
+      assert_warning(/3\.3/) {Regexp.new(s, nil, "u")}
     end
   end
 
@@ -646,13 +646,37 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/)})
     assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/, timeout: nil)})
 
-    assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
-    assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
-    assert_equal(//n, Regexp.new("", nil, "n"))
+    arg_encoding_none = //n.options # ARG_ENCODING_NONE is implementation defined value
 
-    arg_encoding_none = 32 # ARG_ENCODING_NONE is implementation defined value
-    assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
-    assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
+    assert_deprecated_warning('') do
+      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", Regexp::NOENCODING).encoding)
+      assert_equal("bar", "foobarbaz"[Regexp.new("b..", Regexp::NOENCODING)])
+      assert_equal(//, Regexp.new(""))
+      assert_equal(//, Regexp.new("", timeout: 1))
+      assert_equal(//n, Regexp.new("", Regexp::NOENCODING))
+      assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
+
+      assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
+    end
+
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
+    end
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n", timeout: 1).encoding)
+    end
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
+    end
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal(//n, Regexp.new("", nil, "n"))
+    end
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
+    end
+    assert_deprecated_warning(/3\.3/) do
+      assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
+    end
 
     assert_raise(RegexpError) { Regexp.new(")(") }
     assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
@@ -1697,11 +1721,19 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_bug_19273 # [Bug #19273]
+    pattern = /(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))(?::(?:(?:-?b)|(?:-?(?:1_?(?:0_?)*)?0))){0,3}/
+    assert_equal("10:0:0".match(pattern)[0], "10:0:0")
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
     assert_send [Regexp, :linear_time?, 'a', Regexp::IGNORECASE]
     assert_not_send [Regexp, :linear_time?, /(a)\1/]
     assert_not_send [Regexp, :linear_time?, "(a)\\1"]
+
+    assert_raise(TypeError) {Regexp.linear_time?(nil)}
+    assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
   end
 end

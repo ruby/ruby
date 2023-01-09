@@ -477,6 +477,16 @@ describe "Process.spawn" do
 
   # redirection
 
+  it 'redirects to the wrapped IO using wrapped_io.to_io if out: wrapped_io' do
+    File.open(@name, 'w') do |file|
+      -> do
+        wrapped_io = mock('wrapped IO')
+        wrapped_io.should_receive(:to_io).and_return(file)
+        Process.wait Process.spawn('echo Hello World', out: wrapped_io)
+      end.should output_to_fd("Hello World\n", file)
+    end
+  end
+
   it "redirects STDOUT to the given file descriptor if out: Integer" do
     File.open(@name, 'w') do |file|
       -> do

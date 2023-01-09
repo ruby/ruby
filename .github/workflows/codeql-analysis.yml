@@ -4,19 +4,17 @@ on:
   # push:
   #   paths-ignore:
   #     - 'doc/**'
+  #     - '**/man'
   #     - '**.md'
   #     - '**.rdoc'
   #     - '**/.document'
-  #     - '**.[1-8]'
-  #     - '**.ronn'
   # pull_request:
   #   paths-ignore:
   #     - 'doc/**'
+  #     - '**/man'
   #     - '**.md'
   #     - '**.rdoc'
   #     - '**/.document'
-  #     - '**.[1-8]'
-  #     - '**.ronn'
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
@@ -51,9 +49,9 @@ jobs:
         sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
 
     - name: Checkout repository
-      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
 
-    - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
+    - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
       with:
         path: .downloaded-cache
         key: downloaded-cache
@@ -62,7 +60,7 @@ jobs:
       run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@b2a92eb56d8cb930006a1c6ed86b0782dd8a4297 # v2.1.35
+      uses: github/codeql-action/init@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
       with:
         config-file: ./.github/codeql/codeql-config.yml
 
@@ -70,7 +68,7 @@ jobs:
       run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@b2a92eb56d8cb930006a1c6ed86b0782dd8a4297 # v2.1.35
+      uses: github/codeql-action/autobuild@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@b2a92eb56d8cb930006a1c6ed86b0782dd8a4297 # v2.1.35
+      uses: github/codeql-action/analyze@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37

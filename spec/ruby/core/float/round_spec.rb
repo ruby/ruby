@@ -136,7 +136,7 @@ describe "Float#round" do
     -4.809999999999999.round(5, half: :even).should eql(-4.81)
   end
 
-  ruby_bug "", ""..."3.3" do
+  ruby_bug "#19318", ""..."3.3" do
     # These numbers are neighbouring floating point numbers round a
     # precise value. They test that the rounding modes work correctly
     # round that value and precision is not lost which might cause

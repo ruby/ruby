@@ -3,19 +3,17 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -49,10 +47,10 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
         with:
           path: src
-      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
+      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -71,10 +69,9 @@ jobs:
       - run: make incs
       - run: make
       - run: sudo make -s install
-      - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       # - name: Run test-all
@@ -84,7 +81,7 @@ jobs:
       #   timeout-minutes: 60
       - name: Run test-spec
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0

@@ -266,7 +266,7 @@ class TestShapes < Test::Unit::TestCase
 
   def test_remove_then_add_again
     example = RemoveAndAdd.new
-    initial_shape = RubyVM::Shape.of(example)
+    _initial_shape = RubyVM::Shape.of(example)
 
     example.add_foo # makes a transition
     add_foo_shape = RubyVM::Shape.of(example)

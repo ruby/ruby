@@ -144,31 +144,37 @@ round_half_down(double x, double s)
 static double
 round_half_even(double x, double s)
 {
-    double f, d, xs = x * s;
+    double u, v, us, vs, f, d, uf;
+
+    v = modf(x, &u);
+    us = u * s;
+    vs = v * s;
 
     if (x > 0.0) {
-        f = floor(xs);
-        d = xs - f;
+        f = floor(vs);
+        uf = us + f;
+        d = vs - f;
         if (d > 0.5)
             d = 1.0;
-        else if (d == 0.5 || ((double)((f + 0.5) / s) <= x))
-            d = fmod(f, 2.0);
+        else if (d == 0.5 || ((double)((uf + 0.5) / s) <= x))
+            d = fmod(uf, 2.0);
         else
             d = 0.0;
         x = f + d;
     }
     else if (x < 0.0) {
-        f = ceil(xs);
-        d = f - xs;
+        f = ceil(vs);
+        uf = us + f;
+        d = f - vs;
         if (d > 0.5)
             d = 1.0;
-        else if (d == 0.5 || ((double)((f - 0.5) / s) >= x))
-            d = fmod(-f, 2.0);
+        else if (d == 0.5 || ((double)((uf - 0.5) / s) >= x))
+            d = fmod(-uf, 2.0);
         else
             d = 0.0;
         x = f - d;
     }
-    return x;
+    return us + x;
 }
 
 static VALUE fix_lshift(long, unsigned long);

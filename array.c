@@ -226,8 +226,15 @@ ary_embeddable_p(long capa)
 bool
 rb_ary_embeddable_p(VALUE ary)
 {
-    // if the array is shared or a shared root then it's not moveable
-    return !(ARY_SHARED_P(ary) || ARY_SHARED_ROOT_P(ary));
+    /* An array cannot be turned embeddable when the array is:
+     *  - Shared root: other objects may point to the buffer of this array
+     *    so we cannot make it embedded.
+     *  - Frozen: this array may also be a shared root without the shared root
+     *    flag.
+     *  - Shared: we don't want to re-embed an array that points to a shared
+     *    root (to save memory).
+     */
+    return !(ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary));
 }
 
 size_t
@@ -242,7 +249,7 @@ rb_ary_size_as_embedded(VALUE ary)
         real_size = ary_embed_size(ARY_HEAP_CAPA(ary));
     }
     else {
-        real_size = sizeof(struct RString);
+        real_size = sizeof(struct RArray);
     }
     return real_size;
 }

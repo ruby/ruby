@@ -24,7 +24,7 @@
 } while (0)
 
 static inline int
-DSA_HAS_PRIVATE(DSA *dsa)
+DSA_HAS_PRIVATE(OSSL_3_const DSA *dsa)
 {
     const BIGNUM *bn;
     DSA_get0_key(dsa, NULL, &bn);
@@ -32,7 +32,7 @@ DSA_HAS_PRIVATE(DSA *dsa)
 }
 
 static inline int
-DSA_PRIVATE(VALUE obj, DSA *dsa)
+DSA_PRIVATE(VALUE obj, OSSL_3_const DSA *dsa)
 {
     return DSA_HAS_PRIVATE(dsa) || OSSL_PKEY_IS_PRIVATE(obj);
 }
@@ -179,7 +179,7 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_dsa_is_public(VALUE self)
 {
-    DSA *dsa;
+    const DSA *dsa;
     const BIGNUM *bn;
 
     GetDSA(self, dsa);
@@ -198,7 +198,7 @@ ossl_dsa_is_public(VALUE self)
 static VALUE
 ossl_dsa_is_private(VALUE self)
 {
-    DSA *dsa;
+    OSSL_3_const DSA *dsa;
 
     GetDSA(self, dsa);
 
@@ -225,7 +225,7 @@ ossl_dsa_is_private(VALUE self)
 static VALUE
 ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 {
-    DSA *dsa;
+    OSSL_3_const DSA *dsa;
 
     GetDSA(self, dsa);
     if (DSA_HAS_PRIVATE(dsa))
@@ -244,7 +244,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_dsa_to_der(VALUE self)
 {
-    DSA *dsa;
+    OSSL_3_const DSA *dsa;
 
     GetDSA(self, dsa);
     if (DSA_HAS_PRIVATE(dsa))
@@ -265,7 +265,7 @@ ossl_dsa_to_der(VALUE self)
 static VALUE
 ossl_dsa_get_params(VALUE self)
 {
-    DSA *dsa;
+    OSSL_3_const DSA *dsa;
     VALUE hash;
     const BIGNUM *p, *q, *g, *pub_key, *priv_key;
 

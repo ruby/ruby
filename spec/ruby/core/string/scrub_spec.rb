@@ -31,6 +31,11 @@ describe "String#scrub with a default replacement" do
     input.scrub.should == "abc?????"
   end
 
+  it "returns a String in the same encoding as self" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}".scrub.encoding.should == Encoding::UTF_8
+  end
+
   ruby_version_is '3.0' do
     it "returns String instances when called on a subclass" do
       StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(String)
@@ -78,6 +83,11 @@ describe "String#scrub with a custom replacement" do
     block = -> { "foo#{x81}".scrub(xE4) }
 
     block.should raise_error(ArgumentError)
+  end
+
+  it "returns a String in the same encoding as self" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}".scrub("*").encoding.should == Encoding::UTF_8
   end
 
   it "raises TypeError when a non String replacement is given" do

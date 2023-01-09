@@ -358,6 +358,22 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_include(info, '"embedded":true')
   end
 
+  def test_dump_object
+    klass = Class.new
+
+    # Empty object
+    info = ObjectSpace.dump(klass.new)
+    assert_include(info, '"embedded":true')
+    assert_include(info, '"ivars":0')
+
+    # Non-embed object
+    obj = klass.new
+    5.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
+    info = ObjectSpace.dump(obj)
+    assert_not_include(info, '"embedded":true')
+    assert_include(info, '"ivars":5')
+  end
+
   def test_dump_control_char
     assert_include(ObjectSpace.dump("\x0f"), '"value":"\u000f"')
     assert_include(ObjectSpace.dump("\C-?"), '"value":"\u007f"')
@@ -580,7 +596,14 @@ class TestObjSpace < Test::Unit::TestCase
     # This test makes assertions on the assignment to `str`, so we look for
     # the second appearance of /TEST STRING/ in the output
     test_string_in_dump_all = output.grep(/TEST2/)
-    assert_equal(2, test_string_in_dump_all.size, "number of strings")
+
+    begin
+      assert_equal(2, test_string_in_dump_all.size, "number of strings")
+    rescue Exception => e
+      STDERR.puts e.inspect
+      STDERR.puts test_string_in_dump_all
+      raise
+    end
 
     entry_hash = JSON.parse(test_string_in_dump_all[1])
 

@@ -27,6 +27,17 @@ module Bundler
         remove_from_candidates(spec)
       end
 
+      @requirements = requirements
+      @packages = packages
+
+      root, logger = setup_solver
+
+      Bundler.ui.info "Resolving dependencies...", true
+
+      solve_versions(:root => root, :logger => logger)
+    end
+
+    def setup_solver
       root = Resolver::Root.new(name_for_explicit_dependency_source)
       root_version = Resolver::Candidate.new(0)
 
@@ -42,24 +53,27 @@ module Bundler
         end
       end
 
-      root_dependencies = prepare_dependencies(requirements, packages)
+      root_dependencies = prepare_dependencies(@requirements, @packages)
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = if package.root?
           { root_version => root_dependencies }
         else
           Hash.new do |versions, version|
-            versions[version] = to_dependency_hash(version.dependencies, packages)
+            versions[version] = to_dependency_hash(version.dependencies, @packages)
           end
         end
       end
 
       logger = Bundler::UI::Shell.new
       logger.level = debug? ? "debug" : "warn"
+
+      [root, logger]
+    end
+
+    def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(:source => self, :root => root, :logger => logger)
-      before_resolution
       result = solver.solve
-      after_resolution
       result.map {|package, version| version.to_specs(package) }.flatten.uniq
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
@@ -82,8 +96,15 @@ module Bundler
         end
       end
 
+      names_to_unlock.uniq!
+
       if names_to_unlock.any?
+        Bundler.ui.debug "Found conflicts with locked dependencies. Retrying with #{names_to_unlock.join(", ")} unlocked...", true
+
         @base.unlock_names(names_to_unlock)
+
+        root, logger = setup_solver
+
         retry
       end
 
@@ -117,19 +138,19 @@ module Bundler
       cause = PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
       name = package.name
       constraint = unsatisfied_term.constraint
-      requirement = Gem::Requirement.new(constraint.constraint_string.split(","))
+      constraint_string = constraint.constraint_string
+      requirements = constraint_string.split(" OR ").map {|req| Gem::Requirement.new(req.split(",")) }
 
       if name == "bundler"
         custom_explanation = "the current Bundler version (#{Bundler::VERSION}) does not satisfy #{constraint}"
-        extended_explanation = bundler_not_found_message(requirement)
+        extended_explanation = bundler_not_found_message(requirements)
       else
-        specs_matching_other_platforms = filter_matching_specs(@all_specs[name], requirement)
+        specs_matching_other_platforms = filter_matching_specs(@all_specs[name], requirements)
 
         platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
         custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
 
-        dependency = Dependency.new(name, requirement)
-        label = SharedHelpers.pretty_dependency(dependency)
+        label = "#{name} (#{constraint_string})"
         extended_explanation = other_specs_matching_message(specs_matching_other_platforms, label) if specs_matching_other_platforms.any?
       end
 
@@ -144,22 +165,13 @@ module Bundler
         false
     end
 
-    def before_resolution
-      Bundler.ui.info "Resolving dependencies...", debug?
-    end
-
-    def after_resolution
-      Bundler.ui.info ""
-    end
-
     def incompatibilities_for(package, version)
       package_deps = @cached_dependencies[package]
       sorted_versions = @sorted_versions[package]
       package_deps[version].map do |dep_package, dep_constraint|
-        unless dep_constraint
-          # falsey indicates this dependency was invalid
-          cause = PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint.constraint_string)
-          return [PubGrub::Incompatibility.new([PubGrub::Term.new(self_constraint, true)], :cause => cause)]
+        if package == dep_package
+          cause = PubGrub::Incompatibility::CircularDependency.new(dep_package, dep_constraint.constraint_string)
+          return [PubGrub::Incompatibility.new([PubGrub::Term.new(dep_constraint, true)], :cause => cause)]
         end
 
         low = high = sorted_versions.index(version)
@@ -191,18 +203,19 @@ module Bundler
         self_constraint = PubGrub::VersionConstraint.new(package, :range => range)
 
         dep_term = PubGrub::Term.new(dep_constraint, false)
+        self_term = PubGrub::Term.new(self_constraint, true)
 
         custom_explanation = if dep_package.meta? && package.root?
           "current #{dep_package} version is #{dep_constraint.constraint_string}"
         end
 
-        PubGrub::Incompatibility.new([PubGrub::Term.new(self_constraint, true), dep_term], :cause => :dependency, :custom_explanation => custom_explanation)
+        PubGrub::Incompatibility.new([self_term, dep_term], :cause => :dependency, :custom_explanation => custom_explanation)
       end
     end
 
     def all_versions_for(package)
       name = package.name
-      results = @base[name] + @all_specs[name]
+      results = (@base[name] + @all_specs[name]).uniq(&:full_name)
       locked_requirement = base_requirements[name]
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
@@ -265,8 +278,10 @@ module Bundler
 
     private
 
-    def filter_matching_specs(specs, requirement)
-      specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
+    def filter_matching_specs(specs, requirements)
+      Array(requirements).flat_map do |requirement|
+        specs.select {| spec| requirement_satisfied_by?(requirement, spec) }
+      end
     end
 
     def requirement_satisfied_by?(requirement, spec)
@@ -296,7 +311,16 @@ module Bundler
     def prepare_dependencies(requirements, packages)
       to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
         name = dep_package.name
-        next if dep_package.platforms.empty?
+
+        # If a dependency is scoped to a platform different from the current
+        # one, we ignore it. However, it may reappear during resolution as a
+        # transitive dependency of another package, so we need to reset the
+        # package so the proper versions are considered if reintroduced later.
+        if dep_package.platforms.empty?
+          @packages.delete(name)
+          next
+        end
+
         next [dep_package, dep_constraint] if name == "bundler"
         next [dep_package, dep_constraint] unless versions_for(dep_package, dep_constraint.range).empty?
         next unless dep_package.current_platform?
@@ -357,8 +381,9 @@ module Bundler
       end
     end
 
-    def bundler_not_found_message(conflict_dependency)
-      candidate_specs = filter_matching_specs(source_for(:default_bundler).specs.search("bundler"), conflict_dependency)
+    def bundler_not_found_message(conflict_dependencies)
+      candidate_specs = filter_matching_specs(source_for(:default_bundler).specs.search("bundler"), conflict_dependencies)
+
       if candidate_specs.any?
         target_version = candidate_specs.last.version
         new_command = [File.basename($PROGRAM_NAME), "_#{target_version}_", *ARGV].join(" ")

@@ -9,6 +9,9 @@ gem "rake", "~> 13.0"
 <%- if config[:ext] -%>
 
 gem "rake-compiler"
+<%- if config[:ext] == 'rust' -%>
+gem "rb_sys"
+<%- end -%>
 <%- end -%>
 <%- if config[:test] -%>
 

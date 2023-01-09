@@ -56,8 +56,18 @@ describe "String#unpack with format 'H'" do
     ].should be_computed_by(:unpack, "HHH")
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x01\x10".unpack("H\x00H").should == ["0", "1"]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      "\x01\x10".unpack("H\x00H").should == ["0", "1"]
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x01\x10".unpack("H\x00H")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
@@ -121,8 +131,18 @@ describe "String#unpack with format 'h'" do
     ].should be_computed_by(:unpack, "hhh")
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x01\x10".unpack("h\x00h").should == ["1", "0"]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      "\x01\x10".unpack("h\x00h").should == ["1", "0"]
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x01\x10".unpack("h\x00h")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do

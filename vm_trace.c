@@ -106,12 +106,6 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
     rb_objspace_set_event_hook(new_events);
 
     // Invalidate JIT code as needed
-    if (first_time_iseq_events_p && new_iseq_events != RUBY_EVENT_CLASS) {
-        // Stop calling all JIT-ed code. We can't rewrite existing JIT-ed code to trace_ insns for now.
-        // :class events are triggered only in ISEQ_TYPE_CLASS, but mjit_target_iseq_p ignores such iseqs.
-        // Thus we don't need to cancel JIT-ed code for :class events.
-        mjit_cancel_all("TracePoint is enabled");
-    }
     if (first_time_iseq_events_p || enable_c_call || enable_c_return) {
         // Invalidate all code when ISEQs are modified to use trace_* insns above.
         // Also invalidate when enabling c_call or c_return because generated code
@@ -120,6 +114,7 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
         rb_yjit_tracing_invalidate_all();
+        rb_mjit_tracing_invalidate_all(new_iseq_events);
     }
 }
 
@@ -920,7 +915,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
         if (trace_arg->klass && trace_arg->id) {
             const rb_method_entry_t *me;
             VALUE iclass = Qnil;
-            me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->id, &iclass);
+            me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->called_id, &iclass);
             return rb_unnamed_parameters(rb_method_entry_arity(me));
         }
         break;
@@ -961,6 +956,11 @@ VALUE
 rb_tracearg_binding(rb_trace_arg_t *trace_arg)
 {
     rb_control_frame_t *cfp;
+    switch (trace_arg->event) {
+      case RUBY_EVENT_C_CALL:
+      case RUBY_EVENT_C_RETURN:
+        return Qnil;
+    }
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
     if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
@@ -1252,6 +1252,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     }
 
     rb_yjit_tracing_invalidate_all();
+    rb_mjit_tracing_invalidate_all(tp->events);
 
     ruby_vm_event_local_num++;
 

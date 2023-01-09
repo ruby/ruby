@@ -64,6 +64,11 @@ describe "String#squeeze" do
     "hello room".squeeze(other_string, other_string2).should == "hello rom"
   end
 
+  it "returns a String in the same encoding as self" do
+    "yellow moon".encode("US-ASCII").squeeze.encoding.should == Encoding::US_ASCII
+    "yellow moon".encode("US-ASCII").squeeze("a").encoding.should == Encoding::US_ASCII
+  end
+
   it "raises a TypeError when one set arg can't be converted to a string" do
     -> { "hello world".squeeze([])        }.should raise_error(TypeError)
     -> { "hello world".squeeze(Object.new)}.should raise_error(TypeError)

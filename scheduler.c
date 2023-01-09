@@ -118,6 +118,9 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "io_wait", rb_fiber_scheduler_io_wait, 3);
     rb_define_method(rb_cFiberScheduler, "io_read", rb_fiber_scheduler_io_read, 4);
     rb_define_method(rb_cFiberScheduler, "io_write", rb_fiber_scheduler_io_write, 4);
+    rb_define_method(rb_cFiberScheduler, "io_pread", rb_fiber_scheduler_io_pread, 5);
+    rb_define_method(rb_cFiberScheduler, "io_pwrite", rb_fiber_scheduler_io_pwrite, 5);
+    rb_define_method(rb_cFiberScheduler, "io_select", rb_fiber_scheduler_io_select, 4);
     rb_define_method(rb_cFiberScheduler, "kernel_sleep", rb_fiber_scheduler_kernel_sleep, 1);
     rb_define_method(rb_cFiberScheduler, "address_resolve", rb_fiber_scheduler_address_resolve, 1);
     rb_define_method(rb_cFiberScheduler, "timeout_after", rb_fiber_scheduler_timeout_after, 3);
@@ -490,6 +493,14 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
     return rb_check_funcall(scheduler, id_io_read, 4, arguments);
 }
 
+
+/*
+ *  Document-method: Fiber::Scheduler#io_read
+ *  call-seq: io_pread(io, buffer, from, length, offset) -> read length or -errno
+ *
+ *  Invoked by IO::Buffer#pread. See that method for description of arguments.
+ *
+ */
 VALUE
 rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
 {
@@ -537,6 +548,13 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
     return rb_check_funcall(scheduler, id_io_write, 4, arguments);
 }
 
+/*
+ *  Document-method: Fiber::Scheduler#io_pwrite
+ *  call-seq: io_pwrite(io, buffer, from, length, offset) -> written length or -errno
+ *
+ *  Invoked by IO::Buffer#pwrite. See that method for description of arguments.
+ *
+ */
 VALUE
 rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
 {

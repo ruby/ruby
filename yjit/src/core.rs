@@ -1536,10 +1536,10 @@ fn gen_block_series_body(
         // If dump_iseq_disasm is active, see if this iseq's location matches the given substring.
         // If so, we print the new blocks to the console.
         if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
-            let iseq_location = iseq_get_location(blockid.iseq);
+            let blockid_idx = blockid.idx;
+            let iseq_location = iseq_get_location(blockid.iseq, blockid_idx);
             if iseq_location.contains(substr) {
                 let last_block = last_blockref.borrow();
-                let blockid_idx = blockid.idx;
                 println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid_idx, last_block.end_idx);
                 print!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
             }
@@ -2191,9 +2191,9 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     {
         // If dump_iseq_disasm is specified, print to console that blocks for matching ISEQ names were invalidated.
         if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
-            let iseq_location = iseq_get_location(block.blockid.iseq);
+            let blockid_idx = block.blockid.idx;
+            let iseq_location = iseq_get_location(block.blockid.iseq, blockid_idx);
             if iseq_location.contains(substr) {
-                let blockid_idx = block.blockid.idx;
                 println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, blockid_idx, block.end_idx);
             }
         }

@@ -222,7 +222,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
     it "should fetch dependencies from RubyGems and unmarshal them" do
       expect(gem_names).to receive(:each_slice).with(rubygems_limit).and_call_original
       expect(downloader).to receive(:fetch).with(dep_api_uri).and_return(fetch_response)
-      expect(Bundler).to receive(:load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
+      expect(Bundler).to receive(:safe_load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
       expect(subject.unmarshalled_dep_gems(gem_names)).to eq([unmarshalled_gems])
     end
   end
