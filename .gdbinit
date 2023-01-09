@@ -1281,7 +1281,7 @@ end
 
 # Details: https://bugs.ruby-lang.org/projects/ruby-master/wiki/MachineInstructionsTraceWithGDB
 define trace_machine_instructions
-  set logging on
+  set logging enabled
   set height 0
   set width 0
   display/i $pc
