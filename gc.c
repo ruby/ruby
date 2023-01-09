@@ -15002,6 +15002,20 @@ rb_mmtk_enabled(VALUE _)
 {
     return RBOOL(rb_mmtk_enabled_p());
 }
+
+VALUE
+rb_mmtk_harness_begin(VALUE _)
+{
+    mmtk_harness_begin((MMTk_VMMutatorThread)GET_THREAD());
+    return Qnil;
+}
+
+VALUE
+rb_mmtk_harness_end(VALUE _)
+{
+    mmtk_harness_end((MMTk_VMMutatorThread)GET_THREAD());
+    return Qnil;
+}
 #endif
 
 void
@@ -15114,6 +15128,8 @@ Init_GC(void)
     rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
     rb_define_singleton_method(rb_mMMTk, "plan_name", rb_mmtk_plan_name, 0);
     rb_define_singleton_method(rb_mMMTk, "enabled?", rb_mmtk_enabled, 0);
+    rb_define_singleton_method(rb_mMMTk, "harness_begin", rb_mmtk_harness_begin, 0);
+    rb_define_singleton_method(rb_mMMTk, "harness_end", rb_mmtk_harness_end, 0);
 #endif
 
     {
