@@ -63,6 +63,6 @@ DESCRIPTION
     s.add_dependency 'stringio'
   end
 
-  s.metadata['msys2_mingw_dependencies'] = 'libyaml libyaml-devel'
+  s.metadata['msys2_mingw_dependencies'] = 'libyaml'
 
 end
