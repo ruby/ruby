@@ -971,7 +971,11 @@ SRC
   # Internal use only.
   #
   def checking_for(m, fmt = nil)
-    f = caller[0][/in `([^<].*)'$/, 1] and f << ": " #` for vim #'
+    if f = caller_locations(1, 1).first.base_label and /\A\w/ =~ f
+      f += ": "
+    else
+      f = ""
+    end
     m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
     message "%s", m
     a = r = nil
