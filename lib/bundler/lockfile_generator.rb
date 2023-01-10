@@ -45,7 +45,7 @@ module Bundler
       # gems with the same name, but different platform
       # are ordered consistently
       specs.sort_by(&:full_name).each do |spec|
-        next if spec.name == "bundler".freeze
+        next if spec.name == "bundler"
         out << spec.to_lock
       end
     end

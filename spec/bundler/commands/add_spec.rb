@@ -144,7 +144,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github" do
-    it "adds dependency with specified github source" do
+    it "adds dependency with specified github source", :realworld do
       bundle "add rake --github=ruby/rake"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake"})
@@ -152,7 +152,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github and --branch" do
-    it "adds dependency with specified github source and branch" do
+    it "adds dependency with specified github source and branch", :realworld do
       bundle "add rake --github=ruby/rake --branch=master"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :branch => "master"})
@@ -160,7 +160,7 @@ RSpec.describe "bundle add" do
   end
 
   describe "with --github and --ref" do
-    it "adds dependency with specified github source and ref" do
+    it "adds dependency with specified github source and ref", :realworld do
       bundle "add rake --github=ruby/rake --ref=5c60da8"
 
       expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :ref => "5c60da8"})

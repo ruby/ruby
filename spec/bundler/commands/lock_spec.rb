@@ -319,6 +319,61 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array([x86_mingw32, specific_local_platform].uniq)
   end
 
+  it "also cleans up redundant platform gems when removing platforms" do
+    build_repo4 do
+      build_gem "nokogiri", "1.12.0"
+      build_gem "nokogiri", "1.12.0" do |s|
+        s.platform = "x86_64-darwin"
+      end
+    end
+
+    simulate_platform "x86_64-darwin-22" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "nokogiri"
+      G
+    end
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0)
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        ruby
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-darwin-22" do
+      bundle "lock --remove-platform ruby"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "errors when removing all platforms" do
     bundle "lock --remove-platform #{specific_local_platform}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")

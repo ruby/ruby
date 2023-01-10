@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module Gem
-  DEFAULT_HOST = "https://rubygems.org".freeze
+  DEFAULT_HOST = "https://rubygems.org"
 
   @post_install_hooks ||= []
   @done_installing_hooks ||= []

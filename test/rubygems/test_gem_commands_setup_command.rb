@@ -8,7 +8,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   if File.exist?(bundler_gemspec)
     BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
   else
-    BUNDLER_VERS = "2.0.1".freeze
+    BUNDLER_VERS = "2.0.1"
   end
 
   def setup

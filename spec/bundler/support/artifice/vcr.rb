@@ -4,6 +4,7 @@ require "net/http"
 require_relative "../path"
 
 CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
+USED_CASSETTES_PATH = "#{Spec::Path.spec_dir}/support/artifice/used_cassettes.txt"
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
 class BundlerVCRHTTP < Net::HTTP
@@ -20,6 +21,10 @@ class BundlerVCRHTTP < Net::HTTP
       handler = self
       request.instance_eval do
         @__vcr_request_handler = handler
+      end
+
+      File.open(USED_CASSETTES_PATH, "a+") do |f|
+        f.puts request_pair_paths.map {|path| Pathname.new(path).relative_path_from(Spec::Path.source_root).to_s }.join("\n")
       end
 
       if recorded_response?
@@ -74,25 +79,8 @@ class BundlerVCRHTTP < Net::HTTP
 
     def request_pair_paths
       %w[request response].map do |kind|
-        File.join(CASSETTE_PATH, CASSETTE_NAME, file_name_for_key(key + [kind]))
+        File.join(CASSETTE_PATH, CASSETTE_NAME, file_name_for_key(key), kind)
       end
-    end
-
-    def read_stored_request(path)
-      contents = File.binread(path)
-      headers = {}
-      method = nil
-      path = nil
-      contents.lines.grep(/^> /).each do |line|
-        if line =~ /^> (GET|HEAD|POST|PATCH|PUT|DELETE) (.*)/
-          method = $1
-          path = $2.strip
-        elsif line =~ /^> (.*?): (.*)/
-          headers[$1] = $2
-        end
-      end
-      body = contents =~ /^([^>].*)/m && $1
-      Net::HTTP.const_get(method.capitalize).new(path, headers).tap {|r| r.body = body if body }
     end
 
     def request_to_string(request)

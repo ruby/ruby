@@ -299,7 +299,7 @@ class Gem::Dependency
   end
 
   def prioritizes_bundler?
-    name == "bundler".freeze && !specific?
+    name == "bundler" && !specific?
   end
 
   def to_specs

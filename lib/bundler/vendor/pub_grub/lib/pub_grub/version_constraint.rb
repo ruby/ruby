@@ -20,6 +20,10 @@ module Bundler::PubGrub
         range.eql?(other.range)
     end
 
+    def ==(other)
+      package == other.package && range == other.range
+    end
+
     class << self
       def exact(package, version)
         range = VersionRange.new(min: version, max: version, include_min: true, include_max: true)

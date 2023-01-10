@@ -556,12 +556,12 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "nonexistant"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "nonexistent"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch main but Gemfile specifies nonexistant/)
+      expect(err).to match(/is using branch main but Gemfile specifies nonexistent/)
     end
   end
 
