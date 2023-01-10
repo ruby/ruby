@@ -531,7 +531,8 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the iseq and calls us.
             // NOTE(alan): Sometimes we read from an iseq without ever writing to it.
             // We allocate in those cases anyways.
-            let new_payload = Box::into_raw(Box::new(IseqPayload::default()));
+            let new_payload = IseqPayload::default();
+            let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_yjit_payload(iseq, new_payload as VoidPtr);
 
             new_payload
@@ -1171,7 +1172,6 @@ impl Context {
         match opnd {
             SelfOpnd => self.self_type,
             StackOpnd(idx) => {
-                let idx = idx as u16;
                 assert!(idx < self.stack_size);
                 let stack_idx: usize = (self.stack_size - 1 - idx).into();
 
@@ -1212,7 +1212,6 @@ impl Context {
         match opnd {
             SelfOpnd => self.self_type.upgrade(opnd_type),
             StackOpnd(idx) => {
-                let idx = idx as u16;
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
@@ -1247,7 +1246,6 @@ impl Context {
         match opnd {
             SelfOpnd => (MapToSelf, opnd_type),
             StackOpnd(idx) => {
-                let idx = idx as u16;
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 

@@ -434,7 +434,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
-        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED as usize)) } != VALUE(0));
+        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
         assert!(insn_idx < unsafe { get_iseq_encoded_size(iseq) });
 
         // Ensure that the instruction the insn_idx is pointing to is in
