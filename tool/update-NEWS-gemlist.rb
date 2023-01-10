@@ -5,9 +5,14 @@ prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
 prevs = [prev, prev.sub(/\.\d+\z/, '')]
 
 update = ->(list, type, desc = "updated") do
-  news.sub!(/^(?:\*( +))?The following #{type} gems? (?:are|is) #{desc}\.\n(\n*)\K(?:(?(1) \1)\*( +).*\n)*\n*/) do
-    mark = "#{$1&.<< " "}*#{$3 || ' '}"
-    list.map {|g, v|"#{mark}#{g} #{v}\n"}.join("") + $2
+  item = ->(mark = "* ") do
+    "The following #{type} gem#{list.size == 1 ? ' is' : 's are'} #{desc}.\n\n" +
+      list.map {|g, v|"#{mark}#{g} #{v}\n"}.join("") + "\n"
+  end
+  news.sub!(/^(?:\*( +))?The following #{type} gems? (?:are|is) #{desc}\.\n+(?:(?(1) \1)\*( *).*\n)*\n*/) do
+    item["#{$1&.<< " "}*#{$2 || ' '}"]
+  end or news.sub!(/^## Stdlib updates(?:\n+The following.*(?:\n+( *\* *).*)*)*\n+\K/) do
+    item[$1 || "* "]
   end
 end
 ARGV.each do |type|
@@ -28,7 +33,7 @@ ARGV.each do |type|
   end
   update[changed, type] or next
   if added and !added.empty?
-    update[added, 'default', 'now bundled gems'] or next
+    update[added, 'default', 'now bundled'] or next
   end
   File.write("NEWS.md", news)
 end
