@@ -188,7 +188,7 @@ RSpec.describe "bundle binstubs <gem>" do
             lockfile lockfile.gsub(/BUNDLED WITH\n   .*$/m, "BUNDLED WITH\n   2.3.0")
           end
 
-          it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev" do
+          it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev", :realworld => true do
             sys_exec "bin/bundle install --verbose", :artifice => "vcr"
             expect(exitstatus).not_to eq(42)
             expect(out).to include("Bundler 2.999.999 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
@@ -224,7 +224,7 @@ RSpec.describe "bundle binstubs <gem>" do
       context "when update --bundler is called" do
         before { lockfile.gsub(system_bundler_version, "1.1.1") }
 
-        it "calls through to the latest bundler version" do
+        it "calls through to the latest bundler version", :realworld do
           sys_exec "bin/bundle update --bundler", :env => { "DEBUG" => "1" }
           using_bundler_line = /Using bundler ([\w\.]+)\n/.match(out)
           expect(using_bundler_line).to_not be_nil

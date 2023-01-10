@@ -13,8 +13,8 @@ module Bundler
     attr_reader :specs, :all_specs, :sources
     protected :specs, :all_specs
 
-    RUBY = "ruby".freeze
-    NULL = "\0".freeze
+    RUBY = "ruby"
+    NULL = "\0"
 
     def initialize
       @sources = []
