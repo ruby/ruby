@@ -43,7 +43,6 @@ pub enum Type {
 
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
-             //
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
     CArray, // An un-subclassed string of type rb_cArray (can have instance vars in some cases)
 
