@@ -112,7 +112,6 @@ static VALUE
 classname(VALUE klass, int *permanent)
 {
     *permanent = 0;
-    if (!RCLASS_EXT(klass)) return Qnil;
 
     VALUE classpathv = rb_ivar_lookup(klass, classpath, Qnil);
     if (RTEST(classpathv)) {
