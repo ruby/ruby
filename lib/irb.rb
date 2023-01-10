@@ -468,7 +468,7 @@ module IRB
       @context = Context.new(self, workspace, input_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
-      @scanner = RubyLex.new
+      @scanner = RubyLex.new(@context)
     end
 
     # A hook point for `debug` command's TracePoint after :IRB_EXIT as well as its clean-up
@@ -538,7 +538,7 @@ module IRB
         @context.io.prompt
       end
 
-      @scanner.set_input(@context.io, context: @context) do
+      @scanner.set_input(@context.io) do
         signal_status(:IN_INPUT) do
           if l = @context.io.gets
             print l if @context.verbose?
@@ -556,9 +556,9 @@ module IRB
         end
       end
 
-      @scanner.set_auto_indent(@context) if @context.auto_indent_mode
+      @scanner.set_auto_indent
 
-      @scanner.each_top_level_statement(@context) do |line, line_no|
+      @scanner.each_top_level_statement do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
             line.untaint if RUBY_VERSION < '2.7'

@@ -36,13 +36,13 @@ module TestIRB
 
       context = build_context
       context.auto_indent_mode = true
-      ruby_lex = RubyLex.new()
+      ruby_lex = RubyLex.new(context)
       io = MockIO_AutoIndent.new([lines, last_line_index, byte_pointer, add_new_line]) do |auto_indent|
         error_message = "Calculated the wrong number of spaces for:\n #{lines.join("\n")}"
         assert_equal(correct_space_count, auto_indent, error_message)
       end
-      ruby_lex.set_input(io, context: context)
-      ruby_lex.set_auto_indent(context)
+      ruby_lex.set_input(io)
+      ruby_lex.set_auto_indent
     end
 
     def assert_nesting_level(lines, expected, local_variables: [])
@@ -58,14 +58,14 @@ module TestIRB
     end
 
     def ruby_lex_for_lines(lines, local_variables: [])
-      ruby_lex = RubyLex.new()
-
       context = build_context(local_variables)
+      ruby_lex = RubyLex.new(context)
+
       io = proc{ lines.join("\n") }
-      ruby_lex.set_input(io, context: context) do
+      ruby_lex.set_input(io) do
         lines.join("\n")
       end
-      ruby_lex.lex(context)
+      ruby_lex.lex
       ruby_lex
     end
 
@@ -633,7 +633,8 @@ module TestIRB
 
     def assert_dynamic_prompt(lines, expected_prompt_list)
       pend if RUBY_ENGINE == 'truffleruby'
-      ruby_lex = RubyLex.new()
+      context = build_context
+      ruby_lex = RubyLex.new(context)
       io = MockIO_DynamicPrompt.new(lines) do |prompt_list|
         error_message = <<~EOM
           Expected dynamic prompt:
@@ -647,8 +648,7 @@ module TestIRB
       ruby_lex.set_prompt do |ltype, indent, continue, line_no|
         '%03d:%01d:%1s:%s ' % [line_no, indent, ltype, continue ? '*' : '>']
       end
-      context = build_context
-      ruby_lex.set_input(io, context: context)
+      ruby_lex.set_input(io)
     end
 
     def test_dyanmic_prompt
@@ -751,9 +751,10 @@ module TestIRB
     end
 
     def test_unterminated_heredoc_string_literal
+      context = build_context
       ['<<A;<<B', "<<A;<<B\n", "%W[\#{<<A;<<B", "%W[\#{<<A;<<B\n"].each do |code|
         tokens = RubyLex.ripper_lex_without_warning(code)
-        string_literal = RubyLex.new.check_string_literal(tokens)
+        string_literal = RubyLex.new(context).check_string_literal(tokens)
         assert_equal('<<A', string_literal&.tok)
       end
     end
@@ -779,8 +780,9 @@ module TestIRB
           p(
           )
       EOC
+      context = build_context
       [reference_code, code_with_heredoc, code_with_embdoc].each do |code|
-        lex = RubyLex.new
+        lex = RubyLex.new(context)
         lines = code.lines
         lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
         assert_equal 2, lex.check_corresponding_token_depth(lines, lines.size)
@@ -788,7 +790,7 @@ module TestIRB
     end
 
     def test_find_prev_spaces_with_multiline_literal
-      lex = RubyLex.new
+      lex = RubyLex.new(build_context)
       reference_code = <<~EOC.chomp
         if true
           1
@@ -813,8 +815,9 @@ module TestIRB
           world
         end
       EOC
+      context = build_context
       [reference_code, code_with_percent_string, code_with_quoted_string].each do |code|
-        lex = RubyLex.new
+        lex = RubyLex.new(context)
         lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
         prev_spaces = (1..code.lines.size).map { |index| lex.find_prev_spaces index }
         assert_equal [0, 2, 2, 2, 2, 0], prev_spaces

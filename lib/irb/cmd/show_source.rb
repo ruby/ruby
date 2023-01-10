@@ -40,15 +40,15 @@ module IRB
             file, line = receiver.method(method).source_location if receiver.respond_to?(method)
           end
           if file && line
-            Source.new(file: file, first_line: line, last_line: find_end(file, line))
+            Source.new(file: file, first_line: line, last_line: find_end(file, line, irb_context))
           end
         end
 
         private
 
-        def find_end(file, first_line)
+        def find_end(file, first_line, irb_context)
           return first_line unless File.exist?(file)
-          lex = RubyLex.new
+          lex = RubyLex.new(irb_context)
           lines = File.read(file).lines[(first_line - 1)..-1]
           tokens = RubyLex.ripper_lex_without_warning(lines.join)
           prev_tokens = []
