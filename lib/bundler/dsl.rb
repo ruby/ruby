@@ -277,8 +277,8 @@ module Bundler
         if repo_name =~ GITHUB_PULL_REQUEST_URL
           {
             "git" => "https://github.com/#{$1}.git",
-            "branch" => "refs/pull/#{$2}/head",
-            "ref" => nil,
+            "branch" => nil,
+            "ref" => "refs/pull/#{$2}/head",
             "tag" => nil,
           }
         else

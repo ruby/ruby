@@ -337,7 +337,8 @@ module Bundler
 
     def requirement_to_range(requirement)
       ranges = requirement.requirements.map do |(op, version)|
-        ver = Resolver::Candidate.new(version)
+        ver = Resolver::Candidate.new(version).generic!
+        platform_ver = Resolver::Candidate.new(version).platform_specific!
 
         case op
         when "~>"
@@ -345,17 +346,17 @@ module Bundler
           bump = Resolver::Candidate.new(version.bump.to_s + ".A")
           PubGrub::VersionRange.new(:name => name, :min => ver, :max => bump, :include_min => true)
         when ">"
-          PubGrub::VersionRange.new(:min => ver)
+          PubGrub::VersionRange.new(:min => platform_ver)
         when ">="
           PubGrub::VersionRange.new(:min => ver, :include_min => true)
         when "<"
           PubGrub::VersionRange.new(:max => ver)
         when "<="
-          PubGrub::VersionRange.new(:max => ver, :include_max => true)
+          PubGrub::VersionRange.new(:max => platform_ver, :include_max => true)
         when "="
-          PubGrub::VersionRange.new(:min => ver, :max => ver, :include_min => true, :include_max => true)
+          PubGrub::VersionRange.new(:min => ver, :max => platform_ver, :include_min => true, :include_max => true)
         when "!="
-          PubGrub::VersionRange.new(:min => ver, :max => ver, :include_min => true, :include_max => true).invert
+          PubGrub::VersionRange.new(:min => ver, :max => platform_ver, :include_min => true, :include_max => true).invert
         else
           raise "bad version specifier: #{op}"
         end

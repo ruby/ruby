@@ -36,7 +36,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "fails", :bundler => "3" do
-        bundle :instal, :artifice => "compact_index", :raise_on_error => false
+        bundle :install, :artifice => "compact_index", :raise_on_error => false
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4)
       end
@@ -1320,7 +1320,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     expect(out).to include("Using example 0.1.0")
   end
 
-  it "fails inmmediately with a helpful error when a rubygems source does not exist and bundler/setup is required" do
+  it "fails immediately with a helpful error when a rubygems source does not exist and bundler/setup is required" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -1339,7 +1339,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     expect(err).to include("Could not find gem 'example' in locally installed gems.")
   end
 
-  it "fails inmmediately with a helpful error when a non retriable network error happens while resolving sources" do
+  it "fails immediately with a helpful error when a non retriable network error happens while resolving sources" do
     gemfile <<-G
       source "https://gem.repo1"
 
