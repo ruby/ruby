@@ -1161,7 +1161,7 @@ fn gen_newarray(
     );
 
     ctx.stack_pop(n.as_usize());
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1185,7 +1185,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1231,7 +1231,7 @@ fn gen_splatarray(
     // Call rb_vm_splat_array(flag, ary)
     let ary = asm.ccall(rb_vm_splat_array as *const u8, vec![flag.into(), ary_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -1255,7 +1255,7 @@ fn gen_concatarray(
     // Call rb_vm_concat_array(ary1, ary2st)
     let ary = asm.ccall(rb_vm_concat_array as *const u8, vec![ary1_opnd, ary2st_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -3886,6 +3886,8 @@ fn jit_guard_known_klass(
 
         if known_klass == unsafe { rb_cString } {
             ctx.upgrade_opnd_type(insn_opnd, Type::CString);
+        } else if known_klass == unsafe { rb_cArray } {
+            ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
         }
     }
 }
