@@ -5,7 +5,7 @@ prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
 prevs = [prev, prev.sub(/\.\d+\z/, '')]
 
 update = ->(list, type, desc = "updated") do
-  news.sub!(/^\*( +)The following #{type} gems? (?:are|is) #{desc}\.\n(\n*)\K(?: \1\*( +).*\n)*\n*/) do
+  news.sub!(/^(?:\*( +))?The following #{type} gems? (?:are|is) #{desc}\.\n(\n*)\K(?:(?(1) \1)\*( +).*\n)*\n*/) do
     mark = "#{$1&.<< " "}*#{$3 || ' '}"
     list.map {|g, v|"#{mark}#{g} #{v}\n"}.join("") + $2
   end
