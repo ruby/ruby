@@ -75,14 +75,14 @@ To install the Rust build toolchain, we suggest following the [recommended insta
 
 Start by cloning the `ruby/ruby` repository:
 
-```
+```sh
 git clone https://github.com/ruby/ruby yjit
 cd yjit
 ```
 
 The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
-```
+```sh
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
 ./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
@@ -91,7 +91,7 @@ make -j install
 
 or
 
-```
+```sh
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
@@ -100,7 +100,7 @@ make -j install
 
 On macOS, you may need to specify where to find some libraries:
 
-```
+```sh
 # Install dependencies
 brew install openssl readline libyaml
 
@@ -112,7 +112,7 @@ make -j install
 
 Typically configure will choose the default C compiler. To specify the C compiler, use
 
-```
+```sh
 # Choosing a specific c compiler
 export CC=/path/to/my/chosen/c/compiler
 ```
@@ -121,7 +121,7 @@ before running `./configure`.
 
 You can test that YJIT works correctly by running:
 
-```
+```sh
 # Quick tests found in /bootstraptest
 make btest
 
@@ -136,14 +136,14 @@ make -j test-all
 Once YJIT is built, you can either use `./miniruby` from within your build directory, or switch to the YJIT version of `ruby`
 by using the `chruby` tool:
 
-```
+```sh
 chruby ruby-yjit
 ruby myscript.rb
 ```
 
 You can dump statistics about compilation and execution by running YJIT with the `--yjit-stats` command-line option:
 
-```
+```sh
 ./miniruby --yjit-stats myscript.rb
 ```
 
@@ -189,7 +189,7 @@ You can also use the `--yjit-stats` command-line option to see which bytecodes c
 
 If you compile Ruby with `RUBY_DEBUG` and/or `YJIT_STATS` defined and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
 
-```
+```rb
 $ RUBYOPT="--yjit --yjit-stats" irb
 irb(main):001:0> RubyVM::YJIT.runtime_stats
 =>
@@ -274,38 +274,38 @@ There are 3 test suites:
 
 The tests can be run in parallel like this:
 
-```
+```sh
 make -j test-all RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 Or single-threaded like this, to more easily identify which specific test is failing:
 
-```
+```sh
 make test-all TESTOPTS=--verbose RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 To debug a single test in `test-all`:
 
-```
+```sh
 make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 You can also run one specific test in `btest`:
 
-```
+```sh
 make btest BTESTS=bootstraptest/test_ractor.rb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 There are shortcuts to run/debug your own test/repro in `test.rb`:
 
-```
+```sh
 make run  # runs ./miniruby test.rb
 make lldb # launches ./miniruby test.rb in lldb
 ```
 
 You can use the Intel syntax for disassembly in LLDB, keeping it consistent with YJIT's disassembly:
 
-```
+```sh
 echo "settings set target.x86-disassembly-flavor intel" >> ~/.lldbinit
 ```
 
@@ -316,7 +316,7 @@ instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
 
-```
+```sh
 $ softwareupdate --install-rosetta
 ```
 
@@ -324,13 +324,13 @@ Now any command can be run with Rosetta via the `arch` command line tool.
 
 Then you can start your shell in an x86 environment:
 
-```
+```sh
 $ arch -x86_64 zsh
 ```
 
 You can double check your current architecture via the `arch` command:
 
-```
+```sh
 $ arch -x86_64 zsh
 $ arch
 i386
@@ -338,7 +338,7 @@ i386
 
 You may need to set the default target for `rustc` to x86-64, e.g.
 
-```
+```sh
 $ rustup default stable-x86_64-apple-darwin
 ```
 

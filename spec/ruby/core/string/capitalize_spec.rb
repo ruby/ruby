@@ -91,6 +91,10 @@ describe "String#capitalize" do
       StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
     end
   end
+
+  it "returns a String in the same encoding as self" do
+    "h".encode("US-ASCII").capitalize.encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#capitalize!" do

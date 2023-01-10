@@ -66,6 +66,28 @@ describe :stringio_write_string, shared: true do
       @io.tainted?.should be_false
     end
   end
+
+  it "handles writing non-ASCII UTF-8 after seek" do
+    @io.binmode
+    @io << "\x80"
+    @io.pos = 0
+    @io << "\x81"
+    @io.string.should == "\x812345".b
+  end
+
+  it "handles writing with position < buffer size" do
+    @io.pos = 2
+    @io.write "abc"
+    @io.string.should == "12abc"
+
+    @io.pos = 2
+    @io.write "de"
+    @io.string.should == "12dec"
+
+    @io.pos = 2
+    @io.write "fghi"
+    @io.string.should == "12fghi"
+  end
 end
 
 describe :stringio_write_not_writable, shared: true do

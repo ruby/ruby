@@ -1913,48 +1913,48 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  - An internal call to <tt><=></tt> returns +nil+;
  *    that is, the operands are not comparable.
  *
- * Beginless ranges cover all values of the same type before the end,
- * excluding the end for exclusive ranges. Beginless ranges cover
- * ranges that end before the end of the beginless range, or at the
- * end of the beginless range for inclusive ranges.
+ *  Beginless ranges cover all values of the same type before the end,
+ *  excluding the end for exclusive ranges. Beginless ranges cover
+ *  ranges that end before the end of the beginless range, or at the
+ *  end of the beginless range for inclusive ranges.
  *
- *    (..2).cover?(1)     # => true
- *    (..2).cover?(2)     # => true
- *    (..2).cover?(3)     # => false
- *    (...2).cover?(2)    # => false
- *    (..2).cover?("2")   # => false
- *    (..2).cover?(..2)   # => true
- *    (..2).cover?(...2)  # => true
- *    (..2).cover?(.."2") # => false
- *    (...2).cover?(..2)  # => false
+ *     (..2).cover?(1)     # => true
+ *     (..2).cover?(2)     # => true
+ *     (..2).cover?(3)     # => false
+ *     (...2).cover?(2)    # => false
+ *     (..2).cover?("2")   # => false
+ *     (..2).cover?(..2)   # => true
+ *     (..2).cover?(...2)  # => true
+ *     (..2).cover?(.."2") # => false
+ *     (...2).cover?(..2)  # => false
  *
- * Endless ranges cover all values of the same type after the
- * beginning. Endless exclusive ranges do not cover endless
- * inclusive ranges.
+ *  Endless ranges cover all values of the same type after the
+ *  beginning. Endless exclusive ranges do not cover endless
+ *  inclusive ranges.
  *
- *    (2..).cover?(1)     # => false
- *    (2..).cover?(3)     # => true
- *    (2...).cover?(3)    # => true
- *    (2..).cover?(2)     # => true
- *    (2..).cover?("2")   # => false
- *    (2..).cover?(2..)   # => true
- *    (2..).cover?(2...)  # => true
- *    (2..).cover?("2"..) # => false
- *    (2...).cover?(2..)  # => false
- *    (2...).cover?(3...) # => true
- *    (2...).cover?(3..)  # => false
- *    (3..).cover?(2..)   # => false
+ *     (2..).cover?(1)     # => false
+ *     (2..).cover?(3)     # => true
+ *     (2...).cover?(3)    # => true
+ *     (2..).cover?(2)     # => true
+ *     (2..).cover?("2")   # => false
+ *     (2..).cover?(2..)   # => true
+ *     (2..).cover?(2...)  # => true
+ *     (2..).cover?("2"..) # => false
+ *     (2...).cover?(2..)  # => false
+ *     (2...).cover?(3...) # => true
+ *     (2...).cover?(3..)  # => false
+ *     (3..).cover?(2..)   # => false
  *
- * Ranges that are both beginless and endless cover all values and
- * ranges, and return true for all arguments, with the exception that
- * beginless and endless exclusive ranges do not cover endless
- * inclusive ranges.
+ *  Ranges that are both beginless and endless cover all values and
+ *  ranges, and return true for all arguments, with the exception that
+ *  beginless and endless exclusive ranges do not cover endless
+ *  inclusive ranges.
  *
- *    (nil...).cover?(Object.new) # => true
- *    (nil...).cover?(nil...)     # => true
- *    (nil..).cover?(nil...)      # => true
- *    (nil...).cover?(nil..)      # => false
- *    (nil...).cover?(1..)        # => false
+ *     (nil...).cover?(Object.new) # => true
+ *     (nil...).cover?(nil...)     # => true
+ *     (nil..).cover?(nil...)      # => true
+ *     (nil...).cover?(nil..)      # => false
+ *     (nil...).cover?(1..)        # => false
  *
  *  Related: Range#include?.
  *

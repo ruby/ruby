@@ -193,6 +193,7 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
+      expect(err).to be_empty
 
       run <<-RUBY
         require 'foo'
@@ -233,6 +234,29 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
+    end
+
+    it "works when a tag that does not look like a commit hash is used as the value of :ref" do
+      build_git "foo"
+      @remote = build_git("bar", :bare => true)
+      update_git "foo", :remote => file_uri_for(@remote.path)
+      update_git "foo", :push => "main"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}"
+      G
+
+      # Create a new tag on the remote that needs fetching
+      update_git "foo", :tag => "v1.0.0"
+      update_git "foo", :push => "v1.0.0"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}", :ref => "v1.0.0"
+      G
+
+      expect(err).to be_empty
     end
 
     it "works when the revision is a non-head ref" do

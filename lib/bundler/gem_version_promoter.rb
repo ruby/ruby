@@ -8,11 +8,12 @@ module Bundler
   # to the resolution engine to select the best version.
   class GemVersionPromoter
     attr_reader :level
+    attr_accessor :pre
 
     # By default, strict is false, meaning every available version of a gem
     # is returned from sort_versions. The order gives preference to the
     # requested level (:patch, :minor, :major) but in complicated requirement
-    # cases some gems will by necessity by promoted past the requested level,
+    # cases some gems will by necessity be promoted past the requested level,
     # or even reverted to older versions.
     #
     # If strict is set to true, the results from sort_versions will be
@@ -28,6 +29,7 @@ module Bundler
     def initialize
       @level = :major
       @strict = false
+      @pre = false
     end
 
     # @param value [Symbol] One of three Symbols: :major, :minor or :patch.
@@ -66,23 +68,24 @@ module Bundler
       level == :minor
     end
 
+    # @return [bool] Convenience method for testing value of pre variable.
+    def pre?
+      pre == true
+    end
+
     private
 
     def filter_dep_specs(specs, package)
       locked_version = package.locked_version
+      return specs if locked_version.nil? || major?
 
       specs.select do |spec|
-        if locked_version && !major?
-          gsv = spec.version
-          lsv = locked_version
+        gsv = spec.version
 
-          must_match = minor? ? [0] : [0, 1]
+        must_match = minor? ? [0] : [0, 1]
 
-          matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          matches.uniq == [true] ? (gsv >= lsv) : false
-        else
-          true
-        end
+        all_match = must_match.all? {|idx| gsv.segments[idx] == locked_version.segments[idx] }
+        all_match && gsv >= locked_version
       end
     end
 
@@ -90,7 +93,7 @@ module Bundler
       locked_version = package.locked_version
 
       result = specs.sort do |a, b|
-        unless locked_version && package.prerelease_specified?
+        unless locked_version && (package.prerelease_specified? || pre?)
           a_pre = a.prerelease?
           b_pre = b.prerelease?
 
@@ -100,11 +103,11 @@ module Bundler
 
         if major?
           a <=> b
-        elsif either_version_older_than_locked(a, b, locked_version)
+        elsif either_version_older_than_locked?(a, b, locked_version)
           a <=> b
-        elsif segments_do_not_match(a, b, :major)
+        elsif segments_do_not_match?(a, b, :major)
           b <=> a
-        elsif !minor? && segments_do_not_match(a, b, :minor)
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
           b <=> a
         else
           a <=> b
@@ -113,11 +116,11 @@ module Bundler
       post_sort(result, package.unlock?, locked_version)
     end
 
-    def either_version_older_than_locked(a, b, locked_version)
+    def either_version_older_than_locked?(a, b, locked_version)
       locked_version && (a.version < locked_version || b.version < locked_version)
     end
 
-    def segments_do_not_match(a, b, level)
+    def segments_do_not_match?(a, b, level)
       index = [:major, :minor].index(level)
       a.segments[index] != b.segments[index]
     end

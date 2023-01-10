@@ -86,21 +86,24 @@ fn ruby_str_to_rust(v: VALUE) -> String {
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
-pub fn iseq_get_location(iseq: IseqPtr) -> String {
+pub fn iseq_get_location(iseq: IseqPtr, pos: u32) -> String {
+    let iseq_label = unsafe { rb_iseq_label(iseq) };
     let iseq_path = unsafe { rb_iseq_path(iseq) };
-    let iseq_method = unsafe { rb_iseq_method_name(iseq) };
+    let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
-    let mut s = if iseq_path == Qnil {
+    let mut s = if iseq_label == Qnil {
         "None".to_string()
     } else {
-        ruby_str_to_rust(iseq_path)
+        ruby_str_to_rust(iseq_label)
     };
-    s.push_str(":");
-    if iseq_method == Qnil {
+    s.push_str("@");
+    if iseq_path == Qnil {
         s.push_str("None");
     } else {
-        s.push_str(& ruby_str_to_rust(iseq_method));
+        s.push_str(&ruby_str_to_rust(iseq_path));
     }
+    s.push_str(":");
+    s.push_str(&iseq_lineno.to_string());
     s
 }
 

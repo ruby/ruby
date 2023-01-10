@@ -11,6 +11,9 @@
 =end
 
 require "openssl/buffering"
+
+if defined?(OpenSSL::SSL)
+
 require "io/nonblock"
 require "ipaddr"
 require "socket"
@@ -539,4 +542,6 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       end
     end
   end
+end
+
 end

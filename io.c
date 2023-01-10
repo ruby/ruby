@@ -3679,13 +3679,11 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  call-seq:
  *    read(maxlen = nil, out_string = nil) -> new_string, out_string, or nil
  *
- *  Reads bytes from the stream, (in binary mode);
- *  the stream must be opened for reading
+ *  Reads bytes from the stream; the stream must be opened for reading
  *  (see {Access Modes}[rdoc-ref:File@Access+Modes]):
  *
- *  - If +maxlen+ is +nil+, reads all bytes.
- *  - Otherwise reads +maxlen+ bytes, if available.
- *  - Otherwise reads all bytes.
+ *  - If +maxlen+ is +nil+, reads all bytes using the stream's data mode.
+ *  - Otherwise reads up to +maxlen+ bytes in binary mode.
  *
  *  Returns a string (either a new string or the given +out_string+)
  *  containing the bytes read.
@@ -11575,6 +11573,11 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
                 enc2 = NULL;
             }
         }
+        if (enc2 == rb_ascii8bit_encoding()) {
+            /* If external is ASCII-8BIT, no transcoding */
+            enc = enc2;
+            enc2 = NULL;
+        }
         SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
         ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
     }
@@ -13395,16 +13398,22 @@ rb_io_internal_encoding(VALUE io)
  *
  *  See {Encodings}[rdoc-ref:File@Encodings].
  *
- *  Argument +ext_enc+, if given, must be an Encoding object;
+ *  Argument +ext_enc+, if given, must be an Encoding object
+ *  or a String with the encoding name;
  *  it is assigned as the encoding for the stream.
  *
- *  Argument +int_enc+, if given, must be an Encoding object;
+ *  Argument +int_enc+, if given, must be an Encoding object
+ *  or a String with the encoding name;
  *  it is assigned as the encoding for the internal string.
  *
  *  Argument <tt>'ext_enc:int_enc'</tt>, if given, is a string
  *  containing two colon-separated encoding names;
  *  corresponding Encoding objects are assigned as the external
  *  and internal encodings for the stream.
+ *
+ *  If the external encoding of a string is binary/ASCII-8BIT,
+ *  the internal encoding of the string is set to nil, since no
+ *  transcoding is needed.
  *
  *  Optional keyword arguments +enc_opts+ specify
  *  {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
@@ -14779,6 +14788,8 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - +:binmode+: If a truthy value, specifies the mode as binary, text-only otherwise.
  *  - +:autoclose+: If a truthy value, specifies that the +fd+ will close
  *    when the stream closes; otherwise it remains open.
+ *  - +:path:+ If a string value is provided, it is used in #inspect and is available as
+ *    #path method.
  *
  *  Also available are the options offered in String#encode,
  *  which may control conversion between external internal encoding.

@@ -39,6 +39,16 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
+  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
+  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed.".freeze
+  SAFE_MARSHAL_PROC = proc do |object|
+    object.tap do
+      unless SAFE_MARSHAL_CLASSES.include?(object.class)
+        raise TypeError, format(SAFE_MARSHAL_ERROR, object.class, SAFE_MARSHAL_CLASSES.join(", "))
+      end
+    end
+  end
+
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
@@ -453,7 +463,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform]
       Gem::Platform.local
     end
 
@@ -511,8 +521,12 @@ EOF
       end
     end
 
-    def load_marshal(data)
-      Marshal.load(data)
+    def safe_load_marshal(data)
+      load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
+    end
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
     rescue TypeError => e
       raise MarshalError, "#{e.class}: #{e.message}"
     end
@@ -523,7 +537,7 @@ EOF
       @gemspec_cache[key] ||= load_gemspec_uncached(file, validate)
       # Protect against caching side-effected gemspecs by returning a
       # new instance each time.
-      @gemspec_cache[key].dup if @gemspec_cache[key]
+      @gemspec_cache[key]&.dup
     end
 
     def load_gemspec_uncached(file, validate = false)

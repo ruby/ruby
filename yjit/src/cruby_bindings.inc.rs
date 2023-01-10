@@ -1111,14 +1111,14 @@ extern "C" {
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
     pub fn rb_shape_transition_shape_capa(
         shape: *mut rb_shape_t,
         new_capacity: u32,
     ) -> *mut rb_shape_t;
     pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
-    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -1163,8 +1163,9 @@ extern "C" {
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
+    pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
-    pub fn rb_iseq_method_name(iseq: *const rb_iseq_t) -> VALUE;
+    pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_vm_barrier();
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,

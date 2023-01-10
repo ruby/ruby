@@ -89,26 +89,16 @@ module MakeMakefile
 
   unless defined? $configure_args
     $configure_args = {}
-    args = CONFIG["configure_args"]
-    if ENV["CONFIGURE_ARGS"]
-      args << " " << ENV["CONFIGURE_ARGS"]
+    args = CONFIG["configure_args"].shellsplit
+    if arg = ENV["CONFIGURE_ARGS"]
+      args.push(*arg.shellsplit)
     end
-    for arg in Shellwords::shellwords(args)
+    args.delete_if {|a| /\A--(?:top(?:src)?|src|cur)dir(?=\z|=)/ =~ a}
+    for arg in args.concat(ARGV)
       arg, val = arg.split('=', 2)
       next unless arg
       arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
-        val or next
-        arg.downcase!
-      end
-      next if /^--(?:top|topsrc|src|cur)dir$/ =~ arg
-      $configure_args[arg] = val || true
-    end
-    for arg in ARGV
-      arg, val = arg.split('=', 2)
-      next unless arg
-      arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
+      if arg.sub!(/\A(?!--)/, '--')
         val or next
         arg.downcase!
       end

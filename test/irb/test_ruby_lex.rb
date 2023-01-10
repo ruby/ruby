@@ -212,6 +212,24 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
+    def test_heredoc_prompt_with_quotes
+      input_with_prompt = [
+        PromptRow.new("001:0:':* ", %q(<<~'A')),
+        PromptRow.new("002:0:':* ", %q(#{foobar})),
+        PromptRow.new("003:0: :> ", %q(A)),
+        PromptRow.new("004:0:`:* ", %q(<<~`A`)),
+        PromptRow.new("005:0:`:* ", %q(whoami)),
+        PromptRow.new("006:0: :> ", %q(A)),
+        PromptRow.new('007:0:":* ', %q(<<~"A")),
+        PromptRow.new('008:0:":* ', %q(foobar)),
+        PromptRow.new('009:0: :> ', %q(A)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_backtick_method
       input_with_prompt = [
         PromptRow.new('001:0: :> ', %q(self.`(arg))),
@@ -643,6 +661,38 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
+    def test_dyanmic_prompt_with_double_newline_braking_code
+      input_with_prompt = [
+        PromptRow.new('001:1: :* ', %q(if true)),
+        PromptRow.new('002:1: :* ', %q(%)),
+        PromptRow.new('003:1: :* ', %q(;end)),
+        PromptRow.new('004:1: :* ', %q(;hello)),
+        PromptRow.new('005:0: :> ', %q(end)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_dyanmic_prompt_with_multiline_literal
+      input_with_prompt = [
+        PromptRow.new('001:1: :* ', %q(if true)),
+        PromptRow.new('002:1:]:* ', %q(  %w[)),
+        PromptRow.new('003:1:]:* ', %q(  a)),
+        PromptRow.new('004:1: :* ', %q(  ])),
+        PromptRow.new('005:1: :* ', %q(  b)),
+        PromptRow.new('006:1:]:* ', %q(  %w[)),
+        PromptRow.new('007:1:]:* ', %q(  c)),
+        PromptRow.new('008:1: :* ', %q(  ])),
+        PromptRow.new('009:0: :> ', %q(end)),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_dyanmic_prompt_with_blank_line
       input_with_prompt = [
         PromptRow.new('001:0:]:* ', %q(%w[)),
@@ -703,6 +753,69 @@ module TestIRB
         tokens = RubyLex.ripper_lex_without_warning(code)
         string_literal = RubyLex.new.check_string_literal(tokens)
         assert_equal('<<A', string_literal&.tok)
+      end
+    end
+
+    def test_corresponding_token_depth_with_heredoc_and_embdoc
+      reference_code = <<~EOC.chomp
+        if true
+          hello
+          p(
+          )
+      EOC
+      code_with_heredoc = <<~EOC.chomp
+        if true
+          <<~A
+          A
+          p(
+          )
+      EOC
+      code_with_embdoc = <<~EOC.chomp
+        if true
+        =begin
+        =end
+          p(
+          )
+      EOC
+      [reference_code, code_with_heredoc, code_with_embdoc].each do |code|
+        lex = RubyLex.new
+        lines = code.lines
+        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
+        assert_equal 2, lex.check_corresponding_token_depth(lines, lines.size)
+      end
+    end
+
+    def test_find_prev_spaces_with_multiline_literal
+      lex = RubyLex.new
+      reference_code = <<~EOC.chomp
+        if true
+          1
+          hello
+          1
+          world
+        end
+      EOC
+      code_with_percent_string = <<~EOC.chomp
+        if true
+          %w[
+            hello
+          ]
+          world
+        end
+      EOC
+      code_with_quoted_string = <<~EOC.chomp
+        if true
+          '
+            hello
+          '
+          world
+        end
+      EOC
+      [reference_code, code_with_percent_string, code_with_quoted_string].each do |code|
+        lex = RubyLex.new
+        lex.instance_variable_set('@tokens', RubyLex.ripper_lex_without_warning(code))
+        prev_spaces = (1..code.lines.size).map { |index| lex.find_prev_spaces index }
+        assert_equal [0, 2, 2, 2, 2, 0], prev_spaces
       end
     end
 

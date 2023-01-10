@@ -20,21 +20,31 @@
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
+    If you installed the libraries needed for extensions (openssl, readline, libyaml, zlib) into other than the OS default place,
+    typically using Homebrew on macOS, add `--with-EXTLIB-dir` options to `CONFIGURE_ARGS` environment variable.
+
+    ``` shell
+    export CONFIGURE_ARGS=""
+    for ext in openssl readline libyaml zlib; do
+      CONFIGURE_ARGS="${CONFIGURE_ARGS} --with-$ext-dir=$(brew --prefix $ext)"
+    done
+    ```
+
 3. Checkout the CRuby source code:
 
-    ```
+    ``` shell
     git clone https://github.com/ruby/ruby.git
     ```
 
 4. Generate the configure file:
 
-    ```
+    ``` shell
     ./autogen.sh
     ```
 
 5. Create a `build` directory outside of the source directory:
 
-    ```
+    ``` shell
     mkdir build && cd build
     ```
 
@@ -42,13 +52,13 @@
 
 6. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
 
-    ```
+    ``` shell
     mkdir ~/.rubies
     ```
 
 7. Run configure:
 
-    ```
+    ``` shell
     ../configure --prefix="${HOME}/.rubies/ruby-master"
     ```
 
@@ -56,22 +66,9 @@
 
 8. Build Ruby:
 
-    ```
+    ``` shell
     make install
     ```
-
-    - If you're on macOS and installed \OpenSSL through Homebrew, you may encounter failure to build \OpenSSL that look like this:
-
-        ```
-        openssl:
-            Could not be configured. It will not be installed.
-            ruby/ext/openssl/extconf.rb: OpenSSL library could not be found. You might want to use --with-openssl-dir=<dir> option to specify the prefix where OpenSSL is installed.
-            Check ext/openssl/mkmf.log for more details.
-        ```
-
-        Adding `--with-openssl-dir=$(brew --prefix openssl)` to the list of options passed to configure may solve the issue.
-
-        Remember to delete your `build` directory and start again from the configure step.
 
 9. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
@@ -89,7 +86,7 @@ about Ruby's build to help out.
 In GNU make and BSD make implementations, to run a specific make script in parallel, pass the flag `-j<number of processes>`. For instance,
 to run tests on 8 processes, use:
 
-```
+``` shell
 make test-all -j8
 ```
 
@@ -117,7 +114,7 @@ Miniruby is a version of Ruby which has no external dependencies and lacks certa
 It can be useful in Ruby development because it allows for faster build times. Miniruby is
 built before Ruby. A functional Miniruby is required to build Ruby. To build Miniruby:
 
-```
+``` shell
 make miniruby
 ```
 
@@ -151,7 +148,7 @@ On Linux it is important to specify `-O0` when debugging. This is especially tru
 
 You need to be able to use gcc (gcov) and lcov visualizer.
 
-```
+``` shell
 ./autogen.sh
 ./configure --enable-gcov
 make

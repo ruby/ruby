@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_bad_socket
@@ -1379,9 +1379,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_ary
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = ["http/1.1", "spdy/2"]
     ctx_proc = proc { |ctx| ctx.npn_protocols = advertised }
@@ -1399,9 +1397,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_enum
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = Object.new
     def advertised.each
@@ -1423,9 +1419,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_cancel
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1436,9 +1430,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_advertised_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["a" * 256] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1449,9 +1441,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_selected_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|

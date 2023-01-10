@@ -13,7 +13,8 @@ module SyntaxSuggest
     end
 
     def exe(cmd)
-      out = run!("#{exe_path} #{cmd}", raise_on_nonzero_exit: false)
+      ruby = ENV.fetch("RUBY", "ruby")
+      out = run!("#{ruby} #{exe_path} #{cmd}", raise_on_nonzero_exit: false)
       puts out if ENV["SYNTAX_SUGGEST_DEBUG"]
       out
     end

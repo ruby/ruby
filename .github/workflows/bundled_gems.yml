@@ -34,9 +34,9 @@ jobs:
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
           echo "TODAY=$(date +%F)" >> $GITHUB_ENV
 
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
 
-      - uses: actions/cache@9b0c1fce7a93df8e3bb8926b0d6e9d89e92f20a7 # v3.0.11
+      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
         with:
           path: .downloaded-cache
           key: downloaded-cache-${{ github.sha }}
@@ -81,7 +81,7 @@ jobs:
             news.sub!(/^\*( +)The following default gems are now bundled gems\.\n+\K(?: \1\*( +).*\n)*/) do
               mark = "#{$1} *#{$2}"
               added.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
-            end or next if added
+            end or next unless added.empty?
             File.write("NEWS.md", news)
           end
         shell: ruby {0}

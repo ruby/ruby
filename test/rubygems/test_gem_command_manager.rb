@@ -126,6 +126,46 @@ class TestGemCommandManager < Gem::TestCase
     @command_manager.unregister_command :crash
   end
 
+  def test_process_args_with_c_flag
+    custom_start_point = File.join @tempdir, "nice_folder"
+    FileUtils.mkdir_p custom_start_point
+
+    execution_path = nil
+    use_ui @ui do
+      @command_manager[:install].when_invoked do
+        execution_path = Dir.pwd
+        true
+      end
+      @command_manager.process_args %W[-C #{custom_start_point} install net-scp-4.0.0.gem --local]
+    end
+
+    assert_equal custom_start_point, execution_path
+  end
+
+  def test_process_args_with_c_flag_without_path
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError do
+        @command_manager.process_args %w[-C install net-scp-4.0.0.gem --local]
+      end
+    end
+
+    assert_match(/install isn't a directory./i, @ui.error)
+  end
+
+  def test_process_args_with_c_flag_path_not_found
+    custom_start_point = File.join @tempdir, "nice_folder"
+    FileUtils.mkdir_p custom_start_point
+    custom_start_point.tr!("_", "-")
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError do
+        @command_manager.process_args %W[-C #{custom_start_point} install net-scp-4.0.0.gem --local]
+      end
+    end
+
+    assert_match(/#{custom_start_point} isn't a directory./i, @ui.error)
+  end
+
   def test_process_args_bad_arg
     use_ui @ui do
       assert_raise Gem::MockGemUi::TermError do

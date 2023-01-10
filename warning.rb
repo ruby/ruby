@@ -15,7 +15,7 @@ module Kernel
   #
   #    warn("warning 1", "warning 2")
   #
-  #  <em>produces:</em>
+  # <em>produces:</em>
   #
   #    warning 1
   #    warning 2
@@ -35,7 +35,7 @@ module Kernel
   #
   #    bar
   #
-  #  <em>produces:</em>
+  # <em>produces:</em>
   #
   #    baz.rb:6: warning: invalid call to foo
   #

@@ -393,7 +393,7 @@ TODO: `select` syntax of go-language uses round-robin technique to make fair sch
 
 * `Ractor#close_incoming/outgoing` close incoming/outgoing ports (similar to `Queue#close`).
 * `Ractor#close_incoming`
-  * `r.send(obj) ` where `r`'s incoming port is closed, will raise an exception.
+  * `r.send(obj)` where `r`'s incoming port is closed, will raise an exception.
   * When the incoming queue is empty and incoming port is closed, `Ractor.receive` raises an exception. If the incoming queue is not empty, it dequeues an object without exceptions.
 * `Ractor#close_outgoing`
   * `Ractor.yield` on a Ractor which closed the outgoing port, it will raise an exception.
@@ -536,7 +536,7 @@ The following objects are shareable.
 
 Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
 
-To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively travasible objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
+To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
 
 ## Language changes to isolate unshareable objects between Ractors
 
@@ -705,8 +705,8 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 
 * none: Do nothing. Same as: `CONST = expr`
 * literal:
-  * if `expr` is consites of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
-  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?}`.
+  * if `expr` consists of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
+  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?(o)}`.
 * experimental_everything: replaced to `CONST = Ractor.make_shareable(expr)`.
 * experimental_copy: replaced to `CONST = Ractor.make_shareable(expr, copy: true)`.
 

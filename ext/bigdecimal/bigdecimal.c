@@ -6453,7 +6453,7 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
                     }
                 }
                 nc += fprintf(fp, "E%"PRIdSIZE, VpExponent10(a));
-                nc += fprintf(fp, " (%"PRIdVALUE", %lu, %lu)", a->exponent, a->Prec, a->MaxPrec);
+                nc += fprintf(fp, " (%"PRIdVALUE", %"PRIuSIZE", %"PRIuSIZE")", a->exponent, a->Prec, a->MaxPrec);
             }
             else {
                 nc += fprintf(fp, "0.0");

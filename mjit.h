@@ -103,6 +103,13 @@ extern void mjit_mark(void);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
 extern void mjit_notify_waitpid(int exit_code);
 
+extern void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
+extern void rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme);
+extern void rb_mjit_before_ractor_spawn(void);
+extern void rb_mjit_constant_state_changed(ID id);
+extern void rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
+extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
+
 void mjit_child_after_fork(void);
 
 #  ifdef MJIT_HEADER
@@ -121,6 +128,13 @@ static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
 static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
+
+static inline void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
+static inline void rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
+static inline void rb_mjit_before_ractor_spawn(void) {}
+static inline void rb_mjit_constant_state_changed(ID id) {}
+static inline void rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
+static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 
 #define mjit_enabled false
 static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable

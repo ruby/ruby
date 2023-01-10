@@ -96,7 +96,8 @@ class RubyLex
           if t.tok.include?("\n")
             t_str = t.tok
             t_str.each_line("\n") do |s|
-              code << s << "\n"
+              code << s
+              next unless s.include?("\n")
               ltype, indent, continue, code_block_open = check_state(code, partial_tokens, context: context)
               result << @prompt.call(ltype, indent, continue || code_block_open, @line_no + line_num_offset)
               line_num_offset += 1
@@ -188,6 +189,7 @@ class RubyLex
         if line_count >= line_index
           return prev_spaces
         end
+        next if t.event == :on_tstring_content || t.event == :on_words_sep
         if (@tokens.size - 1) > i
           md = @tokens[i + 1].tok.match(/(\A +)/)
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
@@ -642,7 +644,7 @@ class RubyLex
       end
 
       case t.event
-      when :on_ignored_nl, :on_nl, :on_comment
+      when :on_ignored_nl, :on_nl, :on_comment, :on_heredoc_end, :on_embdoc_end
         if in_oneliner_def != :BODY
           corresponding_token_depth = nil
           spaces_at_line_head = 0
@@ -781,13 +783,8 @@ class RubyLex
     when :on_qsymbols_beg then ?]
     when :on_symbols_beg  then ?]
     when :on_heredoc_beg
-      start_token&.tok =~ /<<[-~]?(['"`])[_a-zA-Z0-9]+\1/
-      case $1
-      when ?" then ?"
-      when ?' then ?'
-      when ?` then ?`
-      else         ?"
-      end
+      start_token&.tok =~ /<<[-~]?(['"`])\w+\1/
+      $1 || ?"
     else
       nil
     end

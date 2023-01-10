@@ -216,6 +216,10 @@ describe "IO#gets" do
     @io.gets(nil, 0).should == ""
     @io.gets("", 0).should == ""
   end
+
+  it "does not accept limit that doesn't fit in a C off_t" do
+    -> { @io.gets(2**128) }.should raise_error(RangeError)
+  end
 end
 
 describe "IO#gets" do
@@ -301,11 +305,23 @@ describe "IO#gets" do
     @io.gets.encoding.should == Encoding::BINARY
   end
 
-  it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
-    Encoding.default_external = Encoding::BINARY
-    Encoding.default_internal = Encoding::UTF_8
-    @io = new_io @name, 'r'
-    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-    @io.gets.encoding.should == Encoding::UTF_8
+  ruby_version_is ''...'3.3' do
+    it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
+      Encoding.default_external = Encoding::BINARY
+      Encoding.default_internal = Encoding::UTF_8
+      @io = new_io @name, 'r'
+      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+      @io.gets.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  ruby_version_is '3.3' do
+    it "ignores the internal encoding if the IO object's external encoding is BINARY" do
+      Encoding.default_external = Encoding::BINARY
+      Encoding.default_internal = Encoding::UTF_8
+      @io = new_io @name, 'r'
+      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+      @io.gets.encoding.should == Encoding::BINARY
+    end
   end
 end

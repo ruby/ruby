@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-require "pty" unless RUBY_ENGINE == 'truffleruby'
+begin
+  require "pty"
+rescue LoadError
+  return
+end
+
 require "tempfile"
 require "tmpdir"
 require "envutil"

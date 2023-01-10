@@ -142,6 +142,8 @@ bool mjit_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
+// A flag to communicate that mjit_call_p should be disabled while it's temporarily false.
+bool mjit_cancel_p = false;
 // There's an ISEQ in unit_queue whose total_calls reached 2 * call_threshold.
 // If this is true, check_unit_queue will start compiling ISEQs in unit_queue.
 static bool mjit_compile_p = false;
@@ -963,6 +965,7 @@ mjit_cancel_all(const char *reason)
         return;
 
     mjit_call_p = false;
+    mjit_cancel_p = true;
     if (mjit_opts.warnings || mjit_opts.verbose) {
         fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
     }
@@ -1220,31 +1223,115 @@ static VALUE rb_mMJITC = 0;
 static VALUE rb_cMJITCompiler = 0;
 // RubyVM::MJIT::CPointer::Struct_rb_iseq_t
 static VALUE rb_cMJITIseqPtr = 0;
+// RubyVM::MJIT::CPointer::Struct_IC
+static VALUE rb_cMJITICPtr = 0;
+// RubyVM::MJIT::Compiler
+static VALUE rb_mMJITHooks = 0;
+
+#define WITH_MJIT_DISABLED(stmt) do { \
+    bool original_call_p = mjit_call_p; \
+    mjit_call_p = false; \
+    stmt; \
+    mjit_call_p = original_call_p; \
+    if (mjit_cancel_p) mjit_call_p = false; \
+} while (0);
+
+// Hook MJIT when BOP is redefined.
+MJIT_FUNC_EXPORTED void
+rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_bop_redefined"), 2, INT2NUM(redefined_flag), INT2NUM((int)bop));
+    });
+}
+
+// Hook MJIT when CME is invalidated.
+MJIT_FUNC_EXPORTED void
+rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        VALUE cme_klass = rb_funcall(rb_mMJITC, rb_intern("rb_callable_method_entry_struct"), 0);
+        VALUE cme_ptr = rb_funcall(cme_klass, rb_intern("new"), 1, SIZET2NUM((size_t)cme));
+        rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, cme_ptr);
+    });
+}
+
+// Hook MJIT when Ractor is spawned.
+void
+rb_mjit_before_ractor_spawn(void)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_ractor_spawn"), 0);
+    });
+}
+
+static void
+mjit_constant_state_changed(void *data)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    ID id = (ID)data;
+    WITH_MJIT_DISABLED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_state_changed"), 1, ID2SYM(id));
+    });
+}
+
+// Hook MJIT when constant state is changed.
+MJIT_FUNC_EXPORTED void
+rb_mjit_constant_state_changed(ID id)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    // Asynchronously hook the Ruby code since this is hooked during a "Ruby critical section".
+    extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data);
+    rb_workqueue_register(0, mjit_constant_state_changed, (void *)id);
+}
+
+// Hook MJIT when constant IC is updated.
+MJIT_FUNC_EXPORTED void
+rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
+        VALUE ic_ptr = rb_funcall(rb_cMJITICPtr, rb_intern("new"), 1, SIZET2NUM((size_t)ic));
+        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_ic_update"), 3, iseq_ptr, ic_ptr, UINT2NUM(insn_idx));
+    });
+}
+
+// Hook MJIT when TracePoint is enabled.
+MJIT_FUNC_EXPORTED void
+rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
+    });
+}
 
 // [experimental] Call custom RubyVM::MJIT.compile if defined
 static void
 mjit_hook_custom_compile(const rb_iseq_t *iseq)
 {
-    bool original_call_p = mjit_call_p;
-    mjit_call_p = false; // Avoid impacting JIT metrics by itself
-
-    VALUE iseq_class = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
-    VALUE iseq_ptr = rb_funcall(iseq_class, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
-    VALUE jit_func = rb_funcall(rb_mMJIT, rb_intern("compile"), 1, iseq_ptr);
-    ISEQ_BODY(iseq)->jit_func = (jit_func_t)NUM2ULONG(jit_func);
-
-    mjit_call_p = original_call_p;
+    WITH_MJIT_DISABLED({
+        VALUE iseq_class = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+        VALUE iseq_ptr = rb_funcall(iseq_class, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
+        VALUE jit_func = rb_funcall(rb_mMJIT, rb_intern("compile"), 1, iseq_ptr);
+        ISEQ_BODY(iseq)->jit_func = (jit_func_t)NUM2ULONG(jit_func);
+    });
 }
 
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info)
 {
-    if (!mjit_enabled || pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
-        return;
+    if (!mjit_enabled) return;
     if (mjit_opts.custom) { // Hook custom RubyVM::MJIT.compile if defined
         mjit_hook_custom_compile(iseq);
         return;
     }
+    if (pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
+        return;
     if (!mjit_target_iseq_p(iseq)) {
         ISEQ_BODY(iseq)->jit_func = (jit_func_t)MJIT_FUNC_FAILED; // skip mjit_wait
         return;
@@ -1646,6 +1733,9 @@ mjit_init(const struct mjit_options *opts)
     rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
     rb_cMJITCompiler = rb_funcall(rb_const_get(rb_mMJIT, rb_intern("Compiler")), rb_intern("new"), 0);
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+    rb_cMJITICPtr = rb_funcall(rb_mMJITC, rb_intern("IC"), 0);
+    rb_funcall(rb_cMJITICPtr, rb_intern("new"), 1, SIZET2NUM(0)); // Trigger no-op constant events before enabling hooks
+    rb_mMJITHooks = rb_const_get(rb_mMJIT, rb_intern("Hooks"));
 
     mjit_call_p = true;
     mjit_pid = getpid();
@@ -1845,6 +1935,8 @@ mjit_mark(void)
     // Mark objects used by the MJIT compiler
     rb_gc_mark(rb_cMJITCompiler);
     rb_gc_mark(rb_cMJITIseqPtr);
+    rb_gc_mark(rb_cMJITICPtr);
+    rb_gc_mark(rb_mMJITHooks);
 
     // Mark JIT-compiled ISEQs
     struct rb_mjit_unit *unit = NULL;

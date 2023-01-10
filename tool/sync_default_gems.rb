@@ -159,19 +159,7 @@ module SyncDefaultGems
       cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
       cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
       rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
-      license_files = %w[
-        lib/bundler/vendor/thor/LICENSE.md
-        lib/rubygems/resolver/molinillo/LICENSE
-        lib/bundler/vendor/molinillo/LICENSE
-        lib/bundler/vendor/connection_pool/LICENSE
-        lib/bundler/vendor/net-http-persistent/README.rdoc
-        lib/bundler/vendor/fileutils/LICENSE.txt
-        lib/bundler/vendor/tsort/LICENSE.txt
-        lib/bundler/vendor/uri/LICENSE.txt
-        lib/rubygems/optparse/COPYING
-        lib/rubygems/tsort/LICENSE.txt
-      ]
-      rm_rf license_files
+      rm_rf Dir.glob("lib/{bundle,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
     when "rdoc"
       rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
       cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
@@ -302,6 +290,15 @@ module SyncDefaultGems
       `git checkout ext/strscan/depend`
     when "racc"
       rm_rf(%w[lib/racc lib/racc.rb ext/racc test/racc])
+      parser_files = %w[
+        lib/racc/parser-text.rb
+      ]
+      Dir.chdir(upstream) do
+        `bundle install`
+        parser_files.each do |file|
+          `bundle exec rake #{file}`
+        end
+      end
       cp_r(Dir.glob("#{upstream}/lib/racc*"), "lib")
       mkdir_p("ext/racc/cparse")
       cp_r(Dir.glob("#{upstream}/ext/racc/cparse/*"), "ext/racc/cparse")
@@ -466,13 +463,13 @@ module SyncDefaultGems
     if log and !log.empty?
       log.sub!(/(?<=\n)\n+\z/, '') # drop empty lines at the last
       conv[log]
-      log.sub!(/(?:(\A\s*)|\s*\n)(?=((?i:Co-authored-by:.*\n)+)?\Z)/) {
+      log.sub!(/(?:(\A\s*)|\s*\n)(?=((?i:^Co-authored-by:.*\n?)+)?\Z)/) {
         ($~.begin(1) ? "" : "\n\n") + commit_url + ($~.begin(2) ? "\n" : "")
       }
     else
       log = commit_url
     end
-    print subject, "\n\n", log
+    puts subject, "\n", log
   end
 
   # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
@@ -543,11 +540,22 @@ module SyncDefaultGems
       end
       next if skipped
 
+      case gem
+      when "rubygems"
+        %w[bundler/spec/support/artifice/vcr_cassettes].each do |rem|
+          if File.exist?(rem)
+            system("git", "reset", rem)
+            rm_rf(rem)
+          end
+        end
+        system(*%w[git add spec/bundler])
+      end
+
       if result.empty?
         skipped = true
       elsif /^CONFLICT/ =~ result
         result = pipe_readlines(%W"git status --porcelain -z")
-        result.map! {|line| line[/\A(?:.U|AA) (.*)/, 1]}
+        result.map! {|line| line[/\A(?:.U|[UA]A) (.*)/, 1]}
         result.compact!
         ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
         unless ignore.empty?

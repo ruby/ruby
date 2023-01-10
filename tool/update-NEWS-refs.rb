@@ -4,18 +4,29 @@ orig_src = File.read(File.join(__dir__, "../NEWS.md"))
 lines = orig_src.lines(chomp: true)
 
 links = {}
-while lines.last =~ %r{\A\[(?:Feature|Bug) #(\d+)\]:\s+https://bugs\.ruby-lang\.org/issues/\1(?:#.*)?\z}
-  links[$1] = lines.pop
+while lines.last =~ %r{\A\[(.*?)\]:\s+(.*)\z}
+  links[$1] = $2
+  lines.pop
 end
 
 if links.empty? || lines.last != ""
-  raise "NEWS.md must end with a sequence of links to bugs.ruby-lang.org like \"[Feature #XXXXX]: https://bugs.ruby-lang.org/issues/XXXXX\""
+  raise "NEWS.md must end with a sequence of links"
 end
 
-new_src = lines.join("\n").gsub(/\[?\[(Feature|Bug)\s+#(\d+)\]\]?/) do
-  links[$2] ||= "[#$1 ##$2]: ".ljust(18) + "https://bugs.ruby-lang.org/issues/#$2"
-  "[[#$1 ##$2]]"
-end.chomp + "\n\n" + links.keys.sort.map {|k| links[k] }.join("\n") + "\n"
+labels = links.keys.select {|k| !(k.start_with?("Feature") || k.start_with?("Bug"))}
+new_src = lines.join("\n").gsub(/\[?\[((?:Feature|Bug)\s+#(\d+))\]\]?/) do
+  links[$1] ||= "https://bugs.ruby-lang.org/issues/#$2"
+  "[[#$1]]"
+end.gsub(/\[\[#{Regexp.union(labels)}\]\]?/) do
+  "[#$1]"
+end.chomp + "\n\n"
+
+label_width = links.max_by {|k, _| k.size}.first.size + 4
+redmine_links, non_redmine_links = links.partition {|k,| k =~ /\A(Feature|Bug)\s+#\d+\z/ }
+
+(redmine_links.sort_by {|k,| k[/\d+/].to_i } + non_redmine_links.reverse).each do |k, v|
+  new_src << "[#{k}]:".ljust(label_width) << v << "\n"
+end
 
 if orig_src != new_src
   print "Update NEWS.md? [y/N]"

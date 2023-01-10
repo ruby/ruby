@@ -277,7 +277,10 @@ class Gem::Dependency
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
     end.map(&:to_spec)
 
-    Gem::BundlerVersionFinder.prioritize!(matches) if prioritizes_bundler?
+    if prioritizes_bundler?
+      require_relative "bundler_version_finder"
+      Gem::BundlerVersionFinder.prioritize!(matches)
+    end
 
     if platform_only
       matches.reject! do |spec|

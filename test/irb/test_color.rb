@@ -18,6 +18,20 @@ module TestIRB
     MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
 
+    def setup
+      super
+      if IRB.respond_to?(:conf)
+        @colorize, IRB.conf[:USE_COLORIZE] = IRB.conf[:USE_COLORIZE], true
+      end
+    end
+
+    def teardown
+      if instance_variable_defined?(:@colorize)
+        IRB.conf[:USE_COLORIZE] = @colorize
+      end
+      super
+    end
+
     def test_colorize
       text = "text"
       {

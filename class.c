@@ -803,6 +803,27 @@ refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
 }
 # endif
 
+/*!
+ *--
+ * \private
+ * Initializes the world of objects and classes.
+ *
+ * At first, the function bootstraps the class hierarchy.
+ * It initializes the most fundamental classes and their metaclasses.
+ * - \c BasicObject
+ * - \c Object
+ * - \c Module
+ * - \c Class
+ * After the bootstrap step, the class hierarchy becomes as the following
+ * diagram.
+ *
+ * \image html boottime-classes.png
+ *
+ * Then, the function defines classes, modules and methods as usual.
+ * \ingroup class
+ *++
+ */
+
 void
 Init_class_hierarchy(void)
 {

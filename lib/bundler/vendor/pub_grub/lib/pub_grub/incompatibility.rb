@@ -8,6 +8,9 @@ module Bundler::PubGrub
     InvalidDependency = Struct.new(:package, :constraint) do
     end
 
+    CircularDependency = Struct.new(:package, :constraint) do
+    end
+
     NoVersions = Struct.new(:constraint) do
     end
 
@@ -63,6 +66,8 @@ module Bundler::PubGrub
         "#{terms[0].to_s(allow_every: true)} depends on #{terms[1].invert}"
       when Bundler::PubGrub::Incompatibility::InvalidDependency
         "#{terms[0].to_s(allow_every: true)} depends on unknown package #{cause.package}"
+      when Bundler::PubGrub::Incompatibility::CircularDependency
+        "#{terms[0].to_s(allow_every: true)} depends on itself"
       when Bundler::PubGrub::Incompatibility::NoVersions
         "no versions satisfy #{cause.constraint}"
       when Bundler::PubGrub::Incompatibility::ConflictCause

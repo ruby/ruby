@@ -67,7 +67,7 @@ describe "Encoding#replicate" do
     end
   end
 
-  ruby_version_is "3.3" do
+  ruby_version_is "3.4" do
     it "has been removed" do
       Encoding::US_ASCII.should_not.respond_to?(:replicate, true)
     end

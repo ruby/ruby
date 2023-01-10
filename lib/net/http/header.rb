@@ -763,19 +763,38 @@ module Net::HTTPHeader
 
   alias content_type= set_content_type
 
-  # Set header fields and a body from HTML form data.
-  # +params+ should be an Array of Arrays or
-  # a Hash containing HTML form data.
-  # Optional argument +sep+ means data record separator.
+  # Sets the request body to a URL-encoded string derived from argument +params+,
+  # and sets request header field <tt>'Content-Type'</tt>
+  # to <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # Values are URL encoded as necessary and the content-type is set to
-  # application/x-www-form-urlencoded
+  # The resulting request is suitable for HTTP request +POST+ or +PUT+.
   #
-  # Example:
+  # Argument +params+ must be suitable for use as argument +enum+ to
+  # {URI.encode_www_form}[rdoc-ref:URI.encode_www_form].
   #
-  #    http.form_data = {"q" => "ruby", "lang" => "en"}
-  #    http.form_data = {"q" => ["ruby", "perl"], "lang" => "en"}
-  #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
+  # With only argument +params+ given,
+  # sets the body to a URL-encoded string with the default separator <tt>'&'</tt>:
+  #
+  #   req = Net::HTTP::Post.new('example.com')
+  #
+  #   req.set_form_data(q: 'ruby', lang: 'en')
+  #   req.body            # => "q=ruby&lang=en"
+  #   req['Content-Type'] # => "application/x-www-form-urlencoded"
+  #
+  #   req.set_form_data([['q', 'ruby'], ['lang', 'en']])
+  #   req.body            # => "q=ruby&lang=en"
+  #
+  #   req.set_form_data(q: ['ruby', 'perl'], lang: 'en')
+  #   req.body            # => "q=ruby&q=perl&lang=en"
+  #
+  #   req.set_form_data([['q', 'ruby'], ['q', 'perl'], ['lang', 'en']])
+  #   req.body            # => "q=ruby&q=perl&lang=en"
+  #
+  # With string argument +sep+ also given,
+  # uses that string as the separator:
+  #
+  #   req.set_form_data({q: 'ruby', lang: 'en'}, '|')
+  #   req.body # => "q=ruby|lang=en"
   #
   # Net::HTTPHeader#form_data= is an alias for Net::HTTPHeader#set_form_data.
   def set_form_data(params, sep = '&')

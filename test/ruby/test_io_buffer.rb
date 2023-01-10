@@ -373,12 +373,41 @@ class TestIOBuffer < Test::Unit::TestCase
     io.close!
   end
 
+  def test_pread_offset
+    io = Tempfile.new
+    io.write("Hello World")
+    io.seek(0)
+
+    buffer = IO::Buffer.new(128)
+    buffer.pread(io, 6, 5, 6)
+
+    assert_equal "World", buffer.get_string(6, 5)
+    assert_equal 0, io.tell
+  ensure
+    io.close!
+  end
+
   def test_pwrite
     io = Tempfile.new
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("World")
     buffer.pwrite(io, 6, 5)
+
+    assert_equal 0, io.tell
+
+    io.seek(6)
+    assert_equal "World", io.read(5)
+  ensure
+    io.close!
+  end
+
+  def test_pwrite_offset
+    io = Tempfile.new
+
+    buffer = IO::Buffer.new(128)
+    buffer.set_string("Hello World")
+    buffer.pwrite(io, 6, 5, 6)
 
     assert_equal 0, io.tell
 

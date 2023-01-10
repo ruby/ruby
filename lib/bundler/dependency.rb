@@ -7,7 +7,7 @@ require_relative "rubygems_ext"
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref, :force_ruby_platform
+    attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref
 
     ALL_RUBY_VERSIONS = ((18..27).to_a + (30..31).to_a).freeze
     PLATFORM_MAP = {
@@ -42,7 +42,7 @@ module Bundler
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)
       @gemfile        = options["gemfile"]
-      @force_ruby_platform = options["force_ruby_platform"]
+      @force_ruby_platform = options["force_ruby_platform"] if options.key?("force_ruby_platform")
 
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end
@@ -50,7 +50,7 @@ module Bundler
     # Returns the platforms this dependency is valid for, in the same order as
     # passed in the `valid_platforms` parameter
     def gem_platforms(valid_platforms)
-      return [Gem::Platform::RUBY] if @force_ruby_platform
+      return [Gem::Platform::RUBY] if force_ruby_platform
       return valid_platforms if @platforms.empty?
 
       valid_platforms.select {|p| expanded_platforms.include?(GemHelpers.generic(p)) }

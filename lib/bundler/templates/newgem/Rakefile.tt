@@ -39,7 +39,8 @@ require "standard/rake"
 
 <% end -%>
 <% if config[:ext] -%>
-<% default_task_names.unshift(:clobber, :compile) -%>
+<% default_task_names.unshift(:compile) -%>
+<% default_task_names.unshift(:clobber) unless config[:ext] == 'rust' -%>
 require "rake/extensiontask"
 
 task build: :compile

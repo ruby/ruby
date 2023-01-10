@@ -4,6 +4,26 @@ require "bundler"
 require "tmpdir"
 
 RSpec.describe Bundler do
+  describe "#load_marshal" do
+    it "loads any data" do
+      data = Marshal.dump(Bundler)
+      expect(Bundler.load_marshal(data)).to eq(Bundler)
+    end
+  end
+
+  describe "#safe_load_marshal" do
+    it "fails on unexpected class" do
+      data = Marshal.dump(Bundler)
+      expect { Bundler.safe_load_marshal(data) }.to raise_error(Bundler::MarshalError)
+    end
+
+    it "loads simple structure" do
+      simple_structure = { "name" => [:abc] }
+      data = Marshal.dump(simple_structure)
+      expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
+    end
+  end
+
   describe "#load_gemspec_uncached" do
     let(:app_gemspec_path) { tmp("test.gemspec") }
     subject { Bundler.load_gemspec_uncached(app_gemspec_path) }

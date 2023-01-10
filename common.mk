@@ -235,9 +235,9 @@ all: $(SHOWFLAGS) main docs
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
-main: $(srcdir)/lib/mjit/instruction.rb
-srcs: $(srcdir)/lib/mjit/instruction.rb
-$(srcdir)/lib/mjit/instruction.rb: $(tooldir)/insns2vm.rb $(tooldir)/ruby_vm/views/lib/mjit/instruction.rb.erb $(srcdir)/insns.def
+main: $(srcdir)/lib/ruby_vm/mjit/instruction.rb
+srcs: $(srcdir)/lib/ruby_vm/mjit/instruction.rb
+$(srcdir)/lib/ruby_vm/mjit/instruction.rb: $(tooldir)/insns2vm.rb $(tooldir)/ruby_vm/views/lib/ruby_vm/mjit/instruction.rb.erb $(srcdir)/insns.def
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb --basedir="$(srcdir)" $(INSNS2VMOPT) $@
 
@@ -640,7 +640,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	-$(Q)$(RMALL) yjit/target
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || $(NULLCMD)
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit 2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
 	$(Q)$(CHDIR) bin 2>$(NULL) && $(RM) $(PROGRAM) $(WPROGRAM) $(GORUBY)$(EXEEXT) bin/*.$(DLEXT) 2>$(NULL) || $(NULLCMD)
@@ -766,7 +766,7 @@ clean-spec: PHONY
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
 	-$(Q) $(RMALL) rubyspec_temp
 
-check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all $(DOT_WAIT) test-spec
+check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all
 	$(ECHO) check succeeded
 	-$(Q) : : "run only on sh"; \
 	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
@@ -793,7 +793,7 @@ $(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_
 		i=- srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
 
 noarch-fake.rb: # prerequisite of yes-fake
-	touch $@
+	$(Q) exit > $@
 
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
@@ -901,6 +901,8 @@ yes-test-spec: test-spec-precheck
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT) $(SPECOPTS)
 	$(ACTIONS_ENDGROUP)
 no-test-spec:
+
+check: $(DOT_WAIT) test-spec
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
 runnable: $(RUNNABLE) prog $(tooldir)/mkrunnable.rb PHONY
@@ -1221,7 +1223,7 @@ $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 $(REVISION_H)$(no_baseruby:no=~disabled~):
 	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
-	$(Q) touch $@
+	$(Q) exit > $@
 
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y $(srcdir)/defs/id.def $(srcdir)/ext/ripper/depend
 	$(ECHO) generating $@
@@ -1357,7 +1359,7 @@ after-update:: extract-gems
 
 update-src::
 	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) touch "$(srcdir)/revision.h"
+	$(Q) exit > "$(srcdir)/revision.h"
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
@@ -1373,7 +1375,6 @@ update-config_files: PHONY
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
-prepare-gems: $(DOT_WAIT) $(HAVE_BASERUBY:yes=outdate-bundled-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
 update-gems$(gnumake:yes=-sequential): PHONY
@@ -1454,6 +1455,7 @@ test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
 no-test-syntax-suggest-precheck:
 yes-test-syntax-suggest-precheck: main
 
+test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
 no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
 yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 	$(ACTIONS_GROUP)
@@ -1463,11 +1465,14 @@ yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 
 RSPECOPTS =
 SYNTAX_SUGGEST_SPECS =
+PREPARE_SYNTAX_SUGGEST = test-syntax-suggest-prepare
 test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
-yes-test-syntax-suggest: yes-test-syntax-suggest-prepare
+yes-test-syntax-suggest: yes-$(PREPARE_SYNTAX_SUGGEST)
 	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
 no-test-syntax-suggest:
+
+check: $(DOT_WAIT) $(TEST_RUNNABLE)-$(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
@@ -1486,8 +1491,9 @@ yes-test-bundler-prepare: yes-test-bundler-precheck
 
 RSPECOPTS =
 BUNDLER_SPECS =
+PREPARE_BUNDLER = yes-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
-yes-test-bundler: yes-test-bundler-prepare
+yes-test-bundler: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
 		-e "exec(*ARGV)" -- \
@@ -1497,7 +1503,7 @@ no-test-bundler:
 
 PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
 test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
-yes-test-bundler-parallel: yes-test-bundler-prepare
+yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
@@ -1614,7 +1620,7 @@ $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
 
 touch-unicode-files:
 	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
-	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
+	$(Q) $(TOUCH) $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
 
 UNICODE_TABLES_DATA_FILES = \
 	$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
@@ -1626,7 +1632,7 @@ UNICODE_TABLES_DEPENDENTS = $(UNICODE_TABLES_DEPENDENTS_1:noneyes=force)
 UNICODE_TABLES_TIMESTAMP = yes
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:none=time):
 	$(Q) $(MAKEDIRS) $(@D)
-	touch $(@) || $(NULLCMD)
+	$(Q) exit > $(@) || $(NULLCMD)
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.$(UNICODE_TABLES_DEPENDENTS:force=time): \
 		$(tooldir)/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
@@ -1699,6 +1705,8 @@ info-arch: PHONY
 	@echo arch=$(arch)
 
 exam: check
+exam: $(DOT_WAIT) test-bundler-parallel
+exam: $(DOT_WAIT) test-bundled-gems
 
 love: sudo-precheck up all test exam install
 	@echo love is all you need
@@ -3406,12 +3414,14 @@ cont.$(OBJEXT): $(top_srcdir)/internal/array.h
 cont.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 cont.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
+cont.$(OBJEXT): $(top_srcdir)/internal/error.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+cont.$(OBJEXT): $(top_srcdir)/internal/string.h
 cont.$(OBJEXT): $(top_srcdir)/internal/variable.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
 cont.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -3432,6 +3442,7 @@ cont.$(OBJEXT): {$(VPATH)}constant.h
 cont.$(OBJEXT): {$(VPATH)}cont.c
 cont.$(OBJEXT): {$(VPATH)}debug_counter.h
 cont.$(OBJEXT): {$(VPATH)}defines.h
+cont.$(OBJEXT): {$(VPATH)}encoding.h
 cont.$(OBJEXT): {$(VPATH)}eval_intern.h
 cont.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
 cont.$(OBJEXT): {$(VPATH)}gc.h
@@ -3509,6 +3520,15 @@ cont.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
 cont.$(OBJEXT): {$(VPATH)}internal/ctype.h
 cont.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 cont.$(OBJEXT): {$(VPATH)}internal/dosish.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+cont.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
 cont.$(OBJEXT): {$(VPATH)}internal/error.h
 cont.$(OBJEXT): {$(VPATH)}internal/eval.h
 cont.$(OBJEXT): {$(VPATH)}internal/event.h
@@ -3584,6 +3604,8 @@ cont.$(OBJEXT): {$(VPATH)}method.h
 cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}mjit.h
 cont.$(OBJEXT): {$(VPATH)}node.h
+cont.$(OBJEXT): {$(VPATH)}onigmo.h
+cont.$(OBJEXT): {$(VPATH)}oniguruma.h
 cont.$(OBJEXT): {$(VPATH)}ractor.h
 cont.$(OBJEXT): {$(VPATH)}ractor_core.h
 cont.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -8536,7 +8558,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c
 loadpath.$(OBJEXT): {$(VPATH)}missing.h
-loadpath.$(OBJEXT): {$(VPATH)}revision.h
 loadpath.$(OBJEXT): {$(VPATH)}st.h
 loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
@@ -11500,6 +11521,7 @@ ractor.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ractor.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ractor.$(OBJEXT): $(CCAN_DIR)/str/str.h
+ractor.$(OBJEXT): $(hdrdir)/ruby.h
 ractor.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/array.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -11695,6 +11717,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 ractor.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 ractor.$(OBJEXT): {$(VPATH)}method.h
 ractor.$(OBJEXT): {$(VPATH)}missing.h
+ractor.$(OBJEXT): {$(VPATH)}mjit.h
 ractor.$(OBJEXT): {$(VPATH)}node.h
 ractor.$(OBJEXT): {$(VPATH)}onigmo.h
 ractor.$(OBJEXT): {$(VPATH)}oniguruma.h

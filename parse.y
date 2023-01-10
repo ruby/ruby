@@ -150,7 +150,7 @@ enum lex_state_bits {
     EXPR_CMDARG_bit,		/* newline significant, +/- is an operator. */
     EXPR_MID_bit,		/* newline significant, +/- is an operator. */
     EXPR_FNAME_bit,		/* ignore newline, no reserved words. */
-    EXPR_DOT_bit,		/* right after `.' or `::', no reserved words. */
+    EXPR_DOT_bit,		/* right after `.', `&.' or `::', no reserved words. */
     EXPR_CLASS_bit,		/* immediate after `class', no here document. */
     EXPR_LABEL_bit,		/* flag bit, label is allowed. */
     EXPR_LABELED_bit,		/* flag bit, just after a label. */
@@ -1242,7 +1242,15 @@ endless_method_name(struct parser_params *p, NODE *defn, const YYLTYPE *loc)
     token_info_drop(p, "def", loc->beg_pos);
 }
 
-#define debug_token_line(p, name, line) if (p->debug) rb_parser_printf(p, name ":%d (%d: %ld|%ld|%ld)\n", line, p->ruby_sourceline, p->lex.ptok - p->lex.pbeg, p->lex.pcur - p->lex.ptok, p->lex.pend - p->lex.pcur)
+#define debug_token_line(p, name, line) do { \
+	if (p->debug) { \
+	    const char *const pcur = p->lex.pcur; \
+	    const char *const ptok = p->lex.ptok; \
+	    rb_parser_printf(p, name ":%d (%d: %"PRIdPTRDIFF"|%"PRIdPTRDIFF"|%"PRIdPTRDIFF")\n", \
+			     line, p->ruby_sourceline, \
+			     ptok - p->lex.pbeg, pcur - ptok, p->lex.pend - pcur); \
+	} \
+    } while (0)
 
 #ifndef RIPPER
 # define Qnone 0
@@ -6186,8 +6194,13 @@ ripper_yylval_id(struct parser_params *p, ID x)
 static bool
 parser_has_token(struct parser_params *p)
 {
-    if (p->keep_tokens && (p->lex.pcur < p->lex.ptok)) rb_bug("lex.pcur < lex.ptok. (line: %d) %ld|%ld|%ld", p->ruby_sourceline, p->lex.ptok - p->lex.pbeg, p->lex.pcur - p->lex.ptok, p->lex.pend - p->lex.pcur);
-    return p->lex.pcur > p->lex.ptok;
+    const char *const pcur = p->lex.pcur;
+    const char *const ptok = p->lex.ptok;
+    if (p->keep_tokens && (pcur < ptok)) {
+	rb_bug("lex.pcur < lex.ptok. (line: %d) %"PRIdPTRDIFF"|%"PRIdPTRDIFF"|%"PRIdPTRDIFF"",
+	       p->ruby_sourceline, ptok - p->lex.pbeg, pcur - ptok, p->lex.pend - pcur);
+    }
+    return pcur > ptok;
 }
 
 static VALUE
@@ -7028,6 +7041,14 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end, int
     }
 }
 
+static void
+set_lastline(struct parser_params *p, VALUE v)
+{
+    p->lex.pbeg = p->lex.pcur = RSTRING_PTR(v);
+    p->lex.pend = p->lex.pcur + RSTRING_LEN(v);
+    p->lex.lastline = v;
+}
+
 static int
 nextline(struct parser_params *p, int set_encoding)
 {
@@ -7065,10 +7086,8 @@ nextline(struct parser_params *p, int set_encoding)
 	p->heredoc_end = 0;
     }
     p->ruby_sourceline++;
-    p->lex.pbeg = p->lex.pcur = RSTRING_PTR(v);
-    p->lex.pend = p->lex.pcur + RSTRING_LEN(v);
+    set_lastline(p, v);
     token_flush(p);
-    p->lex.lastline = v;
     return 0;
 }
 
@@ -9807,7 +9826,7 @@ parser_yylex(struct parser_params *p)
 #endif
 	/* Set location for end-of-input because dispatch_scan_event is not called. */
 	RUBY_SET_YYLLOC(*p->yylloc);
-	return 0;
+	return END_OF_INPUT;
 
 	/* white spaces */
       case '\r':
@@ -9850,6 +9869,7 @@ parser_yylex(struct parser_params *p)
 	/* fall through */
       case '\n':
 	p->token_seen = token_seen;
+	VALUE prevline = p->lex.lastline;
 	c = (IS_lex_state(EXPR_BEG|EXPR_CLASS|EXPR_FNAME|EXPR_DOT) &&
 	     !IS_lex_state(EXPR_LABELED));
 	if (c || IS_lex_state_all(EXPR_ARG|EXPR_LABELED)) {
@@ -9887,10 +9907,12 @@ parser_yylex(struct parser_params *p)
 	      default:
 		p->ruby_sourceline--;
 		p->lex.nextline = p->lex.lastline;
+		set_lastline(p, prevline);
 	      case -1:		/* EOF no decrement*/
 		lex_goto_eol(p);
 		if (c != -1) {
-		    p->lex.ptok = p->lex.pcur;
+		    token_flush(p);
+		    RUBY_SET_YYLLOC(*p->yylloc);
 		}
 		goto normal_newline;
 	    }
@@ -9977,7 +9999,7 @@ parser_yylex(struct parser_params *p)
 		    c = nextc(p);
 		    if (c == -1) {
 			compile_error(p, "embedded document meets end of file");
-			return 0;
+			return END_OF_INPUT;
 		    }
 		    if (c == '=' && word_match_p(p, "end", 3)) {
 			break;
@@ -10457,13 +10479,11 @@ parser_yylex(struct parser_params *p)
 	if (was_bol(p) && whole_match_p(p, "__END__", 7, 0)) {
 	    p->ruby__end__seen = 1;
 	    p->eofp = 1;
-#ifndef RIPPER
-	    return -1;
-#else
+#ifdef RIPPER
             lex_goto_eol(p);
             dispatch_scan_event(p, k__END__);
-            return 0;
 #endif
+            return END_OF_INPUT;
 	}
 	newtok(p);
 	break;
@@ -10495,7 +10515,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *p)
 
     if (has_delayed_token(p))
 	dispatch_delayed_token(p, t);
-    else if (t != 0)
+    else if (t != END_OF_INPUT)
 	dispatch_scan_event(p, t);
 
     return t;

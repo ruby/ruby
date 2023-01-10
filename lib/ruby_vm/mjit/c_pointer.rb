@@ -1,4 +1,4 @@
-module RubyVM::MJIT
+module RubyVM::MJIT # :nodoc: all
   # Every class under this namespace is a pointer. Even if the type is
   # immediate, it shouldn't be dereferenced until `*` is called.
   module CPointer

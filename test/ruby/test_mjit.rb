@@ -214,6 +214,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_definemethod_definesmethod
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworldhelloworld', success_count: 3, insns: %i[definemethod definesmethod])
     begin;
       print 2.times.map {
@@ -228,6 +229,8 @@ class TestMJIT < Test::Unit::TestCase
         method_definition + smethod_definition
       }.join
     end;
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_compile_insn_putspecialobject
@@ -510,6 +513,16 @@ class TestMJIT < Test::Unit::TestCase
     begin;
       case 'hello'
       when 'hello'
+        'world'
+      end
+    end;
+  end
+
+  def test_compile_multiple_values_case
+    assert_compile_twice("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
+    begin;
+      case 'hello'
+      when 'hello', 'world'
         'world'
       end
     end;
@@ -1174,6 +1187,19 @@ class TestMJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_cancel_by_bop_redefinition
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 0, call_threshold: 2)
+    begin;
+      class Integer
+        alias < <
+        def <(x)
+          true
+        end
+      end
+      2.times {}
+    end;
+  end
+
   def test_caller_locations_without_catch_table
     out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2)
     begin;
@@ -1194,13 +1220,15 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_jit_failure
-    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
-    begin;
-      2.times do
-        class A
+    _, err = Dir.mktmpdir("jit_test_jit_failure") do |dir|
+      eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", call_threshold: 2, verbose: 1)
+      begin;
+        2.times do
+          class A
+          end
         end
-      end
-    end;
+      end;
+    end
     assert_match(/^MJIT warning: .+ unsupported instruction: defineclass/, err)
   end
 

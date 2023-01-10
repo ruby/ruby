@@ -37,6 +37,10 @@ describe "String#reverse" do
 
     str.reverse.should == "體黑正\xDE\xDF軟微"
   end
+
+  it "returns a String in the same encoding as self" do
+    "stressed".encode("US-ASCII").reverse.encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#reverse!" do

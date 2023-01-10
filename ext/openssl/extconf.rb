@@ -25,8 +25,9 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG")
 end
+$defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
-have_func("rb_io_maybe_wait") # Ruby 3.1
+have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
 
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
@@ -126,7 +127,7 @@ ts_h = "openssl/ts.h".freeze
 ssl_h = "openssl/ssl.h".freeze
 
 # compile options
-have_func("RAND_egd", "openssl/rand.h")
+have_func("RAND_egd()", "openssl/rand.h")
 engines = %w{dynamic 4758cca aep atalla chil
              cswift nuron sureware ubsec padlock capi gmp gost cryptodev}
 engines.each { |name|
@@ -137,56 +138,56 @@ engines.each { |name|
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")
 end
-have_func("EVP_MD_CTX_new", evp_h)
-have_func("EVP_MD_CTX_free", evp_h)
-have_func("EVP_MD_CTX_pkey_ctx", evp_h)
-have_func("X509_STORE_get_ex_data", x509_h)
-have_func("X509_STORE_set_ex_data", x509_h)
+have_func("EVP_MD_CTX_new()", evp_h)
+have_func("EVP_MD_CTX_free(NULL)", evp_h)
+have_func("EVP_MD_CTX_pkey_ctx(NULL)", evp_h)
+have_func("X509_STORE_get_ex_data(NULL, 0)", x509_h)
+have_func("X509_STORE_set_ex_data(NULL, 0, NULL)", x509_h)
 have_func("X509_STORE_get_ex_new_index(0, NULL, NULL, NULL, NULL)", x509_h)
-have_func("X509_CRL_get0_signature", x509_h)
-have_func("X509_REQ_get0_signature", x509_h)
-have_func("X509_REVOKED_get0_serialNumber", x509_h)
-have_func("X509_REVOKED_get0_revocationDate", x509_h)
-have_func("X509_get0_tbs_sigalg", x509_h)
-have_func("X509_STORE_CTX_get0_untrusted", x509_h)
-have_func("X509_STORE_CTX_get0_cert", x509_h)
-have_func("X509_STORE_CTX_get0_chain", x509_h)
-have_func("OCSP_SINGLERESP_get0_id", "openssl/ocsp.h")
-have_func("SSL_CTX_get_ciphers", ssl_h)
-have_func("X509_up_ref", x509_h)
-have_func("X509_CRL_up_ref", x509_h)
-have_func("X509_STORE_up_ref", x509_h)
-have_func("SSL_SESSION_up_ref", ssl_h)
-have_func("EVP_PKEY_up_ref", evp_h)
+have_func("X509_CRL_get0_signature(NULL, NULL, NULL)", x509_h)
+have_func("X509_REQ_get0_signature(NULL, NULL, NULL)", x509_h)
+have_func("X509_REVOKED_get0_serialNumber(NULL)", x509_h)
+have_func("X509_REVOKED_get0_revocationDate(NULL)", x509_h)
+have_func("X509_get0_tbs_sigalg(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_untrusted(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_cert(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_chain(NULL)", x509_h)
+have_func("OCSP_SINGLERESP_get0_id(NULL)", "openssl/ocsp.h")
+have_func("SSL_CTX_get_ciphers(NULL)", ssl_h)
+have_func("X509_up_ref(NULL)", x509_h)
+have_func("X509_CRL_up_ref(NULL)", x509_h)
+have_func("X509_STORE_up_ref(NULL)", x509_h)
+have_func("SSL_SESSION_up_ref(NULL)", ssl_h)
+have_func("EVP_PKEY_up_ref(NULL)", evp_h)
 have_func("SSL_CTX_set_min_proto_version(NULL, 0)", ssl_h)
-have_func("SSL_CTX_get_security_level", ssl_h)
-have_func("X509_get0_notBefore", x509_h)
-have_func("SSL_SESSION_get_protocol_version", ssl_h)
-have_func("TS_STATUS_INFO_get0_status", ts_h)
-have_func("TS_STATUS_INFO_get0_text", ts_h)
-have_func("TS_STATUS_INFO_get0_failure_info", ts_h)
+have_func("SSL_CTX_get_security_level(NULL)", ssl_h)
+have_func("X509_get0_notBefore(NULL)", x509_h)
+have_func("SSL_SESSION_get_protocol_version(NULL)", ssl_h)
+have_func("TS_STATUS_INFO_get0_status(NULL)", ts_h)
+have_func("TS_STATUS_INFO_get0_text(NULL)", ts_h)
+have_func("TS_STATUS_INFO_get0_failure_info(NULL)", ts_h)
 have_func("TS_VERIFY_CTS_set_certs(NULL, NULL)", ts_h)
-have_func("TS_VERIFY_CTX_set_store", ts_h)
-have_func("TS_VERIFY_CTX_add_flags", ts_h)
-have_func("TS_RESP_CTX_set_time_cb", ts_h)
-have_func("EVP_PBE_scrypt", evp_h)
-have_func("SSL_CTX_set_post_handshake_auth", ssl_h)
+have_func("TS_VERIFY_CTX_set_store(NULL, NULL)", ts_h)
+have_func("TS_VERIFY_CTX_add_flags(NULL, 0)", ts_h)
+have_func("TS_RESP_CTX_set_time_cb(NULL, NULL, NULL)", ts_h)
+have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
+have_func("SSL_CTX_set_post_handshake_auth(NULL, 0)", ssl_h)
 
 # added in 1.1.1
-have_func("EVP_PKEY_check", evp_h)
-have_func("EVP_PKEY_new_raw_private_key", evp_h)
-have_func("SSL_CTX_set_ciphersuites", ssl_h)
+have_func("EVP_PKEY_check(NULL)", evp_h)
+have_func("EVP_PKEY_new_raw_private_key(0, NULL, (unsigned char *)\"\", 0)", evp_h)
+have_func("SSL_CTX_set_ciphersuites(NULL, \"\")", ssl_h)
 
 # added in 3.0.0
-have_func("SSL_set0_tmp_dh_pkey", ssl_h)
-have_func("ERR_get_error_all", "openssl/err.h")
+have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
+have_func("ERR_get_error_all(NULL, NULL, NULL, NULL, NULL)", "openssl/err.h")
 have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", ts_h)
-have_func("SSL_CTX_load_verify_file", ssl_h)
-have_func("BN_check_prime", "openssl/bn.h")
-have_func("EVP_MD_CTX_get0_md", evp_h)
-have_func("EVP_MD_CTX_get_pkey_ctx", evp_h)
-have_func("EVP_PKEY_eq", evp_h)
-have_func("EVP_PKEY_dup", evp_h)
+have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
+have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")
+have_func("EVP_MD_CTX_get0_md(NULL)", evp_h)
+have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
+have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
+have_func("EVP_PKEY_dup(NULL)", evp_h)
 
 Logging::message "=== Checking done. ===\n"
 

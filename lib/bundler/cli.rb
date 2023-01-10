@@ -10,6 +10,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
+    EXTENSIONS = ["c", "rust"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -22,6 +23,8 @@ module Bundler
     }.freeze
 
     def self.start(*)
+      check_deprecated_ext_option(ARGV) if ARGV.include?("--ext")
+
       super
     ensure
       Bundler::SharedHelpers.print_major_deprecations!
@@ -292,6 +295,8 @@ module Bundler
       "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "Prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "Always choose the highest allowed version when updating gems, regardless of prerelease status"
     method_option "strict", :type => :boolean, :banner =>
       "Do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
@@ -504,6 +509,7 @@ module Bundler
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
+    method_option "path", :type => :string, :lazy_default => "", :banner => "Open relative path of the gem source."
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run
@@ -574,7 +580,7 @@ module Bundler
     method_option :edit, :type => :string, :aliases => "-e", :required => false, :banner => "EDITOR",
                          :lazy_default => [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? },
                          :desc => "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
-    method_option :ext, :type => :boolean, :default => false, :desc => "Generate the boilerplate for C extension code"
+    method_option :ext, :type => :string, :desc => "Generate the boilerplate for C extension code.", :enum => EXTENSIONS
     method_option :git, :type => :boolean, :default => true, :desc => "Initialize a git repo inside your library."
     method_option :mit, :type => :boolean, :desc => "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
     method_option :rubocop, :type => :boolean, :desc => "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
@@ -582,7 +588,7 @@ module Bundler
     method_option :test, :type => :string, :lazy_default => Bundler.settings["gem.test"] || "", :aliases => "-t", :banner => "Use the specified test framework for your library",
                          :desc => "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, :type => :string, :lazy_default => Bundler.settings["gem.ci"] || "",
-                       :desc => "Generate CI configuration, either GitHub Actions, Travis CI, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|travis|gitlab|circle)`"
+                       :desc => "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
     method_option :linter, :type => :string, :lazy_default => Bundler.settings["gem.linter"] || "",
                            :desc => "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
     method_option :github_username, :type => :string, :default => Bundler.settings["gem.github_username"], :banner => "Set your username on GitHub", :desc => "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
@@ -668,6 +674,8 @@ module Bundler
       "If updating, prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner =>
       "If updating, prefer updating to next major version (default)"
+    method_option "pre", :type => :boolean, :banner =>
+      "If updating, always choose the highest allowed version, regardless of prerelease status"
     method_option "strict", :type => :boolean, :banner =>
       "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", :type => :boolean, :banner =>
@@ -749,6 +757,38 @@ module Bundler
       else
         args
       end
+    end
+
+    def self.check_deprecated_ext_option(arguments)
+      # when deprecated version of `--ext` is called
+      # print out deprecation warning and pretend `--ext=c` was provided
+      if deprecated_ext_value?(arguments)
+        SharedHelpers.major_deprecation 2, "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
+        arguments[arguments.index("--ext")] = "--ext=c"
+      end
+    end
+
+    def self.deprecated_ext_value?(arguments)
+      index = arguments.index("--ext")
+      next_argument = arguments[index+1]
+
+      # it is ok when --ext is followed with valid extension value
+      # for example `bundle gem hello --ext c`
+      return false if EXTENSIONS.include?(next_argument)
+
+      # deprecated call when --ext is called with no value in last position
+      # for example `bundle gem hello_gem --ext`
+      return true if next_argument.nil?
+
+      # deprecated call when --ext is followed by other parameter
+      # for example `bundle gem --ext --no-ci hello_gem`
+      return true if next_argument.start_with?("-")
+
+      # deprecated call when --ext is followed by gem name
+      # for example `bundle gem --ext hello_gem`
+      return true if next_argument
+
+      false
     end
 
     private

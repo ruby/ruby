@@ -111,9 +111,7 @@ module Bundler
           end.compact
 
           if options[:parseable]
-            relevant_outdated_gems.each do |gems|
-              print_gems(gems)
-            end
+            print_gems(relevant_outdated_gems)
           else
             print_gems_table(relevant_outdated_gems)
           end
@@ -196,7 +194,7 @@ module Bundler
       end
       current_version = "#{current_spec.version}#{current_spec.git_version}"
 
-      if dependency && dependency.specific?
+      if dependency&.specific?
         dependency_version = %(, requested #{dependency.requirement})
       end
 

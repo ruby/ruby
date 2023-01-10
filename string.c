@@ -4466,7 +4466,7 @@ static VALUE get_pat(VALUE);
  *    match(pattern, offset = 0) -> matchdata or nil
  *    match(pattern, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a \Matchdata object (or +nil+) based on +self+ and the given +pattern+.
+ *  Returns a \MatchData object (or +nil+) based on +self+ and the given +pattern+.
  *
  *  Note: also updates Regexp@Special+global+variables.
  *
@@ -4522,7 +4522,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *  Computes +regexp+ by converting +pattern+ (if not already a \Regexp).
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \Matchdata object,
+ *  Returns +true+ if <tt>self+.match(regexp)</tt> returns a \MatchData object,
  *  +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
@@ -7332,6 +7332,8 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     current_buffer = DATA_PTR(buffer_anchor);
     DATA_PTR(buffer_anchor) = 0;
     mapping_buffer_free(current_buffer);
+
+    RB_GC_GUARD(buffer_anchor);
 
     /* TODO: check about string terminator character */
     str_enc_copy(target, source);

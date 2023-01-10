@@ -52,10 +52,42 @@ describe "Time#strftime" do
 
   ruby_version_is "3.1" do
     it "supports RFC 3339 UTC for unknown offset local time, -0000, as %-z" do
-      @time.strftime("%z").should == "+0000"
-      @time.strftime("%-z").should == "-0000"
-      @time.strftime("%-:z").should == "-00:00"
-      @time.strftime("%-::z").should == "-00:00:00"
+      time = Time.gm(2022)
+
+      time.strftime("%z").should == "+0000"
+      time.strftime("%-z").should == "-0000"
+      time.strftime("%-:z").should == "-00:00"
+      time.strftime("%-::z").should == "-00:00:00"
+    end
+
+    it "applies '-' flag to UTC time" do
+      time = Time.utc(2022)
+      time.strftime("%-z").should == "-0000"
+
+      time = Time.gm(2022)
+      time.strftime("%-z").should == "-0000"
+
+      time = Time.new(2022, 1, 1, 0, 0, 0, "Z")
+      time.strftime("%-z").should == "-0000"
+
+      time = Time.new(2022, 1, 1, 0, 0, 0, "-00:00")
+      time.strftime("%-z").should == "-0000"
+
+      time = Time.new(2022, 1, 1, 0, 0, 0, "+03:00").utc
+      time.strftime("%-z").should == "-0000"
+    end
+
+    it "ignores '-' flag for non-UTC time" do
+      time = Time.new(2022, 1, 1, 0, 0, 0, "+03:00")
+      time.strftime("%-z").should == "+0300"
+    end
+
+    it "works correctly with width, _ and 0 flags, and :" do
+      Time.now.utc.strftime("%-_10z").should == "      -000"
+      Time.now.utc.strftime("%-10z").should == "-000000000"
+      Time.now.utc.strftime("%-010:z").should == "-000000:00"
+      Time.now.utc.strftime("%-_10:z").should == "     -0:00"
+      Time.now.utc.strftime("%-_10::z").should == "  -0:00:00"
     end
   end
 end

@@ -106,6 +106,10 @@ describe "IO#readlines" do
     it "raises ArgumentError when passed 0 as a limit" do
       -> { @io.readlines(0) }.should raise_error(ArgumentError)
     end
+
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.readlines(2**128) }.should raise_error(RangeError)
+    end
   end
 
   describe "when passed chomp" do

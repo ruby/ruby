@@ -319,8 +319,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_friendly_path
-    @orig_xdg_data_home = ENV['XDG_DATA_HOME']
-    ENV.delete('XDG_DATA_HOME')
+    @orig_xdg_data_home = ENV.delete('XDG_DATA_HOME')
 
     @s.path = @tmpdir
     @s.type = nil

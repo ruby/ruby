@@ -41,6 +41,16 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_includes Gem.platforms, Gem::Platform.local
   end
 
+  def test_handle_deprecated_options
+    use_ui @ui do
+      @cmd.handle_options %w[-C ./test/dir]
+    end
+
+    assert_equal "WARNING:  The \"-C\" option has been deprecated and will be removed in Rubygems 4.0. " \
+                 "-C is a global flag now. Use `gem -C PATH build GEMSPEC_FILE [options]` instead\n",
+                 @ui.error
+  end
+
   def test_options_filename
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
