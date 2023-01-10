@@ -11,7 +11,7 @@ module Bundler
 
       protected :original_path
 
-      DEFAULT_GLOB = "{,*,*/*}.gemspec".freeze
+      DEFAULT_GLOB = "{,*,*/*}.gemspec"
 
       def initialize(options)
         @options = options.dup

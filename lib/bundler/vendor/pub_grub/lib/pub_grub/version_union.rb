@@ -148,7 +148,7 @@ module Bundler::PubGrub
       while !ranges.empty?
         ne = []
         range = ranges.shift
-        while !ranges.empty? && ranges[0].min == range.max
+        while !ranges.empty? && ranges[0].min.to_s == range.max.to_s
           ne << range.max
           range = range.span(ranges.shift)
         end

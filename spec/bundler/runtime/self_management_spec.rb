@@ -91,7 +91,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
     end
 
-    it "shows a discreet message if locked bundler does not exist" do
+    it "shows a discrete message if locked bundler does not exist" do
       missing_minor ="#{Bundler::VERSION[0]}.999.999"
 
       lockfile_bundled_with(missing_minor)

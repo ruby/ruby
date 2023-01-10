@@ -275,7 +275,7 @@ DEPENDENCIES
       Gem::Resolver::LockSet === set
     end
 
-    refute lockfile_set, "fount a LockSet"
+    refute lockfile_set, "found a LockSet"
 
     git_set = @set.sets.find do |set|
       Gem::Resolver::GitSet === set
@@ -318,7 +318,7 @@ DEPENDENCIES
       Gem::Resolver::LockSet === set
     end
 
-    refute lockfile_set, "fount a LockSet"
+    refute lockfile_set, "found a LockSet"
 
     git_set = @set.sets.find do |set|
       Gem::Resolver::GitSet === set
@@ -355,7 +355,7 @@ DEPENDENCIES
       Gem::Resolver::LockSet === set
     end
 
-    refute lockfile_set, "fount a LockSet"
+    refute lockfile_set, "found a LockSet"
 
     git_set = @set.sets.find do |set|
       Gem::Resolver::GitSet === set
@@ -392,7 +392,7 @@ DEPENDENCIES
       Gem::Resolver::LockSet === set
     end
 
-    refute lockfile_set, "fount a LockSet"
+    refute lockfile_set, "found a LockSet"
 
     git_set = @set.sets.find do |set|
       Gem::Resolver::GitSet === set

@@ -5181,6 +5181,10 @@ fn gen_send_iseq(
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
 
+            // Save the PC and SP because the callee may allocate
+            // e.g. Integer#abs on a bignum
+            jit_prepare_routine_call(jit, ctx, asm);
+
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
 

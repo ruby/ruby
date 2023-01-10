@@ -397,7 +397,7 @@ module Bundler::PubGrub
 
     def constraints
       return ["any"] if any?
-      return ["= #{min}"] if min == max
+      return ["= #{min}"] if min.to_s == max.to_s
 
       c = []
       c << "#{include_min ? ">=" : ">"} #{min}" if min

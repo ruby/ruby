@@ -10,7 +10,7 @@ require "rubygems/installer"
 require "rubygems/platform"
 
 class TestGemSpecification < Gem::TestCase
-  LEGACY_YAML_SPEC = <<-EOF.freeze
+  LEGACY_YAML_SPEC = <<-EOF
 --- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
 name: keyedlist
@@ -29,7 +29,7 @@ email: flgr@ccan.de
 has_rdoc: true
   EOF
 
-  LEGACY_RUBY_SPEC = <<-EOF.freeze
+  LEGACY_RUBY_SPEC = <<-EOF
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}

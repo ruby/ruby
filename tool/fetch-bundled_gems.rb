@@ -10,6 +10,7 @@ BEGIN {
 
 n, v, u, r = $F
 
+next unless n
 next if n =~ /^#/
 
 if File.directory?(n)

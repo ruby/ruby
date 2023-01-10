@@ -4,8 +4,8 @@ require_relative "../text"
 class Gem::Licenses
   extend Gem::Text
 
-  NONSTANDARD = "Nonstandard".freeze
-  LICENSE_REF = "LicenseRef-.+".freeze
+  NONSTANDARD = "Nonstandard"
+  LICENSE_REF = "LicenseRef-.+"
 
   # Software Package Data Exchange (SPDX) standard open-source software
   # license identifiers
