@@ -9,6 +9,7 @@ class Reline::ANSI::TestWithoutTerminfo < Reline::TestCase
   end
 
   def teardown
+    Reline.send(:test_mode, ansi: false) # Change IOGate back to GeneralIO
     Reline.test_reset
   end
 
