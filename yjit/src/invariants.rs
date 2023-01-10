@@ -131,7 +131,7 @@ pub fn assume_method_lookup_stable(
         .cme_validity
         .entry(callee_cme)
         .or_default()
-        .insert(block.clone());
+        .insert(block);
 }
 
 // Checks rb_method_basic_definition_p and registers the current block for invalidation if method
