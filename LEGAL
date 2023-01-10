@@ -979,12 +979,20 @@ mentioned below.
     {MIT License}[rdoc-label:label-MIT+License]
 
 [lib/rubygems/resolver/molinillo]
-[lib/bundler/vendor/molinillo]
 
   molinillo is under the following license.
 
   >>>
     Copyright (c) 2014 Samuel E. Giddins segiddins@segiddins.me
+
+    {MIT License}[rdoc-label:label-MIT+License]
+
+[lib/bundler/vendor/pub_grub]
+
+  pub_grub is under the following license.
+
+  >>>
+    Copyright (c) 2018 John Hawthorn
 
     {MIT License}[rdoc-label:label-MIT+License]
 
