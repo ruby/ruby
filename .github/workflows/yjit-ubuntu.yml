@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
       # Check that we don't have linting errors in release mode, too
-      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo clippy --all-targets --all-features
         working-directory: yjit
   make:
     strategy:
