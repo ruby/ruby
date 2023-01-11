@@ -405,6 +405,15 @@ a single one that matches any of the expressions. Each expression is an
     /\w(and|or)\w/.match("furandi")    #=> #<MatchData "randi" 1:"and">
     /\w(and|or)\w/.match("dissemblance") #=> nil
 
+== Condition
+
+The <tt>(?(</tt><i>cond</><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
+syntax matches _yes_ part if _cond_ is captured, otherwise matches _no_ part.
+In the case _no_ part is empty, also <tt>|</tt> can be omitted.
+
+The _cond_ may be a backreference number or a captured name.  A backreference
+number is an absolute position, but can not be a relative position.
+
 == Character Properties
 
 The <tt>\p{}</tt> construct matches characters with the named property,
