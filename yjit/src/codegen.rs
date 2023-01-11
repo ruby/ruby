@@ -5178,7 +5178,9 @@ fn gen_send_iseq(
 
     // Inline ISEQ if possible. Captured operands are not supported yet, which require ep.
     let inline_method = captured_opnd.is_none() && can_inline_iseq(iseq);
-    incr_counter!(inlined_block_count);
+    if inline_method {
+        incr_counter!(inlined_block_count);
+    }
 
     if !inline_method {
         // Check for interrupts
