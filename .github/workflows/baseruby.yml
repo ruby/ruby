@@ -39,6 +39,7 @@ jobs:
 #         - ruby-2.7
           - ruby-3.0
           - ruby-3.1
+          - ruby-3.2
 
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
