@@ -46,7 +46,7 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
-static ID autoload, classpath, tmp_classpath;
+static ID autoload;
 
 // This hash table maps file paths to loadable features. We use this to track
 // autoload state until it's no longer needed.
@@ -75,10 +75,6 @@ Init_var_tables(void)
     rb_global_tbl = rb_id_table_create(0);
     generic_iv_tbl_ = st_init_numtable();
     autoload = rb_intern_const("__autoload__");
-    /* __classpath__: fully qualified class path */
-    classpath = rb_intern_const("__classpath__");
-    /* __tmp_classpath__: temporary class path which contains anonymous names */
-    tmp_classpath = rb_intern_const("__tmp_classpath__");
 
     autoload_mutex = rb_mutex_new();
     rb_obj_hide(autoload_mutex);
@@ -109,17 +105,16 @@ rb_namespace_p(VALUE obj)
  * Ruby level APIs that can change a permanent +classpath+.
  */
 static VALUE
-classname(VALUE klass, int *permanent)
+classname(VALUE klass, bool *permanent)
 {
-    *permanent = 0;
+    *permanent = false;
 
-    VALUE classpathv = rb_ivar_lookup(klass, classpath, Qnil);
-    if (RTEST(classpathv)) {
-        *permanent = 1;
-        return classpathv;
-    }
+    VALUE classpath = RCLASS_EXT(klass)->classpath;
+    if (classpath == 0) return Qnil;
 
-    return rb_ivar_lookup(klass, tmp_classpath, Qnil);;
+    *permanent = RCLASS_EXT(klass)->permanent_classpath;
+
+    return classpath;
 }
 
 /*
@@ -132,7 +127,7 @@ classname(VALUE klass, int *permanent)
 VALUE
 rb_mod_name(VALUE mod)
 {
-    int permanent;
+    bool permanent;
     return classname(mod, &permanent);
 }
 
@@ -158,7 +153,7 @@ make_temporary_path(VALUE obj, VALUE klass)
 typedef VALUE (*fallback_func)(VALUE obj, VALUE name);
 
 static VALUE
-rb_tmp_class_path(VALUE klass, int *permanent, fallback_func fallback)
+rb_tmp_class_path(VALUE klass, bool *permanent, fallback_func fallback)
 {
     VALUE path = classname(klass, permanent);
 
@@ -171,11 +166,11 @@ rb_tmp_class_path(VALUE klass, int *permanent, fallback_func fallback)
                 path = Qfalse;
             }
             else {
-                int perm;
+                bool perm;
                 path = rb_tmp_class_path(RBASIC(klass)->klass, &perm, fallback);
             }
         }
-        *permanent = 0;
+        *permanent = false;
         return fallback(klass, path);
     }
 }
@@ -183,7 +178,7 @@ rb_tmp_class_path(VALUE klass, int *permanent, fallback_func fallback)
 VALUE
 rb_class_path(VALUE klass)
 {
-    int permanent;
+    bool permanent;
     VALUE path = rb_tmp_class_path(klass, &permanent, make_temporary_path);
     if (!NIL_P(path)) path = rb_str_dup(path);
     return path;
@@ -204,7 +199,7 @@ no_fallback(VALUE obj, VALUE name)
 VALUE
 rb_search_class_path(VALUE klass)
 {
-    int permanent;
+    bool permanent;
     return rb_tmp_class_path(klass, &permanent, no_fallback);
 }
 
@@ -226,21 +221,18 @@ build_const_path(VALUE head, ID tail)
 void
 rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 {
-    VALUE str;
-    ID pathid = classpath;
+    bool permanent = true;
 
+    VALUE str;
     if (under == rb_cObject) {
         str = rb_str_new_frozen(name);
     }
     else {
-        int permanent;
         str = rb_tmp_class_path(under, &permanent, make_temporary_path);
         str = build_const_pathname(str, name);
-        if (!permanent) {
-            pathid = tmp_classpath;
-        }
     }
-    rb_ivar_set(klass, pathid, str);
+
+    RCLASS_SET_CLASSPATH(klass, str, permanent);
 }
 
 void
@@ -311,7 +303,7 @@ rb_class_name(VALUE klass)
 const char *
 rb_class2name(VALUE klass)
 {
-    int permanent;
+    bool permanent;
     VALUE path = rb_tmp_class_path(rb_class_real(klass), &permanent, make_temporary_path);
     if (NIL_P(path)) return NULL;
     return RSTRING_PTR(path);
@@ -3217,17 +3209,21 @@ set_namespace_path_i(ID id, VALUE v, void *payload)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)v;
     VALUE value = ce->value;
-    int has_permanent_classpath;
     VALUE parental_path = *((VALUE *) payload);
     if (!rb_is_const_id(id) || !rb_namespace_p(value)) {
         return ID_TABLE_CONTINUE;
     }
+
+    bool has_permanent_classpath;
     classname(value, &has_permanent_classpath);
     if (has_permanent_classpath) {
         return ID_TABLE_CONTINUE;
     }
     set_namespace_path(value, build_const_path(parental_path, id));
-    rb_attr_delete(value, tmp_classpath);
+
+    if (!RCLASS_EXT(value)->permanent_classpath) {
+        RCLASS_SET_CLASSPATH(value, 0, false);
+    }
 
     return ID_TABLE_CONTINUE;
 }
@@ -3244,7 +3240,8 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 
     RB_VM_LOCK_ENTER();
     {
-        rb_class_ivar_set(named_namespace, classpath, namespace_path);
+        RCLASS_SET_CLASSPATH(named_namespace, namespace_path, true);
+
         if (const_table) {
             rb_id_table_foreach(const_table, set_namespace_path_i, &namespace_path);
         }
@@ -3304,24 +3301,24 @@ const_set(VALUE klass, ID id, VALUE val)
      * and avoid order-dependency on const_tbl
      */
     if (rb_cObject && rb_namespace_p(val)) {
-        int val_path_permanent;
+        bool val_path_permanent;
         VALUE val_path = classname(val, &val_path_permanent);
         if (NIL_P(val_path) || !val_path_permanent) {
             if (klass == rb_cObject) {
                 set_namespace_path(val, rb_id2str(id));
             }
             else {
-                int parental_path_permanent;
+                bool parental_path_permanent;
                 VALUE parental_path = classname(klass, &parental_path_permanent);
                 if (NIL_P(parental_path)) {
-                    int throwaway;
+                    bool throwaway;
                     parental_path = rb_tmp_class_path(klass, &throwaway, make_temporary_path);
                 }
                 if (parental_path_permanent && !val_path_permanent) {
                     set_namespace_path(val, build_const_path(parental_path, id));
                 }
                 else if (!parental_path_permanent && NIL_P(val_path)) {
-                    ivar_set(val, tmp_classpath, build_const_path(parental_path, id));
+                    RCLASS_SET_CLASSPATH(val, build_const_path(parental_path, id), false);
                 }
             }
         }
