@@ -62,7 +62,9 @@ module TestIRB
 
       context = build_context(local_variables)
       io = proc{ lines.join("\n") }
-      ruby_lex.set_input(io, io, context: context)
+      ruby_lex.set_input(io, context: context) do
+        lines.join("\n")
+      end
       ruby_lex.lex(context)
       ruby_lex
     end
