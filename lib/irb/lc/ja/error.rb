@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # frozen_string_literal: false
 #   irb/lc/ja/error.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
