@@ -3,10 +3,6 @@
 #   irb/ext/cb.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB # :nodoc:
   class Context

@@ -3,10 +3,6 @@
 #   irb/lc/error.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB
   # :stopdoc:

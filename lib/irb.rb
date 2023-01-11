@@ -3,10 +3,7 @@
 #   irb.rb - irb main module
 #       by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require "ripper"
 require "reline"
 

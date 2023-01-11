@@ -3,10 +3,6 @@
 #   output-method.rb - output methods used by irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB
   # An abstract output class for IO in irb. This is mainly used internally by

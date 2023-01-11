@@ -2,10 +2,6 @@
 #
 #   help.rb - helper using ri
 #
-# --
-#
-#
-#
 
 require_relative "nop"
 

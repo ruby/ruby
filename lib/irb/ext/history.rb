@@ -3,10 +3,6 @@
 #   history.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB # :nodoc:
 

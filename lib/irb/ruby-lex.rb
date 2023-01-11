@@ -3,10 +3,6 @@
 #   irb/ruby-lex.rb - ruby lexcal analyzer
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require "ripper"
 require "jruby" if RUBY_ENGINE == "jruby"

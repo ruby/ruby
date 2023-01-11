@@ -3,10 +3,6 @@
 #   irb/multi-irb.rb - multiple irb module
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB
   class JobManager

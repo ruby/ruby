@@ -3,10 +3,6 @@
 #   irb/version.rb - irb version definition file
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
-# --
-#
-#
-#
 
 module IRB # :nodoc:
   VERSION = "1.6.2"

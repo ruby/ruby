@@ -3,10 +3,6 @@
 #   use-loader.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require_relative "../cmd/load"
 require_relative "loader"

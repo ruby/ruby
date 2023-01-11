@@ -3,10 +3,6 @@
 #   xmp.rb - irb version of gotoken xmp
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
-# --
-#
-#
-#
 
 require_relative "../irb"
 require_relative "frame"

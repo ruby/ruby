@@ -3,10 +3,7 @@
 #   irb/input-method.rb - input methods used irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative 'src_encoding'
 require_relative 'magic-file'
 require_relative 'completion'

@@ -3,10 +3,6 @@
 #   frame.rb -
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
 #
-# --
-#
-#
-#
 
 module IRB
   class Frame

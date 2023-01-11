@@ -1,10 +1,7 @@
 # frozen_string_literal: false
+#
 #   multi.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "nop"

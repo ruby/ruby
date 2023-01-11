@@ -3,10 +3,7 @@
 #   irb/extend-command.rb - irb extend command
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 module IRB # :nodoc:
   # Installs the default irb extensions command bundle.
   module ExtendCommandBundle

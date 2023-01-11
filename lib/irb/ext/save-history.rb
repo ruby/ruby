@@ -1,10 +1,7 @@
 # frozen_string_literal: false
+#
 #   save-history.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB

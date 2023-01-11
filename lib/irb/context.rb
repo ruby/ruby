@@ -3,10 +3,7 @@
 #   irb/context.rb - irb context
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"

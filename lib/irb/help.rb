@@ -3,10 +3,6 @@
 #   irb/help.rb - print usage module
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
-# --
-#
-#
-#
 
 require_relative 'magic-file'
 

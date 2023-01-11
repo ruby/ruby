@@ -3,10 +3,6 @@
 #   irb/inspector.rb - inspect methods
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 module IRB # :nodoc:
 

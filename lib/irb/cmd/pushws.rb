@@ -3,10 +3,6 @@
 #   change-ws.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require_relative "nop"
 require_relative "../ext/workspaces"

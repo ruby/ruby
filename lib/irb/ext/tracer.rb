@@ -3,10 +3,7 @@
 #   irb/lib/tracer.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 begin
   require "tracer"
 rescue LoadError

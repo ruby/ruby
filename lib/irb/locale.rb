@@ -3,10 +3,7 @@
 #   irb/locale.rb - internationalization module
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 module IRB # :nodoc:
   class Locale
 

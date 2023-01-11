@@ -3,10 +3,6 @@
 #   load.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require_relative "nop"
 require_relative "../ext/loader"

@@ -3,10 +3,6 @@
 #   irb/workspace-binding.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require "delegate"
 

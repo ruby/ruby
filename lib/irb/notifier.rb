@@ -3,10 +3,6 @@
 #   notifier.rb - output methods used by irb
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
 require_relative "output-method"
 
