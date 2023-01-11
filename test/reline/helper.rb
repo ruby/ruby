@@ -21,6 +21,8 @@ module Reline
     end
 
     def test_reset
+      remove_const('IOGate') if const_defined?('IOGate')
+      const_set('IOGate', Reline::GeneralIO)
       Reline.instance_variable_set(:@core, nil)
     end
   end
