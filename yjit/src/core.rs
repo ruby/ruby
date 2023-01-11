@@ -2126,6 +2126,7 @@ pub fn defer_compilation(
     set_branch_target(0, blockid, &next_ctx, &branch_rc, &mut branch, ocb);
 
     // Call the branch generation function
+    asm.comment("defer_compilation");
     asm.mark_branch_start(&branch_rc);
     if let Some(dst_addr) = branch.get_target_address(0) {
         gen_jump_branch(asm, dst_addr, None, BranchShape::Default);
