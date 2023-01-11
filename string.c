@@ -768,6 +768,20 @@ str_enc_copy(VALUE str1, VALUE str2)
     rb_enc_set_index(str1, ENCODING_GET(str2));
 }
 
+/* Like str_enc_copy, but does not check frozen status of str1.
+ * You should use this only if you're certain that str1 is not frozen. */
+static inline void
+str_enc_copy_direct(VALUE str1, VALUE str2)
+{
+    int inlined_encoding = RB_ENCODING_GET_INLINED(str2);
+    if (inlined_encoding == ENCODING_INLINE_MAX) {
+        rb_enc_set_index(str1, rb_enc_get_index(str2));
+    }
+    else {
+        ENCODING_SET_INLINED(str1, inlined_encoding);
+    }
+}
+
 static void
 rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 {
@@ -6156,7 +6170,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 
     VALUE str2 = str_subseq(str, beg, len);
 
-    str_enc_copy(str2, str);
+    str_enc_copy_direct(str2, str);
 
     if (RSTRING_LEN(str2) == 0) {
         if (!rb_enc_asciicompat(STR_ENC_GET(str)))
@@ -6382,7 +6396,7 @@ rb_str_reverse(VALUE str)
         }
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    str_enc_copy(rev, str);
+    str_enc_copy_direct(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
     return rev;
@@ -7337,7 +7351,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     RB_GC_GUARD(buffer_anchor);
 
     /* TODO: check about string terminator character */
-    str_enc_copy(target, source);
+    str_enc_copy_direct(target, source);
     /*ENC_CODERANGE_SET(mapped, cr);*/
 
     return target;
@@ -7468,7 +7482,7 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-        str_enc_copy(ret, str);
+        str_enc_copy_direct(ret, str);
         upcase_single(ret);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {
@@ -7570,7 +7584,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-        str_enc_copy(ret, str);
+        str_enc_copy_direct(ret, str);
         downcase_single(ret);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {
