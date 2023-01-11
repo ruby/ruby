@@ -636,14 +636,14 @@ restrict return short signed sizeof static struct switch typedef union
 
   def self.feature(name)
     attr_writer "#{name}_enabled"
-    class_eval <<-EOS
+    class_eval <<~RUBY, __FILE__, __LINE__ + 1
       def enable_#{name}
         @#{name}_enabled = true
       end
       def #{name}_enabled?
         @#{name}_enabled
       end
-    EOS
+    RUBY
   end
   private_class_method :feature
 
