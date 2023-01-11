@@ -7259,6 +7259,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
         }
         mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+
+        gc_mark(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_ICLASS:
@@ -10559,6 +10561,8 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+
+        UPDATE_IF_MOVED(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_ICLASS:

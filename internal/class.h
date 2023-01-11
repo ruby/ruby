@@ -59,6 +59,8 @@ struct rb_classext_struct {
 #endif
     uint32_t max_iv_count;
     unsigned char variation_count;
+    bool permanent_classpath;
+    VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -73,8 +75,10 @@ struct RClass {
 #endif
 };
 
-typedef struct rb_subclass_entry rb_subclass_entry_t;
-typedef struct rb_classext_struct rb_classext_t;
+#if RCLASS_EXT_EMBEDDED
+// Assert that classes can be embedded in size_pools[2] (which has 160B slot size)
+STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
+#endif
 
 #if RCLASS_EXT_EMBEDDED
 #  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
@@ -182,6 +186,16 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
     RB_OBJ_WRITE(klass, &RCLASS(klass)->super, super);
     rb_class_update_superclasses(klass);
     return super;
+}
+
+static inline void
+RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
+{
+    assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE);
+    assert(classpath == 0 || BUILTIN_TYPE(classpath) == T_STRING);
+
+    RB_OBJ_WRITE(klass, &(RCLASS_EXT(klass)->classpath), classpath);
+    RCLASS_EXT(klass)->permanent_classpath = permanent;
 }
 
 #endif /* INTERNAL_CLASS_H */
