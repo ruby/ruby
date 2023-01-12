@@ -3218,8 +3218,9 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
-static VALUE
-vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+static inline VALUE
+vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
+                          int argc, VALUE *argv, VALUE *stack_bottom)
 {
     RB_DEBUG_COUNTER_INC(ccf_cfunc_with_frame);
     const struct rb_callinfo *ci = calling->ci;
@@ -3227,17 +3228,16 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     VALUE val;
     const rb_callable_method_entry_t *me = vm_cc_cme(cc);
     const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(me);
-    int len = cfunc->argc;
 
     VALUE recv = calling->recv;
     VALUE block_handler = calling->block_handler;
     VALUE frame_type = VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL;
-    int argc = calling->argc;
-    int orig_argc = argc;
 
     if (UNLIKELY(calling->kw_splat)) {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW;
     }
+
+    VM_ASSERT(reg_cfp == ec->cfp);
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, vm_ci_mid(ci), me->owner, Qundef);
@@ -3246,14 +3246,17 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
                   block_handler, (VALUE)me,
                   0, ec->cfp->sp, 0, 0);
 
+    int len = cfunc->argc;
     if (len >= 0) rb_check_arity(argc, len, len);
 
-    reg_cfp->sp -= orig_argc + 1;
-    val = (*cfunc->invoker)(recv, argc, reg_cfp->sp + 1, cfunc->func);
+    reg_cfp->sp = stack_bottom;
+    val = (*cfunc->invoker)(recv, argc, argv, cfunc->func);
 
     CHECK_CFP_CONSISTENCY("vm_call_cfunc");
 
     rb_vm_pop_frame(ec);
+
+    VM_ASSERT(ec->cfp->sp == stack_bottom);
 
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, vm_ci_mid(ci), me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
@@ -3262,15 +3265,116 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
 }
 
 static VALUE
+vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
+{
+    int argc = calling->argc;
+    VALUE *stack_bottom = reg_cfp->sp - argc - 1;
+    VALUE *argv = &stack_bottom[1];
+
+    return vm_call_cfunc_with_frame_(ec, reg_cfp, calling, argc, argv, stack_bottom);
+}
+
+#ifndef VM_ARGC_STACK_MAX
+#define VM_ARGC_STACK_MAX 128
+#endif
+
+static VALUE
+vm_call_cfunc_setup_argv_ary(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
+{
+    int argc = calling->argc;
+    VALUE *argv = cfp->sp - argc;
+    VALUE ary = argv[argc-1];
+    long len = RARRAY_LEN(ary);
+
+    if (UNLIKELY(len + argc > VM_ARGC_STACK_MAX)) {
+        vm_check_canary(ec, cfp->sp);
+        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        VALUE argv_ary = rb_ary_new_capa(len + argc - 1);
+        rb_obj_hide(argv_ary);
+        rb_ary_cat(argv_ary, argv, argc-1);
+        rb_ary_cat(argv_ary, ptr, len);
+        cfp->sp -= argc - 1;
+        cfp->sp[-1] = argv_ary;
+        calling->argc = 1;
+
+        return argv_ary;
+    }
+    else {
+        return Qfalse;
+    }
+}
+
+static VALUE
 vm_call_cfunc(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     const struct rb_callinfo *ci = calling->ci;
     RB_DEBUG_COUNTER_INC(ccf_cfunc);
 
-    CALLER_SETUP_ARG(reg_cfp, calling, ci);
-    CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
-    CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat);
-    return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
+    VALUE argv_ary;
+
+    if (UNLIKELY(IS_ARGS_SPLAT(ci)) && (argv_ary = vm_call_cfunc_setup_argv_ary(ec, reg_cfp, calling))) {
+        // special case of CALLER_SETUP_ARG
+        if (!IS_ARGS_KW_OR_KW_SPLAT(ci)) {
+            long hash_idx = RARRAY_LEN(argv_ary) - 1;
+            VALUE final_hash = RARRAY_AREF(argv_ary, hash_idx);
+
+            if (RB_TYPE_P(final_hash, T_HASH) &&
+                (((struct RHash *)final_hash)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+                if (RHASH_EMPTY_P(final_hash)) {
+                    rb_ary_pop(argv_ary);
+                }
+                else {
+                    final_hash = rb_hash_dup(final_hash);
+                    RARRAY_ASET(argv_ary, hash_idx, final_hash);
+                    calling->kw_splat = 1;
+                }
+            }
+        }
+
+        if (UNLIKELY(IS_ARGS_KW_OR_KW_SPLAT(ci))) {
+            VM_ASSERT(!IS_ARGS_KEYWORD(ci)); // should be KW_SPLAT
+
+            long hash_idx = RARRAY_LEN(argv_ary) - 1;
+            VALUE keyword_hash = RARRAY_AREF(argv_ary, hash_idx);
+
+            if (!RB_TYPE_P(keyword_hash, T_HASH)) {
+                /* Convert a non-hash keyword splat to a new hash */
+                RARRAY_ASET(argv_ary, hash_idx, rb_hash_dup(rb_to_hash_type(keyword_hash)));
+            }
+            else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
+                /* Convert a hash keyword splat to a new hash unless
+                 * a mutable keyword splat was passed.
+                 */
+                RARRAY_ASET(argv_ary, hash_idx, rb_hash_dup(keyword_hash));
+            }
+        }
+
+        // special case of CALLER_REMOVE_EMPTY_KW_SPLAT()
+        if (UNLIKELY(calling->kw_splat)) {
+            VALUE kw_hash = RARRAY_AREF(argv_ary, RARRAY_LEN(argv_ary)-1);
+            if (RHASH_EMPTY_P(kw_hash)) {
+                rb_ary_pop(argv_ary);
+                calling->kw_splat = false;
+            }
+        }
+
+        int argc = RARRAY_LENINT(argv_ary);
+        VALUE *argv = (void *)RARRAY_CONST_PTR_TRANSIENT(argv_ary);
+        VALUE *stack_bottom = reg_cfp->sp - 2;
+
+        VM_ASSERT(calling->argc == 1);
+        VM_ASSERT(RB_TYPE_P(argv_ary, T_ARRAY));
+        VM_ASSERT(RBASIC_CLASS(argv_ary) == 0); // hidden ary
+
+        return vm_call_cfunc_with_frame_(ec, reg_cfp, calling, argc, argv, stack_bottom);
+    }
+    else {
+        CALLER_SETUP_ARG(reg_cfp, calling, ci);
+        CALLER_REMOVE_EMPTY_KW_SPLAT(reg_cfp, calling, ci);
+        CC_SET_FASTPATH(calling->cc, vm_call_cfunc_with_frame, !rb_splat_or_kwargs_p(ci) && !calling->kw_splat);
+
+        return vm_call_cfunc_with_frame(ec, reg_cfp, calling);
+    }
 }
 
 static VALUE
