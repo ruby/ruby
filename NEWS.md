@@ -36,6 +36,7 @@ Note: We're only listing outstanding class updates.
 
     * minitest 5.17.0
     * rbs 2.8.3
+    * typeprof 0.21.4
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
