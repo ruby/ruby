@@ -284,10 +284,10 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define ADD_TRACE_WITH_DATA(seq, event, data) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), (data)))
 
-static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level);
+static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level, bool raw);
 static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level);
 
-#define ADD_GETLOCAL(seq, line_node, idx, level) iseq_add_getlocal(iseq, (seq), (line_node), (idx), (level))
+#define ADD_GETLOCAL(seq, line_node, idx, level) iseq_add_getlocal(iseq, (seq), (line_node), (idx), (level), false)
 #define ADD_SETLOCAL(seq, line_node, idx, level) iseq_add_setlocal(iseq, (seq), (line_node), (idx), (level))
 
 /* add label */
@@ -1591,8 +1591,14 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     return idx;
 }
 
-static int
-iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+enum LVAR_TYPE{
+    LVAR_KWREST_PARAM = 1,
+    LVAR_BLOCK_PARAM = 2,
+    LVAR_KWREST_OTHER = 3,
+};
+
+static enum LVAR_TYPE
+iseq_local_type(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
 {
     const struct rb_iseq_constant_body *body;
     while (level > 0) {
@@ -1600,14 +1606,30 @@ iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int l
         level--;
     }
     body = ISEQ_BODY(iseq);
-    if (body->local_iseq == iseq && /* local variables */
+
+    if (body->local_iseq == iseq && // lvar only
         body->param.flags.has_block &&
         body->local_table_size - body->param.block_start == idx) {
-        return TRUE;
+        return LVAR_BLOCK_PARAM;
     }
-    else {
-        return FALSE;
+    else if (body->param.flags.has_kwrest &&
+             body->local_table_size - body->param.keyword->rest_start == idx) {
+        return LVAR_KWREST_PARAM;
     }
+
+    return LVAR_KWREST_OTHER;
+}
+
+static int
+iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    return iseq_local_type(iseq, idx, level) == LVAR_BLOCK_PARAM;
+}
+
+static int
+iseq_local_kwrest_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    return iseq_local_type(iseq, idx, level) == LVAR_KWREST_PARAM;
 }
 
 static int
@@ -1616,6 +1638,21 @@ iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
     int level, ls;
     int idx = get_dyna_var_idx(iseq, id, &level, &ls);
     if (iseq_local_block_param_p(iseq, ls - idx, level)) {
+        *pidx = ls - idx;
+        *plevel = level;
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+}
+
+static int
+iseq_kwrest_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
+{
+    int level, ls;
+    int idx = get_dyna_var_idx(iseq, id, &level, &ls);
+    if (iseq_local_kwrest_param_p(iseq, ls - idx, level)) {
         *pidx = ls - idx;
         *plevel = level;
         return TRUE;
@@ -1673,14 +1710,25 @@ iseq_lvar_id(const rb_iseq_t *iseq, int idx, int level)
 }
 
 static void
-iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level)
+iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const line_node, int idx, int level, bool raw)
 {
-    if (iseq_local_block_param_p(iseq, idx, level)) {
-        ADD_INSN2(seq, line_node, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
-    }
-    else {
+    if (raw) {
         ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
     }
+    else {
+        switch (iseq_local_type(iseq, idx, level)) {
+          case LVAR_KWREST_PARAM:
+            ADD_INSN2(seq, line_node, getkwrestparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+          case LVAR_BLOCK_PARAM:
+            ADD_INSN2(seq, line_node, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+          default:
+            ADD_INSN2(seq, line_node, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+            break;
+        }
+    }
+
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qfalse);
 }
 
@@ -1695,8 +1743,6 @@ iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *const lin
     }
     if (level > 0) access_outer_variables(iseq, level, iseq_lvar_id(iseq, idx, level), Qtrue);
 }
-
-
 
 static void
 iseq_calc_param_size(rb_iseq_t *iseq)
@@ -4318,11 +4364,13 @@ keyword_node_p(const NODE *const node)
 
 static int
 compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-                          const NODE *const root_node,
-                          struct rb_callinfo_kwarg **const kw_arg_ptr,
-                          unsigned int *flag)
+                    const NODE *const root_node,
+                    struct rb_callinfo_kwarg **const kw_arg_ptr,
+                    unsigned int *flag)
 {
-    if (kw_arg_ptr == NULL) return FALSE;
+    RUBY_ASSERT(nd_type_p(root_node, NODE_HASH));
+    RUBY_ASSERT(kw_arg_ptr != NULL);
+    RUBY_ASSERT(flag != NULL);
 
     if (root_node->nd_head && nd_type_p(root_node->nd_head, NODE_LIST)) {
         const NODE *node = root_node->nd_head;
@@ -4379,8 +4427,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 }
 
 static int
-compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
-                   struct rb_callinfo_kwarg **keywords_ptr, unsigned int *flag)
+compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, NODE **kwnode_ptr)
 {
     int len = 0;
 
@@ -4389,15 +4436,11 @@ compile_args(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node,
             EXPECT_NODE("compile_args", node, NODE_LIST, -1);
         }
 
-        if (node->nd_next == NULL && keyword_node_p(node->nd_head)) { /* last node */
-            if (compile_keyword_arg(iseq, ret, node->nd_head, keywords_ptr, flag)) {
-                len--;
-            }
-            else {
-                compile_hash(iseq, ret, node->nd_head, TRUE, FALSE);
-            }
+        if (node->nd_next == NULL && keyword_node_p(node->nd_head)) { /* last node is kwnode */
+            *kwnode_ptr = node->nd_head;
         }
         else {
+            RUBY_ASSERT(!keyword_node_p(node->nd_head));
             NO_CHECK(COMPILE_(ret, "array element", node->nd_head, FALSE));
         }
     }
@@ -4764,7 +4807,14 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                          * This is only done for method calls and not for literal hashes,
                          * because literal hashes should always result in a new hash.
                          */
-                        NO_CHECK(COMPILE(ret, "keyword splat", kw));
+
+                        int idx, lv;
+                        if (nd_type(kw) == NODE_LVAR && iseq_kwrest_param_id_p(iseq, kw->nd_vid, &idx, &lv)) {
+                            iseq_add_getlocal(iseq, ret, kw, idx, lv, true);
+                        }
+                        else {
+                            NO_CHECK(COMPILE(ret, "keyword splat", kw));
+                        }
                     }
                     else {
                         /* There is more than one keyword argument, or this is not a method
@@ -5776,6 +5826,7 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
     ADD_SEQ(ret, ensure);
 }
 
+#if RUBY_DEBUG
 static int
 check_keyword(const NODE *node)
 {
@@ -5790,65 +5841,112 @@ check_keyword(const NODE *node)
 
     return keyword_node_p(node);
 }
+#endif
 
-static VALUE
+static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
-                int dup_rest, unsigned int *flag, struct rb_callinfo_kwarg **keywords)
+                int dup_rest, unsigned int *flag_ptr, struct rb_callinfo_kwarg **kwarg_ptr)
 {
-    if (argn) {
-        switch (nd_type(argn)) {
-          case NODE_SPLAT: {
-            NO_CHECK(COMPILE(args, "args (splat)", argn->nd_head));
-            ADD_INSN1(args, argn, splatarray, RBOOL(dup_rest));
-            if (flag) *flag |= VM_CALL_ARGS_SPLAT;
-            return INT2FIX(1);
+    if (!argn) return 0;
+
+    NODE *kwnode = NULL;
+
+    switch (nd_type(argn)) {
+      case NODE_LIST: {
+          // f(x, y, z)
+          int len = compile_args(iseq, args, argn, &kwnode);
+          RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_ARGS_SPLAT) == 0);
+
+          if (kwnode) {
+              if (compile_keyword_arg(iseq, args, kwnode, kwarg_ptr, flag_ptr)) {
+                  len -= 1;
+              }
+              else {
+                  compile_hash(iseq, args, kwnode, TRUE, FALSE);
+              }
           }
-          case NODE_ARGSCAT:
-          case NODE_ARGSPUSH: {
-            int next_is_list = (nd_type_p(argn->nd_head, NODE_LIST));
-            VALUE argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
-            if (nd_type_p(argn->nd_body, NODE_LIST)) {
-                /* This branch is needed to avoid "newarraykwsplat" [Bug #16442] */
-                int rest_len = compile_args(iseq, args, argn->nd_body, NULL, NULL);
-                ADD_INSN1(args, argn, newarray, INT2FIX(rest_len));
-            }
-            else {
-                NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
-            }
-            if (flag) {
-                *flag |= VM_CALL_ARGS_SPLAT;
-                /* This is a dirty hack.  It traverses the AST twice.
-                 * In a long term, it should be fixed by a redesign of keyword arguments */
-                if (check_keyword(argn->nd_body))
-                    *flag |= VM_CALL_KW_SPLAT;
-            }
-            if (nd_type_p(argn, NODE_ARGSCAT)) {
-                if (next_is_list) {
-                    ADD_INSN1(args, argn, splatarray, Qtrue);
-                    return INT2FIX(FIX2INT(argc) + 1);
-                }
-                else {
-                    ADD_INSN1(args, argn, splatarray, Qfalse);
-                    ADD_INSN(args, argn, concatarray);
-                    return argc;
-                }
-            }
-            else {
-                ADD_INSN1(args, argn, newarray, INT2FIX(1));
-                ADD_INSN(args, argn, concatarray);
-                return argc;
-            }
+
+          return len;
+      }
+      case NODE_SPLAT: {
+          // f(*a)
+          NO_CHECK(COMPILE(args, "args (splat)", argn->nd_head));
+          ADD_INSN1(args, argn, splatarray, RBOOL(dup_rest));
+          if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+          RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_KW_SPLAT) == 0);
+          return 1;
+      }
+      case NODE_ARGSCAT: {
+          if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+          int argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
+
+          if (nd_type_p(argn->nd_body, NODE_LIST)) {
+              int rest_len = compile_args(iseq, args, argn->nd_body, &kwnode);
+              if (kwnode) rest_len--;
+              ADD_INSN1(args, argn, newarray, INT2FIX(rest_len));
           }
-          case NODE_LIST: {
-            int len = compile_args(iseq, args, argn, keywords, flag);
-            return INT2FIX(len);
+          else {
+              RUBY_ASSERT(!check_keyword(argn->nd_body));
+              NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
           }
-          default: {
-            UNKNOWN_NODE("setup_arg", argn, Qnil);
+
+
+          if (nd_type_p(argn->nd_head, NODE_LIST)) {
+              ADD_INSN1(args, argn, splatarray, Qtrue);
+              argc += 1;
           }
-        }
+          else {
+              ADD_INSN1(args, argn, splatarray, Qfalse);
+              ADD_INSN(args, argn, concatarray);
+          }
+
+          // f(..., *a, ..., k1:1, ...) #=> f(..., *[*a, ...], **{k1:1, ...})
+          if (kwnode) {
+              // kwsplat
+              *flag_ptr |= VM_CALL_KW_SPLAT;
+              *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+              compile_hash(iseq, args, kwnode, TRUE, FALSE);
+              argc += 1;
+          }
+
+          return argc;
+      }
+      case NODE_ARGSPUSH: {
+          if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+          int argc = setup_args_core(iseq, args, argn->nd_head, 1, NULL, NULL);
+
+          if (nd_type_p(argn->nd_body, NODE_LIST)) {
+              int rest_len = compile_args(iseq, args, argn->nd_body, &kwnode);
+              if (kwnode) rest_len--;
+              ADD_INSN1(args, argn, newarray, INT2FIX(rest_len));
+              ADD_INSN1(args, argn, newarray, INT2FIX(1));
+              ADD_INSN(args, argn, concatarray);
+          }
+          else {
+              if (keyword_node_p(argn->nd_body)) {
+                  kwnode = argn->nd_body;
+              }
+              else {
+                  NO_CHECK(COMPILE(args, "args (cat: splat)", argn->nd_body));
+                  ADD_INSN1(args, argn, newarray, INT2FIX(1));
+                  ADD_INSN(args, argn, concatarray);
+              }
+          }
+
+          if (kwnode) {
+              // f(*a, k:1)
+              *flag_ptr |= VM_CALL_KW_SPLAT;
+              *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+              compile_hash(iseq, args, kwnode, TRUE, FALSE);
+              argc += 1;
+          }
+
+          return argc;
+      }
+      default: {
+          UNKNOWN_NODE("setup_arg", argn, Qnil);
+      }
     }
-    return INT2FIX(0);
 }
 
 static VALUE
@@ -5874,11 +5972,11 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 dup_rest = 0;
             }
         }
-        ret = setup_args_core(iseq, args, argn->nd_head, dup_rest, flag, keywords);
+        ret = INT2FIX(setup_args_core(iseq, args, argn->nd_head, dup_rest, flag, keywords));
         ADD_SEQ(args, arg_block);
     }
     else {
-        ret = setup_args_core(iseq, args, argn, 0, flag, keywords);
+        ret = INT2FIX(setup_args_core(iseq, args, argn, 0, flag, keywords));
     }
     return ret;
 }
@@ -8990,25 +9088,13 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
                 ADD_GETLOCAL(args, node, idx, lvar_level);
             }
             ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
-            if (local_body->param.flags.has_rest) {
-                ADD_INSN1(args, node, newarray, INT2FIX(1));
-                ADD_INSN (args, node, concatarray);
-                --argc;
-            }
             flag |= VM_CALL_KW_SPLAT;
         }
         else if (local_body->param.flags.has_kwrest) {
             int idx = local_body->local_table_size - local_kwd->rest_start;
             ADD_GETLOCAL(args, node, idx, lvar_level);
-
-            if (local_body->param.flags.has_rest) {
-                ADD_INSN1(args, node, newarray, INT2FIX(1));
-                ADD_INSN (args, node, concatarray);
-            }
-            else {
-                argc++;
-            }
-            flag |= VM_CALL_KW_SPLAT;
+            argc++;
+            flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
         }
     }
 
