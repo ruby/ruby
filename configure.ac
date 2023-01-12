@@ -254,7 +254,7 @@ AC_CHECK_TOOLS([AR],      [gar ar])
 AC_CHECK_TOOLS([AS],      [gas as])
 AC_CHECK_TOOLS([LD],      [gld ld]) # ... try gold ?
 AC_CHECK_TOOLS([NM],      [gnm nm])
-AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy])
+AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
@@ -907,7 +907,6 @@ AS_IF([test "$GCC" = yes], [
     ], [
 	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
     ])
-    test "$visibility_option" = no || OBJCOPY=:
 ])
 
 AS_IF([test "$GCC" = yes], [
