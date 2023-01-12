@@ -195,14 +195,11 @@ module RubyVM::YJIT
 
   # Produce a list of instructions compiled by YJIT for an iseq
   def self.insns_compiled(iseq)
+    return nil unless self.enabled?
+
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
-
-    if self.enabled?
-      Primitive.rb_yjit_insns_compiled(iseq)
-    else
-      Qnil
-    end
+    Primitive.rb_yjit_insns_compiled(iseq)
   end
 
   # Free and recompile all existing JIT code
