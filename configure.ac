@@ -214,7 +214,7 @@ AS_CASE(["/${rb_CC} "],
 [*clang*],            [
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
-    : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
+    RUBY_CHECK_PROG_FOR_CC([LD],      [s/clang/ld/]) # ... maybe try lld ?
     RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
 #   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
     RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
