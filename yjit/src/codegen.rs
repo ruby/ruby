@@ -387,7 +387,11 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 
 /// Generate an exit to return to the interpreter
 fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
-    asm.comment("exit to interpreter");
+    #[cfg(all(feature = "disasm", not(test)))]
+    {
+        let opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
+        asm.comment(&format!("exit to interpreter on {}", insn_name(opcode as usize)));
+    }
 
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
@@ -769,7 +773,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&insn_name(opcode));
+            asm.comment(&format!("Insn: {}", insn_name(opcode)));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -4776,6 +4780,7 @@ fn gen_return_branch(
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
         BranchShape::Default => {
+            asm.comment("update cfp->jit_return");
             asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
         }
     }

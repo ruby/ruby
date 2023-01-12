@@ -1,14 +1,7 @@
 # frozen_string_literal: false
 #
 #   irb/inspector.rb - inspect methods
-#   	$Release Version: 0.9.6$
-#   	$Revision: 1.19 $
-#   	$Date: 2002/06/11 07:51:31 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:

@@ -1,6 +1,7 @@
 test_collection_install(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
+test_replicate(EncodingTest) the method was removed in 3.3
 
 NetSingletonTest depending on external resources
 NetInstanceTest depending on external resources

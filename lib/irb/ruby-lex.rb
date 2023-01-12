@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   irb/ruby-lex.rb - ruby lexcal analyzer
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require "ripper"
@@ -48,7 +42,7 @@ class RubyLex
   end
 
   # io functions
-  def set_input(io, p = nil, context:, &block)
+  def set_input(io, context:, &block)
     @io = io
     if @io.respond_to?(:check_termination)
       @io.check_termination do |code|
@@ -116,22 +110,15 @@ class RubyLex
       end
     end
 
-    if p.respond_to?(:call)
-      @input = p
-    elsif block_given?
+    if block_given?
       @input = block
     else
       @input = Proc.new{@io.gets}
     end
   end
 
-  def set_prompt(p = nil, &block)
-    p = block if block_given?
-    if p.respond_to?(:call)
-      @prompt = p
-    else
-      @prompt = Proc.new{print p}
-    end
+  def set_prompt(&block)
+    @prompt = block
   end
 
   ERROR_TOKENS = [

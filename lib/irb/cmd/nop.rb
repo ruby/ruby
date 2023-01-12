@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   nop.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 module IRB
   # :stopdoc:
 

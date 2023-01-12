@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"

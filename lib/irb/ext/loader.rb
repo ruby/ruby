@@ -1,15 +1,8 @@
 # frozen_string_literal: false
 #
 #   loader.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
-
 
 module IRB # :nodoc:
   # Raised in the event of an exception in a file loaded from an Irb session

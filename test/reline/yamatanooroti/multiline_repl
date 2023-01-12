@@ -39,6 +39,19 @@ opt.on('--dynamic-prompt-with-newline') {
     }
   }
 }
+opt.on('--broken-dynamic-prompt-assert-no-escape-sequence') {
+  Reline.prompt_proc = proc { |lines|
+    has_escape_sequence = lines.join.include?("\e")
+    (lines.size + 1).times.map { |i|
+      has_escape_sequence ? 'error>' : '[%04d]> ' % i
+    }
+  }
+}
+opt.on('--color-bold') {
+  Reline.output_modifier_proc = ->(output, complete:){
+    output.gsub(/./) { |c| "\e[1m#{c}\e[0m" }
+  }
+}
 opt.on('--auto-indent') {
   AutoIndent.new
 }
