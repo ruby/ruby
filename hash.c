@@ -2110,6 +2110,10 @@ hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
         return ar_lookup(hash, key, pval);
     }
     else {
+        extern st_index_t rb_iseq_cdhash_hash(VALUE);
+        RUBY_ASSERT(RHASH_ST_TABLE(hash)->type->hash == rb_any_hash ||
+                    RHASH_ST_TABLE(hash)->type->hash == rb_ident_hash ||
+                    RHASH_ST_TABLE(hash)->type->hash == rb_iseq_cdhash_hash);
         return st_lookup(RHASH_ST_TABLE(hash), key, pval);
     }
 }
