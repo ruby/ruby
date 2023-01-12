@@ -259,8 +259,8 @@ module IRB # :nodoc:
         kwargs = ", **kwargs" if RUBY_ENGINE == "ruby" && RUBY_VERSION >= "2.7.0"
         line = __LINE__; eval %[
           def #{cmd_name}(*opts#{kwargs}, &b)
-            require_relative "#{load_file}"
-            arity = ExtendCommand::#{cmd_class}.instance_method(:execute).arity
+            Kernel.require_relative "#{load_file}"
+            arity = ::IRB::ExtendCommand::#{cmd_class}.instance_method(:execute).arity
             args = (1..(arity < 0 ? ~arity : arity)).map {|i| "arg" + i.to_s }
             args << "*opts#{kwargs}" if arity < 0
             args << "&block"
@@ -269,7 +269,7 @@ module IRB # :nodoc:
               unless singleton_class.class_variable_defined?(:@@#{cmd_name}_)
                 singleton_class.class_variable_set(:@@#{cmd_name}_, true)
                 def self.#{cmd_name}_(\#{args})
-                  ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
+                  ::IRB::ExtendCommand::#{cmd_class}.execute(irb_context, \#{args})
                 end
               end
             ], nil, __FILE__, line
@@ -279,7 +279,7 @@ module IRB # :nodoc:
       else
         line = __LINE__; eval %[
           def #{cmd_name}(*opts, &b)
-            ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
+            ::IRB::ExtendCommand::#{cmd_class}.execute(irb_context, *opts, &b)
           end
         ], nil, __FILE__, line
       end

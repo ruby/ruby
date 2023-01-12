@@ -49,6 +49,19 @@ module TestIRB
     end
   end
 
+  class FrozenObjectTest < CommandTestCase
+    def test_calling_command_on_a_frozen_main
+      main = Object.new.freeze
+
+      out, err = execute_lines(
+        "irb_info",
+        main: main
+      )
+      assert_empty err
+      assert_match(/RUBY_PLATFORM/, out)
+    end
+  end
+
   class CommnadAliasTest < CommandTestCase
     def test_vars_with_aliases
       @foo = "foo"
