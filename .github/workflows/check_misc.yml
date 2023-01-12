@@ -20,7 +20,7 @@ jobs:
           ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]'
+          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
           ! git grep -n '^[	 ][	 ]*$' -- '*.md'
       - name: Check for bash specific substitution in configure.ac
         run: |
