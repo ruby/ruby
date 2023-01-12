@@ -66,7 +66,8 @@ class RubyLex
           end
 
           code.gsub!(/\s*\z/, '').concat("\n")
-          ltype, indent, continue, code_block_open = check_state(code, context: context)
+          tokens = self.class.ripper_lex_without_warning(code, context: context)
+          ltype, indent, continue, code_block_open = check_state(code, tokens, context: context)
           if ltype or indent > 0 or continue or code_block_open
             false
           else
@@ -206,8 +207,7 @@ class RubyLex
     end
   end
 
-  def check_state(code, tokens = nil, context: nil)
-    tokens = self.class.ripper_lex_without_warning(code, context: context) unless tokens
+  def check_state(code, tokens, context:)
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
@@ -280,7 +280,7 @@ class RubyLex
     line
   end
 
-  def process_continue(tokens = @tokens)
+  def process_continue(tokens)
     # last token is always newline
     if tokens.size >= 2 and tokens[-2].event == :on_regexp_end
       # end of regexp literal
@@ -301,7 +301,7 @@ class RubyLex
     false
   end
 
-  def check_code_block(code, tokens = @tokens)
+  def check_code_block(code, tokens)
     return true if tokens.empty?
     if tokens.last.event == :on_heredoc_beg
       return true
@@ -393,7 +393,7 @@ class RubyLex
     false
   end
 
-  def process_nesting_level(tokens = @tokens)
+  def process_nesting_level(tokens)
     indent = 0
     in_oneliner_def = nil
     tokens.each_with_index { |t, index|
@@ -749,7 +749,7 @@ class RubyLex
     pending_heredocs.first || start_token.last
   end
 
-  def process_literal_type(tokens = @tokens)
+  def process_literal_type(tokens)
     start_token = check_string_literal(tokens)
     return nil if start_token == ""
 
@@ -777,7 +777,7 @@ class RubyLex
     end
   end
 
-  def check_termination_in_prev_line(code, context: nil)
+  def check_termination_in_prev_line(code, context:)
     tokens = self.class.ripper_lex_without_warning(code, context: context)
     past_first_newline = false
     index = tokens.rindex do |t|
