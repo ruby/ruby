@@ -219,6 +219,8 @@ class TestShapes < Test::Unit::TestCase
     assert_predicate RubyVM::Shape.of(tc), :too_complex?
     tc.freeze
     assert_raise(FrozenError) { tc.a3_m }
+    # doesn't transition to frozen shape in this case
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
   end
 
   def test_read_undefined_iv_after_complex
@@ -228,6 +230,7 @@ class TestShapes < Test::Unit::TestCase
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
     assert_predicate RubyVM::Shape.of(tc), :too_complex?
     assert_equal nil, tc.iv_not_defined
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
   end
 
   def test_shape_order
@@ -278,7 +281,10 @@ class TestShapes < Test::Unit::TestCase
   class TestObject; end
 
   def test_new_obj_has_t_object_shape
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(TestObject.new).parent)
+    obj = TestObject.new
+    shape = RubyVM::Shape.of(obj)
+    assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
+    assert_shape_equal(RubyVM::Shape.root_shape, shape.parent)
   end
 
   def test_str_has_root_shape
@@ -301,6 +307,10 @@ class TestShapes < Test::Unit::TestCase
     assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
   end
 
+  def test_root_shape_transition_to_special_const_on_frozen
+    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  end
+
   def test_basic_shape_transition
     obj = Example.new
     shape = RubyVM::Shape.of(obj)
@@ -313,7 +323,7 @@ class TestShapes < Test::Unit::TestCase
 
     shape = shape.parent
     assert_equal(RubyVM::Shape.root_shape.id, shape.id)
-    assert_equal(obj.instance_variable_get(:@a), 1)
+    assert_equal(1, obj.instance_variable_get(:@a))
   end
 
   def test_different_objects_make_same_transition
@@ -362,6 +372,15 @@ class TestShapes < Test::Unit::TestCase
     obj2 = obj.clone(freeze: true)
     assert_predicate(obj2, :frozen?)
     assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+  end
+
+  def test_cloning_with_freeze_option
+    obj = Object.new
+    obj2 = obj.clone(freeze: true)
+    assert_predicate(obj2, :frozen?)
+    refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+    assert_equal(RubyVM::Shape::SHAPE_FROZEN, RubyVM::Shape.of(obj2).type)
+    assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2).parent)
   end
 
   def test_freezing_and_cloning_object_with_ivars
