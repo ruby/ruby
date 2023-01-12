@@ -1518,7 +1518,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
         // Get the previous EP from the current EP
         // See GET_PREV_EP(ep) macro
         // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-        let offs = (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32);
+        let offs = (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL;
         ep_opnd = asm.load(Opnd::mem(64, ep_opnd, offs));
         ep_opnd = asm.and(ep_opnd, Opnd::Imm(!0x03));
     }
@@ -1922,7 +1922,7 @@ fn gen_set_ivar(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // Save the PC and SP because the callee may allocate
@@ -2059,7 +2059,7 @@ fn gen_get_ivar(
 
     asm.comment("guard shape");
     asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
+    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
     jit_chain_guard(
         JCC_JNE,
         jit,
@@ -2280,7 +2280,7 @@ fn gen_setinstancevariable(
 
         asm.comment("guard shape");
         asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic).into();
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic);
         jit_chain_guard(
             JCC_JNE,
             jit,
@@ -2318,10 +2318,10 @@ fn gen_setinstancevariable(
                     None
                 };
 
-                let dest_shape = if capa_shape.is_none() {
-                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
+                let dest_shape = if let Some(capa_shape) = capa_shape {
+                    unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
                 } else {
-                    unsafe { rb_shape_get_next(capa_shape.unwrap(), comptime_receiver, ivar_name) }
+                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
                 };
 
                 let new_shape_id = unsafe { rb_shape_id(dest_shape) };
@@ -3490,7 +3490,7 @@ fn gen_opt_case_dispatch(
             &starting_context,
             asm,
             ocb,
-            CASE_WHEN_MAX_DEPTH as i32,
+            CASE_WHEN_MAX_DEPTH,
             side_exit,
         );
 
@@ -4444,7 +4444,7 @@ fn gen_push_frame(
         SpecVal::BlockParamProxy => {
             let ep_opnd = gen_get_lep(jit, asm);
             let block_handler = asm.load(
-                Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+                Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
             );
 
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
@@ -4656,7 +4656,7 @@ fn gen_send_cfunc(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // Points to the receiver operand on the stack
@@ -4722,7 +4722,7 @@ fn gen_send_cfunc(
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
         (0..=passed_argc).map(|i|
-            Opnd::mem(64, sp, -(argc + 1 - (i as i32)) * SIZEOF_VALUE_I32)
+            Opnd::mem(64, sp, -(argc + 1 - i) * SIZEOF_VALUE_I32)
         ).collect()
     }
     // Variadic method
@@ -4849,7 +4849,7 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
 
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
-        for i in 0..required_args as i32 {
+        for i in 0..required_args {
             let top = ctx.stack_push(Type::Unknown);
             asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
         }
@@ -5237,7 +5237,7 @@ fn gen_send_iseq(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     if doing_kw_call {
@@ -5530,7 +5530,7 @@ fn gen_struct_aref(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // All structs from the same Struct class should have the same
@@ -5920,7 +5920,7 @@ fn gen_send_general(
                             &starting_context,
                             asm,
                             ocb,
-                            SEND_MAX_CHAIN_DEPTH as i32,
+                            SEND_MAX_CHAIN_DEPTH,
                             chain_exit,
                         );
 
@@ -5950,7 +5950,7 @@ fn gen_send_general(
 
                         // If this is a .send call we need to adjust the stack
                         if flags & VM_CALL_OPT_SEND != 0 {
-                            handle_opt_send_shift_stack(asm, argc as i32, ctx);
+                            handle_opt_send_shift_stack(asm, argc, ctx);
                         }
 
                         // About to reset the SP, need to load this here
@@ -6110,7 +6110,7 @@ fn gen_invokeblock(
         asm.comment("get local EP");
         let ep_opnd = gen_get_lep(jit, asm);
         let block_handler_opnd = asm.load(
-            Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+            Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
         );
 
         asm.comment("guard block_handler type");
@@ -6272,7 +6272,7 @@ fn gen_invokesuper(
     let ep_me_opnd = Opnd::mem(
         64,
         ep_opnd,
-        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_ME_CREF as i32),
+        (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_ME_CREF,
     );
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).into());
@@ -6290,7 +6290,7 @@ fn gen_invokesuper(
         let ep_specval_opnd = Opnd::mem(
             64,
             ep_opnd,
-            (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+            (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
         asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).into());
@@ -6354,7 +6354,7 @@ fn gen_leave(
 
     // Jump to the JIT return address on the frame that was just popped
     let offset_to_jit_return =
-        -(RUBY_SIZEOF_CONTROL_FRAME as i32) + (RUBY_OFFSET_CFP_JIT_RETURN as i32);
+        -(RUBY_SIZEOF_CONTROL_FRAME as i32) + RUBY_OFFSET_CFP_JIT_RETURN;
     asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
 
     EndBlock
@@ -6815,7 +6815,7 @@ fn gen_getblockparamproxy(
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
     let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+        Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
     );
 
     // Specialize compilation for the case where no block handler is present
@@ -6918,7 +6918,7 @@ fn gen_getblockparam(
             Opnd::mem(
                 64,
                 ep_opnd,
-                (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+                (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL,
             ),
         ]
     );
