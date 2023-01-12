@@ -1330,8 +1330,7 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
         VM_ASSERT(ccs->cme == cme);
     }
     else {
-        ccs = vm_ccs_create(klass, cme);
-        rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+        ccs = vm_ccs_create(klass, cc_tbl, mid, cme);
     }
 }
 
