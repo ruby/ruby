@@ -24,8 +24,16 @@ confexts ||= []
 macros["old_extensions"] = []
 
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
+bundled_gems_to_build = {}
+File.foreach(File.join(__dir__, "../gems/bundled_gems")) do |line|
+  bundled_gem_name, bundled_gem_version = line.split
+  next unless bundled_gem_name
+  next if bundled_gem_name.start_with?("#")
+  bundled_gems_to_build[bundled_gem_name + "-" + bundled_gem_version] = true
+end
 Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   gem = e.start_with?(".bundle/gems/")
+  next if gem && !bundled_gems_to_build[File.basename(File.dirname(e))]
   s = File.read(e)
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
