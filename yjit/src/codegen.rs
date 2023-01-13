@@ -1456,7 +1456,7 @@ fn gen_getlocal_wc0(
 ) -> CodegenStatus {
     // Compute the offset from BP to the local
     let slot_idx = jit_get_arg(jit, 0).as_i32();
-    let offs: i32 = -(SIZEOF_VALUE as i32) * slot_idx;
+    let offs: i32 = -SIZEOF_VALUE_I32 * slot_idx;
     let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx);
 
     // Load environment pointer EP (level 0) from CFP
@@ -1508,7 +1508,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
         // Get the previous EP from the current EP
         // See GET_PREV_EP(ep) macro
         // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-        let offs = (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL;
+        let offs = SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL;
         ep_opnd = asm.load(Opnd::mem(64, ep_opnd, offs));
         ep_opnd = asm.and(ep_opnd, Opnd::Imm(!0x03));
     }
@@ -1543,7 +1543,7 @@ fn gen_getlocal_generic(
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
-    let offs = -(SIZEOF_VALUE as i32 * local_idx as i32);
+    let offs = -(SIZEOF_VALUE_I32 * local_idx as i32);
     let local_opnd = Opnd::mem(64, ep_opnd, offs);
 
     // Write the local at SP
@@ -1609,7 +1609,7 @@ fn gen_setlocal_wc0(
         let flags_opnd = Opnd::mem(
             64,
             ep_opnd,
-            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -1654,7 +1654,7 @@ fn gen_setlocal_generic(
         let flags_opnd = Opnd::mem(
             64,
             ep_opnd,
-            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -1669,7 +1669,7 @@ fn gen_setlocal_generic(
     let stack_top = ctx.stack_pop(1);
 
     // Write the value at the environment pointer
-    let offs = -(SIZEOF_VALUE as i32 * local_idx);
+    let offs = -(SIZEOF_VALUE_I32 * local_idx);
     asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
 
     KeepCompiling
@@ -1794,7 +1794,7 @@ fn gen_checkkeyword(
     let ep_opnd = gen_get_ep(asm, 0);
 
     // VALUE kw_bits = *(ep - bits);
-    let bits_opnd = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * -bits_offset);
+    let bits_opnd = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * -bits_offset);
 
     // unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
     // if ((b & (0x01 << idx))) {
@@ -4434,7 +4434,7 @@ fn gen_push_frame(
         SpecVal::BlockParamProxy => {
             let ep_opnd = gen_get_lep(jit, asm);
             let block_handler = asm.load(
-                Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
+                Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
             );
 
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
@@ -4497,7 +4497,7 @@ fn gen_push_frame(
 
         // Initialize local variables to Qnil
         for i in 0..num_locals {
-            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
+            let offs = SIZEOF_VALUE_I32 * (i - num_locals - 3);
             asm.store(Opnd::mem(64, sp, offs), Qnil.into());
         }
     }
@@ -4841,7 +4841,7 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
 
         for i in 0..required_args {
             let top = ctx.stack_push(Type::Unknown);
-            asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
+            asm.mov(top, Opnd::mem(64, ary_opnd, i * SIZEOF_VALUE_I32));
         }
     }
 }
@@ -5210,7 +5210,7 @@ fn gen_send_iseq(
     asm.comment("stack overflow check");
     let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
     let locals_offs =
-        (SIZEOF_VALUE as i32) * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
+        SIZEOF_VALUE_I32 * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
     let stack_limit = asm.lea(ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).as_side_exit());
@@ -5534,10 +5534,10 @@ fn gen_struct_aref(
     let recv = asm.load(ctx.stack_pop(1));
 
     let val = if embedded != VALUE(0) {
-        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + ((SIZEOF_VALUE as i32) * off))
+        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * off))
     } else {
         let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
-        Opnd::mem(64, rstruct_ptr, (SIZEOF_VALUE as i32) * off)
+        Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
     };
 
     let ret = ctx.stack_push(Type::Unknown);
@@ -6100,7 +6100,7 @@ fn gen_invokeblock(
         asm.comment("get local EP");
         let ep_opnd = gen_get_lep(jit, asm);
         let block_handler_opnd = asm.load(
-            Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
         );
 
         asm.comment("guard block_handler type");
@@ -6262,7 +6262,7 @@ fn gen_invokesuper(
     let ep_me_opnd = Opnd::mem(
         64,
         ep_opnd,
-        (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_ME_CREF,
+        SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
     );
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).into());
@@ -6280,7 +6280,7 @@ fn gen_invokesuper(
         let ep_specval_opnd = Opnd::mem(
             64,
             ep_opnd,
-            (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
         asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).into());
@@ -6797,7 +6797,7 @@ fn gen_getblockparamproxy(
     let flag_check = Opnd::mem(
         64,
         ep_opnd,
-        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32),
+        SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
     );
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.jnz(counted_exit!(ocb, side_exit, gbpp_block_param_modified).into());
@@ -6805,7 +6805,7 @@ fn gen_getblockparamproxy(
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
     let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL)
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
     );
 
     // Specialize compilation for the case where no block handler is present
@@ -6873,7 +6873,7 @@ fn gen_getblockparam(
     let ep_opnd = gen_get_ep(asm, level);
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
-    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flag_check = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     // FIXME: This is testing bits in the same place that the WB check is testing.
     // We should combine these at some point
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
@@ -6890,7 +6890,7 @@ fn gen_getblockparam(
     let flags_opnd = Opnd::mem(
         64,
         ep_opnd,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
     );
     asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -6908,7 +6908,7 @@ fn gen_getblockparam(
             Opnd::mem(
                 64,
                 ep_opnd,
-                (SIZEOF_VALUE as i32) * VM_ENV_DATA_INDEX_SPECVAL,
+                SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
             ),
         ]
     );
@@ -6918,11 +6918,11 @@ fn gen_getblockparam(
 
     // Write the value at the environment pointer
     let idx = jit_get_arg(jit, 0).as_i32();
-    let offs = -(SIZEOF_VALUE as i32 * idx);
+    let offs = -(SIZEOF_VALUE_I32 * idx);
     asm.mov(Opnd::mem(64, ep_opnd, offs), proc);
 
     // Set the frame modified flag
-    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flag_check = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     let modified_flag = asm.or(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.store(flag_check, modified_flag);
 
@@ -7004,7 +7004,7 @@ fn gen_opt_invokebuiltin_delegate(
         for i in 0..bf_argc {
             let table_size = unsafe { get_iseq_body_local_table_size(jit.iseq) };
             let offs: i32 = -(table_size as i32) - (VM_ENV_DATA_SIZE as i32) + 1 + start_index + i;
-            let local_opnd = Opnd::mem(64, ep, offs * (SIZEOF_VALUE as i32));
+            let local_opnd = Opnd::mem(64, ep, offs * SIZEOF_VALUE_I32);
             args.push(local_opnd);
         }
     }
