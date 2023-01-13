@@ -407,7 +407,7 @@ a single one that matches any of the expressions. Each expression is an
 
 == Condition
 
-The <tt>(?(</tt><i>cond</><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
+The <tt>(?(</tt><i>cond</i><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
 syntax matches _yes_ part if _cond_ is captured, otherwise matches _no_ part.
 In the case _no_ part is empty, also <tt>|</tt> can be omitted.
 
