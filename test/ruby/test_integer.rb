@@ -725,5 +725,9 @@ class TestInteger < Test::Unit::TestCase
 
     assert_equal(10, (10**100-11).ceildiv(10**99-1))
     assert_equal(11, (10**100-9).ceildiv(10**99-1))
+
+    o = Object.new
+    def o.coerce(other); [other, 10]; end
+    assert_equal(124, 1234.ceildiv(o))
   end
 end
