@@ -740,6 +740,9 @@ num_modulo(VALUE x, VALUE y)
 static VALUE
 num_remainder(VALUE x, VALUE y)
 {
+    if (!rb_obj_is_kind_of(y, rb_cNumeric)) {
+        do_coerce(&x, &y, TRUE);
+    }
     VALUE z = num_funcall1(x, '%', y);
 
     if ((!rb_equal(z, INT2FIX(0))) &&
@@ -4363,12 +4366,22 @@ static VALUE
 int_remainder(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
-        return num_remainder(x, y);
+        if (FIXNUM_P(y)) {
+            VALUE z = fix_mod(x, y);
+            assert(FIXNUM_P(z));
+            if (z != INT2FIX(0) && (SIGNED_VALUE)(x ^ y) < 0)
+                z = fix_minus(z, y);
+            return z;
+        }
+        else if (!RB_BIGNUM_TYPE_P(y)) {
+            return num_remainder(x, y);
+        }
+        x = rb_int2big(FIX2LONG(x));
     }
-    else if (RB_BIGNUM_TYPE_P(x)) {
-        return rb_big_remainder(x, y);
+    else if (!RB_BIGNUM_TYPE_P(x)) {
+        return Qnil;
     }
-    return Qnil;
+    return rb_big_remainder(x, y);
 }
 
 static VALUE
