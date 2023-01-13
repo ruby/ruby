@@ -1225,6 +1225,9 @@ $(REVISION_H)$(no_baseruby:no=~disabled~):
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 	$(Q) exit > $@
 
+uncommon.mk: $(REVISION_H)
+$(MKFILES): $(REVISION_H)
+
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y $(srcdir)/defs/id.def $(srcdir)/ext/ripper/depend
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && \
