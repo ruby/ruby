@@ -3352,7 +3352,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
     for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
     str = rb_str_buf_new(len);
-    str_enc_copy(str, strary[0]);
+    str_enc_copy_direct(str, strary[0]);
 
     for (i = s; i < num; ++i) {
         const VALUE v = strary[i];
