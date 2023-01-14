@@ -155,6 +155,21 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  def test_set_class_variable_on_frozen_object
+    set_cvar = EnvUtil.labeled_class("SetCVar")
+    set_cvar.class_eval "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      def self.set(val)
+        @@a = val # inline cache
+      end
+    end;
+    set_cvar.set(1) # fill write cache
+    set_cvar.freeze
+    assert_raise(FrozenError) do
+      set_cvar.set(2) # hit write cache, but should check frozen status
+    end
+  end
+
   def test_variable
     assert_instance_of(Integer, $$)
 

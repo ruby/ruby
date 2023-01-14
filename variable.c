@@ -3939,6 +3939,7 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
     int found;
+    rb_check_frozen(obj);
 
     RB_VM_LOCK_ENTER();
     {
