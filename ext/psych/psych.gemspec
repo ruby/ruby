@@ -52,7 +52,6 @@ DESCRIPTION
       "ext/java/org/jruby/ext/psych/PsychLibrary.java",
       "ext/java/org/jruby/ext/psych/PsychParser.java",
       "ext/java/org/jruby/ext/psych/PsychToRuby.java",
-      "ext/java/org/jruby/ext/psych/PsychYamlTree.java",
       "lib/psych_jars.rb",
       "lib/psych.jar"
     ]
