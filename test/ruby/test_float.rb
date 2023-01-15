@@ -227,6 +227,12 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-3.5, (-11.5).remainder(-4))
     assert_predicate(Float::NAN.remainder(4), :nan?)
     assert_predicate(4.remainder(Float::NAN), :nan?)
+
+    ten = Object.new
+    def ten.coerce(other)
+      [other, 10]
+    end
+    assert_equal(4, 14.0.remainder(ten))
   end
 
   def test_to_s
