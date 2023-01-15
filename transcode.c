@@ -2872,6 +2872,15 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 
 static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
 
+/*
+ *  call-seq:
+ *    encode(dst_encoding = Encoding.default_internal, **enc_opts) -> string
+ *    encode(dst_encoding, src_encoding, **enc_opts)   -> string
+ *
+ *  :include: doc/string/encode.rdoc
+ *
+ */
+
 static VALUE
 str_encode(int argc, VALUE *argv, VALUE str)
 {
