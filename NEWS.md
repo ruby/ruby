@@ -15,6 +15,11 @@ Note: We're only listing outstanding class updates.
 
     * `Array#pack` now raises ArgumentError for unknown directives. [[Bug #19150]]
 
+* Dir
+
+    * `Dir.fchdir` added for changing the directory to the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+
 * String
 
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
@@ -65,3 +70,4 @@ changelog for details of the default gems or bundled gems.
 
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
+[Feature #19347]: https://bugs.ruby-lang.org/issues/19347
