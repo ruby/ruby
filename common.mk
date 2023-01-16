@@ -225,6 +225,7 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	--crate-type=staticlib \
 	--edition=2021 \
 	-g \
+	-C lto=thin \
 	-C opt-level=3 \
 	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
