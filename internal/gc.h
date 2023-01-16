@@ -21,7 +21,6 @@ struct rb_objspace; /* in vm_core.h */
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
 # undef RB_NEWOBJ_OF
-# undef RB_OBJ_WRITE
 #endif
 
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
@@ -63,9 +62,6 @@ struct rb_objspace; /* in vm_core.h */
 #endif
 
 #define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-#define RB_OBJ_WRITE(a, slot, b) \
-    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
-                 (VALUE)(b), __FILE__, __LINE__)
 
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID

@@ -9,7 +9,6 @@
  * @brief      Internal header for Struct.
  */
 #include "ruby/internal/stdbool.h"     /* for bool */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 enum {
