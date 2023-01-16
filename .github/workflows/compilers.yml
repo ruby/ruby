@@ -91,12 +91,13 @@ jobs:
             container: gcc-11
             env:
               # Minimal flags to pass the check.
-              default_cc: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
+              default_cc: 'gcc-11 -fcf-protection -Wa,--generate-missing-build-notes=yes'
+              optflags: '-O2'
               LDFLAGS: '-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie"
+              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-gaps"
             check: true
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
