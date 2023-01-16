@@ -1432,6 +1432,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
         return 0;
     }
 
+    /* new ivar to set on object */
     if (!rb_shape_get_iv_index(shape, id, &index)) {
         index = shape->next_iv_index;
         if (index >= MAX_IVARS) {
@@ -1440,7 +1441,12 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 
         RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
 
-        if (UNLIKELY(shape->next_iv_index >= num_iv)) {
+        VALUE klass = rb_obj_class(obj);
+        bool too_complex = RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS;
+
+        /* Grow capacity of ivar list. Don't grow capa it if we're about to
+           switch to OBJ_TOO_COMPLEX shape */
+        if (UNLIKELY(!too_complex && shape->next_iv_index >= num_iv)) {
             RUBY_ASSERT(shape->next_iv_index == num_iv);
 
             shape = rb_grow_iv_list(obj);
@@ -1449,6 +1455,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 
         rb_shape_t *next_shape = rb_shape_get_next(shape, obj, id);
 
+        /* evacuate to hash table */
         if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
             struct rb_id_table * table = rb_id_table_create(shape->next_iv_index);
 
