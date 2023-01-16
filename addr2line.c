@@ -1768,7 +1768,7 @@ di_read_cu(DebugInfoReader *reader)
                 break;
             case VAL_addr:
                 {
-                    addr_header_t header;
+                    addr_header_t header = {};
                     addr_header_init(reader->obj, &header);
                     reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
                 }
