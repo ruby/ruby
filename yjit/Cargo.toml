@@ -45,3 +45,5 @@ opt-level = 3
 overflow-checks = true
 # Generate debug info
 debug = true
+# Use ThinLTO. Much smaller output for a small amount of build time increase.
+lto = "thin"
