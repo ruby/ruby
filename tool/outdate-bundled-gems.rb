@@ -14,6 +14,14 @@ until ARGV.empty?
     # just to run when `make -n`
   when /\A--mflags=(.*)/
     fu = FileUtils::DryRun if /\A-\S*n/ =~ $1
+  when /\A--gem[-_]platform=(.*)/im
+    gem_platform = $1
+    ruby_platform = nil
+  when /\A--ruby[-_]platform=(.*)/im
+    ruby_platform = $1
+    gem_platform = nil
+  when /\A--ruby[-_]version=(.*)/im
+    ruby_version = $1
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
@@ -21,6 +29,9 @@ until ARGV.empty?
   end
   ARGV.shift
 end
+
+gem_platform ||= (ruby_platform ? Gem::Platform.new(ruby_platform) : Gem::Platform.local).to_s
+ruby_version ||= RbConfig::CONFIG['ruby_version'] # This may not have "-static"
 
 class Removal
   attr_reader :base
@@ -104,29 +115,27 @@ curdir.glob(".bundle/gems/*/") do |dir|
   end
 end
 
-platform = Gem::Platform.local.to_s
 curdir.glob(".bundle/{extensions,.timestamp}/*/") do |dir|
-  unless File.basename(dir) == platform
+  unless File.fnmatch?(gem_platform, File.basename(dir))
     curdir.rmdir(dir)
   end
 end
 
-baseruby_version = RbConfig::CONFIG['ruby_version'] # This may not have "-static"
-curdir.glob(".bundle/{extensions,.timestamp}/#{platform}/*/") do |dir|
-  version = File.basename(dir).split('-', 2).first # Remove "-static" if exists
-  unless version == baseruby_version
+curdir.glob(".bundle/{extensions,.timestamp}/#{gem_platform}/*/") do |dir|
+  unless File.fnmatch?(ruby_version, File.basename(dir, '-static'))
     curdir.rmdir(dir)
   end
 end
 
-curdir.glob(".bundle/extensions/#{platform}/#{baseruby_version}/*/") do |dir|
+curdir.glob(".bundle/extensions/#{gem_platform}/#{ruby_version}/*/") do |dir|
   unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
     curdir.rmdir(dir)
   end
 end
 
-curdir.glob(".bundle/.timestamp/#{platform}/#{baseruby_version}/.*.time") do |stamp|
-  unless curdir.directory?(File.join(".bundle", stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')))
+curdir.glob(".bundle/.timestamp/#{gem_platform}/#{ruby_version}/.*.time") do |stamp|
+  dir = stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')[%r[\A[^/]+/[^/]+]]
+  unless curdir.directory?(File.join(".bundle", dir))
     curdir.unlink(stamp)
   end
 end
