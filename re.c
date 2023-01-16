@@ -3792,6 +3792,8 @@ void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const ch
  *      Regexp.new('foo', flags)              # => /foo/mix
  *
  *  - +nil+ or +false+, which is ignored.
+ *  - Any other truthy value, in which case the regexp will be
+ *    case-insensitive.
  *
  *  If optional keyword argument +timeout+ is given,
  *  its float value overrides the timeout interval for the class,
