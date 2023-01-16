@@ -405,6 +405,17 @@ vm_push_frame(rb_execution_context_t *ec,
     vm_push_frame_debug_counter_inc(ec, cfp, type);
 }
 
+void
+rb_vm_pop_frame_no_int(rb_execution_context_t *ec)
+{
+    rb_control_frame_t *cfp = ec->cfp;
+
+    if (VM_CHECK_MODE >= 4) rb_gc_verify_internal_consistency();
+    if (VMDEBUG == 2)       SDR();
+
+    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+}
+
 /* return TRUE if the frame is finished */
 static inline int
 vm_pop_frame(rb_execution_context_t *ec, rb_control_frame_t *cfp, const VALUE *ep)

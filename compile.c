@@ -12311,7 +12311,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     verify_call_cache(iseq);
 
     RB_GC_GUARD(dummy_frame);
-    rb_vm_pop_frame(ec);
+    rb_vm_pop_frame_no_int(ec);
 }
 
 struct ibf_dump_iseq_list_arg
