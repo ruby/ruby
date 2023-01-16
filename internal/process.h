@@ -20,6 +20,7 @@
 #endif
 
 #include "ruby/ruby.h"          /* for VALUE */
+#include "internal/compilers.h" /* for __has_warning */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
 #include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
 

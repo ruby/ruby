@@ -43,7 +43,6 @@
 /* internal/gc.h */
 #undef NEWOBJ_OF
 #undef RB_NEWOBJ_OF
-#undef RB_OBJ_WRITE
 
 /* internal/hash.h */
 #undef RHASH_IFNONE
