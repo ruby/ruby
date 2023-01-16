@@ -126,8 +126,9 @@ void rb_gc_init_collection(void);
 void rb_mmtk_pre_process_opts(int argc, char **argv);
 void rb_mmtk_post_process_opts(const char *arg);
 void rb_mmtk_post_process_opts_finish(bool feature_enable);
-bool rb_mmtk_enabled_p(void);
 #endif
+
+bool rb_mmtk_enabled_p(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
