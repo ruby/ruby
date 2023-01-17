@@ -746,6 +746,7 @@ typedef struct rb_objspace {
         unsigned int dont_incremental : 1;
         unsigned int during_gc : 1;
         unsigned int during_compacting : 1;
+        unsigned int during_reference_updating : 1;
         unsigned int gc_stressful: 1;
         unsigned int has_hook: 1;
         unsigned int during_minor_gc : 1;
@@ -1210,8 +1211,7 @@ VALUE rb_mGC;
 int ruby_disable_gc = 0;
 int ruby_enable_autocompact = 0;
 
-void rb_iseq_mark(const rb_iseq_t *iseq);
-void rb_iseq_update_references(rb_iseq_t *iseq);
+void rb_iseq_mark_and_update(rb_iseq_t *iseq, bool referece_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
@@ -7104,6 +7104,23 @@ rb_gc_mark(VALUE ptr)
     gc_mark_and_pin(&rb_objspace, ptr);
 }
 
+void
+rb_gc_mark_and_move(VALUE *ptr)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    if (RB_SPECIAL_CONST_P(*ptr)) return;
+
+    if (UNLIKELY(objspace->flags.during_reference_updating)) {
+        GC_ASSERT(objspace->flags.during_compacting);
+        GC_ASSERT(during_gc);
+
+        *ptr = rb_gc_location(*ptr);
+    }
+    else {
+        gc_mark_ptr(objspace, *ptr);
+    }
+}
+
 /* CAUTION: THIS FUNCTION ENABLE *ONLY BEFORE* SWEEPING.
  * This function is only for GC_END_MARK timing.
  */
@@ -7170,7 +7187,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
         mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
         return;
       case imemo_iseq:
-        rb_iseq_mark((rb_iseq_t *)obj);
+        rb_iseq_mark_and_update((rb_iseq_t *)obj, false);
         return;
       case imemo_tmpbuf:
         {
@@ -10327,7 +10344,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
         break;
       case imemo_iseq:
-        rb_iseq_update_references((rb_iseq_t *)obj);
+        rb_iseq_mark_and_update((rb_iseq_t *)obj, true);
         break;
       case imemo_ast:
         rb_ast_update_references((rb_ast_t *)obj);
@@ -10763,6 +10780,8 @@ extern rb_symbols_t ruby_global_symbols;
 static void
 gc_update_references(rb_objspace_t *objspace)
 {
+    objspace->flags.during_reference_updating = true;
+
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
@@ -10795,6 +10814,8 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
     gc_update_table_refs(objspace, global_symbols.str_sym);
     gc_update_table_refs(objspace, finalizer_table);
+
+    objspace->flags.during_reference_updating = false;
 }
 
 #if GC_CAN_COMPILE_COMPACTION
