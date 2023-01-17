@@ -21,16 +21,21 @@
   ((RUBY_VERSION_MAJOR < (major)) || \
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR < (minor)) || \
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR == (minor) && RUBY_VERSION_TEENY < (teeny)))
+#define RUBY_VERSION_SINCE(major,minor,teeny) (!RUBY_VERSION_BEFORE(major, minor, teeny))
 
-#if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 2)
+#if RUBY_VERSION_SINCE(3, 3, 0)
+#define RUBY_VERSION_IS_3_3
+#endif
+
+#if RUBY_VERSION_SINCE(3, 2, 0)
 #define RUBY_VERSION_IS_3_2
 #endif
 
-#if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 1)
+#if RUBY_VERSION_SINCE(3, 1, 0)
 #define RUBY_VERSION_IS_3_1
 #endif
 
-#if RUBY_VERSION_MAJOR > 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR >= 0)
+#if RUBY_VERSION_SINCE(3, 0, 0)
 #define RUBY_VERSION_IS_3_0
 #endif
 
