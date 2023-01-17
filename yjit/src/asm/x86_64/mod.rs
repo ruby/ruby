@@ -690,6 +690,8 @@ pub fn call_rel32(cb: &mut CodeBlock, rel32: i32) {
 /// call - Call a pointer, encode with a 32-bit offset if possible
 pub fn call_ptr(cb: &mut CodeBlock, scratch_opnd: X86Opnd, dst_ptr: *const u8) {
     if let X86Opnd::Reg(_scratch_reg) = scratch_opnd {
+        use crate::stats::{incr_counter};
+
         // Pointer to the end of this call instruction
         let end_ptr = cb.get_ptr(cb.write_pos + 5);
 
@@ -698,11 +700,13 @@ pub fn call_ptr(cb: &mut CodeBlock, scratch_opnd: X86Opnd, dst_ptr: *const u8) {
 
         // If the offset fits in 32-bit
         if rel64 >= i32::MIN.into() && rel64 <= i32::MAX.into() {
+            incr_counter!(x86_call_rel32);
             call_rel32(cb, rel64.try_into().unwrap());
             return;
         }
 
         // Move the pointer into the scratch register and call
+        incr_counter!(x86_call_reg);
         mov(cb, scratch_opnd, const_ptr_opnd(dst_ptr));
         call(cb, scratch_opnd);
     } else {
