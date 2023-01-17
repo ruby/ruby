@@ -51,12 +51,6 @@ GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
 BENCHMARK_DRIVER_GIT_REF = v0.16.3
-SIMPLECOV_GIT_URL = https://github.com/simplecov-ruby/simplecov.git
-SIMPLECOV_GIT_REF = v0.17.0
-SIMPLECOV_HTML_GIT_URL = https://github.com/simplecov-ruby/simplecov-html.git
-SIMPLECOV_HTML_GIT_REF = v0.10.2
-DOCLIE_GIT_URL = https://github.com/ms-ati/docile.git
-DOCLIE_GIT_REF = v1.3.2
 
 STATIC_RUBY   = static-ruby
 
@@ -1377,6 +1371,10 @@ update-rubyspec:
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb -d tool --cache-dir=$(CACHE_DIR) -e gnu \
 	    config.guess config.sub
+
+update-coverage: PHONY
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "simplecov"
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)

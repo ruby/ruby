@@ -602,23 +602,6 @@ update-benchmark-driver:
 		--branch $(BENCHMARK_DRIVER_GIT_REF) \
 		$(BENCHMARK_DRIVER_GIT_URL) benchmark-driver $(GIT_OPTS)
 
-update-doclie:
-	$(Q) $(tooldir)/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
-		--branch $(DOCLIE_GIT_REF) \
-		$(DOCLIE_GIT_URL) doclie $(GIT_OPTS)
-
-update-simplecov-html:
-	$(Q) $(tooldir)/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
-		--branch $(SIMPLECOV_HTML_GIT_REF) \
-		$(SIMPLECOV_HTML_GIT_URL) simplecov-html $(GIT_OPTS)
-
-update-simplecov:
-	$(Q) $(tooldir)/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
-		--branch $(SIMPLECOV_GIT_REF)  \
-		$(SIMPLECOV_GIT_URL) simplecov $(GIT_OPTS)
-
-update-coverage: update-simplecov update-simplecov-html update-doclie
-
 update-known-errors:
 	errno --list | cut -d' ' -f1 | sort -u - $(srcdir)/defs/known_errors.def | \
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
