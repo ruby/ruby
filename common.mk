@@ -1374,7 +1374,7 @@ update-config_files: PHONY
 
 update-coverage: PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "simplecov"
+		--install-dir .bundle --conservative "simplecov" -v "0.20.0"
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
