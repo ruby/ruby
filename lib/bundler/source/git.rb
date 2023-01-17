@@ -19,7 +19,7 @@ module Bundler
         # Stringify options that could be set as symbols
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
-        @uri        = options["uri"] || ""
+        @uri        = URINormalizer.normalize_suffix(options["uri"] || "", :trailing_slash => false)
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"]
