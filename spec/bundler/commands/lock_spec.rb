@@ -140,6 +140,24 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(@lockfile)
   end
 
+  it "does not unlock git sources when only uri shape changes" do
+    build_git("foo")
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}"
+    G
+
+    # Change uri format to end with "/" and reinstall
+    install_gemfile <<-G, :verbose => true
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}/"
+    G
+
+    expect(out).to include("using resolution from the lockfile")
+    expect(out).not_to include("re-resolving dependencies because the list of sources changed")
+  end
+
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 

@@ -85,6 +85,7 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
 
   class << self
     def configure
