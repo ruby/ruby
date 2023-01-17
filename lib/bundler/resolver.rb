@@ -9,26 +9,21 @@ module Bundler
   class Resolver
     require_relative "vendored_pub_grub"
     require_relative "resolver/base"
-    require_relative "resolver/package"
     require_relative "resolver/candidate"
     require_relative "resolver/incompatibility"
     require_relative "resolver/root"
 
     include GemHelpers
 
-    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements)
-      @source_requirements = source_requirements
-      @base = Resolver::Base.new(base, additional_base_requirements)
+    def initialize(base, gem_version_promoter)
+      @source_requirements = base.source_requirements
+      @base = base
       @gem_version_promoter = gem_version_promoter
     end
 
-    def start(requirements, packages, exclude_specs: [])
-      exclude_specs.each do |spec|
-        remove_from_candidates(spec)
-      end
-
+    def start(requirements)
       @requirements = requirements
-      @packages = packages
+      @packages = @base.packages
 
       root, logger = setup_solver
 
@@ -78,33 +73,26 @@ module Bundler
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
-      names_to_unlock = []
-      extended_explanation = nil
+      names_to_unlock, names_to_allow_prereleases_for, extended_explanation = find_names_to_relax(incompatibility)
 
-      while incompatibility.conflict?
-        cause = incompatibility.cause
-        incompatibility = cause.incompatibility
+      names_to_relax = names_to_unlock + names_to_allow_prereleases_for
 
-        incompatibility.terms.each do |term|
-          name = term.package.name
-          names_to_unlock << name if base_requirements[name]
+      if names_to_relax.any?
+        if names_to_unlock.any?
+          Bundler.ui.debug "Found conflicts with locked dependencies. Will retry with #{names_to_unlock.join(", ")} unlocked...", true
 
-          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
-          next unless no_versions_incompat
-
-          extended_explanation = no_versions_incompat.extended_explanation
+          @base.unlock_names(names_to_unlock)
         end
-      end
 
-      names_to_unlock.uniq!
+        if names_to_allow_prereleases_for.any?
+          Bundler.ui.debug "Found conflicts with dependencies with prereleases. Will retrying considering prereleases for #{names_to_allow_prereleases_for.join(", ")}...", true
 
-      if names_to_unlock.any?
-        Bundler.ui.debug "Found conflicts with locked dependencies. Retrying with #{names_to_unlock.join(", ")} unlocked...", true
-
-        @base.unlock_names(names_to_unlock)
+          @base.include_prereleases(names_to_allow_prereleases_for)
+        end
 
         root, logger = setup_solver
 
+        Bundler.ui.debug "Retrying resolution...", true
         retry
       end
 
@@ -116,6 +104,35 @@ module Bundler
       end
 
       raise SolveFailure.new(explanation)
+    end
+
+    def find_names_to_relax(incompatibility)
+      names_to_unlock = []
+      names_to_allow_prereleases_for = []
+      extended_explanation = nil
+
+      while incompatibility.conflict?
+        cause = incompatibility.cause
+        incompatibility = cause.incompatibility
+
+        incompatibility.terms.each do |term|
+          package = term.package
+          name = package.name
+
+          if base_requirements[name]
+            names_to_unlock << name
+          elsif package.ignores_prereleases?
+            names_to_allow_prereleases_for << name
+          end
+
+          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
+          next unless no_versions_incompat
+
+          extended_explanation = no_versions_incompat.extended_explanation
+        end
+      end
+
+      [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, extended_explanation]
     end
 
     def parse_dependency(package, dependency)
@@ -215,7 +232,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + @all_specs[name]).uniq(&:full_name)
+      results = (@base[name] + filter_prereleases(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
       locked_requirement = base_requirements[name]
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
@@ -284,6 +301,12 @@ module Bundler
       end
     end
 
+    def filter_prereleases(specs, package)
+      return specs unless package.ignores_prereleases?
+
+      specs.reject {|s| s.version.prerelease? }
+    end
+
     def requirement_satisfied_by?(requirement, spec)
       requirement.satisfied_by?(spec.version) || spec.source.is_a?(Source::Gemspec)
     end
@@ -304,10 +327,6 @@ module Bundler
       @base.base_requirements
     end
 
-    def remove_from_candidates(spec)
-      @base.delete(spec)
-    end
-
     def prepare_dependencies(requirements, packages)
       to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
         name = dep_package.name
@@ -322,7 +341,15 @@ module Bundler
         end
 
         next [dep_package, dep_constraint] if name == "bundler"
-        next [dep_package, dep_constraint] unless versions_for(dep_package, dep_constraint.range).empty?
+
+        versions = versions_for(dep_package, dep_constraint.range)
+        if versions.empty? && dep_package.ignores_prereleases?
+          @sorted_versions.delete(dep_package)
+          dep_package.consider_prereleases!
+          versions = versions_for(dep_package, dep_constraint.range)
+        end
+        next [dep_package, dep_constraint] unless versions.empty?
+
         next unless dep_package.current_platform?
 
         raise_not_found!(dep_package)

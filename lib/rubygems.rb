@@ -8,7 +8,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.4.3".freeze
+  VERSION = "3.4.4".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -118,10 +118,6 @@ module Gem
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
   # to avoid deprecation warnings in Ruby 2.7.
   UNTAINT = RUBY_VERSION < "2.7" ? :untaint.to_sym : proc {}
-
-  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
-  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
-                                         (RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.0")
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -1349,7 +1345,16 @@ end
 Gem::Specification.load_defaults
 
 require_relative "rubygems/core_ext/kernel_gem"
-require_relative "rubygems/core_ext/kernel_require"
-require_relative "rubygems/core_ext/kernel_warn"
+
+path = File.join(__dir__, "rubygems/core_ext/kernel_require.rb")
+# When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+if RUBY_ENGINE == "truffleruby" ||
+   (RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.0")
+  file = "<internal:#{path}>"
+else
+  require_relative "rubygems/core_ext/kernel_warn"
+  file = path
+end
+eval File.read(path), nil, file
 
 require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)

@@ -1,19 +1,40 @@
 # frozen_string_literal: true
 
+require_relative "package"
+
 module Bundler
   class Resolver
     class Base
-      def initialize(base, additional_base_requirements)
+      attr_reader :packages, :source_requirements
+
+      def initialize(source_requirements, dependencies, base, platforms, options)
+        @source_requirements = source_requirements
+
         @base = base
-        @additional_base_requirements = additional_base_requirements
+
+        @packages = Hash.new do |hash, name|
+          hash[name] = Package.new(name, platforms, **options)
+        end
+
+        dependencies.each do |dep|
+          name = dep.name
+
+          @packages[name] = Package.new(name, dep.gem_platforms(platforms), **options.merge(:dependency => dep))
+        end
       end
 
       def [](name)
         @base[name]
       end
 
-      def delete(spec)
-        @base.delete(spec)
+      def delete(specs)
+        specs.each do |spec|
+          @base.delete(spec)
+        end
+      end
+
+      def get_package(name)
+        @packages[name]
       end
 
       def base_requirements
@@ -24,10 +45,14 @@ module Bundler
         names.each do |name|
           @base.delete_by_name(name)
 
-          @additional_base_requirements.reject! {|dep| dep.name == name }
+          @base_requirements.delete(name)
         end
+      end
 
-        @base_requirements = nil
+      def include_prereleases(names)
+        names.each do |name|
+          get_package(name).consider_prereleases!
+        end
       end
 
       private
@@ -38,7 +63,6 @@ module Bundler
           req = Gem::Requirement.new(ls.version)
           base_requirements[ls.name] = req
         end
-        @additional_base_requirements.each {|d| base_requirements[d.name] = d.requirement }
         base_requirements
       end
     end

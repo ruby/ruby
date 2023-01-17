@@ -436,7 +436,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
-  it "when requiring fileutils after does not show redefinition warnings" do
+  it "when requiring fileutils after does not show redefinition warnings", :realworld do
     dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
 
