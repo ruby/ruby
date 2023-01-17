@@ -12,4 +12,8 @@ describe "The END keyword" do
   it "runs multiple ends in LIFO order" do
     ruby_exe("END { puts 'foo' }; END { puts 'bar' }").should == "bar\nfoo\n"
   end
+
+  it "is affected by the toplevel assignment" do
+    ruby_exe("foo = 'foo'; END { puts foo }").should == "foo\n"
+  end
 end
