@@ -28,6 +28,10 @@ pub struct Options {
     // Trace locations of exits
     pub gen_trace_exits: bool,
 
+    // Whether to start YJIT in paused state (initialize YJIT but don't
+    // compile anything)
+    pub pause: bool,
+
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
@@ -50,6 +54,7 @@ pub static mut OPTIONS: Options = Options {
     max_versions: 4,
     gen_stats: false,
     gen_trace_exits: false,
+    pause: false,
     dump_insns: false,
     dump_disasm: None,
     verify_ctx: false,
@@ -130,6 +135,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => {
                 return None;
             }
+        },
+
+        ("pause", "") => unsafe {
+            OPTIONS.pause = true;
         },
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {

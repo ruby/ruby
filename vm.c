@@ -376,7 +376,7 @@ jit_compile(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    bool yjit_enabled = rb_yjit_enabled_p();
+    bool yjit_enabled = rb_yjit_compile_new_iseqs();
     if (yjit_enabled || rb_rjit_call_p) {
         body->total_calls++;
     }
