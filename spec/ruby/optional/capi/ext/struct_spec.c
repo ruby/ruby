@@ -15,10 +15,12 @@ static VALUE struct_spec_rb_struct_getmember(VALUE self, VALUE st, VALUE key) {
   return rb_struct_getmember(st, SYM2ID(key));
 }
 
+#if RUBY_VERSION_MAJOR < 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR < 3)
 static VALUE struct_spec_rb_struct_s_members(VALUE self, VALUE klass)
 {
   return rb_ary_dup(rb_struct_s_members(klass));
 }
+#endif
 
 static VALUE struct_spec_rb_struct_members(VALUE self, VALUE st)
 {
@@ -71,7 +73,9 @@ void Init_struct_spec(void) {
   VALUE cls = rb_define_class("CApiStructSpecs", rb_cObject);
   rb_define_method(cls, "rb_struct_aref", struct_spec_rb_struct_aref, 2);
   rb_define_method(cls, "rb_struct_getmember", struct_spec_rb_struct_getmember, 2);
+#if RUBY_VERSION_MAJOR < 3 || (RUBY_VERSION_MAJOR == 3 && RUBY_VERSION_MINOR < 3)
   rb_define_method(cls, "rb_struct_s_members", struct_spec_rb_struct_s_members, 1);
+#endif
   rb_define_method(cls, "rb_struct_members", struct_spec_rb_struct_members, 1);
   rb_define_method(cls, "rb_struct_aset", struct_spec_rb_struct_aset, 3);
   rb_define_method(cls, "rb_struct_define", struct_spec_struct_define, 4);

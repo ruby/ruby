@@ -56,6 +56,7 @@ struct RStruct {
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
+VALUE rb_struct_s_members(VALUE klass);
 static inline const VALUE *rb_struct_const_heap_ptr(VALUE st);
 static inline bool RSTRUCT_TRANSIENT_P(VALUE st);
 static inline void RSTRUCT_TRANSIENT_SET(VALUE st);

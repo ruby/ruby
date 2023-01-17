@@ -114,23 +114,8 @@ VALUE rb_struct_initialize(VALUE self, VALUE values);
 VALUE rb_struct_getmember(VALUE self, ID key);
 
 /**
- * Queries the list of the names of the fields of the given struct class.
- *
- * @param[in]  klass  A subclass of ::rb_cStruct.
- * @return     The list of the names of the fields of `klass`.
- */
-VALUE rb_struct_s_members(VALUE klass);
-
-/**
  * Queries the list of the names of the fields of the class of the given struct
- * object.  This is  almost the same as calling  rb_struct_s_members() over the
- * class of the receiver.
- *
- * @internal
- *
- * "Almost"?  What exactly is the difference?
- *
- * @endinternal
+ * object.
  *
  * @param[in]  self  An instance of a subclass of ::rb_cStruct.
  * @return     The list of the names of the fields.

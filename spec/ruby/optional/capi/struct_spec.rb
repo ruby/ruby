@@ -151,9 +151,11 @@ describe "C-API Struct function" do
     end
   end
 
-  describe "rb_struct_s_members" do
-    it "returns the struct members as an array of symbols" do
-      @s.rb_struct_s_members(@klass).should == [:a, :b, :c]
+  ruby_version_is ''...'3.3' do
+    describe "rb_struct_s_members" do
+      it "returns the struct members as an array of symbols" do
+        @s.rb_struct_s_members(@klass).should == [:a, :b, :c]
+      end
     end
   end
 
