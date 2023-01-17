@@ -460,6 +460,18 @@ begin
       EOC
     end
 
+    def test_no_escape_sequence_passed_to_dynamic_prompt
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl  --autocomplete --color-bold --broken-dynamic-prompt-assert-no-escape-sequence}, startup_message: 'Multiline REPL.')
+      write("%[ S")
+      write("\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [0000]> %[ S
+        [0001]>
+      EOC
+    end
+
     def test_enable_bracketed_paste
       omit if Reline::IOGate.win?
       write_inputrc <<~LINES

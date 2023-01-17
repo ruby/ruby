@@ -7793,6 +7793,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_IVPTR(obj)[i]);
         }
         mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+
+        gc_mark(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_ICLASS:
@@ -11164,6 +11166,8 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
         update_class_ext(objspace, RCLASS_EXT(obj));
         update_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+
+        UPDATE_IF_MOVED(objspace, RCLASS_EXT(obj)->classpath);
         break;
 
       case T_ICLASS:
@@ -11214,16 +11218,18 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 #if USE_RVARGC
                 VALUE new_root = any->as.string.as.heap.aux.shared;
                 rb_str_update_shared_ary(obj, old_root, new_root);
-
-                // if, after move the string is not embedded, and can fit in the
-                // slot it's been placed in, then re-embed it
-                if (rb_gc_obj_slot_size(obj) >= rb_str_size_as_embedded(obj)) {
-                    if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
-                        rb_str_make_embedded(obj);
-                    }
-                }
 #endif
             }
+
+#if USE_RVARGC
+            /* If, after move the string is not embedded, and can fit in the
+             * slot it's been placed in, then re-embed it. */
+            if (rb_gc_obj_slot_size(obj) >= rb_str_size_as_embedded(obj)) {
+                if (!STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
+                    rb_str_make_embedded(obj);
+                }
+            }
+#endif
 
             break;
         }

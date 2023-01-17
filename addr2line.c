@@ -1725,10 +1725,6 @@ di_read_cu(DebugInfoReader *reader)
     di_read_debug_abbrev_cu(reader);
     if (di_read_debug_line_cu(reader)) return -1;
 
-#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER_BUILD_DATE)
-    /* Though DWARF specifies "the applicable base address defaults to the base
-       address of the compilation unit", but GCC seems to use zero as default */
-#else
     do {
         DIE die;
 
@@ -1772,14 +1768,14 @@ di_read_cu(DebugInfoReader *reader)
                 break;
             case VAL_addr:
                 {
-                    addr_header_t header;
+                    addr_header_t header = {};
                     addr_header_init(reader->obj, &header);
                     reader->current_low_pc = read_addr(&header, reader->current_addr_base, low_pc.as.addr_idx);
                 }
                 break;
         }
     } while (0);
-#endif
+
     return 0;
 }
 

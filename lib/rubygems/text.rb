@@ -9,7 +9,7 @@ module Gem::Text
   # Remove any non-printable characters and make the text suitable for
   # printing.
   def clean_text(text)
-    text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".".freeze)
+    text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".")
   end
 
   def truncate_text(text, description, max_length = 100_000)

@@ -161,16 +161,6 @@ should_be_T_ARRAY(VALUE ary)
     RARRAY(ary)->as.heap.aux.capa = (n); \
 } while (0)
 
-#define ARY_SET_SHARED(ary, value) do { \
-    const VALUE _ary_ = (ary); \
-    const VALUE _value_ = (value); \
-    assert(!ARY_EMBED_P(_ary_)); \
-    assert(ARY_SHARED_P(_ary_)); \
-    assert(!OBJ_FROZEN(_ary_)); \
-    assert(ARY_SHARED_ROOT_P(_value_) || OBJ_FROZEN(_value_)); \
-    RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
-} while (0)
-
 #define ARY_SHARED_ROOT_OCCUPIED(ary) (!OBJ_FROZEN(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
@@ -643,10 +633,15 @@ rb_ary_increment_share(VALUE shared_root)
 static void
 rb_ary_set_shared(VALUE ary, VALUE shared_root)
 {
+    assert(!ARY_EMBED_P(ary));
+    assert(!OBJ_FROZEN(ary));
+    assert(ARY_SHARED_ROOT_P(shared_root) || OBJ_FROZEN(shared_root));
+
     rb_ary_increment_share(shared_root);
     FL_SET_SHARED(ary);
+    RB_OBJ_WRITE(ary, &RARRAY(ary)->as.heap.aux.shared_root, shared_root);
+
     RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
-    ARY_SET_SHARED(ary, shared_root);
 }
 
 static inline void
@@ -1082,10 +1077,7 @@ ary_make_shared(VALUE ary)
 
         ARY_SET_LEN(shared, capa);
         ary_mem_clear(shared, len, capa - len);
-        ARY_SET_SHARED_ROOT_REFCNT(shared, 1);
-        FL_SET_SHARED(ary);
-        RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
-        ARY_SET_SHARED(ary, shared);
+        rb_ary_set_shared(ary, shared);
 
         ary_verify(shared);
         ary_verify(ary);

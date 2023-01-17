@@ -818,6 +818,54 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
+  def test_COLON2_3
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ErrorHighlightTest::NotDefined::Foo
+                        ^^^^^^^^^^^^
+    END
+
+      ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  def test_COLON2_4
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ::ErrorHighlightTest::NotDefined::Foo
+                          ^^^^^^^^^^^^
+    END
+
+      ::ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
+    def test_COLON2_5
+      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+      assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  else
+    def test_COLON2_5
+      assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+        ErrorHighlightTest::NotDefined::NotDefined
+                          ^^^^^^^^^^^^
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  end
+
   def test_COLON3
     assert_error_message(NameError, <<~END) do
 uninitialized constant NotDefined

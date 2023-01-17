@@ -1318,7 +1318,6 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
     VM_ASSERT(cme != NULL);
 
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
-    struct rb_class_cc_entries *ccs;
     VALUE ccs_data;
 
     if (!cc_tbl) {
@@ -1326,12 +1325,13 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
     }
 
     if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
-        ccs = (struct rb_class_cc_entries *)ccs_data;
+#if VM_CHECK_MODE > 0
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         VM_ASSERT(ccs->cme == cme);
+#endif
     }
     else {
-        ccs = vm_ccs_create(klass, cme);
-        rb_id_table_insert(cc_tbl, mid, (VALUE)ccs);
+        vm_ccs_create(klass, cc_tbl, mid, cme);
     }
 }
 

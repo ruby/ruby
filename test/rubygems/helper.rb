@@ -1555,7 +1555,7 @@ Also, a list:
   # :stopdoc:
   # only available in RubyGems tests
 
-  PRIVATE_KEY_PASSPHRASE = "Foo bar".freeze
+  PRIVATE_KEY_PASSPHRASE = "Foo bar"
 
   begin
     PRIVATE_KEY                 = load_key "private"

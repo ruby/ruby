@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/input-method.rb - input methods used irb
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative 'src_encoding'
 require_relative 'magic-file'
 require_relative 'completion'

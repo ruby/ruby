@@ -40,7 +40,7 @@ module Bundler
   SUDO_MUTEX = Thread::Mutex.new
 
   SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
-  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed.".freeze
+  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed."
   SAFE_MARSHAL_PROC = proc do |object|
     object.tap do
       unless SAFE_MARSHAL_CLASSES.include?(object.class)
@@ -506,7 +506,7 @@ EOF
       if File.file?(executable) && File.executable?(executable)
         executable
       elsif paths = ENV["PATH"]
-        quote = '"'.freeze
+        quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
           executable_path = File.expand_path(executable, path)

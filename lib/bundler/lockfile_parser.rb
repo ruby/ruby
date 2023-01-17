@@ -4,15 +4,15 @@ module Bundler
   class LockfileParser
     attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version
 
-    BUNDLED      = "BUNDLED WITH".freeze
-    DEPENDENCIES = "DEPENDENCIES".freeze
-    PLATFORMS    = "PLATFORMS".freeze
-    RUBY         = "RUBY VERSION".freeze
-    GIT          = "GIT".freeze
-    GEM          = "GEM".freeze
-    PATH         = "PATH".freeze
-    PLUGIN       = "PLUGIN SOURCE".freeze
-    SPECS        = "  specs:".freeze
+    BUNDLED      = "BUNDLED WITH"
+    DEPENDENCIES = "DEPENDENCIES"
+    PLATFORMS    = "PLATFORMS"
+    RUBY         = "RUBY VERSION"
+    GIT          = "GIT"
+    GEM          = "GEM"
+    PATH         = "PATH"
+    PLUGIN       = "PLUGIN SOURCE"
+    SPECS        = "  specs:"
     OPTIONS      = /^  ([a-z]+): (.*)$/i.freeze
     SOURCE       = [GIT, GEM, PATH, PLUGIN].freeze
 

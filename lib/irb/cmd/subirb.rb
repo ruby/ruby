@@ -1,12 +1,7 @@
 # frozen_string_literal: false
+#
 #   multi.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "nop"

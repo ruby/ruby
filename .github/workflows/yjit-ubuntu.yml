@@ -40,6 +40,15 @@ jobs:
       # Check that we can build in release mode too
       - run: cargo build --release
         working-directory: yjit
+  lint:
+    name: Rust lint
+    # GitHub Action's image seems to already contain a Rust 1.58.0.
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      # Check that we don't have linting errors in release mode, too
+      - run: cargo clippy --all-targets --all-features
+        working-directory: yjit
   make:
     strategy:
       fail-fast: false

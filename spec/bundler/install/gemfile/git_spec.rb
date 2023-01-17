@@ -1481,8 +1481,6 @@ In Gemfile:
 
   describe "without git installed" do
     it "prints a better error message when installing" do
-      build_git "foo"
-
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
 

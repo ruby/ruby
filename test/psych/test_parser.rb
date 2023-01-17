@@ -16,13 +16,13 @@ module Psych
 
       (Handler.instance_methods(true) -
        Object.instance_methods).each do |m|
-        class_eval %{
+        class_eval <<~RUBY, __FILE__, __LINE__ + 1
           def #{m} *args
             super
             @marks << @parser.mark if @parser
             @calls << [:#{m}, args]
           end
-        }
+        RUBY
       end
     end
 

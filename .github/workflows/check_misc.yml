@@ -20,7 +20,7 @@ jobs:
           ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]'
+          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
           ! git grep -n '^[	 ][	 ]*$' -- '*.md'
       - name: Check for bash specific substitution in configure.ac
         run: |
@@ -66,30 +66,7 @@ jobs:
 
       - name: Maintain updated gems list in NEWS
         run: |
-          #!ruby
-          require 'json'
-          news = File.read("NEWS.md")
-          prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
-          prevs = [prev, prev.sub(/\.\d+\z/, '')]
-          %W[default].each do |type|
-            last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
-              v = g['versions'].values_at(*prevs).compact.first
-              g = g['gem']
-              g = 'RubyGems' if g == 'rubygems'
-              [g, v] if v
-            end.to_h
-            changed = File.foreach("gems/#{type}_gems").filter_map do |l|
-              next if l.start_with?("#")
-              g, v = l.split(" ", 3)
-              [g, v] unless last[g] == v
-            end
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n+\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
-              changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
-            end or next
-            File.write("NEWS.md", news)
-          end
-        shell: ruby {0}
+          ruby tool/update-NEWS-gemlist.rb default
 
       - name: Check diffs
         id: diff

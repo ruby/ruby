@@ -29,7 +29,7 @@ RSpec.describe Bundler::Dsl do
       subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5")
       github_uri = "https://github.com/indirect/sparks.git"
       expect(subject.dependencies.first.source.uri).to eq(github_uri)
-      expect(subject.dependencies.first.source.branch).to eq("refs/pull/5/head")
+      expect(subject.dependencies.first.source.ref).to eq("refs/pull/5/head")
     end
 
     it "rejects :github PR URI with a branch, ref or tag" do

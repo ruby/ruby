@@ -1,4 +1,10 @@
-# gem-name version-to-bundle repository-url [optional-commit-hash-to-test-or-defaults-to-v-version]
+# gem-name version repository-url [revision]
+#
+# - gem-name: gem name to bundle
+# - version: released version to bundle
+# - repository-url: URL from where clone for test
+# - revision: revision in repository-url to test
+#   if `revision` is not given, "v"+`version` or `version` will be used.
 minitest        5.17.0  https://github.com/seattlerb/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.0.6  https://github.com/ruby/rake
@@ -11,6 +17,6 @@ net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.3.3   https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
-rbs             2.8.3   https://github.com/ruby/rbs
-typeprof        0.21.3  https://github.com/ruby/typeprof
+rbs             2.8.3   https://github.com/ruby/rbs eab5367add3469b3f614e663ba43a3debc62420a
+typeprof        0.21.4  https://github.com/ruby/typeprof
 debug           1.7.1   https://github.com/ruby/debug

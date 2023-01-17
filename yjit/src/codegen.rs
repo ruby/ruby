@@ -387,7 +387,11 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 
 /// Generate an exit to return to the interpreter
 fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
-    asm.comment("exit to interpreter");
+    #[cfg(all(feature = "disasm", not(test)))]
+    {
+        let opcode = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
+        asm.comment(&format!("exit to interpreter on {}", insn_name(opcode as usize)));
+    }
 
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
@@ -769,7 +773,7 @@ pub fn gen_single_block(
             gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            asm.comment(&insn_name(opcode));
+            asm.comment(&format!("Insn: {}", insn_name(opcode)));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
@@ -1006,7 +1010,7 @@ fn gen_putself(
     let stack_top = ctx.stack_push_self();
     asm.mov(
         stack_top,
-        Opnd::mem((8 * SIZEOF_VALUE) as u8, CFP, RUBY_OFFSET_CFP_SELF)
+        Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
     );
 
     KeepCompiling
@@ -1161,7 +1165,7 @@ fn gen_newarray(
     );
 
     ctx.stack_pop(n.as_usize());
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1185,7 +1189,7 @@ fn gen_duparray(
         vec![ary.into()],
     );
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::CArray);
     asm.mov(stack_ret, new_ary);
 
     KeepCompiling
@@ -1231,7 +1235,7 @@ fn gen_splatarray(
     // Call rb_vm_splat_array(flag, ary)
     let ary = asm.ccall(rb_vm_splat_array as *const u8, vec![flag.into(), ary_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -1255,7 +1259,7 @@ fn gen_concatarray(
     // Call rb_vm_concat_array(ary1, ary2st)
     let ary = asm.ccall(rb_vm_concat_array as *const u8, vec![ary1_opnd, ary2st_opnd]);
 
-    let stack_ret = ctx.stack_push(Type::Array);
+    let stack_ret = ctx.stack_push(Type::TArray);
     asm.mov(stack_ret, ary);
 
     KeepCompiling
@@ -1314,11 +1318,7 @@ fn guard_object_is_array(
     asm.comment("guard object is array");
 
     // Pull out the type mask
-    let flags_opnd = Opnd::mem(
-        8 * SIZEOF_VALUE as u8,
-        object_opnd,
-        RUBY_OFFSET_RBASIC_FLAGS,
-    );
+    let flags_opnd = Opnd::mem(VALUE_BITS, object_opnd, RUBY_OFFSET_RBASIC_FLAGS);
     let flags_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
 
     // Compare the result with T_ARRAY
@@ -1334,13 +1334,7 @@ fn guard_object_is_string(
     asm.comment("guard object is string");
 
     // Pull out the type mask
-    let flags_reg = asm.load(
-        Opnd::mem(
-            8 * SIZEOF_VALUE as u8,
-            object_reg,
-            RUBY_OFFSET_RBASIC_FLAGS,
-        ),
-    );
+    let flags_reg = asm.load(Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS));
     let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
 
     // Compare the result with T_STRING
@@ -1407,14 +1401,14 @@ fn gen_expandarray(
     }
 
     // Pull out the embed flag to check if it's an embedded array.
-    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
 
     // Move the length of the embedded array into REG1.
     let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
     let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
 
     // Conditionally move the length of the heap array into REG1.
-    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
     let array_len_opnd = Opnd::mem(
         (8 * size_of::<std::os::raw::c_long>()) as u8,
@@ -1431,11 +1425,11 @@ fn gen_expandarray(
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
     let array_reg = asm.load(array_opnd);
-    let ary_opnd = asm.lea(Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
 
     // Conditionally load the address of the heap array into REG1.
     // (struct RArray *)(obj)->as.heap.ptr
-    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
     let heap_ptr_opnd = Opnd::mem(
         (8 * size_of::<usize>()) as u8,
@@ -1462,7 +1456,7 @@ fn gen_getlocal_wc0(
 ) -> CodegenStatus {
     // Compute the offset from BP to the local
     let slot_idx = jit_get_arg(jit, 0).as_i32();
-    let offs: i32 = -(SIZEOF_VALUE as i32) * slot_idx;
+    let offs: i32 = -SIZEOF_VALUE_I32 * slot_idx;
     let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx);
 
     // Load environment pointer EP (level 0) from CFP
@@ -1514,7 +1508,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
         // Get the previous EP from the current EP
         // See GET_PREV_EP(ep) macro
         // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-        let offs = (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32);
+        let offs = SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL;
         ep_opnd = asm.load(Opnd::mem(64, ep_opnd, offs));
         ep_opnd = asm.and(ep_opnd, Opnd::Imm(!0x03));
     }
@@ -1549,7 +1543,7 @@ fn gen_getlocal_generic(
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
-    let offs = -(SIZEOF_VALUE as i32 * local_idx as i32);
+    let offs = -(SIZEOF_VALUE_I32 * local_idx as i32);
     let local_opnd = Opnd::mem(64, ep_opnd, offs);
 
     // Write the local at SP
@@ -1615,7 +1609,7 @@ fn gen_setlocal_wc0(
         let flags_opnd = Opnd::mem(
             64,
             ep_opnd,
-            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -1660,7 +1654,7 @@ fn gen_setlocal_generic(
         let flags_opnd = Opnd::mem(
             64,
             ep_opnd,
-            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
         asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -1675,7 +1669,7 @@ fn gen_setlocal_generic(
     let stack_top = ctx.stack_pop(1);
 
     // Write the value at the environment pointer
-    let offs = -(SIZEOF_VALUE as i32 * local_idx);
+    let offs = -(SIZEOF_VALUE_I32 * local_idx);
     asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
 
     KeepCompiling
@@ -1800,7 +1794,7 @@ fn gen_checkkeyword(
     let ep_opnd = gen_get_ep(asm, 0);
 
     // VALUE kw_bits = *(ep - bits);
-    let bits_opnd = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * -bits_offset);
+    let bits_opnd = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * -bits_offset);
 
     // unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
     // if ((b & (0x01 << idx))) {
@@ -1918,7 +1912,7 @@ fn gen_set_ivar(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // Save the PC and SP because the callee may allocate
@@ -2055,7 +2049,7 @@ fn gen_get_ivar(
 
     asm.comment("guard shape");
     asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic).into();
+    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
     jit_chain_guard(
         JCC_JNE,
         jit,
@@ -2276,7 +2270,7 @@ fn gen_setinstancevariable(
 
         asm.comment("guard shape");
         asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic).into();
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, setivar_megamorphic);
         jit_chain_guard(
             JCC_JNE,
             jit,
@@ -2314,10 +2308,10 @@ fn gen_setinstancevariable(
                     None
                 };
 
-                let dest_shape = if capa_shape.is_none() {
-                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
+                let dest_shape = if let Some(capa_shape) = capa_shape {
+                    unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
                 } else {
-                    unsafe { rb_shape_get_next(capa_shape.unwrap(), comptime_receiver, ivar_name) }
+                    unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
                 };
 
                 let new_shape_id = unsafe { rb_shape_id(dest_shape) };
@@ -3486,7 +3480,7 @@ fn gen_opt_case_dispatch(
             &starting_context,
             asm,
             ocb,
-            CASE_WHEN_MAX_DEPTH as i32,
+            CASE_WHEN_MAX_DEPTH,
             side_exit,
         );
 
@@ -3886,6 +3880,8 @@ fn jit_guard_known_klass(
 
         if known_klass == unsafe { rb_cString } {
             ctx.upgrade_opnd_type(insn_opnd, Type::CString);
+        } else if known_klass == unsafe { rb_cArray } {
+            ctx.upgrade_opnd_type(insn_opnd, Type::CArray);
         }
     }
 }
@@ -4438,7 +4434,7 @@ fn gen_push_frame(
         SpecVal::BlockParamProxy => {
             let ep_opnd = gen_get_lep(jit, asm);
             let block_handler = asm.load(
-                Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+                Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
             );
 
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), block_handler);
@@ -4501,7 +4497,7 @@ fn gen_push_frame(
 
         // Initialize local variables to Qnil
         for i in 0..num_locals {
-            let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
+            let offs = SIZEOF_VALUE_I32 * (i - num_locals - 3);
             asm.store(Opnd::mem(64, sp, offs), Qnil.into());
         }
     }
@@ -4650,7 +4646,7 @@ fn gen_send_cfunc(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // Points to the receiver operand on the stack
@@ -4716,7 +4712,7 @@ fn gen_send_cfunc(
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
         (0..=passed_argc).map(|i|
-            Opnd::mem(64, sp, -(argc + 1 - (i as i32)) * SIZEOF_VALUE_I32)
+            Opnd::mem(64, sp, -(argc + 1 - i) * SIZEOF_VALUE_I32)
         ).collect()
     }
     // Variadic method
@@ -4774,6 +4770,7 @@ fn gen_return_branch(
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
         BranchShape::Default => {
+            asm.comment("update cfp->jit_return");
             asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
         }
     }
@@ -4801,14 +4798,14 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
     );
 
     // Pull out the embed flag to check if it's an embedded array.
-    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
 
     // Get the length of the array
     let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
     let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
 
     // Conditionally move the length of the heap array
-    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
     let array_len_opnd = Opnd::mem(
         (8 * size_of::<std::os::raw::c_long>()) as u8,
@@ -4828,11 +4825,11 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
         // Load the address of the embedded array
         // (struct RArray *)(obj)->as.ary
         let array_reg = asm.load(array_opnd);
-        let ary_opnd = asm.lea(Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+        let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
 
         // Conditionally load the address of the heap array
         // (struct RArray *)(obj)->as.heap.ptr
-        let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+        let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
         asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
         let heap_ptr_opnd = Opnd::mem(
             (8 * size_of::<usize>()) as u8,
@@ -4842,9 +4839,9 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
 
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
-        for i in 0..required_args as i32 {
+        for i in 0..required_args {
             let top = ctx.stack_push(Type::Unknown);
-            asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
+            asm.mov(top, Opnd::mem(64, ary_opnd, i * SIZEOF_VALUE_I32));
         }
     }
 }
@@ -5181,6 +5178,10 @@ fn gen_send_iseq(
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
 
+            // Save the PC and SP because the callee may allocate
+            // e.g. Integer#abs on a bignum
+            jit_prepare_routine_call(jit, ctx, asm);
+
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
 
@@ -5209,7 +5210,7 @@ fn gen_send_iseq(
     asm.comment("stack overflow check");
     let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
     let locals_offs =
-        (SIZEOF_VALUE as i32) * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
+        SIZEOF_VALUE_I32 * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
     let stack_limit = asm.lea(ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).as_side_exit());
@@ -5226,7 +5227,7 @@ fn gen_send_iseq(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     if doing_kw_call {
@@ -5519,7 +5520,7 @@ fn gen_struct_aref(
 
     // This is a .send call and we need to adjust the stack
     if flags & VM_CALL_OPT_SEND != 0 {
-        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     // All structs from the same Struct class should have the same
@@ -5533,10 +5534,10 @@ fn gen_struct_aref(
     let recv = asm.load(ctx.stack_pop(1));
 
     let val = if embedded != VALUE(0) {
-        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + ((SIZEOF_VALUE as i32) * off))
+        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * off))
     } else {
         let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
-        Opnd::mem(64, rstruct_ptr, (SIZEOF_VALUE as i32) * off)
+        Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
     };
 
     let ret = ctx.stack_push(Type::Unknown);
@@ -5909,7 +5910,7 @@ fn gen_send_general(
                             &starting_context,
                             asm,
                             ocb,
-                            SEND_MAX_CHAIN_DEPTH as i32,
+                            SEND_MAX_CHAIN_DEPTH,
                             chain_exit,
                         );
 
@@ -5939,7 +5940,7 @@ fn gen_send_general(
 
                         // If this is a .send call we need to adjust the stack
                         if flags & VM_CALL_OPT_SEND != 0 {
-                            handle_opt_send_shift_stack(asm, argc as i32, ctx);
+                            handle_opt_send_shift_stack(asm, argc, ctx);
                         }
 
                         // About to reset the SP, need to load this here
@@ -6099,7 +6100,7 @@ fn gen_invokeblock(
         asm.comment("get local EP");
         let ep_opnd = gen_get_lep(jit, asm);
         let block_handler_opnd = asm.load(
-            Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
         );
 
         asm.comment("guard block_handler type");
@@ -6261,7 +6262,7 @@ fn gen_invokesuper(
     let ep_me_opnd = Opnd::mem(
         64,
         ep_opnd,
-        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_ME_CREF as i32),
+        SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
     );
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).into());
@@ -6279,7 +6280,7 @@ fn gen_invokesuper(
         let ep_specval_opnd = Opnd::mem(
             64,
             ep_opnd,
-            (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
         asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).into());
@@ -6343,7 +6344,7 @@ fn gen_leave(
 
     // Jump to the JIT return address on the frame that was just popped
     let offset_to_jit_return =
-        -(RUBY_SIZEOF_CONTROL_FRAME as i32) + (RUBY_OFFSET_CFP_JIT_RETURN as i32);
+        -(RUBY_SIZEOF_CONTROL_FRAME as i32) + RUBY_OFFSET_CFP_JIT_RETURN;
     asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
 
     EndBlock
@@ -6796,7 +6797,7 @@ fn gen_getblockparamproxy(
     let flag_check = Opnd::mem(
         64,
         ep_opnd,
-        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32),
+        SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
     );
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.jnz(counted_exit!(ocb, side_exit, gbpp_block_param_modified).into());
@@ -6804,7 +6805,7 @@ fn gen_getblockparamproxy(
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
     let block_handler = asm.load(
-        Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
     );
 
     // Specialize compilation for the case where no block handler is present
@@ -6872,7 +6873,7 @@ fn gen_getblockparam(
     let ep_opnd = gen_get_ep(asm, level);
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
-    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flag_check = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     // FIXME: This is testing bits in the same place that the WB check is testing.
     // We should combine these at some point
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
@@ -6889,7 +6890,7 @@ fn gen_getblockparam(
     let flags_opnd = Opnd::mem(
         64,
         ep_opnd,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
     );
     asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
@@ -6907,7 +6908,7 @@ fn gen_getblockparam(
             Opnd::mem(
                 64,
                 ep_opnd,
-                (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+                SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
             ),
         ]
     );
@@ -6917,11 +6918,11 @@ fn gen_getblockparam(
 
     // Write the value at the environment pointer
     let idx = jit_get_arg(jit, 0).as_i32();
-    let offs = -(SIZEOF_VALUE as i32 * idx);
+    let offs = -(SIZEOF_VALUE_I32 * idx);
     asm.mov(Opnd::mem(64, ep_opnd, offs), proc);
 
     // Set the frame modified flag
-    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let flag_check = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32));
     let modified_flag = asm.or(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.store(flag_check, modified_flag);
 
@@ -7003,7 +7004,7 @@ fn gen_opt_invokebuiltin_delegate(
         for i in 0..bf_argc {
             let table_size = unsafe { get_iseq_body_local_table_size(jit.iseq) };
             let offs: i32 = -(table_size as i32) - (VM_ENV_DATA_SIZE as i32) + 1 + start_index + i;
-            let local_opnd = Opnd::mem(64, ep, offs * (SIZEOF_VALUE as i32));
+            let local_opnd = Opnd::mem(64, ep, offs * SIZEOF_VALUE_I32);
             args.push(local_opnd);
         }
     }

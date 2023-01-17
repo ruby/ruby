@@ -316,14 +316,18 @@ rb_str_make_embedded(VALUE str)
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
-    char *buf = RSTRING_PTR(str);
-    long len = RSTRING_LEN(str);
+    char *buf = RSTRING(str)->as.heap.ptr;
+    long len = RSTRING(str)->as.heap.len;
 
     STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, len);
 
-    memmove(RSTRING_PTR(str), buf, len);
-    ruby_xfree(buf);
+    if (len > 0) {
+        memcpy(RSTRING_PTR(str), buf, len);
+        ruby_xfree(buf);
+    }
+
+    TERM_FILL(RSTRING(str)->as.embed.ary + len, TERM_LEN(str));
 }
 
 void
@@ -766,6 +770,20 @@ static inline void
 str_enc_copy(VALUE str1, VALUE str2)
 {
     rb_enc_set_index(str1, ENCODING_GET(str2));
+}
+
+/* Like str_enc_copy, but does not check frozen status of str1.
+ * You should use this only if you're certain that str1 is not frozen. */
+static inline void
+str_enc_copy_direct(VALUE str1, VALUE str2)
+{
+    int inlined_encoding = RB_ENCODING_GET_INLINED(str2);
+    if (inlined_encoding == ENCODING_INLINE_MAX) {
+        rb_enc_set_index(str1, rb_enc_get_index(str2));
+    }
+    else {
+        ENCODING_SET_INLINED(str1, inlined_encoding);
+    }
 }
 
 static void
@@ -1787,6 +1805,7 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         else {
             RSTRING(dup)->as.heap.len = RSTRING_LEN(str);
             RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
+            FL_SET(root, STR_SHARED_ROOT);
             RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
             flags |= RSTRING_NOEMBED | STR_SHARED;
         }
@@ -3325,28 +3344,19 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
-#define MIN_PRE_ALLOC_SIZE 48
-
 MJIT_FUNC_EXPORTED VALUE
 rb_str_concat_literals(size_t num, const VALUE *strary)
 {
     VALUE str;
-    size_t i, s;
-    long len = 1;
+    size_t i, s = 0;
+    unsigned long len = 1;
 
     if (UNLIKELY(!num)) return rb_str_new(0, 0);
     if (UNLIKELY(num == 1)) return rb_str_resurrect(strary[0]);
 
     for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
-    if (LIKELY(len < MIN_PRE_ALLOC_SIZE)) {
-        str = rb_str_resurrect(strary[0]);
-        s = 1;
-    }
-    else {
-        str = rb_str_buf_new(len);
-        rb_enc_copy(str, strary[0]);
-        s = 0;
-    }
+    str = rb_str_buf_new(len);
+    str_enc_copy_direct(str, strary[0]);
 
     for (i = s; i < num; ++i) {
         const VALUE v = strary[i];
@@ -6155,7 +6165,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 
     VALUE str2 = str_subseq(str, beg, len);
 
-    str_enc_copy(str2, str);
+    str_enc_copy_direct(str2, str);
 
     if (RSTRING_LEN(str2) == 0) {
         if (!rb_enc_asciicompat(STR_ENC_GET(str)))
@@ -6381,7 +6391,7 @@ rb_str_reverse(VALUE str)
         }
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    str_enc_copy(rev, str);
+    str_enc_copy_direct(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
     return rev;
@@ -7336,7 +7346,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     RB_GC_GUARD(buffer_anchor);
 
     /* TODO: check about string terminator character */
-    str_enc_copy(target, source);
+    str_enc_copy_direct(target, source);
     /*ENC_CODERANGE_SET(mapped, cr);*/
 
     return target;
@@ -7467,7 +7477,7 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-        str_enc_copy(ret, str);
+        str_enc_copy_direct(ret, str);
         upcase_single(ret);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {
@@ -7569,7 +7579,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
     enc = str_true_enc(str);
     if (case_option_single_p(flags, enc, str)) {
         ret = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
-        str_enc_copy(ret, str);
+        str_enc_copy_direct(ret, str);
         downcase_single(ret);
     }
     else if (flags&ONIGENC_CASE_ASCII_ONLY) {

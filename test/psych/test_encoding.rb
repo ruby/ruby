@@ -13,13 +13,13 @@ module Psych
 
       (Handler.instance_methods(true) -
        Object.instance_methods).each do |m|
-        class_eval %{
+        class_eval <<~RUBY, __FILE__, __LINE__ + 1
           def #{m} *args
             @strings += args.flatten.find_all { |a|
               String === a
             }
           end
-        }
+        RUBY
       end
     end
 

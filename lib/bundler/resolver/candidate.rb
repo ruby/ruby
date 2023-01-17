@@ -41,6 +41,18 @@ module Bundler
         @spec_group.to_specs(package.force_ruby_platform?)
       end
 
+      def generic!
+        @ruby_only = true
+
+        self
+      end
+
+      def platform_specific!
+        @ruby_only = false
+
+        self
+      end
+
       def prerelease?
         @version.prerelease?
       end
@@ -53,27 +65,20 @@ module Bundler
         [@version, @ruby_only ? -1 : 1]
       end
 
-      def canonical?
-        !@spec_group.empty?
-      end
-
       def <=>(other)
         return unless other.is_a?(self.class)
-        return @version <=> other.version unless canonical? && other.canonical?
 
         sort_obj <=> other.sort_obj
       end
 
       def ==(other)
         return unless other.is_a?(self.class)
-        return @version == other.version unless canonical? && other.canonical?
 
         sort_obj == other.sort_obj
       end
 
       def eql?(other)
         return unless other.is_a?(self.class)
-        return @version.eql?(other.version) unless canonical? || other.canonical?
 
         sort_obj.eql?(other.sort_obj)
       end

@@ -624,7 +624,7 @@ class Gem::Command
 
   # :stopdoc:
 
-  HELP = <<-HELP.freeze
+  HELP = <<-HELP
 RubyGems is a package manager for Ruby.
 
   Usage:

@@ -450,7 +450,7 @@ impl VALUE {
 
     pub fn as_usize(self) -> usize {
         let VALUE(us) = self;
-        us as usize
+        us
     }
 
     pub fn as_ptr<T>(self) -> *const T {
@@ -654,6 +654,7 @@ mod manual_defs {
 
     pub const SIZEOF_VALUE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;

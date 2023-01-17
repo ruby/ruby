@@ -7,20 +7,22 @@ require 'test/unit'
 
 module Reline
   class <<self
-    def test_mode
+    def test_mode(ansi: false)
         remove_const('IOGate') if const_defined?('IOGate')
-        const_set('IOGate', Reline::GeneralIO)
+        const_set('IOGate', ansi ? Reline::ANSI : Reline::GeneralIO)
         if ENV['RELINE_TEST_ENCODING']
           encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
         else
           encoding = Encoding::UTF_8
         end
-        Reline::GeneralIO.reset(encoding: encoding)
+        Reline::GeneralIO.reset(encoding: encoding) unless ansi
         send(:core).config.instance_variable_set(:@test_mode, true)
         send(:core).config.reset
     end
 
     def test_reset
+      remove_const('IOGate') if const_defined?('IOGate')
+      const_set('IOGate', Reline::GeneralIO)
       Reline.instance_variable_set(:@core, nil)
     end
   end
@@ -121,5 +123,12 @@ class Reline::TestCase < Test::Unit::TestCase
       lines = @line_editor.whole_lines
     end
     assert_equal(expected, lines)
+  end
+
+  def assert_key_binding(input, method_symbol, editing_modes = [:emacs, :vi_insert, :vi_command])
+    editing_modes.each do |editing_mode|
+      @config.editing_mode = editing_mode
+      assert_equal(method_symbol, @config.editing_mode.default_key_bindings[input.bytes])
+    end
   end
 end

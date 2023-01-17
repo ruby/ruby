@@ -283,6 +283,7 @@ impl CodeBlock {
 
     /// Return the address ranges of a given address range that this CodeBlock can write.
     #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
+    #[allow(dead_code)]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
         // CodegenGlobals is not initialized when we write initial ocb code
         let freed_pages = if CodegenGlobals::has_instance() {
@@ -355,6 +356,17 @@ impl CodeBlock {
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }
+
+    #[allow(unused_variables)]
+    #[cfg(feature = "disasm")]
+    pub fn remove_comments(&mut self, start_addr: CodePtr, end_addr: CodePtr) {
+        for addr in start_addr.into_usize()..end_addr.into_usize() {
+            self.asm_comments.remove(&addr);
+        }
+    }
+    #[cfg(not(feature = "disasm"))]
+    #[inline]
+    pub fn remove_comments(&mut self, _: CodePtr, _: CodePtr) {}
 
     pub fn clear_comments(&mut self) {
         #[cfg(feature = "disasm")]

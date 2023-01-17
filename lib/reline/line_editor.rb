@@ -671,8 +671,10 @@ class Reline::LineEditor
     dialog.set_cursor_pos(cursor_column, @first_line_started_from + @started_from)
     dialog_render_info = dialog.call(@last_key)
     if dialog_render_info.nil? or dialog_render_info.contents.nil? or dialog_render_info.contents.empty?
+      lines = whole_lines
       dialog.lines_backup = {
-        lines: modify_lines(whole_lines),
+        unmodified_lines: lines,
+        lines: modify_lines(lines),
         line_index: @line_index,
         first_line_started_from: @first_line_started_from,
         started_from: @started_from,
@@ -774,8 +776,10 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column(cursor_column)
     move_cursor_up(dialog.vertical_offset + dialog.contents.size - 1)
     Reline::IOGate.show_cursor
+    lines = whole_lines
     dialog.lines_backup = {
-      lines: modify_lines(whole_lines),
+      unmodified_lines: lines,
+      lines: modify_lines(lines),
       line_index: @line_index,
       first_line_started_from: @first_line_started_from,
       started_from: @started_from,
@@ -785,7 +789,7 @@ class Reline::LineEditor
 
   private def reset_dialog(dialog, old_dialog)
     return if dialog.lines_backup.nil? or old_dialog.contents.nil?
-    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines])
+    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:unmodified_lines])
     visual_lines = []
     visual_start = nil
     dialog.lines_backup[:lines].each_with_index { |l, i|
@@ -896,7 +900,7 @@ class Reline::LineEditor
   private def clear_each_dialog(dialog)
     dialog.trap_key = nil
     return unless dialog.contents
-    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines])
+    prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:unmodified_lines])
     visual_lines = []
     visual_lines_under_dialog = []
     visual_start = nil
