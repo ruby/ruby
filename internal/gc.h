@@ -113,6 +113,14 @@ size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
 
+void rb_gc_mark_and_move(VALUE *ptr);
+
+#define rb_gc_mark_and_move_ptr(ptr) do { \
+    VALUE _obj = (VALUE)*(ptr); \
+    rb_gc_mark_and_move(&_obj); \
+    if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
+} while (0)
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
