@@ -1754,6 +1754,7 @@ help: PHONY
 	"  runruby:               runs test.rb by ruby you just built" \
 	"  gdb:                   runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:              runs test.rb by ruby under gdb" \
+	"  exam:                  equals make check test-bundler-parallel test-bundled-gems" \
 	"  check:                 equals make test test-tool test-all test-spec" \
 	"  test:                  ruby core tests [BTESTS=<bootstraptest files>]" \
 	"  test-all:              all ruby tests [TESTOPTS=-j4 TESTS=<test files>]" \
