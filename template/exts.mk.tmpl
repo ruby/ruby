@@ -26,10 +26,18 @@ macros["old_extensions"] = []
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 bundled_gems_to_build = {}
 File.foreach(File.join(__dir__, "../gems/bundled_gems")) do |line|
-  bundled_gem_name, bundled_gem_version = line.split
+  bundled_gem_name, bundled_gem_version, _, bundled_gem_rev = line.split
   next unless bundled_gem_name
   next if bundled_gem_name.start_with?("#")
   bundled_gems_to_build[bundled_gem_name + "-" + bundled_gem_version] = true
+  if bundled_gem_rev
+    ver_file = File.join(__dir__, "../gems/src/#{ bundled_gem_name }/lib/#{ bundled_gem_name }/version.rb")
+    if File.readable?(ver_file) && File.read(ver_file) =~ /VERSION\s*=\s*["'](.+?)["']/
+      bundled_gems_to_build[bundled_gem_name + "-" + $1] = true
+    else
+      warn "#$0: failed to read: #{ ver_file }"
+    end
+  end
 end
 Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   gem = e.start_with?(".bundle/gems/")
