@@ -170,22 +170,21 @@ This can be useful for some deployment scripts where specifying an extra command
 
 We have collected a set of benchmarks and implemented a simple benchmarking harness in the [yjit-bench](https://github.com/Shopify/yjit-bench) repository. This benchmarking harness is designed to disable CPU frequency scaling, set process affinity and disable address space randomization so that the variance between benchmarking runs will be as small as possible. Please kindly note that we are at an early stage in this project.
 
-### Performance Tips
+### General Performance Tips
 
-This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
+This section contains tips on writing Ruby code that will run as fast as possible on YJIT.
+The advice given here is broadly applicable and likely applies to most Ruby JITs and Ruby implementations.
+As always, a good starting point is to use a profiler such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
 
 - Use exceptions for error recovery only, not as part of normal control-flow
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
-- Use while loops if you can, instead of `integer.times`
-- Minimize layers of indirection
-  - Avoid classes that wrap objects if you can
-  - Avoid methods that just call another method, trivial one liner methods
-- CRuby method calls are costly. Favor larger methods over smaller methods.
 - Try to write code so that the same variables always have the same type
 
-You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
+You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit.
+`--yjit-stats` is meant mostly for YJIT developers and debugging.
+Note that YJIT exit reasons frequently change and we do not advise to change your code based on that.
 
 ### Other Statistics
 
