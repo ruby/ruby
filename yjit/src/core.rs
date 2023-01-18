@@ -339,11 +339,53 @@ type BranchGenFn =
 
 /// A place that a branch could jump to
 #[derive(Debug)]
-struct BranchTarget {
+enum BranchTarget {
+    Stub(Box<BranchStub>), // Not compiled yet
+    Block(BlockRef),       // Already compiled
+}
+
+impl BranchTarget {
+    fn get_address(&self) -> Option<CodePtr> {
+        match self {
+            BranchTarget::Stub(stub) => stub.address,
+            BranchTarget::Block(blockref) => blockref.borrow().start_addr,
+        }
+    }
+
+    fn get_id(&self) -> BlockId {
+        match self {
+            BranchTarget::Stub(stub) => stub.id,
+            BranchTarget::Block(blockref) => blockref.borrow().blockid,
+        }
+    }
+
+    fn get_ctx(&self) -> Context {
+        match self {
+            BranchTarget::Stub(stub) => stub.ctx.clone(),
+            BranchTarget::Block(blockref) => blockref.borrow().ctx.clone(),
+        }
+    }
+
+    fn get_block(&self) -> Option<BlockRef> {
+        match self {
+            BranchTarget::Stub(_) => None,
+            BranchTarget::Block(blockref) => Some(blockref.clone()),
+        }
+    }
+
+    fn set_iseq(&mut self, iseq: IseqPtr) {
+        match self {
+            BranchTarget::Stub(stub) => stub.id.iseq = iseq,
+            BranchTarget::Block(blockref) => blockref.borrow_mut().blockid.iseq = iseq,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct BranchStub {
     address: Option<CodePtr>,
     id: BlockId,
     ctx: Context,
-    block: Option<BlockRef>,
 }
 
 /// Store info about an outgoing branch in a code segment
@@ -387,7 +429,7 @@ impl Branch {
 
     /// Get the address of one of the branch destination
     fn get_target_address(&self, target_idx: usize) -> Option<CodePtr> {
-        self.targets[target_idx].as_ref().and_then(|target| target.address)
+        self.targets[target_idx].as_ref().and_then(|target| target.get_address())
     }
 }
 
@@ -663,7 +705,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             for branch in &block.outgoing {
                 let branch = branch.borrow();
                 for target in branch.targets.iter().flatten() {
-                    unsafe { rb_gc_mark_movable(target.id.iseq.into()) };
+                    unsafe { rb_gc_mark_movable(target.get_id().iseq.into()) };
                 }
             }
 
@@ -718,7 +760,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             for branch in &block.outgoing {
                 let mut branch = branch.borrow_mut();
                 for target in branch.targets.iter_mut().flatten() {
-                    target.id.iseq = unsafe { rb_gc_location(target.id.iseq.into()) }.as_iseq();
+                    target.set_iseq(unsafe { rb_gc_location(target.get_id().iseq.into()) }.as_iseq());
                 }
             }
 
@@ -1494,19 +1536,19 @@ fn gen_block_series_body(
 
         // gen_direct_jump() can request a block to be placed immediately after by
         // leaving a single target that has a `None` address.
-        let mut last_target = match &mut last_branch.targets {
-            [Some(last_target), None] if last_target.address.is_none() => last_target,
+        let last_target = match &mut last_branch.targets {
+            [Some(last_target), None] if last_target.get_address().is_none() => last_target,
             _ => break
         };
 
         incr_counter!(block_next_count);
 
         // Get id and context for the new block
-        let requested_id = last_target.id;
-        let requested_ctx = &last_target.ctx;
+        let requested_id = last_target.get_id();
+        let requested_ctx = last_target.get_ctx();
 
         // Generate new block using context from the last branch.
-        let result = gen_single_block(requested_id, requested_ctx, ec, cb, ocb);
+        let result = gen_single_block(requested_id, &requested_ctx, ec, cb, ocb);
 
         // If the block failed to compile
         if result.is_err() {
@@ -1528,8 +1570,7 @@ fn gen_block_series_body(
         add_block_version(&new_blockref, cb);
 
         // Connect the last branch and the new block
-        last_target.block = Some(new_blockref.clone());
-        last_target.address = new_blockref.borrow().start_addr;
+        last_branch.targets[0] = Some(Box::new(BranchTarget::Block(new_blockref.clone())));
         new_blockref
             .borrow_mut()
             .push_incoming(last_branchref.clone());
@@ -1624,8 +1665,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
         cb.remove_comments(start_addr, end_addr)
     }
 
-    let mut block = branch.block.borrow_mut();
-    let branch_terminates_block = branch.end_addr == block.end_addr;
+    let branch_terminates_block = branch.end_addr == branch.block.borrow().end_addr;
 
     // Generate the branch
     let mut asm = Assembler::new();
@@ -1647,6 +1687,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     branch.end_addr = Some(cb.get_write_ptr());
 
     // The block may have shrunk after the branch is rewritten
+    let mut block = branch.block.borrow_mut();
     if branch_terminates_block {
         // Adjust block size
         block.end_addr = branch.end_addr;
@@ -1733,8 +1774,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     let target_idx: usize = target_idx.as_usize();
     let target = branch.targets[target_idx].as_ref().unwrap();
-    let target_id = target.id;
-    let target_ctx = target.ctx.clone();
+    let target_id = target.get_id();
+    let target_ctx = target.get_ctx().clone();
 
     let target_branch_shape = match target_idx {
         0 => BranchShape::Next0,
@@ -1747,8 +1788,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     // If this branch has already been patched, return the dst address
     // Note: ractors can cause the same stub to be hit multiple times
-    if target.block.is_some() {
-        return target.address.unwrap().raw_ptr();
+    if let BranchTarget::Block(_) = target.as_ref() {
+        return target.get_address().unwrap().raw_ptr();
     }
 
     let (cfp, original_interp_sp) = unsafe {
@@ -1824,17 +1865,12 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
             // Add this branch to the list of incoming branches for the target
             block.push_incoming(branch_rc.clone());
+            mem::drop(block); // end mut borrow
 
             // Update the branch target address
-            let target = branch.targets[target_idx].as_mut().unwrap();
-            let dst_addr = block.start_addr;
-            target.address = dst_addr;
-
-            // Mark this branch target as patched (no longer a stub)
-            target.block = Some(block_rc.clone());
+            branch.targets[target_idx] = Some(Box::new(BranchTarget::Block(block_rc.clone())));
 
             // Rewrite the branch with the new jump target address
-            mem::drop(block); // end mut borrow
             regenerate_branch(cb, &mut branch);
 
             // Restore interpreter sp, since the code hitting the stub expects the original.
@@ -1899,12 +1935,7 @@ fn set_branch_target(
         block.push_incoming(branchref.clone());
 
         // Fill out the target with this block
-        branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget {
-            block: Some(blockref.clone()),
-            address: block.start_addr,
-            id: target,
-            ctx: ctx.clone(),
-        }));
+        branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget::Block(blockref.clone())));
 
         return;
     }
@@ -1939,12 +1970,11 @@ fn set_branch_target(
         // No space
     } else {
         // Fill the branch target with a stub
-        branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget {
-            block: None, // no block yet
+        branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget::Stub(Box::new(BranchStub {
             address: Some(stub_addr),
             id: target,
             ctx: ctx.clone(),
-        }));
+        }))));
     }
 }
 
@@ -2055,34 +2085,33 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     let branchref = make_branch_entry(&jit.get_block(), gen_jump_branch);
     let mut branch = branchref.borrow_mut();
 
-    let mut new_target = BranchTarget {
-        block: None,
+    let mut new_target = BranchTarget::Stub(Box::new(BranchStub {
         address: None,
         ctx: ctx.clone(),
         id: target0,
-    };
+    }));
 
     let maybe_block = find_block_version(target0, ctx);
 
     // If the block already exists
     if let Some(blockref) = maybe_block {
         let mut block = blockref.borrow_mut();
+        let block_addr = block.start_addr.unwrap();
 
         block.push_incoming(branchref.clone());
 
-        new_target.address = block.start_addr;
-        new_target.block = Some(blockref.clone());
+        new_target = BranchTarget::Block(blockref.clone());
+
         branch.shape = BranchShape::Default;
 
         // Call the branch generation function
         asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branchref);
-        gen_jump_branch(asm, new_target.address.unwrap(), None, BranchShape::Default);
+        gen_jump_branch(asm, block_addr, None, BranchShape::Default);
         asm.mark_branch_end(&branchref);
     } else {
-        // This None target address signals gen_block_series() to compile the
+        // `None` in new_target.address signals gen_block_series() to compile the
         // target block right after this one (fallthrough).
-        new_target.address = None;
         branch.shape = BranchShape::Next0;
 
         // The branch is effectively empty (a noop)
@@ -2143,9 +2172,11 @@ fn remove_from_graph(blockref: &BlockRef) {
         let mut pred_branch = pred_branchref.borrow_mut();
 
         // If this is us, nullify the target block
-        for pred_succ in pred_branch.targets.iter_mut().flatten() {
-            if pred_succ.block.as_ref() == Some(blockref) {
-                pred_succ.block = None;
+        for target_idx in 0..=1 {
+            if let Some(target) = pred_branch.targets[target_idx].as_ref() {
+                if target.get_block().as_ref() == Some(blockref) {
+                    pred_branch.targets[target_idx] = None;
+                }
             }
         }
     }
@@ -2156,7 +2187,7 @@ fn remove_from_graph(blockref: &BlockRef) {
 
         // For each successor block
         for out_target in out_branch.targets.iter().flatten() {
-            if let Some(succ_blockref) = &out_target.block {
+            if let Some(succ_blockref) = &out_target.get_block() {
                 // Remove outgoing branch from the successor's incoming list
                 let mut succ_block = succ_blockref.borrow_mut();
                 succ_block
@@ -2279,8 +2310,10 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
         // Assert that the incoming branch indeed points to the block being invalidated
         let incoming_target = branch.targets[target_idx].as_ref().unwrap();
-        assert_eq!(block_start, incoming_target.address);
-        assert_eq!(blockref, incoming_target.block.as_ref().unwrap());
+        assert_eq!(block_start, incoming_target.get_address());
+        if let Some(incoming_block) = &incoming_target.get_block() {
+            assert_eq!(blockref, incoming_block);
+        }
 
         // TODO(alan):
         // Don't patch frozen code region
@@ -2297,12 +2330,11 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // still patch the branch in this situation so stubs are unique
             // to branches. Think about what could go wrong if we run out of
             // memory in the middle of this loop.
-            branch.targets[target_idx] = Some(Box::new(BranchTarget {
-                block: None,
+            branch.targets[target_idx] = Some(Box::new(BranchTarget::Stub(Box::new(BranchStub {
                 address: block.entry_exit,
                 id: block.blockid,
                 ctx: block.ctx.clone(),
-            }));
+            }))));
         }
 
         // Check if the invalidated block immediately follows
