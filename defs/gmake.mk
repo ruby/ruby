@@ -326,27 +326,28 @@ $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 
-define copy-gem
+define build-gem
 $(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
 	$(Q) $(GIT) clone $(4) $$(@)
 
-$(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
-	$(ECHO) Copying $(1)@$(3) to $$(@F)
+.PHONY: $(srcdir)/gems/$(1)-$(2).gem
+$(srcdir)/gems/$(1)-$(2).gem: | $(srcdir)/gems/src/$(1)
+	$(ECHO) Building $(1)@$(3) to $$(@F)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
 	    $(GIT) fetch origin $(3) && \
 	    $(GIT) checkout --detach $(3) && \
 	:
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
-	    -e 'BundledGem.copy("gems/src/$(1)/$(1).gemspec", ".bundle")'
+	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems")'
 
 endef
-define copy-gem-0
-$(eval $(call copy-gem,$(1),$(2),$(3),$(4)))
+define build-gem-0
+$(eval $(call build-gem,$(1),$(2),$(3),$(4)))
 endef
 
-$(call foreach-bundled-gems-rev,copy-gem-0)
+$(call foreach-bundled-gems-rev,build-gem-0)
 
 $(srcdir)/gems/src:
 	$(MAKEDIRS) $@
