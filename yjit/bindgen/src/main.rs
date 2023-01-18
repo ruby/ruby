@@ -81,6 +81,9 @@ fn main() {
         // From include/ruby/internal/core/rbasic.h
         .allowlist_type("RBasic")
 
+        .allowlist_type("rstring_offsets")
+        .allowlist_type("ruby_rstring_flags")
+
         // From internal.h
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")

@@ -225,6 +225,9 @@ pub const RUBY_FL_USER19: ruby_fl_type = -2147483648;
 pub const RUBY_ELTS_SHARED: ruby_fl_type = 16384;
 pub const RUBY_FL_SINGLETON: ruby_fl_type = 4096;
 pub type ruby_fl_type = i32;
+pub const RSTRING_NOEMBED: ruby_rstring_flags = 8192;
+pub const RSTRING_FSTR: ruby_rstring_flags = 536870912;
+pub type ruby_rstring_flags = u32;
 pub type st_data_t = ::std::os::raw::c_ulong;
 pub type st_index_t = st_data_t;
 pub const ST_CONTINUE: st_retval = 0;
@@ -1052,6 +1055,9 @@ pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
+pub const RUBY_OFFSET_RSTRING_AS_HEAP_LEN: rstring_offsets = 16;
+pub const RUBY_OFFSET_RSTRING_EMBED_LEN: rstring_offsets = 16;
+pub type rstring_offsets = u32;
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
     pub fn rb_singleton_class(obj: VALUE) -> VALUE;

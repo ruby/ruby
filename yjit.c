@@ -37,6 +37,12 @@
 
 #include <errno.h>
 
+// Field offsets for the RString struct
+enum rstring_offsets {
+    RUBY_OFFSET_RSTRING_AS_HEAP_LEN = offsetof(struct RString, as.heap.len),
+    RUBY_OFFSET_RSTRING_EMBED_LEN = offsetof(struct RString, as.embed.len),
+};
+
 // We need size_t to have a known size to simplify code generation and FFI.
 // TODO(alan): check this in configure.ac to fail fast on 32 bit platforms.
 STATIC_ASSERT(64b_size_t, SIZE_MAX == UINT64_MAX);
