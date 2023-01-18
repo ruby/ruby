@@ -1420,7 +1420,7 @@ fn gen_expandarray(
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
     asm.cmp(array_len_opnd, num.into());
-    asm.jl(counted_exit!(ocb, side_exit, expandarray_rhs_too_small).into());
+    asm.jl(counted_exit!(ocb, side_exit, expandarray_rhs_too_small).as_side_exit());
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary
@@ -2854,7 +2854,7 @@ fn gen_opt_aref(
         // Bail if idx is not a FIXNUM
         let idx_reg = asm.load(idx_opnd);
         asm.test(idx_reg, (RUBY_FIXNUM_FLAG as u64).into());
-        asm.jz(counted_exit!(ocb, side_exit, oaref_arg_not_fixnum).into());
+        asm.jz(counted_exit!(ocb, side_exit, oaref_arg_not_fixnum).as_side_exit());
 
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
@@ -3908,7 +3908,7 @@ fn jit_protected_callee_ancestry_guard(
         ],
     );
     asm.test(val, val);
-    asm.jz(counted_exit!(ocb, side_exit, send_se_protected_check_failed).into())
+    asm.jz(counted_exit!(ocb, side_exit, send_se_protected_check_failed).as_side_exit())
 }
 
 // Codegen for rb_obj_not().
@@ -4849,7 +4849,7 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
 
     // Only handle the case where the number of values in the array is equal to the number requested
     asm.cmp(array_len_opnd, required_args.into());
-    asm.jne(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal).into());
+    asm.jne(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal).as_side_exit());
 
     let array_opnd = ctx.stack_pop(1);
 
@@ -6140,7 +6140,7 @@ fn gen_invokeblock(
         let side_exit = get_side_exit(jit, ocb, ctx);
         let tag_opnd = asm.and(block_handler_opnd, 0x3.into()); // block_handler is a tagged pointer
         asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
-        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_tag_changed).into());
+        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_tag_changed).as_side_exit());
 
         // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
@@ -6298,7 +6298,7 @@ fn gen_invokesuper(
         SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
     );
     asm.cmp(ep_me_opnd, me_as_value.into());
-    asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).into());
+    asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).as_side_exit());
 
     if block.is_none() {
         // Guard no block passed
@@ -6316,7 +6316,7 @@ fn gen_invokesuper(
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
-        asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).into());
+        asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).as_side_exit());
     }
 
     // We need to assume that both our current method entry and the super
@@ -6754,7 +6754,7 @@ fn gen_opt_getconstant_path(
         // Check the result. SysV only specifies one byte for _Bool return values,
         // so it's important we only check one bit to ignore the higher bits in the register.
         asm.test(ret_val, 1.into());
-        asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).into());
+        asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).as_side_exit());
 
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
@@ -6833,7 +6833,7 @@ fn gen_getblockparamproxy(
         SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
     );
     asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
-    asm.jnz(counted_exit!(ocb, side_exit, gbpp_block_param_modified).into());
+    asm.jnz(counted_exit!(ocb, side_exit, gbpp_block_param_modified).as_side_exit());
 
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
