@@ -661,6 +661,35 @@ begin
       EOC
     end
 
+    def test_auto_indent
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      "def hoge\nputs(\n1,\n2\n)\nend".lines do |line|
+        write line
+      end
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   puts(
+        prompt>     1,
+        prompt>     2
+        prompt>   )
+        prompt> end
+      EOC
+    end
+
+    def test_auto_indent_when_inserting_line
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write 'aa(bb(cc(dd(ee('
+      write "\C-b" * 5 + "\n"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> aa(bb(cc(d
+        prompt>       d(ee(
+      EOC
+    end
+
     def test_suppress_auto_indent_just_after_pasted
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("def hoge\n  [[\n      3]]\ned")
