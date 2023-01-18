@@ -299,6 +299,9 @@ make_counters! {
     exec_mem_non_bump_alloc,
 
     num_gc_obj_refs,
+
+    x86_call_rel32,
+    x86_call_reg,
 }
 
 //===========================================================================
