@@ -114,6 +114,7 @@ MJIT_TABS=@MJIT_TABS@
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
+YJIT_LIBOBJ = $(YJIT_LIBS:.a=.@OBJEXT@)
 CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
 CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
@@ -130,7 +131,7 @@ XDLDFLAGS = @DLDFLAGS@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
-MAINLIBS = $(YJIT_LIBS) @MAINLIBS@
+MAINLIBS = @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJ = @DLNOBJ@
 ENCOBJS = @ENCOBJS@
@@ -319,16 +320,6 @@ $(LIBRUBY_A):
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
-		$(Q) if [ 'no' != '$(YJIT_SUPPORT)' ]; then \
-		  set -eu$(V0:1=x) && \
-		  $(ECHO0) 'merging $(YJIT_LIBS) into $@' && \
-		  $(RMALL)    libyjit/ && \
-		  $(MAKEDIRS) libyjit/ && \
-		  trap "$(RMALL) libyjit/" 0 && \
-		  (cd libyjit/ && $(AR) -x ../$(YJIT_LIBS)) && \
-		  :  "$(AR) $(ARFLAGS) $@ libyjit/*.$(OBJEXT)" && \
-		  find libyjit/ -name '*.$(OBJEXT)' -exec $(AR) $(ARFLAGS) $@ '{}' '+' ; \
-		fi
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)

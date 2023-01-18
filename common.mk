@@ -151,6 +151,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_sync.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
 		$(YJIT_OBJ) \
+		$(YJIT_LIBOBJ) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
