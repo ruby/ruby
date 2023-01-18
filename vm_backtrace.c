@@ -1580,6 +1580,15 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
+    // If this function is called inside a thread after thread creation, but
+    // before the CFP has been created, just return 0.  This can happen when
+    // sampling via signals.  Threads can be interrupted randomly by the
+    // signal, including during the time after the thread has been created, but
+    // before the CFP has been allocated
+    if (!cfp) {
+        return 0;
+    }
+
     // Skip dummy frame; see `rb_ec_partial_backtrace_object` for details
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
