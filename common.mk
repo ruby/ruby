@@ -6134,6 +6134,7 @@ error.$(OBJEXT): {$(VPATH)}constant.h
 error.$(OBJEXT): {$(VPATH)}defines.h
 error.$(OBJEXT): {$(VPATH)}encoding.h
 error.$(OBJEXT): {$(VPATH)}error.c
+error.$(OBJEXT): {$(VPATH)}gc.h
 error.$(OBJEXT): {$(VPATH)}id.h
 error.$(OBJEXT): {$(VPATH)}id_table.h
 error.$(OBJEXT): {$(VPATH)}intern.h

@@ -156,8 +156,9 @@ MMTk_RubyUpcalls ruby_upcalls;
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-#if USE_MMTK
 static bool mmtk_enable = false;
+
+#if USE_MMTK
 static const char *mmtk_env_plan = NULL;
 static const char *mmtk_pre_arg_plan = NULL;
 static const char *mmtk_post_arg_plan = NULL;
@@ -1966,6 +1967,7 @@ rb_objspace_alloc(void)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
+        
         MMTk_Builder *mmtk_builder = mmtk_builder_default();
 
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
@@ -15140,6 +15142,9 @@ gc_using_rvargc_p(VALUE mod)
 static VALUE
 rb_mmtk_plan_name(VALUE _)
 {
+    if (!rb_mmtk_enabled_p()) {
+        rb_raise(rb_eRuntimeError, "Debug harness can only be used when MMTk is enabled, re-run with --mmtk.");
+    }
     const char* plan_name = mmtk_plan_name();
     return rb_str_new(plan_name, strlen(plan_name));
 }
@@ -15175,6 +15180,9 @@ rb_mmtk_enabled(VALUE _)
 static VALUE
 rb_mmtk_harness_begin(VALUE _)
 {
+    if (!rb_mmtk_enabled_p()) {
+        rb_raise(rb_eRuntimeError, "Debug harness can only be used when MMTk is enabled, re-run with --mmtk.");
+    }
     mmtk_harness_begin((MMTk_VMMutatorThread)GET_THREAD());
     return Qnil;
 }
@@ -15191,6 +15199,9 @@ rb_mmtk_harness_begin(VALUE _)
 static VALUE
 rb_mmtk_harness_end(VALUE _)
 {
+    if (!rb_mmtk_enabled_p()) {
+        rb_raise(rb_eRuntimeError, "Debug harness can only be used when MMTk is enabled, re-run with --mmtk.");
+    }
     mmtk_harness_end((MMTk_VMMutatorThread)GET_THREAD());
     return Qnil;
 }
@@ -16193,8 +16204,9 @@ void rb_mmtk_post_process_opts_finish(bool feature_enable) {
     }
 }
 
+#endif
+
 bool rb_mmtk_enabled_p(void) {
     return mmtk_enable;
 }
 
-#endif
