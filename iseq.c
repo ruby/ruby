@@ -310,14 +310,26 @@ rb_iseq_mark_and_update(rb_iseq_t *iseq, bool reference_updating)
 
                 if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
 
-                if (cds[i].cc && (reference_updating || vm_cc_markable(cds[i].cc))) {
-                    VM_ASSERT(reference_updating || (cds[i].cc->flags & VM_CALLCACHE_ON_STACK) == 0);
-
-                    if (reference_updating || !vm_cc_invalidated_p(cds[i].cc)) {
-                        rb_gc_mark_and_move_ptr(&cds[i].cc);
+                const struct rb_callcache *cc = cds[i].cc;
+                if (cc) {
+                    if (reference_updating) {
+                        cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
                     }
-                    else {
-                        cds[i].cc = rb_vm_empty_cc();
+
+                    if (vm_cc_markable(cc)) {
+                        VM_ASSERT((cc->flags & VM_CALLCACHE_ON_STACK) == 0);
+
+                        const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+                        if (reference_updating) {
+                            cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cme);
+                        }
+
+                        if (cc->klass && !METHOD_ENTRY_INVALIDATED(cme)) {
+                            rb_gc_mark_and_move_ptr(&cds[i].cc);
+                        }
+                        else {
+                            cds[i].cc = rb_vm_empty_cc();
+                        }
                     }
                 }
             }
