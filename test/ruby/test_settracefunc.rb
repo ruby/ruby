@@ -70,6 +70,29 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_nil(binding)
   end
 
+  def test_c_call_removed_method
+    # [Bug #19305]
+    klass = Class.new do
+      attr_writer :bar
+      alias_method :set_bar, :bar=
+      remove_method :bar=
+    end
+
+    obj = klass.new
+    method_id = nil
+    parameters = nil
+
+    TracePoint.new(:c_call) { |tp|
+      method_id = tp.method_id
+      parameters = tp.parameters
+    }.enable {
+      obj.set_bar(1)
+    }
+
+    assert_equal(:bar=, method_id)
+    assert_equal([[:req]], parameters)
+  end
+
   def test_call
     events = []
     name = "#{self.class}\##{__method__}"
