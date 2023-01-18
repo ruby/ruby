@@ -4123,6 +4123,39 @@ fn jit_rb_str_to_s(
     false
 }
 
+// Codegen for rb_str_empty()
+fn jit_rb_str_empty(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    const _: () = assert!(
+        RUBY_OFFSET_RSTRING_AS_HEAP_LEN == RUBY_OFFSET_RSTRING_EMBED_LEN,
+        "same offset to len embedded or not so we can use one code path to read the length",
+    );
+
+    let recv_opnd = ctx.stack_pop(1);
+    let out_opnd = ctx.stack_push(Type::UnknownImm);
+
+    let str_len_opnd = Opnd::mem(
+        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        asm.load(recv_opnd),
+        RUBY_OFFSET_RSTRING_AS_HEAP_LEN as i32,
+    );
+
+    asm.cmp(str_len_opnd, Opnd::UImm(0));
+    let string_empty = asm.csel_e(Qtrue.into(), Qfalse.into());
+    asm.mov(out_opnd, string_empty);
+
+    return true;
+}
+
 // Codegen for rb_str_concat() -- *not* String#concat
 // Frequently strings are concatenated using "out_str << next_str".
 // This is common in Erb and similar templating languages.
@@ -7330,6 +7363,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
             // rb_str_to_s() methods in string.c
+            self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty);
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
