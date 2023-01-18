@@ -324,7 +324,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
         if (body->call_data) {
             for (unsigned int i=0; i<body->ci_size; i++) {
                 struct rb_call_data *cds = body->call_data;
-                if (!SPECIAL_CONST_P((VALUE)cds[i].ci)) {
+                if (cds[i].ci) {
                     cds[i].ci = (struct rb_callinfo *)rb_gc_location((VALUE)cds[i].ci);
                 }
                 cds[i].cc = (struct rb_callcache *)rb_gc_location((VALUE)cds[i].cc);
@@ -400,7 +400,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
                 const struct rb_callinfo *ci = cds[i].ci;
                 const struct rb_callcache *cc = cds[i].cc;
 
-                if (vm_ci_markable(ci)) {
+                if (ci) {
                     rb_gc_mark_movable((VALUE)ci);
                 }
 
