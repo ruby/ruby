@@ -3312,121 +3312,17 @@ rb_opts_exception_p(VALUE opts, int default_value)
     return default_value;
 }
 
-#define opts_exception_p(opts) rb_opts_exception_p((opts), TRUE)
-
-/*
- *  call-seq:
- *    Integer(object, base = 0, exception: true) -> integer or nil
- *
- *  Returns an integer converted from +object+.
- *
- *  Tries to convert +object+ to an integer
- *  using +to_int+ first and +to_i+ second;
- *  see below for exceptions.
- *
- *  With a non-zero +base+, +object+ must be a string or convertible
- *  to a string.
- *
- *  ==== numeric objects
- *
- *  With integer argument +object+ given, returns +object+:
- *
- *    Integer(1)                # => 1
- *    Integer(-1)               # => -1
- *
- *  With floating-point argument +object+ given,
- *  returns +object+ truncated to an integer:
- *
- *    Integer(1.9)              # => 1  # Rounds toward zero.
- *    Integer(-1.9)             # => -1 # Rounds toward zero.
- *
- *  ==== string objects
- *
- *  With string argument +object+ and zero +base+ given,
- *  returns +object+ converted to an integer in base 10:
- *
- *    Integer('100')    # => 100
- *    Integer('-100')   # => -100
- *
- *  With +base+ zero, string +object+ may contain leading characters
- *  to specify the actual base (radix indicator):
- *
- *    Integer('0100')  # => 64  # Leading '0' specifies base 8.
- *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
- *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
- *
- *  With a positive +base+ (in range 2..36) given, returns +object+
- *  converted to an integer in the given base:
- *
- *    Integer('100', 2)   # => 4
- *    Integer('100', 8)   # => 64
- *    Integer('-100', 16) # => -256
- *
- *  With a negative +base+ (in range -36..-2) given, returns +object+
- *  converted to an integer in the radix indicator if exists or
- *  +-base+:
- *
- *    Integer('0x100', -2)   # => 256
- *    Integer('100', -2)     # => 4
- *    Integer('0b100', -8)   # => 4
- *    Integer('100', -8)     # => 64
- *    Integer('0o100', -10)  # => 64
- *    Integer('100', -10)    # => 100
- *
- *  +base+ -1 is equal the -10 case.
- *
- *  When converting strings, surrounding whitespace and embedded underscores
- *  are allowed and ignored:
- *
- *    Integer(' 100 ')      # => 100
- *    Integer('-1_0_0', 16) # => -256
- *
- *  ==== other classes
- *
- *  Examples with +object+ of various other classes:
- *
- *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
- *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
- *    Integer(Time.now)        # => 1650974042
- *
- *  ==== keywords
- *
- *  With optional keyword argument +exception+ given as +true+ (the default):
- *
- *  - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
- *  - Raises TypeError if +object+ is +nil+.
- *  - Raise ArgumentError if +object+ is an invalid string.
- *
- *  With +exception+ given as +false+, an exception of any kind is suppressed
- *  and +nil+ is returned.
- *
- */
+static VALUE
+rb_f_integer1(rb_execution_context_t *ec, VALUE obj, VALUE arg)
+{
+    return rb_convert_to_integer(arg, 0, TRUE);
+}
 
 static VALUE
-rb_f_integer(int argc, VALUE *argv, VALUE obj)
+rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE base, VALUE exception)
 {
-    VALUE arg = Qnil, opts = Qnil;
-    int base = 0;
-
-    if (argc > 1) {
-        int narg = 1;
-        VALUE vbase = rb_check_to_int(argv[1]);
-        if (!NIL_P(vbase)) {
-            base = NUM2INT(vbase);
-            narg = 2;
-        }
-        if (argc > narg) {
-            VALUE hash = rb_check_hash_type(argv[argc-1]);
-            if (!NIL_P(hash)) {
-                opts = rb_extract_keywords(&hash);
-                if (!hash) --argc;
-            }
-        }
-    }
-    rb_check_arity(argc, 1, 2);
-    arg = argv[0];
-
-    return rb_convert_to_integer(arg, base, opts_exception_p(opts));
+    int exc = rb_bool_expected(exception, "exception", TRUE);
+    return rb_convert_to_integer(arg, NUM2INT(base), exc);
 }
 
 static double
@@ -4474,8 +4370,6 @@ InitVM_Object(void)
 
     rb_define_global_function("sprintf", f_sprintf, -1);
     rb_define_global_function("format", f_sprintf, -1);
-
-    rb_define_global_function("Integer", rb_f_integer, -1);
 
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);

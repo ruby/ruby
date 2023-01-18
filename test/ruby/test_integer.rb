@@ -251,6 +251,17 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(ArgumentError) { Integer(Object.new, 1) }
 
     assert_raise(ArgumentError) { Integer(1, 1, 1) }
+
+    def (base = Object.new).to_int
+      8
+    end
+    assert_equal(8, Integer("10", base))
+
+    assert_raise(TypeError) { Integer("10", "8") }
+    def (base = Object.new).to_int
+      "8"
+    end
+    assert_raise(TypeError) { Integer("10", base) }
   end
 
   def test_int_p
