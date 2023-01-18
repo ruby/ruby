@@ -6723,8 +6723,6 @@ fn gen_opt_getconstant_path(
         asm.test(ret_val, 1.into());
         asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).into());
 
-        let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
-
         let ic_entry = asm.load(Opnd::mem(
             64,
             inline_cache,
@@ -6737,8 +6735,9 @@ fn gen_opt_getconstant_path(
             RUBY_OFFSET_ICE_VALUE
         ));
 
-        // Push ic->entry->value
-        let stack_top = ctx.stack_push(Type::Unknown);
+        // Push ic->entry->value. We can assume a stable type for constants until a possible reassignment, which
+        // invalidates the IC entry and forces a recompile anyway.
+        let stack_top = ctx.stack_push(Type::from(unsafe { (*ice).value }));
         asm.store(stack_top, ic_entry_val);
     } else {
         // Optimize for single ractor mode.
