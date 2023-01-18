@@ -15859,12 +15859,6 @@ rb_mmtk_update_weak_table_key_only(st_table **table_holder)
 }
 
 static void
-rb_mmtk_update_weak_table_key_value(st_table **table_holder)
-{
-    rb_mmtk_update_weak_table(table_holder, true, NULL, NULL);
-}
-
-static void
 rb_mmtk_on_finalizer_table_delete(st_data_t key, st_data_t value, void *arg)
 {
     VALUE obj = (VALUE)key;
