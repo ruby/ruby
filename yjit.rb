@@ -253,7 +253,7 @@ module RubyVM::YJIT
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
-      if stats[:x86_call_rel32] || stats[:x86_call_reg]
+      if stats[:x86_call_rel32] != 0 || stats[:x86_call_reg] != 0
         $stderr.puts "x86_call_rel32:        " + ("%10d" % stats[:x86_call_rel32])
         $stderr.puts "x86_call_reg:          " + ("%10d" % stats[:x86_call_reg])
       end
