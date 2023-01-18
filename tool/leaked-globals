@@ -43,9 +43,16 @@ ARGV.reject! do |n|
     true
   end
 end
+# darwin's ld64 seems to require exception handling personality functions to be
+# extern, so we allow the Rust one.
+REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
+# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
+# In case we're working with llvm-nm, tell it to not worry about the bitcode.
+no_llvm = "--no-llvm-bc" if `#{NM} --version` =~ /llvm/i
+
 print "Checking leaked global symbols..."
 STDOUT.flush
-IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
+IO.foreach("|#{NM} #{no_llvm} #{ARGV.join(' ')}") do |line|
   n, t, = line.split
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
