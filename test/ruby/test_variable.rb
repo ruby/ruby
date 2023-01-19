@@ -165,7 +165,7 @@ class TestVariable < Test::Unit::TestCase
     end;
     set_cvar.set(1) # fill write cache
     set_cvar.freeze
-    assert_raise(FrozenError) do
+    assert_raise(FrozenError, "[Bug #19341]") do
       set_cvar.set(2) # hit write cache, but should check frozen status
     end
   end
