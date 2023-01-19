@@ -354,6 +354,10 @@ $(srcdir)/gems/src:
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
 
+ifneq ($(DOT_WAIT),)
+up:: $(DOT_WAIT) after-update
+endif
+
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
 endif
