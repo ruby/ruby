@@ -326,18 +326,27 @@ $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 
+$(srcdir)/.bundle/.timestamp:
+	$(MAKEDIRS) $@
+
 define build-gem
-$(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
+$(srcdir)/gems/src/$(1)/$(1).gemspec: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
 	$(Q) $(GIT) clone $(4) $$(@)
 
-.PHONY: $(srcdir)/gems/$(1)-$(2).gem
-$(srcdir)/gems/$(1)-$(2).gem: | $(srcdir)/gems/src/$(1)
-	$(ECHO) Building $(1)@$(3) to $$(@F)
+$(srcdir)/.bundle/.timestamp/$(1).revision: $(srcdir)/gems/src/$(1)/$(1).gemspec \
+	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
+	| $$(@D)
+	$(ECHO) Update $(1) to $(3)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
 	    $(GIT) fetch origin $(3) && \
 	    $(GIT) checkout --detach $(3) && \
 	:
+	echo $(3) | $(IFCHANGE) $$(@) -
+
+$(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
+		$(srcdir)/.bundle/.timestamp/$(1).revision
+	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems")'
