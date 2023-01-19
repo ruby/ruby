@@ -84,8 +84,10 @@
 
 use std::convert::From;
 use std::ffi::CString;
+use std::ops::{BitOr, BitOrAssign, BitAnd};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
+use crate::backend::ir::Opnd;
 
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
@@ -300,6 +302,92 @@ pub struct rb_cref_t {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
+
+/// Represents flags set for a callsite
+/// Comes from the rb_callinfo struct
+pub struct CallFlags(c_uint);
+
+impl CallFlags {
+    pub fn from_ci(ci: *const rb_callinfo) -> Self {
+        Self(unsafe { vm_ci_flag(ci) })
+    }
+
+    pub fn is_kw_splat(&self) -> bool {
+        self.0 & VM_CALL_KW_SPLAT != 0
+    }
+
+    pub fn is_blockarg(&self) -> bool {
+        self.0 & VM_CALL_ARGS_BLOCKARG != 0
+    }
+
+    pub fn is_kwarg(&self) -> bool {
+        self.0 & VM_CALL_KWARG != 0
+    }
+
+    pub fn is_splat(&self) -> bool {
+        self.0 & VM_CALL_ARGS_SPLAT != 0
+    }
+
+    pub fn is_fcall(&self) -> bool {
+        self.0 & VM_CALL_FCALL != 0
+    }
+
+    pub fn is_opt_send(&self) -> bool {
+        self.0 & VM_CALL_OPT_SEND != 0
+    }
+
+    pub fn is_zsuper(&self) -> bool {
+        self.0 & VM_CALL_ZSUPER != 0
+    }
+}
+
+impl BitOr for CallFlags {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl BitAnd for CallFlags {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl BitAnd<u32> for CallFlags {
+    type Output = Self;
+
+    fn bitand(self, rhs: u32) -> Self {
+        Self(self.0 & rhs)
+    }
+}
+
+impl BitOrAssign<u32> for CallFlags {
+    fn bitor_assign(&mut self, rhs: u32) {
+        self.0 |= rhs;
+    }
+}
+impl BitOrAssign for CallFlags {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl Into<u32> for CallFlags {
+    fn into(self) -> u32 {
+        self.0
+    }
+}
+
+impl Into<Opnd> for CallFlags {
+    fn into(self) -> Opnd {
+        Opnd::UImm(self.0 as u64)
+    }
+}
+
 
 impl VALUE {
     /// Dump info about the value to the console similarly to rp(VALUE)
