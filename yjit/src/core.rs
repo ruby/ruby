@@ -352,7 +352,7 @@ impl BranchTarget {
         }
     }
 
-    fn get_id(&self) -> BlockId {
+    fn get_blockid(&self) -> BlockId {
         match self {
             BranchTarget::Stub(stub) => stub.id,
             BranchTarget::Block(blockref) => blockref.borrow().blockid,
@@ -705,7 +705,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             for branch in &block.outgoing {
                 let branch = branch.borrow();
                 for target in branch.targets.iter().flatten() {
-                    unsafe { rb_gc_mark_movable(target.get_id().iseq.into()) };
+                    unsafe { rb_gc_mark_movable(target.get_blockid().iseq.into()) };
                 }
             }
 
@@ -760,7 +760,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             for branch in &block.outgoing {
                 let mut branch = branch.borrow_mut();
                 for target in branch.targets.iter_mut().flatten() {
-                    target.set_iseq(unsafe { rb_gc_location(target.get_id().iseq.into()) }.as_iseq());
+                    target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
                 }
             }
 
@@ -1544,11 +1544,11 @@ fn gen_block_series_body(
         incr_counter!(block_next_count);
 
         // Get id and context for the new block
-        let requested_id = last_target.get_id();
+        let requested_blockid = last_target.get_blockid();
         let requested_ctx = last_target.get_ctx();
 
         // Generate new block using context from the last branch.
-        let result = gen_single_block(requested_id, &requested_ctx, ec, cb, ocb);
+        let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb);
 
         // If the block failed to compile
         if result.is_err() {
@@ -1774,7 +1774,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     let target_idx: usize = target_idx.as_usize();
     let target = branch.targets[target_idx].as_ref().unwrap();
-    let target_id = target.get_id();
+    let target_blockid = target.get_blockid();
     let target_ctx = target.get_ctx();
 
     let target_branch_shape = match target_idx {
@@ -1797,10 +1797,10 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let original_interp_sp = get_cfp_sp(cfp);
 
         let running_iseq = rb_cfp_get_iseq(cfp);
-        let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_id.idx);
+        let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx);
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
 
-        assert_eq!(running_iseq, target_id.iseq as _, "each stub expects a particular iseq");
+        assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
 
         // Update the PC in the current CFP, because it may be out of sync in JITted code
         rb_set_cfp_pc(cfp, reconned_pc);
@@ -1817,7 +1817,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     };
 
     // Try to find an existing compiled version of this block
-    let mut block = find_block_version(target_id, &target_ctx);
+    let mut block = find_block_version(target_blockid, &target_ctx);
 
     // If this block hasn't yet been compiled
     if block.is_none() {
@@ -1844,7 +1844,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
         // Compile the new block version
         drop(branch); // Stop mutable RefCell borrow since GC might borrow branch for marking
-        block = gen_block_series(target_id, &target_ctx, ec, cb, ocb);
+        block = gen_block_series(target_blockid, &target_ctx, ec, cb, ocb);
         branch = branch_rc.borrow_mut();
 
         if block.is_none() && branch_modified {
