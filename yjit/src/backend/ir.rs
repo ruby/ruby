@@ -271,6 +271,7 @@ impl Target
     pub fn unwrap_code_ptr(&self) -> CodePtr {
         match self {
             Target::CodePtr(ptr) => *ptr,
+            Target::SideExitPtr(ptr) => *ptr,
             _ => unreachable!("trying to unwrap {:?} into code ptr", self)
         }
     }
