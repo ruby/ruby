@@ -905,7 +905,7 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
     if ((argc = rb_scan_args(argc, argv, "01", &initial)) == 1) {
         initial = rb_to_array(initial);
     }
-    RB_OBJ_WRITE(self, UNALIGNED_MEMBER_ACCESS(&q->que), ary_buf_new());
+    RB_OBJ_WRITE(self, UNALIGNED_MEMBER_ACCESS((void *)&q->que), ary_buf_new());
     ccan_list_head_init(queue_waitq(q));
     if (argc == 1) {
         rb_ary_concat(q->que, initial);
@@ -1178,7 +1178,7 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
         rb_raise(rb_eArgError, "queue size must be positive");
     }
 
-    RB_OBJ_WRITE(self, UNALIGNED_MEMBER_ACCESS(&sq->q.que), ary_buf_new());
+    RB_OBJ_WRITE(self, UNALIGNED_MEMBER_ACCESS((void *)&sq->q.que), ary_buf_new());
     ccan_list_head_init(szqueue_waitq(sq));
     ccan_list_head_init(szqueue_pushq(sq));
     sq->max = max;
