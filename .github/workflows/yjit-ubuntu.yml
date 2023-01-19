@@ -86,6 +86,7 @@ jobs:
       YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
+      RUST_BACKTRACE: 1
     runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
