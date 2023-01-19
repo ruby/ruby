@@ -373,28 +373,23 @@ rb_iseq_mark_and_update(rb_iseq_t *iseq, bool reference_updating)
         }
     }
 
-    // TODO: make these not pinned
-    if (!reference_updating) {
-        if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
-            rb_gc_mark(iseq->aux.loader.obj);
-        }
-        else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
-            const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
+    if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
+        rb_gc_mark_and_move(&iseq->aux.loader.obj);
+    }
+    else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
+        const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-            rb_iseq_mark_insn_storage(compile_data->insn.storage_head);
+        rb_iseq_mark_and_update_insn_storage(compile_data->insn.storage_head);
 
-            RUBY_MARK_UNLESS_NULL(compile_data->err_info);
-            if (RTEST(compile_data->catch_table_ary)) {
-                rb_gc_mark(compile_data->catch_table_ary);
-            }
-            VM_ASSERT(compile_data != NULL);
-        }
-        else {
-            /* executable */
-            VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
-            if (iseq->aux.exec.local_hooks) {
-                rb_hook_list_mark(iseq->aux.exec.local_hooks);
-            }
+        rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
+        rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
+    }
+    else {
+        /* executable */
+        VM_ASSERT(ISEQ_EXECUTABLE_P(iseq));
+
+        if (iseq->aux.exec.local_hooks) {
+            rb_hook_list_mark_and_update(iseq->aux.exec.local_hooks);
         }
     }
 

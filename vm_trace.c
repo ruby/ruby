@@ -66,6 +66,17 @@ rb_hook_list_mark(rb_hook_list_t *hooks)
     }
 }
 
+void
+rb_hook_list_mark_and_update(rb_hook_list_t *hooks)
+{
+    rb_event_hook_t *hook = hooks->hooks;
+
+    while (hook) {
+        rb_gc_mark_and_move(&hook->data);
+        hook = hook->next;
+    }
+}
+
 static void clean_hooks(const rb_execution_context_t *ec, rb_hook_list_t *list);
 
 void

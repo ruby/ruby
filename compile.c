@@ -10736,7 +10736,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 void
-rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_update_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
@@ -10772,13 +10772,7 @@ rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *storage)
                       case TS_VALUE:
                       case TS_IC: // constant path array
                       case TS_CALLDATA: // ci is stored.
-                        {
-                            VALUE op = OPERAND_AT(iobj, j);
-
-                            if (!SPECIAL_CONST_P(op)) {
-                                rb_gc_mark(op);
-                            }
-                        }
+                        rb_gc_mark_and_move(&OPERAND_AT(iobj, j));
                         break;
                       default:
                         break;
