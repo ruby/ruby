@@ -3489,7 +3489,7 @@ CODE
   private
 
   def assert_bytesplice_result(expected, s, *args)
-    assert_equal(args.last, s.send(:bytesplice, *args))
+    assert_equal(expected, s.send(:bytesplice, *args))
     assert_equal(expected, s)
   end
 
