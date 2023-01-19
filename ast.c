@@ -202,6 +202,11 @@ static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
 {
     int node_id;
+
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
     node_id = rb_get_node_id_from_frame_info(location);
     if (node_id == -1) {
         return Qnil;
