@@ -406,6 +406,11 @@ class TestPack < Test::Unit::TestCase
     assert_equal([0, 1, -1], "\0\1\xff".unpack("c*"))
 
     assert_equal([0, 1, 255], "\0\1\xff".unpack("C*"))
+
+    assert_raise(RangeError) {[10000].pack("c", strict: true)}
+    assert_raise(RangeError) {[-10000].pack("c", strict: true)}
+    assert_raise(RangeError) {[10000].pack("c", strict: true)}
+    assert_raise(RangeError) {[-10000].pack("C", strict: true)}
   end
 
   def test_pack_unpack_sS

@@ -10646,6 +10646,7 @@ pack.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 pack.$(OBJEXT): $(top_srcdir)/internal/gc.h
 pack.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 pack.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+pack.$(OBJEXT): $(top_srcdir)/internal/object.h
 pack.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/serial.h
 pack.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -10815,6 +10816,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/memory.h
 pack.$(OBJEXT): {$(VPATH)}internal/method.h
 pack.$(OBJEXT): {$(VPATH)}internal/module.h
 pack.$(OBJEXT): {$(VPATH)}internal/newobj.h
+pack.$(OBJEXT): {$(VPATH)}internal/object.h
 pack.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 pack.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 pack.$(OBJEXT): {$(VPATH)}internal/static_assert.h
