@@ -1775,7 +1775,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let target_idx: usize = target_idx.as_usize();
     let target = branch.targets[target_idx].as_ref().unwrap();
     let target_id = target.get_id();
-    let target_ctx = target.get_ctx().clone();
+    let target_ctx = target.get_ctx();
 
     let target_branch_shape = match target_idx {
         0 => BranchShape::Next0,
