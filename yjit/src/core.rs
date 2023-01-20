@@ -746,8 +746,8 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
     let cb = CodegenGlobals::get_inline_cb();
 
     for versions in &payload.version_map {
-        for block in versions {
-            let mut block = block.borrow_mut();
+        for version in versions {
+            let mut block = version.borrow_mut();
 
             block.blockid.iseq = unsafe { rb_gc_location(block.blockid.iseq.into()) }.as_iseq();
 
@@ -757,6 +757,8 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             }
 
             // Update outgoing branch entries
+            mem::drop(block); // end mut borrow: target.get_blockid() might borrow it
+            let block = version.borrow();
             for branch in &block.outgoing {
                 let mut branch = branch.borrow_mut();
                 for target in branch.targets.iter_mut().flatten() {
