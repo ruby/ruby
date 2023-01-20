@@ -10,14 +10,14 @@
     * gperf - 3.0.3 or later
     * ruby - 2.2 or later
         * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
+    * OpenSSL 1.1.x or 3.0.x / LibreSSL
+    * libyaml 0.1.7 or later
+    * zlib
 
 2. Install optional, recommended dependencies:
 
-    * OpenSSL 1.1.x or 3.0.x / LibreSSL
     * readline/editline (libedit)
-    * zlib
     * libffi
-    * libyaml 0.1.7 or later
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
