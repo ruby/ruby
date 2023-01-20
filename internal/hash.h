@@ -202,8 +202,8 @@ RHASH_ST_SIZE(VALUE h)
 static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
+    RHASH(h)->as.st = NULL;
     FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
-    RHASH(h)->as.ar = NULL;
 }
 
 static inline unsigned
