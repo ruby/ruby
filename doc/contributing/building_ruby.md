@@ -13,11 +13,11 @@
 
 2. Install optional, recommended dependencies:
 
-    * OpenSSL/LibreSSL
+    * OpenSSL 1.1.x or 3.0.x / LibreSSL
     * readline/editline (libedit)
     * zlib
     * libffi
-    * libyaml
+    * libyaml 0.1.7 or later
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
