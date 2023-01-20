@@ -159,7 +159,6 @@ MMTk_RubyUpcalls ruby_upcalls;
 static bool mmtk_enable = false;
 
 #if USE_MMTK
-static const char *mmtk_env_plan = NULL;
 static const char *mmtk_pre_arg_plan = NULL;
 static const char *mmtk_post_arg_plan = NULL;
 static const char *mmtk_chosen_plan = NULL;
@@ -1967,7 +1966,6 @@ rb_objspace_alloc(void)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        
         MMTk_Builder *mmtk_builder = mmtk_builder_default();
 
         mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
@@ -15996,21 +15994,10 @@ rb_mmtk_parse_heap_limit(const char *argv, bool* had_error)
 }
 
 void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min_size, size_t *max_size) {
-    const char *envval;
     if (mmtk_max_heap_size > 0) {
         *is_dynamic = false;
         *min_size = 0;
         *max_size = mmtk_max_heap_size;
-    } else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
-        bool had_error = false;
-        size_t parsed_max = rb_mmtk_parse_heap_limit(envval, &had_error);
-        if (had_error) {
-            fprintf(stderr, "Error: Invalid THIRD_PARTY_HEAP_LIMIT: %s\n", envval);
-            abort();
-        }
-        *is_dynamic = false;
-        *min_size = 0;
-        *max_size = parsed_max;
     } else {
         const size_t default_min = 1024 * 1024;
         size_t default_max = rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
@@ -16034,15 +16021,6 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
      */
 
     bool enable_rubyopt = true;
-
-    mmtk_env_plan = getenv("MMTK_PLAN");
-    if (mmtk_env_plan) {
-        mmtk_enable = true;
-    }
-
-    if (getenv("THIRD_PARTY_HEAP_LIMIT")) {
-        mmtk_enable = true;
-    }
 
     for (int n = 1; n < argc; n++) {
         if (strcmp(argv[n], "--") == 0) {
@@ -16143,15 +16121,7 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
         }
     }
 
-    if (enable_rubyopt && mmtk_env_plan && mmtk_pre_arg_plan && strcmp(mmtk_env_plan, mmtk_pre_arg_plan) != 0) {
-        fputs("[FATAL] MMTK_PLAN and --mmtk-plan do not agree\n", stderr);
-        exit(EXIT_FAILURE);
-    }
-
-    if (enable_rubyopt && mmtk_env_plan) {
-        mmtk_chosen_plan = mmtk_env_plan;
-    }
-    else if (mmtk_pre_arg_plan) {
+    if (mmtk_pre_arg_plan) {
         mmtk_chosen_plan = mmtk_pre_arg_plan;
     }
     else {
