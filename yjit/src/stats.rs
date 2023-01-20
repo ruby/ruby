@@ -218,7 +218,7 @@ make_counters! {
     send_args_splat_bmethod,
     send_args_splat_aref,
     send_args_splat_aset,
-    send_args_splat_optimized,
+    send_args_splat_opt_call,
     send_args_splat_cfunc_var_args,
     send_args_splat_cfunc_zuper,
     send_args_splat_cfunc_ruby2_keywords,
