@@ -1562,6 +1562,11 @@ vm_getinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, IVC ic)
 static inline void
 vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic)
 {
+    if (RB_SPECIAL_CONST_P(obj)) {
+        rb_error_frozen_object(obj);
+        return;
+    }
+
     shape_id_t dest_shape_id;
     attr_index_t index;
     vm_ic_atomic_shape_and_index(ic, &dest_shape_id, &index);

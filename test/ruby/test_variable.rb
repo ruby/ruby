@@ -261,6 +261,12 @@ class TestVariable < Test::Unit::TestCase
         v.instance_variable_set(:@foo, :bar)
       end
 
+      assert_raise_with_message(FrozenError, msg, "[Bug #19339]") do
+        v.instance_eval do
+          @a = 1
+        end
+      end
+
       assert_nil EnvUtil.suppress_warning {v.instance_variable_get(:@foo)}
       assert_not_send([v, :instance_variable_defined?, :@foo])
 
