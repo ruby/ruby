@@ -293,12 +293,12 @@ foreach-bundled-gems-rev = \
 foreach-bundled-gems-rev-0 = \
     $(call $(1),$(word 1,$(2)),$(word 2,$(2)),$(word 3,$(2)),$(word 4,$(2)))
 bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
-bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+bundled-gem-gemspec = $(srcdir)/gems/src/$(1)/$(1).gemspec
 bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
-update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemspec)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
