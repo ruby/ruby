@@ -332,7 +332,7 @@ $(srcdir)/.bundle/.timestamp:
 define build-gem
 $(srcdir)/gems/src/$(1)/$(1).gemspec: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
-	$(Q) $(GIT) clone $(4) $$(@)
+	$(Q) $(GIT) clone $(4) $$(@D)
 
 $(srcdir)/.bundle/.timestamp/$(1).revision: $(srcdir)/gems/src/$(1)/$(1).gemspec \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
