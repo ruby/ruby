@@ -59,9 +59,19 @@ struct rb_objspace; /* in vm_core.h */
     COMPILER_WARNING_POP; \
     unaligned_member_access_result; \
 })
+
+# define UNALIGNED_MEMBER_PTR(ptr, mem) __extension__({ \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
+    const volatile void *unaligned_member_ptr_result = &(ptr)->mem; \
+    COMPILER_WARNING_POP; \
+    (__typeof__((ptr)->mem) *)unaligned_member_ptr_result; \
+})
 #endif
 
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+#ifndef UNALIGNED_MEMBER_PTR
+# define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+#endif
 
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
