@@ -8,7 +8,7 @@
     * autoconf - 2.67 or later
     * bison - 3.0 or later
     * gperf - 3.0.3 or later
-    * ruby - 2.7 or later
+    * ruby - 2.2 or later
 
 2. Install optional, recommended dependencies:
 
