@@ -54,6 +54,12 @@ module RubyVM::MJIT # :nodoc: all
           # Return the size of this type
           define_singleton_method(:sizeof) { sizeof }
 
+          # Get the offset of a member named +name+
+          define_singleton_method(:offsetof) { |name|
+            _, offset = members.fetch(name)
+            offset / 8
+          }
+
           define_method(:initialize) do |addr = nil|
             if addr.nil? # TODO: get rid of this feature later
               addr = Fiddle.malloc(sizeof)
