@@ -9,6 +9,7 @@
     * bison - 3.0 or later
     * gperf - 3.0.3 or later
     * ruby - 2.2 or later
+        * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
 
 2. Install optional, recommended dependencies:
 
