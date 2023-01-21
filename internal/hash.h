@@ -20,6 +20,7 @@ struct ar_table_struct;
 typedef unsigned char ar_hint_t;
 
 enum ruby_rhash_flags {
+    RHASH_COPY_ON_WRITE = FL_USER0,
     RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
     RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
