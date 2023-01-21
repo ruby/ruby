@@ -29,8 +29,9 @@ if platform and !platform.empty?
   else
     REPLACE.concat(
       h .gsub(%r[/\*.*?\*/]m, " ") # delete block comments
-        .gsub(%r[//.*], ' ')       # delete oneline comments
+        .gsub(%r[//.*], " ")       # delete oneline comments
         .gsub(/^\s*#.*(?:\\\n.*)*/, "") # delete preprocessor directives
+        .gsub(/(?:\A|;)\K\s*typedef\s.*?;/m, "")
         .scan(/\b((?!rb_|DEPRECATED|_)\w+)\s*\(.*\);/)
         .flatten)
   end
@@ -44,7 +45,7 @@ ARGV.reject! do |n|
 end
 print "Checking leaked global symbols..."
 STDOUT.flush
-IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
+IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   n, t, = line.split
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
