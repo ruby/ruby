@@ -684,4 +684,4 @@ mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.
 
 # yes-test-basic: leaked-globals
 leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals PHONY
-	$(Q) $(XRUBY) $(tooldir)/leaked-globals NM=$(NM) SYMBOL_PREFIX=$(SYMBOL_PREFIX) PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac $(COMMONOBJS)
+	$(Q) $(XRUBY) $(tooldir)/leaked-globals NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac $(COMMONOBJS)
