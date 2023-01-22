@@ -468,7 +468,7 @@ class Reline::LineEditor
     rendered = false
     if @add_newline_to_end_of_buffer
       clear_dialog_with_content
-      rerender_added_newline(prompt, prompt_width)
+      rerender_added_newline(prompt, prompt_width, prompt_list)
       @add_newline_to_end_of_buffer = false
     else
       if @just_cursor_moving and not @rerender_all
@@ -969,11 +969,19 @@ class Reline::LineEditor
     end
   end
 
-  private def rerender_added_newline(prompt, prompt_width)
-    scroll_down(1)
+  private def rerender_added_newline(prompt, prompt_width, prompt_list)
     @buffer_of_lines[@previous_line_index] = @line
     @line = @buffer_of_lines[@line_index]
-    unless @in_pasting
+    @previous_line_index = nil
+    if @in_pasting
+      scroll_down(1)
+    else
+      lines = whole_lines
+      prev_line_prompt = @prompt_proc ? prompt_list[@line_index - 1] : prompt
+      prev_line_prompt_width = @prompt_proc ? calculate_width(prev_line_prompt, true) : prompt_width
+      prev_line = modify_lines(lines)[@line_index - 1]
+      render_partial(prev_line_prompt, prev_line_prompt_width, prev_line, @first_line_started_from + @started_from, with_control: false)
+      scroll_down(1)
       render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)
     end
     @cursor = @cursor_max = calculate_width(@line)
@@ -982,7 +990,6 @@ class Reline::LineEditor
     @highest_in_this = calculate_height_by_width(prompt_width + @cursor_max)
     @first_line_started_from += @started_from + 1
     @started_from = calculate_height_by_width(prompt_width + @cursor) - 1
-    @previous_line_index = nil
   end
 
   def just_move_cursor
