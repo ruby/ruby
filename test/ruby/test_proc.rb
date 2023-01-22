@@ -388,6 +388,15 @@ class TestProc < Test::Unit::TestCase
   def test_dup_subclass
     c1 = Class.new(Proc)
     assert_equal c1, c1.new{}.dup.class, '[Bug #17545]'
+    c1 = Class.new(Proc) {def initialize_dup(*) throw :initialize_dup; end}
+    assert_throw(:initialize_dup) {c1.new{}.dup}
+  end
+
+  def test_clone_subclass
+    c1 = Class.new(Proc)
+    assert_equal c1, c1.new{}.clone.class, '[Bug #17545]'
+    c1 = Class.new(Proc) {def initialize_clone(*) throw :initialize_clone; end}
+    assert_throw(:initialize_clone) {c1.new{}.clone}
   end
 
   def test_binding
