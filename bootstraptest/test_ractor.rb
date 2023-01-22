@@ -1564,6 +1564,24 @@ assert_equal '1', %q{
   }.take
 }
 
+# Ractor-local storage
+assert_equal '2', %q{
+  Ractor.new {
+    fails = 0
+    begin
+      Ractor.main[:key] # cannot get ractor local storage from non-main ractor
+    rescue => e
+      fails += 1 if e.message =~ /Cannot get ractor local/
+    end
+    begin
+      Ractor.main[:key] = 'val'
+    rescue => e
+      fails += 1 if e.message =~ /Cannot set ractor local/
+    end
+    fails
+  }.take
+}
+
 ###
 ### Synchronization tests
 ###
