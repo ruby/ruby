@@ -433,6 +433,12 @@ AS_CASE(["$build_os"],
     ])
     rm -fr conftest*
   ])
+AS_CASE(["$build_os"],
+  [darwin*], [
+    AC_SUBST(X_WRAPPER_AR, "`cd -P "${tooldir}" && pwd`/darwin-ar $AR")
+  ], [
+    AC_SUBST(X_WRAPPER_AR, "$AR")
+  ])
 AS_CASE(["$target_os"],
   [wasi*], [
     # Clang linker automatically uses wasm-opt with -O if it found.
