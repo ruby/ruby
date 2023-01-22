@@ -834,13 +834,19 @@ class Ractor
     end
   end
 
-  # get a value from ractor-local storage
+  # get a value from ractor-local storage for current ractor
   def [](sym)
+    if (self != Ractor.current)
+      raise RuntimeError, "Cannot get ractor local storage for non-current ractor"
+    end
     Primitive.ractor_local_value(sym)
   end
 
-  # set a value in ractor-local storage
+  # set a value in ractor-local storage for current ractor
   def []=(sym, val)
+    if (self != Ractor.current)
+      raise RuntimeError, "Cannot set ractor local storage for non-current ractor"
+    end
     Primitive.ractor_local_value_set(sym, val)
   end
 
