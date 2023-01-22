@@ -1419,6 +1419,41 @@ assert_equal 'can not make a Proc shareable because it accesses outer variables 
   end
 }
 
+# Can not access outer variables through eval in isolated (shareable) proc
+assert_equal "2", %q{
+  fails = 0
+  a = Object.new # non-shareable
+  prok = Ractor.current.instance_eval do
+    Proc.new do
+      eval('a')
+    end
+  end
+  prok2 = Ractor.current.instance_eval do
+    Proc.new do
+      eval('a')
+    end
+  end
+  PROC = prok
+  Ractor.make_shareable(PROC)
+  begin
+    PROC.call # this doesn't work, can't access outer variables even through eval in isolated proc
+  rescue SyntaxError => e
+    fails +=1 if e.message.match?(/can not access variable `a' from isolated Proc/)
+  end
+  PROC = prok2
+  Ractor.make_shareable(PROC)
+  fails += Ractor.new do
+    inner_fails = 0
+    begin
+      PROC.call # this doesn't work
+    rescue SyntaxError => e2
+      inner_fails +=1 if e2.message.match?(/can not access variable `a' from isolated Proc/)
+    end
+    inner_fails
+  end.take
+  fails
+}
+
 # Ractor.make_shareable(obj, copy: true) makes copied shareable object.
 assert_equal '[false, false, true, true]', %q{
   r = []
