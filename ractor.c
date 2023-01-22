@@ -2562,9 +2562,9 @@ shareable_p_enter(VALUE obj)
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
-    else if (RB_TYPE_P(obj, T_CLASS)  ||
-             RB_TYPE_P(obj, T_MODULE) ||
-             RB_TYPE_P(obj, T_ICLASS)) {
+    else if (RB_CLASS_TYPE_P(obj)  ||
+             RB_MODULE_TYPE_P(obj) ||
+             RB_ICLASS_TYPE_P(obj)) {
         // TODO: remove it
         mark_shareable(obj);
         return traverse_skip;

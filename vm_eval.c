@@ -841,7 +841,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
                  scope == CALL_PUBLIC) {
 
             VALUE defined_class = me->owner;
-            if (RB_TYPE_P(defined_class, T_ICLASS)) {
+            if (RB_ICLASS_TYPE_P(defined_class)) {
                 defined_class = RBASIC(defined_class)->klass;
             }
 
@@ -1918,7 +1918,7 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
         VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
     }
 
-    VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
+    VM_ASSERT(singleton || RB_MODULE_TYPE_P(self) || RB_CLASS_TYPE_P(self));
     cref = vm_cref_push(ec, self, ep, TRUE, singleton);
 
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);

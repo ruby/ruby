@@ -50,7 +50,7 @@ struct_ivar_get(VALUE c, ID id)
         c = rb_class_superclass(c);
         if (c == rb_cStruct || c == rb_cData || !RTEST(c))
             return Qnil;
-        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+        RUBY_ASSERT(RB_CLASS_TYPE_P(c));
         ivar = rb_attr_get(c, id);
         if (!NIL_P(ivar)) {
             return rb_ivar_set(orig, id, ivar);

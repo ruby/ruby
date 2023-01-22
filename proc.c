@@ -2007,7 +2007,7 @@ rb_method_name_error(VALUE klass, VALUE str)
             break;
         }
     }
-    else if (RB_TYPE_P(c, T_MODULE)) {
+    else if (RB_MODULE_TYPE_P(c)) {
         s = MSG(" module");
     }
     if (UNDEF_P(s)) {
@@ -2243,7 +2243,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
 
     if (is_method) {
         struct METHOD *method = (struct METHOD *)DATA_PTR(body);
-        if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
+        if (method->me->owner != mod && !RB_MODULE_TYPE_P(method->me->owner) &&
             !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
             if (FL_TEST(method->me->owner, FL_SINGLETON)) {
                 rb_raise(rb_eTypeError,
@@ -2589,11 +2589,11 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
 
-    if (RB_TYPE_P(methclass, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(methclass)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(methclass);
         if (!NIL_P(refined_class)) methclass = refined_class;
     }
-    if (!RB_TYPE_P(methclass, T_MODULE) && !RTEST(rb_obj_is_kind_of(recv, methclass))) {
+    if (!RB_MODULE_TYPE_P(methclass) && !RTEST(rb_obj_is_kind_of(recv, methclass))) {
         if (FL_TEST(methclass, FL_SINGLETON)) {
             rb_raise(rb_eTypeError,
                      "singleton method called for a different object");
@@ -2612,7 +2612,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         me = data->me;
     }
 
-    if (RB_TYPE_P(me->owner, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(me->owner)) {
         if (!clone) {
             // if we didn't previously clone the method entry, then we need to clone it now
             // because this branch manipulates it in rb_method_entry_complement_defined_class
@@ -3142,7 +3142,7 @@ method_inspect(VALUE method)
     mklass = data->iclass;
     if (!mklass) mklass = data->klass;
 
-    if (RB_TYPE_P(mklass, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(mklass)) {
         /* TODO: I'm not sure why mklass is T_ICLASS.
          * UnboundMethod#bind() can set it as T_ICLASS at convert_umethod_to_method_components()
          * but not sure it is needed.
@@ -3157,7 +3157,7 @@ method_inspect(VALUE method)
         defined_class = method_entry_defined_class(data->me);
     }
 
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(defined_class)) {
         defined_class = RBASIC_CLASS(defined_class);
     }
 
@@ -3187,10 +3187,10 @@ method_inspect(VALUE method)
         mklass = data->klass;
         if (FL_TEST(mklass, FL_SINGLETON)) {
             VALUE v = rb_ivar_get(mklass, attached);
-            if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
+            if (!(RB_CLASS_TYPE_P(v) || RB_MODULE_TYPE_P(v))) {
                 do {
                    mklass = RCLASS_SUPER(mklass);
-                } while (RB_TYPE_P(mklass, T_ICLASS));
+                } while (RB_ICLASS_TYPE_P(mklass));
             }
         }
         rb_str_buf_append(str, rb_inspect(mklass));

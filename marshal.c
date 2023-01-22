@@ -265,7 +265,7 @@ class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
 
-    must_not_be_anonymous((RB_TYPE_P(klass, T_CLASS) ? "class" : "module"), path);
+    must_not_be_anonymous((RB_CLASS_TYPE_P(klass) ? "class" : "module"), path);
     if (rb_path_to_class(path) != rb_class_real(klass)) {
         rb_raise(rb_eTypeError, "% "PRIsVALUE" can't be referred to", path);
     }
@@ -1657,7 +1657,7 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
         st_data_t key = (st_data_t)v;
         st_delete(arg->partial_objects, &key, &data);
         if (arg->freeze) {
-            if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
+            if (RB_MODULE_TYPE_P(v) || RB_CLASS_TYPE_P(v)) {
                 // noop
             }
             else if (RB_TYPE_P(v, T_STRING)) {
@@ -1730,7 +1730,7 @@ path2class(VALUE path)
 {
     VALUE v = rb_path_to_class(path);
 
-    if (!RB_TYPE_P(v, T_CLASS)) {
+    if (!RB_CLASS_TYPE_P(v)) {
         rb_raise(rb_eArgError, "%"PRIsVALUE" does not refer to class", path);
     }
     return v;
@@ -1741,7 +1741,7 @@ path2class(VALUE path)
 static VALUE
 must_be_module(VALUE v, VALUE path)
 {
-    if (!RB_TYPE_P(v, T_MODULE)) {
+    if (!RB_MODULE_TYPE_P(v)) {
         rb_raise(rb_eArgError, "%"PRIsVALUE" does not refer to module", path);
     }
     return v;
@@ -1839,7 +1839,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             VALUE m = rb_path_to_class(path);
             if (NIL_P(extmod)) extmod = rb_ary_hidden_new(0);
 
-            if (RB_TYPE_P(m, T_CLASS)) { /* prepended */
+            if (RB_CLASS_TYPE_P(m)) { /* prepended */
                 VALUE c;
 
                 v = r_object0(arg, true, 0, Qnil);
@@ -1883,10 +1883,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, extmod, type);
-            if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
+            if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_CLASS_TYPE_P(v)) {
                 goto format_error;
             }
-            if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
+            if (RB_MODULE_TYPE_P(v) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
                 VALUE tmp = rb_obj_alloc(c);
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;

@@ -161,7 +161,7 @@ rb_tmp_class_path(VALUE klass, bool *permanent, fallback_func fallback)
         return path;
     }
     else {
-        if (RB_TYPE_P(klass, T_MODULE)) {
+        if (RB_MODULE_TYPE_P(klass)) {
             if (rb_obj_class(klass) == rb_cModule) {
                 path = Qfalse;
             }
@@ -935,7 +935,7 @@ gen_ivtbl_get_unlocked(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 MJIT_FUNC_EXPORTED int
 rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_ICLASS));
+    RUBY_ASSERT(!RB_ICLASS_TYPE_P(obj));
 
     st_data_t data;
     int r = 0;
@@ -1705,7 +1705,7 @@ gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 static void
 class_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(obj) || RB_MODULE_TYPE_P(obj));
 
     rb_shape_t* shape = rb_shape_get_shape(obj);
     struct iv_itr_data itr_data;
@@ -2113,7 +2113,7 @@ autoload_data(VALUE mod, ID id)
 
     // If we are called with a non-origin ICLASS, fetch the autoload data from
     // the original module.
-    if (RB_TYPE_P(mod, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(mod)) {
         if (FL_TEST_RAW(mod, RICLASS_IS_ORIGIN)) {
             return 0;
         }
@@ -2122,7 +2122,7 @@ autoload_data(VALUE mod, ID id)
         }
     }
 
-    RUBY_ASSERT(RB_TYPE_P(mod, T_CLASS) || RB_TYPE_P(mod, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(mod) || RB_MODULE_TYPE_P(mod));
 
     // Look up the instance variable table for `autoload`, then index into that table with the given constant name `id`.
 
@@ -2404,7 +2404,7 @@ autoload_delete(VALUE module, ID name)
 
     st_data_t load = 0, key = name;
 
-    RUBY_ASSERT(RB_TYPE_P(module, T_CLASS) || RB_TYPE_P(module, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(module) || RB_MODULE_TYPE_P(module));
 
     VALUE table_value = rb_ivar_lookup(module, autoload, 0);
     if (table_value) {
@@ -3553,7 +3553,7 @@ rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
 static VALUE
 original_module(VALUE c)
 {
-    if (RB_TYPE_P(c, T_ICLASS))
+    if (RB_ICLASS_TYPE_P(c))
         return RBASIC(c)->klass;
     return c;
 }
@@ -3561,7 +3561,7 @@ original_module(VALUE c)
 static int
 cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 {
-    if (RB_TYPE_P(klass, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(klass)) {
         if (FL_TEST_RAW(klass, RICLASS_IS_ORIGIN)) {
             return 0;
         }
@@ -3647,7 +3647,7 @@ static void
 check_for_cvar_table(VALUE subclass, VALUE key)
 {
     // Must not check ivar on ICLASS
-    if (!RB_TYPE_P(subclass, T_ICLASS) && RTEST(rb_ivar_defined(subclass, key))) {
+    if (!RB_ICLASS_TYPE_P(subclass) && RTEST(rb_ivar_defined(subclass, key))) {
         RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
         ruby_vm_global_cvar_state++;
         return;
@@ -3670,7 +3670,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
         target = tmp;
     }
 
-    if (RB_TYPE_P(target, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(target)) {
         target = RBASIC(target)->klass;
     }
     check_before_mod_set(target, id, val, "class variable");
@@ -3702,7 +3702,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     // and target is a module or a subclass with the same
     // cvar in this lookup.
     if (result == 0) {
-        if (RB_TYPE_P(target, T_CLASS)) {
+        if (RB_CLASS_TYPE_P(target)) {
             if (RCLASS_SUBCLASSES(target)) {
                 rb_class_foreach_subclass(target, check_for_cvar_table, id);
             }
@@ -3937,7 +3937,7 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
 int
 rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(obj) || RB_MODULE_TYPE_P(obj));
     int found;
     rb_check_frozen(obj);
 
@@ -3991,7 +3991,7 @@ void
 rb_iv_tbl_copy(VALUE dst, VALUE src)
 {
     RUBY_ASSERT(rb_type(dst) == rb_type(src));
-    RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(dst) || RB_MODULE_TYPE_P(dst));
 
     RUBY_ASSERT(RCLASS_SHAPE_ID(dst) == ROOT_SHAPE_ID || rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(dst))->type == SHAPE_INITIAL_CAPACITY);
     RUBY_ASSERT(!RCLASS_IVPTR(dst));

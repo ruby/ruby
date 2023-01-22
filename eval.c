@@ -433,7 +433,7 @@ rb_class_modify_check(VALUE klass)
     if (SPECIAL_CONST_P(klass)) {
         Check_Type(klass, T_CLASS);
     }
-    if (RB_TYPE_P(klass, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(klass)) {
         rb_module_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
@@ -1220,7 +1220,7 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 static void
 ensure_class_or_module(VALUE obj)
 {
-    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+    if (!RB_CLASS_TYPE_P(obj) && !RB_MODULE_TYPE_P(obj)) {
         rb_raise(rb_eTypeError,
                  "wrong argument type %"PRIsVALUE" (expected Class or Module)",
                  rb_obj_class(obj));
@@ -1239,7 +1239,7 @@ hidden_identity_hash_new(void)
 static VALUE
 refinement_superclass(VALUE superclass)
 {
-    if (RB_TYPE_P(superclass, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(superclass)) {
         /* FIXME: Should ancestors of superclass be used here? */
         return rb_include_class_new(RCLASS_ORIGIN(superclass), rb_cBasicObject);
     }
@@ -1268,7 +1268,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
         }
         if (!NIL_P(c = rb_hash_lookup(CREF_REFINEMENTS(cref), klass))) {
             superclass = c;
-            while (c && RB_TYPE_P(c, T_ICLASS)) {
+            while (c && RB_ICLASS_TYPE_P(c)) {
                 if (RBASIC(c)->klass == module) {
                     /* already used refinement */
                     return;
@@ -1365,7 +1365,7 @@ add_activated_refinement(VALUE activated_refinements,
 
     if (!NIL_P(c = rb_hash_lookup(activated_refinements, klass))) {
         superclass = c;
-        while (c && RB_TYPE_P(c, T_ICLASS)) {
+        while (c && RB_ICLASS_TYPE_P(c)) {
             if (RBASIC(c)->klass == refinement) {
                 /* already used refinement */
                 return;

@@ -393,7 +393,7 @@ rb_ec_error_print(rb_execution_context_t *volatile ec, volatile VALUE errinfo)
 void
 rb_print_undef(VALUE klass, ID id, rb_method_visibility_t visi)
 {
-    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    const int is_mod = RB_MODULE_TYPE_P(klass);
     VALUE mesg;
     switch (visi & METHOD_VISI_MASK) {
       case METHOD_VISI_UNDEF:
@@ -408,7 +408,7 @@ rb_print_undef(VALUE klass, ID id, rb_method_visibility_t visi)
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    const int is_mod = RB_MODULE_TYPE_P(klass);
     rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
@@ -421,7 +421,7 @@ rb_print_undef_str(VALUE klass, VALUE name)
 void
 rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
 {
-    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    const int is_mod = RB_MODULE_TYPE_P(klass);
     VALUE mesg;
     switch (visi & METHOD_VISI_MASK) {
       case METHOD_VISI_UNDEF:

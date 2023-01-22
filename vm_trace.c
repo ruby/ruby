@@ -720,7 +720,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     }
 
     if (klass) {
-        if (RB_TYPE_P(klass, T_ICLASS)) {
+        if (RB_ICLASS_TYPE_P(klass)) {
             klass = RBASIC(klass)->klass;
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
@@ -890,7 +890,7 @@ fill_id_and_klass(rb_trace_arg_t *trace_arg)
         }
 
         if (trace_arg->klass) {
-            if (RB_TYPE_P(trace_arg->klass, T_ICLASS)) {
+            if (RB_ICLASS_TYPE_P(trace_arg->klass)) {
                 trace_arg->klass = RBASIC(trace_arg->klass)->klass;
             }
         }

@@ -111,7 +111,7 @@ callable_class_p(VALUE klass)
       default:
         break;
       case T_ICLASS:
-        if (!RB_TYPE_P(RCLASS_SUPER(klass), T_MODULE)) break;
+        if (!RB_MODULE_TYPE_P(RCLASS_SUPER(klass))) break;
       case T_MODULE:
         return TRUE;
     }
@@ -978,7 +978,7 @@ vm_get_const_base(const VALUE *ep)
 static inline void
 vm_check_if_namespace(VALUE klass)
 {
-    if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE)) {
+    if (!RB_CLASS_TYPE_P(klass) && !RB_MODULE_TYPE_P(klass)) {
         rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a class/module", klass);
     }
 }
@@ -986,7 +986,7 @@ vm_check_if_namespace(VALUE klass)
 static inline void
 vm_ensure_not_refinement_module(VALUE self)
 {
-    if (RB_TYPE_P(self, T_MODULE) && FL_TEST(self, RMODULE_IS_REFINEMENT)) {
+    if (RB_MODULE_TYPE_P(self) && FL_TEST(self, RMODULE_IS_REFINEMENT)) {
         rb_warn("not defined at the refinement, but at the outer class/module");
     }
 }
@@ -1489,7 +1489,7 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, ICVARC ic)
     VALUE defined_class = 0;
     VALUE cvar_value = rb_cvar_find(klass, id, &defined_class);
 
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(defined_class)) {
         defined_class = RBASIC(defined_class)->klass;
     }
 
@@ -2072,7 +2072,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_CLASS_TYPE_P(klass) || RB_ICLASS_TYPE_P(klass));
 
     RB_VM_LOCK_ENTER();
     {
@@ -3492,13 +3492,13 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     VALUE klass = current_class;
 
     /* for prepended Module, then start from cover class */
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
-            RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
+    if (RB_ICLASS_TYPE_P(klass) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+            RB_CLASS_TYPE_P(RBASIC_CLASS(klass))) {
         klass = RBASIC_CLASS(klass);
     }
 
     while (RTEST(klass)) {
-        VALUE owner = RB_TYPE_P(klass, T_ICLASS) ? RBASIC_CLASS(klass) : klass;
+        VALUE owner = RB_ICLASS_TYPE_P(klass) ? RBASIC_CLASS(klass) : klass;
         if (owner == target_owner) {
             return klass;
         }
@@ -3516,7 +3516,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 
     if (orig_me->defined_class == 0) {
         VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
+        VM_ASSERT(RB_MODULE_TYPE_P(orig_me->owner));
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
         if (me->def->alias_count + me->def->complemented_count == 0) {
@@ -4223,7 +4223,7 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
-            RB_TYPE_P(RBASIC(klass)->klass, T_MODULE) &&
+            RB_MODULE_TYPE_P(RBASIC(klass)->klass) &&
         FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
         klass = RBASIC(klass)->klass;
     }
@@ -4264,7 +4264,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
-        VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
+        VALUE m = RB_ICLASS_TYPE_P(current_defined_class) ?
             RCLASS_INCLUDER(current_defined_class) : current_defined_class;
 
         if (m) { /* not bound UnboundMethod */
@@ -4899,7 +4899,7 @@ vm_const_get_under(ID id, rb_num_t flags, VALUE cbase)
 static VALUE
 vm_check_if_class(ID id, rb_num_t flags, VALUE super, VALUE klass)
 {
-    if (!RB_TYPE_P(klass, T_CLASS)) {
+    if (!RB_CLASS_TYPE_P(klass)) {
         return 0;
     }
     else if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags)) {
@@ -4922,7 +4922,7 @@ vm_check_if_class(ID id, rb_num_t flags, VALUE super, VALUE klass)
 static VALUE
 vm_check_if_module(ID id, VALUE mod)
 {
-    if (!RB_TYPE_P(mod, T_MODULE)) {
+    if (!RB_MODULE_TYPE_P(mod)) {
         return 0;
     }
     else {
@@ -4977,7 +4977,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
     VALUE klass;
 
-    if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) && !RB_TYPE_P(super, T_CLASS)) {
+    if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) && !RB_CLASS_TYPE_P(super)) {
         rb_raise(rb_eTypeError,
                  "superclass must be an instance of Class (given an instance of %"PRIsVALUE")",
                  rb_obj_class(super));
@@ -5087,7 +5087,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
-    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+    if (id == rb_intern("initialize") && klass != rb_cObject &&  RB_CLASS_TYPE_P(klass) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
 
         RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
     }

@@ -104,6 +104,9 @@ RUBY_SYMBOL_EXPORT_END
 
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
+#define RB_CLASS_TYPE_P(x) RB_TYPE_P((x), T_CLASS)
+#define RB_MODULE_TYPE_P(x) RB_TYPE_P((x), T_MODULE)
+#define RB_ICLASS_TYPE_P(x) RB_TYPE_P((x), T_ICLASS)
 
 #ifndef __MINGW32__
 #undef memcpy

@@ -1394,7 +1394,7 @@ get_klass(const rb_control_frame_t *cfp)
 {
     VALUE klass;
     if (rb_vm_control_frame_id_and_class(cfp, 0, 0, &klass)) {
-        if (RB_TYPE_P(klass, T_ICLASS)) {
+        if (RB_ICLASS_TYPE_P(klass)) {
             return RBASIC(klass)->klass;
         }
         else {
@@ -1741,12 +1741,12 @@ rb_profile_frame_classpath(VALUE frame)
     VALUE klass = frame2klass(frame);
 
     if (klass && !NIL_P(klass)) {
-        if (RB_TYPE_P(klass, T_ICLASS)) {
+        if (RB_ICLASS_TYPE_P(klass)) {
             klass = RBASIC(klass)->klass;
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
             klass = rb_ivar_get(klass, id__attached__);
-            if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE))
+            if (!RB_CLASS_TYPE_P(klass) && !RB_MODULE_TYPE_P(klass))
                 return rb_sprintf("#<%s:%p>", rb_class2name(rb_obj_class(klass)), (void*)klass);
         }
         return rb_class_path(klass);

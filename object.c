@@ -269,7 +269,7 @@ rb_obj_singleton_class(VALUE obj)
 MJIT_FUNC_EXPORTED void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
+    RUBY_ASSERT(!RB_CLASS_TYPE_P(obj) && !RB_MODULE_TYPE_P(obj));
 
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
@@ -796,8 +796,8 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
 static VALUE
 class_search_class_ancestor(VALUE cl, VALUE c)
 {
-    RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
-    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(c));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(cl));
 
     size_t c_depth = RCLASS_SUPERCLASS_DEPTH(c);
     size_t cl_depth = RCLASS_SUPERCLASS_DEPTH(cl);
@@ -845,7 +845,7 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
-    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(cl));
 
     // Fastest path: If the object's class is an exact match we know `c` is a
     // class without checking type and can return immediately.
@@ -854,11 +854,11 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
     // Note: YJIT needs this function to never allocate and never raise when
     // `c` is a class or a module.
 
-    if (LIKELY(RB_TYPE_P(c, T_CLASS))) {
+    if (LIKELY(RB_CLASS_TYPE_P(c))) {
         // Fast path: Both are T_CLASS
         return class_search_class_ancestor(cl, c);
     }
-    else if (RB_TYPE_P(c, T_ICLASS)) {
+    else if (RB_ICLASS_TYPE_P(c)) {
         // First check if we inherit the includer
         // If we do we can return true immediately
         VALUE includer = RCLASS_INCLUDER(c);
@@ -868,14 +868,14 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
         // already included Module.
         // If it is a class, attempt the fast class-to-class check and return
         // true if there is a match.
-        if (RB_TYPE_P(includer, T_CLASS) && class_search_class_ancestor(cl, includer))
+        if (RB_CLASS_TYPE_P(includer) && class_search_class_ancestor(cl, includer))
             return Qtrue;
 
         // We don't include the ICLASS directly, so must check if we inherit
         // the module via another include
         return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
     }
-    else if (RB_TYPE_P(c, T_MODULE)) {
+    else if (RB_MODULE_TYPE_P(c)) {
         // Slow path: check each ancestor in the linked list and its method table
         return RBOOL(class_search_ancestor(cl, RCLASS_ORIGIN(c)));
     }
@@ -1668,7 +1668,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
 {
     if (mod == arg) return Qtrue;
 
-    if (RB_TYPE_P(arg, T_CLASS) && RB_TYPE_P(mod, T_CLASS)) {
+    if (RB_CLASS_TYPE_P(arg) && RB_CLASS_TYPE_P(mod)) {
         // comparison between classes
         size_t mod_depth = RCLASS_SUPERCLASS_DEPTH(mod);
         size_t arg_depth = RCLASS_SUPERCLASS_DEPTH(arg);
@@ -1690,7 +1690,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
         }
     }
     else {
-        if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
+        if (!CLASS_OR_MODULE_P(arg) && !RB_ICLASS_TYPE_P(arg)) {
             rb_raise(rb_eTypeError, "compared with non class/module");
         }
         if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
@@ -2069,7 +2069,7 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 VALUE
 rb_class_superclass(VALUE klass)
 {
-    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(klass));
 
     VALUE super = RCLASS_SUPER(klass);
 
@@ -2079,7 +2079,7 @@ rb_class_superclass(VALUE klass)
     }
     else {
         super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
-        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        RUBY_ASSERT(RB_CLASS_TYPE_P(klass));
         return super;
     }
 }
@@ -2350,7 +2350,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
             pbeg = p;
         }
 
-        if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+        if (!RB_MODULE_TYPE_P(mod) && !RB_CLASS_TYPE_P(mod)) {
             rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
                      QUOTE(name));
         }
@@ -2563,7 +2563,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
         }
 #endif
 
-        if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+        if (p < pend && !RB_MODULE_TYPE_P(mod) && !RB_CLASS_TYPE_P(mod)) {
             rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
                      QUOTE(name));
         }
@@ -2705,7 +2705,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
             else {
                 mod = rb_const_get_at(mod, id);
             }
-            if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+            if (!RB_MODULE_TYPE_P(mod) && !RB_CLASS_TYPE_P(mod)) {
                 rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
                          QUOTE(name));
             }
@@ -2924,7 +2924,7 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_singleton_p(VALUE klass)
 {
-    return RBOOL(RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON));
+    return RBOOL(RB_CLASS_TYPE_P(klass) && FL_TEST(klass, FL_SINGLETON));
 }
 
 /*! \private */

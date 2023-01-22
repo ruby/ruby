@@ -176,7 +176,7 @@ static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_CLASS_TYPE_P(klass) || RB_ICLASS_TYPE_P(klass));
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCK_ENTER();
@@ -270,7 +270,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 static void
 clear_iclass_method_cache_by_id(VALUE iclass, VALUE d)
 {
-    VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+    VM_ASSERT(RB_ICLASS_TYPE_P(iclass));
     ID mid = (ID)d;
     clear_method_cache_by_id_in_class(iclass, mid);
 }
@@ -278,7 +278,7 @@ clear_iclass_method_cache_by_id(VALUE iclass, VALUE d)
 static void
 clear_iclass_method_cache_by_id_for_refinements(VALUE klass, VALUE d)
 {
-    if (RB_TYPE_P(klass, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(klass)) {
         ID mid = (ID)d;
         clear_method_cache_by_id_in_class(klass, mid);
     }
@@ -287,7 +287,7 @@ clear_iclass_method_cache_by_id_for_refinements(VALUE klass, VALUE d)
 void
 rb_clear_method_cache(VALUE klass_or_module, ID mid)
 {
-    if (RB_TYPE_P(klass_or_module, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(klass_or_module)) {
         VALUE module = klass_or_module; // alias
 
         if (FL_TEST(module, RMODULE_IS_REFINEMENT)) {
@@ -313,8 +313,8 @@ invalidate_all_cc(void *vstart, void *vend, size_t stride, void *data)
         void *ptr = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
         if (RBASIC(v)->flags) { // liveness check
-            if (RB_TYPE_P(v, T_CLASS) ||
-                RB_TYPE_P(v, T_ICLASS)) {
+            if (RB_CLASS_TYPE_P(v) ||
+                RB_ICLASS_TYPE_P(v)) {
                 if (RCLASS_CC_TBL(v)) {
                     rb_cc_table_free(v);
                 }
@@ -340,10 +340,10 @@ void
 rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me)
 {
     VALUE table_owner = klass;
-    if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
+    if (RB_ICLASS_TYPE_P(klass) && !RICLASS_OWNS_M_TBL_P(klass)) {
         table_owner = RBASIC(table_owner)->klass;
     }
-    VM_ASSERT(RB_TYPE_P(table_owner, T_CLASS) || RB_TYPE_P(table_owner, T_ICLASS) || RB_TYPE_P(table_owner, T_MODULE));
+    VM_ASSERT(RB_CLASS_TYPE_P(table_owner) || RB_ICLASS_TYPE_P(table_owner) || RB_MODULE_TYPE_P(table_owner));
     VM_ASSERT(table == RCLASS_M_TBL(table_owner));
     rb_id_table_insert(table, method_id, (VALUE)me);
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
@@ -733,7 +733,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
         rb_method_definition_set(me, def, &refined);
     }
 
-    VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
+    VM_ASSERT(RB_MODULE_TYPE_P(me->owner));
 
     return (rb_callable_method_entry_t *)me;
 }
@@ -868,7 +868,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
        rb_class_modify_check(klass);
     }
 
-    if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+    if (RB_MODULE_TYPE_P(klass) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
         rb_add_refined_method_entry(refined_class, mid);
     }
@@ -957,7 +957,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     VM_ASSERT(me->def != NULL);
 
     /* check optimized method override by a prepended module */
-    if (RB_TYPE_P(orig_klass, T_MODULE)) {
+    if (RB_MODULE_TYPE_P(orig_klass)) {
         check_override_opt_method(klass, (VALUE)mid);
     }
 
@@ -1240,7 +1240,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     if (me) {
         if (me->defined_class == 0) {
             RB_DEBUG_COUNTER_INC(mc_cme_complement);
-            VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS) || RB_TYPE_P(defined_class, T_MODULE));
+            VM_ASSERT(RB_ICLASS_TYPE_P(defined_class) || RB_MODULE_TYPE_P(defined_class));
             VM_ASSERT(me->defined_class == 0);
 
             mtbl = RCLASS_CALLABLE_M_TBL(defined_class);
@@ -1359,7 +1359,7 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_CLASS_TYPE_P(klass) || RB_ICLASS_TYPE_P(klass));
     RB_VM_LOCK_ENTER();
     {
         cme = cached_callable_method_entry(klass, mid);
@@ -1625,7 +1625,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 
     me = search_method0(origin_class, name, &defined_class, true);
 
-    if (!me && RB_TYPE_P(klass, T_MODULE)) {
+    if (!me && RB_MODULE_TYPE_P(klass)) {
         me = search_method(rb_cObject, name, &defined_class);
     }
 
@@ -1664,7 +1664,7 @@ method_boundp(VALUE klass, ID id, int ex)
 {
     const rb_callable_method_entry_t *cme;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_CLASS_TYPE_P(klass) || RB_ICLASS_TYPE_P(klass));
 
     if (ex & BOUND_RESPONDS) {
         cme = rb_callable_method_entry_with_refinements(klass, id, NULL);
@@ -2177,7 +2177,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
         UNDEFINED_REFINED_METHOD_P(orig_me->def)) {
-        if ((!RB_TYPE_P(klass, T_MODULE)) ||
+        if ((!RB_MODULE_TYPE_P(klass)) ||
             (orig_me = search_method(rb_cObject, original_name, &defined_class),
              UNDEFINED_METHOD_ENTRY_P(orig_me))) {
             rb_print_undef(klass, original_name, METHOD_VISI_UNDEF);
@@ -2449,7 +2449,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
         }
 
         me = search_method(origin_class, name, &defined_class);
-        if (!me && RB_TYPE_P(module, T_MODULE)) {
+        if (!me && RB_MODULE_TYPE_P(module)) {
             me = search_method(rb_cObject, name, &defined_class);
         }
 
@@ -2655,7 +2655,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     ID id;
     const rb_method_entry_t *me;
 
-    if (!RB_TYPE_P(module, T_MODULE)) {
+    if (!RB_MODULE_TYPE_P(module)) {
         rb_raise(rb_eTypeError, "module_function must be called for modules");
     }
 

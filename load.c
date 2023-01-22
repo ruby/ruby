@@ -749,7 +749,7 @@ rb_load_internal(VALUE fname, VALUE wrap)
     rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state = TAG_NONE;
     if (RTEST(wrap)) {
-        if (!RB_TYPE_P(wrap, T_MODULE)) {
+        if (!RB_MODULE_TYPE_P(wrap)) {
             wrap = rb_module_new();
         }
         state = load_wrapping(ec, fname, wrap);

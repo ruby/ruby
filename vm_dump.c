@@ -1109,8 +1109,8 @@ rb_vm_bugreport(const void *ctx)
                     fprintf(stderr, " %4d %.*s\n", i,
                             LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
                 }
-                else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
-                    const char *const type = RB_TYPE_P(name, T_CLASS) ?
+                else if (RB_CLASS_TYPE_P(name) || RB_MODULE_TYPE_P(name)) {
+                    const char *const type = RB_CLASS_TYPE_P(name) ?
                         "class" : "module";
                     name = rb_search_class_path(rb_class_real(name));
                     if (!RB_TYPE_P(name, T_STRING)) {

@@ -80,7 +80,7 @@ rb_shape_get_parent(rb_shape_t * shape)
 shape_id_t
 rb_rclass_shape_id(VALUE obj)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
+    RUBY_ASSERT(RB_CLASS_TYPE_P(obj) || RB_MODULE_TYPE_P(obj));
     return RCLASS_EXT(obj)->shape_id;
 }
 

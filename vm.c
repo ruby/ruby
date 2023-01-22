@@ -538,7 +538,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
         if (!rb_ec_frame_method_id_and_class(ec, &id, 0, &klass) || !klass)
             return FALSE;
     }
-    if (RB_TYPE_P(klass, T_ICLASS)) {
+    if (RB_ICLASS_TYPE_P(klass)) {
         klass = RBASIC(klass)->klass;
     }
     else if (FL_TEST(klass, FL_SINGLETON)) {
@@ -1966,8 +1966,8 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
-            RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
+    if (RB_ICLASS_TYPE_P(klass) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+            RB_CLASS_TYPE_P(RBASIC_CLASS(klass))) {
        klass = RBASIC_CLASS(klass);
     }
     if (vm_redefinition_check_method_type(me)) {
