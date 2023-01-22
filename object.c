@@ -448,8 +448,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
             rb_shape_transition_shape_frozen(clone);
         }
         break;
-      case Qtrue:
-        {
+      case Qtrue: {
         static VALUE freeze_true_hash;
         if (!freeze_true_hash) {
             freeze_true_hash = rb_hash_new();
@@ -464,9 +463,8 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         RBASIC(clone)->flags |= FL_FREEZE;
         rb_shape_transition_shape_frozen(clone);
         break;
-        }
-      case Qfalse:
-        {
+      }
+      case Qfalse: {
         static VALUE freeze_false_hash;
         if (!freeze_false_hash) {
             freeze_false_hash = rb_hash_new();
@@ -479,7 +477,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         argv[1] = freeze_false_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         break;
-        }
+      }
       default:
         rb_bug("invalid kwfreeze passed to mutable_obj_clone");
     }
