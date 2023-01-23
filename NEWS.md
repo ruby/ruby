@@ -55,4 +55,5 @@ changelog for details of the default gems or bundled gems.
 
 ## JIT
 
-[Bug #19150]:         https://bugs.ruby-lang.org/issues/19150
+[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Feature #19314]: https://bugs.ruby-lang.org/issues/19314
