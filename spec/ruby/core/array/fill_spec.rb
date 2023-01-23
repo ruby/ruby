@@ -169,7 +169,7 @@ describe "Array#fill with (filler, index, length)" do
     [1, 2, 3, 4, 5].fill(-2, -2, &@never_passed).should == [1, 2, 3, 4, 5]
   end
 
-  # See: http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17481
+  # See: https://blade.ruby-lang.org/ruby-core/17481
   it "does not raise an exception if the given length is negative and its absolute value does not exceed the index" do
     -> { [1, 2, 3, 4].fill('a', 3, -1)}.should_not raise_error(ArgumentError)
     -> { [1, 2, 3, 4].fill('a', 3, -2)}.should_not raise_error(ArgumentError)

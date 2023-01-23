@@ -60,7 +60,7 @@ describe "BigDecimal#add" do
   end
 
 #  TODO:
-#  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17374
+#  https://blade.ruby-lang.org/ruby-core/17374
 #
 #  This doesn't work on MRI and looks like a bug to me:
 #  one can use BigDecimal + Float, but not Bigdecimal.add(Float)
