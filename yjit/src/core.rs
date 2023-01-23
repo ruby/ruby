@@ -756,16 +756,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                 *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
-            // Update outgoing branch entries
-            mem::drop(block); // end mut borrow: target.get_blockid() might borrow it
-            let block = version.borrow();
-            for branch in &block.outgoing {
-                let mut branch = branch.borrow_mut();
-                for target in branch.targets.iter_mut().flatten() {
-                    target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
-                }
-            }
-
             // Walk over references to objects in generated code.
             for offset in &block.gc_obj_offsets {
                 let offset_to_value = offset.as_usize();
@@ -785,6 +775,16 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                         cb.write_mem(byte_code_ptr, byte)
                             .expect("patching existing code should be within bounds");
                     }
+                }
+            }
+
+            // Update outgoing branch entries
+            let outgoing_branches = block.outgoing.clone(); // clone to use after borrow
+            mem::drop(block); // end mut borrow: target.set_iseq and target.get_blockid() might (mut) borrow it
+            for branch in &outgoing_branches {
+                let mut branch = branch.borrow_mut();
+                for target in branch.targets.iter_mut().flatten() {
+                    target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
                 }
             }
         }
