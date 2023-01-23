@@ -14,7 +14,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     @profile = :release
   end
 
-  def build(_extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
+  def build(extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
     require "tempfile"
     require "fileutils"
 
@@ -43,16 +43,19 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       dlext_path = File.join(File.dirname(dylib_path), dlext_name)
       FileUtils.cp(dylib_path, dlext_path)
 
+      nesting = extension_nesting(extension)
+
       # TODO: remove in RubyGems 4
       if Gem.install_extension_in_lib && lib_dir
-        FileUtils.mkdir_p lib_dir
-        p [dlext_path, lib_dir]
-        FileUtils.cp_r dlext_path, lib_dir, remove_destination: true
+        nested_lib_dir = File.join(lib_dir, nesting)
+        FileUtils.mkdir_p nested_lib_dir
+        FileUtils.cp_r dlext_path, nested_lib_dir, remove_destination: true
       end
 
       # move to final destination
-      FileUtils.mkdir_p dest_path
-      FileUtils.cp_r dlext_path, dest_path, remove_destination: true
+      nested_dest_path = File.join(dest_path, nesting)
+      FileUtils.mkdir_p nested_dest_path
+      FileUtils.cp_r dlext_path, nested_dest_path, remove_destination: true
     ensure
       # clean up intermediary build artifacts
       FileUtils.rm_rf tmp_dest if tmp_dest
@@ -92,6 +95,23 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
   def cargo
     ENV.fetch("CARGO", "cargo")
+  end
+
+  # returns the directory nesting of the extension, ignoring the first part, so
+  # "ext/foo/bar/Cargo.toml" becomes "foo/bar"
+  def extension_nesting(extension)
+    parts = extension.to_s.split(Regexp.union([File::SEPARATOR, File::ALT_SEPARATOR].compact))
+
+    parts = parts.each_with_object([]) do |segment, final|
+      next if segment == "."
+      if segment == ".."
+        raise Gem::InstallError, "extension outside of gem root" if final.empty?
+        next final.pop
+      end
+      final << segment
+    end
+
+    File.join(parts[1...-1])
   end
 
   def rb_config_env

@@ -32,7 +32,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     Dir.chdir @ext do
       ENV.update(@rust_envs)
       builder = Gem::Ext::CargoBuilder.new
-      builder.build nil, @dest_path, output
+      builder.build "Cargo.toml", @dest_path, output
     end
 
     output = output.join "\n"
@@ -58,7 +58,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     Dir.chdir @ext do
       ENV.update(@rust_envs)
       builder = Gem::Ext::CargoBuilder.new
-      builder.build nil, @dest_path, output
+      builder.build "Cargo.toml", @dest_path, output
     end
 
     output = output.join "\n"
@@ -83,7 +83,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
       Dir.chdir @ext do
         ENV.update(@rust_envs)
         builder = Gem::Ext::CargoBuilder.new
-        builder.build nil, @dest_path, []
+        builder.build "Cargo.toml", @dest_path, []
       end
     end
 
@@ -130,7 +130,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
         Open3.capture2e(*gem, "install", "--verbose", "--local", built_gem, *ARGV)
       end
 
-      stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-rcustom_name_ext", "-e", "puts 'Result: ' + CustomName.say_hello")
+      stdout_and_stderr_str, status = Open3.capture2e(env_for_subprocess, *ruby_with_rubygems_in_load_path, "-rcustom_name", "-e", "puts 'Result: ' + CustomName.say_hello")
 
       assert status.success?, stdout_and_stderr_str
       assert_match "Result: Hello world!", stdout_and_stderr_str
