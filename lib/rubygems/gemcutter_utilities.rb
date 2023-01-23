@@ -251,8 +251,7 @@ module Gem::GemcutterUtilities
   end
 
   def ask_otp(credentials)
-    webauthn_url = webauthn_verification_url(credentials)
-    if webauthn_url
+    if webauthn_url = webauthn_verification_url(credentials)
       say "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_url}."
     else
       say "You have enabled multi-factor authentication. Please enter OTP code."
