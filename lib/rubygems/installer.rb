@@ -528,7 +528,7 @@ class Gem::Installer
   #--
   # The Windows script is generated in addition to the regular one due to a
   # bug or misfeature in the Windows shell's pipe.  See
-  # http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/193379
+  # https://blade.ruby-lang.org/ruby-talk/193379
 
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
