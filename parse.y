@@ -9433,7 +9433,7 @@ tokadd_ident(struct parser_params *p, int c)
 }
 
 static ID
-tokenize_ident(struct parser_params *p, const enum lex_state_e last_state)
+tokenize_ident(struct parser_params *p)
 {
     ID ident = TOK_INTERN();
 
@@ -9568,7 +9568,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 
     if (tokadd_ident(p, c)) return 0;
     SET_LEX_STATE(EXPR_END);
-    tokenize_ident(p, last_state);
+    tokenize_ident(p);
     return tGVAR;
 }
 
@@ -9643,7 +9643,7 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
     }
 
     if (tokadd_ident(p, c)) return 0;
-    tokenize_ident(p, last_state);
+    tokenize_ident(p);
     return result;
 }
 
@@ -9762,7 +9762,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 	SET_LEX_STATE(EXPR_END);
     }
 
-    ident = tokenize_ident(p, last_state);
+    ident = tokenize_ident(p);
     if (result == tCONSTANT && is_local_id(ident)) result = tIDENTIFIER;
     if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
 	(result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
