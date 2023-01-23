@@ -1372,7 +1372,7 @@ update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb -d tool --cache-dir=$(CACHE_DIR) -e gnu \
 	    config.guess config.sub
 
-update-coverage: PHONY
+update-coverage: main PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "simplecov" -v "0.20.0"
 
