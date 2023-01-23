@@ -6,30 +6,57 @@
 class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   attr_accessor :spec, :runner, :profile
 
-  def initialize(spec)
+  def initialize
     require_relative "../command"
     require_relative "cargo_builder/link_flag_converter"
 
-    @spec = spec
     @runner = self.class.method(:run)
     @profile = :release
   end
 
   def build(_extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
+    require "tempfile"
     require "fileutils"
-    require "shellwords"
 
-    build_crate(dest_path, results, args, cargo_dir)
-    validate_cargo_build!(dest_path)
-    rename_cdylib_for_ruby_compatibility(dest_path)
-    finalize_directory(dest_path, lib_dir, cargo_dir)
-    results
-  end
+    # Where's the Cargo.toml of the crate we're building
+    cargo_toml = File.join(cargo_dir, "Cargo.toml")
+    # What's the crate's name
+    crate_name = cargo_crate_name(cargo_dir, cargo_toml, results)
 
-  def build_crate(dest_path, results, args, cargo_dir)
-    env = build_env
-    cmd = cargo_command(cargo_dir, dest_path, args)
-    runner.call cmd, results, "cargo", cargo_dir, env
+    begin
+      # Create a tmp dir to do the build in
+      tmp_dest = Dir.mktmpdir(".gem.", cargo_dir)
+
+      # Run the build
+      cmd = cargo_command(cargo_toml, tmp_dest, args, crate_name)
+      runner.call(cmd, results, "cargo", cargo_dir, build_env)
+
+      # Where do we expect Cargo to write the compiled library
+      dylib_path = cargo_dylib_path(tmp_dest, crate_name)
+
+      # Helpful error if we didn't find the compiled library
+      raise DylibNotFoundError, tmp_dest unless File.exist?(dylib_path)
+
+      # Cargo and Ruby differ on how the library should be named, rename from
+      # what Cargo outputs to what Ruby expects
+      dlext_name = "#{crate_name}.#{makefile_config("DLEXT")}"
+      dlext_path = File.join(File.dirname(dylib_path), dlext_name)
+      FileUtils.cp(dylib_path, dlext_path)
+
+      # TODO: remove in RubyGems 4
+      if Gem.install_extension_in_lib && lib_dir
+        FileUtils.mkdir_p lib_dir
+        p [dlext_path, lib_dir]
+        FileUtils.cp_r dlext_path, lib_dir, remove_destination: true
+      end
+
+      # move to final destination
+      FileUtils.mkdir_p dest_path
+      FileUtils.cp_r dlext_path, dest_path, remove_destination: true
+    ensure
+      # clean up intermediary build artifacts
+      FileUtils.rm_rf tmp_dest if tmp_dest
+    end
 
     results
   end
@@ -42,27 +69,30 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     build_env
   end
 
-  def cargo_command(cargo_dir, dest_path, args = [])
-    manifest = File.join(cargo_dir, "Cargo.toml")
-    cargo = ENV.fetch("CARGO", "cargo")
+  def cargo_command(cargo_toml, dest_path, args = [], crate_name = nil)
+    require "shellwords"
 
     cmd = []
     cmd += [cargo, "rustc"]
     cmd += ["--crate-type", "cdylib"]
     cmd += ["--target", ENV["CARGO_BUILD_TARGET"]] if ENV["CARGO_BUILD_TARGET"]
     cmd += ["--target-dir", dest_path]
-    cmd += ["--manifest-path", manifest]
+    cmd += ["--manifest-path", cargo_toml]
     cmd += ["--lib"]
     cmd += ["--profile", profile.to_s]
     cmd += ["--locked"]
     cmd += Gem::Command.build_args
     cmd += args
     cmd += ["--"]
-    cmd += [*cargo_rustc_args(dest_path)]
+    cmd += [*cargo_rustc_args(dest_path, crate_name)]
     cmd
   end
 
   private
+
+  def cargo
+    ENV.fetch("CARGO", "cargo")
+  end
 
   def rb_config_env
     result = {}
@@ -70,11 +100,11 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     result
   end
 
-  def cargo_rustc_args(dest_dir)
+  def cargo_rustc_args(dest_dir, crate_name)
     [
       *linker_args,
       *mkmf_libpath,
-      *rustc_dynamic_linker_flags(dest_dir),
+      *rustc_dynamic_linker_flags(dest_dir, crate_name),
       *rustc_lib_flags(dest_dir),
       *platform_specific_rustc_args(dest_dir),
     ]
@@ -134,42 +164,53 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     makefile_config("ENABLE_SHARED") == "no"
   end
 
-  # Ruby expects the dylib to follow a file name convention for loading
-  def rename_cdylib_for_ruby_compatibility(dest_path)
-    new_path = final_extension_path(dest_path)
-    FileUtils.cp(cargo_dylib_path(dest_path), new_path)
-    new_path
-  end
-
-  def validate_cargo_build!(dir)
-    dylib_path = cargo_dylib_path(dir)
-
-    raise DylibNotFoundError, dir unless File.exist?(dylib_path)
-
-    dylib_path
-  end
-
-  def final_extension_path(dest_path)
-    dylib_path = cargo_dylib_path(dest_path)
-    dlext_name = "#{spec.name}.#{makefile_config("DLEXT")}"
-    dylib_path.gsub(File.basename(dylib_path), dlext_name)
-  end
-
-  def cargo_dylib_path(dest_path)
+  def cargo_dylib_path(dest_path, crate_name)
     prefix = so_ext == "dll" ? "" : "lib"
     path_parts = [dest_path]
     path_parts << ENV["CARGO_BUILD_TARGET"] if ENV["CARGO_BUILD_TARGET"]
-    path_parts += ["release", "#{prefix}#{cargo_crate_name}.#{so_ext}"]
+    path_parts += ["release", "#{prefix}#{crate_name}.#{so_ext}"]
     File.join(*path_parts)
   end
 
-  def cargo_crate_name
-    spec.metadata.fetch("cargo_crate_name", spec.name).tr("-", "_")
+  def cargo_crate_name(cargo_dir, manifest_path, results)
+    require "open3"
+    Gem.load_yaml
+
+    output, status =
+      begin
+        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", :chdir => cargo_dir)
+      rescue => error
+        raise Gem::InstallError, "cargo metadata failed #{error.message}"
+      end
+
+    unless status.success?
+      if Gem.configuration.really_verbose
+        puts output
+      else
+        results << output
+      end
+
+      exit_reason =
+        if status.exited?
+          ", exit code #{status.exitstatus}"
+        elsif status.signaled?
+          ", uncaught signal #{status.termsig}"
+        end
+
+      raise Gem::InstallError, "cargo metadata failed#{exit_reason}"
+    end
+
+    # cargo metadata output is specified as json, but with the
+    # --format-version 1 option the output is compatible with YAML, so we can
+    # avoid the json dependency
+    metadata = Gem::SafeYAML.safe_load(output)
+    package = metadata["packages"].find {|pkg| pkg["manifest_path"] == manifest_path }
+    package["name"].tr("-", "_")
   end
 
-  def rustc_dynamic_linker_flags(dest_dir)
+  def rustc_dynamic_linker_flags(dest_dir, crate_name)
     split_flags("DLDFLAGS")
-      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir) }
+      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }
       .compact
       .flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
@@ -204,7 +245,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   end
 
   # Interpolate substitution vars in the arg (i.e. $(DEFFILE))
-  def maybe_resolve_ldflag_variable(input_arg, dest_dir)
+  def maybe_resolve_ldflag_variable(input_arg, dest_dir, crate_name)
     var_matches = input_arg.match(/\$\((\w+)\)/)
 
     return input_arg unless var_matches
@@ -217,19 +258,19 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     # On windows, it is assumed that mkmf has setup an exports file for the
     # extension, so we have to to create one ourselves.
     when "DEFFILE"
-      write_deffile(dest_dir)
+      write_deffile(dest_dir, crate_name)
     else
       RbConfig::CONFIG[var_name]
     end
   end
 
-  def write_deffile(dest_dir)
-    deffile_path = File.join(dest_dir, "#{spec.name}-#{RbConfig::CONFIG["arch"]}.def")
+  def write_deffile(dest_dir, crate_name)
+    deffile_path = File.join(dest_dir, "#{crate_name}-#{RbConfig::CONFIG["arch"]}.def")
     export_prefix = makefile_config("EXPORT_PREFIX") || ""
 
     File.open(deffile_path, "w") do |f|
       f.puts "EXPORTS"
-      f.puts "#{export_prefix.strip}Init_#{spec.name}"
+      f.puts "#{export_prefix.strip}Init_#{crate_name}"
     end
 
     deffile_path
@@ -262,44 +303,6 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     return unless val
 
     RbConfig.expand(val.dup)
-  end
-
-  # Copied from ExtConfBuilder
-  def finalize_directory(dest_path, lib_dir, extension_dir)
-    require "fileutils"
-    require "tempfile"
-
-    ext_path = final_extension_path(dest_path)
-
-    begin
-      tmp_dest = Dir.mktmpdir(".gem.", extension_dir)
-
-      # Some versions of `mktmpdir` return absolute paths, which will break make
-      # if the paths contain spaces.
-      #
-      # As such, we convert to a relative path.
-      tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
-
-      full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
-
-      # TODO: remove in RubyGems 4
-      if Gem.install_extension_in_lib && lib_dir
-        FileUtils.mkdir_p lib_dir
-        FileUtils.cp_r ext_path, lib_dir, remove_destination: true
-      end
-
-      FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
-        destent = ent.class.new(dest_path, ent.rel)
-        destent.exist? || FileUtils.mv(ent.path, destent.path)
-      end
-    ensure
-      FileUtils.rm_rf tmp_dest if tmp_dest
-    end
-  end
-
-  def get_relative_path(path, base)
-    path[0..base.length - 1] = "." if path.start_with?(base)
-    path
   end
 
   # Error raised when no cdylib artifact was created

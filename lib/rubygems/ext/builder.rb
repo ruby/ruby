@@ -131,8 +131,7 @@ class Gem::Ext::Builder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder
     when /Cargo.toml/ then
-      # We use the spec name here to ensure we invoke the correct init function later
-      Gem::Ext::CargoBuilder.new(@spec)
+      Gem::Ext::CargoBuilder.new
     else
       build_error("No builder for extension '#{extension}'")
     end
