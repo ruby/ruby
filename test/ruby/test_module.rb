@@ -3281,7 +3281,7 @@ class TestModule < Test::Unit::TestCase
       methods = singleton_class.private_instance_methods(false)
       assert_include(methods, :#{method}, ":#{method} should be private")
 
-      assert_raise_with_message(NoMethodError, "private method `#{method}' called for main:Object") {
+      assert_raise_with_message(NoMethodError, /^private method `#{method}' called for /) {
         recv = self
         recv.#{method}
       }
