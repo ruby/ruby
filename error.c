@@ -2116,12 +2116,14 @@ name_err_mesg_to_str(VALUE obj)
 object:
                 klass = CLASS_OF(obj);
                 if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
-                    s = FAKE_CSTR(&s_str, "extended object ");
+                    s = FAKE_CSTR(&s_str, "");
+                    c = rb_any_to_s(obj);
+                    break;
                 }
                 else {
-                    s = FAKE_CSTR(&s_str, "object ");
+                    s = FAKE_CSTR(&s_str, "an instance of ");
+                    c = rb_class_real(klass);
                 }
-                c = rb_class_real(klass);
             }
             c2 = rb_protect(name_err_mesg_receiver_name, c, &state);
             if (state || NIL_OR_UNDEF_P(c2))
