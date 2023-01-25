@@ -78,7 +78,7 @@ def invoke_simplecov_formatter
   res.each do |path, cov|
     next unless path.start_with?(base_dir) || path.start_with?(cur_dir)
     next if path.start_with?(File.join(base_dir, "test"))
-    simplecov_result[path] = cov[:lines]
+    simplecov_result[path] = cov
   end
 
   a, b = base_dir, cur_dir
