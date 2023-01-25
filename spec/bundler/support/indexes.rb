@@ -28,7 +28,7 @@ module Spec
         source_requirements[name] = d.source = default_source
       end
       packages = Bundler::Resolver::Base.new(source_requirements, @deps, base, @platforms, :locked_specs => originally_locked, :unlock => unlock)
-      Bundler::Resolver.new(packages, gem_version_promoter).start(@deps)
+      Bundler::Resolver.new(packages, gem_version_promoter).start
     end
 
     def should_not_resolve

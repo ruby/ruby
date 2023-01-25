@@ -487,7 +487,7 @@ module Bundler
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= dependencies + metadata_dependencies
+      dependencies + metadata_dependencies
     end
 
     def resolution_packages
@@ -551,13 +551,13 @@ module Bundler
     end
 
     def start_resolution
-      result = resolver.start(expanded_dependencies)
+      result = resolver.start
 
       SpecSet.new(SpecSet.new(result).for(dependencies, false, @platforms))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      @remote && sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
     end
 
     def pin_locally_available_names(source_requirements)

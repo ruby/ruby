@@ -5,7 +5,7 @@ require_relative "package"
 module Bundler
   class Resolver
     class Base
-      attr_reader :packages, :source_requirements
+      attr_reader :packages, :requirements, :source_requirements
 
       def initialize(source_requirements, dependencies, base, platforms, options)
         @source_requirements = source_requirements
@@ -16,11 +16,18 @@ module Bundler
           hash[name] = Package.new(name, platforms, **options)
         end
 
-        dependencies.each do |dep|
+        @requirements = dependencies.map do |dep|
+          dep_platforms = dep.gem_platforms(platforms)
+
+          # Dependencies scoped to external platforms are ignored
+          next if dep_platforms.empty?
+
           name = dep.name
 
-          @packages[name] = Package.new(name, dep.gem_platforms(platforms), **options.merge(:dependency => dep))
-        end
+          @packages[name] = Package.new(name, dep_platforms, **options.merge(:dependency => dep))
+
+          dep
+        end.compact
       end
 
       def [](name)

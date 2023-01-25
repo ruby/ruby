@@ -84,20 +84,20 @@ the `disable_exec_load` setting.
 Any Ruby code that opens a subshell (like `system`, backticks, or `%x{}`) will
 automatically use the current Bundler environment. If you need to shell out to
 a Ruby command that is not part of your current bundle, use the
-`with_clean_env` method with a block. Any subshells created inside the block
+`with_unbundled_env` method with a block. Any subshells created inside the block
 will be given the environment present before Bundler was activated. For
 example, Homebrew commands run Ruby, but don't work inside a bundle:
 
-    Bundler.with_clean_env do
+    Bundler.with_unbundled_env do
       `brew install wget`
     end
 
-Using `with_clean_env` is also necessary if you are shelling out to a different
+Using `with_unbundled_env` is also necessary if you are shelling out to a different
 bundle. Any Bundler commands run in a subshell will inherit the current
 Gemfile, so commands that need to run in the context of a different bundle also
-need to use `with_clean_env`.
+need to use `with_unbundled_env`.
 
-    Bundler.with_clean_env do
+    Bundler.with_unbundled_env do
       Dir.chdir "/other/bundler/project" do
         `bundle exec ./script`
       end

@@ -950,4 +950,30 @@ RSpec.describe "bundle lock" do
     expect(err).to include("Could not find compatible versions")
     expect(err).not_to include("ERROR REPORT TEMPLATE")
   end
+
+  context "when re-resolving to include prereleases" do
+    before do
+      build_repo4 do
+        build_gem "tzinfo-data", "1.2022.7"
+        build_gem "rails", "7.1.0.alpha" do |s|
+          s.add_dependency "activesupport"
+        end
+        build_gem "activesupport", "7.1.0.alpha"
+      end
+    end
+
+    it "does not end up including gems scoped to other platforms in the lockfile" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rails"
+        gem "tzinfo-data", platform: :windows
+      G
+
+      simulate_platform "x86_64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).not_to include("tzinfo-data (1.2022.7)")
+    end
+  end
 end
