@@ -216,17 +216,16 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-15' }}
-      options: --user root
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env: ${{ matrix.entry.env || matrix.env }}
     steps:
       - run: id
-        working-directory:
+        working-directory: /home/ci
       - run: mkdir build
-        working-directory:
+        working-directory: /home/ci
       - name: setenv
         run: |
-          echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" | sudo tee -a $GITHUB_ENV
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: src
@@ -235,7 +234,7 @@ jobs:
           path: src/.downloaded-cache
           key: downloaded-cache
       - run: ./autogen.sh
-        working-directory: src
+        working-directory: /home/ci/src
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
@@ -280,4 +279,4 @@ jobs:
 
 defaults:
   run:
-    working-directory: build
+    working-directory: /home/ci/build
