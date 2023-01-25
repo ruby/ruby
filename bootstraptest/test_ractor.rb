@@ -1326,6 +1326,28 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# Ractor.make_shareable(a_proc) makes inner structure shareable and freezes it
+assert_equal 'true,true,true,true', %q{
+  class Proc
+    attr_reader :obj
+    def initialize
+      @obj = Object.new
+    end
+  end
+
+  pr = Ractor.current.instance_eval do
+    Proc.new {}
+  end
+
+  results = []
+  Ractor.make_shareable(pr)
+  results << Ractor.shareable?(pr)
+  results << pr.frozen?
+  results << Ractor.shareable?(pr.obj)
+  results << pr.obj.frozen?
+  results.map(&:to_s).join(',')
+}
+
 # Ractor.shareable?(recursive_objects)
 assert_equal '[false, false]', %q{
   y = []
@@ -1352,6 +1374,21 @@ assert_equal '[C, M]', %q{
   module M; end
 
   Ractor.make_shareable(ary = [C, M])
+}
+
+# Ractor.make_shareable with curried proc checks isolation of original proc
+assert_equal 'isolation error', %q{
+  a = Object.new
+  orig = proc { a }
+  curried = orig.curry
+
+  begin
+    Ractor.make_shareable(curried)
+  rescue Ractor::IsolationError
+    'isolation error'
+  else
+    'no error'
+  end
 }
 
 # define_method() can invoke different Ractor's proc if the proc is shareable.
