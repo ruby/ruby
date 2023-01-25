@@ -203,7 +203,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     !!Gem::WIN_PATTERNS.find {|r| target_platform =~ r }
   end
 
-  # Interpolate substition vars in the arg (i.e. $(DEFFILE))
+  # Interpolate substitution vars in the arg (i.e. $(DEFFILE))
   def maybe_resolve_ldflag_variable(input_arg, dest_dir)
     var_matches = input_arg.match(/\$\((\w+)\)/)
 

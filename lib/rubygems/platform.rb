@@ -158,7 +158,7 @@ class Gem::Platform
   # Of note, this method is not commutative. Indeed the OS 'linux' has a
   # special case: the version is the libc name, yet while "no version" stands
   # as a wildcard for a binary gem platform (as for other OSes), for the
-  # runtime platform "no version" stands for 'gnu'. To be able to disinguish
+  # runtime platform "no version" stands for 'gnu'. To be able to distinguish
   # these, the method receiver is the gem platform, while the argument is
   # the runtime platform.
   #

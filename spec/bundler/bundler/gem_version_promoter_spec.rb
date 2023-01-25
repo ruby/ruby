@@ -16,6 +16,10 @@ RSpec.describe Bundler::GemVersionPromoter do
       Bundler::SpecSet.new(build_spec(name, v))
     end
 
+    def build_package(name, platforms, locked_specs, unlock)
+      Bundler::Resolver::Package.new(name, platforms, :locked_specs => locked_specs, :unlock => unlock)
+    end
+
     # Rightmost (highest array index) in result is most preferred.
     # Leftmost (lowest array index) in result is least preferred.
     # `build_candidates` has all versions of gem in index.
@@ -35,7 +39,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when keeping build_spec, keep current, next release" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.8"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.8"), []),
           build_candidates(%w[1.7.8 1.7.9 1.8.0])
         )
         expect(versions(res)).to eq %w[1.7.8 1.7.9]
@@ -43,7 +47,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking prefer next release first" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.8"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.8"), []),
           build_candidates(%w[1.7.8 1.7.9 1.8.0])
         )
         expect(versions(res)).to eq %w[1.7.8 1.7.9]
@@ -51,7 +55,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking keep current when already at latest release" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.9"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.9"), []),
           build_candidates(%w[1.7.9 1.8.0 2.0.0])
         )
         expect(versions(res)).to eq %w[1.7.9]
@@ -68,7 +72,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking favor next releases, remove minor and major increases" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "0.2.0"), []),
+          build_package("foo", [], build_spec_set("foo", "0.2.0"), []),
           build_candidates(%w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1])
         )
         expect(versions(res)).to eq %w[0.2.0 0.3.0 0.3.1 0.9.0]
@@ -76,7 +80,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when keep locked, keep current, then favor next release, remove minor and major increases" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "0.2.0"), ["bar"]),
+          build_package("foo", [], build_spec_set("foo", "0.2.0"), ["bar"]),
           build_candidates(%w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1])
         )
         expect(versions(res)).to eq %w[0.3.0 0.3.1 0.9.0 0.2.0]
@@ -93,7 +97,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when not unlocking, same order but make sure build_spec version is most preferred to stay put" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.7"), ["bar"]),
+          build_package("foo", [], build_spec_set("foo", "1.7.7"), ["bar"]),
           build_candidates(%w[1.5.4 1.6.5 1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 1.8.1 2.0.0 2.0.1])
         )
         expect(versions(res)).to eq %w[1.5.4 1.6.5 1.7.6 2.0.0 2.0.1 1.8.0 1.8.1 1.7.8 1.7.9 1.7.7]
@@ -101,7 +105,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking favor next release, then current over minor increase" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.8"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.8"), []),
           build_candidates(%w[1.7.7 1.7.8 1.7.9 1.8.0])
         )
         expect(versions(res)).to eq %w[1.7.7 1.8.0 1.7.8 1.7.9]
@@ -109,7 +113,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking do proper integer comparison, not string" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.8"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.8"), []),
           build_candidates(%w[1.7.7 1.7.8 1.7.9 1.7.15 1.8.0])
         )
         expect(versions(res)).to eq %w[1.7.7 1.8.0 1.7.8 1.7.9 1.7.15]
@@ -117,7 +121,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "leave current when unlocking but already at latest release" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "1.7.9"), []),
+          build_package("foo", [], build_spec_set("foo", "1.7.9"), []),
           build_candidates(%w[1.7.9 1.8.0 2.0.0])
         )
         expect(versions(res)).to eq %w[2.0.0 1.8.0 1.7.9]
@@ -134,7 +138,7 @@ RSpec.describe Bundler::GemVersionPromoter do
 
       it "when unlocking favor next release, then minor increase over current" do
         res = gvp.sort_versions(
-          Bundler::Resolver::Package.new("foo", [], build_spec_set("foo", "0.2.0"), []),
+          build_package("foo", [], build_spec_set("foo", "0.2.0"), []),
           build_candidates(%w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1])
         )
         expect(versions(res)).to eq %w[2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0]

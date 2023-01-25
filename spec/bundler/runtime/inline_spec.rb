@@ -168,6 +168,29 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
+  it "installs subdependencies quietly if necessary when the install option is not set" do
+    build_repo4 do
+      build_gem "rack" do |s|
+        s.add_dependency "rackdep"
+      end
+
+      build_gem "rackdep", "1.0.0"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rack"
+      end
+
+      require "rackdep"
+      puts RACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
   it "installs quietly from git if necessary when the install option is not set" do
     build_git "foo", "1.0.0"
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
@@ -436,7 +459,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
-  it "when requiring fileutils after does not show redefinition warnings" do
+  it "when requiring fileutils after does not show redefinition warnings", :realworld do
     dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
 

@@ -79,6 +79,7 @@ module Bundler
       @locked_bundler_version = nil
       @locked_ruby_version    = nil
       @new_platform = nil
+      @removed_platform = nil
 
       if lockfile && File.exist?(lockfile)
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -129,7 +130,7 @@ module Bundler
       end
       @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
 
-      add_current_platform unless current_ruby_platform_locked? || Bundler.frozen_bundle?
+      add_current_platform unless Bundler.frozen_bundle?
 
       converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
@@ -158,13 +159,6 @@ module Bundler
       resolve
     end
 
-    def resolve_prefering_local!
-      @prefer_local = true
-      @remote = true
-      sources.remote!
-      resolve
-    end
-
     def resolve_with_cache!
       sources.cached!
       resolve
@@ -174,6 +168,23 @@ module Bundler
       @remote = true
       sources.remote!
       resolve
+    end
+
+    def resolution_mode=(options)
+      if options["local"]
+        @remote = false
+      else
+        @remote = true
+        @prefer_local = options["prefer-local"]
+      end
+    end
+
+    def setup_sources_for_resolve
+      if @remote == false
+        sources.cached!
+      else
+        sources.remote!
+      end
     end
 
     # For given dependency list returns a SpecSet with Gemspec of all the required
@@ -267,7 +278,7 @@ module Bundler
           SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
         else
           Bundler.ui.debug "Found no changes, using resolution from the lockfile"
-          if @locked_gems.may_include_redundant_platform_specific_gems?
+          if @removed_platform || @locked_gems.may_include_redundant_platform_specific_gems?
             SpecSet.new(filter_specs(@locked_specs, @dependencies))
           else
             @locked_specs
@@ -446,7 +457,9 @@ module Bundler
     end
 
     def remove_platform(platform)
-      return if @platforms.delete(Gem::Platform.new(platform))
+      removed_platform = @platforms.delete(Gem::Platform.new(platform))
+      @removed_platform ||= removed_platform
+      return if removed_platform
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
     end
 
@@ -470,31 +483,19 @@ module Bundler
     private
 
     def resolver
-      @resolver ||= begin
-        last_resolve = converge_locked_specs
-        remove_ruby_from_platforms_if_necessary!(current_dependencies)
-        Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve(last_resolve))
-      end
+      @resolver ||= Resolver.new(resolution_packages, gem_version_promoter)
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= dependencies + metadata_dependencies
+      dependencies + metadata_dependencies
     end
 
     def resolution_packages
       @resolution_packages ||= begin
-        packages = Hash.new do |h, k|
-          h[k] = Resolver::Package.new(k, @platforms, @originally_locked_specs, @unlock[:gems])
-        end
-
-        expanded_dependencies.each do |dep|
-          name = dep.name
-          platforms = dep.gem_platforms(@platforms)
-
-          packages[name] = Resolver::Package.new(name, platforms, @originally_locked_specs, @unlock[:gems], :dependency => dep)
-        end
-
-        packages
+        last_resolve = converge_locked_specs
+        remove_ruby_from_platforms_if_necessary!(current_dependencies)
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, :locked_specs => @originally_locked_specs, :unlock => @unlock[:gems], :prerelease => gem_version_promoter.pre?)
+        additional_base_requirements_for_resolve(packages, last_resolve)
       end
     end
 
@@ -528,13 +529,15 @@ module Bundler
         break if incomplete_specs.empty?
 
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
-        @resolve = start_resolution(:exclude_specs => incomplete_specs)
+        setup_sources_for_resolve
+        resolution_packages.delete(incomplete_specs)
+        @resolve = start_resolution
         specs = resolve.materialize(dependencies)
 
         still_incomplete_specs = specs.incomplete_specs
 
         if still_incomplete_specs == incomplete_specs
-          package = resolution_packages[incomplete_specs.first.name]
+          package = resolution_packages.get_package(incomplete_specs.first.name)
           resolver.raise_not_found! package
         end
 
@@ -547,14 +550,14 @@ module Bundler
       specs
     end
 
-    def start_resolution(exclude_specs: [])
-      result = resolver.start(expanded_dependencies, resolution_packages, :exclude_specs => exclude_specs)
+    def start_resolution
+      result = resolver.start
 
       SpecSet.new(SpecSet.new(result).for(dependencies, false, @platforms))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      @remote && sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+      sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
     end
 
     def pin_locally_available_names(source_requirements)
@@ -584,6 +587,8 @@ module Bundler
     end
 
     def add_current_platform
+      return if current_ruby_platform_locked?
+
       add_platform(local_platform)
     end
 
@@ -880,11 +885,12 @@ module Bundler
       current == proposed
     end
 
-    def additional_base_requirements_for_resolve(last_resolve)
-      return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
-      converge_specs(@originally_locked_specs - last_resolve).map do |locked_spec|
-        Dependency.new(locked_spec.name, ">= #{locked_spec.version}")
-      end.uniq
+    def additional_base_requirements_for_resolve(resolution_packages, last_resolve)
+      return resolution_packages unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
+      converge_specs(@originally_locked_specs - last_resolve).each do |locked_spec|
+        resolution_packages.base_requirements[locked_spec.name] = Gem::Requirement.new(">= #{locked_spec.version}")
+      end
+      resolution_packages
     end
 
     def remove_ruby_from_platforms_if_necessary!(dependencies)

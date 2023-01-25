@@ -157,7 +157,7 @@ RSpec.shared_examples "bundle install --standalone" do
       bundle "lock", :dir => cwd, :artifice => "compact_index"
     end
 
-    it "works and points to the vendored copies, not to the default copies" do
+    it "works and points to the vendored copies, not to the default copies", :realworld do
       bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, :standalone => true, :dir => cwd, :artifice => "compact_index", :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
 

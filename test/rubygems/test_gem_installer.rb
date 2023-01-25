@@ -1828,7 +1828,7 @@ gem 'other', version
 
     installer = Gem::Installer.at(
       gem_with_ill_formated_platform,
-      :install_dir => @gem_home,
+      :install_dir => @gemhome,
       :user_install => false,
       :force => true
     )

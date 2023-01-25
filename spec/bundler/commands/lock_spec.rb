@@ -319,6 +319,61 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array([x86_mingw32, specific_local_platform].uniq)
   end
 
+  it "also cleans up redundant platform gems when removing platforms" do
+    build_repo4 do
+      build_gem "nokogiri", "1.12.0"
+      build_gem "nokogiri", "1.12.0" do |s|
+        s.platform = "x86_64-darwin"
+      end
+    end
+
+    simulate_platform "x86_64-darwin-22" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "nokogiri"
+      G
+    end
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0)
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        ruby
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-darwin-22" do
+      bundle "lock --remove-platform ruby"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "errors when removing all platforms" do
     bundle "lock --remove-platform #{specific_local_platform}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
@@ -713,133 +768,212 @@ RSpec.describe "bundle lock" do
            #{Bundler::VERSION}
       L
     end
+  end
 
-    it "properly shows resolution errors including OR requirements" do
-      build_repo4 do
-        build_gem "activeadmin", "2.13.1" do |s|
-          s.add_dependency "railties", ">= 6.1", "< 7.1"
-        end
-        build_gem "actionpack", "6.1.4"
-        build_gem "actionpack", "7.0.3.1"
-        build_gem "actionpack", "7.0.4"
-        build_gem "railties", "6.1.4" do |s|
-          s.add_dependency "actionpack", "6.1.4"
-        end
-        build_gem "rails", "7.0.3.1" do |s|
-          s.add_dependency "railties", "7.0.3.1"
-        end
-        build_gem "rails", "7.0.4" do |s|
-          s.add_dependency "railties", "7.0.4"
-        end
+  it "properly shows resolution errors including OR requirements" do
+    build_repo4 do
+      build_gem "activeadmin", "2.13.1" do |s|
+        s.add_dependency "railties", ">= 6.1", "< 7.1"
       end
-
-      gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
-
-        gem "rails", ">= 7.0.3.1"
-        gem "activeadmin", "2.13.1"
-      G
-
-      bundle "lock", :raise_on_error => false
-
-      expect(err).to eq <<~ERR.strip
-        Could not find compatible versions
-
-        Because rails >= 7.0.4 depends on railties = 7.0.4
-          and rails < 7.0.4 depends on railties = 7.0.3.1,
-          railties = 7.0.3.1 OR = 7.0.4 is required.
-        So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
-          version solving has failed.
-      ERR
+      build_gem "actionpack", "6.1.4"
+      build_gem "actionpack", "7.0.3.1"
+      build_gem "actionpack", "7.0.4"
+      build_gem "railties", "6.1.4" do |s|
+        s.add_dependency "actionpack", "6.1.4"
+      end
+      build_gem "rails", "7.0.3.1" do |s|
+        s.add_dependency "railties", "7.0.3.1"
+      end
+      build_gem "rails", "7.0.4" do |s|
+        s.add_dependency "railties", "7.0.4"
+      end
     end
 
-    it "is able to display some explanation on crazy irresolvable cases" do
-      build_repo4 do
-        build_gem "activeadmin", "2.13.1" do |s|
-          s.add_dependency "ransack", "= 3.1.0"
-        end
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
 
-        # Activemodel is missing as a dependency in lockfile
-        build_gem "ransack", "3.1.0" do |s|
-          s.add_dependency "activemodel", ">= 6.0.4"
-          s.add_dependency "activesupport", ">= 6.0.4"
-        end
+      gem "rails", ">= 7.0.3.1"
+      gem "activeadmin", "2.13.1"
+    G
 
-        %w[6.0.4 7.0.2.3 7.0.3.1 7.0.4].each do |version|
-          build_gem "activesupport", version
+    bundle "lock", :raise_on_error => false
 
-          # Activemodel is only available on 6.0.4
-          if version == "6.0.4"
-            build_gem "activemodel", version do |s|
-              s.add_dependency "activesupport", version
-            end
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+      Because rails >= 7.0.4 depends on railties = 7.0.4
+        and rails < 7.0.4 depends on railties = 7.0.3.1,
+        railties = 7.0.3.1 OR = 7.0.4 is required.
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+        version solving has failed.
+    ERR
+  end
+
+  it "is able to display some explanation on crazy irresolvable cases" do
+    build_repo4 do
+      build_gem "activeadmin", "2.13.1" do |s|
+        s.add_dependency "ransack", "= 3.1.0"
+      end
+
+      # Activemodel is missing as a dependency in lockfile
+      build_gem "ransack", "3.1.0" do |s|
+        s.add_dependency "activemodel", ">= 6.0.4"
+        s.add_dependency "activesupport", ">= 6.0.4"
+      end
+
+      %w[6.0.4 7.0.2.3 7.0.3.1 7.0.4].each do |version|
+        build_gem "activesupport", version
+
+        # Activemodel is only available on 6.0.4
+        if version == "6.0.4"
+          build_gem "activemodel", version do |s|
+            s.add_dependency "activesupport", version
           end
+        end
 
-          build_gem "rails", version do |s|
-            # Depednencies of Rails 7.0.2.3 are in reverse order
-            if version == "7.0.2.3"
-              s.add_dependency "activesupport", version
-              s.add_dependency "activemodel", version
-            else
-              s.add_dependency "activemodel", version
-              s.add_dependency "activesupport", version
-            end
+        build_gem "rails", version do |s|
+          # Depednencies of Rails 7.0.2.3 are in reverse order
+          if version == "7.0.2.3"
+            s.add_dependency "activesupport", version
+            s.add_dependency "activemodel", version
+          else
+            s.add_dependency "activemodel", version
+            s.add_dependency "activesupport", version
           end
         end
       end
+    end
 
-      gemfile <<~G
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "rails", ">= 7.0.2.3"
+      gem "activeadmin", "= 2.13.1"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          activeadmin (2.13.1)
+            ransack (= 3.1.0)
+          ransack (3.1.0)
+            activemodel (>= 6.0.4)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        activeadmin (= 2.13.1)
+        ransack (= 3.1.0)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock", :raise_on_error => false
+
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+          Because every version of activemodel depends on activesupport = 6.0.4
+            and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+            every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
+          And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+            rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
+      (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+            and rails >= 7.0.4 depends on activemodel = 7.0.4,
+            rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
+
+          Because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3
+            and rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1,
+            rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 or activesupport = 7.0.3.1.
+          And because rails >= 7.0.4 depends on activesupport = 7.0.4
+            and every version of activemodel depends on activesupport = 6.0.4,
+            activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
+          And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
+            rails >= 7.0.2.3 is forbidden.
+          So, because Gemfile depends on rails >= 7.0.2.3,
+            version solving has failed.
+    ERR
+  end
+
+  it "does not accidentally resolves to prereleases" do
+    build_repo4 do
+      build_gem "autoproj", "2.0.3" do |s|
+        s.add_dependency "autobuild", ">= 1.10.0.a"
+        s.add_dependency "tty-prompt"
+      end
+
+      build_gem "tty-prompt", "0.6.0"
+      build_gem "tty-prompt", "0.7.0"
+
+      build_gem "autobuild", "1.10.0.b3"
+      build_gem "autobuild", "1.10.1" do |s|
+        s.add_dependency "tty-prompt", "~> 0.6.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "autoproj", ">= 2.0.0"
+    G
+
+    bundle "lock"
+    expect(lockfile).to_not include("autobuild (1.10.0.b3)")
+    expect(lockfile).to include("autobuild (1.10.1)")
+  end
+
+  it "deals with platform specific incompatibilities" do
+    build_repo4 do
+      build_gem "activerecord", "6.0.6"
+      build_gem "activerecord-jdbc-adapter", "60.4" do |s|
+        s.platform = "java"
+        s.add_dependency "activerecord", "~> 6.0.0"
+      end
+      build_gem "activerecord-jdbc-adapter", "61.0" do |s|
+        s.platform = "java"
+        s.add_dependency "activerecord", "~> 6.1.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "activerecord", "6.0.6"
+      gem "activerecord-jdbc-adapter", "61.0"
+    G
+
+    simulate_platform "universal-java-19" do
+      bundle "lock", :raise_on_error => false
+    end
+
+    expect(err).to include("Could not find compatible versions")
+    expect(err).not_to include("ERROR REPORT TEMPLATE")
+  end
+
+  context "when re-resolving to include prereleases" do
+    before do
+      build_repo4 do
+        build_gem "tzinfo-data", "1.2022.7"
+        build_gem "rails", "7.1.0.alpha" do |s|
+          s.add_dependency "activesupport"
+        end
+        build_gem "activesupport", "7.1.0.alpha"
+      end
+    end
+
+    it "does not end up including gems scoped to other platforms in the lockfile" do
+      gemfile <<-G
         source "#{file_uri_for(gem_repo4)}"
-
-        gem "rails", ">= 7.0.2.3"
-        gem "activeadmin", "= 2.13.1"
+        gem "rails"
+        gem "tzinfo-data", platform: :windows
       G
 
-      lockfile <<~L
-        GEM
-          remote: #{file_uri_for(gem_repo4)}/
-          specs:
-            activeadmin (2.13.1)
-              ransack (= 3.1.0)
-            ransack (3.1.0)
-              activemodel (>= 6.0.4)
+      simulate_platform "x86_64-darwin-22" do
+        bundle "lock"
+      end
 
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          activeadmin (= 2.13.1)
-          ransack (= 3.1.0)
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-
-      bundle "lock", :raise_on_error => false
-
-      expect(err).to eq <<~ERR.strip
-        Could not find compatible versions
-
-            Because every version of activemodel depends on activesupport = 6.0.4
-              and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
-              every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
-            And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
-              rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
-        (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
-              and rails >= 7.0.4 depends on activemodel = 7.0.4,
-              rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
-
-            Because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3
-              and rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1,
-              rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 or activesupport = 7.0.3.1.
-            And because rails >= 7.0.4 depends on activesupport = 7.0.4
-              and every version of activemodel depends on activesupport = 6.0.4,
-              activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
-            And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
-              rails >= 7.0.2.3 is forbidden.
-            So, because Gemfile depends on rails >= 7.0.2.3,
-              version solving has failed.
-      ERR
+      expect(lockfile).not_to include("tzinfo-data (1.2022.7)")
     end
   end
 end

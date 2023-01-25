@@ -1076,4 +1076,31 @@ RSpec.describe "bundle install with gem sources" do
       G
     end
   end
+
+  context "when a gem has equivalent versions with inconsistent dependencies" do
+    before do
+      build_repo4 do
+        build_gem "autobuild", "1.10.rc2" do |s|
+          s.add_dependency "utilrb", ">= 1.6.0"
+        end
+
+        build_gem "autobuild", "1.10.0.rc2" do |s|
+          s.add_dependency "utilrb", ">= 2.0"
+        end
+      end
+    end
+
+    it "does not crash unexpectedly" do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "autobuild", "1.10.rc2"
+      G
+
+      bundle "install --jobs 1", :raise_on_error => false
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+      expect(err).to include("Could not find compatible versions")
+    end
+  end
 end
