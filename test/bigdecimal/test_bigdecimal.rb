@@ -294,7 +294,11 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_allocate
-    assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    if RUBY_ENGINE == "truffleruby"
+      assert_raise_with_message(NoMethodError, /undefined.+allocate.+for BigDecimal/) { BigDecimal.allocate }
+    else
+      assert_raise_with_message(TypeError, /allocator undefined for BigDecimal/) { BigDecimal.allocate }
+    end
   end
 
   def test_s_new
