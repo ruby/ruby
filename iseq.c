@@ -917,13 +917,20 @@ iseq_setup_coverage(VALUE coverages, VALUE path, const rb_ast_body_t *ast, int l
     return Qnil;
 }
 
-rb_iseq_t *
-rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+static inline void
+iseq_new_setup_coverage(VALUE path, const rb_ast_body_t *ast, int line_offset)
 {
     VALUE coverages = rb_get_coverages();
+
     if (RTEST(coverages)) {
         iseq_setup_coverage(coverages, path, ast, 0);
     }
+}
+
+rb_iseq_t *
+rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+{
+    iseq_new_setup_coverage(path, ast, 0);
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
@@ -932,6 +939,8 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
 rb_iseq_t *
 rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt)
 {
+    iseq_new_setup_coverage(path, ast, 0);
+
     return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
                                 parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE);
