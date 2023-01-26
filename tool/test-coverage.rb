@@ -11,6 +11,7 @@ FILTER_PATHS = %w[
   lib/rubygems/optparse
   tool
   test
+  spec
 ]
 
 def merge_coverage_data(res1, res2)
