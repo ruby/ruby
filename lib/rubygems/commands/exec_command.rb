@@ -34,6 +34,7 @@ class Gem::Commands::ExecCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
+  # TODO(segiddins): add a proper description!
   def description # :nodoc:
     <<-EOF
     EOF
@@ -76,7 +77,22 @@ class Gem::Commands::ExecCommand < Gem::Command
 
     options[:executable], gem_version = extract_gem_name_and_version(options[:args].shift)
     options[:gem_name] ||= options[:executable]
-    options[:version] = gem_version if gem_version
+
+    if gem_version
+      if options[:version].none?
+        options[:version] = Gem::Requirement.new(gem_version)
+      else
+        options[:version].concat [gem_version]
+      end
+    end
+
+    if options[:prerelease] && !options[:version].prerelease?
+      if options[:version].none?
+        options[:version] = Gem::Requirement.default_prerelease
+      else
+        options[:version].concat [Gem::Requirement.default_prerelease]
+      end
+    end
   end
 
   def check_executable
@@ -100,7 +116,7 @@ class Gem::Commands::ExecCommand < Gem::Command
   def install_if_needed
     activate!
   rescue Gem::MissingSpecError
-    verbose "#{dependency_to_s} not available locally"
+    verbose "#{Gem::Dependency.new(options[:gem_name], options[:version])} not available locally, installing from remote"
     install
     activate!
   end
@@ -133,6 +149,8 @@ class Gem::Commands::ExecCommand < Gem::Command
   def activate!
     gem(options[:gem_name], options[:version])
     Gem.finish_resolve
+
+    verbose "activated #{options[:gem_name]} (#{Gem.loaded_specs[options[:gem_name]].version})"
   end
 
   def load!
