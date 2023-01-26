@@ -5,11 +5,11 @@ Coverage.start(lines: true, branches: true, methods: true)
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
 
 FILTER_PATHS = %w[
-  tool/lib
   lib/bundler/vendor
   lib/rubygems/resolver/molinillo
   lib/rubygems/tsort
   lib/rubygems/optparse
+  tool
   test
 ]
 
