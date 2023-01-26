@@ -139,7 +139,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
     *variation_created = false;
 
-    if (new_shapes_allowed && shape->next_iv_index < SHAPE_MAX_NUM_IVS) {
+    if (new_shapes_allowed) {
         RB_VM_LOCK_ENTER();
         {
             bool had_edges = !!shape->edges;
