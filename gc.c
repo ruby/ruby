@@ -4068,7 +4068,8 @@ os_obj_of_i(void *vstart, void *vend, size_t stride, void *data)
     for (; v != (VALUE)vend; v += stride) {
         if (!internal_object_p(v)) {
             if (!oes->of || rb_obj_is_kind_of(v, oes->of)) {
-                if (!rb_multi_ractor_p() || rb_ractor_shareable_p(v)) {
+                if ((!rb_multi_ractor_p()) || GET_VM()->ractor.main_ractor == GET_RACTOR() ||
+                      rb_ractor_shareable_p(v)) {
                     rb_yield(v);
                     oes->num++;
                 }

@@ -1217,6 +1217,24 @@ assert_equal '0', %q{
   }.take
 }
 
+# ObjectSpace.each_object can yield shareable objects in Ractors
+assert_equal 'true', %q{
+  shareable = "str".freeze
+  Ractor.new{
+    n = 0
+    ObjectSpace.each_object{|o| n += 1}
+    n
+  }.take > 0
+}
+
+# Starting ractor (multi-ractor mode) doesn't mess up ObjectSpace for main ractor
+assert_equal 'true', %q{
+  Ractor.new{}.take
+  n = 0
+  ObjectSpace.each_object{|o| n += 1}
+  n > 0
+}
+
 # ObjectSpace._id2ref can not handle unshareable objects with Ractors
 assert_equal 'ok', %q{
   s = 'hello'
