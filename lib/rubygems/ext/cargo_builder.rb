@@ -225,6 +225,17 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     # avoid the json dependency
     metadata = Gem::SafeYAML.safe_load(output)
     package = metadata["packages"].find {|pkg| pkg["manifest_path"] == manifest_path }
+    unless package
+      found = metadata["packages"].map {|md| "#{md["name"]} at #{md["manifest_path"]}" }
+      raise Gem::InstallError, <<-EOF
+failed to determine cargo package name
+
+looking for: #{manifest_path}
+
+found:
+#{found.join("\n")}
+EOF
+    end
     package["name"].tr("-", "_")
   end
 
