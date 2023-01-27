@@ -485,7 +485,6 @@ class CSV
           message = ":quote_char has to be nil or a single character String"
           raise ArgumentError, message
         end
-        @double_quote_character = @quote_character * 2
         @escaped_quote_character = Regexp.escape(@quote_character)
         @escaped_quote = Regexp.new(@escaped_quote_character)
       end
