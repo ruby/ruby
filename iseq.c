@@ -841,7 +841,7 @@ iseq_new_setup_coverage(VALUE path, const rb_ast_body_t *ast, int line_offset)
     VALUE coverages = rb_get_coverages();
 
     if (RTEST(coverages)) {
-        iseq_setup_coverage(coverages, path, ast, 0);
+        iseq_setup_coverage(coverages, path, ast, line_offset);
     }
 }
 

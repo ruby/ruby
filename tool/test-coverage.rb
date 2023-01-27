@@ -4,6 +4,16 @@ Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
 
+FILTER_PATHS = %w[
+  lib/bundler/vendor
+  lib/rubygems/resolver/molinillo
+  lib/rubygems/tsort
+  lib/rubygems/optparse
+  tool
+  test
+  spec
+]
+
 def merge_coverage_data(res1, res2)
   res1.each do |path, cov1|
     cov2 = res2[path]
@@ -77,8 +87,8 @@ def invoke_simplecov_formatter
 
   res.each do |path, cov|
     next unless path.start_with?(base_dir) || path.start_with?(cur_dir)
-    next if path.start_with?(File.join(base_dir, "test"))
-    simplecov_result[path] = cov[:lines]
+    next if FILTER_PATHS.any? {|dir| path.start_with?(File.join(base_dir, dir))}
+    simplecov_result[path] = cov
   end
 
   a, b = base_dir, cur_dir

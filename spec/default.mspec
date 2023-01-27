@@ -4,6 +4,7 @@ if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
 require "./rbconfig" unless defined?(RbConfig)
+require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
 load File.dirname(__FILE__) + '/ruby/default.mspec'
 OBJDIR = File.expand_path("spec/ruby/optional/capi/ext")
 class MSpecScript
@@ -24,6 +25,10 @@ class MSpecScript
       #{srcdir}/tool/runruby.rb --archdir=#{builddir} --extout=#{config['EXTOUT']}
       --
     ]
+  end
+
+  if ENV.key?("COVERAGE")
+    set :excludes, ["Coverage"]
   end
 end
 

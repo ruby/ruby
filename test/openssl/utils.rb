@@ -32,7 +32,12 @@ end
 require "test/unit"
 require "tempfile"
 require "socket"
-require "envutil"
+
+begin
+  require_relative "../lib/core_assertions"
+rescue LoadError
+  # for ruby/ruby repository
+end
 
 if defined?(OpenSSL)
 
@@ -148,6 +153,7 @@ end
 class OpenSSL::TestCase < Test::Unit::TestCase
   include OpenSSL::TestUtils
   extend OpenSSL::TestUtils
+  include Test::Unit::CoreAssertions
 
   def setup
     if ENV["OSSL_GC_STRESS"] == "1"

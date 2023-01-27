@@ -14,6 +14,19 @@ module BundledGem
     puts "Unpacked #{file}"
   end
 
+  def build(gemspec, version, outdir = ".", validation: true)
+    outdir = File.expand_path(outdir)
+    gemdir, gemfile = File.split(gemspec)
+    Dir.chdir(gemdir) do
+      spec = Gem::Specification.load(gemfile)
+      abort "Failed to load #{gemspec}" unless spec
+      abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(version)
+      output = File.join(outdir, spec.file_name)
+      FileUtils.rm_rf(output)
+      Gem::Package.build(spec, validation == false, validation, output)
+    end
+  end
+
   def copy(path, *rest)
     path, n = File.split(path)
     spec = Dir.chdir(path) {Gem::Specification.load(n)} or raise "Cannot load #{path}"

@@ -196,7 +196,17 @@
 #endif
 #define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
 
-#define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
+/* GCC releases before GCC 4.9 had a bug in _Alignof.  See GCC bug 52023
+   <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52023>.
+   clang versions < 8.0.0 have the same bug.  */
+#if (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 201112 \
+     || (defined(__GNUC__) && __GNUC__ < 4 + (__GNUC_MINOR__ < 9) \
+         && !defined(__clang__)) \
+     || (defined(__clang__) && __clang_major__ < 8))
+# define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
+#else
+# define ALIGN_OF(type) _Alignof(type)
+#endif
 
 #define ALIGN_VOIDP  ALIGN_OF(void*)
 #define ALIGN_CHAR   ALIGN_OF(char)

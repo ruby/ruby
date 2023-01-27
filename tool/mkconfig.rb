@@ -122,11 +122,11 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
+        platform = val.sub(/universal/, '$(arch)')
       end
     when /^target_cpu$/
       if universal
-        val = 'arch'
+        val = 'cpu'
       end
     when /^target$/
       val = '"$(target_cpu)-$(target_vendor)-$(target_os)"'
@@ -193,11 +193,13 @@ print "  # Ruby installed directory.\n"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  # DESTDIR on make install.\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
-print <<'ARCH' if universal
+print <<"UNIVERSAL", <<'ARCH' if universal
+  universal = #{universal}
+UNIVERSAL
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
   arch = arch_flag && arch_flag[/\A\s*-arch\s+(\S+)\s*\z/, 1]
+  cpu = arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]
 ARCH
-print "  universal = #{universal}\n" if universal
 print "  # The hash configurations stored.\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"

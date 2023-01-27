@@ -1375,7 +1375,7 @@ update-config_files: PHONY
 
 update-coverage: main PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "simplecov" -v "0.20.0"
+		--install-dir .bundle --conservative "simplecov"
 
 refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
@@ -1403,10 +1403,10 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'gem, ver, _, rev = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'g = "#{gem}-#{ver}"' \
-	    -e 'if File.directory?("#{d}/#{g}")' \
-	    -e 'elsif rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
-	    -e   'BundledGem.copy(gs, ".bundle")' \
-	    -e 'else' \
+	    -e 'unless File.directory?("#{d}/#{g}")' \
+	    -e   'if rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
+	    -e     'BundledGem.build(gs, ver, "gems")' \
+	    -e   'end' \
 	    -e   'BundledGem.unpack("gems/#{g}.gem", ".bundle")' \
 	    -e 'end' \
 	    gems/bundled_gems
@@ -1473,7 +1473,8 @@ PREPARE_SYNTAX_SUGGEST = test-syntax-suggest-prepare
 test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
 yes-test-syntax-suggest: yes-$(PREPARE_SYNTAX_SUGGEST)
 	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest:spec/lib .bundle/bin/rspec \
-		--require spec_helper --require formatter_overrides $(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
+		--require spec_helper --require formatter_overrides --require spec_coverage \
+		$(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
 no-test-syntax-suggest:
 
 check: $(DOT_WAIT) $(TEST_RUNNABLE)-$(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest

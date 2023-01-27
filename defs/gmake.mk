@@ -293,12 +293,12 @@ foreach-bundled-gems-rev = \
 foreach-bundled-gems-rev-0 = \
     $(call $(1),$(word 1,$(2)),$(word 2,$(2)),$(word 3,$(2)),$(word 4,$(2)))
 bundled-gem-gemfile = $(srcdir)/gems/$(1)-$(2).gem
-bundled-gem-srcdir = $(srcdir)/gems/src/$(1)
+bundled-gem-gemspec = $(srcdir)/gems/src/$(1)/$(1).gemspec
 bundled-gem-extracted = $(srcdir)/.bundle/gems/$(1)-$(2)
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
 update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemfile)
-update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-srcdir)
+update-gems: | $(call foreach-bundled-gems-rev,bundled-gem-gemspec)
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -326,27 +326,37 @@ $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 
-define copy-gem
-$(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
-	$(ECHO) Cloning $(4)
-	$(Q) $(GIT) clone $(4) $$(@)
+$(srcdir)/.bundle/.timestamp:
+	$(MAKEDIRS) $@
 
-$(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
-	$(ECHO) Copying $(1)@$(3) to $$(@F)
+define build-gem
+$(srcdir)/gems/src/$(1)/$(1).gemspec: | $(srcdir)/gems/src
+	$(ECHO) Cloning $(4)
+	$(Q) $(GIT) clone $(4) $$(@D)
+
+$(srcdir)/.bundle/.timestamp/$(1).revision: $(srcdir)/gems/src/$(1)/$(1).gemspec \
+	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
+	| $$(@D)
+	$(ECHO) Update $(1) to $(3)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
 	    $(GIT) fetch origin $(3) && \
 	    $(GIT) checkout --detach $(3) && \
 	:
+	echo $(3) | $(IFCHANGE) $$(@) -
+
+$(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
+		$(srcdir)/.bundle/.timestamp/$(1).revision
+	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
-	    -e 'BundledGem.copy("gems/src/$(1)/$(1).gemspec", ".bundle")'
+	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems")'
 
 endef
-define copy-gem-0
-$(eval $(call copy-gem,$(1),$(2),$(3),$(4)))
+define build-gem-0
+$(eval $(call build-gem,$(1),$(2),$(3),$(4)))
 endef
 
-$(call foreach-bundled-gems-rev,copy-gem-0)
+$(call foreach-bundled-gems-rev,build-gem-0)
 
 $(srcdir)/gems/src:
 	$(MAKEDIRS) $@
@@ -471,7 +481,7 @@ update-deps:
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 	$(ECHO) building $@
 	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) $(DLDSHARED) $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
+	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 	$(Q) $(RMALL) $@.*
 
 rubyspec-capiext: $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
