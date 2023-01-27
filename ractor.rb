@@ -1,4 +1,4 @@
-# Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution.
+# \Ractor is an Actor-model abstraction for Ruby that provides thread-safe parallel execution.
 #
 # Ractor.new makes a new \Ractor, which can run in parallel.
 #
@@ -110,7 +110,7 @@
 #     ary[1].frozen?              #=> true
 #
 # When a shareable object is sent (via #send or Ractor.yield), no additional processing occurs
-# on the object. It just becomes usable by both ractors. When an unshareable object is sent, it can be
+# on it. It just becomes usable by both ractors. When an unshareable object is sent, it can be
 # either _copied_ or _moved_. The first is the default, and it copies the object fully by
 # deep cloning (Object#clone) the non-shareable parts of its structure.
 #
@@ -133,7 +133,7 @@
 # shareable frozen string, is the same object.
 #
 # Deep cloning of objects may be slow, and sometimes impossible. Alternatively, <tt>move: true</tt> may
-# be used during sending. This will <em>move</em> the object to the receiving ractor, making it
+# be used during sending. This will <em>move</em> the unshareable object to the receiving ractor, making it
 # inaccessible to the sending ractor.
 #
 #     data = ['foo', 'bar']
@@ -156,12 +156,14 @@
 # on a moved object.
 #
 # Class and Module objects are shareable so the class/module definitions are shared between ractors.
-# Ractor objects are also shareable. All operations on shareable objects are thread-safe, so the thread-safety property
+# \Ractor objects are also shareable. All operations on shareable objects are thread-safe, so the thread-safety property
 # will be kept. We can not define mutable shareable objects in Ruby, but C extensions can introduce them.
 #
-# It is prohibited to access instance variables of shareable objects in other ractors if the values of the
+# It is prohibited to access (get) instance variables of shareable objects in other ractors if the values of the
 # variables aren't shareable. This can occur because modules/classes are shareable, but they can have
-# instance variables whose values are not.
+# instance variables whose values are not. In non-main ractors, it's also prohibited to set instance
+# variables on classes/modules (even if the value is shareable).
+#
 #     class C
 #       class << self
 #         attr_accessor :tricky
@@ -173,12 +175,13 @@
 #     r = Ractor.new(C) do |cls|
 #       puts "I see #{cls}"
 #       puts "I can't see #{cls.tricky}"
+#       cls.tricky = true # doesn't get here, but this would also raise an error
 #     end
 #     r.take
 #     # I see C
 #     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
 #
-# Ractors can access constants if they are shareable. The main Ractor is the only one that can
+# Ractors can access constants if they are shareable. The main \Ractor is the only one that can
 # access non-shareable constants.
 #
 #     GOOD = 'good'.freeze
@@ -238,10 +241,10 @@ class Ractor
   #  call-seq:
   #     Ractor.new(*args, name: nil) {|*args| block } -> ractor
   #
-  # Create a new Ractor with args and a block.
+  # Create a new \Ractor with args and a block.
   #
   # The given block (Proc) will be isolated (can't access any outer variables). +self+
-  # inside the block will refer to the current Ractor.
+  # inside the block will refer to the current \Ractor.
   #
   #    r = Ractor.new { puts "Hi, I am #{self.inspect}" }
   #    r.take
@@ -333,7 +336,7 @@ class Ractor
   #    puts "received #{obj.inspect} from #{r.inspect}"
   #    # Could print: received "to main" from :receive
   #
-  # If +yield_value+ is provided, that value may be yielded if another Ractor is calling #take.
+  # If +yield_value+ is provided, that value may be yielded if another ractor is calling #take.
   # In this case, the pair <tt>[:yield, nil]</tt> is returned:
   #
   #    r1 = Ractor.new(Ractor.current) do |main|
@@ -369,7 +372,7 @@ class Ractor
   # call-seq:
   #    Ractor.receive -> msg
   #
-  # Receive a message from the incoming port of the current Ractor (which was
+  # Receive a message from the incoming port of the current ractor (which was
   # sent there by #send from another ractor).
   #
   #     r = Ractor.new do
@@ -449,7 +452,7 @@ class Ractor
   #
   # Receive only a specific message.
   #
-  # Instead of Ractor.receive, Ractor.receive_if can provide a pattern (or any
+  # Instead of Ractor.receive, Ractor.receive_if can be given a pattern (or any
   # filter) in a block and you can choose the messages to accept that are available in
   # your ractor's incoming queue.
   #
@@ -508,6 +511,7 @@ class Ractor
     Primitive.ractor_receive_if b
   end
 
+  # same as Ractor.receive_if
   private def receive_if &b
     Primitive.ractor_receive_if b
   end
@@ -586,7 +590,7 @@ class Ractor
   #    # Ractor::MovedError (can not send any methods to a moved object)
   #    # ...but its item was still a reference to `s`, which was moved
   #
-  # If the object was shareable, <tt>move: true</tt> has no effect on it:
+  # If the object is shareable, <tt>move: true</tt> has no effect on it:
   #
   #    r = Ractor.new {puts "Received: #{receive}"}
   #    s = 'message'.freeze
@@ -777,7 +781,7 @@ class Ractor
   #     Ractor.shareable?('foo')        #=> false, unless the string is frozen due to # frozen_string_literal: true
   #     Ractor.shareable?('foo'.freeze) #=> true
   #
-  # See also the "Shareable and unshareable objects" section in the Ractor class docs.
+  # See also the "Shareable and unshareable objects" section in the \Ractor class docs.
   def self.shareable? obj
     __builtin_cexpr! %q{
       RBOOL(rb_ractor_shareable_p(obj));
@@ -793,8 +797,8 @@ class Ractor
   # +obj+ and all the objects it refers to will be frozen, unless they are
   # already shareable.
   #
-  # If +copy+ keyword is +true+, the method will copy objects before freezing them.
-  # This is the safer option but it will be slower.
+  # If +copy+ keyword is +true+, it will copy objects before freezing them, and will not
+  # modify +obj+ or its internal objects.
   #
   # Note that the specification and implementation of this method are not
   # mature and may be changed in the future.
