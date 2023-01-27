@@ -271,8 +271,18 @@ describe "C-API exception constant" do
     @s.rb_eScriptError.should == ScriptError
   end
 
-  specify "rb_eSecurityError references the SecurityError class" do
-    @s.rb_eSecurityError.should == SecurityError
+  ruby_version_is '3.3'...'3.4' do
+    specify "rb_eSecurityError references the deprecated SecurityError class" do
+      proc do
+        @s.rb_eSecurityError.should == SecurityError
+      end.should complain(/constant ::SecurityError is deprecated/)
+    end
+  end
+
+  ruby_version_is ''...'3.3' do
+    specify "rb_eSecurityError references the SecurityError class" do
+      @s.rb_eSecurityError.should == SecurityError
+    end
   end
 
   specify "rb_eSignal references the SignalException class" do

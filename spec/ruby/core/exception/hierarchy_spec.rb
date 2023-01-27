@@ -10,7 +10,6 @@ describe "Exception" do
           NotImplementedError => nil,
           SyntaxError => nil,
         },
-        SecurityError => nil,
         SignalException => {
           Interrupt => nil,
         },
@@ -49,6 +48,7 @@ describe "Exception" do
         SystemStackError => nil,
       },
     }
+    hierarchy[Exception][SecurityError] = nil if RUBY_VERSION < '3.3'
 
     traverse = -> parent_class, parent_subclass_hash {
       parent_subclass_hash.each do |child_class, child_subclass_hash|

@@ -2627,9 +2627,9 @@ static void
 forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
 {
     if (opt->setids & 1)
-        rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
+        rb_raise(rb_eRuntimeError, "no %s allowed while running setuid", s);
     if (opt->setids & 2)
-        rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
+        rb_raise(rb_eRuntimeError, "no %s allowed while running setgid", s);
 }
 
 static VALUE

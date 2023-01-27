@@ -350,9 +350,12 @@ describe "The rescue keyword" do
     end
 
     it "will not rescue exceptions except StandardError" do
-      [ Exception.new, NoMemoryError.new, ScriptError.new, SecurityError.new,
+      exceptions = [
+        Exception.new, NoMemoryError.new, ScriptError.new,
         SignalException.new('INT'), SystemExit.new, SystemStackError.new
-      ].each do |exception|
+      ]
+      exceptions << SecurityError.new if RUBY_VERSION < '3.3'
+      exceptions.each do |exception|
         -> {
           begin
             raise exception

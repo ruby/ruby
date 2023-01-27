@@ -121,7 +121,12 @@ RUBY_EXTERN VALUE rb_eRangeError;                /**< `RangeError` exception. */
 RUBY_EXTERN VALUE rb_eIOError;                   /**< `IOError` exception. */
 RUBY_EXTERN VALUE rb_eRuntimeError;              /**< `RuntimeError` exception. */
 RUBY_EXTERN VALUE rb_eFrozenError;               /**< `FrozenError` exception. */
-RUBY_EXTERN VALUE rb_eSecurityError;             /**< `SecurityError` exception. */
+RUBY_EXTERN VALUE rb__eSecurityError;            /**< `SecurityError` exception. */
+#ifdef __GNUC__
+#define rb_eSecurityError _Pragma ("GCC warning \"rb_eSecurityError is deprecated\"") rb__eSecurityError;
+#else
+#define rb_eSecurityError rb__eSecurityError;
+#endif
 RUBY_EXTERN VALUE rb_eSystemCallError;           /**< `SystemCallError` exception. */
 RUBY_EXTERN VALUE rb_eThreadError;               /**< `ThreadError` exception. */
 RUBY_EXTERN VALUE rb_eTypeError;                 /**< `TypeError` exception. */

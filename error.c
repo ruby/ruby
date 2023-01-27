@@ -1097,7 +1097,7 @@ VALUE rb_eNameError;
 VALUE rb_eEncodingError;
 VALUE rb_eEncCompatError;
 VALUE rb_eNoMethodError;
-VALUE rb_eSecurityError;
+VALUE rb__eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
@@ -2789,7 +2789,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: SecurityError
  *
- *  No longer used by internal code.
+ *  Deprecated, no longer used by internal code.
  */
 
 /*
@@ -3062,7 +3062,9 @@ Init_Exception(void)
     rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_define_method(rb_eFrozenError, "initialize", frozen_err_initialize, -1);
     rb_define_method(rb_eFrozenError, "receiver", frozen_err_receiver, 0);
-    rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
+    rb__eSecurityError = rb_define_class("SecurityError", rb_eException);
+    /* Remove SecurityError in Ruby 3.4 */
+    rb_deprecate_constant(rb_cObject, "SecurityError");
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
     rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eEncodingError);

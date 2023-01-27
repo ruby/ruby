@@ -20,6 +20,10 @@ Note: We're only listing outstanding class updates.
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
     * `String#bytesplice` now accepts new arguments index/length or range of the source string to be copied.  [[Feature #19314]]
 
+* SecurityError
+
+    * SecurityError is now deprecated.  It will be removed in Ruby 3.4.
+
 ## Stdlib updates
 
 The following default gems are updated.
