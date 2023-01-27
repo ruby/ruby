@@ -66,7 +66,7 @@ require 'rdoc'
 # In a multi-line comment,
 # \RDoc looks for the comment's natural left margin,
 # which becomes the <em>base margin</em> for the comment
-# and is the initial <em>current margin</em> for for the comment.
+# and is the initial <em>current margin</em> for the comment.
 #
 # The current margin can change, and does so, for example in a list.
 #
