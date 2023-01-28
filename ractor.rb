@@ -151,8 +151,8 @@
 # All operations for the shareable mutable objects are thread-safe, so the thread-safety property
 # will be kept. We can not define mutable shareable objects in Ruby, but C extensions can introduce them.
 #
-# It is prohibited to access instance variables of mutable shareable objects (especially Modules and classes)
-# from ractors other than main:
+# It is prohibited to access non-shareable instance variables of mutable shareable objects
+# (especially modules and classes) from ractors other than main:
 #
 #     class C
 #       class << self
@@ -160,7 +160,7 @@
 #       end
 #     end
 #
-#     C.tricky = 'test'
+#     C.tricky = ['test']
 #
 #     r = Ractor.new(C) do |cls|
 #       puts "I see #{cls}"
@@ -168,7 +168,25 @@
 #     end
 #     r.take
 #     # I see C
-#     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
+#     # can not get unshareable values from instance variables of classes/modules from non-main Ractors (Ractor::IsolationError)
+#
+# Shareable instance variables of modules and classes can be accessed:
+#
+#     class C
+#       class << self
+#         attr_accessor :tricky
+#       end
+#     end
+#
+#     C.tricky = ['test'.freeze].freeze
+#
+#     r = Ractor.new(C) do |cls|
+#       puts "I see #{cls}"
+#       puts "I see #{cls.tricky}"
+#     end
+#     r.take
+#     # I see C
+#     # I see ["test"]
 #
 # Ractors can access constants if they are shareable. The main Ractor is the only one that can
 # access non-shareable constants.
@@ -186,13 +204,24 @@
 #
 #     # Consider the same C class from above
 #
+#     C.tricky = ['test']
 #     r = Ractor.new do
 #       puts "I see #{C}"
 #       puts "I can't see #{C.tricky}"
 #     end
 #     r.take
 #     # I see C
-#     # can not access instance variables of classes/modules from non-main Ractors (RuntimeError)
+#     # can not get unshareable values from instance variables of classes/modules from non-main Ractors (Ractor::IsolationError)
+#
+#     # again, if instance vars of the constant are shareable, they become accessible
+#     C.tricky = ['test'.freeze].freeze
+#     r = Ractor.new do
+#       puts "I see #{C}"
+#       puts "I see #{C.tricky}"
+#     end
+#     r.take
+#     # I see C
+#     # I see ["test"]
 #
 # See also the description of <tt># shareable_constant_value</tt> pragma in
 # {Comments syntax}[rdoc-ref:syntax/comments.rdoc] explanation.
