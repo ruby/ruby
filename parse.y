@@ -11417,9 +11417,8 @@ YYLTYPE *
 rb_parser_set_location_of_heredoc_end(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
     int end_pos = (int)(p->lex.pend - p->lex.pbeg);
-    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
+    return rb_parser_set_pos(yylloc, sourceline, token_column, end_pos);
 }
 
 YYLTYPE *
@@ -11434,18 +11433,15 @@ YYLTYPE *
 rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
+    return rb_parser_set_pos(yylloc, sourceline, token_column, token_column);
 }
 
 YYLTYPE *
 rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
     int end_pos = (int)(p->lex.pcur - p->lex.pbeg);
-    return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
+    return rb_parser_set_pos(yylloc, sourceline, token_column, end_pos);
 }
 #endif /* !RIPPER */
 
