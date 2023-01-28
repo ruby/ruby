@@ -224,7 +224,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     # --format-version 1 option the output is compatible with YAML, so we can
     # avoid the json dependency
     metadata = Gem::SafeYAML.safe_load(output)
-    package = metadata["packages"].find {|pkg| pkg["manifest_path"] == manifest_path }
+    package = metadata["packages"].find {|pkg| normalize_path(pkg["manifest_path"]) == manifest_path }
     unless package
       found = metadata["packages"].map {|md| "#{md["name"]} at #{md["manifest_path"]}" }
       raise Gem::InstallError, <<-EOF
@@ -237,6 +237,12 @@ found:
 EOF
     end
     package["name"].tr("-", "_")
+  end
+
+  def normalize_path(path)
+    return path unless File::ALT_SEPARATOR
+
+    path.tr(File::ALT_SEPARATOR, File::SEPARATOR)
   end
 
   def rustc_dynamic_linker_flags(dest_dir, crate_name)
