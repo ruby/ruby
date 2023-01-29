@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "net/http"
+require_relative "net/http"
 require_relative "user_interaction"
 
 class Gem::Request
@@ -205,7 +205,7 @@ class Gem::Request
       if request.response_body_permitted? && file_name =~ /\.gem$/
         reporter = ui.download_reporter
         response = connection.request(request) do |incomplete_response|
-          if Net::HTTPOK === incomplete_response
+          if Gem::Net::HTTPOK === incomplete_response
             reporter.fetch(file_name, incomplete_response.content_length)
             downloaded = 0
             data = String.new
@@ -228,7 +228,7 @@ class Gem::Request
       end
 
       verbose "#{response.code} #{response.message}"
-    rescue Net::HTTPBadResponse
+    rescue Gem::Net::HTTPBadResponse
       verbose "bad response"
 
       reset connection
@@ -237,11 +237,11 @@ class Gem::Request
 
       bad_response = true
       retry
-    rescue Net::HTTPFatalError
+    rescue Gem::Net::HTTPFatalError
       verbose "fatal error"
 
       raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
-    # HACK: work around EOFError bug in Net::HTTP
+    # HACK: work around EOFError bug in Gem::Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
     rescue EOFError, Timeout::Error,

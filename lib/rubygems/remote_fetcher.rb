@@ -74,7 +74,7 @@ class Gem::RemoteFetcher
 
   def initialize(proxy=nil, dns=nil, headers={})
     require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
-    require "net/http"
+    require_relative "net/http"
     require "stringio"
     require "uri"
 
@@ -210,17 +210,17 @@ class Gem::RemoteFetcher
   # HTTP Fetcher. Dispatched by +fetch_path+. Use it instead.
 
   def fetch_http(uri, last_modified = nil, head = false, depth = 0)
-    fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
+    fetch_type = head ? Gem::Net::HTTP::Head : Gem::Net::HTTP::Get
     response   = request uri, fetch_type, last_modified do |req|
       headers.each {|k,v| req.add_field(k,v) }
     end
 
     case response
-    when Net::HTTPOK, Net::HTTPNotModified then
+    when Gem::Net::HTTPOK, Gem::Net::HTTPNotModified then
       response.uri = uri
       head ? response : response.body
-    when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
-         Net::HTTPTemporaryRedirect then
+    when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
+         Gem::Net::HTTPTemporaryRedirect then
       raise FetchError.new("too many redirects", uri) if depth > 10
 
       unless location = response["Location"]
@@ -305,8 +305,8 @@ class Gem::RemoteFetcher
   end
 
   ##
-  # Performs a Net::HTTP request of type +request_class+ on +uri+ returning
-  # a Net::HTTP response object.  request maintains a table of persistent
+  # Performs a Gem::Net::HTTP request of type +request_class+ on +uri+ returning
+  # a Gem::Net::HTTP response object.  request maintains a table of persistent
   # connections to reduce connect overhead.
 
   def request(uri, request_class, last_modified = nil)

@@ -46,7 +46,7 @@ module Gem::GemcutterUtilities
       Timeout.timeout(TIMEOUT_IN_SECONDS) do
         loop do
           response = webauthn_verification_poll_response(webauthn_url, credentials)
-          raise Gem::WebauthnVerificationError, response.message unless response.is_a?(Net::HTTPSuccess)
+          raise Gem::WebauthnVerificationError, response.message unless response.is_a?(Gem::Net::HTTPSuccess)
 
           require "json"
           parsed_response = JSON.parse(response.body)

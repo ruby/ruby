@@ -659,13 +659,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
       if defined? @requested
-        res = Net::HTTPOK.new nil, 200, nil
+        res = Gem::Net::HTTPOK.new nil, 200, nil
         def res.body
           "real_path"
         end
       else
         @requested = true
-        res = Net::HTTPMovedPermanently.new nil, 301, nil
+        res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
         res.add_field "Location", url
       end
       res
@@ -683,7 +683,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
-      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
       res.add_field "Location", url
       res
     end
@@ -701,7 +701,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     url = "http://gems.example.com/redirect"
 
     def fetcher.request(uri, request_class, last_modified = nil)
-      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
       res
     end
 
@@ -728,7 +728,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
-      res = Net::HTTPOK.new nil, 200, nil
+      res = Gem::Net::HTTPOK.new nil, 200, nil
       def res.body
         "success"
       end
@@ -958,8 +958,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     assert_throws :block_called do
-      fetcher.request URI("http://example"), Net::HTTP::Get do |req|
-        assert_kind_of Net::HTTPGenericRequest, req
+      fetcher.request URI("http://example"), Gem::Net::HTTP::Get do |req|
+        assert_kind_of Gem::Net::HTTPGenericRequest, req
         throw :block_called
       end
     end

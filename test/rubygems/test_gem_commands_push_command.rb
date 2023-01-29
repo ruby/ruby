@@ -60,7 +60,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     assert_match(/Pushing gem to #{@host}.../, @ui.output)
 
-    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal File.size(@path), @fetcher.last_request["Content-Length"].to_i
     assert_equal "application/octet-stream", @fetcher.last_request["Content-Type"]
@@ -77,7 +77,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
@@ -96,7 +96,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
@@ -116,7 +116,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
@@ -319,7 +319,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     assert_match(/Pushing gem to #{host}.../, @ui.output)
 
-    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal File.size(@path), @fetcher.last_request["Content-Length"].to_i
     assert_equal "application/octet-stream", @fetcher.last_request["Content-Type"]
