@@ -4,7 +4,6 @@ require_relative "vendored_persistent"
 require "cgi"
 require "securerandom"
 require "zlib"
-require "rubygems/request"
 
 module Bundler
   # Handles all the fetching with the rubygems server
@@ -307,6 +306,7 @@ module Bundler
         end
       else
         store.set_default_paths
+        require "rubygems/request"
         Gem::Request.get_cert_files.each {|c| store.add_file c }
       end
       store
