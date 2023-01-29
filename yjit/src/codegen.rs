@@ -2717,7 +2717,7 @@ fn gen_opt_gt(
 
 // Implements specialized equality for either two fixnum or two strings
 // Returns None if enough type information isn't available, Some(true)
-// if code was generated, otherwise false.
+// if code was generated, otherwise Some(false).
 fn gen_equality_specialized(
     jit: &mut JITState,
     ctx: &mut Context,
