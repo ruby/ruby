@@ -129,14 +129,14 @@ fn jit_next_insn_idx(jit: &JITState) -> u32 {
 
 // Check if we are compiling the instruction at the stub PC
 // Meaning we are compiling the instruction that is next to execute
-fn jit_at_current_insn(jit: &JITState) -> bool {
+pub fn jit_at_current_insn(jit: &JITState) -> bool {
     let ec_pc: *mut VALUE = unsafe { get_cfp_pc(get_ec_cfp(jit.ec.unwrap())) };
     ec_pc == jit.pc
 }
 
 // Peek at the nth topmost value on the Ruby stack.
 // Returns the topmost value when n == 0.
-fn jit_peek_at_stack(jit: &JITState, ctx: &Context, n: isize) -> VALUE {
+pub fn jit_peek_at_stack(jit: &JITState, ctx: &Context, n: isize) -> VALUE {
     assert!(jit_at_current_insn(jit));
     assert!(n < ctx.get_stack_size() as isize);
 
@@ -1093,7 +1093,7 @@ fn gen_opt_plus(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             defer_compilation(jit, ctx, asm, ocb);
@@ -2539,24 +2539,6 @@ fn gen_concatstrings(
     KeepCompiling
 }
 
-// Return Some if whether stack-top objects are fixnums or not at least at compile
-// time is known, otherwise None.
-fn two_fixnums_on_stack(jit: &mut JITState, ctx: &mut Context) -> Option<bool> {
-    if jit_at_current_insn(jit) {
-        let comptime_recv = jit_peek_at_stack(jit, ctx, 1);
-        let comptime_arg = jit_peek_at_stack(jit, ctx, 0);
-        return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());
-    }
-
-    let recv_type = ctx.get_opnd_type(StackOpnd(1));
-    let arg_type = ctx.get_opnd_type(StackOpnd(0));
-    match (recv_type, arg_type) {
-        (Type::Fixnum, Type::Fixnum) => Some(true),
-        (Type::Unknown | Type::UnknownImm, Type::Unknown | Type::UnknownImm) => None,
-        _ => Some(false),
-    }
-}
-
 fn guard_two_fixnums(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -2640,7 +2622,7 @@ fn gen_fixnum_cmp(
     ocb: &mut OutlinedCb,
     cmov_op: CmovFn,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize based on a runtime receiver
@@ -2730,7 +2712,7 @@ fn gen_equality_specialized(
     let a_opnd = ctx.stack_opnd(1);
     let b_opnd = ctx.stack_opnd(0);
 
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => return None,
     };
@@ -3097,7 +3079,7 @@ fn gen_opt_and(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
@@ -3142,7 +3124,7 @@ fn gen_opt_or(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
@@ -3187,7 +3169,7 @@ fn gen_opt_minus(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
@@ -3254,7 +3236,7 @@ fn gen_opt_mod(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let two_fixnums = match two_fixnums_on_stack(jit, ctx) {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
