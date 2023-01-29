@@ -4,7 +4,7 @@
 module Artifice
   # Activate Artifice with a particular Rack endpoint.
   #
-  # Calling this method will replace the Net::HTTP system
+  # Calling this method will replace the Gem::Net::HTTP system
   # with a replacement that routes all requests to the
   # Rack endpoint.
   #
@@ -18,11 +18,11 @@ module Artifice
 
   # Deactivate the Artifice replacement.
   def self.deactivate
-    replace_net_http(::Net::HTTP)
+    replace_net_http(::Gem::Net::HTTP)
   end
 
   def self.replace_net_http(value)
-    ::Net.class_eval do
+    ::Gem::Net.class_eval do
       remove_const(:HTTP)
       const_set(:HTTP, value)
     end

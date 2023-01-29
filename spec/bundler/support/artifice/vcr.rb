@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require "net/http"
+require "bundler/vendored_net_http"
 require_relative "../path"
 
 CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes".freeze
 USED_CASSETTES_PATH = "#{Spec::Path.spec_dir}/support/artifice/used_cassettes.txt".freeze
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
-class BundlerVCRHTTP < Net::HTTP
+class BundlerVCRHTTP < Gem::Net::HTTP
   class RequestHandler
     attr_reader :http, :request, :body, :response_block
     def initialize(http, request, body = nil, &response_block)
@@ -41,8 +41,8 @@ class BundlerVCRHTTP < Net::HTTP
 
     def recorded_response
       File.open(request_pair_paths.last, "rb:ASCII-8BIT") do |response_file|
-        response_io = ::Net::BufferedIO.new(response_file)
-        ::Net::HTTPResponse.read_new(response_io).tap do |response|
+        response_io = ::Gem::Net::BufferedIO.new(response_file)
+        ::Gem::Net::HTTPResponse.read_new(response_io).tap do |response|
           response.decode_content = request.decode_content if request.respond_to?(:decode_content)
           response.uri = request.uri
 
@@ -148,5 +148,5 @@ end
 
 require_relative "helpers/artifice"
 
-# Replace Net::HTTP with our VCR subclass
+# Replace Gem::Net::HTTP with our VCR subclass
 Artifice.replace_net_http(BundlerVCRHTTP)

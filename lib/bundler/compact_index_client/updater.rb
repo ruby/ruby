@@ -33,11 +33,11 @@ module Bundler
           # Subtract a byte to ensure the range won't be empty.
           # Avoids 416 (Range Not Satisfiable) responses.
           response = @fetcher.call(remote_path, request_headers(etag, file.size - 1))
-          break true if response.is_a?(Net::HTTPNotModified)
+          break true if response.is_a?(Gem::Net::HTTPNotModified)
 
           file.digests = parse_digests(response)
           # server may ignore Range and return the full response
-          if response.is_a?(Net::HTTPPartialContent)
+          if response.is_a?(Gem::Net::HTTPPartialContent)
             break false unless file.append(response.body.byteslice(1..-1))
           else
             file.write(response.body)
@@ -51,7 +51,7 @@ module Bundler
       def replace(remote_path, local_path, etag_path)
         etag = etag_path.read.tap(&:chomp!) if etag_path.file?
         response = @fetcher.call(remote_path, request_headers(etag))
-        return true if response.is_a?(Net::HTTPNotModified)
+        return true if response.is_a?(Gem::Net::HTTPNotModified)
         CacheFile.write(local_path, response.body, parse_digests(response))
         CacheFile.write(etag_path, etag(response))
       end

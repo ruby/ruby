@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "net/http"
+require "bundler/vendored_net_http"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 require "tmpdir"
@@ -64,8 +64,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
       it "does nothing if etags match" do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { false }
-        allow(response).to receive(:is_a?).with(Net::HTTPNotModified) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { true }
 
         updater.update(remote_path, local_path, etag_path)
 
@@ -77,8 +77,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
         allow(response).to receive(:[]).with("ETag") { "NewEtag" }
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { true }
-        allow(response).to receive(:is_a?).with(Net::HTTPNotModified) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { "c123" }
 
         updater.update(remote_path, local_path, etag_path)
@@ -102,7 +102,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       it "tries the request again if the partial response fails digest check" do
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:baddigest:" }
         allow(response).to receive(:body) { "the beginning of the file changed" }
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
 
         full_response = double(:full_response, body: full_body, is_a?: false)
@@ -129,8 +129,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
       it "saves only the etag_path if generated etag matches" do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { false }
-        allow(response).to receive(:is_a?).with(Net::HTTPNotModified) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { true }
 
         updater.update(remote_path, local_path, etag_path)
 
@@ -142,8 +142,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
         allow(response).to receive(:[]).with("ETag") { "OpaqueEtag" }
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { true }
-        allow(response).to receive(:is_a?).with(Net::HTTPNotModified) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { "c123" }
 
         updater.update(remote_path, local_path, etag_path)
@@ -157,8 +157,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         allow(response).to receive(:[]).with("Repr-Digest") { nil }
         allow(response).to receive(:[]).with("Digest") { nil }
         allow(response).to receive(:[]).with("ETag") { "OpaqueEtag" }
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { false }
-        allow(response).to receive(:is_a?).with(Net::HTTPNotModified) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { false }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { full_body }
 
         updater.update(remote_path, local_path, etag_path)
@@ -170,7 +170,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       it "tries the request again if the partial response fails digest check" do
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:baddigest:" }
         allow(response).to receive(:body) { "the beginning of the file changed" }
-        allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { true }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
         expect(fetcher).to receive(:call).once.with(remote_path, headers) do
           # During the failed first request, we simulate another process writing the etag.
           # This ensures the second request doesn't generate the md5 etag again but just uses whatever is written.

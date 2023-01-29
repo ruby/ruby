@@ -1,4 +1,4 @@
-require 'net/http'
+require_relative '../../../../../vendored_net_http'
 require_relative '../../../../uri/lib/uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
@@ -6,9 +6,9 @@ require_relative '../../../../connection_pool/lib/connection_pool'
 autoload :OpenSSL, 'openssl'
 
 ##
-# Persistent connections for Net::HTTP
+# Persistent connections for Gem::Net::HTTP
 #
-# Bundler::Persistent::Net::HTTP::Persistent maintains persistent connections across all the
+# Gem::Net::HTTP::Persistent maintains persistent connections across all the
 # servers you wish to talk to.  For each host:port you communicate with a
 # single persistent connection is created.
 #
@@ -20,23 +20,23 @@ autoload :OpenSSL, 'openssl'
 #
 # Example:
 #
-#   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
+#   require 'bundler/vendor/net-http/lib/net/http/persistent'
 #
 #   uri = Bundler::URI 'http://example.com/awesome/web/service'
 #
-#   http = Bundler::Persistent::Net::HTTP::Persistent.new
+#   http = Gem::Net::HTTP::Persistent.new
 #
 #   # perform a GET
 #   response = http.request uri
 #
 #   # or
 #
-#   get = Net::HTTP::Get.new uri.request_uri
+#   get = Gem::Net::HTTP::Get.new uri.request_uri
 #   response = http.request get
 #
 #   # create a POST
 #   post_uri = uri + 'create'
-#   post = Net::HTTP::Post.new post_uri.path
+#   post = Gem::Net::HTTP::Post.new post_uri.path
 #   post.set_form_data 'some' => 'cool data'
 #
 #   # perform the POST, the Bundler::URI is always required
@@ -92,7 +92,7 @@ autoload :OpenSSL, 'openssl'
 #
 # === Segregation
 #
-# Each Bundler::Persistent::Net::HTTP::Persistent instance has its own pool of connections.  There
+# Each Gem::Net::HTTP::Persistent instance has its own pool of connections.  There
 # is no sharing with other instances (as was true in earlier versions).
 #
 # === Idle Timeout
@@ -131,7 +131,7 @@ autoload :OpenSSL, 'openssl'
 #
 # === Connection Termination
 #
-# If you are done using the Bundler::Persistent::Net::HTTP::Persistent instance you may shut down
+# If you are done using the Gem::Net::HTTP::Persistent instance you may shut down
 # all the connections in the current thread with #shutdown.  This is not
 # recommended for normal use, it should only be used when it will be several
 # minutes before you make another HTTP request.
@@ -141,7 +141,7 @@ autoload :OpenSSL, 'openssl'
 # Ruby will automatically garbage collect and shutdown your HTTP connections
 # when the thread terminates.
 
-class Bundler::Persistent::Net::HTTP::Persistent
+class Gem::Net::HTTP::Persistent
 
   ##
   # The beginning of Time
@@ -172,12 +172,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
+  # The version of Gem::Net::HTTP::Persistent you are using
 
   VERSION = '4.0.2'
 
   ##
-  # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various
+  # Error class for errors raised by Gem::Net::HTTP::Persistent.  Various
   # SystemCallErrors are re-raised with a human-readable message under this
   # class.
 
@@ -200,7 +200,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     uri = Bundler::URI uri unless Bundler::URI::Generic === uri
     uri += '/'
 
-    req = Net::HTTP::Head.new uri.request_uri
+    req = Gem::Net::HTTP::Head.new uri.request_uri
 
     http = new 'net-http-persistent detect_idle_timeout'
 
@@ -214,7 +214,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
         $stderr.puts "HEAD #{uri} => #{response.code}" if $DEBUG
 
-        unless Net::HTTPOK === response then
+        unless Gem::Net::HTTPOK === response then
           raise Error, "bad response code #{response.code} detecting idle timeout"
         end
 
@@ -238,7 +238,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :certificate
 
   ##
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
 
   alias cert certificate
 
@@ -266,7 +266,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :ciphers
 
   ##
-  # Sends debug_output to this IO via Net::HTTP#set_debug_output.
+  # Sends debug_output to this IO via Gem::Net::HTTP#set_debug_output.
   #
   # Never use this method in production code, it causes a serious security
   # hole.
@@ -279,7 +279,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :generation # :nodoc:
 
   ##
-  # Headers that are added to every request using Net::HTTP#add_field
+  # Headers that are added to every request using Gem::Net::HTTP#add_field
 
   attr_reader :headers
 
@@ -304,7 +304,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   ##
   # Number of retries to perform if a request fails.
   #
-  # See also #max_retries=, Net::HTTP#max_retries=.
+  # See also #max_retries=, Gem::Net::HTTP#max_retries=.
 
   attr_reader :max_retries
 
@@ -325,12 +325,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :name
 
   ##
-  # Seconds to wait until a connection is opened.  See Net::HTTP#open_timeout
+  # Seconds to wait until a connection is opened.  See Gem::Net::HTTP#open_timeout
 
   attr_accessor :open_timeout
 
   ##
-  # Headers that are added to every request using Net::HTTP#[]=
+  # Headers that are added to every request using Gem::Net::HTTP#[]=
 
   attr_reader :override_headers
 
@@ -340,7 +340,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :private_key
 
   ##
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
 
   alias key private_key
 
@@ -360,12 +360,12 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :pool # :nodoc:
 
   ##
-  # Seconds to wait until reading one block.  See Net::HTTP#read_timeout
+  # Seconds to wait until reading one block.  See Gem::Net::HTTP#read_timeout
 
   attr_accessor :read_timeout
 
   ##
-  # Seconds to wait until writing one block.  See Net::HTTP#write_timeout
+  # Seconds to wait until writing one block.  See Gem::Net::HTTP#write_timeout
 
   attr_accessor :write_timeout
 
@@ -450,7 +450,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   attr_reader :verify_mode
 
   ##
-  # Creates a new Bundler::Persistent::Net::HTTP::Persistent.
+  # Creates a new Gem::Net::HTTP::Persistent.
   #
   # Set a +name+ for fun.  Your library name should be good enough, but this
   # otherwise has no purpose.
@@ -492,8 +492,8 @@ class Bundler::Persistent::Net::HTTP::Persistent
     @socket_options << [Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1] if
       Socket.const_defined? :TCP_NODELAY
 
-    @pool = Bundler::Persistent::Net::HTTP::Persistent::Pool.new size: pool_size do |http_args|
-      Bundler::Persistent::Net::HTTP::Persistent::Connection.new Net::HTTP, http_args, @ssl_generation
+    @pool = Gem::Net::HTTP::Persistent::Pool.new size: pool_size do |http_args|
+      Gem::Net::HTTP::Persistent::Connection.new Gem::Net::HTTP, http_args, @ssl_generation
     end
 
     @certificate        = nil
@@ -529,7 +529,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     reconnect_ssl
   end
 
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
   alias cert= certificate=
 
   ##
@@ -648,7 +648,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Starts the Net::HTTP +connection+
+  # Starts the Gem::Net::HTTP +connection+
 
   def start http
     http.set_debug_output @debug_output if @debug_output
@@ -666,7 +666,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Finishes the Net::HTTP +connection+
+  # Finishes the Gem::Net::HTTP +connection+
 
   def finish connection
     connection.finish
@@ -716,7 +716,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
     reconnect_ssl
   end
 
-  # For Net::HTTP parity
+  # For Gem::Net::HTTP parity
   alias key= private_key=
 
   ##
@@ -835,7 +835,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Finishes then restarts the Net::HTTP +connection+
+  # Finishes then restarts the Gem::Net::HTTP +connection+
 
   def reset connection
     http = connection.http
@@ -854,13 +854,13 @@ class Bundler::Persistent::Net::HTTP::Persistent
   end
 
   ##
-  # Makes a request on +uri+.  If +req+ is nil a Net::HTTP::Get is performed
+  # Makes a request on +uri+.  If +req+ is nil a Gem::Net::HTTP::Get is performed
   # against +uri+.
   #
-  # If a block is passed #request behaves like Net::HTTP#request (the body of
+  # If a block is passed #request behaves like Gem::Net::HTTP#request (the body of
   # the response will not have been read).
   #
-  # +req+ must be a Net::HTTPGenericRequest subclass (see Net::HTTP for a list).
+  # +req+ must be a Gem::Net::HTTPGenericRequest subclass (see Gem::Net::HTTP for a list).
 
   def request uri, req = nil, &block
     uri      = Bundler::URI uri
@@ -903,7 +903,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   def request_setup req_or_uri # :nodoc:
     req = if req_or_uri.respond_to? 'request_uri' then
-            Net::HTTP::Get.new req_or_uri.request_uri
+            Gem::Net::HTTP::Get.new req_or_uri.request_uri
           else
             req_or_uri
           end
