@@ -1,4 +1,4 @@
-class Bundler::Persistent::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool # :nodoc:
+class Gem::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool # :nodoc:
 
   attr_reader :available # :nodoc:
   attr_reader :key # :nodoc:
@@ -6,7 +6,7 @@ class Bundler::Persistent::Net::HTTP::Persistent::Pool < Bundler::ConnectionPool
   def initialize(options = {}, &block)
     super
 
-    @available = Bundler::Persistent::Net::HTTP::Persistent::TimedStackMulti.new(@size, &block)
+    @available = Gem::Net::HTTP::Persistent::TimedStackMulti.new(@size, &block)
     @key = "current-#{@available.object_id}"
   end
 
