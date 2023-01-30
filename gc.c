@@ -7589,6 +7589,9 @@ rb_mmtk_mark_movable(VALUE obj);
 
 static inline void
 rb_mmtk_mark_pin(VALUE obj);
+
+static inline void
+rb_mmtk_mark_and_move(VALUE *field);
 #endif
 
 static inline void
@@ -7633,6 +7636,13 @@ rb_gc_mark(VALUE ptr)
 void
 rb_gc_mark_and_move(VALUE *ptr)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_mark_and_move(ptr);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = &rb_objspace;
     if (RB_SPECIAL_CONST_P(*ptr)) return;
 
@@ -15750,6 +15760,19 @@ static inline void
 rb_mmtk_mark_pin(VALUE obj)
 {
     rb_mmtk_mark(obj, true);
+}
+
+static inline void
+rb_mmtk_mark_and_move(VALUE *field)
+{
+    VALUE obj = *field;
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        MMTk_ObjectReference old_ref = (MMTk_ObjectReference)obj;
+        MMTk_ObjectReference new_ref = rb_mmtk_call_object_closure(old_ref);
+        if (new_ref != old_ref) {
+            *field = (VALUE)new_ref;
+        }
+    }
 }
 
 static inline void
