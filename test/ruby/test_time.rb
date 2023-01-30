@@ -1426,4 +1426,8 @@ class TestTime < Test::Unit::TestCase
       t.deconstruct_keys(%i[year month sec nonexistent])
     )
   end
+
+  def test_parse_zero_bigint
+    assert_equal 0, Time.new("2020-10-28T16:48:07.000Z").nsec, '[Bug #19390]'
+  end
 end
