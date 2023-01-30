@@ -1290,7 +1290,7 @@ typedef struct statx statx_data;
 #else
 # define statx_has_birthtime(st) 0
 #endif /* !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
-	defined(HAVE_STRUCT_STATX_STX_BTIME) */
+        defined(HAVE_STRUCT_STATX_STX_BTIME) */
 
 static int
 rb_stat(VALUE file, struct stat *st)
