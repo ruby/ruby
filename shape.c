@@ -33,12 +33,6 @@ rb_shape_id(rb_shape_t * shape)
     return (shape_id_t)(shape - GET_VM()->shape_list);
 }
 
-bool
-rb_shape_root_shape_p(rb_shape_t* shape)
-{
-    return shape == rb_shape_get_root_shape();
-}
-
 void
 rb_shape_each_shape(each_shape_callback callback, void *data)
 {
@@ -52,16 +46,6 @@ rb_shape_each_shape(each_shape_callback callback, void *data)
 
 rb_shape_t*
 rb_shape_get_shape_by_id(shape_id_t shape_id)
-{
-    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
-
-    rb_vm_t *vm = GET_VM();
-    rb_shape_t *shape = &vm->shape_list[shape_id];
-    return shape;
-}
-
-rb_shape_t*
-rb_shape_get_shape_by_id_without_assertion(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
 
