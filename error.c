@@ -2065,7 +2065,7 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, d_str;
+        struct RString s_str, c_str, d_str;
         VALUE c, s, d = 0, args[4], c2;
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
@@ -2117,7 +2117,12 @@ object:
                 klass = CLASS_OF(obj);
                 if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
                     s = FAKE_CSTR(&s_str, "");
-                    c = rb_any_to_s(obj);
+                    if (obj == rb_vm_top_self()) {
+                        c = FAKE_CSTR(&c_str, "main");
+                    }
+                    else {
+                        c = rb_any_to_s(obj);
+                    }
                     break;
                 }
                 else {
