@@ -7051,6 +7051,10 @@ static const rb_data_type_t env_data_type = {
  *
  *  Note that setting the default proc will clear the default value and vice versa.
  *
+ *  Be aware that a default proc that modifies the hash is not thread-safe in the
+ *  sense that multiple threads can call into the default proc concurrently for the
+ *  same key.
+ *
  *  === What's Here
  *
  *  First, what's elsewhere. \Class \Hash:

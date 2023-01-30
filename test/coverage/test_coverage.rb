@@ -26,6 +26,13 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_in_main_script
+    autostart_path = File.expand_path("autostart.rb", __dir__)
+    main_path = File.expand_path("main.rb", __dir__)
+
+    assert_in_out_err(['-r', autostart_path, main_path], "", ["1"], [])
+  end
+
   def test_coverage_running?
     assert_in_out_err(%w[-rcoverage], <<-"end;", ["false", "true", "true", "false"], [])
       p Coverage.running?
@@ -158,14 +165,16 @@ class TestCoverage < Test::Unit::TestCase
   end
 
   def test_eval_coverage
-    assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, nil, 1, nil]"], [])
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, 1, 1, nil, 0, nil]"], [])
       Coverage.start(eval: true, lines: true)
 
       eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb")
-      s = String.new
-      begin
-      s << "foo
-      bar".freeze; end
+      _out = String.new
+      if _out.empty?
+        _out << 'Hello World'
+      else
+        _out << 'Goodbye World'
+      end
       RUBY
 
       p Coverage.result["test.rb"][:lines]

@@ -9,7 +9,6 @@
  * @brief      Internal header for Class.
  */
 #include "id_table.h"           /* for struct rb_id_table */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
 #include "ruby/internal/stdbool.h"     /* for bool */

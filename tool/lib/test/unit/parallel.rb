@@ -87,8 +87,6 @@ module Test
         $stdout = orig_stdout if orig_stdout
         o.close if o && !o.closed?
         i.close if i && !i.closed?
-
-        Gem.clear_paths if defined?(Gem)
       end
 
       def run(args = []) # :nodoc:

@@ -18,6 +18,7 @@ Note: We're only listing outstanding class updates.
 * String
 
     * `String#unpack` now raises ArgumentError for unknown directives. [[Bug #19150]]
+    * `String#bytesplice` now accepts new arguments index/length or range of the source string to be copied.  [[Feature #19314]]
 
 ## Stdlib updates
 
@@ -29,13 +30,14 @@ The following default gems are updated.
 * csv 3.2.7
 * fiddle 1.1.2
 * optparse 0.4.0.pre.1
+* psych 5.0.2
 * stringio 3.0.5
 * strscan 3.0.6
 
 The following bundled gems are updated.
 
 * minitest 5.17.0
-* rbs 2.8.3
+* rbs 2.8.4
 * typeprof 0.21.4
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
@@ -53,4 +55,5 @@ changelog for details of the default gems or bundled gems.
 
 ## JIT
 
-[Bug #19150]:         https://bugs.ruby-lang.org/issues/19150
+[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Feature #19314]: https://bugs.ruby-lang.org/issues/19314

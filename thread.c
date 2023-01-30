@@ -4702,7 +4702,6 @@ rb_thread_atfork_before_exec(void)
 
 struct thgroup {
     int enclosed;
-    VALUE group;
 };
 
 static size_t
@@ -4744,7 +4743,6 @@ thgroup_s_alloc(VALUE klass)
 
     group = TypedData_Make_Struct(klass, struct thgroup, &thgroup_data_type, data);
     data->enclosed = 0;
-    data->group = group;
 
     return group;
 }

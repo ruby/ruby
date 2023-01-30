@@ -53,7 +53,9 @@ opt.on('--color-bold') {
   }
 }
 opt.on('--auto-indent') {
-  AutoIndent.new
+  Reline.auto_indent_proc = lambda do |lines, line_index, byte_pointer, is_newline|
+    AutoIndent.calculate_indent(lines, line_index, byte_pointer, is_newline)
+  end
 }
 opt.on('--dialog VAL') { |v|
   Reline.add_dialog_proc(:simple_dialog, lambda {
@@ -194,8 +196,7 @@ end
 begin
   prompt = ENV['RELINE_TEST_PROMPT'] || 'prompt> '
   puts 'Multiline REPL.'
-  checker = TerminationChecker.new
-  while code = Reline.readmultiline(prompt, true) { |code| checker.terminated?(code) }
+  while code = Reline.readmultiline(prompt, true) { |code| TerminationChecker.terminated?(code) }
     case code.chomp
     when 'exit', 'quit', 'q'
       exit 0

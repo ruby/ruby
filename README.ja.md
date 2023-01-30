@@ -50,17 +50,6 @@ https://www.ruby-lang.org/ja/downloads/
 Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
 コミッタはこちらを使います．
 
-### Subversion
-
-古いRubyのバージョンのソースコードは次のコマンドでも取得できます．
-
-    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
-
-他のブランチの一覧は次のコマンドで見られます．
-
-    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
-
-
 ## ホームページ
 
 RubyのホームページのURLは

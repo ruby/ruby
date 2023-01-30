@@ -188,6 +188,7 @@ make_counters! {
     send_cfunc_toomany_args,
     send_cfunc_tracing,
     send_cfunc_kwargs,
+    send_cfunc_splat_with_kw,
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
@@ -209,9 +210,18 @@ make_counters! {
     send_se_cf_overflow,
     send_se_protected_check_failed,
     send_splatarray_length_not_equal,
+    send_splatarray_last_ruby_2_keywords,
     send_splat_not_array,
     send_args_splat_non_iseq,
-    send_args_splat_cfunc,
+    send_args_splat_ivar,
+    send_args_splat_attrset,
+    send_args_splat_bmethod,
+    send_args_splat_aref,
+    send_args_splat_aset,
+    send_args_splat_optimized,
+    send_args_splat_cfunc_var_args,
+    send_args_splat_cfunc_zuper,
+    send_args_splat_cfunc_ruby2_keywords,
     send_iseq_ruby2_keywords,
     send_send_not_imm,
     send_send_wrong_args,
@@ -299,6 +309,9 @@ make_counters! {
     exec_mem_non_bump_alloc,
 
     num_gc_obj_refs,
+
+    x86_call_rel32,
+    x86_call_reg,
 }
 
 //===========================================================================

@@ -40,8 +40,38 @@ $(YJIT_LIBS): $(YJIT_SRC_FILES)
 else
 endif
 
-# Put this here instead of in common.mk to avoid breaking nmake builds
-miniruby$(EXEEXT): $(YJIT_LIBS)
+yjit-libobj: $(YJIT_LIBOBJ)
+
+# Note, BSD handling is in yjit/not_gmake.mk
+YJIT_LIB_SYMBOLS = $(YJIT_LIBS:.a=).symbols
+$(YJIT_LIBOBJ): $(YJIT_LIBS)
+	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
+ifneq ($(findstring linux,$(target_os)),)
+	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
+	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)
+else ifneq ($(findstring darwin,$(target_os)),)
+	$(Q) $(CC) -nodefaultlibs -r -o $@ -exported_symbols_list $(YJIT_LIB_SYMBOLS) $(YJIT_LIBS)
+else
+	false
+endif
+
+# For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
+# Unfortunately, using wildcard like '_rb_*' with -exported-symbol does not work, at least
+# not on version 820.1. Assume llvm-nm, so XCode 8.0 (from 2016) or newer.
+#
+# The -exported_symbols_list pulls out the right archive members. Symbols not listed
+# in the list are made private extern, which are in turn made local as we're using `ld -r`.
+# Note, section about -keep_private_externs in ld's man page hints at this behavior on which
+# we rely.
+ifneq ($(findstring darwin,$(target_os)),)
+$(YJIT_LIB_SYMBOLS): $(YJIT_LIBS)
+	$(Q) $(NM) --no-llvm-bc --defined-only --extern-only $(YJIT_LIBS) | \
+	sed -n -e 's/.* //' -e '/^$(SYMBOL_PREFIX)rb_/p' \
+	-e '/^$(SYMBOL_PREFIX)rust_eh_personality/p' \
+	> $@
+
+$(YJIT_LIBOBJ): $(YJIT_LIB_SYMBOLS)
+endif
 
 # By using YJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
 YJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems

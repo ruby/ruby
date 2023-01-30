@@ -55,14 +55,6 @@ class TestGemUtil < Gem::TestCase
     FileUtils.chmod(0775, "d/e") unless win_platform? || java_platform?
   end
 
-  def test_linked_list_find
-    list = [1,2,3,4,5].inject(Gem::List.new(0)) do |m,o|
-      Gem::List.new o, m
-    end
-    assert_equal 5, list.find {|x| x == 5 }
-    assert_equal 4, list.find {|x| x == 4 }
-  end
-
   def test_glob_files_in_dir
     FileUtils.mkdir_p "g"
     FileUtils.touch File.join("g", "h.rb")

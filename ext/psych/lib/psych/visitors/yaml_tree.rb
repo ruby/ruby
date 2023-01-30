@@ -568,7 +568,7 @@ module Psych
           raise BadAlias, "Tried to dump an aliased object"
         end
 
-        unless @permitted_classes[target.class]
+        unless Symbol === target || @permitted_classes[target.class]
           raise DisallowedClass.new('dump', target.class.name || target.class.inspect)
         end
 
@@ -576,7 +576,7 @@ module Psych
       end
 
       def visit_Symbol sym
-        unless @permitted_symbols[sym]
+        unless @permitted_classes[Symbol] || @permitted_symbols[sym]
           raise DisallowedClass.new('dump', "Symbol(#{sym.inspect})")
         end
 

@@ -1,6 +1,6 @@
 # Building Ruby
 
-## Quick start guide
+## Dependencies
 
 1. Install the prerequisite dependencies for building the CRuby interpreter:
 
@@ -8,15 +8,16 @@
     * autoconf - 2.67 or later
     * bison - 3.0 or later
     * gperf - 3.0.3 or later
-    * ruby - 2.7 or later
+    * ruby - 2.2 or later
+        * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
+    * OpenSSL 1.1.x or 3.0.x / LibreSSL
+    * libyaml 0.1.7 or later
+    * zlib
 
 2. Install optional, recommended dependencies:
 
-    * OpenSSL/LibreSSL
     * readline/editline (libedit)
-    * zlib
     * libffi
-    * libyaml
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
@@ -30,19 +31,21 @@
     done
     ```
 
-3. Checkout the CRuby source code:
+## Quick start guide
+
+1. Checkout the CRuby source code:
 
     ``` shell
     git clone https://github.com/ruby/ruby.git
     ```
 
-4. Generate the configure file:
+2. Generate the configure file:
 
     ``` shell
     ./autogen.sh
     ```
 
-5. Create a `build` directory outside of the source directory:
+3. Create a `build` directory outside of the source directory:
 
     ``` shell
     mkdir build && cd build
@@ -50,13 +53,13 @@
 
     While it's not necessary to build in a separate directory, it's good practice to do so.
 
-6. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
+4. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
 
     ``` shell
     mkdir ~/.rubies
     ```
 
-7. Run configure:
+5. Run configure:
 
     ``` shell
     ../configure --prefix="${HOME}/.rubies/ruby-master"
@@ -64,13 +67,13 @@
 
     - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
 
-8. Build Ruby:
+6. Build Ruby:
 
     ``` shell
     make install
     ```
 
-9. [Run tests](testing_ruby.md) to confirm your build succeeded.
+7. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
 ### Unexplainable Build Errors
 

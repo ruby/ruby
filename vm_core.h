@@ -1770,6 +1770,7 @@ const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dync
 void rb_vm_inc_const_missing_count(void);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
+void rb_vm_pop_frame_no_int(rb_execution_context_t *ec);
 MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);
@@ -2037,6 +2038,7 @@ struct rb_trace_arg_struct {
 };
 
 void rb_hook_list_mark(rb_hook_list_t *hooks);
+void rb_hook_list_mark_and_update(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
 void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);

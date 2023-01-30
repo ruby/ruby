@@ -71,7 +71,7 @@ AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'p
         # Can MSys shell run a command with a drive letter?
         RUBYOPT=- `cygpath -ma "$BASERUBY"` --disable=gems -e exit 2>/dev/null || HAVE_BASERUBY=no
     ])
-    BASERUBY="$BASERUBY --disable=gems"
+    RUBY_APPEND_OPTION(BASERUBY, "--disable=gems")
     BASERUBY_VERSION=`$BASERUBY -v`
     $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&AS_MESSAGE_FD
 ], [
@@ -215,7 +215,7 @@ AS_CASE(["/${rb_CC} "],
 [*clang*],            [
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
-    : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
+    RUBY_CHECK_PROG_FOR_CC([LD],      [s/clang/ld/]) # ... maybe try lld ?
     RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
 #   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
     RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
@@ -255,7 +255,7 @@ AC_CHECK_TOOLS([AR],      [gar ar])
 AC_CHECK_TOOLS([AS],      [gas as])
 AC_CHECK_TOOLS([LD],      [gld ld]) # ... try gold ?
 AC_CHECK_TOOLS([NM],      [gnm nm])
-AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy])
+AC_CHECK_TOOLS([OBJCOPY], [gobjcopy objcopy], [:])
 AC_CHECK_TOOLS([OBJDUMP], [gobjdump objdump])
 AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
@@ -433,6 +433,12 @@ AS_CASE(["$build_os"],
 	CC="$CC_WRAPPER $CC"
     ])
     rm -fr conftest*
+  ])
+AS_CASE(["$build_os"],
+  [darwin*], [
+    AC_SUBST(X_WRAPPER_AR, "`cd -P "${tooldir}" && pwd`/darwin-ar $AR")
+  ], [
+    AC_SUBST(X_WRAPPER_AR, "$AR")
   ])
 AS_CASE(["$target_os"],
   [wasi*], [
@@ -902,7 +908,6 @@ AS_IF([test "$GCC" = yes], [
     ], [
 	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
     ])
-    test "$visibility_option" = no || OBJCOPY=:
 ])
 
 AS_IF([test "$GCC" = yes], [

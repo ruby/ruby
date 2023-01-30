@@ -5261,10 +5261,10 @@ rb_str_drop_bytes(VALUE str, long len)
 }
 
 static void
-rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
+rb_str_splice_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
 {
     char *sptr;
-    long slen, vlen = RSTRING_LEN(val);
+    long slen;
     int cr;
 
     if (beg == 0 && vlen == 0) {
@@ -5294,12 +5294,18 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
         MEMZERO(sptr + slen, char, -len);
     }
     if (vlen > 0) {
-        memmove(sptr + beg, RSTRING_PTR(val), vlen);
+        memmove(sptr + beg, RSTRING_PTR(val) + vbeg, vlen);
     }
     slen += vlen - len;
     STR_SET_LEN(str, slen);
     TERM_FILL(&sptr[slen], TERM_LEN(str));
     ENC_CODERANGE_SET(str, cr);
+}
+
+static inline void
+rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
+{
+    rb_str_splice_1(str, beg, len, val, 0, RSTRING_LEN(val));
 }
 
 void
@@ -6267,16 +6273,49 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
     return str_byte_aref(str, argv[0]);
 }
 
+static void
+str_check_beg_len(VALUE str, long *beg, long *len)
+{
+    long end, slen = RSTRING_LEN(str);
+
+    if (*len < 0) rb_raise(rb_eIndexError, "negative length %ld", *len);
+    if ((slen < *beg) || ((*beg < 0) && (*beg + slen < 0))) {
+        rb_raise(rb_eIndexError, "index %ld out of string", *beg);
+    }
+    if (*beg < 0) {
+        *beg += slen;
+    }
+    assert(*beg >= 0);
+    assert(*beg <= slen);
+    if (*len > slen - *beg) {
+        *len = slen - *beg;
+    }
+    end = *beg + *len;
+    if (!str_check_byte_pos(str, *beg)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", *beg);
+    }
+    if (!str_check_byte_pos(str, end)) {
+        rb_raise(rb_eIndexError,
+                 "offset %ld does not land on character boundary", end);
+    }
+}
+
 /*
  *  call-seq:
  *    bytesplice(index, length, str) -> string
- *    bytesplice(range, str)         -> string
+ *    bytesplice(index, length, str, str_index, str_length) -> string
+ *    bytesplice(range, str) -> string
+ *    bytesplice(range, str, str_range) -> string
  *
- *  Replaces some or all of the content of +self+ with +str+, and returns +str+.
+ *  Replaces some or all of the content of +self+ with +str+, and returns +self+.
  *  The portion of the string affected is determined using
  *  the same criteria as String#byteslice, except that +length+ cannot be omitted.
  *  If the replacement string is not the same length as the text it is replacing,
  *  the string will be adjusted accordingly.
+ *
+ *  If +str_index+ and +str_length+, or +str_range+ are given, the content of +self+ is replaced by str.byteslice(str_index, str_length) or str.byteslice(str_range); however the substring of +str+ is not allocated as a new string.
+ *
  *  The form that take an Integer will raise an IndexError if the value is out
  *  of range; the Range form will raise a RangeError.
  *  If the beginning or ending offset does not land on character (codepoint)
@@ -6286,55 +6325,61 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
-    long beg, end, len, slen;
+    long beg, len, vbeg, vlen;
     VALUE val;
     rb_encoding *enc;
     int cr;
 
-    rb_check_arity(argc, 2, 3);
-    if (argc == 2) {
+    rb_check_arity(argc, 2, 5);
+    if (!(argc == 2 || argc == 3 || argc == 5)) {
+        rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 2, 3, or 5)", argc);
+    }
+    if (argc == 2 || (argc == 3 && !RB_INTEGER_TYPE_P(argv[0]))) {
         if (!rb_range_beg_len(argv[0], &beg, &len, RSTRING_LEN(str), 2)) {
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
                      rb_builtin_class_name(argv[0]));
         }
         val = argv[1];
+        StringValue(val);
+        if (argc == 2) {
+            /* bytesplice(range, str) */
+            vbeg = 0;
+            vlen = RSTRING_LEN(val);
+        }
+        else {
+            /* bytesplice(range, str, str_range) */
+            if (!rb_range_beg_len(argv[2], &vbeg, &vlen, RSTRING_LEN(val), 2)) {
+                rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                         rb_builtin_class_name(argv[2]));
+            }
+        }
     }
     else {
         beg = NUM2LONG(argv[0]);
         len = NUM2LONG(argv[1]);
         val = argv[2];
+        StringValue(val);
+        if (argc == 3) {
+            /* bytesplice(index, length, str) */
+            vbeg = 0;
+            vlen = RSTRING_LEN(val);
+        }
+        else {
+            /* bytesplice(index, length, str, str_index, str_length) */
+            vbeg = NUM2LONG(argv[3]);
+            vlen = NUM2LONG(argv[4]);
+        }
     }
-    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
-    slen = RSTRING_LEN(str);
-    if ((slen < beg) || ((beg < 0) && (beg + slen < 0))) {
-        rb_raise(rb_eIndexError, "index %ld out of string", beg);
-    }
-    if (beg < 0) {
-        beg += slen;
-    }
-    assert(beg >= 0);
-    assert(beg <= slen);
-    if (len > slen - beg) {
-        len = slen - beg;
-    }
-    end = beg + len;
-    if (!str_check_byte_pos(str, beg)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", beg);
-    }
-    if (!str_check_byte_pos(str, end)) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", end);
-    }
-    StringValue(val);
+    str_check_beg_len(str, &beg, &len);
+    str_check_beg_len(val, &vbeg, &vlen);
     enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
-    rb_str_splice_0(str, beg, len, val);
+    rb_str_splice_1(str, beg, len, val, vbeg, vlen);
     rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
-    return val;
+    return str;
 }
 
 /*

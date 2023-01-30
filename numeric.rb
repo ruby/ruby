@@ -278,7 +278,7 @@ class Integer
   #
   #    3.ceildiv(1.2) # => 3
   def ceildiv(other)
-    -div(-other)
+    -div(0 - other)
   end
 
   #

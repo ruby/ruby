@@ -680,8 +680,7 @@ class TestGemRequire < Gem::TestCase
       require "json"
     RUBY
     out = Gem::Util.popen({ "GEM_HOME" => @gemhome }, *ruby_with_rubygems_in_load_path, "-e", cmd)
-    puts out
-    assert $?.success?
+    assert_predicate $?, :success?, "Require failed due to #{out}"
   end
 
   private
