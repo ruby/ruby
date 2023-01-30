@@ -25,7 +25,6 @@ Note: We're only listing outstanding class updates.
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
-* abbrev 0.1.1
 * bundler 2.5.0.dev
 * csv 3.2.7
 * fiddle 1.1.2
