@@ -181,6 +181,8 @@ module Gem
 
   @default_source_date_epoch = nil
 
+  @discover_gems_on_require = true
+
   ##
   # Try to activate a gem containing +path+. Returns true if
   # activation succeeded or wasn't needed because it was already
@@ -1162,7 +1164,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # RubyGems distributors (like operating system package managers) can
     # disable RubyGems update by setting this to error message printed to
     # end-users on gem update --system instead of actual update.
+
     attr_accessor :disable_system_update_message
+
+    ##
+    # Whether RubyGems should enhance builtin `require` to automatically
+    # check whether the path required is present in installed gems, and
+    # automatically activate them and add them to `$LOAD_PATH`.
+
+    attr_accessor :discover_gems_on_require
 
     ##
     # Hash of loaded Gem::Specification keyed by name
