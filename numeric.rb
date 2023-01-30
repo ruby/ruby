@@ -186,12 +186,6 @@ class Integer
   end
 
   alias magnitude abs
-=begin
-  def magnitude
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'rb_int_abs(self)'
-  end
-=end
 
   #  call-seq:
   #     int.odd?  ->  true or false
