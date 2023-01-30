@@ -4872,21 +4872,6 @@ fn gen_send_cfunc(
     EndBlock
 }
 
-fn gen_return_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => {
-            asm.comment("update cfp->jit_return");
-            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
-        }
-    }
-}
-
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
@@ -5609,7 +5594,15 @@ fn gen_send_iseq(
         &return_ctx,
         None,
         None,
-        gen_return_branch,
+        |asm, target0, _target1, shape| {
+            match shape {
+                BranchShape::Default => {
+                    asm.comment("update cfp->jit_return");
+                    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
+                }
+                _ => unreachable!()
+            }
+        },
     );
 
     //print_str(cb, "calling Ruby func:");
