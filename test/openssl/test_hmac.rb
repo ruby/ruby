@@ -21,6 +21,9 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_dup
+    require "etc"
+    pend "[Bug #19386] OpenSSL 3.0.1 of RHEL9 is not working this test" if Etc.uname[:release] =~ /el9/
+
     h1 = OpenSSL::HMAC.new("KEY", "MD5")
     h1.update("DATA")
     h = h1.dup
