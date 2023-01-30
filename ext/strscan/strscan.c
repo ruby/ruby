@@ -1038,8 +1038,9 @@ strscan_empty_p(VALUE self)
  * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
- *   s.eos?              # These two
- *   s.rest?             # are opposites.
+ *   # These two are opposites
+ *   s.eos? # => false
+ *   s.rest? # => true
  */
 static VALUE
 strscan_rest_p(VALUE self)
