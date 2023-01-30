@@ -129,14 +129,14 @@ fn jit_next_insn_idx(jit: &JITState) -> u32 {
 
 // Check if we are compiling the instruction at the stub PC
 // Meaning we are compiling the instruction that is next to execute
-fn jit_at_current_insn(jit: &JITState) -> bool {
+pub fn jit_at_current_insn(jit: &JITState) -> bool {
     let ec_pc: *mut VALUE = unsafe { get_cfp_pc(get_ec_cfp(jit.ec.unwrap())) };
     ec_pc == jit.pc
 }
 
 // Peek at the nth topmost value on the Ruby stack.
 // Returns the topmost value when n == 0.
-fn jit_peek_at_stack(jit: &JITState, ctx: &Context, n: isize) -> VALUE {
+pub fn jit_peek_at_stack(jit: &JITState, ctx: &Context, n: isize) -> VALUE {
     assert!(jit_at_current_insn(jit));
     assert!(n < ctx.get_stack_size() as isize);
 
@@ -1093,15 +1093,15 @@ fn gen_opt_plus(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -2622,16 +2622,16 @@ fn gen_fixnum_cmp(
     ocb: &mut OutlinedCb,
     cmov_op: CmovFn,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize base on a runtime receiver
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            // Defer compilation so we can specialize based on a runtime receiver
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -2698,24 +2698,29 @@ fn gen_opt_gt(
 }
 
 // Implements specialized equality for either two fixnum or two strings
-// Returns true if code was generated, otherwise false
+// Returns None if enough type information isn't available, Some(true)
+// if code was generated, otherwise Some(false).
 fn gen_equality_specialized(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    side_exit: Target,
-) -> bool {
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
+) -> Option<bool> {
+    // Create a side-exit to fall back to the interpreter
+    let side_exit = get_side_exit(jit, ocb, ctx);
 
     let a_opnd = ctx.stack_opnd(1);
     let b_opnd = ctx.stack_opnd(0);
 
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => return None,
+    };
+
+    if two_fixnums {
         if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQ) {
             // if overridden, emit the generic version
-            return false;
+            return Some(false);
         }
 
         guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
@@ -2729,13 +2734,19 @@ fn gen_equality_specialized(
         let dst = ctx.stack_push(Type::UnknownImm);
         asm.mov(dst, val);
 
-        true
+        return Some(true);
     }
-    else if unsafe { comptime_a.class_of() == rb_cString && comptime_b.class_of() == rb_cString }
-    {
+
+    if !jit_at_current_insn(jit) {
+        return None;
+    }
+    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
+    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
+
+    if unsafe { comptime_a.class_of() == rb_cString && comptime_b.class_of() == rb_cString } {
         if !assume_bop_not_redefined(jit, ocb, STRING_REDEFINED_OP_FLAG, BOP_EQ) {
             // if overridden, emit the generic version
-            return false;
+            return Some(false);
         }
 
         // Guard that a is a String
@@ -2792,9 +2803,9 @@ fn gen_equality_specialized(
 
         asm.write_label(ret);
 
-        true
+        Some(true)
     } else {
-        false
+        Some(false)
     }
 }
 
@@ -2804,16 +2815,16 @@ fn gen_opt_eq(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize base on a runtime receiver
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let specialized = match gen_equality_specialized(jit, ctx, asm, ocb) {
+        Some(specialized) => specialized,
+        None => {
+            // Defer compilation so we can specialize base on a runtime receiver
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
-
-    if gen_equality_specialized(jit, ctx, asm, ocb, side_exit) {
+    if specialized {
         jump_to_next_insn(jit, ctx, asm, ocb);
         EndBlock
     } else {
@@ -3068,16 +3079,16 @@ fn gen_opt_and(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize on a runtime `self`
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            // Defer compilation so we can specialize on a runtime `self`
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -3113,16 +3124,16 @@ fn gen_opt_or(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize on a runtime `self`
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            // Defer compilation so we can specialize on a runtime `self`
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -3158,16 +3169,16 @@ fn gen_opt_minus(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize on a runtime `self`
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            // Defer compilation so we can specialize on a runtime `self`
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -3225,16 +3236,16 @@ fn gen_opt_mod(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Defer compilation so we can specialize on a runtime `self`
-    if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, asm, ocb);
-        return EndBlock;
-    }
+    let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
+        Some(two_fixnums) => two_fixnums,
+        None => {
+            // Defer compilation so we can specialize on a runtime `self`
+            defer_compilation(jit, ctx, asm, ocb);
+            return EndBlock;
+        }
+    };
 
-    let comptime_a = jit_peek_at_stack(jit, ctx, 1);
-    let comptime_b = jit_peek_at_stack(jit, ctx, 0);
-
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    if two_fixnums {
         // Create a side-exit to fall back to the interpreter
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
