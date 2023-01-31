@@ -5222,24 +5222,14 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
+    // We will handle splat case later
     if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT == 0 {
         num_params -= opts_missing as u32;
         unsafe {
             let opt_table = get_iseq_body_param_opt_table(iseq);
             start_pc_offset = (*opt_table.offset(opts_filled as isize)).as_u32();
         }
-    } else if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
-        // We are going to assume that args_splat fills all of the optional arguments.
-        // We should actually get the array length instead at compile time.
-        // We don't set num_params here because we use it for the splat.
-        // If our assumption is wrong, we will exit early in the splat code.
-        // We could do that a bit smarter and not exit but instead change
-        // the offset we jump to. But we aren't currently doing that.
-        unsafe {
-            let opt_table = get_iseq_body_param_opt_table(iseq);
-            start_pc_offset = (*opt_table.offset(opt_num as isize)).as_u32();
-        };
-    };
+    }
 
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
@@ -5393,12 +5383,42 @@ fn gen_send_iseq(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        let required_args = num_params - (argc as u32 - 1);
+
+        let array = jit_peek_at_stack(jit, ctx, if block_arg { 1 } else { 0 }) ;
+        let array_length = if array == Qnil {
+            0
+        } else {
+            unsafe { rb_yjit_array_len(array) as u32}
+        };
+
+        if opt_num == 0 && required_num != array_length as i32 {
+            gen_counter_incr!(asm, send_iseq_splat_arity_error);
+            return CantCompile;
+        }
+
+        let remaining_opt = (opt_num as u32 + required_num as u32).saturating_sub(array_length + (argc as u32 - 1));
+
+        if opt_num > 0 {
+
+            // We are going to jump to the correct offset based on how many optional
+            // params are remaining.
+            unsafe {
+                let opt_table = get_iseq_body_param_opt_table(iseq);
+                let offset = (opt_num - remaining_opt as i32) as isize;
+                start_pc_offset = (*opt_table.offset(offset)).as_u32();
+            };
+        }
         // We are going to assume that the splat fills
         // all the remaining arguments. In the generated code
         // we test if this is true and if not side exit.
-        argc = num_params as i32;
-        push_splat_args(required_args, ctx, asm, ocb, side_exit)
+        argc = argc - 1 + array_length as i32 + remaining_opt as i32;
+        push_splat_args(array_length, ctx, asm, ocb, side_exit);
+
+        for _ in 0..remaining_opt as u32 {
+            // We need to push nil for the optional arguments
+            let stack_ret = ctx.stack_push(Type::Unknown);
+            asm.mov(stack_ret, Qnil.into());
+        }
     }
 
     // This is a .send call and we need to adjust the stack

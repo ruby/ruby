@@ -222,6 +222,7 @@ make_counters! {
     send_args_splat_cfunc_var_args,
     send_args_splat_cfunc_zuper,
     send_args_splat_cfunc_ruby2_keywords,
+    send_iseq_splat_arity_error,
     send_iseq_ruby2_keywords,
     send_send_not_imm,
     send_send_wrong_args,

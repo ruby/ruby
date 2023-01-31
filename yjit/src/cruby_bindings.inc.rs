@@ -1194,6 +1194,7 @@ extern "C" {
     pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
     pub fn rb_yjit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
+    pub fn rb_yjit_array_len(a: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_yjit_icache_invalidate(
         start: *mut ::std::os::raw::c_void,
         end: *mut ::std::os::raw::c_void,
