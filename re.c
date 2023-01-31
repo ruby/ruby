@@ -2801,14 +2801,18 @@ unescape_unicode_bmp(const char **pp, const char *end,
 }
 
 static int
-unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
+unescape_nonascii0(const char **pp, const char *end, rb_encoding *enc,
         VALUE buf, rb_encoding **encp, int *has_property,
-        onig_errmsg_buffer err, int options)
+        onig_errmsg_buffer err, int options, int recurse)
 {
+    const char *p = *pp;
     unsigned char c;
     char smallbuf[2];
     int in_char_class = 0;
+    int parens = 1; /* ignored unless recurse is true */
+    int extended_mode = options & ONIG_OPTION_EXTEND;
 
+begin_scan:
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
         if (!MBCLEN_CHARFOUND_P(chlen)) {
@@ -2920,7 +2924,7 @@ escape_asis:
             break;
 
           case '#':
-            if ((options & ONIG_OPTION_EXTEND) && !in_char_class) {
+            if (extended_mode && !in_char_class) {
                 /* consume and ignore comment in extended regexp */
                 while ((p < end) && ((c = *p++) != '\n'));
                 break;
@@ -2937,49 +2941,132 @@ escape_asis:
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
-          case '(':
-            if (!in_char_class && p + 1 < end && *p == '?' && *(p+1) == '#') {
-                /* (?# is comment inside any regexp, and content inside should be ignored */
-                const char *orig_p = p;
-                int cont = 1;
-
-                while (cont && (p < end)) {
-                    switch (c = *p++) {
-                      default:
-                        if (!(c & 0x80)) break;
-                        --p;
-                        /* fallthrough */
-                      case '\\':
-                        chlen = rb_enc_precise_mbclen(p, end, enc);
-                        if (!MBCLEN_CHARFOUND_P(chlen)) {
-                            goto invalid_multibyte;
-                        }
-                        p += MBCLEN_CHARFOUND_LEN(chlen);
-                        break;
-                      case ')':
-                        cont = 0;
-                        break;
-                    }
+          case ')':
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            if (!in_char_class && recurse) {
+                if (--parens == 0) {
+                    *pp = p;
+                    return 0;
                 }
-
-                if (cont) {
-                    /* unterminated (?#, rewind so it is syntax error */
-                    p = orig_p;
-                    c = '(';
-                    rb_str_buf_cat(buf, (char *)&c, 1);
-                }
-            }
-            else {
-                rb_str_buf_cat(buf, (char *)&c, 1);
             }
             break;
+          case '(':
+            if (!in_char_class && p + 1 < end && *p == '?') {
+                if (*(p+1) == '#') {
+                    /* (?# is comment inside any regexp, and content inside should be ignored */
+                    const char *orig_p = p;
+                    int cont = 1;
+
+                    while (cont && (p < end)) {
+                        switch (c = *p++) {
+                          default:
+                            if (!(c & 0x80)) break;
+                            --p;
+                            /* fallthrough */
+                          case '\\':
+                            chlen = rb_enc_precise_mbclen(p, end, enc);
+                            if (!MBCLEN_CHARFOUND_P(chlen)) {
+                                goto invalid_multibyte;
+                            }
+                            p += MBCLEN_CHARFOUND_LEN(chlen);
+                            break;
+                          case ')':
+                            cont = 0;
+                            break;
+                        }
+                    }
+
+                    if (cont) {
+                        /* unterminated (?#, rewind so it is syntax error */
+                        p = orig_p;
+                        c = '(';
+                        rb_str_buf_cat(buf, (char *)&c, 1);
+                    }
+                    break;
+                } else {
+                    /* potential change of extended option */
+                    int invert = 0;
+                    int local_extend = 0;
+                    const char *s;
+
+                    if (recurse) {
+                        parens++;
+                    }
+
+                    for(s = p+1; s < end; s++) {
+                        switch(*s) {
+                            case 'x':
+                                local_extend = invert ? -1 : 1;
+                                break;
+                            case '-':
+                                invert = 1;
+                                break;
+                            case ':':
+                            case ')':
+                                if (local_extend == 0 ||
+                                    (local_extend == -1 && !extended_mode) ||
+                                    (local_extend == 1 && extended_mode)) {
+                                    /* no changes to extended flag */
+                                    goto fallthrough;
+                                }
+
+                                if (*s == ':') {
+                                    /* change extended flag until ')' */
+                                    int local_options = options;
+                                    if (local_extend == 1) {
+                                         local_options |= ONIG_OPTION_EXTEND;
+                                    } else {
+                                         local_options &= ~ONIG_OPTION_EXTEND;
+                                    }
+
+                                    rb_str_buf_cat(buf, (char *)&c, 1);
+                                    int ret = unescape_nonascii0(&p, end, enc, buf, encp,
+                                                                has_property, err,
+                                                                local_options, 1);
+                                    if (ret < 0) return ret;
+                                    goto begin_scan;
+                                } else {
+                                    /* change extended flag for rest of expression */
+                                    extended_mode = local_extend == 1;
+                                    goto fallthrough;
+                                }
+                            case 'i':
+                            case 'm':
+                            case 'a':
+                            case 'd':
+                            case 'u':
+                                /* other option flags, ignored during scanning */
+                                break;
+                            default:
+                                /* other character, no extended flag change*/
+                                goto fallthrough;
+                        }
+                    }
+                }
+            } else if (!in_char_class && recurse) {
+                parens++;
+            }
+            /* FALLTHROUGH */
           default:
+fallthrough:
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
         }
     }
 
+    if (recurse) {
+        *pp = p;
+    }
     return 0;
+}
+
+static int
+unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
+        VALUE buf, rb_encoding **encp, int *has_property,
+        onig_errmsg_buffer err, int options)
+{
+    return unescape_nonascii0(&p, end, enc, buf, encp, has_property,
+                              err, options, 0);
 }
 
 static VALUE
