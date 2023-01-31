@@ -1800,9 +1800,9 @@ copy_str(VALUE str, rb_encoding *enc, bool intern)
 
 // Check that an environment variable is set to a truthy value
 static bool
-env_var_truthy(const char* name)
+env_var_truthy(const char *name)
 {
-    const char* value = getenv(name);
+    const char *value = getenv(name);
 
     if (!value)
         return false;
