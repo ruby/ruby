@@ -34,67 +34,62 @@ module Net   #:nodoc:
 
   # \Class \Net::HTTP provides a rich library that implements the client
   # in a client-server model that uses the \HTTP request-response protocol.
-  # For information about \HTTP, see
+  # For information about \HTTP, see:
   #
   # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
   # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
   #
-  # Note: If you are performing only a few GET requests, consider using
-  # {OpenURI}[rdoc-ref:OpenURI];
-  # otherwise, read on.
+  # == Strategies
   #
-  # == Synopsis
+  # - If you will make only a few GET requests,
+  #   consider using {OpenURI}[rdoc-ref:OpenURI].
+  # - If you will make only a few requests of all kinds,
+  #   consider using the various singleton convenience methods in this class.
+  #   Each of the following methods automatically starts and finishes
+  #   a {session}[rdoc-ref:Net::HTTP@Sessions] that sends a single request:
   #
-  # If you are already familiar with \HTTP, this synopsis may be helpful.
+  #     # Return string response body.
+  #     Net::HTTP.get(hostname, path, port = 80)
+  #     Net::HTTP.get(uri, headers = {}, port = 80)
   #
-  # {Session}[rdoc-ref:Net::HTTP@Sessions] with multiple requests for
-  # {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]:
+  #     # Write string response body to $stdout.
+  #     Net::HTTP.get_print(hostname, path_or_uri, port = 80)
+  #     Net::HTTP.get_print(uri, headers = {}, port = 80)
   #
-  #   Net::HTTP.start(hostname) do |http|
-  #     # Session started automatically before block execution.
-  #     http.get(path_or_uri, headers = {})
-  #     http.head(path_or_uri, headers = {})
-  #     http.post(path_or_uri, data, headers = {})  # Can also have a block.
-  #     http.put(path_or_uri, data, headers = {})
-  #     http.delete(path_or_uri, headers = {Depth: 'Infinity'})
-  #     http.options(path_or_uri, headers = {})
-  #     http.trace(path_or_uri, headers = {})
-  #     http.patch(path_or_uri, data, headers = {}) # Can also have a block.
-  #     # Session finished automatically at block exit.
-  #   end
+  #     # Return response as Net::HTTPResponse object.
+  #     Net::HTTP.get_response(hostname, path_or_uri, port = 80)
+  #     Net::HTTP.get_response(uri, headers = {}, port = 80)
+  #     Net::HTTP.post(uri, data, headers = {})
+  #     Net::HTTP.post_form(uri, params)
   #
-  # {Session}[rdoc-ref:Net::HTTP@Sessions] with multiple requests for
-  # {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
+  # - If performance is important, consider using sessions, which lower request overhead.
+  #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
+  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
+  #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
-  #   Net::HTTP.start(hostname) do |http|
-  #     # Session started automatically before block execution.
-  #     http.copy(path_or_uri, headers = {})
-  #     http.lock(path_or_uri, body, headers = {})
-  #     http.mkcol(path_or_uri, body = nil, headers = {})
-  #     http.move(path_or_uri, headers = {})
-  #     http.propfind(path_or_uri, body = nil, headers = {'Depth' => '0'})
-  #     http.proppatch(path_or_uri, body, headers = {})
-  #     http.unlock(path_or_uri, body, headers = {})
-  #     # Session finished automatically at block exit.
-  #   end
+  #     Net::HTTP.start(hostname) do |http|
+  #       # Session started automatically before block execution.
+  #       http.get(path_or_uri, headers = {})
+  #       http.head(path_or_uri, headers = {})
+  #       http.post(path_or_uri, body, headers = {})  # Can also have a block.
+  #       http.put(path_or_uri, body, headers = {})
+  #       http.delete(path_or_uri, headers = {Depth: 'Infinity'})
+  #       http.options(path_or_uri, headers = {})
+  #       http.trace(path_or_uri, headers = {})
+  #       http.patch(path_or_uri, body, headers = {}) # Can also have a block.
+  #       http.copy(path_or_uri, headers = {})
+  #       http.lock(path_or_uri, body, headers = {})
+  #       http.mkcol(path_or_uri, body = nil, headers = {})
+  #       http.move(path_or_uri, headers = {})
+  #       http.propfind(path_or_uri, body = nil, headers = {'Depth' => '0'})
+  #       http.proppatch(path_or_uri, body, headers = {})
+  #       http.unlock(path_or_uri, body, headers = {})
+  #       # Session finished automatically at block exit.
+  #     end
   #
-  # Each of the following methods automatically starts and finishes
-  # a {session}[rdoc-ref:Net::HTTP@Sessions] that sends a single request:
-  #
-  #   # Return string response body.
-  #   Net::HTTP.get(hostname, path, port = 80)
-  #   Net::HTTP.get(uri, headers = {}, port = 80)
-  #
-  #   # Write string response body to $stdout.
-  #   Net::HTTP.get_print(hostname, path_or_uri, port = 80)
-  #   Net::HTTP.get_print(uri, headers = {}, port = 80)
-  #
-  #   # Return response as Net::HTTPResponse object.
-  #   Net::HTTP.get_response(hostname, path_or_uri, port = 80)
-  #   Net::HTTP.get_response(uri, headers = {}, port = 80)
-  #
-  #   Net::HTTP.post(uri, data, headers = {})
-  #   Net::HTTP.post_form(uri, params)
+  # The methods cited above are convenience methods that, via their few arguments,
+  # allow minimal control over the requests.
+  # For greater control, consider using {request objects}[rdoc-ref:Net::HTTPRequest].
   #
   # == About the Examples
   #
@@ -183,7 +178,7 @@ module Net   #:nodoc:
   # - May contain any number of requests.
   # - Is ended by instance method Net::HTTP#finish.
   #
-  # See example sessions at the {Synopsis}[rdoc-ref:Net::HTTP@Synopsis].
+  # See example sessions at {Strategies}[rdoc-ref:Net::HTTP@Strategies].
   #
   # === Session Using \Net::HTTP.start
   #
