@@ -4380,6 +4380,36 @@ fn jit_obj_respond_to(
     true
 }
 
+fn jit_rb_f_block_given_p(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    asm.comment("block_given?");
+
+    // Same as rb_vm_frame_block_handler
+    let ep_opnd = gen_get_lep(jit, asm);
+    let block_handler = asm.load(
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+    );
+
+    ctx.stack_pop(1);
+    let out_opnd = ctx.stack_push(Type::UnknownImm);
+
+    // Return `block_handler != VM_BLOCK_HANDLER_NONE`
+    asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+    let block_given = asm.csel_ne(Qtrue.into(), Qfalse.into());
+    asm.mov(out_opnd, block_given);
+
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -7513,6 +7543,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
+            self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
 
             // Thread.current
             self.yjit_reg_method(

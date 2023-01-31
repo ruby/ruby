@@ -569,12 +569,6 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
     return LONG2FIX(1);
 }
 
-static VALUE
-block_given_p(rb_execution_context_t *ec, VALUE self)
-{
-    return RBOOL(rb_block_given_p());
-}
-
 /**
  * :nodoc:
  *--
