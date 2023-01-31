@@ -31,6 +31,7 @@
 #
 def gemfile(install = false, options = {}, &gemfile)
   require_relative "../bundler"
+  Bundler.reset!
 
   opts = options.dup
   ui = opts.delete(:ui) { Bundler::UI::Shell.new }

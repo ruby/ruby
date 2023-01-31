@@ -26,9 +26,8 @@ module Bundler
 
       def initialize(version, specs: [])
         @spec_group = Resolver::SpecGroup.new(specs)
-        @platforms = specs.map(&:platform).sort_by(&:to_s).uniq
         @version = Gem::Version.new(version)
-        @ruby_only = @platforms == [Gem::Platform::RUBY]
+        @ruby_only = specs.map(&:platform).uniq == [Gem::Platform::RUBY]
       end
 
       def dependencies
@@ -88,9 +87,7 @@ module Bundler
       end
 
       def to_s
-        return @version.to_s if @platforms.empty? || @ruby_only
-
-        "#{@version} (#{@platforms.join(", ")})"
+        @version.to_s
       end
     end
   end

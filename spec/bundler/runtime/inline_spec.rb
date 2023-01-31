@@ -168,6 +168,29 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
+  it "installs subdependencies quietly if necessary when the install option is not set" do
+    build_repo4 do
+      build_gem "rack" do |s|
+        s.add_dependency "rackdep"
+      end
+
+      build_gem "rackdep", "1.0.0"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rack"
+      end
+
+      require "rackdep"
+      puts RACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
   it "installs quietly from git if necessary when the install option is not set" do
     build_git "foo", "1.0.0"
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
@@ -207,8 +230,6 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
-<<<<<<< HEAD:spec/bundler/runtime/inline_spec.rb
-=======
   it "doesn't reinstall already installed gems" do
     system_gems "rack-1.0.0"
 
@@ -316,7 +337,6 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
->>>>>>> fa6e6ea95c2 (Fix issue with extensions not compiling properly using inline gemfile):bundler/spec/runtime/inline_spec.rb
   it "installs inline gems when a Gemfile.lock is present" do
     gemfile <<-G
       source "https://notaserver.com"
