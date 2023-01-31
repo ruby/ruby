@@ -85,7 +85,7 @@ jobs:
           arch: ${{matrix.arch}}
           configure: ${{matrix.configure}}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${configure:cppflags=-DRUBY_DEBUG}
+          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
       - run: $SETARCH make prepare-gems
