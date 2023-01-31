@@ -262,28 +262,26 @@ module Net   #:nodoc:
   #
   # == Following Redirection
   #
-  # Each Net::HTTPResponse object belongs to a class for its response code.
+  # Each returned response is an instance of a subclass of Net::HTTPResponse.
+  # See the {response class hierarchy}[rdoc-ref:Net::HTTPResponse@Response+Subclasses].
   #
-  # For example, all 2XX responses are instances of a Net::HTTPSuccess
-  # subclass, a 3XX response is an instance of a Net::HTTPRedirection
-  # subclass and a 200 response is an instance of the Net::HTTPOK class.
-  # For details, see HTTPResponse.
-  #
-  # Using a case statement you can handle various types of responses properly:
+  # In particular, class Net::HTTPRedirection is the parent
+  # of all redirection classes.
+  # This allows you to craft a case statement to handle redirections properly:
   #
   #   def fetch(uri, limit = 10)
   #     # You should choose a better exception.
-  #     raise ArgumentError, 'too many HTTP redirects' if limit == 0
+  #     raise ArgumentError, 'Too many HTTP redirects' if limit == 0
   #
   #     res = Net::HTTP.get_response(URI(uri))
   #     case res
-  #     when Net::HTTPSuccess then
+  #     when Net::HTTPSuccess     # Any success class.
   #       res
-  #     when Net::HTTPRedirection then
-  #       location = res['location']
-  #       warn "redirected to #{location}"
+  #     when Net::HTTPRedirection # Any redirection class.
+  #       location = res['Location']
+  #       warn "Redirected to #{location}"
   #       fetch(location, limit - 1)
-  #     else
+  #     else                      # Any other class.
   #       res.value
   #     end
   #   end
@@ -320,7 +318,7 @@ module Net   #:nodoc:
   #
   # == HTTPS
   #
-  # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=:
+  # HTTPS is enabled for an \HTTP connection by Net::HTTP#use_ssl=:
   #
   #   Net::HTTP.start(hostname, :use_ssl => true) do |http|
   #     req = Net::HTTP::Get.new(uri)
@@ -328,7 +326,7 @@ module Net   #:nodoc:
   #   end
   #
   # Or if you simply want to make a GET request, you may pass in a URI
-  # object that has an HTTPS URL. \Net::HTTP automatically turns on TLS
+  # object that has an \HTTPS URL. \Net::HTTP automatically turns on TLS
   # verification if the URI object has a 'https' URI scheme:
   #
   #   uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com/>
@@ -529,10 +527,10 @@ module Net   #:nodoc:
     end
 
     #
-    # HTTP session management
+    # \HTTP session management
     #
 
-    # Returns intger +80+, the default port to use for HTTP requests:
+    # Returns intger +80+, the default port to use for \HTTP requests:
     #
     #   Net::HTTP.default_port # => 80
     #
@@ -540,7 +538,7 @@ module Net   #:nodoc:
       http_default_port()
     end
 
-    # Returns integer +80+, the default port to use for HTTP requests:
+    # Returns integer +80+, the default port to use for \HTTP requests:
     #
     #   Net::HTTP.http_default_port # => 80
     #
@@ -673,7 +671,7 @@ module Net   #:nodoc:
     end
 
     # Returns a new \Net::HTTP object +http+
-    # (but does not open a TCP connection or HTTP session).
+    # (but does not open a TCP connection or \HTTP session).
     #
     # <b>No Proxy</b>
     #
@@ -806,7 +804,7 @@ module Net   #:nodoc:
     end
 
     # Creates a new \Net::HTTP object for the specified server address,
-    # without opening the TCP connection or initializing the HTTP session.
+    # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil)
       @address = address
@@ -991,20 +989,20 @@ module Net   #:nodoc:
     end
 
     # Number of seconds to wait for the connection to open. Any number
-    # may be used, including Floats for fractional seconds. If the HTTP
+    # may be used, including Floats for fractional seconds. If the \HTTP
     # object cannot open a connection in this many seconds, it raises a
     # \Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
-    # seconds. If the HTTP object cannot read data in this many seconds,
+    # seconds. If the \HTTP object cannot read data in this many seconds,
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Number of seconds to wait for one block to be written (via one write(2)
     # call). Any number may be used, including Floats for fractional
-    # seconds. If the HTTP object cannot write data in this many seconds,
+    # seconds. If the \HTTP object cannot write data in this many seconds,
     # it raises a \Net::WriteTimeout exception. The default value is 60 seconds.
     # \Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
@@ -1057,7 +1055,7 @@ module Net   #:nodoc:
       @write_timeout = sec
     end
 
-    # Seconds to wait for 100 Continue response. If the HTTP object does not
+    # Seconds to wait for 100 Continue response. If the \HTTP object does not
     # receive a response in this many seconds it sends the request body. The
     # default value is +nil+.
     attr_reader :continue_timeout
@@ -1078,7 +1076,7 @@ module Net   #:nodoc:
     # Content-Length headers. For backwards compatibility, the default is true.
     attr_accessor :ignore_eof
 
-    # Returns true if the HTTP session has been started.
+    # Returns true if the \HTTP session has been started.
     def started?
       @started
     end
@@ -1087,7 +1085,7 @@ module Net   #:nodoc:
 
     attr_accessor :close_on_empty_response
 
-    # Returns true if SSL/TLS is being used with HTTP.
+    # Returns true if SSL/TLS is being used with \HTTP.
     def use_ssl?
       @use_ssl
     end
@@ -1202,10 +1200,10 @@ module Net   #:nodoc:
       @socket.io.peer_cert
     end
 
-    # Opens a TCP connection and HTTP session.
+    # Opens a TCP connection and \HTTP session.
     #
     # When this method is called with a block, it passes the \Net::HTTP
-    # object to the block, and closes the TCP connection and HTTP session
+    # object to the block, and closes the TCP connection and \HTTP session
     # after the block has been executed.
     #
     # When called with a block, it returns the return value of the
@@ -1345,7 +1343,7 @@ module Net   #:nodoc:
     end
     private :on_connect
 
-    # Finishes the HTTP session and closes the TCP connection.
+    # Finishes the \HTTP session and closes the TCP connection.
     # Raises IOError if the session has not been started.
     def finish
       raise IOError, 'HTTP session not yet started' unless started?
@@ -1373,7 +1371,7 @@ module Net   #:nodoc:
     @proxy_user = nil
     @proxy_pass = nil
 
-    # Creates an HTTP proxy class which behaves like \Net::HTTP, but
+    # Creates an \HTTP proxy class which behaves like \Net::HTTP, but
     # performs all access via the specified proxy.
     #
     # This class is obsolete.  You may pass these same parameters directly to
@@ -1762,7 +1760,7 @@ module Net   #:nodoc:
     alias put2   request_put    #:nodoc: obsolete
 
 
-    # Sends an HTTP request to the HTTP server.
+    # Sends an \HTTP request to the \HTTP server.
     # Also sends a DATA string if +data+ is given.
     #
     # Returns a Net::HTTPResponse object.
@@ -1778,7 +1776,7 @@ module Net   #:nodoc:
       request r, data
     end
 
-    # Sends an HTTPRequest object +req+ to the HTTP server.
+    # Sends an HTTPRequest object +req+ to the \HTTP server.
     #
     # If +req+ is a Net::HTTP::Post or Net::HTTP::Put request containing
     # data, the data is also sent. Providing data for a Net::HTTP::Head or
