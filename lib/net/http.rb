@@ -39,6 +39,10 @@ module Net   #:nodoc:
   # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
   # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
   #
+  # == About the Examples
+  #
+  # :include: doc/net-http/examples.rdoc
+  #
   # == Strategies
   #
   # - If you will make only a few GET requests,
@@ -49,17 +53,19 @@ module Net   #:nodoc:
   #   a {session}[rdoc-ref:Net::HTTP@Sessions] that sends a single request:
   #
   #     # Return string response body.
-  #     Net::HTTP.get(hostname, path, port = 80)
-  #     Net::HTTP.get(uri, headers = {}, port = 80)
+  #     Net::HTTP.get(hostname, path)
+  #     Net::HTTP.get(uri)
   #
   #     # Write string response body to $stdout.
-  #     Net::HTTP.get_print(hostname, path_or_uri, port = 80)
-  #     Net::HTTP.get_print(uri, headers = {}, port = 80)
+  #     Net::HTTP.get_print(hostname, path)
+  #     Net::HTTP.get_print(uri)
   #
   #     # Return response as Net::HTTPResponse object.
-  #     Net::HTTP.get_response(hostname, path_or_uri, port = 80)
-  #     Net::HTTP.get_response(uri, headers = {}, port = 80)
-  #     Net::HTTP.post(uri, data, headers = {})
+  #     Net::HTTP.get_response(hostname, path)
+  #     Net::HTTP.get_response(uri)
+  #     data = '{"title": "foo", "body": "bar", "userId": 1}'
+  #     Net::HTTP.post(uri, data)
+  #     params = {title: 'foo', body: 'bar', userId: 1}
   #     Net::HTTP.post_form(uri, params)
   #
   # - If performance is important, consider using sessions, which lower request overhead.
@@ -69,31 +75,28 @@ module Net   #:nodoc:
   #
   #     Net::HTTP.start(hostname) do |http|
   #       # Session started automatically before block execution.
-  #       http.get(path_or_uri, headers = {})
-  #       http.head(path_or_uri, headers = {})
-  #       http.post(path_or_uri, body, headers = {})  # Can also have a block.
-  #       http.put(path_or_uri, body, headers = {})
-  #       http.delete(path_or_uri, headers = {Depth: 'Infinity'})
-  #       http.options(path_or_uri, headers = {})
-  #       http.trace(path_or_uri, headers = {})
-  #       http.patch(path_or_uri, body, headers = {}) # Can also have a block.
-  #       http.copy(path_or_uri, headers = {})
-  #       http.lock(path_or_uri, body, headers = {})
-  #       http.mkcol(path_or_uri, body = nil, headers = {})
-  #       http.move(path_or_uri, headers = {})
-  #       http.propfind(path_or_uri, body = nil, headers = {'Depth' => '0'})
-  #       http.proppatch(path_or_uri, body, headers = {})
-  #       http.unlock(path_or_uri, body, headers = {})
+  #       http.get(path)
+  #       http.head(path)
+  #       body = 'Some text'
+  #       http.post(path, body)  # Can also have a block.
+  #       http.put(path, body)
+  #       http.delete(path)
+  #       http.options(path)
+  #       http.trace(path)
+  #       http.patch(path, body) # Can also have a block.
+  #       http.copy(path)
+  #       http.lock(path, body)
+  #       http.mkcol(path, body)
+  #       http.move(path)
+  #       http.propfind(path, body)
+  #       http.proppatch(path, body)
+  #       http.unlock(path, body)
   #       # Session finished automatically at block exit.
   #     end
   #
   # The methods cited above are convenience methods that, via their few arguments,
   # allow minimal control over the requests.
   # For greater control, consider using {request objects}[rdoc-ref:Net::HTTPRequest].
-  #
-  # == About the Examples
-  #
-  # :include: doc/net-http/examples.rdoc
   #
   # == URIs
   #
@@ -263,62 +266,53 @@ module Net   #:nodoc:
   #
   # For example, all 2XX responses are instances of a Net::HTTPSuccess
   # subclass, a 3XX response is an instance of a Net::HTTPRedirection
-  # subclass and a 200 response is an instance of the Net::HTTPOK class.  For
-  # details of response classes, see the section "HTTP Response Classes"
-  # below.
+  # subclass and a 200 response is an instance of the Net::HTTPOK class.
+  # For details, see HTTPResponse.
   #
   # Using a case statement you can handle various types of responses properly:
   #
-  #   def fetch(uri_str, limit = 10)
+  #   def fetch(uri, limit = 10)
   #     # You should choose a better exception.
   #     raise ArgumentError, 'too many HTTP redirects' if limit == 0
   #
-  #     response = Net::HTTP.get_response(URI(uri_str))
-  #
-  #     case response
+  #     res = Net::HTTP.get_response(URI(uri))
+  #     case res
   #     when Net::HTTPSuccess then
-  #       response
+  #       res
   #     when Net::HTTPRedirection then
-  #       location = response['location']
+  #       location = res['location']
   #       warn "redirected to #{location}"
   #       fetch(location, limit - 1)
   #     else
-  #       response.value
+  #       res.value
   #     end
   #   end
   #
-  #   print fetch('http://www.ruby-lang.org')
+  #   fetch(uri)
   #
   # == Basic Authentication
   #
   # Basic authentication is performed according to
-  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt).
-  #
-  #   uri = URI('http://example.com/index.html?key=value')
+  # {RFC2617}[http://www.ietf.org/rfc/rfc2617.txt]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req.basic_auth 'user', 'pass'
-  #
-  #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
+  #   req.basic_auth('user', 'pass')
+  #   res = Net::HTTP.start(hostname) do |http|
   #     http.request(req)
-  #   }
-  #   puts res.body
+  #   end
   #
   # == Streaming Response Bodies
   #
-  # By default Net::HTTP reads an entire response into memory.  If you are
+  # By default \Net::HTTP reads an entire response into memory.  If you are
   # handling large files or wish to implement a progress bar you can instead
   # stream the body directly to an IO.
   #
-  #   uri = URI('http://example.com/large_file')
-  #
-  #   Net::HTTP.start(uri.host, uri.port) do |http|
-  #     request = Net::HTTP::Get.new uri
-  #
-  #     http.request request do |response|
-  #       open 'large_file', 'w' do |io|
-  #         response.read_body do |chunk|
-  #           io.write chunk
+  #   Net::HTTP.start(hostname) do |http|
+  #     req = Net::HTTP::Get.new(uri)
+  #     http.request(req) do |res|
+  #       open('t.tmp', 'w') do |f|
+  #         res.read_body do |chunk|
+  #           f.write chunk
   #         end
   #       end
   #     end
@@ -326,28 +320,23 @@ module Net   #:nodoc:
   #
   # == HTTPS
   #
-  # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=.
+  # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=:
   #
-  #   uri = URI('https://secure.example.com/some_path?query=string')
-  #
-  #   Net::HTTP.start(uri.host, uri.port, :use_ssl => true) do |http|
-  #     request = Net::HTTP::Get.new uri
-  #     response = http.request request # Net::HTTPResponse object
+  #   Net::HTTP.start(hostname, :use_ssl => true) do |http|
+  #     req = Net::HTTP::Get.new(uri)
+  #     res = http.request(req)
   #   end
   #
-  # Or if you simply want to make a GET request, you may pass in an URI
-  # object that has an HTTPS URL. Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' URI scheme.
+  # Or if you simply want to make a GET request, you may pass in a URI
+  # object that has an HTTPS URL. \Net::HTTP automatically turns on TLS
+  # verification if the URI object has a 'https' URI scheme:
   #
-  #   uri = URI('https://example.com/')
-  #   Net::HTTP.get(uri) # => String
-  #
-  # In previous versions of Ruby you would need to require 'net/https' to use
-  # HTTPS. This is no longer true.
+  #   uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com/>
+  #   Net::HTTP.get(uri)
   #
   # == Proxies
   #
-  # Net::HTTP will automatically create a proxy from the +http_proxy+
+  # \Net::HTTP will automatically create a proxy from the +http_proxy+
   # environment variable if it is present.  To disable use of +http_proxy+,
   # pass +nil+ for the proxy address.
   #
@@ -360,12 +349,9 @@ module Net   #:nodoc:
   #     # always proxy via your.proxy.addr:8080
   #   }
   #
-  # See Net::HTTP.new for further details and examples such as proxies that
-  # require a username and password.
-  #
   # == Compression
   #
-  # Net::HTTP automatically adds Accept-Encoding for compression of response
+  # \Net::HTTP automatically adds Accept-Encoding for compression of response
   # bodies and automatically decompresses gzip and deflate responses unless a
   # Range header was sent.
   #
@@ -686,7 +672,7 @@ module Net   #:nodoc:
       alias newobj new # :nodoc:
     end
 
-    # Returns a new Net::HTTP object +http+
+    # Returns a new \Net::HTTP object +http+
     # (but does not open a TCP connection or HTTP session).
     #
     # <b>No Proxy</b>
@@ -819,7 +805,7 @@ module Net   #:nodoc:
       http
     end
 
-    # Creates a new Net::HTTP object for the specified server address,
+    # Creates a new \Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil)
@@ -1007,7 +993,7 @@ module Net   #:nodoc:
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception. The default value is 60 seconds.
+    # \Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
@@ -1019,12 +1005,12 @@ module Net   #:nodoc:
     # Number of seconds to wait for one block to be written (via one write(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the HTTP object cannot write data in this many seconds,
-    # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
-    # Net::WriteTimeout is not raised on Windows.
+    # it raises a \Net::WriteTimeout exception. The default value is 60 seconds.
+    # \Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
 
     # Sets the maximum number of times to retry an idempotent request in case of
-    # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
+    # \Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
     # Timeout::Error.
     # The initial value is 1.
@@ -1084,7 +1070,7 @@ module Net   #:nodoc:
 
     # Seconds to reuse the connection of the previous request.
     # If the idle time is less than this Keep-Alive Timeout,
-    # Net::HTTP reuses the TCP/IP socket used by the previous communication.
+    # \Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
 
@@ -1109,7 +1095,7 @@ module Net   #:nodoc:
     # Turn on/off SSL.
     # This flag must be set before starting session.
     # If you change use_ssl value after session started,
-    # a Net::HTTP object raises IOError.
+    # IOError is raised.
     def use_ssl=(flag)
       flag = flag ? true : false
       if started? and @use_ssl != flag
@@ -1218,7 +1204,7 @@ module Net   #:nodoc:
 
     # Opens a TCP connection and HTTP session.
     #
-    # When this method is called with a block, it passes the Net::HTTP
+    # When this method is called with a block, it passes the \Net::HTTP
     # object to the block, and closes the TCP connection and HTTP session
     # after the block has been executed.
     #
@@ -1387,11 +1373,11 @@ module Net   #:nodoc:
     @proxy_user = nil
     @proxy_pass = nil
 
-    # Creates an HTTP proxy class which behaves like Net::HTTP, but
+    # Creates an HTTP proxy class which behaves like \Net::HTTP, but
     # performs all access via the specified proxy.
     #
     # This class is obsolete.  You may pass these same parameters directly to
-    # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
+    # \Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
     def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil) #:nodoc:
       return self unless p_addr
 
@@ -1419,16 +1405,16 @@ module Net   #:nodoc:
         defined?(@is_proxy_class) ? @is_proxy_class : false
       end
 
-      # Address of proxy host. If Net::HTTP does not use a proxy, nil.
+      # Address of proxy host. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_address
 
-      # Port number of proxy host. If Net::HTTP does not use a proxy, nil.
+      # Port number of proxy host. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_port
 
-      # User name for accessing proxy. If Net::HTTP does not use a proxy, nil.
+      # User name for accessing proxy. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_user
 
-      # User password for accessing proxy. If Net::HTTP does not use a proxy,
+      # User password for accessing proxy. \If Net::HTTP does not use a proxy,
       # nil.
       attr_reader :proxy_pass
     end
@@ -1796,7 +1782,7 @@ module Net   #:nodoc:
     #
     # If +req+ is a Net::HTTP::Post or Net::HTTP::Put request containing
     # data, the data is also sent. Providing data for a Net::HTTP::Head or
-    # Net::HTTP::Get request results in an ArgumentError.
+    # \Net::HTTP::Get request results in an ArgumentError.
     #
     # Returns an HTTPResponse object.
     #
