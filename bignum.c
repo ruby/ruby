@@ -4184,7 +4184,6 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         }
         if (!c || ISSPACE(c)) --str;
         if (end) len = end - str;
-        ASSERT_LEN();
     }
     c = *str;
     c = conv_digit(c);
