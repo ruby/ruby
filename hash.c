@@ -579,13 +579,6 @@ rb_hash_ar_table_p(VALUE hash)
     }
 }
 
-ar_table *
-rb_hash_ar_table(VALUE hash)
-{
-    HASH_ASSERT(RHASH_AR_TABLE_P(hash));
-    return RHASH(hash)->as.ar;
-}
-
 st_table *
 rb_hash_st_table(VALUE hash)
 {
