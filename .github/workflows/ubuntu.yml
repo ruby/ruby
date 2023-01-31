@@ -26,7 +26,11 @@ jobs:
   make:
     strategy:
       matrix:
-        entry:
+        test_task: [check]
+        arch: ['']
+        configure: ['']
+        # specifying all jobs with `include` to avoid redundant tests
+        include:
           - test_task: check
           - test_task: check
             arch: i686
