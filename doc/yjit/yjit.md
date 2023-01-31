@@ -11,7 +11,7 @@ YJIT - Yet Another Ruby JIT
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
 Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
-YJIT is currently supported for macOS and Linux on x86-64 and arm64/aarch64 CPUs.
+YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
 <p align="center"><b>
