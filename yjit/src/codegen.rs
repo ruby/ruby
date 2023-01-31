@@ -5977,22 +5977,10 @@ fn gen_send_general(
                 }
                 return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, flags, argc);
             }
-            VM_METHOD_TYPE_ZSUPER => {
-                gen_counter_incr!(asm, send_zsuper_method);
-                return CantCompile;
-            }
             VM_METHOD_TYPE_ALIAS => {
                 // Retrieve the aliased method and re-enter the switch
                 cme = unsafe { rb_aliased_callable_method_entry(cme) };
                 continue;
-            }
-            VM_METHOD_TYPE_UNDEF => {
-                gen_counter_incr!(asm, send_undef_method);
-                return CantCompile;
-            }
-            VM_METHOD_TYPE_NOTIMPLEMENTED => {
-                gen_counter_incr!(asm, send_not_implemented_method);
-                return CantCompile;
             }
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
@@ -6211,6 +6199,18 @@ fn gen_send_general(
                         panic!("unknown optimized method type!")
                     }
                 }
+            }
+            VM_METHOD_TYPE_ZSUPER => {
+                gen_counter_incr!(asm, send_zsuper_method);
+                return CantCompile;
+            }
+            VM_METHOD_TYPE_UNDEF => {
+                gen_counter_incr!(asm, send_undef_method);
+                return CantCompile;
+            }
+            VM_METHOD_TYPE_NOTIMPLEMENTED => {
+                gen_counter_incr!(asm, send_not_implemented_method);
+                return CantCompile;
             }
             VM_METHOD_TYPE_MISSING => {
                 gen_counter_incr!(asm, send_missing_method);
