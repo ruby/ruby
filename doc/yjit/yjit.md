@@ -157,14 +157,21 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 128 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
+- `--yjit-stats`: produce statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
+
+You can verify that YJIT is enabled by checking that `ruby -v --yjit` includes the string `+YJIT`:
+
+```sh
+ruby -v --yjit
+ruby 3.3.0dev (2023-01-31T15:11:10Z master 2a0bf269c9) +YJIT dev [x86_64-darwin22]
+```
 
 ### Benchmarking
 
@@ -245,8 +252,6 @@ The YJIT source code is divided between:
 - `yjit/src/options.rs`: handling of command-line options
 - `yjit/bindgen/src/main.rs`: C bindings exposed to the Rust codebase through bindgen
 - `yjit/src/cruby.rs`: C bindings manually exposed to the Rust codebase
-- `misc/test_yjit_asm.sh`: script to compile and run the in-memory assembler tests
-- `misc/yjit_asm_tests.c`: tests for the in-memory assembler
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
