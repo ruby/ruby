@@ -439,7 +439,7 @@ pub type CmePtr = *const rb_callable_method_entry_t;
 /// Basic block version
 /// Represents a portion of an iseq compiled with a given context
 /// Note: care must be taken to minimize the size of block_t objects
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Block {
     // Bytecode sequence (iseq, idx) this is a version of
     blockid: BlockId,
@@ -2318,6 +2318,8 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
+    mem::drop(block); // end borrow: regenerate_branch might mut borrow this
+    let block = blockref.borrow().clone();
     for branchref in &block.incoming {
         let mut branch = branchref.borrow_mut();
         let target_idx = if branch.get_target_address(0) == block_start {
