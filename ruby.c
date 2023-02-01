@@ -1798,6 +1798,7 @@ copy_str(VALUE str, rb_encoding *enc, bool intern)
     return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), enc);
 }
 
+#ifdef USE_YJIT
 // Check that an environment variable is set to a truthy value
 static bool
 env_var_truthy(const char *name)
@@ -1815,6 +1816,7 @@ env_var_truthy(const char *name)
 
     return false;
 }
+#endif
 
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
