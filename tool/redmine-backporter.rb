@@ -422,7 +422,7 @@ eom
   },
 
   "done" => proc{|args|
-    raise CommandSyntaxError unless /\A(\d+)?(?: by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
+    raise CommandSyntaxError unless /\A(\d+)?(?: *by (\h+))?(?:\s*-- +(.*))?\z/ =~ args
     notes = $3
     notes.strip! if notes
     rev = $2
