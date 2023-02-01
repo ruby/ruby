@@ -313,7 +313,7 @@ static const rb_data_type_t BigDecimal_data_type = {
     "BigDecimal",
     { 0, BigDecimal_delete, BigDecimal_memsize, },
 #ifdef RUBY_TYPED_FREE_IMMEDIATELY
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED
 #endif
 };
 
