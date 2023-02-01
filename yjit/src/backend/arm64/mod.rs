@@ -641,9 +641,8 @@ impl Assembler
     }
 
     /// Emit platform-specific machine code
-    /// Returns a list of GC offsets
-    pub fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
-    {
+    /// Returns a list of GC offsets. Can return failure to signal caller to retry.
+    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<u32>, ()> {
         /// Determine how many instructions it will take to represent moving
         /// this value into a register. Note that the return value of this
         /// function must correspond to how many instructions are used to
@@ -1055,13 +1054,19 @@ impl Assembler
             if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr_with_invalidation) {
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
+
+                // We don't want label references to cross page boundaries. Signal caller for
+                // retry.
+                if !self.label_names.is_empty() {
+                    return Err(());
+                }
             } else {
                 insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
 
-        gc_offsets
+        Ok(gc_offsets)
     }
 
     /// Optimize and compile the stored instructions
@@ -1076,7 +1081,16 @@ impl Assembler
         }
 
         let start_ptr = cb.get_write_ptr();
-        let gc_offsets = asm.arm64_emit(cb);
+        let starting_label_state = cb.get_label_state();
+        let gc_offsets = asm.arm64_emit(cb)
+            .unwrap_or_else(|_err| {
+                // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
+                // range limit. We can easily exceed the limit in case the jump straddles two pages.
+                // In this case, we retry with a fresh page.
+                cb.set_label_state(starting_label_state);
+                cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation);
+                asm.arm64_emit(cb).expect("should not fail when writing to a fresh code page")
+            });
 
         if cb.has_dropped_bytes() {
             cb.clear_labels();
@@ -1398,6 +1412,47 @@ mod tests {
         let shape_opnd = Opnd::mem(32, Opnd::Reg(X0_REG), 6);
         asm.store(shape_opnd, Opnd::UImm(4097));
         asm.compile_with_num_regs(&mut cb, 2);
+    }
+
+    #[test]
+    fn test_bcond_straddling_code_pages() {
+        const LANDING_PAGE: usize = 65;
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
+
+        // Skip to near the end of the page. Room for two instructions.
+        cb.set_pos(cb.page_start_pos() + cb.page_end() - 8);
+
+        let end = asm.new_label("end");
+        // Start with a conditional jump...
+        asm.jz(end);
+
+        // A few instructions, enough to cause a page switch.
+        let sum = asm.add(399.into(), 111.into());
+        let xorred = asm.xor(sum, 859.into());
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), xorred);
+        asm.store(Opnd::mem(64, Opnd::Reg(X0_REG), 0), xorred);
+
+        // The branch target. It should be in the landing page.
+        asm.write_label(end);
+        asm.cret(xorred);
+
+        // [Bug #19385]
+        // This used to panic with "The offset must be 19 bits or less."
+        // due to attempting to lower the `asm.jz` above to a `b.e` with an offset that's > 1 MiB.
+        let starting_pos = cb.get_write_pos();
+        asm.compile_with_num_regs(&mut cb, 2);
+        let gap = cb.get_write_pos() - starting_pos;
+        assert!(gap > 0b1111111111111111111);
+
+        let instruction_at_starting_pos: [u8; 4] = unsafe {
+            std::slice::from_raw_parts(cb.get_ptr(starting_pos).raw_ptr(), 4)
+        }.try_into().unwrap();
+        assert_eq!(
+            0b000101 << 26_u32,
+            u32::from_le_bytes(instruction_at_starting_pos) & (0b111111 << 26_u32),
+            "starting instruction should be an unconditional branch to the new page (B)"
+        );
     }
 
     #[test]
