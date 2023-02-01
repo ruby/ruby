@@ -12870,6 +12870,7 @@ wmap_free(void *ptr)
     st_foreach(w->obj2wmap, wmap_free_map, 0);
     st_free_table(w->obj2wmap);
     st_free_table(w->wmap2obj);
+    xfree(w);
 }
 
 static int
