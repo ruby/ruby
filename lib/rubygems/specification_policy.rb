@@ -466,7 +466,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
   def validate_rust_extensions(builder) # :nodoc:
     rust_extension = @specification.extensions.any? {|s| builder.builder_for(s).is_a? Gem::Ext::CargoBuilder }
-    missing_cargo_lock = !@specification.files.include?("Cargo.lock")
+    missing_cargo_lock = !@specification.files.any? {|f| f.end_with?("Cargo.lock") }
 
     error <<-ERROR if rust_extension && missing_cargo_lock
 You have specified rust based extension, but Cargo.lock is not part of the gem files. Please run `cargo generate-lockfile` or any other command to generate Cargo.lock and ensure it is added to your gem files section in gemspec.

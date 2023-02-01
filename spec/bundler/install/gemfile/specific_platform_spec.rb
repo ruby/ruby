@@ -821,6 +821,64 @@ RSpec.describe "bundle install with specific platforms" do
     bundle :install
   end
 
+  it "automatically fixes the lockfile if the specific platform is locked and we move to a newer ruby version for which a native package is not available" do
+    #
+    # Given an existing application using native gems (e.g., nokogiri)
+    # And a lockfile generated with a stable ruby version
+    # When want test the application against ruby-head and `bundle install`
+    # Then bundler should fall back to the generic ruby platform gem
+    #
+    simulate_platform "x86_64-linux" do
+      build_repo4 do
+        build_gem "nokogiri", "1.14.0"
+        build_gem "nokogiri", "1.14.0" do |s|
+          s.platform = "x86_64-linux"
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "nokogiri", "1.14.0"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.14.0-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri (= 1.14.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle :install
+
+      expect(lockfile).to eq(<<~L)
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.14.0)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri (= 1.14.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   private
 
   def setup_multiplatform_gem

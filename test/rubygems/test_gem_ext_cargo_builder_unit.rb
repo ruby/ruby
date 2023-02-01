@@ -6,8 +6,7 @@ require "rubygems/ext"
 class TestGemExtCargoBuilderUnit < Gem::TestCase
   def test_cargo_command_passes_args
     skip_unsupported_platforms!
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
+    builder = Gem::Ext::CargoBuilder.new
     command = builder.cargo_command(Dir.pwd, @tempdir, ["--all-features"])
 
     assert_includes command, "--all-features"
@@ -15,8 +14,7 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
 
   def test_cargo_command_locks_in_release_profile
     skip_unsupported_platforms!
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
+    builder = Gem::Ext::CargoBuilder.new
     builder.profile = :release
     command = builder.cargo_command(Dir.pwd, @tempdir)
 
@@ -27,8 +25,7 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
     skip_unsupported_platforms!
     old_cargo = ENV["CARGO"]
     ENV["CARGO"] = "mycargo"
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
+    builder = Gem::Ext::CargoBuilder.new
     command = builder.cargo_command(Dir.pwd, @tempdir)
 
     assert_includes command, "mycargo"
@@ -38,8 +35,7 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
 
   def test_build_env_includes_rbconfig
     skip_unsupported_platforms!
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
+    builder = Gem::Ext::CargoBuilder.new
     env = builder.build_env
 
     assert_equal env.fetch("RBCONFIG_RUBY_SO_NAME"), RbConfig::CONFIG["RUBY_SO_NAME"]
@@ -49,8 +45,7 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
     skip_unsupported_platforms!
     old_cargo = ENV["CARGO_BUILD_TARGET"]
     ENV["CARGO_BUILD_TARGET"] = "x86_64-unknown-linux-gnu"
-    spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-    builder = Gem::Ext::CargoBuilder.new(spec)
+    builder = Gem::Ext::CargoBuilder.new
     command = builder.cargo_command(Dir.pwd, @tempdir, ["--locked"])
 
     assert_includes command, "--target"

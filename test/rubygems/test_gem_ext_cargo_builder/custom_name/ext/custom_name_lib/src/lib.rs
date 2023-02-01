@@ -12,7 +12,7 @@ unsafe extern "C" fn say_hello(_klass: VALUE) -> VALUE {
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn Init_custom_name() {
+pub extern "C" fn Init_custom_name_ext() {
     let name = CString::new("CustomName").unwrap();
     let function_name = CString::new("say_hello").unwrap();
     // bindgen does not properly detect the arity of the ruby callback function, so we have to transmute

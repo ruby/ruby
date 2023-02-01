@@ -2,11 +2,10 @@
 
 RSpec.describe "bundle exec" do
   let(:system_gems_to_install) { %w[rack-1.0.0 rack-0.9.1] }
-  before :each do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
-  end
 
   it "works with --gemfile flag" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     create_file "CustomGemfile", <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "1.0.0"
@@ -17,6 +16,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "activates the correct gem" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
@@ -27,6 +28,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "works and prints no warnings when HOME is not writable" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
@@ -209,8 +212,6 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
-    let(:system_gems_to_install) { [] }
-
     let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false }
 
     context "when not specified in Gemfile" do
@@ -402,6 +403,8 @@ RSpec.describe "bundle exec" do
   end
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
+    system_gems(system_gems_to_install, :path => default_bundle_path)
+
     bundle "config set clean false" # want to keep the rackup binstub
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -706,6 +709,8 @@ RSpec.describe "bundle exec" do
     RUBY
 
     before do
+      system_gems(system_gems_to_install, :path => default_bundle_path)
+
       bundled_app(path).open("w") {|f| f << executable }
       bundled_app(path).chmod(0o755)
 
