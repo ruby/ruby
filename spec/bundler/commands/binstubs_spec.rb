@@ -369,6 +369,7 @@ RSpec.describe "bundle binstubs <gem>" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
+        gem "rails"
       G
     end
 
@@ -394,6 +395,26 @@ RSpec.describe "bundle binstubs <gem>" do
         bundle "binstubs rack --standalone --all-platforms"
         expect(bundled_app("bin/rackup")).to exist
         expect(bundled_app("bin/rackup.cmd")).to exist
+      end
+    end
+
+    context "when the gem is bundler" do
+      it "warns without generating a standalone binstub" do
+        bundle "binstubs bundler --standalone"
+        expect(bundled_app("bin/bundle")).not_to exist
+        expect(bundled_app("bin/bundler")).not_to exist
+        expect(err).to include("Sorry, Bundler can only be run via RubyGems.")
+      end
+    end
+
+    context "when specified --all option" do
+      it "generates standalone binstubs for all gems except bundler" do
+        bundle "binstubs --standalone --all"
+        expect(bundled_app("bin/rackup")).to exist
+        expect(bundled_app("bin/rails")).to exist
+        expect(bundled_app("bin/bundle")).not_to exist
+        expect(bundled_app("bin/bundler")).not_to exist
+        expect(err).not_to include("Sorry, Bundler can only be run via RubyGems.")
       end
     end
   end
