@@ -69,6 +69,96 @@ impl From<&Opnd> for A64Opnd {
     }
 }
 
+/// Call emit_jmp_ptr and immediately invalidate the written range.
+/// This is needed when next_page also moves other_cb that is not invalidated
+/// by compile_with_regs. Doing it here allows you to avoid invalidating a lot
+/// more than necessary when other_cb jumps from a position early in the page.
+/// This invalidates a small range of cb twice, but we accept the small cost.
+fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+    #[cfg(not(test))]
+    let start = cb.get_write_ptr();
+    emit_jmp_ptr(cb, dst_ptr, true);
+    #[cfg(not(test))]
+    {
+        let end = cb.get_write_ptr();
+        use crate::cruby::rb_yjit_icache_invalidate;
+        unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
+    }
+}
+
+fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
+    let src_addr = cb.get_write_ptr().into_i64();
+    let dst_addr = dst_ptr.into_i64();
+
+    // If the offset is short enough, then we'll use the
+    // branch instruction. Otherwise, we'll move the
+    // destination into a register and use the branch
+    // register instruction.
+    let num_insns = if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+        b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+        1
+    } else {
+        let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
+        br(cb, Assembler::SCRATCH0);
+        num_insns + 1
+    };
+
+    if padding {
+        // Make sure it's always a consistent number of
+        // instructions in case it gets patched and has to
+        // use the other branch.
+        for _ in num_insns..(JMP_PTR_BYTES / 4) {
+            nop(cb);
+        }
+    }
+}
+
+/// Emit the required instructions to load the given value into the
+/// given register. Our goal here is to use as few instructions as
+/// possible to get this value into the register.
+fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
+    let mut current = value;
+
+    if current <= 0xffff {
+        // If the value fits into a single movz
+        // instruction, then we'll use that.
+        movz(cb, rd, A64Opnd::new_uimm(current), 0);
+        return 1;
+    } else if BitmaskImmediate::try_from(current).is_ok() {
+        // Otherwise, if the immediate can be encoded
+        // with the special bitmask immediate encoding,
+        // we'll use that.
+        mov(cb, rd, A64Opnd::new_uimm(current));
+        return 1;
+    } else {
+        // Finally we'll fall back to encoding the value
+        // using movz for the first 16 bits and movk for
+        // each subsequent set of 16 bits as long we
+        // they are necessary.
+        movz(cb, rd, A64Opnd::new_uimm(current & 0xffff), 0);
+        let mut num_insns = 1;
+
+        // (We're sure this is necessary since we
+        // checked if it only fit into movz above).
+        current >>= 16;
+        movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 16);
+        num_insns += 1;
+
+        if current > 0xffff {
+            current >>= 16;
+            movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 32);
+            num_insns += 1;
+        }
+
+        if current > 0xffff {
+            current >>= 16;
+            movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
+            num_insns += 1;
+        }
+        return num_insns;
+    }
+}
+
 impl Assembler
 {
     // A special scratch register for intermediate processing.
@@ -574,52 +664,6 @@ impl Assembler
             }
         }
 
-        /// Emit the required instructions to load the given value into the
-        /// given register. Our goal here is to use as few instructions as
-        /// possible to get this value into the register.
-        fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
-            let mut current = value;
-
-            if current <= 0xffff {
-                // If the value fits into a single movz
-                // instruction, then we'll use that.
-                movz(cb, rd, A64Opnd::new_uimm(current), 0);
-                return 1;
-            } else if BitmaskImmediate::try_from(current).is_ok() {
-                // Otherwise, if the immediate can be encoded
-                // with the special bitmask immediate encoding,
-                // we'll use that.
-                mov(cb, rd, A64Opnd::new_uimm(current));
-                return 1;
-            } else {
-                // Finally we'll fall back to encoding the value
-                // using movz for the first 16 bits and movk for
-                // each subsequent set of 16 bits as long we
-                // they are necessary.
-                movz(cb, rd, A64Opnd::new_uimm(current & 0xffff), 0);
-                let mut num_insns = 1;
-
-                // (We're sure this is necessary since we
-                // checked if it only fit into movz above).
-                current >>= 16;
-                movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 16);
-                num_insns += 1;
-
-                if current > 0xffff {
-                    current >>= 16;
-                    movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 32);
-                    num_insns += 1;
-                }
-
-                if current > 0xffff {
-                    current >>= 16;
-                    movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
-                    num_insns += 1;
-                }
-                return num_insns;
-            }
-        }
-
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
@@ -689,50 +733,6 @@ impl Assembler
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
-        }
-
-        fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
-            let src_addr = cb.get_write_ptr().into_i64();
-            let dst_addr = dst_ptr.into_i64();
-
-            // If the offset is short enough, then we'll use the
-            // branch instruction. Otherwise, we'll move the
-            // destination into a register and use the branch
-            // register instruction.
-            let num_insns = if b_offset_fits_bits((dst_addr - src_addr) / 4) {
-                b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
-                1
-            } else {
-                let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr as u64);
-                br(cb, Assembler::SCRATCH0);
-                num_insns + 1
-            };
-
-            if padding {
-                // Make sure it's always a consistent number of
-                // instructions in case it gets patched and has to
-                // use the other branch.
-                for _ in num_insns..(JMP_PTR_BYTES / 4) {
-                    nop(cb);
-                }
-            }
-        }
-
-        /// Call emit_jmp_ptr and immediately invalidate the written range.
-        /// This is needed when next_page also moves other_cb that is not invalidated
-        /// by compile_with_regs. Doing it here allows you to avoid invalidating a lot
-        /// more than necessary when other_cb jumps from a position early in the page.
-        /// This invalidates a small range of cb twice, but we accept the small cost.
-        fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
-            #[cfg(not(test))]
-            let start = cb.get_write_ptr();
-            emit_jmp_ptr(cb, dst_ptr, true);
-            #[cfg(not(test))]
-            {
-                let end = cb.get_write_ptr();
-                use crate::cruby::rb_yjit_icache_invalidate;
-                unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
-            }
         }
 
         // dbg!(&self.insns);
