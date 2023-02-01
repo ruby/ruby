@@ -1973,8 +1973,6 @@ fn gen_set_ivar(
     KeepCompiling
 }
 
-
-
 // Codegen for getting an instance variable.
 // Preconditions:
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
@@ -3318,7 +3316,6 @@ fn gen_opt_succ(
     // Delegate to send, call the method on the recv
     gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
-
 
 fn gen_opt_str_freeze(
     jit: &mut JITState,
