@@ -138,7 +138,7 @@ impl CodeBlock {
             return false;
         }
 
-        // Move the other CodeBlock to the same page if it'S on the furthest page
+        // Move the other CodeBlock to the same page if it's on the furthest page
         #[cfg(not(test))]
         self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
 

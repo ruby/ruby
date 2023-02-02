@@ -532,7 +532,7 @@ impl PartialEq for BlockRef {
     }
 }
 
-/// It's comparison by identity so all the requirements are statisfied
+/// It's comparison by identity so all the requirements are satisfied
 impl Eq for BlockRef {}
 
 /// This is all the data YJIT stores on an iseq

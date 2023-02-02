@@ -73,7 +73,7 @@ pub extern "C" fn rb_yjit_init_rust() {
 /// rb_bug() might not be as good at printing a call trace as Rust's stdlib, but
 /// it dumps some other info that might be relevant.
 ///
-/// In case we want to do start doing fancier exception handling with panic=unwind,
+/// In case we want to start doing fancier exception handling with panic=unwind,
 /// we can revisit this later. For now, this helps to get us good bug reports.
 fn rb_bug_panic_hook() {
     use std::panic;

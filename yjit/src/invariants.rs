@@ -327,7 +327,7 @@ pub extern "C" fn rb_yjit_root_mark() {
     // Why not let the GC move the cme keys in this table?
     // Because this is basically a compare_by_identity Hash.
     // If a key moves, we would need to reinsert it into the table so it is rehashed.
-    // That is tricky to do, espcially as it could trigger allocation which could
+    // That is tricky to do, especially as it could trigger allocation which could
     // trigger GC. Not sure if it is okay to trigger GC while the GC is updating
     // references.
     //

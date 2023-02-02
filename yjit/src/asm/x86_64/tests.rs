@@ -361,7 +361,7 @@ fn test_sub() {
 #[test]
 #[should_panic]
 fn test_sub_uimm_too_large() {
-    // This immedaite becomes a different value after
+    // This immediate becomes a different value after
     // sign extension, so not safe to encode.
     check_bytes("ff", |cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
 }
