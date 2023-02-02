@@ -564,15 +564,17 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
 pub fn rust_str_to_sym(str: &str) -> VALUE {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-
     unsafe { rb_id2sym(rb_intern(c_ptr)) }
 }
 
 /// Produce an owned Rust String from a C char pointer
 #[cfg(feature = "disasm")]
 pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> String {
+    assert!(c_char_ptr != std::ptr::null());
+
     use std::ffi::CStr;
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
+
     c_str.to_str().unwrap().to_string()
 }
 
