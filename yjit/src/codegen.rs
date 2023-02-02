@@ -5668,9 +5668,6 @@ fn gen_send_iseq(
         },
     );
 
-    //print_str(cb, "calling Ruby func:");
-    //print_str(cb, rb_id2name(vm_ci_mid(ci)));
-
     // Directly jump to the entry point of the callee
     gen_direct_jump(
         jit,
@@ -5830,6 +5827,19 @@ fn gen_send_general(
 
     let comptime_recv = jit_peek_at_stack(jit, ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
+
+    // Log the name of the method we're calling to
+    #[cfg(feature = "disasm")]
+    {
+        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_klass)) };
+        let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) };
+        match (class_name, method_name) {
+            (Some(class_name), Some(method_name)) => {
+                asm.comment(&format!("call to {}#{}", class_name, method_name))
+            }
+            _ => {}
+        }
+    }
 
     // Guard that the receiver has the same class as the one from compile time
     let side_exit = get_side_exit(jit, ocb, ctx);
