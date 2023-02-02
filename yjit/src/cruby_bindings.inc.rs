@@ -570,7 +570,7 @@ pub struct vm_ifunc_argc {
 #[repr(C)]
 pub struct vm_ifunc {
     pub flags: VALUE,
-    pub reserved: VALUE,
+    pub owner_cfp: *mut rb_control_frame_struct,
     pub func: rb_block_call_func_t,
     pub data: *const ::std::os::raw::c_void,
     pub argc: vm_ifunc_argc,
