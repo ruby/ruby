@@ -1576,10 +1576,12 @@ static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
     if (!RHASH_EMPTY_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash))
+        if (RHASH_AR_TABLE_P(hash)) {
             ar_copy(ret, hash);
-        else if (RHASH_ST_TABLE_P(hash))
+        }
+        else {
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
+        }
     }
     return ret;
 }
