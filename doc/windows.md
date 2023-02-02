@@ -83,7 +83,19 @@ make
     * sed
     * ruby 2.0 or later
 
-5.  Enable Command Extension of your command line.  It's the default behavior
+    You can use [scoop](https://scoop.sh/) to install them like:
+
+    ```
+    scoop install git ruby winflexbison sed patch
+    ```
+
+5. You need to install required libraries using [vcpkg](https://vcpkg.io/) like:
+
+    ```
+    vcpkg --triplet x64-windows install openssl libffi libyaml zlib
+    ```
+
+6.  Enable Command Extension of your command line.  It's the default behavior
     of `cmd.exe`.  If you want to enable it explicitly, run `cmd.exe` with
     `/E:ON` option.
 
@@ -105,13 +117,16 @@ make
     And add _RUBYW_INSTALL_NAME_ to change the name of the
     executable without console window if also you want.
 
-3.  Run `nmake up` if you are building from GIT source.
+3.  You need specify vcpkg directory to use `--with-opt-dir`
+    option like `configure --with-opt-dir=C:\vcpkg\installed\x64-windows`
 
-4.  Run `nmake`
+4.  Run `nmake up` if you are building from GIT source.
 
-5.  Run `nmake check`
+5.  Run `nmake`
 
-6.  Run `nmake install`
+6.  Run `nmake check`
+
+7.  Run `nmake install`
 
 ### Build examples
 
