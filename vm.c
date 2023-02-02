@@ -1715,6 +1715,14 @@ rb_sourceline(void)
 VALUE
 rb_source_location(int *pline)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p() && rb_gc_obj_free_on_exit_started()) {
+        // The GC has started calling `obj_free` on everything.
+        // Source location information is held in heap objects which may have been corrupted by now.
+        if (pline) *pline = 0;
+        return Qnil;
+    }
+#endif
     const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 

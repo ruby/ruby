@@ -125,6 +125,10 @@ int rb_objspace_garbage_object_p(VALUE obj);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
+#if USE_MMTK
+bool rb_gc_obj_free_on_exit_started(void);
+#endif
+
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
     rb_gc_mark_and_move(&_obj); \

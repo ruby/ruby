@@ -167,6 +167,8 @@ static size_t mmtk_post_max_heap_size = 0;
 
 static bool mmtk_max_heap_parse_error = false;
 static size_t mmtk_max_heap_size = 0;
+
+static bool obj_free_on_exit_started = false;
 #endif
 
 static inline struct rbimpl_size_mul_overflow_tag
@@ -2643,7 +2645,9 @@ maybe_register_finalizable(VALUE obj) {
         RUBY_DEBUG_LOG("Object registered for obj_free: %p: %s %s",
             (MMTk_ObjectReference)obj,
             rb_type_str(RB_BUILTIN_TYPE(obj)),
-            rb_obj_class(obj)==0?"(null)":rb_class2name(rb_obj_class(obj))
+            RB_BUILTIN_TYPE(obj) == T_IMEMO ? rb_imemo_name(imemo_type(obj)) :
+            rb_obj_class(obj) == 0 ? "(null klass)" :
+            rb_class2name(rb_obj_class(obj))
             );
         break;
       case T_RATIONAL:
@@ -4939,6 +4943,11 @@ rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t dat
     return ST_CONTINUE;
 }
 
+bool
+rb_gc_obj_free_on_exit_started(void) {
+    return obj_free_on_exit_started;
+}
+
 #endif
 
 void
@@ -4983,6 +4992,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         // When using MMTk, we simply iterate through all elements and call run_finalizer immediately.
         // The finalizer_table will be freed soon, so we don't need to remove elements.
         st_foreach(finalizer_table, rb_mmtk_run_finalizers_immediately, 0);
+
+        // Tell the world that obj_free on exit has started.
+        obj_free_on_exit_started = true;
 
         // TODO: Should we disable GC, too?
 
