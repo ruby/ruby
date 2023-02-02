@@ -228,7 +228,7 @@ class Ripper
 
     def on_heredoc_end(tok)
       @buf.push Elem.new([lineno(), column()], __callee__, tok, state())
-      @buf = @stack.pop
+      @buf = @stack.pop unless @stack.empty?
     end
 
     def _push_token(tok)
