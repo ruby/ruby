@@ -77,6 +77,9 @@ fn main() {
         // From encindex.h
         .allowlist_type("ruby_preserved_encindex")
 
+        // From include/ruby/ruby.h
+        .allowlist_function("rb_class2name")
+
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
         .allowlist_type("RBasic")
@@ -199,6 +202,7 @@ fn main() {
         // From include/ruby/internal/symbol.h
         .allowlist_function("rb_intern")
         .allowlist_function("rb_id2sym")
+        .allowlist_function("rb_id2name")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
 

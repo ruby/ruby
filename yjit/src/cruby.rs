@@ -568,6 +568,14 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
     unsafe { rb_id2sym(rb_intern(c_ptr)) }
 }
 
+/// Produce an owned Rust String from a C char pointer
+#[cfg(feature = "disasm")]
+pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> String {
+    use std::ffi::CStr;
+    let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
+    c_str.to_str().unwrap().to_string()
+}
+
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {
