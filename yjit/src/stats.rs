@@ -248,8 +248,9 @@ make_counters! {
     invokeblock_none,
     invokeblock_iseq_arg0_splat,
     invokeblock_iseq_block_changed,
-    invokeblock_iseq_tag_changed,
-    invokeblock_ifunc,
+    invokeblock_tag_changed,
+    invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kw_splat,
     invokeblock_proc,
     invokeblock_symbol,
 
