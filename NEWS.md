@@ -30,7 +30,7 @@ The following default gems are updated.
 * fiddle 1.1.2
 * optparse 0.4.0.pre.1
 * psych 5.0.2
-* stringio 3.0.6
+* stringio 3.0.5
 * strscan 3.0.6
 
 The following bundled gems are updated.
