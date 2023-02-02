@@ -569,13 +569,16 @@ pub fn rust_str_to_sym(str: &str) -> VALUE {
 
 /// Produce an owned Rust String from a C char pointer
 #[cfg(feature = "disasm")]
-pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> String {
+pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     assert!(c_char_ptr != std::ptr::null());
 
     use std::ffi::CStr;
     let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
 
-    c_str.to_str().unwrap().to_string()
+    match c_str.to_str() {
+        Ok(rust_str) => Some(rust_str.to_string()),
+        Err(_) => None
+    }
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
