@@ -1,6 +1,6 @@
 # Distribution
 
-This document outlines the expected way to distribute Ruby, with a specific focus on building Ruby packages for operating system distributions.
+This document outlines the expected way to distribute Ruby, with a specific focus on building Ruby packages.
 
 ## Building a Ruby Tarball
 
@@ -21,20 +21,6 @@ This will create several tarball in the `tmp` directory. The tarball will be nam
 The tarball for official releases is created by the release manager. The release manager will run the above commands to create the tarball. The release manager will then upload the tarball to the [Ruby website](https://www.ruby-lang.org/en/downloads/).
 
 Downstream distributors should use the official release tarballs as part of their build process. This ensures that the tarball is created in a consistent way, and that the tarball is crytographically verified.
-
-## Building a Ruby Package
-
-Most distributions have a tool to build packages from a tarball. For example, Debian has `dpkg-buildpackage` and Fedora has `rpmbuild`. These tools will take the tarball and build a package for the distribution.
-
-```bash
-$ pkgver=3.1.3
-$ curl https://cache.ruby-lang.org/pub/ruby/${pkgver%.*}/ruby-${pkgver}.tar.xz --output ruby-${pkgver}.tar.xz
-$ tar xpvf ruby-${pkgver}.tar.xz
-$ cd ruby-${pkgver}
-$ ./configure
-$ make
-$ make install
-```
 
 ## Updating the Ruby Standard Library
 
