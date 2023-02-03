@@ -708,15 +708,12 @@ pub fn gen_single_block(
     let starting_insn_idx = insn_idx;
 
     // Allocate the new block
-    let blockref = Block::new(blockid, &ctx);
+    let blockref = Block::new(blockid, &ctx, cb.get_write_ptr());
 
     // Initialize a JIT state object
     let mut jit = JITState::new(&blockref);
     jit.iseq = blockid.iseq;
     jit.ec = Some(ec);
-
-    // Mark the start position of the block
-    blockref.borrow_mut().set_start_addr(cb.get_write_ptr());
 
     // Create a backend assembler instance
     let mut asm = Assembler::new();
@@ -802,7 +799,7 @@ pub fn gen_single_block(
             // If this is the first instruction in the block, then we can use
             // the exit for block->entry_exit.
             if insn_idx == block.get_blockid().idx {
-                block.entry_exit = block.get_start_addr();
+                block.entry_exit = Some(block.get_start_addr());
             }
 
             break;
@@ -7731,13 +7728,14 @@ mod tests {
             iseq: ptr::null(),
             idx: 0,
         };
-        let block = Block::new(blockid, &Context::default());
+        let cb = CodeBlock::new_dummy(256 * 1024);
+        let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
 
         return (
             JITState::new(&block),
             Context::default(),
             Assembler::new(),
-            CodeBlock::new_dummy(256 * 1024),
+            cb,
             OutlinedCb::wrap(CodeBlock::new_dummy(256 * 1024)),
         );
     }
