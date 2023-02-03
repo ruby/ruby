@@ -171,7 +171,7 @@ static const rb_data_type_t strio_data_type = {
 	strio_free,
 	strio_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #define check_strio(self) ((struct StringIO*)rb_check_typeddata((self), &strio_data_type))
@@ -379,7 +379,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     if (ptr->flags & FMODE_TRUNC) {
 	rb_str_resize(string, 0);
     }
-    ptr->string = string;
+    RB_OBJ_WRITE(self, &ptr->string, string);
     if (argc == 1) {
 	ptr->enc = rb_enc_get(string);
     }
@@ -397,7 +397,7 @@ static VALUE
 strio_finalize(VALUE self)
 {
     struct StringIO *ptr = StringIO(self);
-    ptr->string = Qnil;
+    RB_OBJ_WRITE(self, &ptr->string, Qnil);
     ptr->flags &= ~FMODE_READWRITE;
     return self;
 }
@@ -563,7 +563,8 @@ strio_set_string(VALUE self, VALUE string)
     ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
     ptr->pos = 0;
     ptr->lineno = 0;
-    return ptr->string = string;
+    RB_OBJ_WRITE(self, &ptr->string, string);
+    return string;
 }
 
 /*
