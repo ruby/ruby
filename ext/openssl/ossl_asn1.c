@@ -509,7 +509,8 @@ ossl_asn1_get_asn1type(VALUE obj)
     ASN1_TYPE *ret;
     VALUE value, rflag;
     void *ptr;
-    void (*free_func)();
+    typedef void free_func_type(void *);
+    free_func_type *free_func;
     int tag;
 
     tag = ossl_asn1_default_tag(obj);
@@ -522,16 +523,16 @@ ossl_asn1_get_asn1type(VALUE obj)
     case V_ASN1_INTEGER:         /* FALLTHROUGH */
     case V_ASN1_ENUMERATED:
 	ptr = obj_to_asn1int(value);
-	free_func = ASN1_INTEGER_free;
+	free_func = (free_func_type *)ASN1_INTEGER_free;
 	break;
     case V_ASN1_BIT_STRING:
         rflag = rb_attr_get(obj, sivUNUSED_BITS);
 	ptr = obj_to_asn1bstr(value, NUM2INT(rflag));
-	free_func = ASN1_BIT_STRING_free;
+	free_func = (free_func_type *)ASN1_BIT_STRING_free;
 	break;
     case V_ASN1_NULL:
 	ptr = obj_to_asn1null(value);
-	free_func = ASN1_NULL_free;
+	free_func = (free_func_type *)ASN1_NULL_free;
 	break;
     case V_ASN1_OCTET_STRING:    /* FALLTHROUGH */
     case V_ASN1_UTF8STRING:      /* FALLTHROUGH */
@@ -546,24 +547,24 @@ ossl_asn1_get_asn1type(VALUE obj)
     case V_ASN1_UNIVERSALSTRING: /* FALLTHROUGH */
     case V_ASN1_BMPSTRING:
 	ptr = obj_to_asn1str(value);
-	free_func = ASN1_STRING_free;
+	free_func = (free_func_type *)ASN1_STRING_free;
 	break;
     case V_ASN1_OBJECT:
 	ptr = obj_to_asn1obj(value);
-	free_func = ASN1_OBJECT_free;
+	free_func = (free_func_type *)ASN1_OBJECT_free;
 	break;
     case V_ASN1_UTCTIME:
 	ptr = obj_to_asn1utime(value);
-	free_func = ASN1_TIME_free;
+	free_func = (free_func_type *)ASN1_TIME_free;
 	break;
     case V_ASN1_GENERALIZEDTIME:
 	ptr = obj_to_asn1gtime(value);
-	free_func = ASN1_TIME_free;
+	free_func = (free_func_type *)ASN1_TIME_free;
 	break;
     case V_ASN1_SET:             /* FALLTHROUGH */
     case V_ASN1_SEQUENCE:
 	ptr = obj_to_asn1derstr(obj);
-	free_func = ASN1_STRING_free;
+	free_func = (free_func_type *)ASN1_STRING_free;
 	break;
     default:
 	ossl_raise(eASN1Error, "unsupported ASN.1 type");
@@ -1522,7 +1523,7 @@ Init_ossl_asn1(void)
      *
      * An Array that stores the name of a given tag number. These names are
      * the same as the name of the tag constant that is additionally defined,
-     * e.g. +UNIVERSAL_TAG_NAME[2] = "INTEGER"+ and +OpenSSL::ASN1::INTEGER = 2+.
+     * e.g. <tt>UNIVERSAL_TAG_NAME[2] = "INTEGER"</tt> and <tt>OpenSSL::ASN1::INTEGER = 2</tt>.
      *
      * == Example usage
      *

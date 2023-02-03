@@ -37,15 +37,15 @@ class Gem::Request::ConnectionPools # :nodoc:
   # Returns list of no_proxy entries (if any) from the environment
 
   def get_no_proxy_from_env
-    env_no_proxy = ENV['no_proxy'] || ENV['NO_PROXY']
+    env_no_proxy = ENV["no_proxy"] || ENV["NO_PROXY"]
 
-    return [] if env_no_proxy.nil? or env_no_proxy.empty?
+    return [] if env_no_proxy.nil? || env_no_proxy.empty?
 
     env_no_proxy.split(/\s*,\s*/)
   end
 
   def https?(uri)
-    uri.scheme.downcase == 'https'
+    uri.scheme.downcase == "https"
   end
 
   def no_proxy?(host, env_no_proxy)
@@ -78,7 +78,7 @@ class Gem::Request::ConnectionPools # :nodoc:
 
     no_proxy = get_no_proxy_from_env
 
-    if proxy_uri and not no_proxy?(hostname, no_proxy)
+    if proxy_uri && !no_proxy?(hostname, no_proxy)
       proxy_hostname = proxy_uri.respond_to?(:hostname) ? proxy_uri.hostname : proxy_uri.host
       net_http_args + [
         proxy_hostname,

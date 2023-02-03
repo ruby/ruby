@@ -20,12 +20,18 @@ describe "BasicObject#instance_eval" do
     a.instance_eval('self').equal?(a).should be_true
   end
 
-  it "expects a block with no arguments" do
-    -> { "hola".instance_eval }.should raise_error(ArgumentError)
+  it "raises an ArgumentError when no arguments and no block are given" do
+    -> { "hola".instance_eval }.should raise_error(ArgumentError, "wrong number of arguments (given 0, expected 1..3)")
   end
 
-  it "takes no arguments with a block" do
-    -> { "hola".instance_eval(4, 5) {|a,b| a + b } }.should raise_error(ArgumentError)
+  it "raises an ArgumentError when a block and normal arguments are given" do
+    -> { "hola".instance_eval(4, 5) {|a,b| a + b } }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 0)")
+  end
+
+  it "raises an ArgumentError when more than 3 arguments are given" do
+    -> {
+      "hola".instance_eval("1 + 1", "some file", 0, "bogus")
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "yields the object to the block" do
@@ -184,5 +190,59 @@ end
     instance_eval "x = :value"
 
     x.should == :value
+  end
+
+  it "converts string argument with #to_str method" do
+    source_code = Object.new
+    def source_code.to_str() "1" end
+
+    a = BasicObject.new
+    a.instance_eval(source_code).should == 1
+  end
+
+  it "raises ArgumentError if returned value is not String" do
+    source_code = Object.new
+    def source_code.to_str() :symbol end
+
+    a = BasicObject.new
+    -> { a.instance_eval(source_code) }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+
+  it "converts filename argument with #to_str method" do
+    filename = Object.new
+    def filename.to_str() "file.rb" end
+
+    err = begin
+            Object.new.instance_eval("raise", filename)
+          rescue => e
+            e
+          end
+    err.backtrace.first.split(":")[0].should == "file.rb"
+  end
+
+  it "raises ArgumentError if returned value is not String" do
+    filename = Object.new
+    def filename.to_str() :symbol end
+
+    -> { Object.new.instance_eval("raise", filename) }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+
+  it "converts lineno argument with #to_int method" do
+    lineno = Object.new
+    def lineno.to_int() 15 end
+
+    err = begin
+            Object.new.instance_eval("raise", "file.rb", lineno)
+          rescue => e
+            e
+          end
+    err.backtrace.first.split(":")[1].should == "15"
+  end
+
+  it "raises ArgumentError if returned value is not Integer" do
+    lineno = Object.new
+    def lineno.to_int() :symbol end
+
+    -> { Object.new.instance_eval("raise", "file.rb", lineno) }.should raise_error(TypeError, /can't convert Object to Integer/)
   end
 end

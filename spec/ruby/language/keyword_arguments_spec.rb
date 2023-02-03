@@ -58,6 +58,24 @@ ruby_version_is "3.0" do
       m(kw: 1).should == []
       -> { m(kw: 1, kw2: 2) }.should raise_error(ArgumentError, 'unknown keyword: :kw2')
       -> { m(kw: 1, true => false) }.should raise_error(ArgumentError, 'unknown keyword: true')
+      -> { m(kw: 1, a: 1, b: 2, c: 3) }.should raise_error(ArgumentError, 'unknown keywords: :a, :b, :c')
+    end
+
+    it "raises ArgumentError exception when required keyword argument is not passed" do
+      def m(a:, b:, c:)
+        [a, b, c]
+      end
+
+      -> { m(a: 1, b: 2) }.should raise_error(ArgumentError, /missing keyword: :c/)
+      -> { m() }.should raise_error(ArgumentError, /missing keywords: :a, :b, :c/)
+    end
+
+    it "raises ArgumentError for missing keyword arguments even if there are extra ones" do
+      def m(a:)
+        a
+      end
+
+      -> { m(b: 1) }.should raise_error(ArgumentError, /missing keyword: :a/)
     end
 
     it "handle * and ** at the same call site" do
@@ -301,6 +319,21 @@ ruby_version_is "3.0" do
 
         m(a: 1).should == [[{a: 1}], {}]
         m({a: 1}).should == [[{a: 1}], {}]
+      end
+
+      ruby_version_is "3.1" do
+        describe "omitted values" do
+          it "accepts short notation 'key' for 'key: value' syntax" do
+            def m(a:, b:)
+              [a, b]
+            end
+
+            a = 1
+            b = 2
+
+            eval('m(a:, b:).should == [1, 2]')
+          end
+        end
       end
 
       ruby_version_is "3.2" do

@@ -27,7 +27,7 @@ test_make(VALUE klass, VALUE num)
     unsigned long i, n = NUM2UINT(num);
 
     for (i = 0; i < n; i++) {
-	test_alloc(klass);
+        test_alloc(klass);
     }
 
     return Qnil;

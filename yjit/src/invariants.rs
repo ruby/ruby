@@ -12,7 +12,6 @@ use crate::yjit::yjit_enabled_p;
 
 use std::collections::{HashMap, HashSet};
 use std::mem;
-use std::os::raw::c_void;
 
 // Invariants to track:
 // assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -25,11 +24,6 @@ use std::os::raw::c_void;
 pub struct Invariants {
     /// Tracks block assumptions about callable method entry validity.
     cme_validity: HashMap<*const rb_callable_method_entry_t, HashSet<BlockRef>>,
-
-    /// Tracks block assumptions about method lookup. Maps a class to a table of
-    /// method ID points to a set of blocks. While a block `b` is in the table,
-    /// b->callee_cme == rb_callable_method_entry(klass, mid).
-    method_lookup: HashMap<VALUE, HashMap<ID, HashSet<BlockRef>>>,
 
     /// A map from a class and its associated basic operator to a set of blocks
     /// that are assuming that that operator is not redefined. This is used for
@@ -69,7 +63,6 @@ impl Invariants {
         unsafe {
             INVARIANTS = Some(Invariants {
                 cme_validity: HashMap::new(),
-                method_lookup: HashMap::new(),
                 basic_operator_blocks: HashMap::new(),
                 block_basic_operators: HashMap::new(),
                 single_ractor: HashSet::new(),
@@ -125,34 +118,39 @@ pub fn assume_bop_not_redefined(
 pub fn assume_method_lookup_stable(
     jit: &mut JITState,
     ocb: &mut OutlinedCb,
-    receiver_klass: VALUE,
     callee_cme: *const rb_callable_method_entry_t,
 ) {
-    // RUBY_ASSERT(rb_callable_method_entry(receiver_klass, cme->called_id) == cme);
-    // RUBY_ASSERT_ALWAYS(RB_TYPE_P(receiver_klass, T_CLASS) || RB_TYPE_P(receiver_klass, T_ICLASS));
-    // RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(receiver_klass));
-
     jit_ensure_block_entry_exit(jit, ocb);
 
     let block = jit.get_block();
     block
         .borrow_mut()
-        .add_cme_dependency(receiver_klass, callee_cme);
+        .add_cme_dependency(callee_cme);
 
     Invariants::get_instance()
         .cme_validity
         .entry(callee_cme)
         .or_default()
-        .insert(block.clone());
-
-    let mid = unsafe { (*callee_cme).called_id };
-    Invariants::get_instance()
-        .method_lookup
-        .entry(receiver_klass)
-        .or_default()
-        .entry(mid)
-        .or_default()
         .insert(block);
+}
+
+// Checks rb_method_basic_definition_p and registers the current block for invalidation if method
+// lookup changes.
+// A "basic method" is one defined during VM boot, so we can use this to check assumptions based on
+// default behavior.
+pub fn assume_method_basic_definition(
+    jit: &mut JITState,
+    ocb: &mut OutlinedCb,
+    klass: VALUE,
+    mid: ID
+    ) -> bool {
+    if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
+        let cme = unsafe { rb_callable_method_entry(klass, mid) };
+        assume_method_lookup_stable(jit, ocb, cme);
+        true
+    } else {
+        false
+    }
 }
 
 /// Tracks that a block is assuming it is operating in single-ractor mode.
@@ -173,57 +171,41 @@ pub fn assume_single_ractor_mode(jit: &mut JITState, ocb: &mut OutlinedCb) -> bo
 /// subsequent opt_setinlinecache and find all of the name components that are
 /// associated with this constant (which correspond to the getconstant
 /// arguments).
-pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb) {
+pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, idlist: *const ID) {
     /// Tracks that a block is assuming that the name component of a constant
     /// has not changed since the last call to this function.
-    unsafe extern "C" fn assume_stable_constant_name(
-        code: *mut VALUE,
-        insn: VALUE,
-        index: u64,
-        data: *mut c_void,
-    ) -> bool {
-        if insn.as_u32() == YARVINSN_opt_setinlinecache {
-            return false;
+    fn assume_stable_constant_name(
+        jit: &mut JITState,
+        id: ID,
+    ) {
+        if id == idNULL as u64 {
+            // Used for :: prefix
+            return;
         }
 
-        if insn.as_u32() == YARVINSN_getconstant {
-            let jit = &mut *(data as *mut JITState);
+        let invariants = Invariants::get_instance();
+        invariants
+            .constant_state_blocks
+            .entry(id)
+            .or_default()
+            .insert(jit.get_block());
+        invariants
+            .block_constant_states
+            .entry(jit.get_block())
+            .or_default()
+            .insert(id);
+    }
 
-            // The first operand to GETCONSTANT is always the ID associated with
-            // the constant lookup. We are grabbing this out in order to
-            // associate this block with the stability of this constant name.
-            let id = code.add(index.as_usize() + 1).read().as_u64() as ID;
 
-            let invariants = Invariants::get_instance();
-            invariants
-                .constant_state_blocks
-                .entry(id)
-                .or_default()
-                .insert(jit.get_block());
-            invariants
-                .block_constant_states
-                .entry(jit.get_block())
-                .or_default()
-                .insert(id);
+    for i in 0.. {
+        match unsafe { *idlist.offset(i) } {
+            0 => break, // End of NULL terminated list
+            id => assume_stable_constant_name(jit, id),
         }
-
-        true
     }
 
     jit_ensure_block_entry_exit(jit, ocb);
 
-    unsafe {
-        let iseq = jit.get_iseq();
-        let encoded = get_iseq_body_iseq_encoded(iseq);
-        let start_index = jit.get_pc().offset_from(encoded);
-
-        rb_iseq_each(
-            iseq,
-            start_index.try_into().unwrap(),
-            Some(assume_stable_constant_name),
-            jit as *mut _ as *mut c_void,
-        );
-    };
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -267,31 +249,6 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
                 incr_counter!(invalidate_method_lookup);
             }
         }
-    });
-}
-
-/// Callback for when rb_callable_method_entry(klass, mid) is going to change.
-/// Invalidate blocks that assume stable method lookup of `mid` in `klass` when this happens.
-/// This needs to be wrapped on the C side with RB_VM_LOCK_ENTER().
-#[no_mangle]
-pub extern "C" fn rb_yjit_method_lookup_change(klass: VALUE, mid: ID) {
-    // If YJIT isn't enabled, do nothing
-    if !yjit_enabled_p() {
-        return;
-    }
-
-    with_vm_lock(src_loc!(), || {
-        Invariants::get_instance()
-            .method_lookup
-            .entry(klass)
-            .and_modify(|deps| {
-                if let Some(deps) = deps.remove(&mid) {
-                    for block in &deps {
-                        invalidate_block_version(block);
-                        incr_counter!(invalidate_method_lookup);
-                    }
-                }
-            });
     });
 }
 
@@ -370,7 +327,7 @@ pub extern "C" fn rb_yjit_root_mark() {
     // Why not let the GC move the cme keys in this table?
     // Because this is basically a compare_by_identity Hash.
     // If a key moves, we would need to reinsert it into the table so it is rehashed.
-    // That is tricky to do, espcially as it could trigger allocation which could
+    // That is tricky to do, especially as it could trigger allocation which could
     // trigger GC. Not sure if it is okay to trigger GC while the GC is updating
     // references.
     //
@@ -385,16 +342,6 @@ pub extern "C" fn rb_yjit_root_mark() {
 
         unsafe { rb_gc_mark(cme) };
     }
-
-    // Mark class and iclass objects
-    for klass in invariants.method_lookup.keys() {
-        // TODO: This is a leak. Unused blocks linger in the table forever, preventing the
-        // callee class they speculate on from being collected.
-        // We could do a bespoke weak reference scheme on classes similar to
-        // the interpreter's call cache. See finalizer for T_CLASS and cc_table_free().
-
-        unsafe { rb_gc_mark(*klass) };
-    }
 }
 
 /// Remove all invariant assumptions made by the block by removing the block as
@@ -408,17 +355,15 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         // For each method lookup dependency
         for dep in block.iter_cme_deps() {
             // Remove tracking for cme validity
-            if let Some(blockset) = invariants.cme_validity.get_mut(&dep.callee_cme) {
+            if let Some(blockset) = invariants.cme_validity.get_mut(dep) {
                 blockset.remove(blockref);
-            }
-
-            // Remove tracking for lookup stability
-            if let Some(id_to_block_set) = invariants.method_lookup.get_mut(&dep.receiver_klass) {
-                let mid = unsafe { (*dep.callee_cme).called_id };
-                if let Some(block_set) = id_to_block_set.get_mut(&mid) {
-                    block_set.remove(&blockref);
+                if blockset.is_empty() {
+                    invariants.cme_validity.remove(dep);
                 }
             }
+        }
+        if invariants.cme_validity.is_empty() {
+            invariants.cme_validity.shrink_to_fit();
         }
     }
 
@@ -430,19 +375,41 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
         for key in &bops {
             if let Some(blocks) = invariants.basic_operator_blocks.get_mut(key) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.basic_operator_blocks.remove(key);
+                }
             }
         }
     }
+    if invariants.block_basic_operators.is_empty() {
+        invariants.block_basic_operators.shrink_to_fit();
+    }
+    if invariants.basic_operator_blocks.is_empty() {
+        invariants.basic_operator_blocks.shrink_to_fit();
+    }
 
+    // Remove tracking for blocks assuming single ractor mode
     invariants.single_ractor.remove(&blockref);
+    if invariants.single_ractor.is_empty() {
+        invariants.single_ractor.shrink_to_fit();
+    }
 
     // Remove tracking for constant state for a given ID.
     if let Some(ids) = invariants.block_constant_states.remove(&blockref) {
         for id in ids {
             if let Some(blocks) = invariants.constant_state_blocks.get_mut(&id) {
                 blocks.remove(&blockref);
+                if blocks.is_empty() {
+                    invariants.constant_state_blocks.remove(&id);
+                }
             }
         }
+    }
+    if invariants.block_constant_states.is_empty() {
+        invariants.block_constant_states.shrink_to_fit();
+    }
+    if invariants.constant_state_blocks.is_empty() {
+        invariants.constant_state_blocks.shrink_to_fit();
     }
 }
 
@@ -450,7 +417,7 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
-pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
+pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u32) {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
@@ -464,34 +431,33 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
 
     with_vm_lock(src_loc!(), || {
         let code = unsafe { get_iseq_body_iseq_encoded(iseq) };
-        let get_insn_idx = unsafe { (*ic).get_insn_idx };
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
-        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED as usize)) } != VALUE(0));
-        assert!(get_insn_idx < unsafe { get_iseq_encoded_size(iseq) });
+        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
+        assert!(insn_idx < unsafe { get_iseq_encoded_size(iseq) });
 
-        // Ensure that the instruction the get_insn_idx is pointing to is in
-        // fact a opt_getinlinecache instruction.
+        // Ensure that the instruction the insn_idx is pointing to is in
+        // fact a opt_getconstant_path instruction.
         assert_eq!(
             unsafe {
-                let opcode_pc = code.add(get_insn_idx.as_usize());
+                let opcode_pc = code.add(insn_idx.as_usize());
                 let translated_opcode: VALUE = opcode_pc.read();
                 rb_vm_insn_decode(translated_opcode)
             },
-            YARVINSN_opt_getinlinecache.try_into().unwrap()
+            YARVINSN_opt_getconstant_path.try_into().unwrap()
         );
 
         // Find the matching opt_getinlinecache and invalidate all the blocks there
         // RUBY_ASSERT(insn_op_type(BIN(opt_getinlinecache), 1) == TS_IC);
 
-        let ic_pc = unsafe { code.add(get_insn_idx.as_usize() + 2) };
+        let ic_pc = unsafe { code.add(insn_idx.as_usize() + 1) };
         let ic_operand: IC = unsafe { ic_pc.read() }.as_mut_ptr();
 
         if ic == ic_operand {
             for block in take_version_list(BlockId {
                 iseq,
-                idx: get_insn_idx,
+                idx: insn_idx,
             }) {
                 invalidate_block_version(&block);
                 incr_counter!(invalidate_constant_ic_fill);
@@ -528,48 +494,59 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         return;
     }
 
-    use crate::asm::x86_64::jmp_ptr;
-
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
-        unsafe { rb_yjit_for_each_iseq(Some(invalidate_all_blocks_for_tracing)) };
-
-        extern "C" fn invalidate_all_blocks_for_tracing(iseq: IseqPtr) {
-            if let Some(payload) = unsafe { load_iseq_payload(iseq) } {
-                // C comment:
-                //   Leaking the blocks for now since we might have situations where
-                //   a different ractor is waiting for the VM lock in branch_stub_hit().
-                //   If we free the block that ractor can wake up with a dangling block.
-                //
-                // Deviation: since we ref count the the blocks now, we might be deallocating and
-                //   not leak the block.
-                //
-                // Empty all blocks on the iseq so we don't compile new blocks that jump to the
-                // invalidated region.
+        let mut on_stack_iseqs = HashSet::new();
+        for_each_on_stack_iseq(|iseq| {
+            on_stack_iseqs.insert(iseq);
+        });
+        for_each_iseq(|iseq| {
+            if let Some(payload) = get_iseq_payload(iseq) {
                 let blocks = payload.take_all_blocks();
-                for blockref in blocks {
-                    block_assumptions_free(&blockref);
+
+                if on_stack_iseqs.contains(&iseq) {
+                    // This ISEQ is running, so we can't free blocks immediately
+                    for block in blocks {
+                        delayed_deallocation(&block);
+                    }
+                    payload.dead_blocks.shrink_to_fit();
+                } else {
+                    // Safe to free dead blocks since the ISEQ isn't running
+                    for block in blocks {
+                        free_block(&block);
+                    }
+                    mem::take(&mut payload.dead_blocks)
+                        .iter()
+                        .for_each(free_block);
                 }
             }
 
             // Reset output code entry point
             unsafe { rb_iseq_reset_jit_func(iseq) };
-        }
+        });
 
         let cb = CodegenGlobals::get_inline_cb();
 
         // Apply patches
         let old_pos = cb.get_write_pos();
-        let patches = CodegenGlobals::take_global_inval_patches();
+        let old_dropped_bytes = cb.has_dropped_bytes();
+        let mut patches = CodegenGlobals::take_global_inval_patches();
+        patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr());
+        let mut last_patch_end = std::ptr::null();
         for patch in &patches {
-            cb.set_write_ptr(patch.inline_patch_pos);
-            jmp_ptr(cb, patch.outlined_target_pos);
+            assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(), "patches should not overlap");
 
-            // FIXME: Can't easily check we actually wrote out the JMP at the moment.
-            // assert!(!cb.has_dropped_bytes(), "patches should have space and jump offsets should fit in JMP rel32");
+            let mut asm = crate::backend::ir::Assembler::new();
+            asm.jmp(patch.outlined_target_pos.as_side_exit());
+
+            cb.set_write_ptr(patch.inline_patch_pos);
+            cb.set_dropped_bytes(false);
+            asm.compile(cb);
+            last_patch_end = cb.get_write_ptr().raw_ptr();
         }
         cb.set_pos(old_pos);
+        cb.set_dropped_bytes(old_dropped_bytes);
 
         // Freeze invalidated part of the codepage. We only want to wait for
         // running instances of the code to exit from now on, so we shouldn't

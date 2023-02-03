@@ -136,8 +136,8 @@ module Gem
       "Found %s (%s), but was for platform%s %s" %
         [@name,
          @version,
-         @platforms.size == 1 ? '' : 's',
-         @platforms.join(' ,')]
+         @platforms.size == 1 ? "" : "s",
+         @platforms.join(" ,")]
     end
   end
 
@@ -168,7 +168,7 @@ module Gem
     # An English description of the error.
 
     def wordy
-      "Unable to download data from #{Gem::Uri.new(@source.uri).redacted} - #{@error.message}"
+      "Unable to download data from #{Gem::Uri.redact(@source.uri)} - #{@error.message}"
     end
 
     ##

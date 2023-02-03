@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/list_command'
+require_relative "helper"
+require "rubygems/commands/list_command"
 
 class TestGemCommandsListCommand < Gem::TestCase
   def setup
@@ -9,7 +9,7 @@ class TestGemCommandsListCommand < Gem::TestCase
     @cmd = Gem::Commands::ListCommand.new
 
     spec_fetcher do |fetcher|
-      fetcher.spec 'c', 1
+      fetcher.spec "c", 1
     end
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
@@ -27,6 +27,6 @@ class TestGemCommandsListCommand < Gem::TestCase
     end
 
     assert_equal "true\n", @ui.output
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 end

@@ -106,13 +106,15 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
     vm->ractor.sync.lock_rec++;
     *lev = vm->ractor.sync.lock_rec;
 
-    RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%d", vm->ractor.sync.lock_rec, rb_ractor_id(vm->ractor.sync.lock_owner));
+    RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u", vm->ractor.sync.lock_rec,
+                    (unsigned int)rb_ractor_id(vm->ractor.sync.lock_owner));
 }
 
 static void
 vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
 {
-    RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%d", vm->ractor.sync.lock_rec, rb_ractor_id(vm->ractor.sync.lock_owner));
+    RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u", vm->ractor.sync.lock_rec,
+                    (unsigned int)rb_ractor_id(vm->ractor.sync.lock_owner));
 
     ASSERT_vm_locking();
     VM_ASSERT(vm->ractor.sync.lock_rec > 0);

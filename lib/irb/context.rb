@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 require_relative "workspace"
 require_relative "inspector"
 require_relative "input-method"
@@ -22,7 +17,7 @@ module IRB
     #
     # The optional +input_method+ argument:
     #
-    # +nil+::     uses stdin or Reidline or Readline
+    # +nil+::     uses stdin or Reline or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil)
@@ -32,7 +27,7 @@ module IRB
       else
         @workspace = WorkSpace.new
       end
-      @thread = Thread.current if defined? Thread
+      @thread = Thread.current
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
@@ -48,12 +43,19 @@ module IRB
       end
       if IRB.conf.has_key?(:USE_MULTILINE)
         @use_multiline = IRB.conf[:USE_MULTILINE]
-      elsif IRB.conf.has_key?(:USE_REIDLINE) # backward compatibility
+      elsif IRB.conf.has_key?(:USE_RELINE) # backward compatibility
+        warn <<~MSG.strip
+          USE_RELINE is deprecated, please use USE_MULTILINE instead.
+        MSG
+        @use_multiline = IRB.conf[:USE_RELINE]
+      elsif IRB.conf.has_key?(:USE_REIDLINE)
+        warn <<~MSG.strip
+          USE_REIDLINE is deprecated, please use USE_MULTILINE instead.
+        MSG
         @use_multiline = IRB.conf[:USE_REIDLINE]
       else
         @use_multiline = nil
       end
-      @use_colorize = IRB.conf[:USE_COLORIZE]
       @use_autocomplete = IRB.conf[:USE_AUTOCOMPLETE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
@@ -84,14 +86,14 @@ module IRB
         when nil
           if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
-            @io = ReidlineInputMethod.new
+            @io = RelineInputMethod.new
           else
             @io = nil
           end
         when false
           @io = nil
         when true
-          @io = ReidlineInputMethod.new
+          @io = RelineInputMethod.new
         end
         unless @io
           case use_singleline?
@@ -116,6 +118,10 @@ module IRB
         end
         @io = StdioInputMethod.new unless @io
 
+      when '-'
+        @io = FileInputMethod.new($stdin)
+        @irb_name = '-'
+        @irb_path = '-'
       when String
         @io = FileInputMethod.new(input_method)
         @irb_name = File.basename(input_method)
@@ -141,6 +147,8 @@ module IRB
       if @newline_before_multiline_output.nil?
         @newline_before_multiline_output = true
       end
+
+      @command_aliases = IRB.conf[:COMMAND_ALIASES]
     end
 
     # The top-level workspace, see WorkSpace#main
@@ -157,7 +165,7 @@ module IRB
     # The current input method.
     #
     # Can be either StdioInputMethod, ReadlineInputMethod,
-    # ReidlineInputMethod, FileInputMethod or other specified when the
+    # RelineInputMethod, FileInputMethod or other specified when the
     # context is created. See ::new for more # information on +input_method+.
     attr_accessor :io
 
@@ -186,8 +194,6 @@ module IRB
     attr_reader :use_singleline
     # Whether colorization is enabled or not.
     #
-    # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
-    attr_reader :use_colorize
     # A copy of the default <code>IRB.conf[:USE_AUTOCOMPLETE]</code>
     attr_reader :use_autocomplete
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
@@ -320,20 +326,21 @@ module IRB
     # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
+    # User-defined IRB command aliases
+    attr_accessor :command_aliases
+
     # Alias for #use_multiline
     alias use_multiline? use_multiline
     # Alias for #use_singleline
     alias use_singleline? use_singleline
     # backward compatibility
-    alias use_reidline use_multiline
+    alias use_reline use_multiline
     # backward compatibility
-    alias use_reidline? use_multiline
+    alias use_reline? use_multiline
     # backward compatibility
     alias use_readline use_singleline
     # backward compatibility
     alias use_readline? use_singleline
-    # Alias for #use_colorize
-    alias use_colorize? use_colorize
     # Alias for #use_autocomplete
     alias use_autocomplete? use_autocomplete
     # Alias for #rc
@@ -347,7 +354,7 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-        if @io.kind_of?(ReidlineInputMethod)
+        if @io.kind_of?(RelineInputMethod)
           false
         elsif defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
           false
@@ -362,11 +369,11 @@ module IRB
     end
 
     # Whether #verbose? is +true+, and +input_method+ is either
-    # StdioInputMethod or ReidlineInputMethod or ReadlineInputMethod, see #io
+    # StdioInputMethod or RelineInputMethod or ReadlineInputMethod, see #io
     # for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-                   @io.kind_of?(ReidlineInputMethod) ||
+                   @io.kind_of?(RelineInputMethod) ||
                    (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
@@ -473,6 +480,20 @@ module IRB
         line = "begin ::Kernel.raise _; rescue _.class\n#{line}\n""end"
         @workspace.local_variable_set(:_, exception)
       end
+
+      # Transform a non-identifier alias (@, $) or keywords (next, break)
+      command, args = line.split(/\s/, 2)
+      if original = command_aliases[command.to_sym]
+        line = line.gsub(/\A#{Regexp.escape(command)}/, original.to_s)
+        command = original
+      end
+
+      # Hook command-specific transformation
+      command_class = ExtendCommandBundle.load_command(command)
+      if command_class&.respond_to?(:transform_args)
+        line = "#{command} #{command_class.transform_args(args)}"
+      end
+
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
     end
 
@@ -514,5 +535,21 @@ module IRB
     end
     alias __to_s__ to_s
     alias to_s inspect
+
+    def local_variables # :nodoc:
+      workspace.binding.local_variables
+    end
+
+    # Return true if it's aliased from the argument and it's not an identifier.
+    def symbol_alias?(command)
+      return nil if command.match?(/\A\w+\z/)
+      command_aliases.key?(command.to_sym)
+    end
+
+    # Return true if the command supports transforming args
+    def transform_args?(command)
+      command = command_aliases.fetch(command.to_sym, command)
+      ExtendCommandBundle.load_command(command)&.respond_to?(:transform_args)
+    end
   end
 end

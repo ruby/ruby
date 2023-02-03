@@ -55,6 +55,11 @@ describe "Integer#fdiv" do
     num.fdiv(den).should == -0.5555555555555556
   end
 
+  it "rounds to the correct float for bignum denominators" do
+    1.fdiv(10**324).should == 0.0
+    1.fdiv(10**323).should == 1.0e-323
+  end
+
   it "performs floating-point division between self and a Float" do
     8.fdiv(9.0).should be_close(0.888888888888889, TOLERANCE)
   end

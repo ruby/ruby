@@ -5,17 +5,26 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   checks:
+    permissions:
+      contents: write  # for Git to git push
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
       - name: Check if C-sources are US-ASCII
         run: |
-          ! grep -r -n '[^	 -~]' *.[chy] include internal win32/*.[ch]
+          ! grep -r -n '[^	 -~]' -- *.[chy] include internal win32/*.[ch]
       - name: Check for trailing spaces
         run: |
-          ! git grep -n '[	 ]$' '*.rb' '*.[chy]'
+          ! git grep -n '[	 ]$' -- '*.rb' '*.[chy]' '*.rs'
+          ! git grep -n '^[	 ][	 ]*$' -- '*.md'
+      - name: Check for bash specific substitution in configure.ac
+        run: |
+          ! git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac
       - name: Check for header macros
         run: |
           ! for header in ruby/*.h; do \
@@ -23,7 +32,7 @@ jobs:
           done | grep -F .
         working-directory: include
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: .downloaded-cache
           key: downloaded-cache-${{ github.sha }}
@@ -39,6 +48,7 @@ jobs:
 
       - name: Make default gems list
         run: |
+          #!ruby
           require 'rubygems'
           $:.unshift "lib"
           rgver = File.foreach("lib/rubygems.rb") do |line|
@@ -56,29 +66,7 @@ jobs:
 
       - name: Maintain updated gems list in NEWS
         run: |
-          require 'json'
-          news = File.read("NEWS.md")
-          prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
-          prevs = [prev, prev.sub(/\.\d+\z/, '')]
-          %W[default].each do |type|
-            last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
-              v = g['versions'].values_at(*prevs).compact.first
-              g = g['gem']
-              g = 'RubyGems' if g == 'rubygems'
-              [g, v] if v
-            end.to_h
-            changed = File.foreach("gems/#{type}_gems").filter_map do |l|
-              next if l.start_with?("#")
-              g, v = l.split(" ", 3)
-              [g, v] unless last[g] == v
-            end
-            news.sub!(/^\*( +)The following #{type} gems? are updated\.\n\K(?: \1\* .*\n)*/) do
-              mark = "#{$1} * "
-              changed.map {|g, v|"#{mark}#{g} #{v}\n"}.join("")
-            end or next
-            File.write("NEWS.md", news)
-          end
-        shell: ruby {0}
+          ruby tool/update-NEWS-gemlist.rb default
 
       - name: Check diffs
         id: diff
@@ -95,3 +83,17 @@ jobs:
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
         if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}

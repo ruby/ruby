@@ -13,6 +13,7 @@
 #include "internal/variable.h"
 #include "internal/compile.h"
 #include "internal/class.h"
+#include "internal/fixnum.h"
 #include "gc.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -26,6 +27,7 @@
 #include "probes_helper.h"
 #include "iseq.h"
 #include "ruby/debug.h"
+#include "internal/cont.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -34,6 +36,12 @@
 #endif
 
 #include <errno.h>
+
+// Field offsets for the RString struct
+enum rstring_offsets {
+    RUBY_OFFSET_RSTRING_AS_HEAP_LEN = offsetof(struct RString, as.heap.len),
+    RUBY_OFFSET_RSTRING_EMBED_LEN = offsetof(struct RString, as.embed.len),
+};
 
 // We need size_t to have a known size to simplify code generation and FFI.
 // TODO(alan): check this in configure.ac to fail fast on 32 bit platforms.
@@ -64,19 +72,55 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 bool
 rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 {
-    if (mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE)) {
-        return false;
-    }
-    return true;
+    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
 }
 
 void
 rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 {
+    // Do not call mprotect when mem_size is zero. Some platforms may return
+    // an error for it. https://github.com/Shopify/ruby/issues/450
+    if (mem_size == 0) {
+        return;
+    }
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+}
+
+// Free the specified memory block.
+bool
+rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
+{
+    // On Linux, you need to use madvise MADV_DONTNEED to free memory.
+    // We might not need to call this on macOS, but it's not really documented.
+    // We generally prefer to do the same thing on both to ease testing too.
+    madvise(mem_block, mem_size, MADV_DONTNEED);
+
+    // On macOS, mprotect PROT_NONE seems to reduce RSS.
+    // We also call this on Linux to avoid executing unused pages.
+    return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+}
+
+long
+rb_yjit_array_len(VALUE a)
+{
+    return rb_array_len(a);
+}
+
+// `start` is inclusive and `end` is exclusive.
+void
+rb_yjit_icache_invalidate(void *start, void *end)
+{
+    // Clear/invalidate the instruction cache. Compiles to nothing on x86_64
+    // but required on ARM before running freshly written code.
+    // On Darwin it's the same as calling sys_icache_invalidate().
+#ifdef __GNUC__
+    __builtin___clear_cache(start, end);
+#elif defined(__aarch64__)
+#error No instruction cache clear available with this compiler on Aarch64!
+#endif
 }
 
 # define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
@@ -90,7 +134,8 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
 
     if (RTEST(rb_hash_aref(hash, frame_id))) {
         return;
-    } else {
+    }
+    else {
         VALUE frame_info = rb_hash_new();
         // Full label for the frame
         VALUE name = rb_profile_frame_full_label(frame);
@@ -106,6 +151,10 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
 
         rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
         rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("total_samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("edges")), rb_hash_new());
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("lines")), rb_hash_new());
 
         if (line != INT2FIX(0)) {
             rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
@@ -270,6 +319,10 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
         perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
         rb_bug("mmap failed");
     }
 
@@ -362,6 +415,9 @@ rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
     iseq->body->jit_func = NULL;
+    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
+    // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
+    iseq->body->total_calls = 0;
 }
 
 // Get the PC for a given index in an iseq
@@ -391,6 +447,26 @@ VALUE
 rb_str_bytesize(VALUE str)
 {
     return LONG2NUM(RSTRING_LEN(str));
+}
+
+unsigned long
+rb_RSTRING_LEN(VALUE str)
+{
+    return RSTRING_LEN(str);
+}
+
+char *
+rb_RSTRING_PTR(VALUE str)
+{
+    return RSTRING_PTR(str);
+}
+
+rb_proc_t *
+rb_yjit_get_proc_ptr(VALUE procv)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procv, proc);
+    return proc;
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -448,61 +524,67 @@ rb_get_cikw_keywords_idx(const struct rb_callinfo_kwarg *cikw, int idx)
 }
 
 rb_method_visibility_t
-rb_METHOD_ENTRY_VISI(rb_callable_method_entry_t *me)
+rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
 {
     return METHOD_ENTRY_VISI(me);
 }
 
 rb_method_type_t
-rb_get_cme_def_type(rb_callable_method_entry_t *cme)
+rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
-    return cme->def->type;
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
+        return VM_METHOD_TYPE_UNDEF;
+    } else {
+        return cme->def->type;
+    }
 }
 
 ID
-rb_get_cme_def_body_attr_id(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.attr.id;
 }
 
+ID rb_get_symbol_id(VALUE namep);
+
 enum method_optimized_type
-rb_get_cme_def_body_optimized_type(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.optimized.type;
 }
 
 unsigned int
-rb_get_cme_def_body_optimized_index(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_optimized_index(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.optimized.index;
 }
 
 rb_method_cfunc_t *
-rb_get_cme_def_body_cfunc(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_cfunc(const rb_callable_method_entry_t *cme)
 {
     return UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 }
 
 uintptr_t
-rb_get_def_method_serial(rb_method_definition_t *def)
+rb_get_def_method_serial(const rb_method_definition_t *def)
 {
     return def->method_serial;
 }
 
 ID
-rb_get_def_original_id(rb_method_definition_t *def)
+rb_get_def_original_id(const rb_method_definition_t *def)
 {
     return def->original_id;
 }
 
 int
-rb_get_mct_argc(rb_method_cfunc_t *mct)
+rb_get_mct_argc(const rb_method_cfunc_t *mct)
 {
     return mct->argc;
 }
 
 void *
-rb_get_mct_func(rb_method_cfunc_t *mct)
+rb_get_mct_func(const rb_method_cfunc_t *mct)
 {
     return (void*)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
@@ -513,107 +595,147 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
     return def_iseq_ptr(def);
 }
 
-rb_iseq_t *
-rb_get_iseq_body_local_iseq(rb_iseq_t  *iseq)
+VALUE
+rb_get_def_bmethod_proc(rb_method_definition_t *def)
+{
+    RUBY_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD);
+    return def->body.bmethod.proc;
+}
+
+const rb_iseq_t *
+rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
     return iseq->body->local_iseq;
 }
 
+const rb_iseq_t *
+rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
+{
+    return iseq->body->parent_iseq;
+}
+
 unsigned int
-rb_get_iseq_body_local_table_size(rb_iseq_t *iseq)
+rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
     return iseq->body->local_table_size;
 }
 
 VALUE *
-rb_get_iseq_body_iseq_encoded(rb_iseq_t *iseq)
+rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
 {
     return iseq->body->iseq_encoded;
 }
 
 bool
-rb_get_iseq_body_builtin_inline_p(rb_iseq_t *iseq)
+rb_get_iseq_body_builtin_inline_p(const rb_iseq_t *iseq)
 {
     return iseq->body->builtin_inline_p;
 }
 
 unsigned
-rb_get_iseq_body_stack_max(rb_iseq_t *iseq)
+rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
     return iseq->body->stack_max;
 }
 
 bool
-rb_get_iseq_flags_has_opt(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_lead;
+}
+
+bool
+rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt;
 }
 
 bool
-rb_get_iseq_flags_has_kw(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_kw;
 }
 
 bool
-rb_get_iseq_flags_has_post(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_post;
 }
 
 bool
-rb_get_iseq_flags_has_kwrest(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_kwrest;
 }
 
 bool
-rb_get_iseq_flags_has_rest(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
 }
 
 bool
-rb_get_iseq_flags_has_block(rb_iseq_t *iseq)
+rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ruby2_keywords;
+}
+
+bool
+rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_block;
 }
 
 bool
-rb_get_iseq_flags_has_accepts_no_kwarg(rb_iseq_t *iseq)
+rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ambiguous_param0;
+}
+
+bool
+rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.accepts_no_kwarg;
 }
 
 const rb_seq_param_keyword_struct *
-rb_get_iseq_body_param_keyword(rb_iseq_t *iseq)
+rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
     return iseq->body->param.keyword;
 }
 
 unsigned
-rb_get_iseq_body_param_size(rb_iseq_t *iseq)
+rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
 {
     return iseq->body->param.size;
 }
 
 int
-rb_get_iseq_body_param_lead_num(rb_iseq_t *iseq)
+rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
 {
     return iseq->body->param.lead_num;
 }
 
 int
-rb_get_iseq_body_param_opt_num(rb_iseq_t *iseq)
+rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
 {
     return iseq->body->param.opt_num;
 }
 
 const VALUE *
-rb_get_iseq_body_param_opt_table(rb_iseq_t *iseq)
+rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 {
     return iseq->body->param.opt_table;
 }
+
+VALUE
+rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+{
+    rb_proc_t *proc;
+    GetProcPtr(recv, proc);
+    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
+}
+
 
 // If true, the iseq is leaf and it can be replaced by a single C call.
 bool
@@ -645,7 +767,7 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
 }
 
 struct rb_control_frame_struct *
-rb_get_ec_cfp(rb_execution_context_t *ec)
+rb_get_ec_cfp(const rb_execution_context_t *ec)
 {
     return ec->cfp;
 }
@@ -693,6 +815,17 @@ rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
     return (VALUE*)cfp->ep;
 }
 
+const VALUE *
+rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
+{
+    uint32_t i;
+    const VALUE *ep = (VALUE*)cfp->ep;
+    for (i = 0; i < lv; i++) {
+        ep = VM_ENV_PREV_EP(ep);
+    }
+    return ep;
+}
+
 VALUE
 rb_yarv_class_of(VALUE obj)
 {
@@ -712,6 +845,12 @@ VALUE
 rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
+}
+
+VALUE
+rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mod_fix(recv, obj);
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes
@@ -762,7 +901,7 @@ rb_RSTRUCT_SET(VALUE st, int k, VALUE v)
 }
 
 const struct rb_callinfo *
-rb_get_call_data_ci(struct rb_call_data *cd)
+rb_get_call_data_ci(const struct rb_call_data *cd)
 {
     return cd->ci;
 }
@@ -813,13 +952,17 @@ rb_assert_cme_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 
-typedef void (*iseq_callback)(const rb_iseq_t *);
+// Used for passing a callback and other data over rb_objspace_each_objects
+struct iseq_callback_data {
+    rb_iseq_callback callback;
+    void *data;
+};
 
 // Heap-walking callback for rb_yjit_for_each_iseq().
 static int
 for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    const iseq_callback callback = (iseq_callback)data;
+    const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
@@ -827,7 +970,7 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 
         if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
-            callback(iseq);
+            callback_data->callback(iseq, callback_data->data);
         }
 
         asan_poison_object_if(ptr, v);
@@ -838,9 +981,10 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 // Iterate through the whole GC heap and invoke a callback for each iseq.
 // Used for global code invalidation.
 void
-rb_yjit_for_each_iseq(iseq_callback callback)
+rb_yjit_for_each_iseq(rb_iseq_callback callback, void *data)
 {
-    rb_objspace_each_objects(for_each_iseq_i, (void *)callback);
+    struct iseq_callback_data callback_data = { .callback = callback, .data = data };
+    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
 // For running write barriers from Rust. Required when we add a new edge in the
@@ -939,6 +1083,14 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
     // method caches, so we do nothing here for now.
 }
 
+// Number of object shapes, which might be useful for investigating YJIT exit reasons.
+static VALUE
+object_shape_count(rb_execution_context_t *ec, VALUE self)
+{
+    // next_shape_id starts from 0, so it's the same as the count
+    return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
@@ -946,6 +1098,7 @@ VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
+VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 

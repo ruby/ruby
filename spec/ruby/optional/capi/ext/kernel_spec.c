@@ -112,6 +112,10 @@ VALUE kernel_spec_rb_eval_string(VALUE self, VALUE str) {
   return rb_eval_string(RSTRING_PTR(str));
 }
 
+VALUE kernel_spec_rb_eval_cmd_kw(VALUE self, VALUE cmd, VALUE args, VALUE kw_splat) {
+  return rb_eval_cmd_kw(cmd, args, NUM2INT(kw_splat));
+}
+
 VALUE kernel_spec_rb_raise(VALUE self, VALUE hash) {
   rb_hash_aset(hash, ID2SYM(rb_intern("stage")), ID2SYM(rb_intern("before")));
   if (self != Qundef)
@@ -361,6 +365,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_frame_this_func_test_again", kernel_spec_rb_frame_this_func, 0);
   rb_define_method(cls, "rb_ensure", kernel_spec_rb_ensure, 4);
   rb_define_method(cls, "rb_eval_string", kernel_spec_rb_eval_string, 1);
+  rb_define_method(cls, "rb_eval_cmd_kw", kernel_spec_rb_eval_cmd_kw, 3);
   rb_define_method(cls, "rb_raise", kernel_spec_rb_raise, 1);
   rb_define_method(cls, "rb_throw", kernel_spec_rb_throw, 1);
   rb_define_method(cls, "rb_throw_obj", kernel_spec_rb_throw_obj, 2);

@@ -1,8 +1,6 @@
 # frozen_string_literal: false
 #
 #   irb/completion.rb -
-#   	$Release Version: 0.9$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       From Original Idea of shugo@ruby-lang.org
 #
@@ -11,7 +9,29 @@ require_relative 'ruby-lex'
 
 module IRB
   module InputCompletor # :nodoc:
+    using Module.new {
+      refine ::Binding do
+        def eval_methods
+          ::Kernel.instance_method(:methods).bind(eval("self")).call
+        end
 
+        def eval_private_methods
+          ::Kernel.instance_method(:private_methods).bind(eval("self")).call
+        end
+
+        def eval_instance_variables
+          ::Kernel.instance_method(:instance_variables).bind(eval("self")).call
+        end
+
+        def eval_global_variables
+          ::Kernel.instance_method(:global_variables).bind(eval("self")).call
+        end
+
+        def eval_class_constants
+          ::Module.instance_method(:constants).bind(eval("self.class")).call
+        end
+      end
+    }
 
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
@@ -42,25 +62,34 @@ module IRB
       if File.respond_to?(:absolute_path?)
         File.absolute_path?(p)
       else
-        if File.absolute_path(p) == p
-          true
-        else
-          false
-        end
+        File.absolute_path(p) == p
       end
     end
 
+    GEM_PATHS =
+      if defined?(Gem::Specification)
+        Gem::Specification.latest_specs(true).map { |s|
+          s.require_paths.map { |p|
+            if absolute_path?(p)
+              p
+            else
+              File.join(s.full_gem_path, p)
+            end
+          }
+        }.flatten
+      else
+        []
+      end.freeze
+
     def self.retrieve_gem_and_system_load_path
-      gem_paths = Gem::Specification.latest_specs(true).map { |s|
-        s.require_paths.map { |p|
-          if absolute_path?(p)
-            p
-          else
-            File.join(s.full_gem_path, p)
-          end
-        }
-      }.flatten if defined?(Gem::Specification)
-      (gem_paths.to_a | $LOAD_PATH).sort
+      candidates = (GEM_PATHS | $LOAD_PATH)
+      candidates.map do |p|
+        if p.respond_to?(:to_path)
+          p.to_path
+        else
+          String(p) rescue nil
+        end
+      end.compact.sort
     end
 
     def self.retrieve_files_to_require_from_load_path
@@ -142,10 +171,10 @@ module IRB
         receiver = $1
         message = $3
 
-        candidates = String.instance_methods.collect{|m| m.to_s}
         if doc_namespace
           "String.#{message}"
         else
+          candidates = String.instance_methods.collect{|m| m.to_s}
           select_message(receiver, message, candidates)
         end
 
@@ -154,10 +183,10 @@ module IRB
         receiver = $1
         message = $2
 
-        candidates = Regexp.instance_methods.collect{|m| m.to_s}
         if doc_namespace
           "Regexp.#{message}"
         else
+          candidates = Regexp.instance_methods.collect{|m| m.to_s}
           select_message(receiver, message, candidates)
         end
 
@@ -166,10 +195,10 @@ module IRB
         receiver = $1
         message = $2
 
-        candidates = Array.instance_methods.collect{|m| m.to_s}
         if doc_namespace
           "Array.#{message}"
         else
+          candidates = Array.instance_methods.collect{|m| m.to_s}
           select_message(receiver, message, candidates)
         end
 
@@ -178,29 +207,33 @@ module IRB
         receiver = $1
         message = $2
 
-        proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
-        hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
         if doc_namespace
           ["Proc.#{message}", "Hash.#{message}"]
         else
+          proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
+          hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
           select_message(receiver, message, proc_candidates | hash_candidates)
         end
 
       when /^(:[^:.]*)$/
         # Symbol
-        return nil if doc_namespace
-        sym = $1
-        candidates = Symbol.all_symbols.collect do |s|
-          ":" + s.id2name.encode(Encoding.default_external)
-        rescue EncodingError
-          # ignore
+        if doc_namespace
+          nil
+        else
+          sym = $1
+          candidates = Symbol.all_symbols.collect do |s|
+            ":" + s.id2name.encode(Encoding.default_external)
+          rescue EncodingError
+            # ignore
+          end
+          candidates.grep(/^#{Regexp.quote(sym)}/)
         end
-        candidates.grep(/^#{Regexp.quote(sym)}/)
-
       when /^::([A-Z][^:\.\(\)]*)$/
         # Absolute Constant or class methods
         receiver = $1
+
         candidates = Object.constants.collect{|m| m.to_s}
+
         if doc_namespace
           candidates.find { |i| i == receiver }
         else
@@ -211,16 +244,18 @@ module IRB
         # Constant or class methods
         receiver = $1
         message = $2
-        begin
-          candidates = eval("#{receiver}.constants.collect{|m| m.to_s}", bind)
-          candidates |= eval("#{receiver}.methods.collect{|m| m.to_s}", bind)
-        rescue Exception
-          candidates = []
-        end
+
         if doc_namespace
           "#{receiver}::#{message}"
         else
-          select_message(receiver, message, candidates, "::")
+          begin
+            candidates = eval("#{receiver}.constants.collect{|m| m.to_s}", bind)
+            candidates |= eval("#{receiver}.methods.collect{|m| m.to_s}", bind)
+          rescue Exception
+            candidates = []
+          end
+
+          select_message(receiver, message, candidates.sort, "::")
         end
 
       when /^(:[^:.]+)(\.|::)([^.]*)$/
@@ -229,10 +264,10 @@ module IRB
         sep = $2
         message = $3
 
-        candidates = Symbol.instance_methods.collect{|m| m.to_s}
         if doc_namespace
           "Symbol.#{message}"
         else
+          candidates = Symbol.instance_methods.collect{|m| m.to_s}
           select_message(receiver, message, candidates, sep)
         end
 
@@ -244,6 +279,7 @@ module IRB
 
         begin
           instance = eval(receiver, bind)
+
           if doc_namespace
             "#{instance.class.name}.#{message}"
           else
@@ -254,7 +290,7 @@ module IRB
           if doc_namespace
             nil
           else
-            candidates = []
+            []
           end
         end
 
@@ -276,7 +312,7 @@ module IRB
           if doc_namespace
             nil
           else
-            candidates = []
+            []
           end
         end
 
@@ -284,6 +320,7 @@ module IRB
         # global var
         gvar = $1
         all_gvars = global_variables.collect{|m| m.to_s}
+
         if doc_namespace
           all_gvars.find{ |i| i == gvar }
         else
@@ -296,10 +333,10 @@ module IRB
         sep = $2
         message = $3
 
-        gv = eval("global_variables", bind).collect{|m| m.to_s}.push("true", "false", "nil")
-        lv = eval("local_variables", bind).collect{|m| m.to_s}
-        iv = eval("instance_variables", bind).collect{|m| m.to_s}
-        cv = eval("self.class.constants", bind).collect{|m| m.to_s}
+        gv = bind.eval_global_variables.collect{|m| m.to_s}.push("true", "false", "nil")
+        lv = bind.local_variables.collect{|m| m.to_s}
+        iv = bind.eval_instance_variables.collect{|m| m.to_s}
+        cv = bind.eval_class_constants.collect{|m| m.to_s}
 
         if (gv | lv | iv | cv).include?(receiver) or /^[A-Z]/ =~ receiver && /\./ !~ receiver
           # foo.func and foo is var. OR
@@ -322,11 +359,13 @@ module IRB
           to_ignore = ignored_modules
           ObjectSpace.each_object(Module){|m|
             next if (to_ignore.include?(m) rescue true)
+            next unless m.respond_to?(:instance_methods) # JRuby has modules that represent java packages. They don't include many common ruby methods
             candidates.concat m.instance_methods(false).collect{|x| x.to_s}
           }
           candidates.sort!
           candidates.uniq!
         end
+
         if doc_namespace
           rec_class = rec.is_a?(Module) ? rec : rec.class
           "#{rec_class.name}#{sep}#{candidates.find{ |i| i == message }}"
@@ -341,27 +380,28 @@ module IRB
         message = $1
 
         candidates = String.instance_methods(true).collect{|m| m.to_s}
+
         if doc_namespace
           "String.#{candidates.find{ |i| i == message }}"
         else
-          select_message(receiver, message, candidates)
+          select_message(receiver, message, candidates.sort)
         end
 
       else
         if doc_namespace
-          vars = eval("local_variables | instance_variables", bind).collect{|m| m.to_s}
+          vars = (bind.local_variables | bind.eval_instance_variables).collect{|m| m.to_s}
           perfect_match_var = vars.find{|m| m.to_s == input}
           if perfect_match_var
             eval("#{perfect_match_var}.class.name", bind)
           else
-            candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+            candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
             candidates |= ReservedWords
             candidates.find{ |i| i == input }
           end
         else
-          candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+          candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
           candidates |= ReservedWords
-          candidates.grep(/^#{Regexp.quote(input)}/)
+          candidates.grep(/^#{Regexp.quote(input)}/).sort
         end
       end
     end

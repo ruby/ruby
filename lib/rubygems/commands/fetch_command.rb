@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
 
 class Gem::Commands::FetchCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -10,10 +10,10 @@ class Gem::Commands::FetchCommand < Gem::Command
   def initialize
     defaults = {
       :suggest_alternate => true,
-      :version           => Gem::Requirement.default,
+      :version => Gem::Requirement.default,
     }
 
-    super 'fetch', 'Download a gem and place it in the current directory', defaults
+    super "fetch", "Download a gem and place it in the current directory", defaults
 
     add_bulk_threshold_option
     add_proxy_option
@@ -24,13 +24,13 @@ class Gem::Commands::FetchCommand < Gem::Command
     add_platform_option
     add_prerelease_option
 
-    add_option '--[no-]suggestions', 'Suggest alternates when gems are not found' do |value, options|
+    add_option "--[no-]suggestions", "Suggest alternates when gems are not found" do |value, options|
       options[:suggest_alternate] = value
     end
   end
 
   def arguments # :nodoc:
-    'GEMNAME       name of gem to download'
+    "GEMNAME       name of gem to download"
   end
 
   def defaults_str # :nodoc:
@@ -52,8 +52,8 @@ then repackaging it.
   end
 
   def check_version # :nodoc:
-    if options[:version] != Gem::Requirement.default and
-         get_all_gem_names.size > 1
+    if options[:version] != Gem::Requirement.default &&
+       get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
                   " version requirements using `gem fetch 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1

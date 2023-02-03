@@ -3,55 +3,59 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check", "test-bundler-parallel", "test-bundled-gems"]
-        os:
-          - ubuntu-20.04
-#         - ubuntu-18.04
-        configure: ["", "cppflags=-DRUBY_DEBUG"]
+        test_task: [check]
+        arch: ['']
+        configure: ['cppflags=-DVM_CHECK_MODE']
+        # specifying everything else with `include` to avoid redundant tests
         include:
-          - test_task: "check"
-            configure: "--host=i686-$OSTYPE"
-          - test_task: "check"
-            configure: "--enable-shared --enable-load-relative"
-            skipped_tests: "TestGem#test_.*_from_binstubs.*"
-            continue-on-skipped_tests: true
-          - test_task: "test-all TESTS=--repeat-count=2"
+          - test_task: check
+            arch: i686
+          - test_task: check
+            configure: '--enable-shared --enable-load-relative'
+          - test_task: test-all TESTS=--repeat-count=2
+          - test_task: test-bundler-parallel
+          - test_task: test-bundled-gems
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
-    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
+      SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
+    runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
         working-directory:
       - name: Set ENV
-        env:
-          configure: ${{matrix.configure}}
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-          arch=`echo " $configure" | sed '/.* --host=/!d;s///;s/[- ].*//'`
-          echo "SETARCH=${arch:+setarch $arch}" >> $GITHUB_ENV
       - name: Install libraries
+        env:
+          arch: ${{matrix.arch}}
         run: |
           set -x
-          arch="${SETARCH##* }"
           arch=${arch:+:${arch/i[3-6]86/i386}}
           ${arch:+sudo dpkg --add-architecture ${arch#:}}
           sudo apt-get update -q || :
@@ -65,10 +69,10 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: src
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -82,14 +86,15 @@ jobs:
       - name: Run configure
         env:
           arch: ${{matrix.arch}}
+          configure: ${{matrix.configure}}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-          ${arch:+--target=$arch-$OSTYPE}
+          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
+          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
+      - run: $SETARCH make prepare-gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: $SETARCH make
       - run: $SETARCH make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
-      - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |
@@ -113,15 +118,15 @@ jobs:
           TESTS: ${{ matrix.skipped_tests }}
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

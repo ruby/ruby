@@ -39,8 +39,23 @@ opt.on('--dynamic-prompt-with-newline') {
     }
   }
 }
+opt.on('--broken-dynamic-prompt-assert-no-escape-sequence') {
+  Reline.prompt_proc = proc { |lines|
+    has_escape_sequence = lines.join.include?("\e")
+    (lines.size + 1).times.map { |i|
+      has_escape_sequence ? 'error>' : '[%04d]> ' % i
+    }
+  }
+}
+opt.on('--color-bold') {
+  Reline.output_modifier_proc = ->(output, complete:){
+    output.gsub(/./) { |c| "\e[1m#{c}\e[0m" }
+  }
+}
 opt.on('--auto-indent') {
-  AutoIndent.new
+  Reline.auto_indent_proc = lambda do |lines, line_index, byte_pointer, is_newline|
+    AutoIndent.calculate_indent(lines, line_index, byte_pointer, is_newline)
+  end
 }
 opt.on('--dialog VAL') { |v|
   Reline.add_dialog_proc(:simple_dialog, lambda {
@@ -181,8 +196,7 @@ end
 begin
   prompt = ENV['RELINE_TEST_PROMPT'] || 'prompt> '
   puts 'Multiline REPL.'
-  checker = TerminationChecker.new
-  while code = Reline.readmultiline(prompt, true) { |code| checker.terminated?(code) }
+  while code = Reline.readmultiline(prompt, true) { |code| TerminationChecker.terminated?(code) }
     case code.chomp
     when 'exit', 'quit', 'q'
       exit 0

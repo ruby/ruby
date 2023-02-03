@@ -10,6 +10,7 @@ BEGIN {
 
 n, v, u, r = $F
 
+next unless n
 next if n =~ /^#/
 
 if File.directory?(n)
@@ -27,5 +28,5 @@ c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
 puts "checking out #{c} (v=#{v}, r=#{r}) ..."
 unless system(*checkout, c, "--", chdir: n)
-  abort
+  abort if r or !system(*checkout, v, "--", chdir: n)
 end

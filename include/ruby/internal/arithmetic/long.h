@@ -115,7 +115,7 @@ RB_INT2FIX(long i)
     /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
      * defined. Also it can be compiled into a single LEA instruction. */
     const unsigned long j = i;
-    const unsigned long k = 2 * j + RUBY_FIXNUM_FLAG;
+    const unsigned long k = (j << 1) + RUBY_FIXNUM_FLAG;
     const long          l = k;
     const SIGNED_VALUE  m = l; /* Sign extend */
     const VALUE         n = m;

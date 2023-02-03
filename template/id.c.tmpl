@@ -12,7 +12,7 @@
 **********************************************************************/
 <%
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
-ids = eval(File.read(defs), binding, defs)
+ids = eval(File.read(defs), nil, defs)
 ops = ids[:token_op].uniq {|id, op, token| token && op}
 %>
 % ops.each do |_id, _op, token|

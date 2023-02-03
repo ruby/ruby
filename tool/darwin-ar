@@ -1,0 +1,5 @@
+#!/bin/bash
+exec 2> >(exec grep -v \
+  -e ' no symbols$' \
+  >&2)
+exec "$@"

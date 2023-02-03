@@ -76,6 +76,8 @@
 #define RB_SPECIAL_CONST_P RB_SPECIAL_CONST_P
 #define RB_STATIC_SYM_P    RB_STATIC_SYM_P
 #define RB_TEST            RB_TEST
+#define RB_UNDEF_P         RB_UNDEF_P
+#define RB_NIL_OR_UNDEF_P  RB_NIL_OR_UNDEF_P
 /** @endcond */
 
 /** special constants - i.e. non-zero and non-fixnum constants */
@@ -94,9 +96,9 @@ ruby_special_consts {
     RUBY_SYMBOL_FLAG,           /**< Flag to denote a static symbol. */
 #elif USE_FLONUM
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
+    RUBY_Qnil           = 0x04, /* ...0000 0100 */
     RUBY_Qtrue          = 0x14, /* ...0001 0100 */
-    RUBY_Qnil           = 0x08, /* ...0000 1000 */
-    RUBY_Qundef         = 0x34, /* ...0011 0100 */
+    RUBY_Qundef         = 0x24, /* ...0010 0100 */
     RUBY_IMMEDIATE_MASK = 0x07, /* ...0000 0111 */
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x03, /* ...0000 0011 */
@@ -104,14 +106,14 @@ ruby_special_consts {
     RUBY_SYMBOL_FLAG    = 0x0c, /* ...xxxx 1100 */
 #else
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
-    RUBY_Qtrue          = 0x02, /* ...0000 0010 */
-    RUBY_Qnil           = 0x04, /* ...0000 0100 */
-    RUBY_Qundef         = 0x06, /* ...0000 0110 */
+    RUBY_Qnil           = 0x02, /* ...0000 0010 */
+    RUBY_Qtrue          = 0x06, /* ...0000 0110 */
+    RUBY_Qundef         = 0x0a, /* ...0000 1010 */
     RUBY_IMMEDIATE_MASK = 0x03, /* ...0000 0011 */
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x00, /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
     RUBY_FLONUM_FLAG    = 0x02, /* ...0000 0010 */
-    RUBY_SYMBOL_FLAG    = 0x0e, /* ...0000 1110 */
+    RUBY_SYMBOL_FLAG    = 0x0e, /* ...xxxx 1110 */
 #endif
 
     RUBY_SPECIAL_SHIFT  = 8 /**< Least significant 8 bits are reserved. */
@@ -136,12 +138,21 @@ static inline bool
 RB_TEST(VALUE obj)
 {
     /*
+     * if USE_FLONUM
      *  Qfalse:  ....0000 0000
-     *  Qnil:    ....0000 1000
-     * ~Qnil:    ....1111 0111
+     *  Qnil:    ....0000 0100
+     * ~Qnil:    ....1111 1011
      *  v        ....xxxx xxxx
      * ----------------------------
-     *  RTEST(v) ....xxxx 0xxx
+     *  RTEST(v) ....xxxx x0xx
+     *
+     * if ! USE_FLONUM
+     *  Qfalse:  ....0000 0000
+     *  Qnil:    ....0000 0010
+     * ~Qnil:    ....1111 1101
+     *  v        ....xxxx xxxx
+     * ----------------------------
+     *  RTEST(v) ....xxxx xx0x
      *
      *  RTEST(v) can be 0 if and only if (v == Qfalse || v == Qnil).
      */
@@ -162,6 +173,62 @@ static inline bool
 RB_NIL_P(VALUE obj)
 {
     return obj == RUBY_Qnil;
+}
+
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is undef.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is ::RUBY_Qundef.
+ * @retval     false  Anything else.
+ */
+static inline bool
+RB_UNDEF_P(VALUE obj)
+{
+    return obj == RUBY_Qundef;
+}
+
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX14)
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is nil or undef.  Can be used to see if
+ * a keyword argument is not given or given `nil`.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is ::RUBY_Qnil or ::RUBY_Qundef.
+ * @retval     false  Anything else.
+ */
+static inline bool
+RB_NIL_OR_UNDEF_P(VALUE obj)
+{
+    /*
+     * if USE_FLONUM
+     *  Qundef:       ....0010 0100
+     *  Qnil:         ....0000 0100
+     *  mask:         ....1101 1111
+     *  common_bits:  ....0000 0100
+     * ---------------------------------
+     *  Qnil & mask   ....0000 0100
+     *  Qundef & mask ....0000 0100
+     *
+     * if ! USE_FLONUM
+     *  Qundef:       ....0000 1010
+     *  Qnil:         ....0000 0010
+     *  mask:         ....1111 0111
+     *  common_bits:  ....0000 0010
+     * ----------------------------
+     *  Qnil & mask   ....0000 0010
+     *  Qundef & mask ....0000 0010
+     *
+     *  NIL_OR_UNDEF_P(v) can be true only when v is Qundef or Qnil.
+     */
+    const VALUE mask = ~(RUBY_Qundef ^ RUBY_Qnil);
+    const VALUE common_bits = RUBY_Qundef & RUBY_Qnil;
+    return (obj & mask) == common_bits;
 }
 
 RBIMPL_ATTR_CONST()
@@ -259,7 +326,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
-    return RB_IMMEDIATE_P(obj) || ! RB_TEST(obj);
+    return RB_IMMEDIATE_P(obj) || obj == RUBY_Qfalse;
 }
 
 RBIMPL_ATTR_CONST()

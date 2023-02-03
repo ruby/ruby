@@ -113,7 +113,7 @@ class RubygemsVersionManager
   end
 
   def resolve_target_tag
-    return "v#{@source}" if @source.match(/^\d/)
+    return "v#{@source}" if @source.match?(/^\d/)
 
     @source
   end

@@ -108,7 +108,7 @@ VALUE rb_get_path_no_checksafe(VALUE);
 # define rb_varargs_argc_check_runtime(argc, vargc) \
     (((argc) <= (vargc)) ? (argc) : \
      (rb_fatal("argc(%d) exceeds actual arguments(%d)", \
-	       argc, vargc), 0))
+               argc, vargc), 0))
 # define rb_varargs_argc_valid_p(argc, vargc) \
     ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
      (argc) == (vargc))
@@ -117,16 +117,16 @@ VALUE rb_get_path_no_checksafe(VALUE);
 ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
 #   else
 #     define rb_varargs_bad_length(argc, vargc) \
-	((argc)/rb_varargs_argc_valid_p(argc, vargc))
+        ((argc)/rb_varargs_argc_valid_p(argc, vargc))
 #   endif
 #   define rb_varargs_argc_check(argc, vargc) \
     __builtin_choose_expr(__builtin_constant_p(argc), \
-	(rb_varargs_argc_valid_p(argc, vargc) ? (argc) : \
-	 rb_varargs_bad_length(argc, vargc)), \
-	rb_varargs_argc_check_runtime(argc, vargc))
+        (rb_varargs_argc_valid_p(argc, vargc) ? (argc) : \
+         rb_varargs_bad_length(argc, vargc)), \
+        rb_varargs_argc_check_runtime(argc, vargc))
 # else
 #   define rb_varargs_argc_check(argc, vargc) \
-	rb_varargs_argc_check_runtime(argc, vargc)
+        rb_varargs_argc_check_runtime(argc, vargc)
 # endif
 #endif
 /** @endcond */
@@ -277,24 +277,24 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
 # define rb_yield_values(argc, ...) \
 __extension__({ \
-	const int rb_yield_values_argc = (argc); \
-	const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
-	const int rb_yield_values_nargs = \
-	    (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
-	rb_yield_values2( \
-	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
-	    rb_yield_values_nargs ? rb_yield_values_args : NULL); \
+        const int rb_yield_values_argc = (argc); \
+        const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
+        const int rb_yield_values_nargs = \
+            (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
+        rb_yield_values2( \
+            rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
+            rb_yield_values_nargs ? rb_yield_values_args : NULL); \
     })
 
 # define rb_funcall(recv, mid, argc, ...) \
 __extension__({ \
-	const int rb_funcall_argc = (argc); \
-	const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
-	const int rb_funcall_nargs = \
-	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
+        const int rb_funcall_argc = (argc); \
+        const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
+        const int rb_funcall_nargs = \
+            (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
         rb_funcallv(recv, mid, \
-	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
-	    rb_funcall_nargs ? rb_funcall_args : NULL); \
+            rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
+            rb_funcall_nargs ? rb_funcall_args : NULL); \
     })
 #endif
 /** @endcond */

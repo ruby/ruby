@@ -1,13 +1,7 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: false
+#
 #   irb/lc/ja/error.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB
@@ -46,11 +40,6 @@ module IRB
   class NoSuchJob < StandardError
     def initialize(val)
       super("そのようなジョブ(#{val})はありません.")
-    end
-  end
-  class CantShiftToMultiIrbMode < StandardError
-    def initialize
-      super("multi-irb modeに移れません.")
     end
   end
   class CantChangeBinding < StandardError

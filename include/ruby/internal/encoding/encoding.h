@@ -139,23 +139,6 @@ RBIMPL_ATTR_NOALIAS()
 int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
 /**
- * Creates a new encoding, using the passed one as a template.
- *
- * @param[in]  name          Name of the creating encoding.
- * @param[in]  src           Template.
- * @exception  rb_eArgError  Duplicated or malformed `name`.
- * @return     Replicated new encoding's index.
- * @post       Encoding named `name` is created as a copy of `src`, whose index
- *             is the return value.
- *
- * @internal
- *
- * `name` can be `NULL`,  but that just raises an exception.   OTOH it seems no
- * sanity check is done against `src`...?
- */
-int rb_enc_replicate(const char *name, rb_encoding *src);
-
-/**
  * Creates a new "dummy" encoding.  Roughly speaking, an encoding is dummy when
  * it is  stateful.  Notable  example of  dummy encoding  are those  defined in
  * ISO/IEC 2022
@@ -643,10 +626,12 @@ rb_enc_code_to_mbclen(int c, rb_encoding *enc)
  * Identical to rb_enc_uint_chr(),  except it writes back to  the passed buffer
  * instead of allocating one.
  *
- * @param[in]   c    Code point.
- * @param[out]  buf  Return buffer.
- * @param[in]   enc  Target encoding scheme.
- * @post        `c` is encoded according to `enc`, then written to `buf`.
+ * @param[in]  c          Code point.
+ * @param[out] buf        Return buffer.
+ * @param[in]  enc        Target encoding scheme.
+ * @retval     <= 0       `c` is invalid in `enc`.
+ * @return     otherwise  Number of bytes written to `buf`.
+ * @post       `c` is encoded according to `enc`, then written to `buf`.
  *
  * @internal
  *

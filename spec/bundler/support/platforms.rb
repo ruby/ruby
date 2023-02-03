@@ -24,20 +24,32 @@ module Spec
       Gem::Platform.new(["x86", "linux", nil])
     end
 
-    def mswin
+    def x86_mswin32
       Gem::Platform.new(["x86", "mswin32", nil])
     end
 
-    def mingw
+    def x64_mswin64
+      Gem::Platform.new(["x64", "mswin64", nil])
+    end
+
+    def x86_mingw32
       Gem::Platform.new(["x86", "mingw32", nil])
     end
 
-    def x64_mingw
+    def x64_mingw32
       Gem::Platform.new(["x64", "mingw32", nil])
     end
 
+    def x64_mingw_ucrt
+      Gem::Platform.new(["x64", "mingw", "ucrt"])
+    end
+
+    def windows_platforms
+      [x86_mswin32, x64_mswin64, x86_mingw32, x64_mingw32, x64_mingw_ucrt]
+    end
+
     def all_platforms
-      [rb, java, linux, mswin, mingw, x64_mingw]
+      [rb, java, linux, windows_platforms].flatten
     end
 
     def local
@@ -55,13 +67,15 @@ module Spec
     def local_tag
       if RUBY_PLATFORM == "java"
         :jruby
+      elsif ["x64-mingw32", "x64-mingw-ucrt"].include?(RUBY_PLATFORM)
+        :windows
       else
         :ruby
       end
     end
 
     def not_local_tag
-      [:ruby, :jruby].find {|tag| tag != local_tag }
+      [:jruby, :windows, :ruby].find {|tag| tag != local_tag }
     end
 
     def local_ruby_engine
@@ -69,12 +83,12 @@ module Spec
     end
 
     def local_engine_version
-      RUBY_ENGINE_VERSION
+      RUBY_ENGINE == "ruby" ? Gem.ruby_version : RUBY_ENGINE_VERSION
     end
 
     def not_local_engine_version
       case not_local_tag
-      when :ruby
+      when :ruby, :windows
         not_local_ruby_version
       when :jruby
         "1.6.1"
@@ -90,15 +104,11 @@ module Spec
     end
 
     def lockfile_platforms
-      lockfile_platforms_for(local_platforms)
+      lockfile_platforms_for([specific_local_platform])
     end
 
     def lockfile_platforms_for(platforms)
       platforms.map(&:to_s).sort.join("\n  ")
-    end
-
-    def local_platforms
-      [specific_local_platform]
     end
   end
 end

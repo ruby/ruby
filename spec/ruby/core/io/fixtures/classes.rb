@@ -7,6 +7,18 @@ module IOSpecs
   class SubIO < IO
   end
 
+  class SubIOWithRedefinedNew < IO
+    def self.new(...)
+      ScratchPad << :redefined_new_called
+      super
+    end
+
+    def initialize(...)
+      ScratchPad << :call_original_initialize
+      super
+    end
+  end
+
   def self.collector
     Proc.new { |x| ScratchPad << x }
   end
@@ -108,6 +120,14 @@ module IOSpecs
       "linha ", "cinco.\nHere ", "is ", "line ", "six.\n" ]
   end
 
+  def self.lines_space_separator_without_trailing_spaces
+    [ "Voici", "la", "ligne", "une.\nQui",
+      "\303\250", "la", "linea", "due.\n\n\nAqu\303\255",
+      "est\303\241", "la", "l\303\255nea", "tres.\nHier",
+      "ist", "Zeile", "vier.\n\nEst\303\241", "aqui", "a",
+      "linha", "cinco.\nHere", "is", "line", "six.\n" ]
+  end
+
   def self.lines_arbitrary_separator
     [ "Voici la ligne une.\nQui \303\250",
       " la linea due.\n\n\nAqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.\n\nEst\303\241 aqui a linha cinco.\nHere is line six.\n" ]
@@ -116,6 +136,12 @@ module IOSpecs
   def self.paragraphs
     [ "Voici la ligne une.\nQui \303\250 la linea due.\n\n",
       "Aqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.\n\n",
+      "Est\303\241 aqui a linha cinco.\nHere is line six.\n" ]
+  end
+
+  def self.paragraphs_without_trailing_new_line_characters
+    [ "Voici la ligne une.\nQui \303\250 la linea due.",
+      "Aqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.",
       "Est\303\241 aqui a linha cinco.\nHere is line six.\n" ]
   end
 

@@ -17,10 +17,9 @@ describe :env_update, shared: true do
 
   ruby_version_is "3.2" do
     it "adds the multiple parameter hashes to ENV, returning ENV" do
-      ENV.send(@method, {"foo" => "0", "bar" => "1"}, {"baz" => "2"}).should equal(ENV)
-      ENV["foo"].should == "0"
-      ENV["bar"].should == "1"
-      ENV["baz"].should == "2"
+      ENV.send(@method, {"foo" => "multi1"}, {"bar" => "multi2"}).should equal(ENV)
+      ENV["foo"].should == "multi1"
+      ENV["bar"].should == "multi2"
     end
   end
 

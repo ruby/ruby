@@ -55,4 +55,27 @@ class TestOptionParserSummaryTest < TestOptionParser
     o.release = "rel"
     assert_equal "foo 0.1 (rel)", o.ver
   end
+
+  # https://github.com/ruby/optparse/issues/37
+  def test_very_long_without_short
+    o = OptionParser.new do |opts|
+      # This causes TypeError
+      opts.on('',   '--long-long-option-param-without-short', "Error desc") { options[:long_long_option_param_without_short] = true }
+      opts.on('',   '--long-option-param', "Long desc") { options[:long_option_param_without_short] = true }
+      opts.on('-a', '--long-long-option-param-with-short', "Normal description") { options[:long_long_option_param_with_short] = true }
+
+      opts.on('',   '--long-long-option-param-without-short-but-with-desc', 'Description of the long long param') { options[:long_long_option_param_without_short_but_with_desc] = true }
+    end
+
+    s = o.summarize
+
+    assert_match(/^\s*--long-long-option-param-without-short$/, s[0])
+    assert_match(/^\s*Error desc$/, s[1])
+    assert_match(/^\s*--long-option-param\s+Long desc$/, s[2])
+    assert_match(/^\s*-a\s+Normal description$/, s[3])
+    assert_match(/^\s*--long-long-option-param-with-short$/, s[4])
+
+    assert_match(/^\s*--long-long-option-param-without-short-but-with-desc$/, s[5])
+    assert_match(/^\s*Description of the long long param$/, s[6])
+  end
 end

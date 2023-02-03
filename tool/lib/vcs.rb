@@ -1,6 +1,8 @@
 # vcs
 require 'fileutils'
 require 'optparse'
+require 'pp'
+require 'tempfile'
 
 # This library is used by several other tools/ scripts to detect the current
 # VCS in use (e.g. SVN, Git) or to interact with that VCS.
@@ -9,6 +11,22 @@ ENV.delete('PWD')
 
 class VCS
   DEBUG_OUT = STDERR.dup
+
+  def self.dump(obj, pre = nil)
+    out = DEBUG_OUT
+    @pp ||= PP.new(out)
+    @pp.guard_inspect_key do
+      if pre
+        @pp.group(pre.size, pre) {
+          obj.pretty_print(@pp)
+        }
+      else
+        obj.pretty_print(@pp)
+      end
+      @pp.flush
+      out << "\n"
+    end
+  end
 end
 
 unless File.respond_to? :realpath
@@ -19,14 +37,14 @@ unless File.respond_to? :realpath
 end
 
 def IO.pread(*args)
-  VCS::DEBUG_OUT.puts(args.inspect) if $DEBUG
+  VCS.dump(args, "args: ") if $DEBUG
   popen(*args) {|f|f.read}
 end
 
 module DebugPOpen
   refine IO.singleton_class do
     def popen(*args)
-      VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+      VCS.dump(args, "args: ") if $DEBUG
       super
     end
   end
@@ -34,7 +52,7 @@ end
 using DebugPOpen
 module DebugSystem
   def system(*args)
-    VCS::DEBUG_OUT.puts args.inspect if $DEBUG
+    VCS.dump(args, "args: ") if $DEBUG
     exception = false
     opts = Hash.try_convert(args[-1])
     if RUBY_VERSION >= "2.6"
@@ -69,6 +87,9 @@ class VCS
     begin
       @@dirs.each do |dir, klass, pred|
         if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+          if klass.const_defined?(:COMMAND)
+            IO.pread([{'LANG' => 'C', 'LC_ALL' => 'C'}, klass::COMMAND, "--version"]) rescue next
+          end
           vcs = klass.new(curr)
           vcs.define_options(parser) if parser
           vcs.set_options(options)
@@ -92,7 +113,21 @@ class VCS
     parser.separator("  VCS common options:")
     parser.define("--[no-]dryrun") {|v| opts[:dryrun] = v}
     parser.define("--[no-]debug") {|v| opts[:debug] = v}
+    parser.define("-z", "--zone=OFFSET", /\A[-+]\d\d:\d\d\z/) {|v| opts[:zone] = v}
     opts
+  end
+
+  def release_date(time)
+    t = time.getlocal(@zone)
+    [
+      t.strftime('#define RUBY_RELEASE_YEAR %Y'),
+      t.strftime('#define RUBY_RELEASE_MONTH %-m'),
+      t.strftime('#define RUBY_RELEASE_DAY %-d'),
+    ]
+  end
+
+  def self.short_revision(rev)
+    rev
   end
 
   attr_reader :srcdir
@@ -112,6 +147,7 @@ class VCS
   def set_options(opts)
     @debug = opts.fetch(:debug) {$DEBUG}
     @dryrun = opts.fetch(:dryrun) {@debug}
+    @zone = opts.fetch(:zone) {'+09:00'}
   end
 
   attr_reader :dryrun, :debug
@@ -204,16 +240,42 @@ class VCS
     revision_handler(rev).short_revision(rev)
   end
 
+  # make-snapshot generates only release_date whereas file2lastrev generates both release_date and release_datetime
+  def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
+    short = short_revision(last)
+    if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
+      title = title.dup.force_encoding("US-ASCII")
+    end
+    code = [
+      "#define RUBY_REVISION #{short.inspect}",
+    ]
+    unless short == last
+      code << "#define RUBY_FULL_REVISION #{last.inspect}"
+    end
+    if branch
+      e = '..'
+      name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
+      name = name.dump.sub(/\\#/, '#')
+      code << "#define RUBY_BRANCH_NAME #{name}"
+    end
+    if title
+      title = title.dump.sub(/\\#/, '#')
+      code << "#define RUBY_LAST_COMMIT_TITLE #{title}"
+    end
+    if release_datetime
+      t = release_datetime.utc
+      code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
+    end
+    code += self.release_date(release_date)
+    code
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
 
     def self.revision_name(rev)
       "r#{rev}"
-    end
-
-    def self.short_revision(rev)
-      rev
     end
 
     def _get_revisions(path, srcdir = nil)
@@ -350,7 +412,7 @@ class VCS
     def commit
       args = %W"#{COMMAND} commit"
       if dryrun?
-        VCS::DEBUG_OUT.puts(args.inspect)
+        VCS.dump(args, "commit: ")
         return true
       end
       system(*args)
@@ -358,8 +420,21 @@ class VCS
   end
 
   class GIT < self
-    register(".git") {|path, dir| File.exist?(File.join(path, dir))}
-    COMMAND = ENV["GIT"] || 'git'
+    register(".git") do |path, dir|
+      SAFE_DIRECTORIES ||=
+        begin
+          command = ENV["GIT"] || 'git'
+          dirs = IO.popen(%W"#{command} config --global --get-all safe.directory", &:read).split("\n")
+        rescue
+          command = nil
+          dirs = []
+        ensure
+          VCS.dump(dirs, "safe.directory: ") if $DEBUG
+          COMMAND = command
+        end
+
+      COMMAND and File.exist?(File.join(path, dir))
+    end
 
     def cmd_args(cmds, srcdir = nil)
       (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
@@ -367,7 +442,7 @@ class VCS
       if srcdir
         opts[:chdir] ||= srcdir
       end
-      VCS::DEBUG_OUT.puts cmds.inspect if debug?
+      VCS.dump(cmds, "cmds: ") if debug? and !$DEBUG
       cmds
     end
 
@@ -377,7 +452,7 @@ class VCS
 
     def cmd_read_at(srcdir, cmds)
       result = without_gitconfig { IO.pread(*cmd_args(cmds, srcdir)) }
-      VCS::DEBUG_OUT.puts result.inspect if debug?
+      VCS.dump(result, "result: ") if debug?
       result
     end
 
@@ -398,7 +473,14 @@ class VCS
     def _get_revisions(path, srcdir = nil)
       ref = Branch === path ? path.to_str : 'HEAD'
       gitcmd = [COMMAND]
-      last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref]]).rstrip
+      last = nil
+      IO.pipe do |r, w|
+        last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref, err: w]]).rstrip
+        w.close
+        unless r.eof?
+          raise "#{COMMAND} rev-parse failed\n#{r.read.gsub(/^(?=\s*\S)/, '  ')}"
+        end
+      end
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])
       changed = log[/\Acommit (\h+)/, 1]
       modified = log[/^CommitDate:\s+(.*)/, 1]
@@ -460,19 +542,35 @@ class VCS
     end
 
     def without_gitconfig
-      envs = %w'HOME XDG_CONFIG_HOME GIT_SYSTEM_CONFIG GIT_CONFIG_SYSTEM'.each_with_object({}) do |v, h|
+      envs = (%w'HOME XDG_CONFIG_HOME' + ENV.keys.grep(/\AGIT_/)).each_with_object({}) do |v, h|
         h[v] = ENV.delete(v)
-        ENV[v] = NullDevice if v.start_with?('GIT_')
       end
+      ENV['GIT_CONFIG_SYSTEM'] = NullDevice
+      ENV['GIT_CONFIG_GLOBAL'] = global_config
       yield
     ensure
       ENV.update(envs)
     end
 
+    def global_config
+      return NullDevice if SAFE_DIRECTORIES.empty?
+      unless @gitconfig
+        @gitconfig = Tempfile.new(%w"vcs_ .gitconfig")
+        @gitconfig.close
+        ENV['GIT_CONFIG_GLOBAL'] = @gitconfig.path
+        SAFE_DIRECTORIES.each do |dir|
+          system(*%W[#{COMMAND} config --global --add safe.directory #{dir}])
+        end
+        VCS.dump(`#{COMMAND} config --global --get-all safe.directory`, "safe.directory: ") if debug?
+      end
+      @gitconfig.path
+    end
+
     def initialize(*)
       super
       @srcdir = File.realpath(@srcdir)
-      VCS::DEBUG_OUT.puts @srcdir.inspect if debug?
+      @gitconfig = nil
+      VCS.dump(@srcdir, "srcdir: ") if debug?
       self
     end
 
@@ -631,7 +729,7 @@ class VCS
 
             if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
               issue = "#{$1}pull/"
-              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+              s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {issue}
             end
 
             s.gsub!(/ +\n/, "\n")
@@ -677,13 +775,13 @@ class VCS
 
     def commit(opts = {})
       args = [COMMAND, "push"]
-      args << "-n" if dryrun
+      args << "-n" if dryrun?
       remote, branch = upstream
       args << remote
       branches = %W[refs/notes/commits:refs/notes/commits HEAD:#{branch}]
       if dryrun?
         branches.each do |b|
-          VCS::DEBUG_OUT.puts((args + [b]).inspect)
+          VCS.dump(args + [b], "commit: ")
         end
         return true
       end
@@ -713,7 +811,7 @@ class VCS
       commits.each_with_index do |l, i|
         r, a, c = l.split(' ')
         dcommit = [COMMAND, "svn", "dcommit"]
-        dcommit.insert(-2, "-n") if dryrun
+        dcommit.insert(-2, "-n") if dryrun?
         dcommit << "--add-author-from" unless a == c
         dcommit << r
         system(*dcommit) or return false
@@ -731,6 +829,17 @@ class VCS
         end
       end
       true
+    end
+  end
+
+  class Null < self
+    def get_revisions(path, srcdir = nil)
+      @modified ||= Time.now - 10
+      return nil, nil, @modified
+    end
+
+    def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
+      self.release_date(release_date)
     end
   end
 end

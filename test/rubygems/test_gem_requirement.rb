@@ -1,14 +1,14 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 require "rubygems/requirement"
 
 class TestGemRequirement < Gem::TestCase
   def test_concat
-    r = req '>= 1'
+    r = req ">= 1"
 
-    r.concat ['< 2']
+    r.concat ["< 2"]
 
-    assert_equal [['>=', v(1)], ['<', v(2)]], r.requirements
+    assert_equal [[">=", v(1)], ["<", v(2)]], r.requirements
   end
 
   def test_equals2
@@ -60,42 +60,42 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_for_lockfile
-    assert_equal ' (~> 1.0)', req('~> 1.0').for_lockfile
+    assert_equal " (~> 1.0)", req("~> 1.0").for_lockfile
 
-    assert_equal ' (~> 1.0, >= 1.0.1)', req('>= 1.0.1', '~> 1.0').for_lockfile
+    assert_equal " (~> 1.0, >= 1.0.1)", req(">= 1.0.1", "~> 1.0").for_lockfile
 
-    duped = req '= 1.0'
-    duped.requirements << ['=', v('1.0')]
+    duped = req "= 1.0"
+    duped.requirements << ["=", v("1.0")]
 
-    assert_equal ' (= 1.0)', duped.for_lockfile
+    assert_equal " (= 1.0)", duped.for_lockfile
 
     assert_nil Gem::Requirement.default.for_lockfile
   end
 
   def test_parse
-    assert_equal ['=', Gem::Version.new(1)], Gem::Requirement.parse('  1')
-    assert_equal ['=', Gem::Version.new(1)], Gem::Requirement.parse('= 1')
-    assert_equal ['>', Gem::Version.new(1)], Gem::Requirement.parse('> 1')
-    assert_equal ['=', Gem::Version.new(1)], Gem::Requirement.parse("=\n1")
-    assert_equal ['=', Gem::Version.new(1)], Gem::Requirement.parse('1.0')
+    assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("  1")
+    assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("= 1")
+    assert_equal [">", Gem::Version.new(1)], Gem::Requirement.parse("> 1")
+    assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("=\n1")
+    assert_equal ["=", Gem::Version.new(1)], Gem::Requirement.parse("1.0")
 
-    assert_equal ['=', Gem::Version.new(2)],
-      Gem::Requirement.parse(Gem::Version.new('2'))
+    assert_equal ["=", Gem::Version.new(2)],
+      Gem::Requirement.parse(Gem::Version.new("2"))
   end
 
-  if RUBY_VERSION >= '2.5' && !(Gem.java_platform? && ENV["JRUBY_OPTS"] =~ /--debug/)
+  if !(Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug"))
     def test_parse_deduplication
-      assert_same '~>', Gem::Requirement.parse('~> 1').first
+      assert_same "~>", Gem::Requirement.parse("~> 1").first
     end
   end
 
   def test_parse_bad
     [
       nil,
-      '',
-      '! 1',
-      '= junk',
-      '1..2',
+      "",
+      "! 1",
+      "= junk",
+      "1..2",
     ].each do |bad|
       e = assert_raise Gem::Requirement::BadRequirementError do
         Gem::Requirement.parse bad
@@ -108,28 +108,30 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_prerelease_eh
-    r = req '= 1'
+    r = req "= 1"
 
     refute r.prerelease?
 
-    r = req '= 1.a'
+    r = req "= 1.a"
 
     assert r.prerelease?
 
-    r = req '> 1.a', '< 2'
+    r = req "> 1.a", "< 2"
 
     assert r.prerelease?
   end
 
   def test_satisfied_by_eh_bang_equal
-    r = req '!= 1.2'
+    r = req "!= 1.2"
 
     assert_satisfied_by "1.1", r
     refute_satisfied_by "1.2", r
     assert_satisfied_by "1.3", r
 
     assert_raise ArgumentError do
-      assert_satisfied_by nil, r
+      Gem::Deprecate.skip_during do
+        assert_satisfied_by nil, r
+      end
     end
   end
 
@@ -141,7 +143,9 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.3", r
 
     assert_raise ArgumentError do
-      assert_satisfied_by nil, r
+      Gem::Deprecate.skip_during do
+        assert_satisfied_by nil, r
+      end
     end
   end
 
@@ -153,7 +157,9 @@ class TestGemRequirement < Gem::TestCase
     refute_satisfied_by "1.3", r
 
     assert_raise ArgumentError do
-      assert_satisfied_by nil, r
+      Gem::Deprecate.skip_during do
+        assert_satisfied_by nil, r
+      end
     end
   end
 
@@ -362,16 +368,16 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_specific
-    refute req('> 1') .specific?
-    refute req('>= 1').specific?
+    refute req("> 1") .specific?
+    refute req(">= 1").specific?
 
-    assert req('!= 1').specific?
-    assert req('< 1') .specific?
-    assert req('<= 1').specific?
-    assert req('= 1') .specific?
-    assert req('~> 1').specific?
+    assert req("!= 1").specific?
+    assert req("< 1") .specific?
+    assert req("<= 1").specific?
+    assert req("= 1") .specific?
+    assert req("~> 1").specific?
 
-    assert req('> 1', '> 2').specific? # GIGO
+    assert req("> 1", "> 2").specific? # GIGO
   end
 
   def test_bad
@@ -392,12 +398,12 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_hash_with_multiple_versions
-    r1 = req('1.0', '2.0')
-    r2 = req('2.0', '1.0')
+    r1 = req("1.0", "2.0")
+    r2 = req("2.0", "1.0")
     assert_equal r1.hash, r2.hash
 
-    r1 = req('1.0', '2.0').tap {|r| r.concat(['3.0']) }
-    r2 = req('3.0', '1.0').tap {|r| r.concat(['2.0']) }
+    r1 = req("1.0", "2.0").tap {|r| r.concat(["3.0"]) }
+    r2 = req("3.0", "1.0").tap {|r| r.concat(["2.0"]) }
     assert_equal r1.hash, r2.hash
   end
 

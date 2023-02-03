@@ -239,15 +239,16 @@
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n)           RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_method_13,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_12(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n)           RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_method_14,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n))
 # define RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n)           RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_method_15,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_singleton_method_m3, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_protected_method_m3, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method(n, f)   RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_private_method_m3,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_module_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f)           RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_singleton_method_notimpl, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_protected_method_notimpl, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method(n, f)   RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_private_method_notimpl,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_module_function_notimpl,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_notimpl,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_notimpl,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
+# define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f)           RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_notimpl,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
 # define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL(()) RBIMPL_ATTR_WEAKREF(sym)
 # define RBIMPL_ANYARGS_DECL(sym, ...) \
+RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _notimpl(__VA_ARGS__, VALUE(*)(int, const VALUE *, VALUE, VALUE), int); \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
 RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m1(__VA_ARGS__, VALUE(*)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE), int); \

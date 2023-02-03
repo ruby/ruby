@@ -4,15 +4,15 @@ module Bundler
   class LockfileParser
     attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version
 
-    BUNDLED      = "BUNDLED WITH".freeze
-    DEPENDENCIES = "DEPENDENCIES".freeze
-    PLATFORMS    = "PLATFORMS".freeze
-    RUBY         = "RUBY VERSION".freeze
-    GIT          = "GIT".freeze
-    GEM          = "GEM".freeze
-    PATH         = "PATH".freeze
-    PLUGIN       = "PLUGIN SOURCE".freeze
-    SPECS        = "  specs:".freeze
+    BUNDLED      = "BUNDLED WITH"
+    DEPENDENCIES = "DEPENDENCIES"
+    PLATFORMS    = "PLATFORMS"
+    RUBY         = "RUBY VERSION"
+    GIT          = "GIT"
+    GEM          = "GEM"
+    PATH         = "PATH"
+    PLUGIN       = "PLUGIN SOURCE"
+    SPECS        = "  specs:"
     OPTIONS      = /^  ([a-z]+): (.*)$/i.freeze
     SOURCE       = [GIT, GEM, PATH, PLUGIN].freeze
 
@@ -63,7 +63,7 @@ module Bundler
       @state        = nil
       @specs        = {}
 
-      if lockfile.match(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
+      if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} contains merge conflicts.\n" \
           "Run `git checkout HEAD -- #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}` first to get a clean lock."
       end
@@ -80,7 +80,7 @@ module Bundler
           @state = :ruby
         elsif line == BUNDLED
           @state = :bundled_with
-        elsif line =~ /^[^\s]/
+        elsif /^[^\s]/.match?(line)
           @state = nil
         elsif @state
           send("parse_#{@state}", line)
@@ -93,12 +93,16 @@ module Bundler
         "and then `bundle install` to generate a new lockfile."
     end
 
+    def may_include_redundant_platform_specific_gems?
+      bundler_version.nil? || bundler_version < Gem::Version.new("1.16.2")
+    end
+
     private
 
     TYPES = {
-      GIT    => Bundler::Source::Git,
-      GEM    => Bundler::Source::Rubygems,
-      PATH   => Bundler::Source::Path,
+      GIT => Bundler::Source::Git,
+      GEM => Bundler::Source::Rubygems,
+      PATH => Bundler::Source::Path,
       PLUGIN => Bundler::Plugin,
     }.freeze
 

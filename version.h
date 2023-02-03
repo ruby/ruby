@@ -13,12 +13,11 @@
 #define RUBY_RELEASE_DATE RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR
 #define RUBY_PATCHLEVEL -1
 
-#define RUBY_RELEASE_YEAR 2022
-#define RUBY_RELEASE_MONTH 6
-#define RUBY_RELEASE_DAY 22
-
 #include "ruby/version.h"
 #include "ruby/internal/abi.h"
+
+#ifndef RUBY_REVISION
+#include "revision.h"
 
 #ifndef TOKEN_PASTE
 #define TOKEN_PASTE(x,y) x##y
@@ -38,54 +37,29 @@
 #define RUBY_RELEASE_DAY_STR STRINGIZE(RUBY_RELEASE_DAY)
 #endif
 
+#endif
+
+#ifdef RUBY_ABI_VERSION
+# define RUBY_ABI_VERSION_SUFFIX "+"STRINGIZE(RUBY_ABI_VERSION)
+#else
+# define RUBY_ABI_VERSION_SUFFIX ""
+#endif
 #if !defined RUBY_LIB_VERSION && defined RUBY_LIB_VERSION_STYLE
 # if RUBY_LIB_VERSION_STYLE == 3
 #   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
-        "."STRINGIZE(RUBY_API_VERSION_TEENY)"+"STRINGIZE(RUBY_ABI_VERSION)
+        "."STRINGIZE(RUBY_API_VERSION_TEENY) RUBY_ABI_VERSION_SUFFIX
 # elif RUBY_LIB_VERSION_STYLE == 2
 #   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
-    "+"STRINGIZE(RUBY_ABI_VERSION)
+        RUBY_ABI_VERSION_SUFFIX
 # endif
 #endif
 
 #if RUBY_PATCHLEVEL == -1
 #define RUBY_PATCHLEVEL_STR "dev"
+#elif defined RUBY_ABI_VERSION
+#error RUBY_ABI_VERSION is defined in non-development branch
 #else
 #define RUBY_PATCHLEVEL_STR ""
 #endif
-
-#ifndef RUBY_REVISION
-# include "revision.h"
-#endif
-
-#ifdef RUBY_REVISION
-# if RUBY_PATCHLEVEL == -1
-#  ifndef RUBY_BRANCH_NAME
-#   define RUBY_BRANCH_NAME "master"
-#  endif
-#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
-# else
-#  define RUBY_REVISION_STR " revision "RUBY_REVISION
-# endif
-#else
-# define RUBY_REVISION "HEAD"
-# define RUBY_REVISION_STR ""
-#endif
-#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
-# undef RUBY_RELEASE_DATETIME
-# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
-#endif
-
-# define RUBY_DESCRIPTION_WITH(opt) \
-    "ruby "RUBY_VERSION		    \
-    RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATETIME	    \
-    RUBY_REVISION_STR")"opt" "	    \
-    "["RUBY_PLATFORM"]"
-# define RUBY_COPYRIGHT		    \
-    "ruby - Copyright (C) "	    \
-    RUBY_BIRTH_YEAR_STR"-"   \
-    RUBY_RELEASE_YEAR_STR" " \
-    RUBY_AUTHOR
 
 #endif /* RUBY_TOPLEVEL_VERSION_H */

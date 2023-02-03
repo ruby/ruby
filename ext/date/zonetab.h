@@ -36,7 +36,7 @@ struct zone {
     int name;
     int offset;
 };
-static const struct zone *zonetab();
+static const struct zone *zonetab(register const char *str, register size_t len);
 #line 9 "zonetab.list"
 struct zone;
 

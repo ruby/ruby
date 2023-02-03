@@ -88,7 +88,6 @@ result.each {|k,v|
 # They can be referenced as $(top_srcdir)/filename.
 # % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
 FILES_IN_SOURCE_DIRECTORY = %w[
-  revision.h
 ]
 
 # Files built in the build directory (except extconf.h).
@@ -120,7 +119,7 @@ FILES_NEED_VPATH = %w[
   known_errors.inc
   lex.c
   miniprelude.c
-  mjit_compile.inc
+  mjit_sp_inc.inc
   newline.c
   node_name.inc
   opt_sc.inc
@@ -129,6 +128,7 @@ FILES_NEED_VPATH = %w[
   parse.c
   parse.h
   probes.dmyh
+  revision.h
   vm.inc
   vmtc.inc
 
@@ -301,6 +301,8 @@ def read_make_deps(cwd)
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
+      next if /libyjit.o\z/ =~ target.to_s # skip YJIT Rust object (no corresponding C source)
+      next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
       dir = curdir || dirstack.last
@@ -339,7 +341,7 @@ def read_single_cc_deps(path_i, cwd)
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
-    next if /\.erb\z/ =~ dep
+    next if /\.e?rb\z/ =~ dep
     compiler_wd ||= dep
     files[dep] = true
   }

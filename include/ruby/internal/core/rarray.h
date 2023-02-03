@@ -488,14 +488,6 @@ rb_array_ptr_use_end(VALUE a,
  * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
  * directly.
  */
-#define RARRAY_PTR_USE_START(a) rb_array_ptr_use_start(a, 0)
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- */
 #define RARRAY_PTR_USE_END(a) rb_array_ptr_use_end(a, 0)
 
 /**
@@ -525,22 +517,6 @@ rb_array_ptr_use_end(VALUE a,
  */
 #define RARRAY_PTR_USE(ary, ptr_name, expr)     \
     RBIMPL_RARRAY_STMT(0, ary, ptr_name, expr)
-
-/**
- * @private
- *
- * This is  an implementation  detail of #RARRAY_PTR_USE_TRANSIENT.   People do
- * not use it directly.
- */
-#define RARRAY_PTR_USE_START_TRANSIENT(a) rb_array_ptr_use_start(a, 1)
-
-/**
- * @private
- *
- * This is  an implementation  detail of #RARRAY_PTR_USE_TRANSIENT.   People do
- * not use it directly.
- */
-#define RARRAY_PTR_USE_END_TRANSIENT(a) rb_array_ptr_use_end(a, 1)
 
 /**
  * Identical to #RARRAY_PTR_USE, except the pointer can be a transient one.

@@ -11,11 +11,15 @@
  */
 #include "ossl.h"
 
+#ifndef OPENSSL_NO_SOCK
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
+#if !defined(OPENSSL_NO_NEXTPROTONEG) && !OSSL_IS_LIBRESSL
+# define OSSL_USE_NEXTPROTONEG
+#endif
+
 #if !defined(TLS1_3_VERSION) && \
-    defined(LIBRESSL_VERSION_NUMBER) && \
-    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
+    OSSL_LIBRESSL_PREREQ(3, 2, 0) && !OSSL_LIBRESSL_PREREQ(3, 4, 0)
 #  define TLS1_3_VERSION 0x0304
 #endif
 
@@ -30,7 +34,6 @@
 } while (0)
 
 VALUE mSSL;
-static VALUE mSSLExtConfig;
 static VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
@@ -49,7 +52,7 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
 	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
 	  id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
-	  id_i_verify_hostname;
+	  id_i_verify_hostname, id_i_keylog_cb;
 static ID id_i_io, id_i_context, id_i_hostname;
 
 static int ossl_ssl_ex_vcb_idx;
@@ -291,7 +294,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     if (!pkey)
 	return NULL;
 
-    return EVP_PKEY_get0_DH(pkey);
+    return (DH *)EVP_PKEY_get0_DH(pkey);
 }
 #endif /* OPENSSL_NO_DH */
 
@@ -440,6 +443,54 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
      */
     return 0;
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+/*
+ * It is only compatible with OpenSSL >= 1.1.1. Even if LibreSSL implements
+ * SSL_CTX_set_keylog_callback() from v3.4.2, it does nothing (see
+ * https://github.com/libressl-portable/openbsd/commit/648d39f0f035835d0653342d139883b9661e9cb6).
+ */
+
+struct ossl_call_keylog_cb_args {
+    VALUE ssl_obj;
+    const char * line;
+};
+
+static VALUE
+ossl_call_keylog_cb(VALUE args_v)
+{
+    VALUE sslctx_obj, cb, line_v;
+    struct ossl_call_keylog_cb_args *args = (struct ossl_call_keylog_cb_args *) args_v;
+
+    sslctx_obj = rb_attr_get(args->ssl_obj, id_i_context);
+
+    cb = rb_attr_get(sslctx_obj, id_i_keylog_cb);
+    if (NIL_P(cb)) return Qnil;
+
+    line_v = rb_str_new_cstr(args->line);
+
+    return rb_funcall(cb, id_call, 2, args->ssl_obj, line_v);
+}
+
+static void
+ossl_sslctx_keylog_cb(const SSL *ssl, const char *line)
+{
+    VALUE ssl_obj;
+    struct ossl_call_keylog_cb_args args;
+    int state = 0;
+
+    OSSL_Debug("SSL keylog callback entered");
+
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    args.ssl_obj = ssl_obj;
+    args.line = line;
+
+    rb_protect(ossl_call_keylog_cb, (VALUE)&args, &state);
+    if (state) {
+        rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
+    }
+}
+#endif
 
 static VALUE
 ossl_call_session_remove_cb(VALUE ary)
@@ -655,7 +706,7 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
     return SSL_TLSEXT_ERR_OK;
 }
 
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
 static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
 		     void *arg)
@@ -852,7 +903,7 @@ ossl_sslctx_setup(VALUE self)
     val = rb_attr_get(self, id_i_verify_depth);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
     if (!NIL_P(val)) {
 	VALUE encoded = ssl_encode_npn_protocols(val);
@@ -911,6 +962,18 @@ ossl_sslctx_setup(VALUE self)
 	OSSL_Debug("SSL TLSEXT servername callback added");
     }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+    /*
+     * It is only compatible with OpenSSL >= 1.1.1. Even if LibreSSL implements
+     * SSL_CTX_set_keylog_callback() from v3.4.2, it does nothing (see
+     * https://github.com/libressl-portable/openbsd/commit/648d39f0f035835d0653342d139883b9661e9cb6).
+     */
+    if (RTEST(rb_attr_get(self, id_i_keylog_cb))) {
+        SSL_CTX_set_keylog_callback(ctx, ossl_sslctx_keylog_cb);
+        OSSL_Debug("SSL keylog callback added");
+    }
+#endif
+
     return Qtrue;
 }
 
@@ -959,6 +1022,29 @@ ossl_sslctx_get_ciphers(VALUE self)
     return ary;
 }
 
+static VALUE
+build_cipher_string(VALUE v)
+{
+    VALUE str, elem;
+    int i;
+
+    if (RB_TYPE_P(v, T_ARRAY)) {
+        str = rb_str_new(0, 0);
+        for (i = 0; i < RARRAY_LEN(v); i++) {
+            elem = rb_ary_entry(v, i);
+            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
+            elem = rb_String(elem);
+            rb_str_append(str, elem);
+            if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
+        }
+    } else {
+        str = v;
+        StringValue(str);
+    }
+
+    return str;
+}
+
 /*
  * call-seq:
  *    ctx.ciphers = "cipher1:cipher2:..."
@@ -973,33 +1059,49 @@ static VALUE
 ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 {
     SSL_CTX *ctx;
-    VALUE str, elem;
-    int i;
+    VALUE str;
 
     rb_check_frozen(self);
     if (NIL_P(v))
-	return v;
-    else if (RB_TYPE_P(v, T_ARRAY)) {
-        str = rb_str_new(0, 0);
-        for (i = 0; i < RARRAY_LEN(v); i++) {
-            elem = rb_ary_entry(v, i);
-            if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
-            elem = rb_String(elem);
-            rb_str_append(str, elem);
-            if (i < RARRAY_LEN(v)-1) rb_str_cat2(str, ":");
-        }
-    } else {
-        str = v;
-        StringValue(str);
-    }
+        return v;
+
+    str = build_cipher_string(v);
 
     GetSSLCTX(self, ctx);
-    if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str))) {
+    if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str)))
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
-    }
 
     return v;
 }
+
+#ifdef HAVE_SSL_CTX_SET_CIPHERSUITES
+/*
+ * call-seq:
+ *    ctx.ciphersuites = "cipher1:cipher2:..."
+ *    ctx.ciphersuites = [name, ...]
+ *    ctx.ciphersuites = [[name, version, bits, alg_bits], ...]
+ *
+ * Sets the list of available TLSv1.3 cipher suites for this context.
+ */
+static VALUE
+ossl_sslctx_set_ciphersuites(VALUE self, VALUE v)
+{
+    SSL_CTX *ctx;
+    VALUE str;
+
+    rb_check_frozen(self);
+    if (NIL_P(v))
+        return v;
+
+    str = build_cipher_string(v);
+
+    GetSSLCTX(self, ctx);
+    if (!SSL_CTX_set_ciphersuites(ctx, StringValueCStr(str)))
+        ossl_raise(eSSLError, "SSL_CTX_set_ciphersuites");
+
+    return v;
+}
+#endif
 
 #ifndef OPENSSL_NO_DH
 /*
@@ -1439,7 +1541,6 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
 /*
  * SSLSocket class
  */
-#ifndef OPENSSL_NO_SOCK
 static inline int
 ssl_started(SSL *ssl)
 {
@@ -1602,11 +1703,16 @@ no_exception_p(VALUE opts)
     return 0;
 }
 
+// Provided by Ruby 3.2.0 and later in order to support the default IO#timeout.
+#ifndef RUBY_IO_TIMEOUT_DEFAULT
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
+#endif
+
 static void
 io_wait_writable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+    rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
 #else
     rb_io_wait_writable(fptr->fd);
 #endif
@@ -1616,14 +1722,14 @@ static void
 io_wait_readable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+    rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
 #else
     rb_io_wait_readable(fptr->fd);
 #endif
 }
 
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
+ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
 {
     SSL *ssl;
     rb_io_t *fptr;
@@ -2342,7 +2448,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-# ifndef OPENSSL_NO_NEXTPROTONEG
+# ifdef OSSL_USE_NEXTPROTONEG
 /*
  * call-seq:
  *    ssl.npn_protocol => String | nil
@@ -2392,6 +2498,49 @@ ossl_ssl_alpn_protocol(VALUE self)
 
 /*
  * call-seq:
+ *    session.export_keying_material(label, length) -> String
+ *
+ * Enables use of shared session key material in accordance with RFC 5705.
+ */
+static VALUE
+ossl_ssl_export_keying_material(int argc, VALUE *argv, VALUE self)
+{
+    SSL *ssl;
+    VALUE str;
+    VALUE label;
+    VALUE length;
+    VALUE context;
+    unsigned char *p;
+    size_t len;
+    int use_ctx = 0;
+    unsigned char *ctx = NULL;
+    size_t ctx_len = 0;
+    int ret;
+
+    rb_scan_args(argc, argv, "21", &label, &length, &context);
+    StringValue(label);
+
+    GetSSL(self, ssl);
+
+    len = (size_t)NUM2LONG(length);
+    str = rb_str_new(0, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (!NIL_P(context)) {
+	use_ctx = 1;
+	StringValue(context);
+	ctx = (unsigned char *)RSTRING_PTR(context);
+	ctx_len = RSTRING_LEN(context);
+    }
+    ret = SSL_export_keying_material(ssl, p, len, (char *)RSTRING_PTR(label),
+				     RSTRING_LENINT(label), ctx, ctx_len, use_ctx);
+    if (ret == 0 || ret == -1) {
+	ossl_raise(eSSLError, "SSL_export_keying_material");
+    }
+    return str;
+}
+
+/*
+ * call-seq:
  *    ssl.tmp_key => PKey or nil
  *
  * Returns the ephemeral key used in case of forward secrecy cipher.
@@ -2419,6 +2568,7 @@ Init_ossl_ssl(void)
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
 #endif
 
+#ifndef OPENSSL_NO_SOCK
     id_call = rb_intern_const("call");
     ID_callback_state = rb_intern_const("callback_state");
 
@@ -2440,16 +2590,6 @@ Init_ossl_ssl(void)
      * of SSLContext to set up connections.
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
-
-    /* Document-module: OpenSSL::ExtConfig
-     *
-     * This module contains configuration information about the SSL extension,
-     * for example if socket support is enabled, or the host name TLS extension
-     * is enabled.  Constants in this module will always be defined, but contain
-     * +true+ or +false+ values depending on the configuration of your OpenSSL
-     * installation.
-     */
-    mSSLExtConfig = rb_define_module_under(mOSSL, "ExtConfig");
 
     /* Document-class: OpenSSL::SSL::SSLError
      *
@@ -2613,8 +2753,6 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern_const("session_remove_cb"), 1, 1, Qfalse);
 
-    rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
-
     /*
      * A callback invoked whenever a new handshake is initiated on an
      * established connection. May be used to disable renegotiation entirely.
@@ -2635,7 +2773,7 @@ Init_ossl_ssl(void)
      *   end
      */
     rb_attr(cSSLContext, rb_intern_const("renegotiation_cb"), 1, 1, Qfalse);
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
     /*
      * An Enumerable of Strings. Each String represents a protocol to be
      * advertised as the list of supported protocols for Next Protocol
@@ -2697,12 +2835,38 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern_const("alpn_select_cb"), 1, 1, Qfalse);
 
+    /*
+     * A callback invoked when TLS key material is generated or received, in
+     * order to allow applications to store this keying material for debugging
+     * purposes.
+     *
+     * The callback is invoked with an SSLSocket and a string containing the
+     * key material in the format used by NSS for its SSLKEYLOGFILE debugging
+     * output.
+     *
+     * It is only compatible with OpenSSL >= 1.1.1. Even if LibreSSL implements
+     * SSL_CTX_set_keylog_callback() from v3.4.2, it does nothing (see
+     * https://github.com/libressl-portable/openbsd/commit/648d39f0f035835d0653342d139883b9661e9cb6).
+     *
+     * === Example
+     *
+     *   context.keylog_cb = proc do |_sock, line|
+     *     File.open('ssl_keylog_file', "a") do |f|
+     *       f.write("#{line}\n")
+     *     end
+     *   end
+     */
+    rb_attr(cSSLContext, rb_intern_const("keylog_cb"), 1, 1, Qfalse);
+
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
     rb_define_private_method(cSSLContext, "set_minmax_proto_version",
 			     ossl_sslctx_set_minmax_proto_version, 2);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+#ifdef HAVE_SSL_CTX_SET_CIPHERSUITES
+    rb_define_method(cSSLContext, "ciphersuites=", ossl_sslctx_set_ciphersuites, 1);
+#endif
 #ifndef OPENSSL_NO_DH
     rb_define_method(cSSLContext, "tmp_dh=", ossl_sslctx_set_tmp_dh, 1);
 #endif
@@ -2779,11 +2943,6 @@ Init_ossl_ssl(void)
      * Document-class: OpenSSL::SSL::SSLSocket
      */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
-#ifdef OPENSSL_NO_SOCK
-    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qtrue);
-    rb_define_method(cSSLSocket, "initialize", rb_f_notimplement, -1);
-#else
-    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qfalse);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_undef_method(cSSLSocket, "initialize_copy");
@@ -2814,10 +2973,10 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
-# ifndef OPENSSL_NO_NEXTPROTONEG
+    rb_define_method(cSSLSocket, "export_keying_material", ossl_ssl_export_keying_material, -1);
+# ifdef OSSL_USE_NEXTPROTONEG
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif
-#endif
 
     rb_define_const(mSSL, "VERIFY_NONE", INT2NUM(SSL_VERIFY_NONE));
     rb_define_const(mSSL, "VERIFY_PEER", INT2NUM(SSL_VERIFY_PEER));
@@ -2974,8 +3133,10 @@ Init_ossl_ssl(void)
     DefIVarID(alpn_select_cb);
     DefIVarID(servername_cb);
     DefIVarID(verify_hostname);
+    DefIVarID(keylog_cb);
 
     DefIVarID(io);
     DefIVarID(context);
     DefIVarID(hostname);
+#endif /* !defined(OPENSSL_NO_SOCK) */
 }

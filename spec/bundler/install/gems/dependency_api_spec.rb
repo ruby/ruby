@@ -119,7 +119,7 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "falls back when the API errors out" do
-    simulate_platform mswin
+    simulate_platform x86_mswin32
 
     build_repo2 do
       # The rcov gem is platform mswin32, but has no arch
@@ -443,6 +443,22 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
+  it "does not fetch all marshaled specs" do
+    build_repo2 do
+      build_gem "foo", "1.0"
+      build_gem "foo", "2.0"
+    end
+
+    install_gemfile <<-G, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :verbose => true
+      source "#{source_uri}"
+
+      gem "foo"
+    G
+
+    expect(out).to include("foo-2.0.gemspec.rz")
+    expect(out).not_to include("foo-1.0.gemspec.rz")
+  end
+
   it "does not refetch if the only unmet dependency is bundler" do
     build_repo2 do
       build_gem "bundler_dep" do |s|
@@ -458,18 +474,6 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-  end
-
-  it "should install when EndpointSpecification has a bin dir owned by root", :sudo => true do
-    sudo "mkdir -p #{system_gem_path("bin")}"
-    sudo "chown -R root #{system_gem_path("bin")}"
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rails"
-    G
-    bundle :install, :artifice => "endpoint"
-    expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
   it "installs the binstubs", :bundler => "< 3" do

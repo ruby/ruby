@@ -258,7 +258,7 @@ module Bundler
           @dependencies |= Array(names)
         end
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def can_lock?(spec)
           spec.source == self
         end
@@ -285,7 +285,7 @@ module Bundler
         end
         alias_method :identifier, :to_s
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def include?(other)
           other == self
         end
@@ -294,7 +294,7 @@ module Bundler
           SharedHelpers.digest(:SHA1).hexdigest(uri)
         end
 
-        # Note: Do not override if you don't know what you are doing.
+        # NOTE: Do not override if you don't know what you are doing.
         def gem_install_dir
           Bundler.install_path
         end

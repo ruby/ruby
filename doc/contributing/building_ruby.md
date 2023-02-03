@@ -1,47 +1,79 @@
 # Building Ruby
 
-## Quick start guide
+## Dependencies
 
 1. Install the prerequisite dependencies for building the CRuby interpreter:
 
     * C compiler
     * autoconf - 2.67 or later
-    * bison - 2.0 or later
+    * bison - 3.0 or later
     * gperf - 3.0.3 or later
-    * ruby - 2.7 or later
+    * ruby - 2.2 or later
+        * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
+    * OpenSSL 1.1.x or 3.0.x / LibreSSL
+    * libyaml 0.1.7 or later
+    * zlib
 
 2. Install optional, recommended dependencies:
 
-    * OpenSSL/LibreSSL
     * readline/editline (libedit)
-    * zlib
     * libffi
-    * libyaml
     * libexecinfo (FreeBSD)
+    * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
-3. Checkout the CRuby source code:
+    If you installed the libraries needed for extensions (openssl, readline, libyaml, zlib) into other than the OS default place,
+    typically using Homebrew on macOS, add `--with-EXTLIB-dir` options to `CONFIGURE_ARGS` environment variable.
 
+    ``` shell
+    export CONFIGURE_ARGS=""
+    for ext in openssl readline libyaml zlib; do
+      CONFIGURE_ARGS="${CONFIGURE_ARGS} --with-$ext-dir=$(brew --prefix $ext)"
+    done
     ```
+
+## Quick start guide
+
+1. Checkout the CRuby source code:
+
+    ``` shell
     git clone https://github.com/ruby/ruby.git
     ```
 
-4. Generate the configuration files and build. It's generally advisable to use a build directory:
+2. Generate the configure file:
 
-    ```
+    ``` shell
     ./autogen.sh
-    mkdir build && cd build # it's good practice to build outside of source dir
-    mkdir ~/.rubies # we will install to .rubies/ruby-master in our home dir
+    ```
+
+3. Create a `build` directory outside of the source directory:
+
+    ``` shell
+    mkdir build && cd build
+    ```
+
+    While it's not necessary to build in a separate directory, it's good practice to do so.
+
+4. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
+
+    ``` shell
+    mkdir ~/.rubies
+    ```
+
+5. Run configure:
+
+    ``` shell
     ../configure --prefix="${HOME}/.rubies/ruby-master"
+    ```
+
+    - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
+
+6. Build Ruby:
+
+    ``` shell
     make install
     ```
 
-5. Optional: If you are frequently building Ruby, disabling documentation will reduce the time it takes to `make`:
-
-    ``` shell
-    ../configure --disable-install-doc
-    ```
-
-6. [Run tests](testing_ruby.md) to confirm your build succeeded
+7. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
 ### Unexplainable Build Errors
 
@@ -57,7 +89,7 @@ about Ruby's build to help out.
 In GNU make and BSD make implementations, to run a specific make script in parallel, pass the flag `-j<number of processes>`. For instance,
 to run tests on 8 processes, use:
 
-```
+``` shell
 make test-all -j8
 ```
 
@@ -85,7 +117,7 @@ Miniruby is a version of Ruby which has no external dependencies and lacks certa
 It can be useful in Ruby development because it allows for faster build times. Miniruby is
 built before Ruby. A functional Miniruby is required to build Ruby. To build Miniruby:
 
-```
+``` shell
 make miniruby
 ```
 
@@ -119,7 +151,7 @@ On Linux it is important to specify `-O0` when debugging. This is especially tru
 
 You need to be able to use gcc (gcov) and lcov visualizer.
 
-```
+``` shell
 ./autogen.sh
 ./configure --enable-gcov
 make

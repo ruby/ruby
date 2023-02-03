@@ -32,249 +32,309 @@ module Net   #:nodoc:
   class HTTPHeaderSyntaxError < StandardError; end
   # :startdoc:
 
-  # == An HTTP client API for Ruby.
+  # \Class \Net::HTTP provides a rich library that implements the client
+  # in a client-server model that uses the \HTTP request-response protocol.
+  # For information about \HTTP, see:
   #
-  # Net::HTTP provides a rich library which can be used to build HTTP
-  # user-agents.  For more details about HTTP see
-  # [RFC2616](http://www.ietf.org/rfc/rfc2616.txt).
+  # - {Hypertext Transfer Protocol}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol].
+  # - {Technical overview}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Technical_overview].
   #
-  # Net::HTTP is designed to work closely with URI.  URI::HTTP#host,
-  # URI::HTTP#port and URI::HTTP#request_uri are designed to work with
-  # Net::HTTP.
+  # == About the Examples
   #
-  # If you are only performing a few GET requests you should try OpenURI.
+  # :include: doc/net-http/examples.rdoc
   #
-  # == Simple Examples
+  # == Strategies
   #
-  # All examples assume you have loaded Net::HTTP with:
+  # - If you will make only a few GET requests,
+  #   consider using {OpenURI}[rdoc-ref:OpenURI].
+  # - If you will make only a few requests of all kinds,
+  #   consider using the various singleton convenience methods in this class.
+  #   Each of the following methods automatically starts and finishes
+  #   a {session}[rdoc-ref:Net::HTTP@Sessions] that sends a single request:
   #
-  #   require 'net/http'
+  #     # Return string response body.
+  #     Net::HTTP.get(hostname, path)
+  #     Net::HTTP.get(uri)
   #
-  # This will also require 'uri' so you don't need to require it separately.
+  #     # Write string response body to $stdout.
+  #     Net::HTTP.get_print(hostname, path)
+  #     Net::HTTP.get_print(uri)
   #
-  # The Net::HTTP methods in the following section do not persist
-  # connections.  They are not recommended if you are performing many HTTP
-  # requests.
+  #     # Return response as Net::HTTPResponse object.
+  #     Net::HTTP.get_response(hostname, path)
+  #     Net::HTTP.get_response(uri)
+  #     data = '{"title": "foo", "body": "bar", "userId": 1}'
+  #     Net::HTTP.post(uri, data)
+  #     params = {title: 'foo', body: 'bar', userId: 1}
+  #     Net::HTTP.post_form(uri, params)
   #
-  # === GET
+  # - If performance is important, consider using sessions, which lower request overhead.
+  #   This {session}[rdoc-ref:Net::HTTP@Sessions] has multiple requests for
+  #   {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]
+  #   and {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
   #
-  #   Net::HTTP.get('example.com', '/index.html') # => String
+  #     Net::HTTP.start(hostname) do |http|
+  #       # Session started automatically before block execution.
+  #       http.get(path)
+  #       http.head(path)
+  #       body = 'Some text'
+  #       http.post(path, body)  # Can also have a block.
+  #       http.put(path, body)
+  #       http.delete(path)
+  #       http.options(path)
+  #       http.trace(path)
+  #       http.patch(path, body) # Can also have a block.
+  #       http.copy(path)
+  #       http.lock(path, body)
+  #       http.mkcol(path, body)
+  #       http.move(path)
+  #       http.propfind(path, body)
+  #       http.proppatch(path, body)
+  #       http.unlock(path, body)
+  #       # Session finished automatically at block exit.
+  #     end
   #
-  # === GET by URI
+  # The methods cited above are convenience methods that, via their few arguments,
+  # allow minimal control over the requests.
+  # For greater control, consider using {request objects}[rdoc-ref:Net::HTTPRequest].
   #
-  #   uri = URI('http://example.com/index.html?count=10')
-  #   Net::HTTP.get(uri) # => String
+  # == URIs
   #
-  # === GET with Dynamic Parameters
+  # On the internet, a URI
+  # ({Universal Resource Identifier}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier])
+  # is a string that identifies a particular resource.
+  # It consists of some or all of: scheme, hostname, path, query, and fragment;
+  # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  #   uri = URI('http://example.com/index.html')
-  #   params = { :limit => 10, :page => 3 }
-  #   uri.query = URI.encode_www_form(params)
+  # A Ruby {URI::Generic}[rdoc-ref:URI::Generic] object
+  # represents an internet URI.
+  # It provides, among others, methods
+  # +scheme+, +hostname+, +path+, +query+, and +fragment+.
   #
-  #   res = Net::HTTP.get_response(uri)
-  #   puts res.body if res.is_a?(Net::HTTPSuccess)
+  # === Schemes
   #
-  # === POST
+  # An internet \URI has
+  # a {scheme}[https://en.wikipedia.org/wiki/List_of_URI_schemes].
   #
-  #   uri = URI('http://www.example.com/search.cgi')
-  #   res = Net::HTTP.post_form(uri, 'q' => 'ruby', 'max' => '50')
-  #   puts res.body
+  # The two schemes supported in \Net::HTTP are <tt>'https'</tt> and <tt>'http'</tt>:
   #
-  # === POST with Multiple Values
+  #   uri.scheme                       # => "https"
+  #   URI('http://example.com').scheme # => "http"
   #
-  #   uri = URI('http://www.example.com/search.cgi')
-  #   res = Net::HTTP.post_form(uri, 'q' => ['ruby', 'perl'], 'max' => '50')
-  #   puts res.body
+  # === Hostnames
   #
-  # == How to use Net::HTTP
+  # A hostname identifies a server (host) to which requests may be sent:
   #
-  # The following example code can be used as the basis of an HTTP user-agent
-  # which can perform a variety of request types using persistent
-  # connections.
-  #
-  #   uri = URI('http://example.com/some_path?query=string')
-  #
-  #   Net::HTTP.start(uri.host, uri.port) do |http|
-  #     request = Net::HTTP::Get.new uri
-  #
-  #     response = http.request request # Net::HTTPResponse object
+  #   hostname = uri.hostname # => "jsonplaceholder.typicode.com"
+  #   Net::HTTP.start(hostname) do |http|
+  #     # Some HTTP stuff.
   #   end
   #
-  # Net::HTTP::start immediately creates a connection to an HTTP server which
-  # is kept open for the duration of the block.  The connection will remain
-  # open for multiple requests in the block if the server indicates it
-  # supports persistent connections.
+  # === Paths
   #
-  # If you wish to re-use a connection across multiple HTTP requests without
-  # automatically closing it you can use ::new and then call #start and
-  # #finish manually.
+  # A host-specific path identifies a resource on the host:
   #
-  # The request types Net::HTTP supports are listed below in the section "HTTP
-  # Request Classes".
+  #   _uri = uri.dup
+  #   _uri.path = '/todos/1'
+  #   hostname = _uri.hostname
+  #   path = _uri.path
+  #   Net::HTTP.get(hostname, path)
   #
-  # For all the Net::HTTP request objects and shortcut request methods you may
-  # supply either a String for the request path or a URI from which Net::HTTP
-  # will extract the request path.
+  # === Queries
   #
-  # === Response Data
+  # A host-specific query adds name/value pairs to the URI:
   #
-  #   uri = URI('http://example.com/index.html')
-  #   res = Net::HTTP.get_response(uri)
+  #   _uri = uri.dup
+  #   params = {userId: 1, completed: false}
+  #   _uri.query = URI.encode_www_form(params)
+  #   _uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com?userId=1&completed=false>
+  #   Net::HTTP.get(_uri)
   #
-  #   # Headers
-  #   res['Set-Cookie']            # => String
-  #   res.get_fields('set-cookie') # => Array
-  #   res.to_hash['set-cookie']    # => Array
-  #   puts "Headers: #{res.to_hash.inspect}"
+  # === Fragments
   #
-  #   # Status
-  #   puts res.code       # => '200'
-  #   puts res.message    # => 'OK'
-  #   puts res.class.name # => 'HTTPOK'
+  # A {URI fragment}[https://en.wikipedia.org/wiki/URI_fragment] has no effect
+  # in \Net::HTTP;
+  # the same data is returned, regardless of whether a fragment is included.
   #
-  #   # Body
-  #   puts res.body
+  # == Request Headers
   #
-  # === Following Redirection
+  # Request headers may be used to pass additional information to the host,
+  # similar to arguments passed in a method call;
+  # each header is a name/value pair.
   #
-  # Each Net::HTTPResponse object belongs to a class for its response code.
+  # Each of the \Net::HTTP methods that sends a request to the host
+  # has optional argument +headers+,
+  # where the headers are expressed as a hash of field-name/value pairs:
   #
-  # For example, all 2XX responses are instances of a Net::HTTPSuccess
-  # subclass, a 3XX response is an instance of a Net::HTTPRedirection
-  # subclass and a 200 response is an instance of the Net::HTTPOK class.  For
-  # details of response classes, see the section "HTTP Response Classes"
-  # below.
+  #   headers = {Accept: 'application/json', Connection: 'Keep-Alive'}
+  #   Net::HTTP.get(uri, headers)
   #
-  # Using a case statement you can handle various types of responses properly:
+  # See lists of both standard request fields and common request fields at
+  # {Request Fields}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields].
+  # A host may also accept other custom fields.
   #
-  #   def fetch(uri_str, limit = 10)
+  # == Sessions
+  #
+  # A _session_ is a connection between a server (host) and a client that:
+  #
+  # - Is begun by instance method Net::HTTP#start.
+  # - May contain any number of requests.
+  # - Is ended by instance method Net::HTTP#finish.
+  #
+  # See example sessions at {Strategies}[rdoc-ref:Net::HTTP@Strategies].
+  #
+  # === Session Using \Net::HTTP.start
+  #
+  # If you have many requests to make to a single host (and port),
+  # consider using singleton method Net::HTTP.start with a block;
+  # the method handles the session automatically by:
+  #
+  # - Calling #start before block execution.
+  # - Executing the block.
+  # - Calling #finish after block execution.
+  #
+  # In the block, you can use these instance methods,
+  # each of which that sends a single request:
+  #
+  # - {HTTP methods}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods]:
+  #
+  #   - #get, #request_get: GET.
+  #   - #head, #request_head: HEAD.
+  #   - #post, #request_post: POST.
+  #   - #delete: DELETE.
+  #   - #options: OPTIONS.
+  #   - #trace: TRACE.
+  #   - #patch: PATCH.
+  #
+  # - {WebDAV methods}[https://en.wikipedia.org/wiki/WebDAV#Implementation]:
+  #
+  #   - #copy: COPY.
+  #   - #lock: LOCK.
+  #   - #mkcol: MKCOL.
+  #   - #move: MOVE.
+  #   - #propfind: PROPFIND.
+  #   - #proppatch: PROPPATCH.
+  #   - #unlock: UNLOCK.
+  #
+  # === Session Using \Net::HTTP.start and \Net::HTTP.finish
+  #
+  # You can manage a session manually using methods #start and #finish:
+  #
+  #   http = Net::HTTP.new(hostname)
+  #   http.start
+  #   http.get('/todos/1')
+  #   http.get('/todos/2')
+  #   http.delete('/posts/1')
+  #   http.finish # Needed to free resources.
+  #
+  # === Single-Request Session
+  #
+  # Certain convenience methods automatically handle a session by:
+  #
+  # - Creating an \HTTP object
+  # - Starting a session.
+  # - Sending a single request.
+  # - Finishing the session.
+  # - Destroying the object.
+  #
+  # Such methods that send GET requests:
+  #
+  # - ::get: Returns the string response body.
+  # - ::get_print: Writes the string response body to $stdout.
+  # - ::get_response: Returns a Net::HTTPResponse object.
+  #
+  # Such methods that send POST requests:
+  #
+  # - ::post: Posts data to the host.
+  # - ::post_form: Posts form data to the host.
+  #
+  # == \HTTP Requests and Responses
+  #
+  # Many of the methods above are convenience methods,
+  # each of which sends a request and returns a string
+  # without directly using \Net::HTTPRequest and \Net::HTTPResponse objects.
+  #
+  # You can, however, directly create a request object, send the request,
+  # and retrieve the response object; see:
+  #
+  # - Net::HTTPRequest.
+  # - Net::HTTPResponse.
+  #
+  # == Following Redirection
+  #
+  # Each returned response is an instance of a subclass of Net::HTTPResponse.
+  # See the {response class hierarchy}[rdoc-ref:Net::HTTPResponse@Response+Subclasses].
+  #
+  # In particular, class Net::HTTPRedirection is the parent
+  # of all redirection classes.
+  # This allows you to craft a case statement to handle redirections properly:
+  #
+  #   def fetch(uri, limit = 10)
   #     # You should choose a better exception.
-  #     raise ArgumentError, 'too many HTTP redirects' if limit == 0
+  #     raise ArgumentError, 'Too many HTTP redirects' if limit == 0
   #
-  #     response = Net::HTTP.get_response(URI(uri_str))
-  #
-  #     case response
-  #     when Net::HTTPSuccess then
-  #       response
-  #     when Net::HTTPRedirection then
-  #       location = response['location']
-  #       warn "redirected to #{location}"
+  #     res = Net::HTTP.get_response(URI(uri))
+  #     case res
+  #     when Net::HTTPSuccess     # Any success class.
+  #       res
+  #     when Net::HTTPRedirection # Any redirection class.
+  #       location = res['Location']
+  #       warn "Redirected to #{location}"
   #       fetch(location, limit - 1)
-  #     else
-  #       response.value
+  #     else                      # Any other class.
+  #       res.value
   #     end
   #   end
   #
-  #   print fetch('http://www.ruby-lang.org')
+  #   fetch(uri)
   #
-  # === POST
-  #
-  # A POST can be made using the Net::HTTP::Post request class.  This example
-  # creates a URL encoded POST body:
-  #
-  #   uri = URI('http://www.example.com/todo.cgi')
-  #   req = Net::HTTP::Post.new(uri)
-  #   req.set_form_data('from' => '2005-01-01', 'to' => '2005-03-31')
-  #
-  #   res = Net::HTTP.start(uri.hostname, uri.port) do |http|
-  #     http.request(req)
-  #   end
-  #
-  #   case res
-  #   when Net::HTTPSuccess, Net::HTTPRedirection
-  #     # OK
-  #   else
-  #     res.value
-  #   end
-  #
-  # To send multipart/form-data use Net::HTTPHeader#set_form:
-  #
-  #   req = Net::HTTP::Post.new(uri)
-  #   req.set_form([['upload', File.open('foo.bar')]], 'multipart/form-data')
-  #
-  # Other requests that can contain a body such as PUT can be created in the
-  # same way using the corresponding request class (Net::HTTP::Put).
-  #
-  # === Setting Headers
-  #
-  # The following example performs a conditional GET using the
-  # If-Modified-Since header.  If the files has not been modified since the
-  # time in the header a Not Modified response will be returned.  See RFC 2616
-  # section 9.3 for further details.
-  #
-  #   uri = URI('http://example.com/cached_response')
-  #   file = File.stat 'cached_response'
-  #
-  #   req = Net::HTTP::Get.new(uri)
-  #   req['If-Modified-Since'] = file.mtime.rfc2822
-  #
-  #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
-  #     http.request(req)
-  #   }
-  #
-  #   open 'cached_response', 'w' do |io|
-  #     io.write res.body
-  #   end if res.is_a?(Net::HTTPSuccess)
-  #
-  # === Basic Authentication
+  # == Basic Authentication
   #
   # Basic authentication is performed according to
-  # [RFC2617](http://www.ietf.org/rfc/rfc2617.txt).
-  #
-  #   uri = URI('http://example.com/index.html?key=value')
+  # {RFC2617}[http://www.ietf.org/rfc/rfc2617.txt]:
   #
   #   req = Net::HTTP::Get.new(uri)
-  #   req.basic_auth 'user', 'pass'
-  #
-  #   res = Net::HTTP.start(uri.hostname, uri.port) {|http|
+  #   req.basic_auth('user', 'pass')
+  #   res = Net::HTTP.start(hostname) do |http|
   #     http.request(req)
-  #   }
-  #   puts res.body
+  #   end
   #
-  # === Streaming Response Bodies
+  # == Streaming Response Bodies
   #
-  # By default Net::HTTP reads an entire response into memory.  If you are
+  # By default \Net::HTTP reads an entire response into memory.  If you are
   # handling large files or wish to implement a progress bar you can instead
   # stream the body directly to an IO.
   #
-  #   uri = URI('http://example.com/large_file')
-  #
-  #   Net::HTTP.start(uri.host, uri.port) do |http|
-  #     request = Net::HTTP::Get.new uri
-  #
-  #     http.request request do |response|
-  #       open 'large_file', 'w' do |io|
-  #         response.read_body do |chunk|
-  #           io.write chunk
+  #   Net::HTTP.start(hostname) do |http|
+  #     req = Net::HTTP::Get.new(uri)
+  #     http.request(req) do |res|
+  #       open('t.tmp', 'w') do |f|
+  #         res.read_body do |chunk|
+  #           f.write chunk
   #         end
   #       end
   #     end
   #   end
   #
-  # === HTTPS
+  # == HTTPS
   #
-  # HTTPS is enabled for an HTTP connection by Net::HTTP#use_ssl=.
+  # HTTPS is enabled for an \HTTP connection by Net::HTTP#use_ssl=:
   #
-  #   uri = URI('https://secure.example.com/some_path?query=string')
-  #
-  #   Net::HTTP.start(uri.host, uri.port, :use_ssl => true) do |http|
-  #     request = Net::HTTP::Get.new uri
-  #     response = http.request request # Net::HTTPResponse object
+  #   Net::HTTP.start(hostname, :use_ssl => true) do |http|
+  #     req = Net::HTTP::Get.new(uri)
+  #     res = http.request(req)
   #   end
   #
-  # Or if you simply want to make a GET request, you may pass in an URI
-  # object that has an HTTPS URL. Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' URI scheme.
+  # Or if you simply want to make a GET request, you may pass in a URI
+  # object that has an \HTTPS URL. \Net::HTTP automatically turns on TLS
+  # verification if the URI object has a 'https' URI scheme:
   #
-  #   uri = URI('https://example.com/')
-  #   Net::HTTP.get(uri) # => String
+  #   uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com/>
+  #   Net::HTTP.get(uri)
   #
-  # In previous versions of Ruby you would need to require 'net/https' to use
-  # HTTPS. This is no longer true.
+  # == Proxies
   #
-  # === Proxies
-  #
-  # Net::HTTP will automatically create a proxy from the +http_proxy+
+  # \Net::HTTP will automatically create a proxy from the +http_proxy+
   # environment variable if it is present.  To disable use of +http_proxy+,
   # pass +nil+ for the proxy address.
   #
@@ -287,117 +347,18 @@ module Net   #:nodoc:
   #     # always proxy via your.proxy.addr:8080
   #   }
   #
-  # See Net::HTTP.new for further details and examples such as proxies that
-  # require a username and password.
+  # == Compression
   #
-  # === Compression
-  #
-  # Net::HTTP automatically adds Accept-Encoding for compression of response
+  # \Net::HTTP automatically adds Accept-Encoding for compression of response
   # bodies and automatically decompresses gzip and deflate responses unless a
   # Range header was sent.
   #
   # Compression can be disabled through the Accept-Encoding: identity header.
   #
-  # == HTTP Request Classes
-  #
-  # Here is the HTTP request class hierarchy.
-  #
-  # * Net::HTTPRequest
-  #   * Net::HTTP::Get
-  #   * Net::HTTP::Head
-  #   * Net::HTTP::Post
-  #   * Net::HTTP::Patch
-  #   * Net::HTTP::Put
-  #   * Net::HTTP::Proppatch
-  #   * Net::HTTP::Lock
-  #   * Net::HTTP::Unlock
-  #   * Net::HTTP::Options
-  #   * Net::HTTP::Propfind
-  #   * Net::HTTP::Delete
-  #   * Net::HTTP::Move
-  #   * Net::HTTP::Copy
-  #   * Net::HTTP::Mkcol
-  #   * Net::HTTP::Trace
-  #
-  # == HTTP Response Classes
-  #
-  # Here is HTTP response class hierarchy.  All classes are defined in Net
-  # module and are subclasses of Net::HTTPResponse.
-  #
-  # HTTPUnknownResponse:: For unhandled HTTP extensions
-  # HTTPInformation::                    1xx
-  #   HTTPContinue::                        100
-  #   HTTPSwitchProtocol::                  101
-  #   HTTPProcessing::                      102
-  #   HTTPEarlyHints::                      103
-  # HTTPSuccess::                        2xx
-  #   HTTPOK::                              200
-  #   HTTPCreated::                         201
-  #   HTTPAccepted::                        202
-  #   HTTPNonAuthoritativeInformation::     203
-  #   HTTPNoContent::                       204
-  #   HTTPResetContent::                    205
-  #   HTTPPartialContent::                  206
-  #   HTTPMultiStatus::                     207
-  #   HTTPAlreadyReported::                 208
-  #   HTTPIMUsed::                          226
-  # HTTPRedirection::                    3xx
-  #   HTTPMultipleChoices::                 300
-  #   HTTPMovedPermanently::                301
-  #   HTTPFound::                           302
-  #   HTTPSeeOther::                        303
-  #   HTTPNotModified::                     304
-  #   HTTPUseProxy::                        305
-  #   HTTPTemporaryRedirect::               307
-  #   HTTPPermanentRedirect::               308
-  # HTTPClientError::                    4xx
-  #   HTTPBadRequest::                      400
-  #   HTTPUnauthorized::                    401
-  #   HTTPPaymentRequired::                 402
-  #   HTTPForbidden::                       403
-  #   HTTPNotFound::                        404
-  #   HTTPMethodNotAllowed::                405
-  #   HTTPNotAcceptable::                   406
-  #   HTTPProxyAuthenticationRequired::     407
-  #   HTTPRequestTimeOut::                  408
-  #   HTTPConflict::                        409
-  #   HTTPGone::                            410
-  #   HTTPLengthRequired::                  411
-  #   HTTPPreconditionFailed::              412
-  #   HTTPRequestEntityTooLarge::           413
-  #   HTTPRequestURITooLong::               414
-  #   HTTPUnsupportedMediaType::            415
-  #   HTTPRequestedRangeNotSatisfiable::    416
-  #   HTTPExpectationFailed::               417
-  #   HTTPMisdirectedRequest::              421
-  #   HTTPUnprocessableEntity::             422
-  #   HTTPLocked::                          423
-  #   HTTPFailedDependency::                424
-  #   HTTPUpgradeRequired::                 426
-  #   HTTPPreconditionRequired::            428
-  #   HTTPTooManyRequests::                 429
-  #   HTTPRequestHeaderFieldsTooLarge::     431
-  #   HTTPUnavailableForLegalReasons::      451
-  # HTTPServerError::                    5xx
-  #   HTTPInternalServerError::             500
-  #   HTTPNotImplemented::                  501
-  #   HTTPBadGateway::                      502
-  #   HTTPServiceUnavailable::              503
-  #   HTTPGatewayTimeOut::                  504
-  #   HTTPVersionNotSupported::             505
-  #   HTTPVariantAlsoNegotiates::           506
-  #   HTTPInsufficientStorage::             507
-  #   HTTPLoopDetected::                    508
-  #   HTTPNotExtended::                     510
-  #   HTTPNetworkAuthenticationRequired::   511
-  #
-  # There is also the Net::HTTPBadResponse exception which is raised when
-  # there is a protocol error.
-  #
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.2.2"
+    VERSION = "0.3.2"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
@@ -408,18 +369,17 @@ module Net   #:nodoc:
     end
     # :startdoc:
 
-    # Turns on net/http 1.2 (Ruby 1.8) features.
-    # Defaults to ON in Ruby 1.8 or later.
+    # Returns +true+; retained for compatibility.
     def HTTP.version_1_2
       true
     end
 
-    # Returns true if net/http is in version 1.2 mode.
-    # Defaults to true.
+    # Returns +true+; retained for compatibility.
     def HTTP.version_1_2?
       true
     end
 
+    # Returns +false+; retained for compatibility.
     def HTTP.version_1_1?  #:nodoc:
       false
     end
@@ -429,25 +389,12 @@ module Net   #:nodoc:
       alias is_version_1_2? version_1_2?   #:nodoc:
     end
 
+    # :call-seq:
+    #   Net::HTTP.get_print(hostname, path, port = 80) -> nil
+    #   Net::HTTP:get_print(uri, headers = {}, port = uri.port) -> nil
     #
-    # short cut methods
-    #
-
-    #
-    # Gets the body text from the target and outputs it to $stdout.  The
-    # target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
-    #
-    #    Net::HTTP.get_print URI('http://www.example.com/index.html')
-    #
-    # or:
-    #
-    #    Net::HTTP.get_print 'www.example.com', '/index.html'
-    #
-    # you can also specify request headers:
-    #
-    #    Net::HTTP.get_print URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' }
-    #
+    # Like Net::HTTP.get, but writes the returned body to $stdout;
+    # returns +nil+.
     def HTTP.get_print(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port) {|res|
         res.read_body do |chunk|
@@ -457,40 +404,48 @@ module Net   #:nodoc:
       nil
     end
 
-    # Sends a GET request to the target and returns the HTTP response
-    # as a string.  The target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
+    # :call-seq:
+    #   Net::HTTP.get(hostname, path, port = 80) -> body
+    #   Net::HTTP:get(uri, headers = {}, port = uri.port) -> body
     #
-    #    print Net::HTTP.get(URI('http://www.example.com/index.html'))
+    # Sends a GET request and returns the \HTTP response body as a string.
     #
-    # or:
+    # With string arguments +hostname+ and +path+:
     #
-    #    print Net::HTTP.get('www.example.com', '/index.html')
+    #   hostname = 'jsonplaceholder.typicode.com'
+    #   path = '/todos/1'
+    #   puts Net::HTTP.get(hostname, path)
     #
-    # you can also specify request headers:
+    # Output:
     #
-    #    Net::HTTP.get(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
+    #   {
+    #     "userId": 1,
+    #     "id": 1,
+    #     "title": "delectus aut autem",
+    #     "completed": false
+    #   }
+    #
+    # With URI object +uri+ and optional hash argument +headers+:
+    #
+    #   uri = URI('https://jsonplaceholder.typicode.com/todos/1')
+    #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
+    #   Net::HTTP.get(uri, headers)
+    #
+    # Related:
+    #
+    # - Net::HTTP::Get: request class for \HTTP method +GET+.
+    # - Net::HTTP#get: convenience method for \HTTP method +GET+.
     #
     def HTTP.get(uri_or_host, path_or_headers = nil, port = nil)
       get_response(uri_or_host, path_or_headers, port).body
     end
 
-    # Sends a GET request to the target and returns the HTTP response
-    # as a Net::HTTPResponse object.  The target can either be specified as
-    # (+uri+, +headers+), or as (+host+, +path+, +port+ = 80); so:
+    # :call-seq:
+    #   Net::HTTP.get_response(hostname, path, port = 80) -> http_response
+    #   Net::HTTP:get_response(uri, headers = {}, port = uri.port) -> http_response
     #
-    #    res = Net::HTTP.get_response(URI('http://www.example.com/index.html'))
-    #    print res.body
-    #
-    # or:
-    #
-    #    res = Net::HTTP.get_response('www.example.com', '/index.html')
-    #    print res.body
-    #
-    # you can also specify request headers:
-    #
-    #    Net::HTTP.get_response(URI('http://www.example.com/index.html'), { 'Accept' => 'text/html' })
-    #
+    # Like Net::HTTP.get, but returns a Net::HTTPResponse object
+    # instead of the body string.
     def HTTP.get_response(uri_or_host, path_or_headers = nil, port = nil, &block)
       if path_or_headers && !path_or_headers.is_a?(Hash)
         host = uri_or_host
@@ -508,16 +463,31 @@ module Net   #:nodoc:
       end
     end
 
-    # Posts data to the specified URI object.
+    # Posts data to a host; returns a Net::HTTPResponse object.
     #
-    # Example:
+    # Argument +url+ must be a URL;
+    # argument +data+ must be a string:
     #
-    #   require 'net/http'
-    #   require 'uri'
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = '{"title": "foo", "body": "bar", "userId": 1}'
+    #   headers = {'content-type': 'application/json'}
+    #   res = Net::HTTP.post(_uri, data, headers) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
     #
-    #   Net::HTTP.post URI('http://www.example.com/api/search'),
-    #                  { "q" => "ruby", "max" => "50" }.to_json,
-    #                  "Content-Type" => "application/json"
+    # Output:
+    #
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": 1,
+    #     "id": 101
+    #   }
+    #
+    # Related:
+    #
+    # - Net::HTTP::Post: request class for \HTTP method +POST+.
+    # - Net::HTTP#post: convenience method for \HTTP method +POST+.
     #
     def HTTP.post(url, data, header = nil)
       start(url.hostname, url.port,
@@ -526,22 +496,25 @@ module Net   #:nodoc:
       }
     end
 
-    # Posts HTML form data to the specified URI object.
-    # The form data must be provided as a Hash mapping from String to String.
-    # Example:
+    # Posts data to a host; returns a Net::HTTPResponse object.
     #
-    #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
+    # Argument +url+ must be a URI;
+    # argument +data+ must be a hash:
     #
-    # This method also does Basic Authentication if and only if +url+.user exists.
-    # But userinfo for authentication is deprecated (RFC3986).
-    # So this feature will be removed.
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   data = {title: 'foo', body: 'bar', userId: 1}
+    #   res = Net::HTTP.post_form(_uri, data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   puts res.body
     #
-    # Example:
+    # Output:
     #
-    #   require 'net/http'
-    #
-    #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
-    #                       { "q" => "ruby", "max" => "50" }
+    #   {
+    #     "title": "foo",
+    #     "body": "bar",
+    #     "userId": "1",
+    #     "id": 101
+    #   }
     #
     def HTTP.post_form(url, params)
       req = Post.new(url)
@@ -554,20 +527,29 @@ module Net   #:nodoc:
     end
 
     #
-    # HTTP session management
+    # \HTTP session management
     #
 
-    # The default port to use for HTTP requests; defaults to 80.
+    # Returns integer +80+, the default port to use for \HTTP requests:
+    #
+    #   Net::HTTP.default_port # => 80
+    #
     def HTTP.default_port
       http_default_port()
     end
 
-    # The default port to use for HTTP requests; defaults to 80.
+    # Returns integer +80+, the default port to use for \HTTP requests:
+    #
+    #   Net::HTTP.http_default_port # => 80
+    #
     def HTTP.http_default_port
       80
     end
 
-    # The default port to use for HTTPS requests; defaults to 443.
+    # Returns integer +443+, the default port to use for HTTPS requests:
+    #
+    #   Net::HTTP.https_default_port # => 443
+    #
     def HTTP.https_default_port
       443
     end
@@ -577,35 +559,91 @@ module Net   #:nodoc:
     end
 
     # :call-seq:
-    #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass, &block)
-    #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
+    #   HTTP.start(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, opts) -> http
+    #   HTTP.start(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, opts) {|http| ... } -> object
     #
-    # Creates a new Net::HTTP object, then additionally opens the TCP
-    # connection and HTTP session.
+    # Creates a new \Net::HTTP object, +http+, via \Net::HTTP.new:
     #
-    # Arguments are the following:
-    # _address_ :: hostname or IP address of the server
-    # _port_    :: port of the server
-    # _p_addr_  :: address of proxy
-    # _p_port_  :: port of proxy
-    # _p_user_  :: user of proxy
-    # _p_pass_  :: pass of proxy
-    # _opt_     :: optional hash
+    #   Net::HTTP.new(address, port, p_addr, p_port, p_user, p_pass)
     #
-    # _opt_ sets following values by its accessor.
-    # The keys are ipaddr, ca_file, ca_path, cert, cert_store, ciphers, keep_alive_timeout,
-    # close_on_empty_response, key, open_timeout, read_timeout, write_timeout, ssl_timeout,
-    # ssl_version, use_ssl, verify_callback, verify_depth and verify_mode.
-    # If you set :use_ssl as true, you can use https and default value of
-    # verify_mode is set as OpenSSL::SSL::VERIFY_PEER.
+    # - For arguments +hostname+ through +p_pass+, see Net::HTTP.new.
+    # - For argument +opts+, see below.
     #
-    # If the optional block is given, the newly
-    # created Net::HTTP object is passed to it and closed when the
-    # block finishes.  In this case, the return value of this method
-    # is the return value of the block.  If no block is given, the
-    # return value of this method is the newly created Net::HTTP object
-    # itself, and the caller is responsible for closing it upon completion
-    # using the finish() method.
+    # Note: If +port+ is +nil+ and <tt>opts[:use_ssl]</tt> is a truthy value,
+    # the value passed to +new+ is Net::HTTP.https_default_port, not +port+.
+    #
+    # With no block given:
+    #
+    # - Calls <tt>http.start</tt> with no block (see #start),
+    #   which opens a TCP connection and \HTTP session.
+    # - Returns +http+.
+    # - The caller should call #finish to close the session:
+    #
+    #     http = Net::HTTP.start(hostname)
+    #     http.started? # => true
+    #     http.finish
+    #     http.started? # => false
+    #
+    # With a block given:
+    #
+    # - Calls <tt>http.start</tt> with the block (see #start), which:
+    #
+    #   - Opens a TCP connection and \HTTP session.
+    #   - Calls the block,
+    #     which may make any number of requests to the host.
+    #   - Closes the \HTTP session and TCP connection on block exit.
+    #   - Returns the block's value +object+.
+    #
+    # - Returns +object+.
+    #
+    # Example:
+    #
+    #   hostname = 'jsonplaceholder.typicode.com'
+    #   Net::HTTP.start(hostname) do |http|
+    #     puts http.get('/todos/1').body
+    #     puts http.get('/todos/2').body
+    #   end
+    #
+    # Output:
+    #
+    #   {
+    #     "userId": 1,
+    #     "id": 1,
+    #     "title": "delectus aut autem",
+    #     "completed": false
+    #   }
+    #   {
+    #     "userId": 1,
+    #     "id": 2,
+    #     "title": "quis ut nam facilis et officia qui",
+    #     "completed": false
+    #   }
+    #
+    # If the last argument given is a hash, it is the +opts+ hash,
+    # where each key is a method or accessor to be called,
+    # and its value is the value to be set.
+    #
+    # The keys may include:
+    #
+    # - #ca_file
+    # - #ca_path
+    # - #cert
+    # - #cert_store
+    # - #ciphers
+    # - #close_on_empty_response
+    # - +ipaddr+ (calls #ipaddr=)
+    # - #keep_alive_timeout
+    # - #key
+    # - #open_timeout
+    # - #read_timeout
+    # - #ssl_timeout
+    # - #ssl_version
+    # - +use_ssl+ (calls #use_ssl=)
+    # - #verify_callback
+    # - #verify_depth
+    # - #verify_mode
+    # - #write_timeout
+    #
     def HTTP.start(address, *arg, &block) # :yield: +http+
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
@@ -632,25 +670,113 @@ module Net   #:nodoc:
       alias newobj new # :nodoc:
     end
 
-    # Creates a new Net::HTTP object without opening a TCP connection or
-    # HTTP session.
+    # Returns a new \Net::HTTP object +http+
+    # (but does not open a TCP connection or \HTTP session).
     #
-    # The +address+ should be a DNS hostname or IP address, the +port+ is the
-    # port the server operates on.  If no +port+ is given the default port for
-    # HTTP or HTTPS is used.
+    # <b>No Proxy</b>
     #
-    # If none of the +p_+ arguments are given, the proxy host and port are
-    # taken from the +http_proxy+ environment variable (or its uppercase
-    # equivalent) if present.  If the proxy requires authentication you must
-    # supply it by hand.  See URI::Generic#find_proxy for details of proxy
-    # detection from the environment.  To disable proxy detection set +p_addr+
-    # to nil.
+    # With only string argument +hostname+ given
+    # (and <tt>ENV['http_proxy']</tt> undefined or +nil+),
+    # the returned +http+:
     #
-    # If you are connecting to a custom proxy, +p_addr+ specifies the DNS name
-    # or IP address of the proxy host, +p_port+ the port to use to access the
-    # proxy, +p_user+ and +p_pass+ the username and password if authorization
-    # is required to use the proxy, and p_no_proxy hosts which do not
-    # use the proxy.
+    # - Has the given address.
+    # - Has the default port number, Net::HTTP.default_port (80).
+    # - Has no proxy.
+    #
+    # Example:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.address # => "jsonplaceholder.typicode.com"
+    #   http.port    # => 80
+    #   http.proxy?  # => false
+    #
+    # With integer argument +port+ also given,
+    # the returned +http+ has the given port:
+    #
+    #   http = Net::HTTP.new(hostname, 8000)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:8000 open=false>
+    #   http.port # => 8000
+    #
+    # <b>Proxy Using Argument +p_addr+ as a \String</b>
+    #
+    # When argument +p_addr+ is a string hostname,
+    # the returned +http+ has a proxy:
+    #
+    #   http = Net::HTTP.new(hostname, nil, 'proxy.example')
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.proxy_address # => "proxy.example"
+    #   # These use default values.
+    #   http.proxy_port    # => 80
+    #   http.proxy_user    # => nil
+    #   http.proxy_pass    # => nil
+    #
+    # The port, username, and password for the proxy may also be given:
+    #
+    #   http = Net::HTTP.new(hostname, nil, 'proxy.example', 8000, 'pname', 'ppass')
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.proxy_address # => "proxy.example"
+    #   http.proxy_port    # => 8000
+    #   http.proxy_user    # => "pname"
+    #   http.proxy_pass    # => "ppass"
+    #
+    # <b>Proxy Using <tt>ENV['http_proxy']</tt></b>
+    #
+    # When environment variable <tt>'http_proxy'</tt>
+    # is set to a \URI string,
+    # the returned +http+ will have that URI as its proxy;
+    # note that the \URI string must have a protocol
+    # such as <tt>'http'</tt> or <tt>'https'</tt>:
+    #
+    #   ENV['http_proxy'] = 'http://example.com'
+    #   # => "http://example.com"
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy?        # => true
+    #   http.address       # => "jsonplaceholder.typicode.com"
+    #   http.proxy_address # => "example.com"
+    #
+    # The \URI string may include proxy username, password, and port number:
+    #
+    #   ENV['http_proxy'] = 'http://pname:ppass@example.com:8000'
+    #   # => "http://pname:ppass@example.com:8000"
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.proxy_port # => 8000
+    #   http.proxy_user # => "pname"
+    #   http.proxy_pass # => "ppass"
+    #
+    # <b>Argument +p_no_proxy+</b>
+    #
+    # You can use argument +p_no_proxy+ to reject certain proxies:
+    #
+    # - Reject a certain address:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example')
+    #     http.proxy_address # => nil
+    #
+    # - Reject certain domains or subdomains:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'my.proxy.example', 8000, 'pname', 'ppass', 'proxy.example')
+    #     http.proxy_address # => nil
+    #
+    # - Reject certain addresses and port combinations:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example:1234')
+    #     http.proxy_address # => "proxy.example"
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'proxy.example:8000')
+    #     http.proxy_address # => nil
+    #
+    # - Reject a list of the types above delimited using a comma:
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'proxy.example', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
+    #     http.proxy_address # => nil
+    #
+    #     http = Net::HTTP.new('example.com', nil, 'my.proxy', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
+    #     http.proxy_address # => nil
     #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
@@ -677,8 +803,8 @@ module Net   #:nodoc:
       http
     end
 
-    # Creates a new Net::HTTP object for the specified server address,
-    # without opening the TCP connection or initializing the HTTP session.
+    # Creates a new \Net::HTTP object for the specified server address,
+    # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil)
       @address = address
@@ -717,6 +843,11 @@ module Net   #:nodoc:
       end
     end
 
+    # Returns a string representation of +self+:
+    #
+    #   Net::HTTP.new(hostname).inspect
+    #   # => "#<Net::HTTP jsonplaceholder.typicode.com:80 open=false>"
+    #
     def inspect
       "#<#{self.class} #{@address}:#{@port} open=#{started?}>"
     end
@@ -724,11 +855,51 @@ module Net   #:nodoc:
     # *WARNING* This method opens a serious security hole.
     # Never use this method in production code.
     #
-    # Sets an output stream for debugging.
+    # Sets the output stream for debugging:
     #
     #   http = Net::HTTP.new(hostname)
-    #   http.set_debug_output $stderr
-    #   http.start { .... }
+    #   File.open('t.tmp', 'w') do |file|
+    #     http.set_debug_output(file)
+    #     http.start
+    #     http.get('/nosuch/1')
+    #     http.finish
+    #   end
+    #   puts File.read('t.tmp')
+    #
+    # Output:
+    #
+    #   opening connection to jsonplaceholder.typicode.com:80...
+    #   opened
+    #   <- "GET /nosuch/1 HTTP/1.1\r\nAccept-Encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3\r\nAccept: */*\r\nUser-Agent: Ruby\r\nHost: jsonplaceholder.typicode.com\r\n\r\n"
+    #   -> "HTTP/1.1 404 Not Found\r\n"
+    #   -> "Date: Mon, 12 Dec 2022 21:14:11 GMT\r\n"
+    #   -> "Content-Type: application/json; charset=utf-8\r\n"
+    #   -> "Content-Length: 2\r\n"
+    #   -> "Connection: keep-alive\r\n"
+    #   -> "X-Powered-By: Express\r\n"
+    #   -> "X-Ratelimit-Limit: 1000\r\n"
+    #   -> "X-Ratelimit-Remaining: 999\r\n"
+    #   -> "X-Ratelimit-Reset: 1670879660\r\n"
+    #   -> "Vary: Origin, Accept-Encoding\r\n"
+    #   -> "Access-Control-Allow-Credentials: true\r\n"
+    #   -> "Cache-Control: max-age=43200\r\n"
+    #   -> "Pragma: no-cache\r\n"
+    #   -> "Expires: -1\r\n"
+    #   -> "X-Content-Type-Options: nosniff\r\n"
+    #   -> "Etag: W/\"2-vyGp6PvFo4RvsFtPoIWeCReyIC8\"\r\n"
+    #   -> "Via: 1.1 vegur\r\n"
+    #   -> "CF-Cache-Status: MISS\r\n"
+    #   -> "Server-Timing: cf-q-config;dur=1.3000000762986e-05\r\n"
+    #   -> "Report-To: {\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v3?s=yOr40jo%2BwS1KHzhTlVpl54beJ5Wx2FcG4gGV0XVrh3X9OlR5q4drUn2dkt5DGO4GDcE%2BVXT7CNgJvGs%2BZleIyMu8CLieFiDIvOviOY3EhHg94m0ZNZgrEdpKD0S85S507l1vsEwEHkoTm%2Ff19SiO\"}],\"group\":\"cf-nel\",\"max_age\":604800}\r\n"
+    #   -> "NEL: {\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}\r\n"
+    #   -> "Server: cloudflare\r\n"
+    #   -> "CF-RAY: 778977dc484ce591-DFW\r\n"
+    #   -> "alt-svc: h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400\r\n"
+    #   -> "\r\n"
+    #   reading 2 bytes...
+    #   -> "{}"
+    #   read 2 bytes
+    #   Conn keep-alive
     #
     def set_debug_output(output)
       warn 'Net::HTTP#set_debug_output called after HTTP started', uplevel: 1 if started?
@@ -752,8 +923,24 @@ module Net   #:nodoc:
     # body encoding.
     attr_reader :response_body_encoding
 
-    # Set the encoding to use for the response body.  If given a String, find
-    # the related Encoding.
+    # Sets the encoding to be used for the response body;
+    # returns the encoding.
+    #
+    # The given +value+ may be:
+    #
+    # - An Encoding object.
+    # - The name of an encoding.
+    # - An alias for an encoding name.
+    #
+    # See {Encoding}[rdoc-ref:Encoding].
+    #
+    # Examples:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.response_body_encoding = Encoding::US_ASCII # => #<Encoding:US-ASCII>
+    #   http.response_body_encoding = 'US-ASCII'         # => "US-ASCII"
+    #   http.response_body_encoding = 'ASCII'            # => "ASCII"
+    #
     def response_body_encoding=(value)
       value = Encoding.find(value) if value.is_a?(String)
       @response_body_encoding = value
@@ -765,42 +952,73 @@ module Net   #:nodoc:
     attr_writer :proxy_user
     attr_writer :proxy_pass
 
-    # The IP address to connect to/used to connect to
+    # Returns the IP address for the connection.
+    #
+    # If the session has not been started,
+    # returns the value set by #ipaddr=,
+    # or +nil+ if it has not been set:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.ipaddr # => nil
+    #   http.ipaddr = '172.67.155.76'
+    #   http.ipaddr # => "172.67.155.76"
+    #
+    # If the session has been started,
+    # returns the IP address from the socket:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.start
+    #   http.ipaddr # => "172.67.155.76"
+    #   http.finish
+    #
     def ipaddr
       started? ?  @socket.io.peeraddr[3] : @ipaddr
     end
 
-    # Set the IP address to connect to
+    # Sets the IP address for the connection:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.ipaddr # => nil
+    #   http.ipaddr = '172.67.155.76'
+    #   http.ipaddr # => "172.67.155.76"
+    #
+    # The IP address may not be set if the session has been started.
     def ipaddr=(addr)
       raise IOError, "ipaddr value changed, but session already started" if started?
       @ipaddr = addr
     end
 
     # Number of seconds to wait for the connection to open. Any number
-    # may be used, including Floats for fractional seconds. If the HTTP
+    # may be used, including Floats for fractional seconds. If the \HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception. The default value is 60 seconds.
+    # \Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
-    # seconds. If the HTTP object cannot read data in this many seconds,
+    # seconds. If the \HTTP object cannot read data in this many seconds,
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Number of seconds to wait for one block to be written (via one write(2)
     # call). Any number may be used, including Floats for fractional
-    # seconds. If the HTTP object cannot write data in this many seconds,
-    # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
-    # Net::WriteTimeout is not raised on Windows.
+    # seconds. If the \HTTP object cannot write data in this many seconds,
+    # it raises a \Net::WriteTimeout exception. The default value is 60 seconds.
+    # \Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
 
-    # Maximum number of times to retry an idempotent request in case of
-    # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
+    # Sets the maximum number of times to retry an idempotent request in case of
+    # \Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
     # Timeout::Error.
-    # Should be a non-negative integer number. Zero means no retries.
-    # The default value is 1.
+    # The initial value is 1.
+    #
+    # Argument +retries+ must be a non-negative numeric value:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.max_retries = 2   # => 2
+    #   http.max_retries       # => 2
+    #
     def max_retries=(retries)
       retries = retries.to_int
       if retries < 0
@@ -811,19 +1029,46 @@ module Net   #:nodoc:
 
     attr_reader :max_retries
 
-    # Setter for the read_timeout attribute.
+    # Sets the read timeout, in seconds, for +self+ to integer +sec+;
+    # the initial value is 60.
+    #
+    # Argument +sec+ must be a non-negative numeric value:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.read_timeout # => 60
+    #   http.get('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
+    #   http.read_timeout = 0
+    #   http.get('/todos/1') # Raises Net::ReadTimeout.
+    #
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
     end
 
-    # Setter for the write_timeout attribute.
+    # Sets the write timeout, in seconds, for +self+ to integer +sec+;
+    # the initial value is 60.
+    #
+    # Argument +sec+ must be a non-negative numeric value:
+    #
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   body = 'bar' * 200000
+    #   data = <<EOF
+    #   {"title": "foo", "body": "#{body}", "userId": "1"}
+    #   EOF
+    #   headers = {'content-type': 'application/json'}
+    #   http = Net::HTTP.new(hostname)
+    #   http.post(_uri.path, data, headers)
+    #   # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   http.write_timeout = 0
+    #   http.post(_uri.path, data, headers) # Raises Net::WriteTimeout.
+    #
     def write_timeout=(sec)
       @socket.write_timeout = sec if @socket
       @write_timeout = sec
     end
 
-    # Seconds to wait for 100 Continue response. If the HTTP object does not
+    # Seconds to wait for 100 Continue response. If the \HTTP object does not
     # receive a response in this many seconds it sends the request body. The
     # default value is +nil+.
     attr_reader :continue_timeout
@@ -836,7 +1081,7 @@ module Net   #:nodoc:
 
     # Seconds to reuse the connection of the previous request.
     # If the idle time is less than this Keep-Alive Timeout,
-    # Net::HTTP reuses the TCP/IP socket used by the previous communication.
+    # \Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
 
@@ -844,7 +1089,7 @@ module Net   #:nodoc:
     # Content-Length headers. For backwards compatibility, the default is true.
     attr_accessor :ignore_eof
 
-    # Returns true if the HTTP session has been started.
+    # Returns true if the \HTTP session has been started.
     def started?
       @started
     end
@@ -853,7 +1098,7 @@ module Net   #:nodoc:
 
     attr_accessor :close_on_empty_response
 
-    # Returns true if SSL/TLS is being used with HTTP.
+    # Returns true if SSL/TLS is being used with \HTTP.
     def use_ssl?
       @use_ssl
     end
@@ -861,7 +1106,7 @@ module Net   #:nodoc:
     # Turn on/off SSL.
     # This flag must be set before starting session.
     # If you change use_ssl value after session started,
-    # a Net::HTTP object raises IOError.
+    # IOError is raised.
     def use_ssl=(flag)
       flag = flag ? true : false
       if started? and @use_ssl != flag
@@ -968,10 +1213,10 @@ module Net   #:nodoc:
       @socket.io.peer_cert
     end
 
-    # Opens a TCP connection and HTTP session.
+    # Opens a TCP connection and \HTTP session.
     #
-    # When this method is called with a block, it passes the Net::HTTP
-    # object to the block, and closes the TCP connection and HTTP session
+    # When this method is called with a block, it passes the \Net::HTTP
+    # object to the block, and closes the TCP connection and \HTTP session
     # after the block has been executed.
     #
     # When called with a block, it returns the return value of the
@@ -1013,13 +1258,14 @@ module Net   #:nodoc:
       end
 
       debug "opening connection to #{conn_addr}:#{conn_port}..."
-      begin
-        s = Socket.tcp conn_addr, conn_port, @local_host, @local_port, connect_timeout: @open_timeout
-      rescue => e
-        e = Net::OpenTimeout.new(e) if e.is_a?(Errno::ETIMEDOUT) #for compatibility with previous versions
-        raise e, "Failed to open TCP connection to " +
-          "#{conn_addr}:#{conn_port} (#{e.message})"
-      end
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+        begin
+          TCPSocket.open(conn_addr, conn_port, @local_host, @local_port)
+        rescue => e
+          raise e, "Failed to open TCP connection to " +
+            "#{conn_addr}:#{conn_port} (#{e.message})"
+        end
+      }
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       debug "opened"
       if use_ssl?
@@ -1110,7 +1356,7 @@ module Net   #:nodoc:
     end
     private :on_connect
 
-    # Finishes the HTTP session and closes the TCP connection.
+    # Finishes the \HTTP session and closes the TCP connection.
     # Raises IOError if the session has not been started.
     def finish
       raise IOError, 'HTTP session not yet started' unless started?
@@ -1138,12 +1384,12 @@ module Net   #:nodoc:
     @proxy_user = nil
     @proxy_pass = nil
 
-    # Creates an HTTP proxy class which behaves like Net::HTTP, but
+    # Creates an \HTTP proxy class which behaves like \Net::HTTP, but
     # performs all access via the specified proxy.
     #
     # This class is obsolete.  You may pass these same parameters directly to
-    # Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
-    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
+    # \Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
+    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil) #:nodoc:
       return self unless p_addr
 
       Class.new(self) {
@@ -1170,16 +1416,16 @@ module Net   #:nodoc:
         defined?(@is_proxy_class) ? @is_proxy_class : false
       end
 
-      # Address of proxy host. If Net::HTTP does not use a proxy, nil.
+      # Address of proxy host. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_address
 
-      # Port number of proxy host. If Net::HTTP does not use a proxy, nil.
+      # Port number of proxy host. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_port
 
-      # User name for accessing proxy. If Net::HTTP does not use a proxy, nil.
+      # User name for accessing proxy. If \Net::HTTP does not use a proxy, nil.
       attr_reader :proxy_user
 
-      # User password for accessing proxy. If Net::HTTP does not use a proxy,
+      # User password for accessing proxy. \If Net::HTTP does not use a proxy,
       # nil.
       attr_reader :proxy_pass
     end
@@ -1221,16 +1467,9 @@ module Net   #:nodoc:
       end
     end
 
-    # [Bug #12921]
-    if /linux|freebsd|darwin/ =~ RUBY_PLATFORM
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = true
-    else
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = false
-    end
-
     # The username of the proxy server, if one is configured.
     def proxy_user
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         user = proxy_uri&.user
         unescape(user) if user
       else
@@ -1240,7 +1479,7 @@ module Net   #:nodoc:
 
     # The password of the proxy server, if one is configured.
     def proxy_pass
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         pass = proxy_uri&.password
         unescape(pass) if pass
       else
@@ -1534,7 +1773,7 @@ module Net   #:nodoc:
     alias put2   request_put    #:nodoc: obsolete
 
 
-    # Sends an HTTP request to the HTTP server.
+    # Sends an \HTTP request to the \HTTP server.
     # Also sends a DATA string if +data+ is given.
     #
     # Returns a Net::HTTPResponse object.
@@ -1550,11 +1789,11 @@ module Net   #:nodoc:
       request r, data
     end
 
-    # Sends an HTTPRequest object +req+ to the HTTP server.
+    # Sends an HTTPRequest object +req+ to the \HTTP server.
     #
     # If +req+ is a Net::HTTP::Post or Net::HTTP::Put request containing
     # data, the data is also sent. Providing data for a Net::HTTP::Head or
-    # Net::HTTP::Get request results in an ArgumentError.
+    # \Net::HTTP::Get request results in an ArgumentError.
     #
     # Returns an HTTPResponse object.
     #

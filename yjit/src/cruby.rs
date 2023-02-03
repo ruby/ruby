@@ -84,7 +84,7 @@
 
 use std::convert::From;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uint};
+use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
 // We check that we can do this with the configure script and a couple of
@@ -96,6 +96,7 @@ pub type size_t = u64;
 pub type RedefinitionFlag = u32;
 
 #[allow(dead_code)]
+#[allow(clippy::useless_transmute)]
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
@@ -106,157 +107,13 @@ pub use autogened::*;
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 
-// TODO:
-// Temporary, these external bindings will likely be auto-generated
-// and textually included in this file
+// These are functions we expose from vm_insnhelper.c, not in any header.
+// Parsing it would result in a lot of duplicate definitions.
+// Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
-    #[link_name = "rb_insn_name"]
-    pub fn raw_insn_name(insn: VALUE) -> *const c_char;
-
-    #[link_name = "rb_insn_len"]
-    pub fn raw_insn_len(v: VALUE) -> c_int;
-
-    #[link_name = "rb_yarv_class_of"]
-    pub fn CLASS_OF(v: VALUE) -> VALUE;
-
-    #[link_name = "rb_get_ec_cfp"]
-    pub fn get_ec_cfp(ec: EcPtr) -> CfpPtr;
-
-    #[link_name = "rb_get_cfp_pc"]
-    pub fn get_cfp_pc(cfp: CfpPtr) -> *mut VALUE;
-
-    #[link_name = "rb_get_cfp_sp"]
-    pub fn get_cfp_sp(cfp: CfpPtr) -> *mut VALUE;
-
-    #[link_name = "rb_get_cfp_self"]
-    pub fn get_cfp_self(cfp: CfpPtr) -> VALUE;
-
-    #[link_name = "rb_get_cfp_ep"]
-    pub fn get_cfp_ep(cfp: CfpPtr) -> *mut VALUE;
-
-    #[link_name = "rb_get_cme_def_type"]
-    pub fn get_cme_def_type(cme: *const rb_callable_method_entry_t) -> rb_method_type_t;
-
-    #[link_name = "rb_get_cme_def_body_attr_id"]
-    pub fn get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
-
-    #[link_name = "rb_get_cme_def_body_optimized_type"]
-    pub fn get_cme_def_body_optimized_type(
-        cme: *const rb_callable_method_entry_t,
-    ) -> method_optimized_type;
-
-    #[link_name = "rb_get_cme_def_body_optimized_index"]
-    pub fn get_cme_def_body_optimized_index(cme: *const rb_callable_method_entry_t) -> c_uint;
-
-    #[link_name = "rb_get_cme_def_body_cfunc"]
-    pub fn get_cme_def_body_cfunc(cme: *const rb_callable_method_entry_t)
-        -> *mut rb_method_cfunc_t;
-
-    #[link_name = "rb_get_def_method_serial"]
-    /// While this returns a uintptr_t in C, we always use it as a Rust u64
-    pub fn get_def_method_serial(def: *const rb_method_definition_t) -> u64;
-
-    #[link_name = "rb_get_def_original_id"]
-    pub fn get_def_original_id(def: *const rb_method_definition_t) -> ID;
-
-    #[link_name = "rb_get_mct_argc"]
-    pub fn get_mct_argc(mct: *const rb_method_cfunc_t) -> c_int;
-
-    #[link_name = "rb_get_mct_func"]
-    pub fn get_mct_func(mct: *const rb_method_cfunc_t) -> *const u8;
-
-    #[link_name = "rb_get_def_iseq_ptr"]
-    pub fn get_def_iseq_ptr(def: *const rb_method_definition_t) -> IseqPtr;
-
-    #[link_name = "rb_iseq_encoded_size"]
-    pub fn get_iseq_encoded_size(iseq: IseqPtr) -> c_uint;
-
-    #[link_name = "rb_get_iseq_body_local_iseq"]
-    pub fn get_iseq_body_local_iseq(iseq: IseqPtr) -> IseqPtr;
-
-    #[link_name = "rb_get_iseq_body_iseq_encoded"]
-    pub fn get_iseq_body_iseq_encoded(iseq: IseqPtr) -> *mut VALUE;
-
-    #[link_name = "rb_get_iseq_body_stack_max"]
-    pub fn get_iseq_body_stack_max(iseq: IseqPtr) -> c_uint;
-
-    #[link_name = "rb_get_iseq_flags_has_opt"]
-    pub fn get_iseq_flags_has_opt(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_kw"]
-    pub fn get_iseq_flags_has_kw(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_rest"]
-    pub fn get_iseq_flags_has_rest(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_post"]
-    pub fn get_iseq_flags_has_post(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_kwrest"]
-    pub fn get_iseq_flags_has_kwrest(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_block"]
-    pub fn get_iseq_flags_has_block(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_flags_has_accepts_no_kwarg"]
-    pub fn get_iseq_flags_has_accepts_no_kwarg(iseq: IseqPtr) -> bool;
-
-    #[link_name = "rb_get_iseq_body_local_table_size"]
-    pub fn get_iseq_body_local_table_size(iseq: IseqPtr) -> c_uint;
-
-    #[link_name = "rb_get_iseq_body_param_keyword"]
-    pub fn get_iseq_body_param_keyword(iseq: IseqPtr) -> *const rb_seq_param_keyword_struct;
-
-    #[link_name = "rb_get_iseq_body_param_size"]
-    pub fn get_iseq_body_param_size(iseq: IseqPtr) -> c_uint;
-
-    #[link_name = "rb_get_iseq_body_param_lead_num"]
-    pub fn get_iseq_body_param_lead_num(iseq: IseqPtr) -> c_int;
-
-    #[link_name = "rb_get_iseq_body_param_opt_num"]
-    pub fn get_iseq_body_param_opt_num(iseq: IseqPtr) -> c_int;
-
-    #[link_name = "rb_get_iseq_body_param_opt_table"]
-    pub fn get_iseq_body_param_opt_table(iseq: IseqPtr) -> *const VALUE;
-
-    #[link_name = "rb_get_cikw_keyword_len"]
-    pub fn get_cikw_keyword_len(cikw: *const rb_callinfo_kwarg) -> c_int;
-
-    #[link_name = "rb_get_cikw_keywords_idx"]
-    pub fn get_cikw_keywords_idx(cikw: *const rb_callinfo_kwarg, idx: c_int) -> VALUE;
-
-    #[link_name = "rb_get_call_data_ci"]
-    pub fn get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
-
-    #[link_name = "rb_yarv_str_eql_internal"]
-    pub fn rb_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
-
-    #[link_name = "rb_yarv_ary_entry_internal"]
-    pub fn rb_ary_entry_internal(ary: VALUE, offset: c_long) -> VALUE;
-
-    #[link_name = "rb_FL_TEST"]
-    pub fn FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
-
-    #[link_name = "rb_FL_TEST_RAW"]
-    pub fn FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
-
-    #[link_name = "rb_RB_TYPE_P"]
-    pub fn RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
-
-    #[link_name = "rb_BASIC_OP_UNREDEFINED_P"]
-    pub fn BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: RedefinitionFlag) -> bool;
-
-    #[link_name = "rb_RSTRUCT_LEN"]
-    pub fn RSTRUCT_LEN(st: VALUE) -> c_long;
-
-    #[link_name = "rb_RSTRUCT_SET"]
-    pub fn RSTRUCT_SET(st: VALUE, k: c_int, v: VALUE);
-
-    // Ruby only defines these in vm_insnhelper.c, not in any header.
-    // Parsing it would result in a lot of duplicate definitions.
-    pub fn rb_vm_opt_mod(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
         ec: EcPtr,
         reg_cfp: CfpPtr,
@@ -264,7 +121,7 @@ extern "C" {
         obj: VALUE,
         v: VALUE,
     ) -> bool;
-    pub fn rb_vm_set_ivar_idx(obj: VALUE, idx: u32, val: VALUE) -> VALUE;
+    pub fn rb_vm_set_ivar_id(obj: VALUE, idx: u32, val: VALUE) -> VALUE;
     pub fn rb_vm_setinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, val: VALUE, ic: IVC);
     pub fn rb_aliased_callable_method_entry(
         me: *const rb_callable_method_entry_t,
@@ -278,27 +135,67 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
-
-    #[link_name = "rb_vm_ci_argc"]
-    pub fn vm_ci_argc(ci: *const rb_callinfo) -> c_int;
-
-    #[link_name = "rb_vm_ci_mid"]
-    pub fn vm_ci_mid(ci: *const rb_callinfo) -> ID;
-
-    #[link_name = "rb_vm_ci_flag"]
-    pub fn vm_ci_flag(ci: *const rb_callinfo) -> c_uint;
-
-    #[link_name = "rb_vm_ci_kwarg"]
-    pub fn vm_ci_kwarg(ci: *const rb_callinfo) -> *const rb_callinfo_kwarg;
-
-    #[link_name = "rb_METHOD_ENTRY_VISI"]
-    pub fn METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
-
     pub fn rb_str_bytesize(str: VALUE) -> VALUE;
-
-    #[link_name = "rb_RCLASS_ORIGIN"]
-    pub fn RCLASS_ORIGIN(v: VALUE) -> VALUE;
 }
+
+// Renames
+pub use rb_insn_name as raw_insn_name;
+pub use rb_insn_len as raw_insn_len;
+pub use rb_yarv_class_of as CLASS_OF;
+pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_pc as get_cfp_pc;
+pub use rb_get_cfp_sp as get_cfp_sp;
+pub use rb_get_cfp_self as get_cfp_self;
+pub use rb_get_cfp_ep as get_cfp_ep;
+pub use rb_get_cfp_ep_level as get_cfp_ep_level;
+pub use rb_get_cme_def_type as get_cme_def_type;
+pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
+pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
+pub use rb_get_cme_def_body_optimized_index as get_cme_def_body_optimized_index;
+pub use rb_get_cme_def_body_cfunc as get_cme_def_body_cfunc;
+pub use rb_get_def_method_serial as get_def_method_serial;
+pub use rb_get_def_original_id as get_def_original_id;
+pub use rb_get_mct_argc as get_mct_argc;
+pub use rb_get_mct_func as get_mct_func;
+pub use rb_get_def_iseq_ptr as get_def_iseq_ptr;
+pub use rb_iseq_encoded_size as get_iseq_encoded_size;
+pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
+pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
+pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
+pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
+pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
+pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
+pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
+pub use rb_get_iseq_flags_ruby2_keywords as get_iseq_flags_ruby2_keywords;
+pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
+pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
+pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
+pub use rb_get_iseq_flags_ambiguous_param0 as get_iseq_flags_ambiguous_param0;
+pub use rb_get_iseq_flags_accepts_no_kwarg as get_iseq_flags_accepts_no_kwarg;
+pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
+pub use rb_get_iseq_body_param_keyword as get_iseq_body_param_keyword;
+pub use rb_get_iseq_body_param_size as get_iseq_body_param_size;
+pub use rb_get_iseq_body_param_lead_num as get_iseq_body_param_lead_num;
+pub use rb_get_iseq_body_param_opt_num as get_iseq_body_param_opt_num;
+pub use rb_get_iseq_body_param_opt_table as get_iseq_body_param_opt_table;
+pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
+pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
+pub use rb_get_call_data_ci as get_call_data_ci;
+pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
+pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
+pub use rb_yarv_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_FL_TEST as FL_TEST;
+pub use rb_FL_TEST_RAW as FL_TEST_RAW;
+pub use rb_RB_TYPE_P as RB_TYPE_P;
+pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
+pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
+pub use rb_RSTRUCT_SET as RSTRUCT_SET;
+pub use rb_vm_ci_argc as vm_ci_argc;
+pub use rb_vm_ci_mid as vm_ci_mid;
+pub use rb_vm_ci_flag as vm_ci_flag;
+pub use rb_vm_ci_kwarg as vm_ci_kwarg;
+pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
+pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
@@ -373,13 +270,6 @@ pub struct rb_method_cfunc_t {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
-/// Opaque FILE type from the C standard library
-#[repr(C)]
-pub struct FILE {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
@@ -427,7 +317,8 @@ impl VALUE {
     /// Return true if the number is an immediate integer, flonum or static symbol
     fn immediate_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 7) != 0
+        let mask = RUBY_IMMEDIATE_MASK as usize;
+        (cval & mask) != 0
     }
 
     /// Return true if the value is a Ruby immediate integer, flonum, static symbol, nil or false
@@ -435,22 +326,45 @@ impl VALUE {
         self.immediate_p() || !self.test()
     }
 
+    /// Return true if the value is a heap object
+    pub fn heap_object_p(self) -> bool {
+        !self.special_const_p()
+    }
+
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 1) == 1
+        let flag = RUBY_FIXNUM_FLAG as usize;
+        (cval & flag) == flag
     }
 
     /// Return true if the value is an immediate Ruby floating-point number (flonum)
     pub fn flonum_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 3) == 2
+        let mask = RUBY_FLONUM_MASK as usize;
+        let flag = RUBY_FLONUM_FLAG as usize;
+        (cval & mask) == flag
     }
 
-    /// Return true for a static (non-heap) Ruby symbol
+    /// Return true if the value is a Ruby symbol (RB_SYMBOL_P)
+    pub fn symbol_p(self) -> bool {
+        self.static_sym_p() || self.dynamic_sym_p()
+    }
+
+    /// Return true for a static (non-heap) Ruby symbol (RB_STATIC_SYM_P)
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 0xff) == RUBY_SYMBOL_FLAG
+        let flag = RUBY_SYMBOL_FLAG as usize;
+        (cval & 0xff) == flag
+    }
+
+    /// Return true for a dynamic Ruby symbol (RB_DYNAMIC_SYM_P)
+    fn dynamic_sym_p(self) -> bool {
+        return if self.special_const_p() {
+            false
+        } else {
+            self.builtin_type() == RUBY_T_SYMBOL
+        }
     }
 
     /// Returns true or false depending on whether the value is nil
@@ -458,18 +372,56 @@ impl VALUE {
         self == Qnil
     }
 
+    pub fn string_p(self) -> bool {
+        self.class_of() == unsafe { rb_cString }
+    }
+
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)
     pub fn builtin_type(self) -> ruby_value_type {
+        (self.builtin_flags() & (RUBY_T_MASK as usize)) as ruby_value_type
+    }
+
+    pub fn builtin_flags(self) -> usize {
         assert!(!self.special_const_p());
 
         let VALUE(cval) = self;
         let rbasic_ptr = cval as *const RBasic;
         let flags_bits: usize = unsafe { (*rbasic_ptr).flags }.as_usize();
-        (flags_bits & (RUBY_T_MASK as usize)) as ruby_value_type
+        return flags_bits;
     }
 
     pub fn class_of(self) -> VALUE {
         unsafe { CLASS_OF(self) }
+    }
+
+    pub fn is_frozen(self) -> bool {
+        unsafe { rb_obj_frozen_p(self) != VALUE(0) }
+    }
+
+    pub fn shape_too_complex(self) -> bool {
+        unsafe { rb_shape_obj_too_complex(self) }
+    }
+
+    pub fn shape_id_of(self) -> u32 {
+        unsafe { rb_shape_get_shape_id(self) }
+    }
+
+    pub fn shape_of(self) -> *mut rb_shape {
+        unsafe {
+            let shape = rb_shape_get_shape_by_id(self.shape_id_of());
+
+            if shape.is_null() {
+                panic!("Shape should not be null");
+            } else {
+                shape
+            }
+        }
+    }
+
+    pub fn embedded_p(self) -> bool {
+        unsafe {
+            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+        }
     }
 
     pub fn as_isize(self) -> isize {
@@ -498,7 +450,7 @@ impl VALUE {
 
     pub fn as_usize(self) -> usize {
         let VALUE(us) = self;
-        us as usize
+        us
     }
 
     pub fn as_ptr<T>(self) -> *const T {
@@ -511,7 +463,7 @@ impl VALUE {
         us as *mut T
     }
 
-    /// For working with opague pointers and encoding null check.
+    /// For working with opaque pointers and encoding null check.
     /// Similar to [std::ptr::NonNull], but for `*const T`. `NonNull<T>`
     /// is for `*mut T` while our C functions are setup to use `*const T`.
     /// Casting from `NonNull<T>` to `*const T` is too noisy.
@@ -591,22 +543,42 @@ impl From<VALUE> for i32 {
     fn from(value: VALUE) -> Self {
         let VALUE(uimm) = value;
         assert!(uimm <= (i32::MAX as usize));
-        uimm as i32
+        uimm.try_into().unwrap()
+    }
+}
+
+impl From<VALUE> for u16 {
+    fn from(value: VALUE) -> Self {
+        let VALUE(uimm) = value;
+        uimm.try_into().unwrap()
     }
 }
 
 /// Produce a Ruby string from a Rust string slice
-#[cfg(feature = "asm_comments")]
+#[cfg(feature = "disasm")]
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
-    unsafe { rb_utf8_str_new(str.as_ptr() as *const i8, str.len() as i64) }
+    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
 
 /// Produce a Ruby symbol from a Rust string slice
 pub fn rust_str_to_sym(str: &str) -> VALUE {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-
     unsafe { rb_id2sym(rb_intern(c_ptr)) }
+}
+
+/// Produce an owned Rust String from a C char pointer
+#[cfg(feature = "disasm")]
+pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
+    assert!(c_char_ptr != std::ptr::null());
+
+    use std::ffi::CStr;
+    let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
+
+    match c_str.to_str() {
+        Ok(rust_str) => Some(rust_str.to_string()),
+        Err(_) => None
+    }
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
@@ -681,13 +653,13 @@ where
 
 // Non-idiomatic capitalization for consistency with CRuby code
 #[allow(non_upper_case_globals)]
-pub const Qfalse: VALUE = VALUE(0);
+pub const Qfalse: VALUE = VALUE(RUBY_Qfalse as usize);
 #[allow(non_upper_case_globals)]
-pub const Qnil: VALUE = VALUE(8);
+pub const Qnil: VALUE = VALUE(RUBY_Qnil as usize);
 #[allow(non_upper_case_globals)]
-pub const Qtrue: VALUE = VALUE(20);
+pub const Qtrue: VALUE = VALUE(RUBY_Qtrue as usize);
 #[allow(non_upper_case_globals)]
-pub const Qundef: VALUE = VALUE(52);
+pub const Qundef: VALUE = VALUE(RUBY_Qundef as usize);
 
 #[allow(unused)]
 mod manual_defs {
@@ -695,22 +667,13 @@ mod manual_defs {
 
     pub const SIZEOF_VALUE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
 
     pub const RUBY_FIXNUM_MIN: isize = RUBY_LONG_MIN / 2;
     pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
-    pub const RUBY_FIXNUM_FLAG: usize = 0x1;
-
-    // All these are defined in include/ruby/internal/special_consts.h,
-    // in the same enum as RUBY_Qfalse, etc.
-    // Do we want to switch to using Ruby's definition of Qnil, Qfalse, etc?
-    pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
-    pub const RUBY_FLONUM_FLAG: usize = 0x2;
-    pub const RUBY_FLONUM_MASK: usize = 0x3;
-    pub const RUBY_SPECIAL_SHIFT: usize = 8;
-    pub const RUBY_IMMEDIATE_MASK: usize = 0x7;
 
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
@@ -719,6 +682,8 @@ mod manual_defs {
     pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
     pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;
+    pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
+    pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
     // From internal/struct.h - in anonymous enum, so we can't easily import it
     pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
@@ -736,10 +701,6 @@ mod manual_defs {
 
     pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
-
-    pub const RUBY_OFFSET_ROBJECT_AS_ARY: i32 = 16; // struct RObject, subfield "as.ary"
-    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV: i32 = 16; // struct RObject, subfield "as.heap.numiv"
-    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR: i32 = 24; // struct RObject, subfield "as.heap.ivptr"
 
     // Constants from rb_control_frame_t vm_core.h
     pub const RUBY_OFFSET_CFP_PC: i32 = 0;

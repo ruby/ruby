@@ -12,6 +12,21 @@ ifeq ($(HAVE_BASERUBY),yes)
 override REVISION_FORCE := PHONY
 endif
 
+override order_only := |
+
+ifneq ($(filter notintermediate,$(.FEATURES)),)
+DOT_WAIT = .WAIT
+endif
+
+# Needs the dependency when any Unicode tables data files exist.
+override UNICODE_TABLES_DEPENDENTS = \
+	$(if $(or \
+	    $(filter yes,$(ALWAYS_UPDATE_UNICODE)), \
+	    $(wildcard \
+		$(if $(filter .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)),,\
+		    $(UNICODE_TABLES_DATA_FILES)))),\
+	    force,none)
+
 include $(srcdir)/defs/universal.mk
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk

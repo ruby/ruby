@@ -175,9 +175,10 @@ end
 
 #### Guard for bug
 
-In case there is a bug in MRI but the expected behavior is obvious.
+In case there is a bug in MRI and the fix will be backported to previous versions.
+If it is not backported or not likely, use `ruby_version_is` instead.
 First, file a bug at https://bugs.ruby-lang.org/.
-It is better to use a `ruby_version_is` guard if there was a release with the fix.
+The problem is `ruby_bug` would make non-MRI implementations fail this spec while MRI itself does not pass it, so it should only be used if the bug is/will be fixed and backported.
 
 ```ruby
 ruby_bug '#13669', ''...'3.2' do

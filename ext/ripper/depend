@@ -17,12 +17,9 @@ ripper.o: ripper.c
 all: check
 static: check
 
-ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y {$(VPATH)}id.h
+ripper.y: $(srcdir)/tools/preproc.rb $(srcdir)/tools/dsl.rb $(top_srcdir)/parse.y $(top_srcdir)/defs/id.def
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ \
-		--vpath=$(VPATH)$(PATH_SEPARATOR)$(top_srcdir) id.h $(top_srcdir)/parse.y > ripper.tmp.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/pure_parser.rb ripper.tmp.y $(BISON)
-	$(Q) $(RM) ripper.tmp.y.bak
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb $(top_srcdir)/parse.y > ripper.tmp.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
@@ -234,6 +231,7 @@ ripper.o: $(top_srcdir)/internal/bits.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
+ripper.o: $(top_srcdir)/internal/encoding.h
 ripper.o: $(top_srcdir)/internal/error.h
 ripper.o: $(top_srcdir)/internal/fixnum.h
 ripper.o: $(top_srcdir)/internal/gc.h
@@ -255,6 +253,7 @@ ripper.o: $(top_srcdir)/internal/warnings.h
 ripper.o: $(top_srcdir)/node.h
 ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/ruby_assert.h
+ripper.o: $(top_srcdir)/shape.h
 ripper.o: $(top_srcdir)/symbol.h
 ripper.o: ../../probes.h
 ripper.o: eventids2.c

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/dependency_list'
+require_relative "helper"
+require "rubygems/dependency_list"
 
 class TestGemDependencyList < Gem::TestCase
   def setup
@@ -9,26 +9,26 @@ class TestGemDependencyList < Gem::TestCase
     @deplist = Gem::DependencyList.new
 
     # TODO: switch to util_spec
-    @a1 = util_spec 'a', '1'
-    @a2 = util_spec 'a', '2'
-    @a3 = util_spec 'a', '3'
+    @a1 = util_spec "a", "1"
+    @a2 = util_spec "a", "2"
+    @a3 = util_spec "a", "3"
 
-    @b1 = util_spec 'b', '1' do |s|
-      s.add_dependency 'a', '>= 1'
+    @b1 = util_spec "b", "1" do |s|
+      s.add_dependency "a", ">= 1"
     end
 
-    @b2 = util_spec 'b', '2' do |s|
-      s.add_dependency 'a', '>= 1'
+    @b2 = util_spec "b", "2" do |s|
+      s.add_dependency "a", ">= 1"
     end
 
-    @c1 = util_spec 'c', '1' do |s|
-      s.add_dependency 'b', '>= 1'
+    @c1 = util_spec "c", "1" do |s|
+      s.add_dependency "b", ">= 1"
     end
 
-    @c2 = util_spec 'c', '2'
+    @c2 = util_spec "c", "2"
 
-    @d1 = util_spec 'd', '1' do |s|
-      s.add_dependency 'c', '>= 1'
+    @d1 = util_spec "d", "1" do |s|
+      s.add_dependency "c", ">= 1"
     end
   end
 
@@ -56,7 +56,7 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_dependency_order_circle
-    @a1.add_dependency 'c', '>= 1'
+    @a1.add_dependency "c", ">= 1"
     @deplist.add @a1, @b1, @c1
 
     order = @deplist.dependency_order
@@ -65,14 +65,14 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_dependency_order_development
-    e1 = util_spec 'e', '1'
-    f1 = util_spec 'f', '1'
-    g1 = util_spec 'g', '1'
+    e1 = util_spec "e", "1"
+    f1 = util_spec "f", "1"
+    g1 = util_spec "g", "1"
 
-    @a1.add_dependency 'e'
-    @a1.add_dependency 'f'
-    @a1.add_dependency 'g'
-    g1.add_development_dependency 'a'
+    @a1.add_dependency "e"
+    @a1.add_dependency "f"
+    @a1.add_dependency "g"
+    g1.add_development_dependency "a"
 
     deplist = Gem::DependencyList.new true
     deplist.add @a1, e1, f1, g1
@@ -80,7 +80,7 @@ class TestGemDependencyList < Gem::TestCase
     order = deplist.dependency_order
 
     assert_equal %w[g-1 a-1 f-1 e-1], order.map {|s| s.full_name },
-                 'development on'
+                 "development on"
 
     deplist2 = Gem::DependencyList.new
     deplist2.add @a1, e1, f1, g1
@@ -88,19 +88,19 @@ class TestGemDependencyList < Gem::TestCase
     order = deplist2.dependency_order
 
     assert_equal %w[a-1 g-1 f-1 e-1], order.map {|s| s.full_name },
-                 'development off'
+                 "development off"
   end
 
   def test_dependency_order_diamond
     util_diamond
-    e1 = util_spec 'e', '1'
+    e1 = util_spec "e", "1"
     @deplist.add e1
-    @a1.add_dependency 'e', '>= 1'
+    @a1.add_dependency "e", ">= 1"
 
     order = @deplist.dependency_order
 
     assert_equal %w[d-1 c-2 b-1 a-2 e-1], order.map {|s| s.full_name },
-                 'deps of trimmed specs not included'
+                 "deps of trimmed specs not included"
   end
 
   def test_dependency_order_no_dependencies
@@ -121,15 +121,15 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_ok_eh
-    assert @deplist.ok?, 'no dependencies'
+    assert @deplist.ok?, "no dependencies"
 
     @deplist.add @b2
 
-    refute @deplist.ok?, 'unsatisfied dependency'
+    refute @deplist.ok?, "unsatisfied dependency"
 
     @deplist.add @a1
 
-    assert @deplist.ok?, 'satisfied dependency'
+    assert @deplist.ok?, "satisfied dependency"
   end
 
   def test_why_not_ok_eh
@@ -147,13 +147,13 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_why_not_ok_eh_old_dependency
-    a  = util_spec 'a', '1',
-                  'b' => '~> 1.0'
+    a  = util_spec "a", "1",
+                  "b" => "~> 1.0"
 
-    b0 = util_spec 'b', '1.0',
-                  'd' => '>= 0'
+    b0 = util_spec "b", "1.0",
+                  "d" => ">= 0"
 
-    b1 = util_spec 'b', '1.1'
+    b1 = util_spec "b", "1.1"
 
     util_clear_gems
 
@@ -165,25 +165,25 @@ class TestGemDependencyList < Gem::TestCase
   end
 
   def test_ok_eh_mismatch
-    a1 = util_spec 'a', '1'
-    a2 = util_spec 'a', '2'
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2"
 
-    b = util_spec 'b', '1' do |s|
-      s.add_dependency 'a', '= 1'
+    b = util_spec "b", "1" do |s|
+      s.add_dependency "a", "= 1"
     end
 
-    c = util_spec 'c', '1' do |s|
-      s.add_dependency 'a', '= 2'
+    c = util_spec "c", "1" do |s|
+      s.add_dependency "a", "= 2"
     end
 
-    d = util_spec 'd', '1' do |s|
-      s.add_dependency 'b'
-      s.add_dependency 'c'
+    d = util_spec "d", "1" do |s|
+      s.add_dependency "b"
+      s.add_dependency "c"
     end
 
     @deplist.add a1, a2, b, c, d
 
-    assert @deplist.ok?, 'this will break on require'
+    assert @deplist.ok?, "this will break on require"
   end
 
   def test_ok_eh_redundant
@@ -256,8 +256,8 @@ class TestGemDependencyList < Gem::TestCase
   # d1 -> b1 -> a1
   # d1 -> c2 -> a2
   def util_diamond
-    @c2.add_dependency 'a', '>= 2'
-    @d1.add_dependency 'b'
+    @c2.add_dependency "a", ">= 2"
+    @d1.add_dependency "b"
 
     @deplist.add @a1, @a2, @b1, @c2, @d1
   end

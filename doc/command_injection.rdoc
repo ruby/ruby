@@ -8,7 +8,7 @@ They should not be called with unknown or unsanitized commands.
 These methods include:
 
 - Kernel.system
-- {`command` (backtick method)}[rdoc-ref:Kernel#`]
+- {\`command` (backtick method)}[rdoc-ref:Kernel#`]
   (also called by the expression <tt>%x[command]</tt>).
 - IO.popen(command).
 - IO.read(command).

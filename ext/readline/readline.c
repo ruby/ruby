@@ -376,8 +376,8 @@ prepare_readline(void)
 {
     static int initialized = 0;
     if (!initialized) {
-	rl_initialize();
-	initialized = 1;
+        rl_initialize();
+        initialized = 1;
     }
 
     if (readline_instream) {

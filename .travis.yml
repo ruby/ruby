@@ -113,6 +113,7 @@ env:
         libncursesw5-dev:armhf
         libreadline-dev:armhf
         libssl-dev:armhf
+        libyaml-dev:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
 
@@ -170,9 +171,9 @@ before_script:
     else
       mkdir build
     fi
-  - mkdir config_1st config_2nd
+  - mkdir config_1st config_2nd gems/src
   - chmod -R a-w .
-  - chmod -R u+w build config_1st config_2nd
+  - chmod -R u+w build config_1st config_2nd gems/src
   - cd build
   - |-
     case "$CC" in

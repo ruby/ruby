@@ -21,7 +21,6 @@ struct rb_objspace; /* in vm_core.h */
 #ifdef NEWOBJ_OF
 # undef NEWOBJ_OF
 # undef RB_NEWOBJ_OF
-# undef RB_OBJ_WRITE
 #endif
 
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
@@ -60,18 +59,29 @@ struct rb_objspace; /* in vm_core.h */
     COMPILER_WARNING_POP; \
     unaligned_member_access_result; \
 })
+
+# define UNALIGNED_MEMBER_PTR(ptr, mem) __extension__({ \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
+    const volatile void *unaligned_member_ptr_result = &(ptr)->mem; \
+    COMPILER_WARNING_POP; \
+    (__typeof__((ptr)->mem) *)unaligned_member_ptr_result; \
+})
 #endif
 
-#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
-#define RB_OBJ_WRITE(a, slot, b) \
-    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
-                 (VALUE)(b), __FILE__, __LINE__)
+#ifndef UNALIGNED_MEMBER_PTR
+# define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+#endif
 
-#if USE_RVARGC
+// We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
+// The next available shapd ID will be the SPECIAL_CONST_SHAPE_ID
+#if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 # define SIZE_POOL_COUNT 5
 #else
 # define SIZE_POOL_COUNT 1
 #endif
+
+#define RCLASS_EXT_EMBEDDED (SIZE_POOL_COUNT > 1)
 
 typedef struct ractor_newobj_size_pool_cache {
     struct RVALUE *freelist;
@@ -112,6 +122,14 @@ void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
+
+void rb_gc_mark_and_move(VALUE *ptr);
+
+#define rb_gc_mark_and_move_ptr(ptr) do { \
+    VALUE _obj = (VALUE)*(ptr); \
+    rb_gc_mark_and_move(&_obj); \
+    if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
+} while (0)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* gc.c (export) */

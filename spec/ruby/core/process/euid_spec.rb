@@ -21,9 +21,19 @@ describe "Process.euid=" do
       -> { Process.euid = Object.new }.should raise_error(TypeError)
     end
 
+    it "sets the effective user id to its own uid if given the username corresponding to its own uid" do
+      raise unless Process.uid == Process.euid
+
+      require "etc"
+      user = Etc.getpwuid(Process.uid).name
+
+      Process.euid = user
+      Process.euid.should == Process.uid
+    end
+
     as_user do
       it "raises Errno::ERPERM if run by a non superuser trying to set the superuser id" do
-        -> { (Process.euid = 0)}.should raise_error(Errno::EPERM)
+        -> { Process.euid = 0 }.should raise_error(Errno::EPERM)
       end
 
       it "raises Errno::ERPERM if run by a non superuser trying to set the superuser id from username" do

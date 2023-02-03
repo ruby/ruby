@@ -63,6 +63,9 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal(/foo/i, @reopt)
     assert_equal(%w"", no_error {@opt.parse!(%w"--regexp=/foo/n")})
     assert_equal(/foo/n, @reopt)
+    assert_equal(%w"", no_error {@opt.parse!(%W"--regexp=/\u{3042}/s")})
+    assert_equal(Encoding::Windows_31J, @reopt.encoding)
+    assert_equal("\x82\xa0".force_encoding(Encoding::Windows_31J), @reopt.source)
   end
 
   def test_into
@@ -96,6 +99,18 @@ class TestOptionParser < Test::Unit::TestCase
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zrs foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
+  end
+
+  def test_raise_unknown
+    @opt.def_option('--my-foo [ARG]') {|arg| @foo = arg}
+    assert @opt.raise_unknown
+
+    @opt.raise_unknown = false
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo --my-bar]))
+    assert_nil(@foo)
+
+    assert_equal(%w[--my-bar], @opt.parse(%w[--my-foo x --my-bar]))
+    assert_equal("x", @foo)
   end
 
   def test_nonopt_pattern

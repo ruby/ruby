@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/mirror_command'
+require_relative "helper"
+require "rubygems/commands/mirror_command"
 
 class TestGemCommandsMirrorCommand < Gem::TestCase
   def setup

@@ -163,10 +163,20 @@ class TestSyntax < Test::Unit::TestCase
         def c(**kw); kw end
         def d(**); b(k: 1, **) end
         def e(**); b(**, k: 1) end
+        def f(a: nil, **); b(**) end
         assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
         assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
         assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
+        assert_equal({k: 3}, f(a: 1, k: 3))
     end;
+  end
+
+  def test_argument_forwarding_with_anon_rest_kwrest_and_block
+    assert_syntax_error("def f(*, **, &); g(...); end", /unexpected \.\.\./)
+    assert_syntax_error("def f(...); g(*); end", /no anonymous rest parameter/)
+    assert_syntax_error("def f(...); g(0, *); end", /no anonymous rest parameter/)
+    assert_syntax_error("def f(...); g(**); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def f(...); g(x: 1, **); end", /no anonymous keyword rest parameter/)
   end
 
   def test_newline_in_block_parameters
@@ -1707,6 +1717,8 @@ eom
     assert_syntax_error('def foo(...) foo[...] = x; end', /unexpected/)
     assert_syntax_error('def foo(...) foo(...) { }; end', /both block arg and actual block given/)
     assert_syntax_error('def foo(...) defined?(...); end', /unexpected/)
+    assert_syntax_error('def foo(*rest, ...) end', '... after rest argument')
+    assert_syntax_error('def foo(*, ...) end', '... after rest argument')
 
     obj1 = Object.new
     def obj1.bar(*args, **kws, &block)
@@ -1905,6 +1917,21 @@ eom
 
     exp = eval("-> (a: nil) {a...1}")
     assert_equal 0...1, exp.call(a: 0)
+  end
+
+  def test_class_module_Object_ancestors
+    assert_separately([], <<-RUBY)
+      m = Module.new
+      m::Bug18832 = 1
+      include m
+      class Bug18832; end
+    RUBY
+    assert_separately([], <<-RUBY)
+      m = Module.new
+      m::Bug18832 = 1
+      include m
+      module Bug18832; end
+    RUBY
   end
 
   def test_cdhash

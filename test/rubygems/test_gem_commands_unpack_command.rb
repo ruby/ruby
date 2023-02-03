@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/unpack_command'
+require_relative "helper"
+require "rubygems/commands/unpack_command"
 
 class TestGemCommandsUnpackCommand < Gem::TestCase
   def setup
@@ -17,28 +17,28 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
     assert_equal(
       @cmd.find_in_cache(File.basename @a1.cache_file),
       @a1.cache_file,
-      'found a-1.gem in the cache'
+      "found a-1.gem in the cache"
     )
   end
 
   def test_get_path
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
+      fetcher.gem "a", 1
     end
 
-    dep = Gem::Dependency.new 'a', 1
+    dep = Gem::Dependency.new "a", 1
     assert_equal(
       @cmd.get_path(dep),
-      specs['a-1'].cache_file,
-      'fetches a-1 and returns the cache path'
+      specs["a-1"].cache_file,
+      "fetches a-1 and returns the cache path"
     )
 
-    FileUtils.rm specs['a-1'].cache_file
+    FileUtils.rm specs["a-1"].cache_file
 
     assert_equal(
       @cmd.get_path(dep),
-      specs['a-1'].cache_file,
-      'when removed from cache, refetches a-1'
+      specs["a-1"].cache_file,
+      "when removed from cache, refetches a-1"
     )
   end
 
@@ -53,18 +53,18 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-3.a')), 'a should be unpacked'
-    assert File.exist?(File.join(@tempdir, 'b-2')),   'b should be unpacked'
+    assert File.exist?(File.join(@tempdir, "a-3.a")), "a should be unpacked"
+    assert File.exist?(File.join(@tempdir, "b-2")),   "b should be unpacked"
   end
 
   def test_execute_gem_path
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', '3.a'
+      fetcher.gem "a", "3.a"
     end
 
     Gem.clear_paths
 
-    gemhome2 = File.join @tempdir, 'gemhome2'
+    gemhome2 = File.join @tempdir, "gemhome2"
 
     Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
@@ -76,7 +76,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-3.a'))
+    assert File.exist?(File.join(@tempdir, "a-3.a"))
   end
 
   def test_execute_gem_path_missing
@@ -84,7 +84,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     Gem.clear_paths
 
-    gemhome2 = File.join @tempdir, 'gemhome2'
+    gemhome2 = File.join @tempdir, "gemhome2"
 
     Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
@@ -96,13 +96,13 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
+    assert_equal "", @ui.output
   end
 
   def test_execute_remote
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 1
-      fetcher.download 'a', 2
+      fetcher.download "a", 1
+      fetcher.download "a", 2
     end
 
     Gem.configuration.verbose = :really
@@ -114,7 +114,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-2')), 'a should be unpacked'
+    assert File.exist?(File.join(@tempdir, "a-2")), "a should be unpacked"
   end
 
   def test_execute_spec
@@ -129,15 +129,15 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-3.a.gemspec'))
-    assert File.exist?(File.join(@tempdir, 'b-2.gemspec'))
+    assert File.exist?(File.join(@tempdir, "a-3.a.gemspec"))
+    assert File.exist?(File.join(@tempdir, "b-2.gemspec"))
   end
 
   def test_execute_spec_target
     util_make_gems
 
     @cmd.options[:args] = %w[a b]
-    @cmd.options[:target] = 'specs'
+    @cmd.options[:target] = "specs"
     @cmd.options[:spec] = true
 
     use_ui @ui do
@@ -146,12 +146,12 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'specs/a-3.a.gemspec'))
-    assert File.exist?(File.join(@tempdir, 'specs/b-2.gemspec'))
+    assert File.exist?(File.join(@tempdir, "specs/a-3.a.gemspec"))
+    assert File.exist?(File.join(@tempdir, "specs/b-2.gemspec"))
   end
 
   def test_execute_sudo
-    pend 'Cannot perform this test on windows (chmod)' if win_platform?
+    pend "Cannot perform this test on windows (chmod)" if win_platform?
 
     util_make_gems
 
@@ -165,7 +165,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'b-2')), 'b should be unpacked'
+    assert File.exist?(File.join(@tempdir, "b-2")), "b should be unpacked"
   ensure
     FileUtils.chmod 0755, @gemhome
   end
@@ -173,7 +173,7 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   def test_execute_with_target_option
     util_make_gems
 
-    target = 'with_target'
+    target = "with_target"
     @cmd.options[:args] = %w[a]
     @cmd.options[:target] = target
 
@@ -183,12 +183,12 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, target, 'a-3.a'))
+    assert File.exist?(File.join(@tempdir, target, "a-3.a"))
   end
 
   def test_execute_exact_match
-    foo_spec = util_spec 'foo'
-    foo_bar_spec = util_spec 'foo_bar'
+    foo_spec = util_spec "foo"
+    foo_bar_spec = util_spec "foo_bar"
 
     use_ui @ui do
       Dir.chdir @tempdir do

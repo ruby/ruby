@@ -199,11 +199,6 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o.method(:foo), o.method(:foo))
     assert_equal(o.method(:foo), o.method(:bar))
     assert_not_equal(o.method(:foo), o.method(:baz))
-
-    class << o
-      private :bar
-    end
-    assert_not_equal(o.method(:foo), o.method(:bar))
   end
 
   def test_hash
@@ -330,8 +325,8 @@ class TestMethod < Test::Unit::TestCase
     def PUBLIC_SINGLETON_TEST.def; end
   end
   def test_define_singleton_method_public
-    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:dsm).public?)
-    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:def).public?)
+    assert_nil(PUBLIC_SINGLETON_TEST.dsm)
+    assert_nil(PUBLIC_SINGLETON_TEST.def)
   end
 
   def test_define_singleton_method_no_proc
@@ -1061,7 +1056,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(sm, im.clone.bind(o).super_method)
   end
 
-  def test_super_method_removed
+  def test_super_method_removed_public
     c1 = Class.new {private def foo; end}
     c2 = Class.new(c1) {public :foo}
     c3 = Class.new(c2) {def foo; end}
@@ -1071,20 +1066,35 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m, Feature9781)
   end
 
+  def test_super_method_removed_regular
+    c1 = Class.new { def foo; end }
+    c2 = Class.new(c1) { def foo; end }
+    assert_equal c1.instance_method(:foo), c2.instance_method(:foo).super_method
+    c1.remove_method :foo
+    assert_equal nil, c2.instance_method(:foo).super_method
+  end
+
   def test_prepended_public_zsuper
-    mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
-    mods = [mod]
+    mod = EnvUtil.labeled_module("Mod") {private def foo; [:ok] end}
     obj = Object.new.extend(mod)
+
     class << obj
       public :foo
     end
-    2.times do |i|
-      mods.unshift(mod = EnvUtil.labeled_module("Mod#{i}") {def foo; end})
-      obj.singleton_class.prepend(mod)
-    end
+
+    mod1 = EnvUtil.labeled_module("Mod1") {def foo; [:mod1] + super end}
+    obj.singleton_class.prepend(mod1)
+
+    mod2 = EnvUtil.labeled_module("Mod2") {def foo; [:mod2] + super end}
+    obj.singleton_class.prepend(mod2)
+
     m = obj.method(:foo)
-    assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
-    assert_nil(m)
+    assert_equal mod2, m.owner
+    assert_equal mod1, m.super_method.owner
+    assert_equal obj.singleton_class, m.super_method.super_method.owner
+    assert_equal nil, m.super_method.super_method.super_method
+
+    assert_equal [:mod2, :mod1, :ok], obj.foo
   end
 
   def test_super_method_with_prepended_module
@@ -1197,48 +1207,145 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(super_method)
   end
 
-  def test_method_visibility_predicates
-    v = Visibility.new
-    assert_equal(true, v.method(:mv1).public?)
-    assert_equal(true, v.method(:mv2).private?)
-    assert_equal(true, v.method(:mv3).protected?)
-    assert_equal(false, v.method(:mv2).public?)
-    assert_equal(false, v.method(:mv3).private?)
-    assert_equal(false, v.method(:mv1).protected?)
+  # Bug 18435
+  def test_instance_methods_owner_consistency
+    a = Module.new { def method1; end }
+
+    b = Class.new do
+      include a
+      protected :method1
+    end
+
+    assert_equal [:method1], b.instance_methods(false)
+    assert_equal b, b.instance_method(:method1).owner
   end
 
-  def test_unbound_method_visibility_predicates
-    assert_equal(true, Visibility.instance_method(:mv1).public?)
-    assert_equal(true, Visibility.instance_method(:mv2).private?)
-    assert_equal(true, Visibility.instance_method(:mv3).protected?)
-    assert_equal(false, Visibility.instance_method(:mv2).public?)
-    assert_equal(false, Visibility.instance_method(:mv3).private?)
-    assert_equal(false, Visibility.instance_method(:mv1).protected?)
+  def test_zsuper_method_removed
+    a = EnvUtil.labeled_class('A') do
+      private
+      def foo(arg = nil)
+        1
+      end
+    end
+    line = __LINE__ - 4
+
+    b = EnvUtil.labeled_class('B', a) do
+      public :foo
+    end
+
+    unbound = b.instance_method(:foo)
+
+    assert_equal unbound, b.public_instance_method(:foo)
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+
+    a.remove_method(:foo)
+
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+
+    obj = b.new
+    assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    link = 'https://github.com/ruby/ruby/pull/6467#issuecomment-1262159088'
+    assert_raise(NameError, link) { b.instance_method(:foo) }
+    # For #test_method_list below, otherwise we get the same error as just above
+    b.remove_method(:foo)
   end
 
-  class VisibilitySub < Visibility
-    protected :mv1
-    public :mv2
-    private :mv3
+  def test_zsuper_method_removed_higher_method
+    a0 = EnvUtil.labeled_class('A0') do
+      def foo(arg1 = nil, arg2 = nil)
+        0
+      end
+    end
+    line0 = __LINE__ - 4
+    a0_foo = a0.instance_method(:foo)
+
+    a = EnvUtil.labeled_class('A', a0) do
+      private
+      def foo(arg = nil)
+        1
+      end
+    end
+    line = __LINE__ - 4
+
+    b = EnvUtil.labeled_class('B', a) do
+      public :foo
+    end
+
+    unbound = b.instance_method(:foo)
+
+    assert_equal a0_foo, unbound.super_method
+
+    a.remove_method(:foo)
+
+    assert_equal "#<UnboundMethod: A#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+    assert_equal a0_foo, unbound.super_method
+
+    obj = b.new
+    assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    assert_equal "#<UnboundMethod: A0#foo(arg1=..., arg2=...) #{__FILE__}:#{line0}>", b.instance_method(:foo).inspect
   end
 
-  def test_method_visibility_predicates_with_subclass_visbility_change
-    v = VisibilitySub.new
-    assert_equal(false, v.method(:mv1).public?)
-    assert_equal(false, v.method(:mv2).private?)
-    assert_equal(false, v.method(:mv3).protected?)
-    assert_equal(true, v.method(:mv2).public?)
-    assert_equal(true, v.method(:mv3).private?)
-    assert_equal(true, v.method(:mv1).protected?)
+  def test_zsuper_method_redefined_bind_call
+    c0 = EnvUtil.labeled_class('C0') do
+      def foo
+        [:foo]
+      end
+    end
+
+    c1 = EnvUtil.labeled_class('C1', c0) do
+      def foo
+        super + [:bar]
+      end
+    end
+    m1 = c1.instance_method(:foo)
+
+    c2 = EnvUtil.labeled_class('C2', c1) do
+      private :foo
+    end
+
+    assert_equal [:foo], c2.private_instance_methods(false)
+    m2 = c2.instance_method(:foo)
+
+    c1.class_exec do
+      remove_method :foo
+      def foo
+        [:bar2]
+      end
+    end
+
+    m3 = c2.instance_method(:foo)
+    c = c2.new
+    assert_equal [:foo, :bar], m1.bind_call(c)
+    assert_equal c1, m1.owner
+    assert_equal [:foo, :bar], m2.bind_call(c)
+    assert_equal c2, m2.owner
+    assert_equal [:bar2], m3.bind_call(c)
+    assert_equal c2, m3.owner
   end
 
-  def test_unbound_method_visibility_predicates_with_subclass_visbility_change
-    assert_equal(false, VisibilitySub.instance_method(:mv1).public?)
-    assert_equal(false, VisibilitySub.instance_method(:mv2).private?)
-    assert_equal(false, VisibilitySub.instance_method(:mv3).protected?)
-    assert_equal(true, VisibilitySub.instance_method(:mv2).public?)
-    assert_equal(true, VisibilitySub.instance_method(:mv3).private?)
-    assert_equal(true, VisibilitySub.instance_method(:mv1).protected?)
+  # Bug #18751
+  def method_equality_visbility_alias
+    c = Class.new do
+      class << self
+        alias_method :n, :new
+        private :new
+      end
+    end
+
+    assert_equal c.method(:n), c.method(:new)
+
+    assert_not_equal c.method(:n), Class.method(:new)
+    assert_equal c.method(:n) == Class.instance_method(:new).bind(c)
+
+    assert_not_equal c.method(:new), Class.method(:new)
+    assert_equal c.method(:new), Class.instance_method(:new).bind(c)
   end
 
   def rest_parameter(*rest)
@@ -1359,7 +1466,7 @@ class TestMethod < Test::Unit::TestCase
       ::Object.prepend(M2)
 
       m = Object.instance_method(:x)
-      assert_equal M, m.owner
+      assert_equal M2, m.owner
     end;
   end
 

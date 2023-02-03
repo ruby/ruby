@@ -68,9 +68,9 @@ class Gem::Package::TarReader::Entry
       @header.name
     end
   rescue ArgumentError => e
-    raise unless e.message == 'string contains null byte'
+    raise unless e.message == "string contains null byte"
     raise Gem::Package::TarInvalidError,
-          'tar is corrupt, name contains null byte'
+          "tar is corrupt, name contains null byte"
   end
 
   ##
@@ -130,9 +130,10 @@ class Gem::Package::TarReader::Entry
   def read(len = nil)
     check_closed
 
-    return nil if @read >= @header.size
-
     len ||= @header.size - @read
+
+    return nil if len > 0 && @read >= @header.size
+
     max_read = [len, @header.size - @read].min
 
     ret = @io.read max_read
@@ -144,9 +145,10 @@ class Gem::Package::TarReader::Entry
   def readpartial(maxlen = nil, outbuf = "".b)
     check_closed
 
-    raise EOFError if @read >= @header.size
-
     maxlen ||= @header.size - @read
+
+    raise EOFError if maxlen > 0 && @read >= @header.size
+
     max_read = [maxlen, @header.size - @read].min
 
     @io.readpartial(max_read, outbuf)

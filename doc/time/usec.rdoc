@@ -1,2 +1,0 @@
-- +usec+ is the number of microseconds (Integer, Float, or Rational)
-  in the range <tt>0..1000000</tt>.

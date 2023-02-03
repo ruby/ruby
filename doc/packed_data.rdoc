@@ -1,0 +1,590 @@
+== Packed \Data
+
+Certain Ruby core methods deal with packing and unpacking data:
+
+- \Method Array#pack:
+  Formats each element in array +self+ into a binary string;
+  returns that string.
+- \Method String#unpack:
+  Extracts data from string +self+,
+  forming objects that become the elements of a new array;
+  returns that array.
+- \Method String#unpack1:
+  Does the same, but unpacks and returns only the first extracted object.
+
+Each of these methods accepts a string +template+,
+consisting of zero or more _directive_ characters,
+each followed by zero or more _modifier_ characters.
+
+Examples (directive <tt>'C'</tt> specifies 'unsigned character'):
+
+  [65].pack('C')      # => "A"  # One element, one directive.
+  [65, 66].pack('CC') # => "AB" # Two elements, two directives.
+  [65, 66].pack('C')  # => "A"  # Extra element is ignored.
+  [65].pack('')       # => ""   # No directives.
+  [65].pack('CC')               # Extra directive raises ArgumentError.
+
+  'A'.unpack('C')   # => [65]      # One character, one directive.
+  'AB'.unpack('CC') # => [65, 66]  # Two characters, two directives.
+  'AB'.unpack('C')  # => [65]      # Extra character is ignored.
+  'A'.unpack('CC')  # => [65, nil] # Extra directive generates nil.
+  'AB'.unpack('')   # => []        # No directives.
+
+The string +template+ may contain any mixture of valid directives
+(directive <tt>'c'</tt> specifies 'signed character'):
+
+  [65, -1].pack('cC')  # => "A\xFF"
+  "A\xFF".unpack('cC') # => [65, 255]
+
+The string +template+ may contain whitespace (which is ignored)
+and comments, each of which begins with character <tt>'#'</tt>
+and continues up to and including the next following newline:
+
+  [0,1].pack("  C  #foo \n  C  ")    # => "\x00\x01"
+  "\0\1".unpack("  C  #foo \n  C  ") # => [0, 1]
+
+Any directive may be followed by either of these modifiers:
+
+- <tt>'*'</tt> - The directive is to be applied as many times as needed:
+
+    [65, 66].pack('C*') # => "AB"
+    'AB'.unpack('C*')   # => [65, 66]
+
+- Integer +count+ - The directive is to be applied +count+ times:
+
+    [65, 66].pack('C2') # => "AB"
+    [65, 66].pack('C3') # Raises ArgumentError.
+    'AB'.unpack('C2')   # => [65, 66]
+    'AB'.unpack('C3')   # => [65, 66, nil]
+
+  Note: Directives in <tt>%w[A a Z m]</tt> use +count+ differently;
+  see {String Directives}[rdoc-ref:packed_data.rdoc@String+Directives].
+
+If elements don't fit the provided directive, only least significant bits are encoded:
+
+    [257].pack("C").unpack("C") # => [1]
+
+=== Packing \Method
+
+\Method Array#pack accepts optional keyword argument
++buffer+ that specifies the target string (instead of a new string):
+
+  [65, 66].pack('C*', buffer: 'foo') # => "fooAB"
+
+The method can accept a block:
+
+  # Packed string is passed to the block.
+  [65, 66].pack('C*') {|s| p s }    # => "AB"
+
+=== Unpacking Methods
+
+Methods String#unpack and String#unpack1 each accept
+an optional keyword argument +offset+ that specifies an offset
+into the string:
+
+  'ABC'.unpack('C*', offset: 1)  # => [66, 67]
+  'ABC'.unpack1('C*', offset: 1) # => 66
+
+Both methods can accept a block:
+
+  # Each unpacked object is passed to the block.
+  ret = []
+  "ABCD".unpack("C*") {|c| ret << c }
+  ret # => [65, 66, 67, 68]
+
+  # The single unpacked object is passed to the block.
+  'AB'.unpack1('C*') {|ele| p ele } # => 65
+
+=== \Integer Directives
+
+Each integer directive specifies the packing or unpacking
+for one element in the input or output array.
+
+==== 8-Bit \Integer Directives
+
+- <tt>'c'</tt> - 8-bit signed integer
+  (like C <tt>signed char</tt>):
+
+    [0, 1, 255].pack('c*')  # => "\x00\x01\xFF"
+    s = [0, 1, -1].pack('c*') # => "\x00\x01\xFF"
+    s.unpack('c*') # => [0, 1, -1]
+
+- <tt>'C'</tt> - 8-bit signed integer
+  (like C <tt>unsigned char</tt>):
+
+    [0, 1, 255].pack('C*')    # => "\x00\x01\xFF"
+    s = [0, 1, -1].pack('C*') # => "\x00\x01\xFF"
+    s.unpack('C*')            # => [0, 1, 255]
+
+==== 16-Bit \Integer Directives
+
+- <tt>'s'</tt> - 16-bit signed integer, native-endian
+  (like C <tt>int16_t</tt>):
+
+    [513, -514].pack('s*')      # => "\x01\x02\xFE\xFD"
+    s = [513, 65022].pack('s*') # => "\x01\x02\xFE\xFD"
+    s.unpack('s*')              # => [513, -514]
+
+- <tt>'S'</tt> - 16-bit unsigned integer, native-endian
+  (like C <tt>uint16_t</tt>):
+
+    [513, -514].pack('S*')      # => "\x01\x02\xFE\xFD"
+    s = [513, 65022].pack('S*') # => "\x01\x02\xFE\xFD"
+    s.unpack('S*')              # => [513, 65022]
+
+- <tt>'n'</tt> - 16-bit network integer, big-endian:
+
+    s = [0, 1, -1, 32767, -32768, 65535].pack('n*')
+    # => "\x00\x00\x00\x01\xFF\xFF\x7F\xFF\x80\x00\xFF\xFF"
+    s.unpack('n*')
+    # => [0, 1, 65535, 32767, 32768, 65535]
+
+- <tt>'v'</tt> - 16-bit VAX integer, little-endian:
+
+    s = [0, 1, -1, 32767, -32768, 65535].pack('v*')
+    # => "\x00\x00\x01\x00\xFF\xFF\xFF\x7F\x00\x80\xFF\xFF"
+    s.unpack('v*')
+    # => [0, 1, 65535, 32767, 32768, 65535]
+
+==== 32-Bit \Integer Directives
+
+- <tt>'l'</tt> - 32-bit signed integer, native-endian
+  (like C <tt>int32_t</tt>):
+
+    s = [67305985, -50462977].pack('l*')
+    # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
+    s.unpack('l*')
+    # => [67305985, -50462977]
+
+- <tt>'L'</tt> - 32-bit unsigned integer, native-endian
+  (like C <tt>uint32_t</tt>):
+
+    s = [67305985, 4244504319].pack('L*')
+    # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
+    s.unpack('L*')
+    # => [67305985, 4244504319]
+
+- <tt>'N'</tt> - 32-bit network integer, big-endian:
+
+    s = [0,1,-1].pack('N*')
+    # => "\x00\x00\x00\x00\x00\x00\x00\x01\xFF\xFF\xFF\xFF"
+    s.unpack('N*')
+    # => [0, 1, 4294967295]
+
+- <tt>'V'</tt> - 32-bit VAX integer, little-endian:
+
+    s = [0,1,-1].pack('V*')
+    # => "\x00\x00\x00\x00\x01\x00\x00\x00\xFF\xFF\xFF\xFF"
+    s.unpack('v*')
+    # => [0, 0, 1, 0, 65535, 65535]
+
+==== 64-Bit \Integer Directives
+
+- <tt>'q'</tt> - 64-bit signed integer, native-endian
+  (like C <tt>int64_t</tt>):
+
+    s = [578437695752307201, -506097522914230529].pack('q*')
+    # => "\x01\x02\x03\x04\x05\x06\a\b\xFF\xFE\xFD\xFC\xFB\xFA\xF9\xF8"
+    s.unpack('q*')
+    # => [578437695752307201, -506097522914230529]
+
+- <tt>'Q'</tt> - 64-bit unsigned integer, native-endian
+  (like C <tt>uint64_t</tt>):
+
+    s = [578437695752307201, 17940646550795321087].pack('Q*')
+    # => "\x01\x02\x03\x04\x05\x06\a\b\xFF\xFE\xFD\xFC\xFB\xFA\xF9\xF8"
+    s.unpack('Q*')
+    # => [578437695752307201, 17940646550795321087]
+
+==== Platform-Dependent \Integer Directives
+
+- <tt>'i'</tt> - Platform-dependent width signed integer,
+  native-endian (like C <tt>int</tt>):
+
+    s = [67305985, -50462977].pack('i*')
+    # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
+    s.unpack('i*')
+    # => [67305985, -50462977]
+
+- <tt>'I'</tt> - Platform-dependent width unsigned integer,
+  native-endian (like C <tt>unsigned int</tt>):
+
+    s = [67305985, -50462977].pack('I*')
+    # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
+    s.unpack('I*')
+    # => [67305985, 4244504319]
+
+==== Pointer Directives
+
+- <tt>'j'</tt> - 64-bit pointer-width signed integer,
+  native-endian (like C <tt>intptr_t</tt>):
+
+    s = [67305985, -50462977].pack('j*')
+    # => "\x01\x02\x03\x04\x00\x00\x00\x00\xFF\xFE\xFD\xFC\xFF\xFF\xFF\xFF"
+    s.unpack('j*')
+    # => [67305985, -50462977]
+
+- <tt>'j'</tt> - 64-bit pointer-width unsigned integer,
+  native-endian (like C <tt>uintptr_t</tt>):
+
+    s = [67305985, 4244504319].pack('J*')
+    # => "\x01\x02\x03\x04\x00\x00\x00\x00\xFF\xFE\xFD\xFC\x00\x00\x00\x00"
+    s.unpack('J*')
+    # => [67305985, 4244504319]
+
+==== Other \Integer Directives
+:
+- <tt>'U'</tt> - UTF-8 character:
+
+    s = [4194304].pack('U*')
+    # => "\xF8\x90\x80\x80\x80"
+    s.unpack('U*')
+    # => [4194304]
+
+- <tt>'w'</tt> - BER-encoded integer
+  (see {BER enocding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
+
+    s = [1073741823].pack('w*')
+    # => "\x83\xFF\xFF\xFF\x7F"
+    s.unpack('w*')
+    # => [1073741823]
+
+==== Modifiers for \Integer Directives
+
+For directives in
+<tt>'i'</tt>,
+<tt>'I'</tt>,
+<tt>'s'</tt>,
+<tt>'S'</tt>,
+<tt>'l'</tt>,
+<tt>'L'</tt>,
+<tt>'q'</tt>,
+<tt>'Q'</tt>,
+<tt>'j'</tt>, and
+<tt>'J'</tt>,
+these modifiers may be suffixed:
+
+- <tt>'!'</tt> or <tt>'_'</tt> - Underlying platform’s native size.
+- <tt>'>'</tt> - Big-endian.
+- <tt>'<'</tt> - Little-endian.
+
+=== \Float Directives
+
+Each float directive specifies the packing or unpacking
+for one element in the input or output array.
+
+==== Single-Precision \Float Directives
+
+- <tt>'F'</tt> or <tt>'f'</tt> - Native format:
+
+    s = [3.0].pack('F') # => "\x00\x00@@"
+    s.unpack('F')       # => [3.0]
+
+- <tt>'e'</tt> - Little-endian:
+
+    s = [3.0].pack('e') # => "\x00\x00@@"
+    s.unpack('e')       # => [3.0]
+
+- <tt>'g'</tt> - Big-endian:
+
+    s = [3.0].pack('g') # => "@@\x00\x00"
+    s.unpack('g')       # => [3.0]
+
+==== Double-Precision \Float Directives
+
+- <tt>'D'</tt> or <tt>'d'</tt> - Native format:
+
+    s = [3.0].pack('D') # => "\x00\x00\x00\x00\x00\x00\b@"
+    s.unpack('D')       # => [3.0]
+
+- <tt>'E'</tt> - Little-endian:
+
+    s = [3.0].pack('E') # => "\x00\x00\x00\x00\x00\x00\b@"
+    s.unpack('E')       # => [3.0]
+
+- <tt>'G'</tt> - Big-endian:
+
+    s = [3.0].pack('G') # => "@\b\x00\x00\x00\x00\x00\x00"
+    s.unpack('G')       # => [3.0]
+
+A float directive may be infinity or not-a-number:
+
+  inf = 1.0/0.0                  # => Infinity
+  [inf].pack('f')                # => "\x00\x00\x80\x7F"
+  "\x00\x00\x80\x7F".unpack('f') # => [Infinity]
+
+  nan = inf/inf                  # => NaN
+  [nan].pack('f')                # => "\x00\x00\xC0\x7F"
+  "\x00\x00\xC0\x7F".unpack('f') # => [NaN]
+
+=== \String Directives
+
+Each string directive specifies the packing or unpacking
+for one byte in the input or output string.
+
+==== Binary \String Directives
+
+- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width);
+  +nil+ is treated as the empty string:
+
+    ['foo'].pack('A')    # => "f"
+    ['foo'].pack('A*')   # => "foo"
+    ['foo'].pack('A2')   # => "fo"
+    ['foo'].pack('A4')   # => "foo "
+    [nil].pack('A')      # => " "
+    [nil].pack('A*')     # => ""
+    [nil].pack('A2')     # => "  "
+    [nil].pack('A4')     # => "    "
+
+    "foo\0".unpack('A')      # => ["f"]
+    "foo\0".unpack('A4')     # => ["foo"]
+    "foo\0bar".unpack('A10') # => ["foo\x00bar"] # Reads past "\0".
+    "foo ".unpack('A')       # => ["f"]
+    "foo ".unpack('A4')      # => ["foo"]
+    "foo".unpack('A4')       # => ["foo"]
+
+    russian = "\u{442 435 441 442}" # => "тест"
+    russian.size         # => 4
+    russian.bytesize     # => 8
+    [russian].pack('A')  # => "\xD1"
+    [russian].pack('A*') # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
+    russian.unpack('A')  # => ["\xD1"]
+    russian.unpack('A2') # => ["\xD1\x82"]
+    russian.unpack('A4') # => ["\xD1\x82\xD0\xB5"]
+    russian.unpack('A*') # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
+
+- <tt>'a'</tt> - Arbitrary binary string (null padded; count is width):
+
+    ["foo"].pack('a')    # => "f"
+    ["foo"].pack('a*')   # => "foo"
+    ["foo"].pack('a2')   # => "fo"
+    ["foo\0"].pack('a4') # => "foo\x00"
+    [nil].pack('a')      # => "\x00"
+    [nil].pack('a*')     # => ""
+    [nil].pack('a2')     # => "\x00\x00"
+    [nil].pack('a4')     # => "\x00\x00\x00\x00"
+
+    "foo\0".unpack('a')     # => ["f"]
+    "foo\0".unpack('a4')    # => ["foo\x00"]
+    "foo ".unpack('a4')     # => ["foo "]
+    "foo".unpack('a4')      # => ["foo"]
+    "foo\0bar".unpack('a4') # => ["foo\x00"] # Reads past "\0".
+
+- <tt>'Z'</tt> - Same as <tt>'a'</tt>,
+  except that null is added or ignored with <tt>'*'</tt>:
+
+    ["foo"].pack('Z*')   # => "foo\x00"
+    [nil].pack('Z*')     # => "\x00"
+
+    "foo\0".unpack('Z*')    # => ["foo"]
+    "foo".unpack('Z*')      # => ["foo"]
+    "foo\0bar".unpack('Z*') # => ["foo"] # Does not read past "\0".
+
+==== Bit \String Directives
+
+- <tt>'B'</tt> - Bit string (high byte first):
+
+    ['11111111' + '00000000'].pack('B*') # => "\xFF\x00"
+    ['10000000' + '01000000'].pack('B*') # => "\x80@"
+
+    ['1'].pack('B0') # => ""
+    ['1'].pack('B1') # => "\x80"
+    ['1'].pack('B2') # => "\x80\x00"
+    ['1'].pack('B3') # => "\x80\x00"
+    ['1'].pack('B4') # => "\x80\x00\x00"
+    ['1'].pack('B5') # => "\x80\x00\x00"
+    ['1'].pack('B6') # => "\x80\x00\x00\x00"
+
+    "\xff\x00".unpack("B*") # => ["1111111100000000"]
+    "\x01\x02".unpack("B*") # => ["0000000100000010"]
+
+    "".unpack("B0")     # => [""]
+    "\x80".unpack("B1") # => ["1"]
+    "\x80".unpack("B2") # => ["10"]
+    "\x80".unpack("B3") # => ["100"]
+
+- <tt>'b'</tt> - Bit string (low byte first):
+
+    ['11111111' + '00000000'].pack('b*') # => "\xFF\x00"
+    ['10000000' + '01000000'].pack('b*') # => "\x01\x02"
+
+    ['1'].pack('b0') # => ""
+    ['1'].pack('b1') # => "\x01"
+    ['1'].pack('b2') # => "\x01\x00"
+    ['1'].pack('b3') # => "\x01\x00"
+    ['1'].pack('b4') # => "\x01\x00\x00"
+    ['1'].pack('b5') # => "\x01\x00\x00"
+    ['1'].pack('b6') # => "\x01\x00\x00\x00"
+
+    "\xff\x00".unpack("b*") # => ["1111111100000000"]
+    "\x01\x02".unpack("b*") # => ["1000000001000000"]
+
+    "".unpack("b0")     # => [""]
+    "\x01".unpack("b1") # => ["1"]
+    "\x01".unpack("b2") # => ["10"]
+    "\x01".unpack("b3") # => ["100"]
+
+==== Hex \String Directives
+
+- <tt>'H'</tt> - Hex string (high nibble first):
+
+    ['10ef'].pack('H*')    # => "\x10\xEF"
+    ['10ef'].pack('H0')    # => ""
+    ['10ef'].pack('H3')    # => "\x10\xE0"
+    ['10ef'].pack('H5')    # => "\x10\xEF\x00"
+
+    ['fff'].pack('H3')    # => "\xFF\xF0"
+    ['fff'].pack('H4')    # => "\xFF\xF0"
+    ['fff'].pack('H5')    # => "\xFF\xF0\x00"
+    ['fff'].pack('H6')    # => "\xFF\xF0\x00"
+    ['fff'].pack('H7')    # => "\xFF\xF0\x00\x00"
+    ['fff'].pack('H8')    # => "\xFF\xF0\x00\x00"
+
+    "\x10\xef".unpack('H*')    # => ["10ef"]
+    "\x10\xef".unpack('H0')    # => [""]
+    "\x10\xef".unpack('H1')    # => ["1"]
+    "\x10\xef".unpack('H2')    # => ["10"]
+    "\x10\xef".unpack('H3')    # => ["10e"]
+    "\x10\xef".unpack('H4')    # => ["10ef"]
+    "\x10\xef".unpack('H5')    # => ["10ef"]
+
+- <tt>'h'</tt> - Hex string (low nibble first):
+
+    ['10ef'].pack('h*') # => "\x01\xFE"
+    ['10ef'].pack('h0') # => ""
+    ['10ef'].pack('h3') # => "\x01\x0E"
+    ['10ef'].pack('h5') # => "\x01\xFE\x00"
+
+    ['fff'].pack('h3') # => "\xFF\x0F"
+    ['fff'].pack('h4') # => "\xFF\x0F"
+    ['fff'].pack('h5') # => "\xFF\x0F\x00"
+    ['fff'].pack('h6') # => "\xFF\x0F\x00"
+    ['fff'].pack('h7') # => "\xFF\x0F\x00\x00"
+    ['fff'].pack('h8') # => "\xFF\x0F\x00\x00"
+
+    "\x01\xfe".unpack('h*') # => ["10ef"]
+    "\x01\xfe".unpack('h0') # => [""]
+    "\x01\xfe".unpack('h1') # => ["1"]
+    "\x01\xfe".unpack('h2') # => ["10"]
+    "\x01\xfe".unpack('h3') # => ["10e"]
+    "\x01\xfe".unpack('h4') # => ["10ef"]
+    "\x01\xfe".unpack('h5') # => ["10ef"]
+
+==== Pointer \String Directives
+
+- <tt>'P'</tt> - Pointer to a structure (fixed-length string):
+
+    s = ['abc'].pack('P')  # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
+    s.unpack('P*')         # => ["abc"]
+    ".".unpack("P")        # => []
+    ("\0" * 8).unpack("P") # => [nil]
+    [nil].pack("P")        # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+
+- <tt>'p'</tt> - Pointer to a null-terminated string:
+
+    s = ['abc'].pack('p')  # => "(\xE4u\xE5\xA1\x01\x00\x00"
+    s.unpack('p*')         # => ["abc"]
+    ".".unpack("p")        # => []
+    ("\0" * 8).unpack("p") # => [nil]
+    [nil].pack("p")        # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+
+==== Other \String Directives
+
+- <tt>'M'</tt> - Quoted printable, MIME encoding;
+  text mode, but input must use LF and output LF;
+  (see {RFC 2045}[https://www.ietf.org/rfc/rfc2045.txt]):
+
+    ["a b c\td \ne"].pack('M') # => "a b c\td =\n\ne=\n"
+    ["\0"].pack('M')           # => "=00=\n"
+
+    ["a"*1023].pack('M') == ("a"*73+"=\n")*14+"a=\n"     # => true
+    ("a"*73+"=\na=\n").unpack('M') == ["a"*74]           # => true
+    (("a"*73+"=\n")*14+"a=\n").unpack('M') == ["a"*1023] # => true
+
+    "a b c\td =\n\ne=\n".unpack('M')    # => ["a b c\td \ne"]
+    "=00=\n".unpack('M')    # => ["\x00"]
+
+    "pre=31=32=33after".unpack('M') # => ["pre123after"]
+    "pre=\nafter".unpack('M')       # => ["preafter"]
+    "pre=\r\nafter".unpack('M')     # => ["preafter"]
+    "pre=".unpack('M')              # => ["pre="]
+    "pre=\r".unpack('M')            # => ["pre=\r"]
+    "pre=hoge".unpack('M')          # => ["pre=hoge"]
+    "pre==31after".unpack('M')      # => ["pre==31after"]
+    "pre===31after".unpack('M')     # => ["pre===31after"]
+
+- <tt>'m'</tt> - Base64 encoded string;
+  count specifies input bytes between each newline,
+  rounded down to nearest multiple of 3;
+  if count is zero, no newlines are added;
+  (see {RFC 4648}[https://www.ietf.org/rfc/rfc4648.txt]):
+
+    [""].pack('m')             # => ""
+    ["\0"].pack('m')           # => "AA==\n"
+    ["\0\0"].pack('m')         # => "AAA=\n"
+    ["\0\0\0"].pack('m')       # => "AAAA\n"
+    ["\377"].pack('m')         # => "/w==\n"
+    ["\377\377"].pack('m')     # => "//8=\n"
+    ["\377\377\377"].pack('m') # => "////\n"
+
+    "".unpack('m')       # => [""]
+    "AA==\n".unpack('m') # => ["\x00"]
+    "AAA=\n".unpack('m') # => ["\x00\x00"]
+    "AAAA\n".unpack('m') # => ["\x00\x00\x00"]
+    "/w==\n".unpack('m') # => ["\xFF"]
+    "//8=\n".unpack('m') # => ["\xFF\xFF"]
+    "////\n".unpack('m') # => ["\xFF\xFF\xFF"]
+    "A\n".unpack('m')    # => [""]
+    "AA\n".unpack('m')   # => ["\x00"]
+    "AA=\n".unpack('m')  # => ["\x00"]
+    "AAA\n".unpack('m')  # => ["\x00\x00"]
+
+    [""].pack('m0')             # => ""
+    ["\0"].pack('m0')           # => "AA=="
+    ["\0\0"].pack('m0')         # => "AAA="
+    ["\0\0\0"].pack('m0')       # => "AAAA"
+    ["\377"].pack('m0')         # => "/w=="
+    ["\377\377"].pack('m0')     # => "//8="
+    ["\377\377\377"].pack('m0') # => "////"
+
+    "".unpack('m0')     # => [""]
+    "AA==".unpack('m0') # => ["\x00"]
+    "AAA=".unpack('m0') # => ["\x00\x00"]
+    "AAAA".unpack('m0') # => ["\x00\x00\x00"]
+    "/w==".unpack('m0') # => ["\xFF"]
+    "//8=".unpack('m0') # => ["\xFF\xFF"]
+    "////".unpack('m0') # => ["\xFF\xFF\xFF"]
+
+- <tt>'u'</tt> - UU-encoded string:
+
+    [0].pack("U")          # => "\u0000"
+    [0x3fffffff].pack("U") # => "\xFC\xBF\xBF\xBF\xBF\xBF"
+    [0x40000000].pack("U") # => "\xFD\x80\x80\x80\x80\x80"
+    [0x7fffffff].pack("U") # => "\xFD\xBF\xBF\xBF\xBF\xBF"
+
+=== Offset Directives
+
+- <tt>'@'</tt> - Begin packing at the given byte offset;
+  for packing, null fill if necessary:
+
+    [1, 2].pack("C@0C") # => "\x02"
+    [1, 2].pack("C@1C") # => "\x01\x02"
+    [1, 2].pack("C@5C") # => "\x01\x00\x00\x00\x00\x02"
+
+    "\x01\x00\x00\x02".unpack("C@3C") # => [1, 2]
+    "\x00".unpack("@1C")              # => [nil]
+
+- <tt>'X'</tt> - Back up a byte:
+
+    [0, 1, 2].pack("CCXC")    # => "\x00\x02"
+    [0, 1, 2].pack("CCX2C")   # => "\x02"
+    "\x00\x02".unpack("CCXC") # => [0, 2, 2]
+
+=== Null Byte Direcive
+
+- <tt>'x'</tt> - Null byte:
+
+    [].pack("x0")                # => ""
+    [].pack("x")                 # => "\x00"
+    [].pack("x8")                # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x02".unpack("CxC") # => [0, 2]

@@ -29,7 +29,7 @@ class Gem::Source::Local < Gem::Source
   end
 
   def inspect # :nodoc:
-    keys = @specs ? @specs.keys.sort : 'NOT LOADED'
+    keys = @specs ? @specs.keys.sort : "NOT LOADED"
     "#<%s specs: %p>" % [self.class, keys]
   end
 
@@ -121,7 +121,7 @@ class Gem::Source::Local < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Local gems:', ']' do
+    q.group 2, "[Local gems:", "]" do
       q.breakable
       q.seplist @specs.keys do |v|
         q.text v.full_name

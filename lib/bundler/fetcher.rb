@@ -20,6 +20,7 @@ module Bundler
     class TooManyRequestsError < HTTPError; end
     # This error is raised if the API returns a 413 (only printed in verbose)
     class FallbackError < HTTPError; end
+
     # This is the error raised if OpenSSL fails the cert verification
     class CertificateFailureError < HTTPError
       def initialize(remote_uri)
@@ -28,20 +29,18 @@ module Bundler
           " is a chance you are experiencing a man-in-the-middle attack, but" \
           " most likely your system doesn't have the CA certificates needed" \
           " for verification. For information about OpenSSL certificates, see" \
-          " https://railsapps.github.io/openssl-certificate-verify-failed.html." \
-          " To connect without using SSL, edit your Gemfile" \
-          " sources and change 'https' to 'http'."
+          " https://railsapps.github.io/openssl-certificate-verify-failed.html."
       end
     end
+
     # This is the error raised when a source is HTTPS and OpenSSL didn't load
     class SSLError < HTTPError
       def initialize(msg = nil)
         super msg || "Could not load OpenSSL.\n" \
-            "You must recompile Ruby with OpenSSL support or change the sources in your " \
-            "Gemfile from 'https' to 'http'. Instructions for compiling with OpenSSL " \
-            "using RVM are available at rvm.io/packages/openssl."
+            "You must recompile Ruby with OpenSSL support."
       end
     end
+
     # This error is raised if HTTP authentication is required, but not provided.
     class AuthenticationRequiredError < HTTPError
       def initialize(remote_uri)
@@ -52,6 +51,7 @@ module Bundler
           "or by storing the credentials in the `#{Settings.key_for(remote_uri)}` environment variable"
       end
     end
+
     # This error is raised if HTTP authentication is provided, but incorrect.
     class BadAuthenticationError < HTTPError
       def initialize(remote_uri)
@@ -236,8 +236,8 @@ module Bundler
     def connection
       @connection ||= begin
         needs_ssl = remote_uri.scheme == "https" ||
-          Bundler.settings[:ssl_verify_mode] ||
-          Bundler.settings[:ssl_client_cert]
+                    Bundler.settings[:ssl_verify_mode] ||
+                    Bundler.settings[:ssl_client_cert]
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
         con = PersistentHTTP.new :name => "bundler", :proxy => :ENV
@@ -252,8 +252,8 @@ module Bundler
         end
 
         ssl_client_cert = Bundler.settings[:ssl_client_cert] ||
-          (Gem.configuration.ssl_client_cert if
-            Gem.configuration.respond_to?(:ssl_client_cert))
+                          (Gem.configuration.ssl_client_cert if
+                            Gem.configuration.respond_to?(:ssl_client_cert))
         if ssl_client_cert
           pem = File.read(ssl_client_cert)
           con.cert = OpenSSL::X509::Certificate.new(pem)
@@ -284,8 +284,8 @@ module Bundler
     def bundler_cert_store
       store = OpenSSL::X509::Store.new
       ssl_ca_cert = Bundler.settings[:ssl_ca_cert] ||
-        (Gem.configuration.ssl_ca_cert if
-          Gem.configuration.respond_to?(:ssl_ca_cert))
+                    (Gem.configuration.ssl_ca_cert if
+                      Gem.configuration.respond_to?(:ssl_ca_cert))
       if ssl_ca_cert
         if File.directory? ssl_ca_cert
           store.add_path ssl_ca_cert

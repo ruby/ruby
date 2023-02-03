@@ -5,9 +5,11 @@
 #elif defined __wasi__
 #include <errno.h>
 
-int flock(int fd, int operation) {
-  errno = EINVAL;
-  return -1;
+int
+flock(int fd, int operation)
+{
+    errno = EINVAL;
+    return -1;
 }
 #elif defined HAVE_FCNTL && defined HAVE_FCNTL_H
 

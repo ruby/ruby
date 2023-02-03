@@ -1,6 +1,6 @@
 prelude: |
   class C
-    def initialize
+    def set_ivars
       @a = nil
       @b = nil
       @c = nil
@@ -8,7 +8,9 @@ prelude: |
       @e = nil
     end
   end
+
+  c = C.new
 benchmark:
   vm_ivar_extended_obj_init: |
-    C.new
+    c.set_ivars
 loop_count: 30000000

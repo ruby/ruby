@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+if ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+  Object.send(:remove_const, :RUBY_PLATFORM)
+  RUBY_PLATFORM = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+end
+
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
@@ -14,21 +19,35 @@ module Gem
     @default_specifications_dir = nil
   end
 
+  if ENV["BUNDLER_SPEC_WINDOWS"]
+    @@win_platform = true # rubocop:disable Style/ClassVars
+  end
+
   if ENV["BUNDLER_SPEC_PLATFORM"]
+    previous_platforms = @platforms
+    previous_local = Platform.local
+
     class Platform
       @local = new(ENV["BUNDLER_SPEC_PLATFORM"])
     end
-    @platforms = [Gem::Platform::RUBY, Gem::Platform.local]
+    @platforms = previous_platforms.map {|platform| platform == previous_local ? Platform.local : platform }
   end
 
   if ENV["BUNDLER_SPEC_GEM_SOURCES"]
     self.sources = [ENV["BUNDLER_SPEC_GEM_SOURCES"]]
   end
 
-  # We only need this hack for rubygems versions without the BundlerVersionFinder
-  if Gem.rubygems_version < Gem::Version.new("2.7.0")
-    @path_to_default_spec_map.delete_if do |_path, spec|
-      spec.name == "bundler"
+  if ENV["BUNDLER_IGNORE_DEFAULT_GEM"]
+    module RemoveDefaultBundlerStub
+      def default_stubs(pattern = "*")
+        super.delete_if {|stub| stub.name == "bundler" }
+      end
+    end
+
+    class Specification
+      class << self
+        prepend RemoveDefaultBundlerStub
+      end
     end
   end
 end

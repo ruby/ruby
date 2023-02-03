@@ -2,6 +2,14 @@
 require_relative 'base'
 
 class TestMkmfTryConstant < TestMkmf
+  def setup
+    if ENV.key?('APPVEYOR')
+      @omitted = true
+      omit 'This test fails too often on AppVeyor'
+    end
+    super
+  end
+
   def test_simple
     assert_equal( 0, mkmf {try_constant("0")}, MKMFLOG)
     assert_equal( 1, mkmf {try_constant("1")}, MKMFLOG)

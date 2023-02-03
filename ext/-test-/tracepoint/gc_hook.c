@@ -28,12 +28,12 @@ static void
 gc_start_end_i(VALUE tpval, void *data)
 {
     if (0) {
-	rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
-	fprintf(stderr, "trace: %s\n", rb_tracearg_event_flag(tparg) == RUBY_INTERNAL_EVENT_GC_START ? "gc_start" : "gc_end");
+        rb_trace_arg_t *tparg = rb_tracearg_from_tracepoint(tpval);
+        fprintf(stderr, "trace: %s\n", rb_tracearg_event_flag(tparg) == RUBY_INTERNAL_EVENT_GC_START ? "gc_start" : "gc_end");
     }
 
     if (invoking == 0) {
-	rb_postponed_job_register(0, invoke_proc, data);
+        rb_postponed_job_register(0, invoke_proc, data);
     }
 }
 
@@ -45,19 +45,19 @@ set_gc_hook(VALUE module, VALUE proc, rb_event_flag_t event, const char *tp_str,
 
     /* disable previous keys */
     if (rb_ivar_defined(module, tp_key) != 0 &&
-	RTEST(tpval = rb_ivar_get(module, tp_key))) {
-	rb_tracepoint_disable(tpval);
-	rb_ivar_set(module, tp_key, Qnil);
+        RTEST(tpval = rb_ivar_get(module, tp_key))) {
+        rb_tracepoint_disable(tpval);
+        rb_ivar_set(module, tp_key, Qnil);
     }
 
     if (RTEST(proc)) {
-	if (!rb_obj_is_proc(proc)) {
-	    rb_raise(rb_eTypeError, "trace_func needs to be Proc");
-	}
+        if (!rb_obj_is_proc(proc)) {
+            rb_raise(rb_eTypeError, "trace_func needs to be Proc");
+        }
 
-	tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc);
-	rb_ivar_set(module, tp_key, tpval);
-	rb_tracepoint_enable(tpval);
+        tpval = rb_tracepoint_new(0, event, gc_start_end_i, (void *)proc);
+        rb_ivar_set(module, tp_key, tpval);
+        rb_tracepoint_enable(tpval);
     }
 
     return proc;
@@ -67,7 +67,7 @@ static VALUE
 set_after_gc_start(VALUE module, VALUE proc)
 {
     return set_gc_hook(module, proc, RUBY_INTERNAL_EVENT_GC_START,
-		       "__set_after_gc_start_tpval__", "__set_after_gc_start_proc__");
+                       "__set_after_gc_start_tpval__", "__set_after_gc_start_proc__");
 }
 
 static VALUE

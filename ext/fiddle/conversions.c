@@ -211,32 +211,32 @@ rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst)
       case TYPE_CHAR:
 	dst->schar = (signed char)NUM2INT(*src);
 	break;
-      case -TYPE_CHAR:
+      case TYPE_UCHAR:
 	dst->uchar = (unsigned char)NUM2UINT(*src);
 	break;
       case TYPE_SHORT:
 	dst->sshort = (unsigned short)NUM2INT(*src);
 	break;
-      case -TYPE_SHORT:
+      case TYPE_USHORT:
 	dst->sshort = (signed short)NUM2UINT(*src);
 	break;
       case TYPE_INT:
 	dst->sint = NUM2INT(*src);
 	break;
-      case -TYPE_INT:
+      case TYPE_UINT:
 	dst->uint = NUM2UINT(*src);
 	break;
       case TYPE_LONG:
 	dst->slong = NUM2LONG(*src);
 	break;
-      case -TYPE_LONG:
+      case TYPE_ULONG:
 	dst->ulong = NUM2ULONG(*src);
 	break;
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
 	dst->slong_long = NUM2LL(*src);
 	break;
-      case -TYPE_LONG_LONG:
+      case TYPE_ULONG_LONG:
 	dst->ulong_long = NUM2ULL(*src);
 	break;
 #endif
@@ -283,24 +283,24 @@ rb_fiddle_generic_to_value(VALUE rettype, fiddle_generic retval)
           PTR2NUM((void *)retval.pointer));
       case TYPE_CHAR:
 	return INT2NUM((signed char)retval.fffi_sarg);
-      case -TYPE_CHAR:
+      case TYPE_UCHAR:
 	return INT2NUM((unsigned char)retval.fffi_arg);
       case TYPE_SHORT:
 	return INT2NUM((signed short)retval.fffi_sarg);
-      case -TYPE_SHORT:
+      case TYPE_USHORT:
 	return INT2NUM((unsigned short)retval.fffi_arg);
       case TYPE_INT:
 	return INT2NUM((signed int)retval.fffi_sarg);
-      case -TYPE_INT:
+      case TYPE_UINT:
 	return UINT2NUM((unsigned int)retval.fffi_arg);
       case TYPE_LONG:
 	return LONG2NUM(retval.slong);
-      case -TYPE_LONG:
+      case TYPE_ULONG:
 	return ULONG2NUM(retval.ulong);
 #if HAVE_LONG_LONG
       case TYPE_LONG_LONG:
 	return LL2NUM(retval.slong_long);
-      case -TYPE_LONG_LONG:
+      case TYPE_ULONG_LONG:
 	return ULL2NUM(retval.ulong_long);
 #endif
       case TYPE_FLOAT:

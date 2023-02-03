@@ -29,10 +29,10 @@ describe "Time#localtime" do
       time.localtime.should equal(time)
     end
 
-    it "raises a RuntimeError if the time has a different time zone" do
+    it "raises a FrozenError if the time has a different time zone" do
       time = Time.gm(2007, 1, 9, 12, 0, 0)
       time.freeze
-      -> { time.localtime }.should raise_error(RuntimeError)
+      -> { time.localtime }.should raise_error(FrozenError)
     end
   end
 
@@ -77,6 +77,18 @@ describe "Time#localtime" do
     t.localtime("-01:00")
     t.should == Time.new(2007, 1, 9, 11, 0, 0, -3600)
     t.utc_offset.should == -3600
+  end
+
+  it "returns a Time with a UTC offset specified as UTC" do
+    t = Time.new(2007, 1, 9, 12, 0, 0, 3600)
+    t.localtime("UTC")
+    t.utc_offset.should == 0
+  end
+
+  it "returns a Time with a UTC offset specified as A-Z military zone" do
+    t = Time.new(2007, 1, 9, 12, 0, 0, 3600)
+    t.localtime("B")
+    t.utc_offset.should == 3600 * 2
   end
 
   platform_is_not :windows do

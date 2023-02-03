@@ -58,18 +58,16 @@ rb_fiddle_free(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlunwrap(addr)
  *
- * Returns the hexadecimal representation of a memory pointer address +addr+
+ * Returns the Ruby object stored at the memory address +addr+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
- *
- *   lib['strcpy'].to_s(16)
- *   => "7f59de6dd240"
- *
- *   Fiddle.dlunwrap(Fiddle.dlwrap(lib['strcpy'].to_s(16)))
- *   => "7f59de6dd240"
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
+ *    Fiddle.dlunwrap(_)
+ *    # => #<Object:0x0000000107c7d870>
  */
 VALUE
 rb_fiddle_ptr2value(VALUE self, VALUE addr)
@@ -80,15 +78,22 @@ rb_fiddle_ptr2value(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlwrap(val)
  *
- * Returns a memory pointer of a function's hexadecimal address location +val+
+ * Returns the memory address of the Ruby object stored at +val+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
  *
- *   Fiddle.dlwrap(lib['strcpy'].to_s(16))
- *   => 25522520
+ * In the case +val+ is not a heap allocated object, this method will return
+ * the tagged pointer value.
+ *
+ * Example:
+ *
+ *    Fiddle.dlwrap(123)
+ *    # => 247
  */
 static VALUE
 rb_fiddle_value2ptr(VALUE self, VALUE val)
@@ -164,137 +169,193 @@ Init_fiddle(void)
      */
     rb_eFiddleDLError = rb_define_class_under(mFiddle, "DLError", rb_eFiddleError);
 
-    /* Document-const: TYPE_VOID
+    VALUE mFiddleTypes = rb_define_module_under(mFiddle, "Types");
+
+    /* Document-const: Fiddle::Types::VOID
      *
      * C type - void
      */
-    rb_define_const(mFiddle, "TYPE_VOID",      INT2NUM(TYPE_VOID));
+    rb_define_const(mFiddleTypes, "VOID",      INT2NUM(TYPE_VOID));
 
-    /* Document-const: TYPE_VOIDP
+    /* Document-const: Fiddle::Types::VOIDP
      *
      * C type - void*
      */
-    rb_define_const(mFiddle, "TYPE_VOIDP",     INT2NUM(TYPE_VOIDP));
+    rb_define_const(mFiddleTypes, "VOIDP",     INT2NUM(TYPE_VOIDP));
 
-    /* Document-const: TYPE_CHAR
+    /* Document-const: Fiddle::Types::CHAR
      *
      * C type - char
      */
-    rb_define_const(mFiddle, "TYPE_CHAR",      INT2NUM(TYPE_CHAR));
+    rb_define_const(mFiddleTypes, "CHAR",      INT2NUM(TYPE_CHAR));
 
-    /* Document-const: TYPE_SHORT
+    /* Document-const: Fiddle::Types::UCHAR
+     *
+     * C type - unsigned char
+     */
+    rb_define_const(mFiddleTypes, "UCHAR",      INT2NUM(TYPE_UCHAR));
+
+    /* Document-const: Fiddle::Types::SHORT
      *
      * C type - short
      */
-    rb_define_const(mFiddle, "TYPE_SHORT",     INT2NUM(TYPE_SHORT));
+    rb_define_const(mFiddleTypes, "SHORT",     INT2NUM(TYPE_SHORT));
 
-    /* Document-const: TYPE_INT
+    /* Document-const: Fiddle::Types::USHORT
+     *
+     * C type - unsigned short
+     */
+    rb_define_const(mFiddleTypes, "USHORT",     INT2NUM(TYPE_USHORT));
+
+    /* Document-const: Fiddle::Types::INT
      *
      * C type - int
      */
-    rb_define_const(mFiddle, "TYPE_INT",       INT2NUM(TYPE_INT));
+    rb_define_const(mFiddleTypes, "INT",       INT2NUM(TYPE_INT));
 
-    /* Document-const: TYPE_LONG
+    /* Document-const: Fiddle::Types::UINT
+     *
+     * C type - unsigned int
+     */
+    rb_define_const(mFiddleTypes, "UINT",       INT2NUM(TYPE_UINT));
+
+    /* Document-const: Fiddle::Types::LONG
      *
      * C type - long
      */
-    rb_define_const(mFiddle, "TYPE_LONG",      INT2NUM(TYPE_LONG));
+    rb_define_const(mFiddleTypes, "LONG",      INT2NUM(TYPE_LONG));
+
+    /* Document-const: Fiddle::Types::ULONG
+     *
+     * C type - long
+     */
+    rb_define_const(mFiddleTypes, "ULONG",      INT2NUM(TYPE_ULONG));
 
 #if HAVE_LONG_LONG
-    /* Document-const: TYPE_LONG_LONG
+    /* Document-const: Fiddle::Types::LONG_LONG
      *
      * C type - long long
      */
-    rb_define_const(mFiddle, "TYPE_LONG_LONG", INT2NUM(TYPE_LONG_LONG));
+    rb_define_const(mFiddleTypes, "LONG_LONG", INT2NUM(TYPE_LONG_LONG));
+
+    /* Document-const: Fiddle::Types::ULONG_LONG
+     *
+     * C type - long long
+     */
+    rb_define_const(mFiddleTypes, "ULONG_LONG", INT2NUM(TYPE_ULONG_LONG));
 #endif
 
 #ifdef TYPE_INT8_T
-    /* Document-const: TYPE_INT8_T
+    /* Document-const: Fiddle::Types::INT8_T
      *
      * C type - int8_t
      */
-    rb_define_const(mFiddle, "TYPE_INT8_T",    INT2NUM(TYPE_INT8_T));
+    rb_define_const(mFiddleTypes, "INT8_T",    INT2NUM(TYPE_INT8_T));
+
+    /* Document-const: Fiddle::Types::UINT8_T
+     *
+     * C type - uint8_t
+     */
+    rb_define_const(mFiddleTypes, "UINT8_T",    INT2NUM(TYPE_UINT8_T));
 #endif
 
 #ifdef TYPE_INT16_T
-    /* Document-const: TYPE_INT16_T
+    /* Document-const: Fiddle::Types::INT16_T
      *
      * C type - int16_t
      */
-    rb_define_const(mFiddle, "TYPE_INT16_T",   INT2NUM(TYPE_INT16_T));
+    rb_define_const(mFiddleTypes, "INT16_T",   INT2NUM(TYPE_INT16_T));
+
+    /* Document-const: Fiddle::Types::UINT16_T
+     *
+     * C type - uint16_t
+     */
+    rb_define_const(mFiddleTypes, "UINT16_T",   INT2NUM(TYPE_UINT16_T));
 #endif
 
 #ifdef TYPE_INT32_T
-    /* Document-const: TYPE_INT32_T
+    /* Document-const: Fiddle::Types::INT32_T
      *
      * C type - int32_t
      */
-    rb_define_const(mFiddle, "TYPE_INT32_T",   INT2NUM(TYPE_INT32_T));
+    rb_define_const(mFiddleTypes, "INT32_T",   INT2NUM(TYPE_INT32_T));
+
+    /* Document-const: Fiddle::Types::UINT32_T
+     *
+     * C type - uint32_t
+     */
+    rb_define_const(mFiddleTypes, "UINT32_T",   INT2NUM(TYPE_UINT32_T));
 #endif
 
 #ifdef TYPE_INT64_T
-    /* Document-const: TYPE_INT64_T
+    /* Document-const: Fiddle::Types::INT64_T
      *
      * C type - int64_t
      */
-    rb_define_const(mFiddle, "TYPE_INT64_T",   INT2NUM(TYPE_INT64_T));
+    rb_define_const(mFiddleTypes, "INT64_T",   INT2NUM(TYPE_INT64_T));
+
+    /* Document-const: Fiddle::Types::UINT64_T
+     *
+     * C type - uint64_t
+     */
+    rb_define_const(mFiddleTypes, "UINT64_T",   INT2NUM(TYPE_UINT64_T));
 #endif
 
-    /* Document-const: TYPE_FLOAT
+    /* Document-const: Fiddle::Types::FLOAT
      *
      * C type - float
      */
-    rb_define_const(mFiddle, "TYPE_FLOAT",     INT2NUM(TYPE_FLOAT));
+    rb_define_const(mFiddleTypes, "FLOAT",     INT2NUM(TYPE_FLOAT));
 
-    /* Document-const: TYPE_DOUBLE
+    /* Document-const: Fiddle::Types::DOUBLE
      *
      * C type - double
      */
-    rb_define_const(mFiddle, "TYPE_DOUBLE",    INT2NUM(TYPE_DOUBLE));
+    rb_define_const(mFiddleTypes, "DOUBLE",    INT2NUM(TYPE_DOUBLE));
 
 #ifdef HAVE_FFI_PREP_CIF_VAR
-    /* Document-const: TYPE_VARIADIC
+    /* Document-const: Fiddle::Types::VARIADIC
      *
      * C type - ...
      */
-    rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
+    rb_define_const(mFiddleTypes, "VARIADIC",  INT2NUM(TYPE_VARIADIC));
 #endif
 
-    /* Document-const: TYPE_CONST_STRING
+    /* Document-const: Fiddle::Types::CONST_STRING
      *
      * C type - const char* ('\0' terminated const char*)
      */
-    rb_define_const(mFiddle, "TYPE_CONST_STRING",  INT2NUM(TYPE_CONST_STRING));
+    rb_define_const(mFiddleTypes, "CONST_STRING",  INT2NUM(TYPE_CONST_STRING));
 
-    /* Document-const: TYPE_SIZE_T
+    /* Document-const: Fiddle::Types::SIZE_T
      *
      * C type - size_t
      */
-    rb_define_const(mFiddle, "TYPE_SIZE_T",   INT2NUM(TYPE_SIZE_T));
+    rb_define_const(mFiddleTypes, "SIZE_T",   INT2NUM(TYPE_SIZE_T));
 
-    /* Document-const: TYPE_SSIZE_T
+    /* Document-const: Fiddle::Types::SSIZE_T
      *
      * C type - ssize_t
      */
-    rb_define_const(mFiddle, "TYPE_SSIZE_T",   INT2NUM(TYPE_SSIZE_T));
+    rb_define_const(mFiddleTypes, "SSIZE_T",   INT2NUM(TYPE_SSIZE_T));
 
-    /* Document-const: TYPE_PTRDIFF_T
+    /* Document-const: Fiddle::Types::PTRDIFF_T
      *
      * C type - ptrdiff_t
      */
-    rb_define_const(mFiddle, "TYPE_PTRDIFF_T", INT2NUM(TYPE_PTRDIFF_T));
+    rb_define_const(mFiddleTypes, "PTRDIFF_T", INT2NUM(TYPE_PTRDIFF_T));
 
-    /* Document-const: TYPE_INTPTR_T
+    /* Document-const: Fiddle::Types::INTPTR_T
      *
      * C type - intptr_t
      */
-    rb_define_const(mFiddle, "TYPE_INTPTR_T",  INT2NUM(TYPE_INTPTR_T));
+    rb_define_const(mFiddleTypes, "INTPTR_T",  INT2NUM(TYPE_INTPTR_T));
 
-    /* Document-const: TYPE_UINTPTR_T
+    /* Document-const: Fiddle::Types::UINTPTR_T
      *
      * C type - uintptr_t
      */
-    rb_define_const(mFiddle, "TYPE_UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
+    rb_define_const(mFiddleTypes, "UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
 
     /* Document-const: ALIGN_VOIDP
      *
@@ -422,11 +483,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_CHAR",  INT2NUM(sizeof(char)));
 
+    /* Document-const: SIZEOF_UCHAR
+     *
+     * size of a unsigned char
+     */
+    rb_define_const(mFiddle, "SIZEOF_UCHAR",  INT2NUM(sizeof(unsigned char)));
+
     /* Document-const: SIZEOF_SHORT
      *
      * size of a short
      */
     rb_define_const(mFiddle, "SIZEOF_SHORT", INT2NUM(sizeof(short)));
+
+    /* Document-const: SIZEOF_USHORT
+     *
+     * size of a unsigned short
+     */
+    rb_define_const(mFiddle, "SIZEOF_USHORT", INT2NUM(sizeof(unsigned short)));
 
     /* Document-const: SIZEOF_INT
      *
@@ -434,11 +507,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT",   INT2NUM(sizeof(int)));
 
+    /* Document-const: SIZEOF_UINT
+     *
+     * size of an unsigned int
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT",   INT2NUM(sizeof(unsigned int)));
+
     /* Document-const: SIZEOF_LONG
      *
      * size of a long
      */
     rb_define_const(mFiddle, "SIZEOF_LONG",  INT2NUM(sizeof(long)));
+
+    /* Document-const: SIZEOF_ULONG
+     *
+     * size of a unsigned long
+     */
+    rb_define_const(mFiddle, "SIZEOF_ULONG",  INT2NUM(sizeof(unsigned long)));
 
 #if HAVE_LONG_LONG
     /* Document-const: SIZEOF_LONG_LONG
@@ -446,6 +531,12 @@ Init_fiddle(void)
      * size of a long long
      */
     rb_define_const(mFiddle, "SIZEOF_LONG_LONG",  INT2NUM(sizeof(LONG_LONG)));
+
+    /* Document-const: SIZEOF_ULONG_LONG
+     *
+     * size of a unsigned long long
+     */
+    rb_define_const(mFiddle, "SIZEOF_ULONG_LONG",  INT2NUM(sizeof(unsigned LONG_LONG)));
 #endif
 
     /* Document-const: SIZEOF_INT8_T
@@ -454,11 +545,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT8_T",  INT2NUM(sizeof(int8_t)));
 
+    /* Document-const: SIZEOF_UINT8_T
+     *
+     * size of a uint8_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT8_T",  INT2NUM(sizeof(uint8_t)));
+
     /* Document-const: SIZEOF_INT16_T
      *
      * size of a int16_t
      */
     rb_define_const(mFiddle, "SIZEOF_INT16_T", INT2NUM(sizeof(int16_t)));
+
+    /* Document-const: SIZEOF_UINT16_T
+     *
+     * size of a uint16_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT16_T", INT2NUM(sizeof(uint16_t)));
 
     /* Document-const: SIZEOF_INT32_T
      *
@@ -466,11 +569,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT32_T", INT2NUM(sizeof(int32_t)));
 
+    /* Document-const: SIZEOF_UINT32_T
+     *
+     * size of a uint32_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT32_T", INT2NUM(sizeof(uint32_t)));
+
     /* Document-const: SIZEOF_INT64_T
      *
      * size of a int64_t
      */
     rb_define_const(mFiddle, "SIZEOF_INT64_T", INT2NUM(sizeof(int64_t)));
+
+    /* Document-const: SIZEOF_UINT64_T
+     *
+     * size of a uint64_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT64_T", INT2NUM(sizeof(uint64_t)));
 
     /* Document-const: SIZEOF_FLOAT
      *
@@ -539,6 +654,30 @@ Init_fiddle(void)
     rb_define_module_function(mFiddle, "malloc", rb_fiddle_malloc, 1);
     rb_define_module_function(mFiddle, "realloc", rb_fiddle_realloc, 2);
     rb_define_module_function(mFiddle, "free", rb_fiddle_free, 1);
+
+    /* Document-const: Qtrue
+     *
+     * The value of Qtrue
+     */
+    rb_define_const(mFiddle, "Qtrue", INT2NUM(Qtrue));
+
+    /* Document-const: Qfalse
+     *
+     * The value of Qfalse
+     */
+    rb_define_const(mFiddle, "Qfalse", INT2NUM(Qfalse));
+
+    /* Document-const: Qnil
+     *
+     * The value of Qnil
+     */
+    rb_define_const(mFiddle, "Qnil", INT2NUM(Qnil));
+
+    /* Document-const: Qundef
+     *
+     * The value of Qundef
+     */
+    rb_define_const(mFiddle, "Qundef", INT2NUM(Qundef));
 
     Init_fiddle_function();
     Init_fiddle_closure();

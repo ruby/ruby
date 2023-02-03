@@ -6,8 +6,8 @@ class Colorize
   #   Colorize.new(color: color, colors_file: colors_file)
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
-    @color = (opts[:color] if opts)
-    if color or (color == nil && STDOUT.tty?)
+    @color = opts && opts[:color] || color
+    if color or (color == nil && STDOUT.tty? && (ENV["NO_COLOR"] || "").empty?)
       if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
         @beg = "\e["
         colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
@@ -33,9 +33,11 @@ class Colorize
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
   }
 
+  NO_COLOR = (nc = ENV['NO_COLOR']) && !nc.empty?
+
   # colorize.decorate(str, name = color_name)
   def decorate(str, name = @color)
-    if @colors and color = (@colors[name] || DEFAULTS[name])
+    if !NO_COLOR and @colors and color = (@colors[name] || DEFAULTS[name])
       "#{@beg}#{color}m#{str}#{@reset}"
     else
       str

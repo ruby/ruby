@@ -19,6 +19,21 @@ describe "String#inspect" do
     ].should be_computed_by(:inspect)
   end
 
+  it "returns a string with special characters replaced with \\<char> notation for UTF-16" do
+    pairs = [
+      ["\a", '"\\a"'],
+      ["\b", '"\\b"'],
+      ["\t", '"\\t"'],
+      ["\n", '"\\n"'],
+      ["\v", '"\\v"'],
+      ["\f", '"\\f"'],
+      ["\r", '"\\r"'],
+      ["\e", '"\\e"']
+    ].map { |str, result| [str.encode('UTF-16LE'), result] }
+
+    pairs.should be_computed_by(:inspect)
+  end
+
   it "returns a string with \" and \\ escaped with a backslash" do
     [ ["\"", '"\\""'],
       ["\\", '"\\\\"']
@@ -309,6 +324,11 @@ describe "String#inspect" do
 
   it "uses \\x notation for broken UTF-8 sequences" do
     "\xF0\x9F".inspect.should == '"\\xF0\\x9F"'
+  end
+
+  it "works for broken US-ASCII strings" do
+    s = "©".force_encoding("US-ASCII")
+    s.inspect.should == '"\xC2\xA9"'
   end
 
   describe "when default external is UTF-8" do

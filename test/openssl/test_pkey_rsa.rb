@@ -80,8 +80,8 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
   def test_sign_verify
     rsa1024 = Fixtures.pkey("rsa1024")
     data = "Sign me!"
-    signature = rsa1024.sign("SHA1", data)
-    assert_equal true, rsa1024.verify("SHA1", signature, data)
+    signature = rsa1024.sign("SHA256", data)
+    assert_equal true, rsa1024.verify("SHA256", signature, data)
 
     signature0 = (<<~'end;').unpack("m")[0]
       oLCgbprPvfhM4pjFQiDTFeWI9Sk+Og7Nh9TmIZ/xSxf2CGXQrptlwo7NQ28+
@@ -108,15 +108,20 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
                                       salt_length: 20, mgf1_hash: "SHA1")
     # Defaults to PKCS #1 v1.5 padding => verification failure
     assert_equal false, key.verify("SHA256", sig_pss, data)
+
+    # option type check
+    assert_raise_with_message(TypeError, /expected Hash/) {
+      key.sign("SHA256", data, ["x"])
+    }
   end
 
   def test_sign_verify_raw
     key = Fixtures.pkey("rsa-1")
     data = "Sign me!"
-    hash = OpenSSL::Digest.digest("SHA1", data)
-    signature = key.sign_raw("SHA1", hash)
-    assert_equal true, key.verify_raw("SHA1", signature, hash)
-    assert_equal true, key.verify("SHA1", signature, data)
+    hash = OpenSSL::Digest.digest("SHA256", data)
+    signature = key.sign_raw("SHA256", hash)
+    assert_equal true, key.verify_raw("SHA256", signature, hash)
+    assert_equal true, key.verify("SHA256", signature, data)
 
     # Too long data
     assert_raise(OpenSSL::PKey::PKeyError) {
@@ -129,9 +134,9 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
       "rsa_pss_saltlen" => 20,
       "rsa_mgf1_md" => "SHA256"
     }
-    sig_pss = key.sign_raw("SHA1", hash, pssopts)
-    assert_equal true, key.verify("SHA1", sig_pss, data, pssopts)
-    assert_equal true, key.verify_raw("SHA1", sig_pss, hash, pssopts)
+    sig_pss = key.sign_raw("SHA256", hash, pssopts)
+    assert_equal true, key.verify("SHA256", sig_pss, data, pssopts)
+    assert_equal true, key.verify_raw("SHA256", sig_pss, hash, pssopts)
   end
 
   def test_sign_verify_raw_legacy

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverVendorSpecification < Gem::TestCase
   def setup
     super
 
     @set  = Gem::Resolver::VendorSet.new
-    @spec = Gem::Specification.new 'a', 1
+    @spec = Gem::Specification.new "a", 1
   end
 
   def test_equals2
@@ -14,7 +14,7 @@ class TestGemResolverVendorSpecification < Gem::TestCase
 
     assert_equal v_spec_a, v_spec_a
 
-    spec_b = Gem::Specification.new 'b', 1
+    spec_b = Gem::Specification.new "b", 1
     v_spec_b = Gem::Resolver::VendorSpecification.new @set, spec_b
 
     refute_equal v_spec_a, v_spec_b
@@ -27,24 +27,24 @@ class TestGemResolverVendorSpecification < Gem::TestCase
     i_set  = Gem::Resolver::IndexSet.new
     source = Gem::Source.new @gem_repo
     i_spec = Gem::Resolver::IndexSpecification.new(
-      i_set, 'a', v(1), source, Gem::Platform::RUBY)
+      i_set, "a", v(1), source, Gem::Platform::RUBY)
 
     refute_equal v_spec_a, i_spec
   end
 
   def test_dependencies
-    @spec.add_dependency 'b'
-    @spec.add_dependency 'c'
+    @spec.add_dependency "b"
+    @spec.add_dependency "c"
 
     v_spec = Gem::Resolver::VendorSpecification.new @set, @spec
 
-    assert_equal [dep('b'), dep('c')], v_spec.dependencies
+    assert_equal [dep("b"), dep("c")], v_spec.dependencies
   end
 
   def test_full_name
     v_spec = Gem::Resolver::VendorSpecification.new @set, @spec
 
-    assert_equal 'a-1', v_spec.full_name
+    assert_equal "a-1", v_spec.full_name
   end
 
   def test_install
@@ -62,7 +62,7 @@ class TestGemResolverVendorSpecification < Gem::TestCase
   def test_name
     v_spec = Gem::Resolver::VendorSpecification.new @set, @spec
 
-    assert_equal 'a', v_spec.name
+    assert_equal "a", v_spec.name
   end
 
   def test_platform
@@ -72,7 +72,7 @@ class TestGemResolverVendorSpecification < Gem::TestCase
   end
 
   def test_version
-    spec = Gem::Specification.new 'a', 1
+    spec = Gem::Specification.new "a", 1
 
     v_spec = Gem::Resolver::VendorSpecification.new @set, spec
 

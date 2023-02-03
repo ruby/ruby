@@ -761,7 +761,6 @@ with inline notes^[like this]
 and an extra note.[^2]
 
 [^1]: With a footnote
-
 [^2]: Which should be numbered correctly
     MD
 
@@ -1057,6 +1056,27 @@ and an extra note.[^2]
       ["", "", "1.08x", "-"],
       ["test", "10", "1.849M", "1.723M"],
       ["", "", "1.07x", "-"],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
+  def test_gfm_table_2
+    doc = parse <<~'MD'
+    | Cmd | Returns | Meaning
+    ----- | :-----: | -------
+    |"b"  | boolean | True if file1 is a block device
+    "c"   | boolean | True if file1 is a character device
+    |"\|" | boolean | escaped bar \| test
+    MD
+
+    head = %w[Cmd Returns Meaning]
+    align = [nil, :center, nil]
+    body = [
+      ['"b"', 'boolean', 'True if file1 is a block device'],
+      ['"c"', 'boolean', 'True if file1 is a character device'],
+      ['"|"', 'boolean', 'escaped bar | test'],
     ]
     expected = doc(@RM::Table.new(head, align, body))
 

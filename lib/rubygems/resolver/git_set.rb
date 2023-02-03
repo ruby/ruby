@@ -35,7 +35,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   def initialize # :nodoc:
     super()
 
-    @git             = ENV['git'] || 'git'
+    @git             = ENV["git"] || "git"
     @need_submodules = {}
     @repositories    = {}
     @root_dir        = Gem.dir
@@ -104,7 +104,7 @@ class Gem::Resolver::GitSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[GitSet', ']' do
+    q.group 2, "[GitSet", "]" do
       next if @repositories.empty?
       q.breakable
 

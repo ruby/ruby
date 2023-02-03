@@ -1,5 +1,5 @@
-#ifndef RUBY_IO_BUFFER_T
-#define RUBY_IO_BUFFER_T 1
+#ifndef RUBY_IO_BUFFER_H
+#define RUBY_IO_BUFFER_H
 /**
  * @file
  * @author     Samuel Williams
@@ -21,6 +21,8 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
 
+#define RUBY_IO_BUFFER_VERSION 2
+
 RUBY_EXTERN VALUE rb_cIOBuffer;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
@@ -34,6 +36,9 @@ enum rb_io_buffer_flags {
     // The memory in the buffer is mapped.
     // A non-private mapping is marked as external.
     RB_IO_BUFFER_MAPPED = 4,
+
+    // A mapped buffer that is also shared.
+    RB_IO_BUFFER_SHARED = 8,
 
     // The buffer is locked and cannot be resized.
     // More specifically, it means we can't change the base address or size.
@@ -65,7 +70,7 @@ enum rb_io_buffer_endian {
 };
 
 VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags);
-VALUE rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags);
+VALUE rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags);
 
 VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
@@ -81,11 +86,11 @@ void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 // The length is the minimum required length.
-VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset);
-VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset);
+VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
+VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
-#endif  /* RUBY_IO_BUFFER_T */
+#endif  /* RUBY_IO_BUFFER_H */

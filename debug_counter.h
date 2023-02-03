@@ -130,7 +130,6 @@ RB_DEBUG_COUNTER(frame_C2R)
 /* instance variable counts
  *
  * * ivar_get_ic_hit/miss: ivar_get inline cache (ic) hit/miss counts (VM insn)
- * * ivar_get_ic_miss_serial: ivar_get ic miss reason by serial (VM insn)
  * * ivar_get_ic_miss_unset:                      ... by unset (VM insn)
  * * ivar_get_ic_miss_noobject:                   ... by "not T_OBJECT" (VM insn)
  * * ivar_set_...: same counts with ivar_set (VM insn)
@@ -140,17 +139,17 @@ RB_DEBUG_COUNTER(frame_C2R)
  */
 RB_DEBUG_COUNTER(ivar_get_ic_hit)
 RB_DEBUG_COUNTER(ivar_get_ic_miss)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_serial)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_unset)
 RB_DEBUG_COUNTER(ivar_get_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_set_ic_hit)
 RB_DEBUG_COUNTER(ivar_set_ic_miss)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_serial)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_unset)
 RB_DEBUG_COUNTER(ivar_set_ic_miss_iv_hit)
 RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_get_base)
 RB_DEBUG_COUNTER(ivar_set_base)
+RB_DEBUG_COUNTER(ivar_get_ic_miss_set)
+RB_DEBUG_COUNTER(ivar_get_cc_miss_set)
+RB_DEBUG_COUNTER(ivar_get_ic_miss_unset)
+RB_DEBUG_COUNTER(ivar_get_cc_miss_unset)
 
 /* local variable counts
  *
@@ -244,6 +243,7 @@ RB_DEBUG_COUNTER(obj_wb_unprotect)
 RB_DEBUG_COUNTER(obj_obj_embed)
 RB_DEBUG_COUNTER(obj_obj_transient)
 RB_DEBUG_COUNTER(obj_obj_ptr)
+RB_DEBUG_COUNTER(obj_obj_too_complex)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)
@@ -346,41 +346,6 @@ RB_DEBUG_COUNTER(vm_sync_lock_enter)
 RB_DEBUG_COUNTER(vm_sync_lock_enter_nb)
 RB_DEBUG_COUNTER(vm_sync_lock_enter_cr)
 RB_DEBUG_COUNTER(vm_sync_barrier)
-
-/* mjit_exec() counts */
-RB_DEBUG_COUNTER(mjit_exec)
-RB_DEBUG_COUNTER(mjit_exec_not_added)
-RB_DEBUG_COUNTER(mjit_exec_not_ready)
-RB_DEBUG_COUNTER(mjit_exec_not_compiled)
-RB_DEBUG_COUNTER(mjit_exec_call_func)
-
-/* MJIT enqueue / unload */
-RB_DEBUG_COUNTER(mjit_add_iseq_to_process)
-RB_DEBUG_COUNTER(mjit_unload_units)
-
-/* MJIT <-> VM frame push counts */
-RB_DEBUG_COUNTER(mjit_frame_VM2VM)
-RB_DEBUG_COUNTER(mjit_frame_VM2JT)
-RB_DEBUG_COUNTER(mjit_frame_JT2JT)
-RB_DEBUG_COUNTER(mjit_frame_JT2VM)
-
-/* MJIT cancel counters */
-RB_DEBUG_COUNTER(mjit_cancel)
-RB_DEBUG_COUNTER(mjit_cancel_ivar_inline)
-RB_DEBUG_COUNTER(mjit_cancel_exivar_inline)
-RB_DEBUG_COUNTER(mjit_cancel_send_inline)
-RB_DEBUG_COUNTER(mjit_cancel_opt_insn) /* CALL_SIMPLE_METHOD */
-RB_DEBUG_COUNTER(mjit_cancel_invalidate_all)
-RB_DEBUG_COUNTER(mjit_cancel_leave)
-
-/* rb_mjit_unit_list length */
-RB_DEBUG_COUNTER(mjit_length_unit_queue)
-RB_DEBUG_COUNTER(mjit_length_active_units)
-RB_DEBUG_COUNTER(mjit_length_compact_units)
-RB_DEBUG_COUNTER(mjit_length_stale_units)
-
-/* Other MJIT counters */
-RB_DEBUG_COUNTER(mjit_compile_failures)
 
 /* load (not implemented yet) */
 /*

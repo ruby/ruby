@@ -7,9 +7,9 @@ class TestTimeTZ < Test::Unit::TestCase
   has_lisbon_tz = true
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
-  when /linux/
+  when /darwin|linux/
     force_tz_test = true
-  when /darwin|freebsd|openbsd/
+  when /freebsd|openbsd/
     has_lisbon_tz = false
     force_tz_test = true
   end
@@ -95,6 +95,9 @@ class TestTimeTZ < Test::Unit::TestCase
   CORRECT_KIRITIMATI_SKIP_1994 = with_tz("Pacific/Kiritimati") {
     Time.local(1994, 12, 31, 0, 0, 0).year == 1995
   }
+  CORRECT_SINGAPORE_1982 = with_tz("Asia/Singapore") {
+    "2022g" if Time.local(1981, 12, 31, 23, 59, 59).utc_offset == 8*3600
+  }
 
   def time_to_s(t)
     t.to_s
@@ -140,9 +143,12 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_asia_singapore
     with_tz(tz="Asia/Singapore") {
-      assert_time_constructor(tz, "1981-12-31 23:59:59 +0730", :local, [1981,12,31,23,59,59])
-      assert_time_constructor(tz, "1982-01-01 00:30:00 +0800", :local, [1982,1,1,0,0,0])
-      assert_time_constructor(tz, "1982-01-01 00:59:59 +0800", :local, [1982,1,1,0,29,59])
+      assert_time_constructor(tz, "1981-12-31 23:29:59 +0730", :local, [1981,12,31,23,29,59])
+      if CORRECT_SINGAPORE_1982
+        assert_time_constructor(tz, "1982-01-01 00:00:00 +0800", :local, [1981,12,31,23,30,00])
+        assert_time_constructor(tz, "1982-01-01 00:00:00 +0800", :local, [1982,1,1,0,0,0])
+        assert_time_constructor(tz, "1982-01-01 00:29:59 +0800", :local, [1982,1,1,0,29,59])
+      end
       assert_time_constructor(tz, "1982-01-01 00:30:00 +0800", :local, [1982,1,1,0,30,0])
     }
   end
@@ -450,8 +456,11 @@ America/Managua  Fri Jan  1 06:00:00 1993 UTC = Fri Jan  1 01:00:00 1993 EST isd
 America/Managua  Wed Jan  1 04:59:59 1997 UTC = Tue Dec 31 23:59:59 1996 EST isdst=0 gmtoff=-18000
 America/Managua  Wed Jan  1 05:00:00 1997 UTC = Tue Dec 31 23:00:00 1996 CST isdst=0 gmtoff=-21600
 Asia/Singapore  Sun Aug  8 16:30:00 1965 UTC = Mon Aug  9 00:00:00 1965 SGT isdst=0 gmtoff=27000
-Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
+Asia/Singapore  Thu Dec 31 15:59:59 1981 UTC = Thu Dec 31 23:29:59 1981 SGT isdst=0 gmtoff=27000
 Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
+End
+  gen_zdump_test <<'End' if CORRECT_SINGAPORE_1982
+Asia/Singapore  Thu Dec 31 16:00:00 1981 UTC = Fri Jan  1 00:00:00 1982 SGT isdst=0 gmtoff=28800
 End
   gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' + (CORRECT_TOKYO_DST_1951 < "2018f" ? <<'2018e' : <<'2018f') : <<'End'
 Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
@@ -610,6 +619,11 @@ module TestTimeTZ::WithTZ
     assert_equal(244, t.yday)
     assert_equal(t, time_class.new(2018, 9, 1, 12, in: tzarg))
     assert_raise(ArgumentError) {time_class.new(2018, 9, 1, 12, 0, 0, tzarg, in: tzarg)}
+  end
+
+  def subtest_hour24(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2000, 1, 1, 24, 0, 0, tzarg)
+    assert_equal([0, 0, 0, 2, 1, 2000], [t.sec, t.min, t.hour, t.mday, t.mon, t.year])
   end
 
   def subtest_now(time_class, tz, tzarg, tzname, abbr, utc_offset)

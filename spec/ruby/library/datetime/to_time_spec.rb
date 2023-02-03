@@ -7,15 +7,29 @@ describe "DateTime#to_time" do
   end
 
   it "returns a Time representing the same instant" do
-    datetime = DateTime.civil(3, 12, 31, 23, 58, 59)
+    datetime = DateTime.civil(2012, 12, 31, 23, 58, 59)
     time = datetime.to_time.utc
 
-    time.year.should == 3
+    time.year.should == 2012
     time.month.should == 12
     time.day.should == 31
     time.hour.should == 23
     time.min.should == 58
     time.sec.should == 59
+  end
+
+  date_version = defined?(Date::VERSION) ? Date::VERSION : '0.0.0'
+  version_is(date_version, '3.2.3') do
+    it "returns a Time representing the same instant before Gregorian" do
+      datetime = DateTime.civil(1582, 10, 4, 23, 58, 59)
+      time = datetime.to_time.utc
+      time.year.should == 1582
+      time.month.should == 10
+      time.day.should == 14
+      time.hour.should == 23
+      time.min.should == 58
+      time.sec.should == 59
+    end
   end
 
   it "preserves the same time regardless of local time or zone" do

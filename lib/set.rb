@@ -66,8 +66,8 @@
 #
 #  First, what's elsewhere. \Class \Set:
 #
-# - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html#class-Object-label-What-27s+Here].
-# - Includes {module Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-What-27s+Here],
+# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+# - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
 #   which provides dozens of additional methods.
 #
 # In particular, class \Set does not have many methods of its own
@@ -507,7 +507,7 @@ class Set
   # the element as parameter.  Returns an enumerator if no block is
   # given.
   def each(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     @hash.each_key(&block)
     self
   end
@@ -582,7 +582,7 @@ class Set
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def reject!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     delete_if(&block)
     self if size != n
@@ -591,7 +591,7 @@ class Set
   # Equivalent to Set#keep_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def select!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     keep_if(&block)
     self if size != n

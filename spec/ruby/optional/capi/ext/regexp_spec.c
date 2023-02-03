@@ -49,6 +49,12 @@ VALUE regexp_spec_match(VALUE self, VALUE regexp, VALUE str) {
   return rb_funcall(regexp, rb_intern("match"), 1, str);
 }
 
+VALUE regexp_spec_memcicmp(VALUE self, VALUE str1, VALUE str2) {
+  long l1 = RSTRING_LEN(str1);
+  long l2 = RSTRING_LEN(str2);
+  return INT2FIX(rb_memcicmp(RSTRING_PTR(str1), RSTRING_PTR(str2), l1 < l2 ? l1 : l2));
+}
+
 void Init_regexp_spec(void) {
   VALUE cls = rb_define_class("CApiRegexpSpecs", rb_cObject);
   rb_define_method(cls, "match", regexp_spec_match, 2);
@@ -60,6 +66,7 @@ void Init_regexp_spec(void) {
   rb_define_method(cls, "rb_reg_match_backref_get", regexp_spec_reg_match_backref_get, 2);
   rb_define_method(cls, "rb_reg_options", regexp_spec_rb_reg_options, 1);
   rb_define_method(cls, "rb_reg_regcomp", regexp_spec_rb_reg_regcomp, 1);
+  rb_define_method(cls, "rb_memcicmp", regexp_spec_memcicmp, 2);
 }
 
 #ifdef __cplusplus

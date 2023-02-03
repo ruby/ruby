@@ -64,8 +64,8 @@ ast_new_internal(rb_ast_t *ast, const NODE *node)
     return obj;
 }
 
-static VALUE rb_ast_parse_str(VALUE str, VALUE keep_script_lines);
-static VALUE rb_ast_parse_file(VALUE path, VALUE keep_script_lines);
+static VALUE rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens);
+static VALUE rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens);
 
 static VALUE
 ast_parse_new(void)
@@ -85,31 +85,33 @@ ast_parse_done(rb_ast_t *ast)
 }
 
 static VALUE
-ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE keep_script_lines)
+ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
-    return rb_ast_parse_str(str, keep_script_lines);
+    return rb_ast_parse_str(str, keep_script_lines, error_tolerant, keep_tokens);
 }
 
 static VALUE
-rb_ast_parse_str(VALUE str, VALUE keep_script_lines)
+rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     rb_ast_t *ast = 0;
 
     StringValue(str);
     VALUE vparser = ast_parse_new();
     if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
+    if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_string_path(vparser, Qnil, str, 1);
     return ast_parse_done(ast);
 }
 
 static VALUE
-ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE keep_script_lines)
+ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
-    return rb_ast_parse_file(path, keep_script_lines);
+    return rb_ast_parse_file(path, keep_script_lines, error_tolerant, keep_tokens);
 }
 
 static VALUE
-rb_ast_parse_file(VALUE path, VALUE keep_script_lines)
+rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     VALUE f;
     rb_ast_t *ast = 0;
@@ -120,6 +122,8 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines)
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     VALUE vparser = ast_parse_new();
     if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
+    if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_file_path(vparser, Qnil, f, 1);
     rb_io_close(f);
     return ast_parse_done(ast);
@@ -139,13 +143,15 @@ lex_array(VALUE array, int index)
 }
 
 static VALUE
-rb_ast_parse_array(VALUE array, VALUE keep_script_lines)
+rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     rb_ast_t *ast = 0;
 
     array = rb_check_array_type(array);
     VALUE vparser = ast_parse_new();
     if (RTEST(keep_script_lines)) rb_parser_keep_script_lines(vparser);
+    if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
+    if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     ast = rb_parser_compile_generic(vparser, lex_array, Qnil, array, 1);
     return ast_parse_done(ast);
 }
@@ -193,7 +199,24 @@ script_lines(VALUE path)
 }
 
 static VALUE
-ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines)
+node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
+{
+    int node_id;
+
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
+    node_id = rb_get_node_id_from_frame_info(location);
+    if (node_id == -1) {
+        return Qnil;
+    }
+
+    return INT2NUM(node_id);
+}
+
+static VALUE
+ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     VALUE node, lines = Qnil;
     const rb_iseq_t *iseq;
@@ -232,13 +255,13 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
     }
 
     if (!NIL_P(lines) || !NIL_P(lines = script_lines(path))) {
-        node = rb_ast_parse_array(lines, keep_script_lines);
+        node = rb_ast_parse_array(lines, keep_script_lines, error_tolerant, keep_tokens);
     }
     else if (e_option) {
-        node = rb_ast_parse_str(rb_e_script, keep_script_lines);
+        node = rb_ast_parse_str(rb_e_script, keep_script_lines, error_tolerant, keep_tokens);
     }
     else {
-        node = rb_ast_parse_file(path, keep_script_lines);
+        node = rb_ast_parse_file(path, keep_script_lines, error_tolerant, keep_tokens);
     }
 
     return node_find(node, node_id);
@@ -645,6 +668,8 @@ node_children(rb_ast_t *ast, const NODE *node)
                                         NEW_CHILD(ast, node->nd_pkwargs),
                                         kwrest);
         }
+      case NODE_ERROR:
+        return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;
@@ -696,6 +721,15 @@ ast_node_last_column(rb_execution_context_t *ec, VALUE self)
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
     return INT2NUM(nd_last_column(data->node));
+}
+
+static VALUE
+ast_node_all_tokens(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    return rb_ast_tokens(data->ast);
 }
 
 static VALUE

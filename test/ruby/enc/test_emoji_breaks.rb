@@ -84,7 +84,8 @@ class TestEmojiBreaks < Test::Unit::TestCase
               raise "File Name Mismatch: line: #{line}, expected filename: #{file.basename}.txt"
             end
           end
-          version_mismatch = false  if line =~ /^# Version: #{file.version}/
+          version_mismatch = false  if line =~ /^# Version: #{file.version}/                 # 13.0 and older
+          version_mismatch = false  if line =~ /^# Used with Emoji Version #{EMOJI_VERSION}/ # 14.0 and newer
           next  if line.match?(/\A(#|\z)/)
           if line =~ /^(\h{4,6})\.\.(\h{4,6}) *(;.+)/  # deal with Unicode ranges in emoji-sequences.txt (Bug #18028)
             range_start = $1.to_i(16)

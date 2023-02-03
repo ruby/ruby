@@ -10,8 +10,7 @@
  */
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
-#include "internal/array.h"     /* for rb_ary_tmp_new_fill */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
+#include "internal/array.h"     /* for rb_ary_hidden_new_fill */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
@@ -83,7 +82,7 @@ struct vm_ifunc_argc {
 /*! IFUNC (Internal FUNCtion) */
 struct vm_ifunc {
     VALUE flags;
-    VALUE reserved;
+    struct rb_control_frame_struct *owner_cfp;
     rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;
@@ -121,9 +120,9 @@ struct MEMO {
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
+  ((value) = rb_ary_hidden_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 #define NEW_PARTIAL_MEMO_FOR(type, value, member) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), \
+  ((value) = rb_ary_hidden_new_fill(type_roomof(type, VALUE)), \
    rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), \
    MEMO_FOR(type, value))
 

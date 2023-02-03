@@ -5,7 +5,7 @@ require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
-# http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/23633
+# https://blade.ruby-lang.org/ruby-core/23633
 
 describe "Array#reverse_each" do
   before :each do

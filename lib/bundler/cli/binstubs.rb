@@ -11,7 +11,7 @@ module Bundler
     def run
       Bundler.definition.validate_runtime!
       path_option = options["path"]
-      path_option = nil if path_option && path_option.empty?
+      path_option = nil if path_option&.empty?
       Bundler.settings.set_command_option :bin, path_option if options["path"]
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
       installer = Installer.new(Bundler.root, Bundler.definition)
@@ -40,7 +40,11 @@ module Bundler
         end
 
         if options[:standalone]
-          next Bundler.ui.warn("Sorry, Bundler can only be run via RubyGems.") if gem_name == "bundler"
+          if gem_name == "bundler"
+            Bundler.ui.warn("Sorry, Bundler can only be run via RubyGems.") unless options[:all]
+            next
+          end
+
           Bundler.settings.temporary(:path => (Bundler.settings[:path] || Bundler.root)) do
             installer.generate_standalone_bundler_executable_stubs(spec, installer_opts)
           end

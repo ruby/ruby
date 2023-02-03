@@ -11,16 +11,16 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
       run([Gem.ruby, File.basename(extension), *args], results, class_name, extension_dir)
     end
 
-    rake = ENV['rake']
+    rake = ENV["rake"]
 
     if rake
       require "shellwords"
       rake = rake.shellsplit
     else
       begin
-        rake = [Gem.ruby, "-I#{File.expand_path("../..", __dir__)}", "-rrubygems", Gem.bin_path('rake', 'rake')]
+        rake = [Gem.ruby, "-I#{File.expand_path("../..", __dir__)}", "-rrubygems", Gem.bin_path("rake", "rake")]
       rescue Gem::Exception
-        rake = [Gem.default_exec_format % 'rake']
+        rake = [Gem.default_exec_format % "rake"]
       end
     end
 

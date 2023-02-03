@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
-require_relative '../gemcutter_utilities'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
+require_relative "../gemcutter_utilities"
 
 class Gem::Commands::YankCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -28,15 +28,15 @@ data you will need to change them immediately and yank your gem.
   end
 
   def initialize
-    super 'yank', 'Remove a pushed gem from the index'
+    super "yank", "Remove a pushed gem from the index"
 
     add_version_option("remove")
     add_platform_option("remove")
     add_otp_option
 
-    add_option('--host HOST',
-               'Yank from another gemcutter-compatible host',
-               '  (e.g. https://rubygems.org)') do |value, options|
+    add_option("--host HOST",
+               "Yank from another gemcutter-compatible host",
+               "  (e.g. https://rubygems.org)") do |value, options|
       options[:host] = value
     end
 
@@ -76,10 +76,10 @@ data you will need to change them immediately and yank your gem.
       request.add_field("Authorization", api_key)
 
       data = {
-        'gem_name' => name,
-        'version' => version,
+        "gem_name" => name,
+        "version" => version,
       }
-      data['platform'] = platform if platform
+      data["platform"] = platform if platform
 
       request.set_form_data data
     end

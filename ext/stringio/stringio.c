@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.3"
+#define STRINGIO_VERSION "3.0.6"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -257,9 +257,20 @@ strio_s_allocate(VALUE klass)
 }
 
 /*
- * call-seq: StringIO.new(string=""[, mode])
+ * call-seq:
+ *   StringIO.new(string = '', mode = 'r+') -> new_stringio
  *
- * Creates new StringIO instance from with _string_ and _mode_.
+ * Note that +mode+ defaults to <tt>'r'</tt> if +string+ is frozen.
+ *
+ * Returns a new \StringIO instance formed from +string+ and +mode+;
+ * see {Access Modes}[rdoc-ref:File@Access+Modes]:
+ *
+ *   strio = StringIO.new # => #<StringIO>
+ *   strio.close
+ *
+ * The instance should be closed when no longer needed.
+ *
+ * Related: StringIO.open (accepts block; closes automatically).
  */
 static VALUE
 strio_initialize(int argc, VALUE *argv, VALUE self)
@@ -392,11 +403,26 @@ strio_finalize(VALUE self)
 }
 
 /*
- * call-seq: StringIO.open(string=""[, mode]) {|strio| ...}
+ * call-seq:
+ *   StringIO.open(string = '', mode = 'r+') {|strio| ... }
  *
- * Equivalent to StringIO.new except that when it is called with a block, it
- * yields with the new instance and closes it, and returns the result which
- * returned from the block.
+ * Note that +mode+ defaults to <tt>'r'</tt> if +string+ is frozen.
+ *
+ * Creates a new \StringIO instance formed from +string+ and +mode+;
+ * see {Access Modes}[rdoc-ref:File@Access+Modes].
+ *
+ * With no block, returns the new instance:
+ *
+ *   strio = StringIO.open # => #<StringIO>
+ *
+ * With a block, calls the block with the new instance
+ * and returns the block's value;
+ * closes the instance on block exit.
+ *
+ *   StringIO.open {|strio| p strio }
+ *   # => #<StringIO>
+ *
+ * Related: StringIO.new.
  */
 static VALUE
 strio_s_open(int argc, VALUE *argv, VALUE klass)
@@ -482,9 +508,23 @@ strio_unimpl(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq: strio.string     -> string
+ * call-seq:
+ *   string -> string
  *
- * Returns underlying String object, the subject of IO.
+ * Returns underlying string:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string= (assigns the underlying string).
  */
 static VALUE
 strio_get_string(VALUE self)
@@ -494,9 +534,23 @@ strio_get_string(VALUE self)
 
 /*
  * call-seq:
- *   strio.string = string  -> string
+ *   string = other_string -> other_string
  *
- * Changes underlying String object, the subject of IO.
+ * Assigns the underlying string as +other_string+, and sets position to zero;
+ * returns +other_string+:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string (returns the underlying string).
  */
 static VALUE
 strio_set_string(VALUE self, VALUE string)
@@ -514,10 +568,13 @@ strio_set_string(VALUE self, VALUE string)
 
 /*
  * call-seq:
- *   strio.close  -> nil
+ *   close -> nil
  *
- * Closes a StringIO. The stream is unavailable for any further data
- * operations; an +IOError+ is raised if such an attempt is made.
+ * Closes +self+ for both reading and writing.
+ *
+ * Raises IOError if reading or writing is attempted.
+ *
+ * Related: StringIO#close_read, StringIO#close_write.
  */
 static VALUE
 strio_close(VALUE self)
@@ -529,10 +586,13 @@ strio_close(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_read    -> nil
+ *   close_read -> nil
  *
- * Closes the read end of a StringIO.  Will raise an +IOError+ if the
- * receiver is not readable.
+ * Closes +self+ for reading; closed-write setting remains unchanged.
+ *
+ * Raises IOError if reading is attempted.
+ *
+ * Related: StringIO#close, StringIO#close_write.
  */
 static VALUE
 strio_close_read(VALUE self)
@@ -547,10 +607,13 @@ strio_close_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_write    -> nil
+ *   close_write -> nil
  *
- * Closes the write end of a StringIO.  Will raise an  +IOError+ if the
- * receiver is not writeable.
+ * Closes +self+ for writing; closed-read setting remains unchanged.
+ *
+ * Raises IOError if writing is attempted.
+ *
+ * Related: StringIO#close, StringIO#close_read.
  */
 static VALUE
 strio_close_write(VALUE self)
@@ -565,9 +628,10 @@ strio_close_write(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed?    -> true or false
+ *   closed? -> true or false
  *
- * Returns +true+ if the stream is completely closed, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for both reading and writing,
+ * +false+ otherwise.
  */
 static VALUE
 strio_closed(VALUE self)
@@ -579,9 +643,9 @@ strio_closed(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_read?    -> true or false
+ *   closed_read? -> true or false
  *
- * Returns +true+ if the stream is not readable, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for reading, +false+ otherwise.
  */
 static VALUE
 strio_closed_read(VALUE self)
@@ -593,9 +657,9 @@ strio_closed_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_write?    -> true or false
+ *   closed_write? -> true or false
  *
- * Returns +true+ if the stream is not writable, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for writing, +false+ otherwise.
  */
 static VALUE
 strio_closed_write(VALUE self)
@@ -615,11 +679,14 @@ strio_to_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.eof     -> true or false
- *   strio.eof?    -> true or false
+ *   eof? -> true or false
  *
- * Returns true if the stream is at the end of the data (underlying string).
- * The stream must be opened for reading or an +IOError+ will be raised.
+ * Returns +true+ if positioned at end-of-stream, +false+ otherwise;
+ * see {Position}[rdoc-ref:File@Position].
+ *
+ * Raises IOError if the stream is not opened for reading.
+ *
+ * StreamIO#eof is an alias for StreamIO#eof?.
  */
 static VALUE
 strio_eof(VALUE self)
@@ -649,13 +716,10 @@ strio_copy(VALUE copy, VALUE orig)
 
 /*
  * call-seq:
- *   strio.lineno    -> integer
+ *   lineno -> current_line_number
  *
- * Returns the current line number. The stream must be
- * opened for reading. +lineno+ counts the number of times  +gets+ is
- * called, rather than the number of newlines  encountered. The two
- * values will differ if +gets+ is  called with a separator other than
- * newline.  See also the  <code>$.</code> variable.
+ * Returns the current line number in +self+;
+ * see {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -665,10 +729,10 @@ strio_get_lineno(VALUE self)
 
 /*
  * call-seq:
- *   strio.lineno = integer    -> integer
+ *   lineno = new_line_number -> new_line_number
  *
- * Manually sets the current line number to the given value.
- * <code>$.</code> is updated only on the next read.
+ * Sets the current line number in +self+ to the given +new_line_number+;
+ * see {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -679,9 +743,10 @@ strio_set_lineno(VALUE self, VALUE lineno)
 
 /*
  * call-seq:
- *   strio.binmode    -> stringio
+ *   binmode -> self
  *
- * Puts stream into binary mode. See IO#binmode.
+ * Sets the data mode in +self+ to binary mode;
+ * see {Data Mode}[rdoc-ref:File@Data+Mode].
  *
  */
 static VALUE
@@ -705,11 +770,27 @@ strio_binmode(VALUE self)
 
 /*
  * call-seq:
- *   strio.reopen(other_StrIO)     -> strio
- *   strio.reopen(string, mode)    -> strio
+ *   reopen(other, mode = 'r+') -> self
  *
- * Reinitializes the stream with the given <i>other_StrIO</i> or _string_
- * and _mode_ (see StringIO#new).
+ * Reinitializes the stream with the given +other+ (string or StringIO) and +mode+;
+ * see IO.new:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.reopen('bar')
+ *     p strio.string
+ *     other_strio = StringIO.new('baz')
+ *     strio.reopen(other_strio)
+ *     p strio.string
+ *     other_strio.close
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *   "baz"
+ *
  */
 static VALUE
 strio_reopen(int argc, VALUE *argv, VALUE self)
@@ -723,10 +804,12 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.pos     -> integer
- *   strio.tell    -> integer
+ *   pos -> stream_position
  *
- * Returns the current offset (in bytes).
+ * Returns the current position (in bytes);
+ * see {Position}[rdoc-ref:IO@Position].
+ *
+ * StringIO#tell is an alias for StringIO#pos.
  */
 static VALUE
 strio_get_pos(VALUE self)
@@ -736,9 +819,10 @@ strio_get_pos(VALUE self)
 
 /*
  * call-seq:
- *   strio.pos = integer    -> integer
+ *   pos = new_position -> new_position
  *
- * Seeks to the given position (in bytes).
+ * Sets the current position (in bytes);
+ * see {Position}[rdoc-ref:IO@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -754,10 +838,11 @@ strio_set_pos(VALUE self, VALUE pos)
 
 /*
  * call-seq:
- *   strio.rewind    -> 0
+ *   rewind -> 0
  *
- * Positions the stream to the beginning of input, resetting
- * +lineno+ to zero.
+ * Sets the current position and line number to zero;
+ * see {Position}[rdoc-ref:IO@Position]
+ * and {Line Number}[rdoc-ref:IO@Line+Number].
  */
 static VALUE
 strio_rewind(VALUE self)
@@ -770,10 +855,11 @@ strio_rewind(VALUE self)
 
 /*
  * call-seq:
- *   strio.seek(amount, whence=SEEK_SET) -> 0
+ *   seek(offset, whence = SEEK_SET) -> 0
  *
- * Seeks to a given offset _amount_ in the stream according to
- * the value of _whence_ (see IO#seek).
+ * Sets the current position to the given integer +offset+ (in bytes),
+ * with respect to a given constant +whence+;
+ * see {Position}[rdoc-ref:IO@Position].
  */
 static VALUE
 strio_seek(int argc, VALUE *argv, VALUE self)
@@ -809,9 +895,9 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.sync    -> true
+ *   sync -> true
  *
- * Returns +true+ always.
+ * Returns +true+; implemented only for compatibility with other stream classes.
  */
 static VALUE
 strio_get_sync(VALUE self)
@@ -826,10 +912,12 @@ strio_get_sync(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_byte {|byte| block }  -> strio
- *   strio.each_byte                  -> anEnumerator
+ *   each_byte {|byte| ... } -> self
  *
- * See IO#each_byte.
+ * With a block given, calls the block with each remaining byte in the stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
+ *
+ * With no block given, returns an enumerator.
  */
 static VALUE
 strio_each_byte(VALUE self)
@@ -847,9 +935,10 @@ strio_each_byte(VALUE self)
 
 /*
  * call-seq:
- *   strio.getc   -> string or nil
+ *   getc -> character or nil
  *
- * See IO#getc.
+ * Reads and returns the next character from the stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_getc(VALUE self)
@@ -872,9 +961,10 @@ strio_getc(VALUE self)
 
 /*
  * call-seq:
- *   strio.getbyte   -> fixnum or nil
+ *   getbyte -> byte or nil
  *
- * See IO#getbyte.
+ * Reads and returns the next 8-bit byte from the stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_getbyte(VALUE self)
@@ -910,12 +1000,10 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 
 /*
  * call-seq:
- *   strio.ungetc(string)   -> nil
+ *   ungetc(character) -> nil
  *
- * Pushes back one character (passed as a parameter)
- * such that a subsequent buffered read will return it.  There is no
- * limitation for multiple pushbacks including pushing back behind the
- * beginning of the buffer string.
+ * Pushes back ("unshifts") a character or integer onto the stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
@@ -950,9 +1038,10 @@ strio_ungetc(VALUE self, VALUE c)
 
 /*
  * call-seq:
- *   strio.ungetbyte(fixnum)   -> nil
+ *   ungetbyte(byte) -> nil
  *
- * See IO#ungetbyte
+ * Pushes back ("unshifts") an 8-bit byte onto the stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
@@ -1012,9 +1101,10 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 
 /*
  * call-seq:
- *   strio.readchar   -> string
+ *   readchar -> string
  *
- * See IO#readchar.
+ * Like +getc+, but raises an exception if already at end-of-stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
  */
 static VALUE
 strio_readchar(VALUE self)
@@ -1026,9 +1116,10 @@ strio_readchar(VALUE self)
 
 /*
  * call-seq:
- *   strio.readbyte   -> fixnum
+ *   readbyte -> byte
  *
- * See IO#readbyte.
+ * Like +getbyte+, but raises an exception if already at end-of-stream;
+ * see {Byte IO}[rdoc-ref:IO@Byte+IO].
  */
 static VALUE
 strio_readbyte(VALUE self)
@@ -1040,10 +1131,12 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_char {|char| block }  -> strio
- *   strio.each_char                  -> anEnumerator
+ *   each_char {|c| ... } -> self
  *
- * See IO#each_char.
+ * With a block given, calls the block with each remaining character in the stream;
+ * see {Character IO}[rdoc-ref:IO@Character+IO].
+ *
+ * With no block given, returns an enumerator.
  */
 static VALUE
 strio_each_char(VALUE self)
@@ -1060,10 +1153,12 @@ strio_each_char(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_codepoint {|c| block }  -> strio
- *   strio.each_codepoint               -> anEnumerator
+ *   each_codepoint {|codepoint| ... } -> self
  *
- * See IO#each_codepoint.
+ * With a block given, calls the block with each remaining codepoint in the stream;
+ * see {Codepoint IO}[rdoc-ref:IO@Codepoint+IO].
+ *
+ * With no block given, returns an enumerator.
  */
 static VALUE
 strio_each_codepoint(VALUE self)
@@ -1245,8 +1340,9 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else {
-	if (n < e - s) {
-	    if (e - s < 1024) {
+	if (n < e - s + arg->chomp) {
+	    /* unless chomping, RS at the end does not matter */
+	    if (e - s < 1024 || n == e - s) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
 			e = p + n;
@@ -1273,11 +1369,13 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 
 /*
  * call-seq:
- *   strio.gets(sep=$/, chomp: false)     -> string or nil
- *   strio.gets(limit, chomp: false)      -> string or nil
- *   strio.gets(sep, limit, chomp: false) -> string or nil
+ *   gets(sep = $/, chomp: false) -> string or nil
+ *   gets(limit, chomp: false) -> string or nil
+ *   gets(sep, limit, chomp: false) -> string or nil
  *
- * See IO#gets.
+ * Reads and returns a line from the stream;
+ * assigns the return value to <tt>$_</tt>;
+ * see {Line IO}[rdoc-ref:IO@Line+IO].
  */
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
@@ -1297,11 +1395,12 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.readline(sep=$/, chomp: false)     -> string
- *   strio.readline(limit, chomp: false)      -> string or nil
- *   strio.readline(sep, limit, chomp: false) -> string or nil
+ *   readline(sep = $/, chomp: false) -> string
+ *   readline(limit, chomp: false) -> string
+ *   readline(sep, limit, chomp: false) -> string
  *
- * See IO#readline.
+ * Reads a line as with IO#gets, but raises EOFError if already at end-of-file;
+ * see {Line IO}[rdoc-ref:IO@Line+IO].
  */
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
@@ -1313,17 +1412,16 @@ strio_readline(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.each(sep=$/, chomp: false) {|line| block }         -> strio
- *   strio.each(limit, chomp: false) {|line| block }          -> strio
- *   strio.each(sep, limit, chomp: false) {|line| block }     -> strio
- *   strio.each(...)                                          -> anEnumerator
+ *   each_line(sep = $/, chomp: false) {|line| ... }   -> self
+ *   each_line(limit, chomp: false) {|line| ... }      -> self
+ *   each_line(sep, limit, chomp: false) {|line| ... } -> self
  *
- *   strio.each_line(sep=$/, chomp: false) {|line| block }     -> strio
- *   strio.each_line(limit, chomp: false) {|line| block }      -> strio
- *   strio.each_line(sep, limit, chomp: false) {|line| block } -> strio
- *   strio.each_line(...)                                      -> anEnumerator
+ * Calls the block with each remaining line read from the stream;
+ * does nothing if already at end-of-file;
+ * returns +self+.
+ * See {Line IO}[rdoc-ref:IO@Line+IO].
  *
- * See IO#each.
+ * StringIO#each is an alias for StringIO#each_line.
  */
 static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
@@ -1668,7 +1766,7 @@ strio_truncate(VALUE self, VALUE len)
     if (plen < l) {
 	MEMZERO(RSTRING_PTR(string) + plen, char, l - plen);
     }
-    return len;
+    return INT2FIX(0);
 }
 
 /*
@@ -1751,24 +1849,16 @@ strio_set_encoding_by_bom(VALUE self)
 }
 
 /*
- * Pseudo I/O on String object, with interface corresponding to IO.
+ * \IO streams for strings, with access similar to
+ * {IO}[rdoc-ref:IO];
+ * see {IO}[rdoc-ref:IO].
  *
- * Commonly used to simulate <code>$stdio</code> or <code>$stderr</code>
+ * === About the Examples
  *
- * === Examples
+ * Examples on this page assume that \StringIO has been required:
  *
  *   require 'stringio'
  *
- *   # Writing stream emulation
- *   io = StringIO.new
- *   io.puts "Hello World"
- *   io.string #=> "Hello World\n"
- *
- *   # Reading stream emulation
- *   io = StringIO.new "first\nsecond\nlast\n"
- *   io.getc #=> "f"
- *   io.gets #=> "irst\n"
- *   io.read #=> "second\nlast\n"
  */
 void
 Init_stringio(void)

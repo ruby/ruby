@@ -1294,6 +1294,12 @@ class TestArray < Test::Unit::TestCase
 =end
   end
 
+  def test_pack_with_buffer
+    n = [ 65, 66, 67 ]
+    str = "a" * 100
+    assert_equal("aaaABC", n.pack("@3ccc", buffer: str.dup), "[Bug #19116]")
+  end
+
   def test_pop
     a = @cls[ 'cat', 'dog' ]
     assert_equal('dog', a.pop)
@@ -1580,6 +1586,96 @@ class TestArray < Test::Unit::TestCase
     assert_equal_instance(a.values_at(*idx), a.slice((3..90)%2))
     idx = 90.step(3, -2).to_a
     assert_equal_instance(a.values_at(*idx), a.slice((90 .. 3)% -2))
+
+    a = [0, 1, 2, 3, 4, 5]
+    assert_equal([2, 1, 0], a.slice((2..).step(-1)))
+    assert_equal([2, 0], a.slice((2..).step(-2)))
+    assert_equal([2], a.slice((2..).step(-3)))
+    assert_equal([2], a.slice((2..).step(-4)))
+
+    assert_equal([3, 2, 1, 0], a.slice((-3..).step(-1)))
+    assert_equal([3, 1], a.slice((-3..).step(-2)))
+    assert_equal([3, 0], a.slice((-3..).step(-3)))
+    assert_equal([3], a.slice((-3..).step(-4)))
+    assert_equal([3], a.slice((-3..).step(-5)))
+
+    assert_equal([5, 4, 3, 2, 1, 0], a.slice((..0).step(-1)))
+    assert_equal([5, 3, 1], a.slice((..0).step(-2)))
+    assert_equal([5, 2], a.slice((..0).step(-3)))
+    assert_equal([5, 1], a.slice((..0).step(-4)))
+    assert_equal([5, 0], a.slice((..0).step(-5)))
+    assert_equal([5], a.slice((..0).step(-6)))
+    assert_equal([5], a.slice((..0).step(-7)))
+
+    assert_equal([5, 4, 3, 2, 1], a.slice((...0).step(-1)))
+    assert_equal([5, 3, 1], a.slice((...0).step(-2)))
+    assert_equal([5, 2], a.slice((...0).step(-3)))
+    assert_equal([5, 1], a.slice((...0).step(-4)))
+    assert_equal([5], a.slice((...0).step(-5)))
+    assert_equal([5], a.slice((...0).step(-6)))
+
+    assert_equal([5, 4, 3, 2], a.slice((...1).step(-1)))
+    assert_equal([5, 3], a.slice((...1).step(-2)))
+    assert_equal([5, 2], a.slice((...1).step(-3)))
+    assert_equal([5], a.slice((...1).step(-4)))
+    assert_equal([5], a.slice((...1).step(-5)))
+
+    assert_equal([5, 4, 3, 2, 1], a.slice((..-5).step(-1)))
+    assert_equal([5, 3, 1], a.slice((..-5).step(-2)))
+    assert_equal([5, 2], a.slice((..-5).step(-3)))
+    assert_equal([5, 1], a.slice((..-5).step(-4)))
+    assert_equal([5], a.slice((..-5).step(-5)))
+    assert_equal([5], a.slice((..-5).step(-6)))
+
+    assert_equal([5, 4, 3, 2], a.slice((...-5).step(-1)))
+    assert_equal([5, 3], a.slice((...-5).step(-2)))
+    assert_equal([5, 2], a.slice((...-5).step(-3)))
+    assert_equal([5], a.slice((...-5).step(-4)))
+    assert_equal([5], a.slice((...-5).step(-5)))
+
+    assert_equal([4, 3, 2, 1], a.slice((4..1).step(-1)))
+    assert_equal([4, 2], a.slice((4..1).step(-2)))
+    assert_equal([4, 1], a.slice((4..1).step(-3)))
+    assert_equal([4], a.slice((4..1).step(-4)))
+    assert_equal([4], a.slice((4..1).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((4...1).step(-1)))
+    assert_equal([4, 2], a.slice((4...1).step(-2)))
+    assert_equal([4], a.slice((4...1).step(-3)))
+    assert_equal([4], a.slice((4...1).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((-2..1).step(-1)))
+    assert_equal([4, 2], a.slice((-2..1).step(-2)))
+    assert_equal([4, 1], a.slice((-2..1).step(-3)))
+    assert_equal([4], a.slice((-2..1).step(-4)))
+    assert_equal([4], a.slice((-2..1).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((-2...1).step(-1)))
+    assert_equal([4, 2], a.slice((-2...1).step(-2)))
+    assert_equal([4], a.slice((-2...1).step(-3)))
+    assert_equal([4], a.slice((-2...1).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((4..-5).step(-1)))
+    assert_equal([4, 2], a.slice((4..-5).step(-2)))
+    assert_equal([4, 1], a.slice((4..-5).step(-3)))
+    assert_equal([4], a.slice((4..-5).step(-4)))
+    assert_equal([4], a.slice((4..-5).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((4...-5).step(-1)))
+    assert_equal([4, 2], a.slice((4...-5).step(-2)))
+    assert_equal([4], a.slice((4...-5).step(-3)))
+    assert_equal([4], a.slice((4...-5).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((-2..-5).step(-1)))
+    assert_equal([4, 2], a.slice((-2..-5).step(-2)))
+    assert_equal([4, 1], a.slice((-2..-5).step(-3)))
+    assert_equal([4], a.slice((-2..-5).step(-4)))
+    assert_equal([4], a.slice((-2..-5).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((-2...-5).step(-1)))
+    assert_equal([4, 2], a.slice((-2...-5).step(-2)))
+    assert_equal([4], a.slice((-2...-5).step(-3)))
+    assert_equal([4], a.slice((-2...-5).step(-4)))
   end
 
   def test_slice_out_of_range
@@ -2890,7 +2986,9 @@ class TestArray < Test::Unit::TestCase
     assert_raise(RangeError) {
       [*0..2].shuffle(random: gen)
     }
+  end
 
+  def test_shuffle_random_clobbering
     ary = (0...10000).to_a
     gen = proc do
       ary.replace([])
@@ -2900,7 +2998,9 @@ class TestArray < Test::Unit::TestCase
       alias rand call
     end
     assert_raise(RuntimeError) {ary.shuffle!(random: gen)}
+  end
 
+  def test_shuffle_random_zero
     zero = Object.new
     def zero.to_int
       0
@@ -2913,7 +3013,10 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
+  end
 
+  def test_shuffle_random_invalid_generator
+    ary = (0...10).to_a
     assert_raise(NoMethodError) {
       ary.shuffle(random: Object.new)
     }
@@ -2930,7 +3033,9 @@ class TestArray < Test::Unit::TestCase
         assert_include([0, 1, 2], sample)
       }
     end
+  end
 
+  def test_sample_statistics
     srand(0)
     a = (1..18).to_a
     (0..20).each do |n|
@@ -2947,9 +3052,13 @@ class TestArray < Test::Unit::TestCase
       end
       assert_operator(h.values.min * 2, :>=, h.values.max) if n != 0
     end
+  end
 
+  def test_sample_invalid_argument
     assert_raise(ArgumentError, '[ruby-core:23374]') {[1, 2].sample(-1)}
+  end
 
+  def test_sample_random_srand0
     gen = Random.new(0)
     srand(0)
     a = (1..18).to_a
@@ -2958,13 +3067,15 @@ class TestArray < Test::Unit::TestCase
         assert_equal(a.sample(n), a.sample(n, random: gen), "#{i}/#{n}")
       end
     end
+  end
 
+  def test_sample_unknown_keyword
     assert_raise_with_message(ArgumentError, /unknown keyword/) do
       [0, 1, 2].sample(xawqij: "a")
     end
   end
 
-  def test_sample_random
+  def test_sample_random_generator
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
     gen0 = proc do |max|
@@ -3007,7 +3118,9 @@ class TestArray < Test::Unit::TestCase
     assert_equal([5000, 0, 5001, 2, 5002, 4, 5003, 6, 5004, 8, 5005], ary.sample(11, random: gen0))
     ary.sample(11, random: gen1) # implementation detail, may change in the future
     assert_equal([], ary)
+  end
 
+  def test_sample_random_generator_half
     half = Object.new
     def half.to_int
       5000
@@ -3020,7 +3133,10 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(5000, ary.sample(random: gen_to_int))
+  end
 
+  def test_sample_random_invalid_generator
+    ary = (0..10).to_a
     assert_raise(NoMethodError) {
       ary.sample(random: Object.new)
     }

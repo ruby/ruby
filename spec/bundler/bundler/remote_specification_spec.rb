@@ -45,7 +45,7 @@ RSpec.describe Bundler::RemoteSpecification do
       let(:platform) { "jruby" }
 
       it "should return the spec name, version, and platform" do
-        expect(subject.full_name).to eq("foo-1.0.0-jruby")
+        expect(subject.full_name).to eq("foo-1.0.0-java")
       end
     end
   end

@@ -39,9 +39,18 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
+  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
+  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed."
+  SAFE_MARSHAL_PROC = proc do |object|
+    object.tap do
+      unless SAFE_MARSHAL_CLASSES.include?(object.class)
+        raise TypeError, format(SAFE_MARSHAL_ERROR, object.class, SAFE_MARSHAL_CLASSES.join(", "))
+      end
+    end
+  end
+
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
-  autoload :DepProxy,               File.expand_path("bundler/dep_proxy", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
   autoload :Digest,                 File.expand_path("bundler/digest", __dir__)
   autoload :Dsl,                    File.expand_path("bundler/dsl", __dir__)
@@ -58,7 +67,7 @@ module Bundler
   autoload :Installer,              File.expand_path("bundler/installer", __dir__)
   autoload :LazySpecification,      File.expand_path("bundler/lazy_specification", __dir__)
   autoload :LockfileParser,         File.expand_path("bundler/lockfile_parser", __dir__)
-  autoload :MatchPlatform,          File.expand_path("bundler/match_platform", __dir__)
+  autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -76,7 +85,6 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
-  autoload :VersionRanges,          File.expand_path("bundler/version_ranges", __dir__)
 
   class << self
     def configure
@@ -331,9 +339,9 @@ module Bundler
       FileUtils.remove_entry_secure(path) if path && File.exist?(path)
     rescue ArgumentError
       message = <<EOF
-It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.
+It is a security vulnerability to allow your home directory to be world-writable, and bundler cannot continue.
 You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to https://ruby-doc.org/stdlib-2.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
+Please refer to https://ruby-doc.org/stdlib-3.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
 EOF
       File.world_writable?(path) ? Bundler.ui.warn(message) : raise
       raise PathError, "Please fix the world-writable issue with your #{path} directory"
@@ -455,7 +463,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform]
       Gem::Platform.local
     end
 
@@ -488,41 +496,9 @@ EOF
       configured_bundle_path.use_system_gems?
     end
 
-    def requires_sudo?
-      return @requires_sudo if defined?(@requires_sudo_ran)
-
-      sudo_present = which "sudo" if settings.allow_sudo?
-
-      if sudo_present
-        # the bundle path and subdirectories need to be writable for RubyGems
-        # to be able to unpack and install gems without exploding
-        path = bundle_path
-        path = path.parent until path.exist?
-
-        # bins are written to a different location on OS X
-        bin_dir = Pathname.new(Bundler.system_bindir)
-        bin_dir = bin_dir.parent until bin_dir.exist?
-
-        # if any directory is not writable, we need sudo
-        files = [path, bin_dir] | Dir[bundle_path.join("build_info/*").to_s] | Dir[bundle_path.join("*").to_s]
-        unwritable_files = files.reject {|f| File.writable?(f) }
-        sudo_needed = !unwritable_files.empty?
-        if sudo_needed
-          Bundler.ui.warn "Following files may not be writable, so sudo is needed:\n  #{unwritable_files.map(&:to_s).sort.join("\n  ")}"
-        end
-      end
-
-      @requires_sudo_ran = true
-      @requires_sudo = settings.allow_sudo? && sudo_present && sudo_needed
-    end
-
     def mkdir_p(path, options = {})
-      if requires_sudo? && !options[:no_sudo]
-        sudo "mkdir -p '#{path}'" unless File.exist?(path)
-      else
-        SharedHelpers.filesystem_access(path, :write) do |p|
-          FileUtils.mkdir_p(p)
-        end
+      SharedHelpers.filesystem_access(path, :write) do |p|
+        FileUtils.mkdir_p(p)
       end
     end
 
@@ -530,37 +506,12 @@ EOF
       if File.file?(executable) && File.executable?(executable)
         executable
       elsif paths = ENV["PATH"]
-        quote = '"'.freeze
+        quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
           executable_path = File.expand_path(executable, path)
           return executable_path if File.file?(executable_path) && File.executable?(executable_path)
         end
-      end
-    end
-
-    def sudo(str)
-      SUDO_MUTEX.synchronize do
-        prompt = "\n\n" + <<-PROMPT.gsub(/^ {6}/, "").strip + " "
-        Your user account isn't allowed to install to the system RubyGems.
-        You can cancel this installation and run:
-
-            bundle config set --local path 'vendor/bundle'
-            bundle install
-
-        to install the gems into ./vendor/bundle/, or you can enter your password
-        and install the bundled gems to RubyGems using sudo.
-
-        Password:
-        PROMPT
-
-        unless @prompted_for_sudo ||= system(%(sudo -k -p "#{prompt}" true))
-          raise SudoNotPermittedError,
-            "Bundler requires sudo access to install at the moment. " \
-            "Try installing again, granting Bundler sudo access when prompted, or installing into a different path."
-        end
-
-        `sudo -p "#{prompt}" #{str}`
       end
     end
 
@@ -570,8 +521,12 @@ EOF
       end
     end
 
-    def load_marshal(data)
-      Marshal.load(data)
+    def safe_load_marshal(data)
+      load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
+    end
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
     rescue TypeError => e
       raise MarshalError, "#{e.class}: #{e.message}"
     end
@@ -582,7 +537,7 @@ EOF
       @gemspec_cache[key] ||= load_gemspec_uncached(file, validate)
       # Protect against caching side-effected gemspecs by returning a
       # new instance each time.
-      @gemspec_cache[key].dup if @gemspec_cache[key]
+      @gemspec_cache[key]&.dup
     end
 
     def load_gemspec_uncached(file, validate = false)
@@ -609,7 +564,7 @@ EOF
 
     def git_present?
       return @git_present if defined?(@git_present)
-      @git_present = Bundler.which("git") || Bundler.which("git.exe")
+      @git_present = Bundler.which("git#{RbConfig::CONFIG["EXEEXT"]}")
     end
 
     def feature_flag

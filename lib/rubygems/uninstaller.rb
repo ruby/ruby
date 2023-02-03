@@ -5,12 +5,12 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'fileutils'
-require_relative '../rubygems'
-require_relative 'installer_uninstaller_utils'
-require_relative 'dependency_list'
-require_relative 'rdoc'
-require_relative 'user_interaction'
+require "fileutils"
+require_relative "../rubygems"
+require_relative "installer_uninstaller_utils"
+require_relative "dependency_list"
+require_relative "rdoc"
+require_relative "user_interaction"
 
 ##
 # An Uninstaller.
@@ -105,8 +105,8 @@ class Gem::Uninstaller
     @default_specs_matching_uninstall_params = default_specs
 
     list, other_repo_specs = list.partition do |spec|
-      @gem_home == spec.base_dir or
-        (@user_install and spec.base_dir == Gem.user_dir)
+      @gem_home == spec.base_dir ||
+        (@user_install && spec.base_dir == Gem.user_dir)
     end
 
     list.sort!
@@ -239,8 +239,8 @@ class Gem::Uninstaller
   # spec:: the spec of the gem to be uninstalled
 
   def remove(spec)
-    unless path_ok?(@gem_home, spec) or
-           (@user_install and path_ok?(Gem.user_dir, spec))
+    unless path_ok?(@gem_home, spec) ||
+           (@user_install && path_ok?(Gem.user_dir, spec))
       e = Gem::GemNotInHomeException.new \
             "Gem '#{spec.full_name}' is not installed in directory #{@gem_home}"
       e.spec = spec
@@ -302,8 +302,8 @@ class Gem::Uninstaller
   # Is +spec+ in +gem_dir+?
 
   def path_ok?(gem_dir, spec)
-    full_path     = File.join gem_dir, 'gems', spec.full_name
-    original_path = File.join gem_dir, 'gems', spec.original_name
+    full_path     = File.join gem_dir, "gems", spec.full_name
+    original_path = File.join gem_dir, "gems", spec.original_name
 
     full_path == spec.full_gem_path || original_path == spec.full_gem_path
   end
@@ -332,10 +332,10 @@ class Gem::Uninstaller
   # Asks if it is OK to remove +spec+.  Returns true if it is OK.
 
   def ask_if_ok(spec) # :nodoc:
-    msg = ['']
-    msg << 'You have requested to uninstall the gem:'
+    msg = [""]
+    msg << "You have requested to uninstall the gem:"
     msg << "\t#{spec.full_name}"
-    msg << ''
+    msg << ""
 
     siblings = Gem::Specification.select do |s|
       s.name == spec.name && s.full_name != spec.full_name
@@ -347,8 +347,8 @@ class Gem::Uninstaller
       end
     end
 
-    msg << 'If you remove this gem, these dependencies will not be met.'
-    msg << 'Continue with Uninstall?'
+    msg << "If you remove this gem, these dependencies will not be met."
+    msg << "Continue with Uninstall?"
     return ask_yes_no(msg.join("\n"), false)
   end
 
@@ -360,7 +360,7 @@ class Gem::Uninstaller
     # of what it did for us to find rather than trying to recreate
     # it again.
     if @format_executable
-      require_relative 'installer'
+      require_relative "installer"
       Gem::Installer.exec_format % File.basename(filename)
     else
       filename

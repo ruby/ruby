@@ -1,4 +1,4 @@
-require 'socket'
+require "socket"
 
 module CoreExtensions
   module TCPSocketExt

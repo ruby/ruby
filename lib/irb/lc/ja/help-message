@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-#   irb/lc/ja/help-message.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
-#
 Usage:  irb.rb [options] [programfile] [arguments]
   -f		    ~/.irbrc を読み込まない.
   -d                $DEBUG をtrueにする(ruby -d と同じ)
@@ -53,5 +43,3 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -v, --version	    irbのバージョンを表示する.
   -h, --help	    irb のヘルプを表示する.
   --		    以降のコマンドライン引数をオプションとして扱わない.
-
-# vim:fileencoding=utf-8

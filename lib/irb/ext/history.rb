@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   history.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:

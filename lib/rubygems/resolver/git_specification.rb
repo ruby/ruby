@@ -6,9 +6,9 @@
 
 class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   def ==(other) # :nodoc:
-    self.class === other and
-      @set  == other.set and
-      @spec == other.spec and
+    self.class === other &&
+      @set  == other.set &&
+      @spec == other.spec &&
       @source == other.source
   end
 
@@ -21,7 +21,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   # the executables.
 
   def install(options = {})
-    require_relative '../installer'
+    require_relative "../installer"
 
     installer = Gem::Installer.for_spec spec, options
 
@@ -35,7 +35,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[GitSpecification', ']' do
+    q.group 2, "[GitSpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -43,7 +43,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
       q.text "version: #{version}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp dependencies
 

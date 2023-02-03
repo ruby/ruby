@@ -111,11 +111,16 @@
 #define TYPE_VOID  0
 #define TYPE_VOIDP 1
 #define TYPE_CHAR  2
+#define TYPE_UCHAR  -TYPE_CHAR
 #define TYPE_SHORT 3
+#define TYPE_USHORT -TYPE_SHORT
 #define TYPE_INT   4
+#define TYPE_UINT   -TYPE_INT
 #define TYPE_LONG  5
+#define TYPE_ULONG  -TYPE_LONG
 #if HAVE_LONG_LONG
 #define TYPE_LONG_LONG 6
+#define TYPE_ULONG_LONG -TYPE_LONG_LONG
 #endif
 #define TYPE_FLOAT 7
 #define TYPE_DOUBLE 8
@@ -123,11 +128,18 @@
 #define TYPE_CONST_STRING 10
 
 #define TYPE_INT8_T TYPE_CHAR
+#define TYPE_UINT8_T -TYPE_INT8_T
+
 #if SIZEOF_SHORT == 2
 # define TYPE_INT16_T TYPE_SHORT
 #elif SIZEOF_INT == 2
 # define TYPE_INT16_T TYPE_INT
 #endif
+
+#ifdef TYPE_INT16_T
+# define TYPE_UINT16_T -TYPE_INT16_T
+#endif
+
 #if SIZEOF_SHORT == 4
 # define TYPE_INT32_T TYPE_SHORT
 #elif SIZEOF_INT == 4
@@ -135,12 +147,21 @@
 #elif SIZEOF_LONG == 4
 # define TYPE_INT32_T TYPE_LONG
 #endif
+
+#ifdef TYPE_INT32_T
+#define TYPE_UINT32_T -TYPE_INT32_T
+#endif
+
 #if SIZEOF_INT == 8
 # define TYPE_INT64_T TYPE_INT
 #elif SIZEOF_LONG == 8
 # define TYPE_INT64_T TYPE_LONG
 #elif defined(TYPE_LONG_LONG)
 # define TYPE_INT64_T TYPE_LONG_LONG
+#endif
+
+#ifdef TYPE_INT64_T
+#define TYPE_UINT64_T -TYPE_INT64_T
 #endif
 
 #ifndef TYPE_SSIZE_T
@@ -175,7 +196,17 @@
 #endif
 #define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
 
-#define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
+/* GCC releases before GCC 4.9 had a bug in _Alignof.  See GCC bug 52023
+   <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52023>.
+   clang versions < 8.0.0 have the same bug.  */
+#if (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 201112 \
+     || (defined(__GNUC__) && __GNUC__ < 4 + (__GNUC_MINOR__ < 9) \
+         && !defined(__clang__)) \
+     || (defined(__clang__) && __clang_major__ < 8))
+# define ALIGN_OF(type) offsetof(struct {char align_c; type align_x;}, align_x)
+#else
+# define ALIGN_OF(type) _Alignof(type)
+#endif
 
 #define ALIGN_VOIDP  ALIGN_OF(void*)
 #define ALIGN_CHAR   ALIGN_OF(char)

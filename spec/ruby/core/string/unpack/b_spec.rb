@@ -86,12 +86,27 @@ describe "String#unpack with format 'B'" do
     ].should be_computed_by(:unpack, "BBB")
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x80\x00".unpack("B\x00B").should == ["1", "0"]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      "\x80\x00".unpack("B\x00B").should == ["1", "0"]
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x80\x00".unpack("B\x00B")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
     "\x80\x00".unpack("B B").should == ["1", "0"]
+  end
+
+  it "decodes into US-ASCII string values" do
+    str = "s".force_encoding('UTF-8').unpack("B*")[0]
+    str.encoding.name.should == 'US-ASCII'
   end
 end
 
@@ -177,8 +192,18 @@ describe "String#unpack with format 'b'" do
     ].should be_computed_by(:unpack, "bbb")
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x01\x00".unpack("b\x00b").should == ["1", "0"]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      "\x01\x00".unpack("b\x00b").should == ["1", "0"]
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x01\x00".unpack("b\x00b")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
@@ -189,5 +214,4 @@ describe "String#unpack with format 'b'" do
     str = "s".force_encoding('UTF-8').unpack("b*")[0]
     str.encoding.name.should == 'US-ASCII'
   end
-
 end

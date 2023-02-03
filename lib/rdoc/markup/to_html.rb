@@ -84,7 +84,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def handle_RDOCLINK url # :nodoc:
     case url
     when /^rdoc-ref:/
-      $'
+      CGI.escapeHTML($')
     when /^rdoc-label:/
       text = $'
 
@@ -95,13 +95,11 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
              else                    text
              end
 
-      gen_url url, text
+      gen_url CGI.escapeHTML(url), CGI.escapeHTML(text)
     when /^rdoc-image:/
-      "<img src=\"#{$'}\">"
-    else
-      url =~ /\Ardoc-[a-z]+:/
-
-      $'
+      %[<img src=\"#{CGI.escapeHTML($')}\">]
+    when /\Ardoc-[a-z]+:/
+      CGI.escapeHTML($')
     end
   end
 
@@ -125,7 +123,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #   Reference to a local file relative to the output directory.
 
   def handle_regexp_HYPERLINK(target)
-    url = target.text
+    url = CGI.escapeHTML(target.text)
 
     gen_url url, url
   end
@@ -154,9 +152,13 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       text =~ /^\{(.*)\}\[(.*?)\]$/ or text =~ /^(\S+)\[(.*?)\]$/
 
     label = $1
-    url   = $2
+    url   = CGI.escapeHTML($2)
 
-    label = handle_RDOCLINK label if /^rdoc-image:/ =~ label
+    if /^rdoc-image:/ =~ label
+      label = handle_RDOCLINK(label)
+    else
+      label = CGI.escapeHTML(label)
+    end
 
     gen_url url, label
   end
@@ -324,7 +326,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     header.zip(aligns) do |text, align|
       @res << '<th'
       @res << ' align="' << align << '"' if align
-      @res << '>' << CGI.escapeHTML(text) << "</th>\n"
+      @res << '>' << to_html(text) << "</th>\n"
     end
     @res << "</tr>\n</thead>\n<tbody>\n"
     body.each do |row|
@@ -332,7 +334,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       row.zip(aligns) do |text, align|
         @res << '<td'
         @res << ' align="' << align << '"' if align
-        @res << '>' << CGI.escapeHTML(text) << "</td>\n"
+        @res << '>' << to_html(text) << "</td>\n"
       end
       @res << "</tr>\n"
     end

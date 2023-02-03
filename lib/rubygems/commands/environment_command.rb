@@ -1,21 +1,22 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
   def initialize
-    super 'environment', 'Display information about the RubyGems environment'
+    super "environment", "Display information about the RubyGems environment"
   end
 
   def arguments # :nodoc:
     args = <<-EOF
-          gemdir          display the path where gems are installed
-          gempath         display path used to search for gems
+          home            display the path where gems are installed. Aliases: gemhome, gemdir, GEM_HOME
+          path            display path used to search for gems. Aliases: gempath, GEM_PATH
+          user_gemhome    display the path where gems are installed when `--user-install` is given. Aliases: user_gemdir
           version         display the gem format version
           remotesources   display the remote gem servers
           platform        display the supported gem platforms
           <omitted>       display everything
     EOF
-    return args.gsub(/^\s+/, '')
+    return args.gsub(/^\s+/, "")
   end
 
   def description # :nodoc:
@@ -80,6 +81,8 @@ lib/rubygems/defaults/operating_system.rb
         Gem.dir
       when /^gempath/, /^path/, /^GEM_PATH/ then
         Gem.path.join(File::PATH_SEPARATOR)
+      when /^user_gemdir/, /^user_gemhome/ then
+        Gem.user_dir
       when /^remotesources/ then
         Gem.sources.to_a.join("\n")
       when /^platform/ then
@@ -138,7 +141,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - GEM CONFIGURATION:\n"
     Gem.configuration.each do |name, value|
-      value = value.gsub(/./, '*') if name == 'gemcutter_key'
+      value = value.gsub(/./, "*") if name == "gemcutter_key"
       out << "     - #{name.inspect} => #{value.inspect}\n"
     end
 
@@ -149,7 +152,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - SHELL PATH:\n"
 
-    shell_path = ENV['PATH'].split(File::PATH_SEPARATOR)
+    shell_path = ENV["PATH"].split(File::PATH_SEPARATOR)
     add_path out, shell_path
 
     out

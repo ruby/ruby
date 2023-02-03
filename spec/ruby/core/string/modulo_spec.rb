@@ -368,8 +368,16 @@ describe "String#%" do
     ("%c" % 'A').should == "A"
   end
 
-  it "raises an exception for multiple character strings as argument for %c" do
-    -> { "%c" % 'AA' }.should raise_error(ArgumentError)
+  ruby_version_is ""..."3.2" do
+    it "raises an exception for multiple character strings as argument for %c" do
+      -> { "%c" % 'AA' }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "supports only the first character as argument for %c" do
+      ("%c" % 'AA').should == "A"
+    end
   end
 
   it "calls to_str on argument for %c formats" do

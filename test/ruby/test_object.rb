@@ -853,6 +853,15 @@ class TestObject < Test::Unit::TestCase
     x.instance_variable_set(:@bar, 42)
     assert_match(/\A#<Object:0x\h+ (?:@foo="value", @bar=42|@bar=42, @foo="value")>\z/, x.inspect)
 
+    # Bug: [ruby-core:19167]
+    x = Object.new
+    x.instance_variable_set(:@foo, NilClass)
+    assert_match(/\A#<Object:0x\h+ @foo=NilClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, TrueClass)
+    assert_match(/\A#<Object:0x\h+ @foo=TrueClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, FalseClass)
+    assert_match(/\A#<Object:0x\h+ @foo=FalseClass>\z/, x.inspect)
+
     # #inspect does not call #to_s anymore
     feature6130 = '[ruby-core:43238]'
     x = Object.new
@@ -925,6 +934,19 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?)
+
+    y = Object.new
+    ys = y.singleton_class
+    ys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #19169]')
+  end
+
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
@@ -992,5 +1014,14 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
+  end
+
+  def test_frozen_inspect
+    obj = Object.new
+    obj.instance_variable_set(:@a, "a")
+    ins = obj.inspect
+    obj.freeze
+
+    assert_equal(ins, obj.inspect)
   end
 end

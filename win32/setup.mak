@@ -67,24 +67,19 @@ MJIT_SUPPORT = $(MJIT_SUPPORT)
 <<
 !if defined(BASERUBY)
 	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
-!else
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
 !endif
-	@type << >> $(MAKEFILE)
-$(BANG)if "$$(BASERUBY)" == ""
-BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
-HAVE_BASERUBY = no
-$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
-HAVE_BASERUBY = yes
-$(BANG)else
-HAVE_BASERUBY = no
-$(BANG)endif
-<<
+!if "$(RUBY_DEVEL)" == "yes"
+	RUBY_DEVEL = yes
+!endif
 !if "$(GIT)" != ""
 	@echo GIT = $(GIT)>> $(MAKEFILE)
 !endif
 !if "$(HAVE_GIT)" != ""
 	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
+!endif
+
+!if "$(WITH_GMP)" == "yes"
+	@echo>>$(MAKEFILE) USE_GMP = 1
 !endif
 
 -osname-section-:
@@ -168,13 +163,15 @@ main(void)
 }
 <<
 	@( \
-	  ($(CC) -O2 -DNO_ASSUME $@.c && .\$@ && $(CC) -O2 $@.c) && \
-	  (.\$@ || echo>>$(MAKEFILE) VS2022_FP_BUG=1) \
-	) & $(WIN32DIR:/=\)\rm.bat $@.*
+	  $(CC) -O2 $@.c && .\$@ || \
+	  set bug=%ERRORLEVEL% \
+	  echo This compiler has an optimization bug \
+	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
 
 verconf.mk: nul
+	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
 @echo off
 #define RUBY_REVISION 0
@@ -195,9 +192,9 @@ echo RUBY_RELEASE_DAY = %ruby_release_day:~-2%
 echo MAJOR = RUBY_VERSION_MAJOR
 echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY
-echo ABI_VERSION = RUBY_ABI_VERSION
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
-echo RUBY_DEVEL = yes
+#include "$(@F)"
+echo ABI_VERSION = RUBY_ABI_VERSION
 #endif
 set /a MSC_VER = _MSC_VER
 #if _MSC_VER >= 1920
@@ -291,7 +288,6 @@ AS = $(AS) -nologo
 	(echo AS = $(AS:64=) -nologo) || \
 	(echo AS = $(AS) -nologo) ) >>$(MAKEFILE)
 !endif
-	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub

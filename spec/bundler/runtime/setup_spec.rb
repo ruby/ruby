@@ -370,7 +370,7 @@ RSpec.describe "Bundler.setup" do
 
       context "when the ruby stdlib is a substring of Gem.path" do
         it "does not reject the stdlib from $LOAD_PATH" do
-          substring = "/" + $LOAD_PATH.find {|p| p =~ /vendor_ruby/ }.split("/")[2]
+          substring = "/" + $LOAD_PATH.find {|p| p.include?("vendor_ruby") }.split("/")[2]
           run "puts 'worked!'", :env => { "GEM_PATH" => substring }
           expect(out).to eq("worked!")
         end
@@ -489,7 +489,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -507,7 +507,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -529,7 +529,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -541,7 +541,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies changed/)
+      expect(err).to match(/is using branch main but Gemfile specifies changed/)
     end
 
     it "explodes on refs with different branches on runtime" do
@@ -551,17 +551,17 @@ RSpec.describe "Bundler.setup" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "main"
       G
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "nonexistant"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "nonexistent"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies nonexistant/)
+      expect(err).to match(/is using branch main but Gemfile specifies nonexistent/)
     end
   end
 
@@ -634,6 +634,23 @@ RSpec.describe "Bundler.setup" do
 
       ruby "require '#{system_gem_path("gems/bundler-9.99.9.beta1/lib/bundler.rb")}'; Bundler.setup", :env => { "DEBUG" => "1" }
       expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(out).not_to include("lockfile does not have all gems needed for the current platform")
+      expect(err).to be_empty
+    end
+
+    it "doesn't re-resolve when deleting dependencies" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+        gem "actionpack"
+      G
+
+      install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      expect(out).to include("Some dependencies were deleted, using a subset of the resolution from the lockfile")
       expect(err).to be_empty
     end
 
@@ -801,7 +818,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly", :ruby_repo do
+  it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))
@@ -848,7 +865,7 @@ end
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
-                lines.reject {|line| line =~ %r{lib/bundler/version} }.join
+                lines.reject {|line| line.include?("lib/bundler/version") }.join
 
       File.open(File.join(specifications_dir, "#{full_name}.gemspec"), "wb") do |f|
         f.write(gemspec_content)
@@ -1287,18 +1304,14 @@ end
 
     describe "default gem activation" do
       let(:exemptions) do
-        exempts = if Gem.rubygems_version >= Gem::Version.new("2.7")
-          %w[did_you_mean]
-        else
-          %w[io-console openssl]
-        end << "bundler"
-        exempts << "fiddle" if Gem.win_platform? && Gem.rubygems_version >= Gem::Version.new("2.7")
+        exempts = %w[did_you_mean bundler]
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
+        exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
         exempts
       end
 

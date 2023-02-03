@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 #
 # This set of tests can be run with:
-# make test-all TESTS='test/ruby/test_yjit_exit_locations.rb' RUN_OPTS="--yjit-call-threshold=1"
+# make test-all TESTS='test/ruby/test_yjit_exit_locations.rb'
 
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+return unless JITSupport.yjit_supported?
 
 # Tests for YJIT with assertions on tracing exits
 # insipired by the MJIT tests in test/ruby/test_yjit.rb

@@ -8,6 +8,11 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
+// stats_alloc is a middleware to instrument global allocations in Rust.
+#[cfg(feature="stats")]
+#[global_allocator]
+static GLOBAL_ALLOCATOR: &stats_alloc::StatsAlloc<std::alloc::System> = &stats_alloc::INSTRUMENTED_SYSTEM;
+
 // YJIT exit counts for each instruction type
 const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
@@ -104,7 +109,7 @@ impl YjitExitLocations {
 
             // Increase index for exit instruction.
             idx += 1;
-            // Increase index for bookeeping value (number of times we've seen this
+            // Increase index for bookkeeping value (number of times we've seen this
             // row in a stack).
             idx += 1;
         }
@@ -164,39 +169,90 @@ make_counters! {
 
     send_keywords,
     send_kw_splat,
-    send_args_splat,
+    send_args_splat_super,
+    send_iseq_zsuper,
     send_block_arg,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
     send_optimized_method,
-    send_optimized_method_send,
     send_optimized_method_call,
     send_optimized_method_block_call,
+    send_call_block,
+    send_call_kwarg,
+    send_call_multi_ractor,
     send_missing_method,
-    send_bmethod,
     send_refined_method,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_toomany_args,
     send_cfunc_tracing,
     send_cfunc_kwargs,
+    send_cfunc_splat_with_kw,
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
     send_iseq_only_keywords,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
-    send_iseq_complex_callee,
+    send_iseq_has_rest,
+    send_iseq_has_post,
+    send_iseq_has_kwrest,
+    send_iseq_has_no_kw,
+    send_iseq_accepts_no_kwarg,
+    send_iseq_materialized_block,
+    send_iseq_splat_with_opt,
+    send_iseq_splat_with_kw,
+    send_iseq_missing_optional_kw,
+    send_iseq_too_many_kwargs,
     send_not_implemented_method,
     send_getter_arity,
     send_se_cf_overflow,
     send_se_protected_check_failed,
+    send_splatarray_length_not_equal,
+    send_splatarray_last_ruby_2_keywords,
+    send_splat_not_array,
+    send_args_splat_non_iseq,
+    send_args_splat_ivar,
+    send_args_splat_attrset,
+    send_args_splat_bmethod,
+    send_args_splat_aref,
+    send_args_splat_aset,
+    send_args_splat_opt_call,
+    send_args_splat_cfunc_var_args,
+    send_args_splat_cfunc_zuper,
+    send_args_splat_cfunc_ruby2_keywords,
+    send_iseq_splat_arity_error,
+    send_iseq_ruby2_keywords,
+    send_send_not_imm,
+    send_send_wrong_args,
+    send_send_null_mid,
+    send_send_null_cme,
+    send_send_nested,
+    send_send_chain,
+    send_send_chain_string,
+    send_send_chain_not_string,
+    send_send_chain_not_sym,
+    send_send_chain_not_string_or_sym,
+    send_send_getter,
+    send_send_builtin,
+
+    send_bmethod_ractor,
+    send_bmethod_block_arg,
 
     traced_cfunc_return,
 
     invokesuper_me_changed,
     invokesuper_block,
+
+    invokeblock_none,
+    invokeblock_iseq_arg0_splat,
+    invokeblock_iseq_block_changed,
+    invokeblock_tag_changed,
+    invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kw_splat,
+    invokeblock_proc,
+    invokeblock_symbol,
 
     leave_se_interrupt,
     leave_interp_return,
@@ -212,11 +268,20 @@ make_counters! {
     setivar_name_not_mapped,
     setivar_not_object,
     setivar_frozen,
+    setivar_megamorphic,
 
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
 
     opt_getinlinecache_miss,
+
+    expandarray_splat,
+    expandarray_postarg,
+    expandarray_not_array,
+    expandarray_rhs_too_small,
+
+    gbpp_block_param_modified,
+    gbpp_block_handler_not_iseq,
 
     binding_allocations,
     binding_set,
@@ -224,7 +289,11 @@ make_counters! {
     vm_insns_count,
     compiled_iseq_count,
     compiled_block_count,
+    compiled_branch_count,
     compilation_failure,
+    block_next_count,
+    defer_count,
+    freed_iseq_count,
 
     exit_from_branch_stub,
 
@@ -237,17 +306,14 @@ make_counters! {
 
     constant_state_bumps,
 
-    expandarray_splat,
-    expandarray_postarg,
-    expandarray_not_array,
-    expandarray_rhs_too_small,
-
-    gbpp_block_param_modified,
-    gbpp_block_handler_not_iseq,
-
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
+
+    num_gc_obj_refs,
+
+    x86_call_rel32,
+    x86_call_reg,
 }
 
 //===========================================================================
@@ -256,12 +322,12 @@ make_counters! {
 /// Check if stats generation is enabled
 #[no_mangle]
 pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    #[cfg(feature = "stats")]
+
     if get_option!(gen_stats) {
         return Qtrue;
+    } else {
+        return Qfalse;
     }
-
-    return Qfalse;
 }
 
 /// Primitive called in yjit.rb.
@@ -329,23 +395,47 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         return Qnil;
     }
 
+    macro_rules! hash_aset_usize {
+        ($hash:ident, $counter_name:expr, $value:expr) => {
+            let key = rust_str_to_sym($counter_name);
+            let value = VALUE::fixnum_from_usize($value);
+            rb_hash_aset($hash, key, value);
+        }
+    }
+
     let hash = unsafe { rb_hash_new() };
 
-    // Inline and outlined code size
+    // CodeBlock stats
     unsafe {
         // Get the inline and outlined code blocks
         let cb = CodegenGlobals::get_inline_cb();
         let ocb = CodegenGlobals::get_outlined_cb();
 
         // Inline code size
-        let key = rust_str_to_sym("inline_code_size");
-        let value = VALUE::fixnum_from_usize(cb.get_write_pos());
-        rb_hash_aset(hash, key, value);
+        hash_aset_usize!(hash, "inline_code_size", cb.code_size());
 
         // Outlined code size
-        let key = rust_str_to_sym("outlined_code_size");
-        let value = VALUE::fixnum_from_usize(ocb.unwrap().get_write_pos());
-        rb_hash_aset(hash, key, value);
+        hash_aset_usize!(hash, "outlined_code_size", ocb.unwrap().code_size());
+
+        // GCed pages
+        let freed_page_count = cb.num_freed_pages();
+        hash_aset_usize!(hash, "freed_page_count", freed_page_count);
+
+        // GCed code size
+        hash_aset_usize!(hash, "freed_code_size", freed_page_count * cb.page_size());
+
+        // Live pages
+        hash_aset_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
+
+        // Code GC count
+        hash_aset_usize!(hash, "code_gc_count", CodegenGlobals::get_code_gc_count());
+
+        // Size of memory region allocated for JIT code
+        hash_aset_usize!(hash, "code_region_size", cb.mapped_region_size());
+
+        // Rust global allocations in bytes
+        #[cfg(feature="stats")]
+        hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
     }
 
     // If we're not generating stats, the hash is done
@@ -354,7 +444,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
     }
 
     // If the stats feature is enabled
-    #[cfg(feature = "stats")]
+
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
@@ -364,6 +454,13 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
+
+            #[cfg(not(feature = "stats"))]
+            if counter_name == &"vm_insns_count" {
+                // If the stats feature is disabled, we don't have vm_insns_count
+                // so we are going to exclude the key
+                continue;
+            }
 
             // Put counter into hash
             let key = rust_str_to_sym(counter_name);
@@ -420,7 +517,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         const BUFF_LEN: usize = 2048;
 
         // Create 2 array buffers to be used to collect frames and lines.
-        let mut frames_buffer = [VALUE(0 as usize); BUFF_LEN];
+        let mut frames_buffer = [VALUE(0_usize); BUFF_LEN];
         let mut lines_buffer = [0; BUFF_LEN];
 
         // Records call frame and line information for each method entry into two
@@ -430,23 +527,67 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         // Call frame info is stored in the frames_buffer, line number information
         // in the lines_buffer. The first argument is the start point and the second
         // argument is the buffer limit, set at 2048.
-        let num = unsafe { rb_profile_frames(0, BUFF_LEN as i32, frames_buffer.as_mut_ptr(), lines_buffer.as_mut_ptr()) };
+        let stack_length = unsafe { rb_profile_frames(0, BUFF_LEN as i32, frames_buffer.as_mut_ptr(), lines_buffer.as_mut_ptr()) };
+        let samples_length = (stack_length as usize) + 3;
 
-        let mut i = num - 1;
         let yjit_raw_samples = YjitExitLocations::get_raw_samples();
         let yjit_line_samples = YjitExitLocations::get_line_samples();
 
-        yjit_raw_samples.push(VALUE(num as usize));
-        yjit_line_samples.push(num);
+        // If yjit_raw_samples is less than or equal to the current length of the samples
+        // we might have seen this stack trace previously.
+        if yjit_raw_samples.len() >= samples_length {
+            let prev_stack_len_index = yjit_raw_samples.len() - samples_length;
+            let prev_stack_len = i64::from(yjit_raw_samples[prev_stack_len_index]);
+            let mut idx = stack_length - 1;
+            let mut prev_frame_idx = 0;
+            let mut seen_already = true;
 
-        while i >= 0 {
-            let frame = frames_buffer[i as usize];
-            let line = lines_buffer[i as usize];
+            // If the previous stack length and current stack length are equal,
+            // loop and compare the current frame to the previous frame. If they are
+            // not equal, set seen_already to false and break out of the loop.
+            if prev_stack_len == stack_length as i64 {
+                while idx >= 0 {
+                    let current_frame = frames_buffer[idx as usize];
+                    let prev_frame = yjit_raw_samples[prev_stack_len_index + prev_frame_idx + 1];
+
+                    // If the current frame and previous frame are not equal, set
+                    // seen_already to false and break out of the loop.
+                    if current_frame != prev_frame {
+                        seen_already = false;
+                        break;
+                    }
+
+                    idx -= 1;
+                    prev_frame_idx += 1;
+                }
+
+                // If we know we've seen this stack before, increment the counter by 1.
+                if seen_already {
+                    let prev_idx = yjit_raw_samples.len() - 1;
+                    let prev_count = i64::from(yjit_raw_samples[prev_idx]);
+                    let new_count = prev_count + 1;
+
+                    yjit_raw_samples[prev_idx] = VALUE(new_count as usize);
+                    yjit_line_samples[prev_idx] = new_count as i32;
+
+                    return;
+                }
+            }
+        }
+
+        yjit_raw_samples.push(VALUE(stack_length as usize));
+        yjit_line_samples.push(stack_length);
+
+        let mut idx = stack_length - 1;
+
+        while idx >= 0 {
+            let frame = frames_buffer[idx as usize];
+            let line = lines_buffer[idx as usize];
 
             yjit_raw_samples.push(frame);
             yjit_line_samples.push(line);
 
-            i -= 1;
+            idx -= 1;
         }
 
         // Push the insn value into the yjit_raw_samples Vec.
@@ -457,7 +598,9 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         let line = yjit_line_samples.len() - 1;
         yjit_line_samples.push(line as i32);
 
-        yjit_raw_samples.push(VALUE(1 as usize));
+        // Push number of times seen onto the stack, which is 1
+        // because it's the first time we've seen it.
+        yjit_raw_samples.push(VALUE(1_usize));
         yjit_line_samples.push(1);
     }
 }
@@ -502,4 +645,11 @@ pub extern "C" fn rb_yjit_count_side_exit_op(exit_pc: *const VALUE) -> *const VA
 
     // This function must return exit_pc!
     return exit_pc;
+}
+
+// Get the size of global allocations in Rust.
+#[cfg(feature="stats")]
+fn global_allocation_size() -> usize {
+    let stats = GLOBAL_ALLOCATOR.stats();
+    stats.bytes_allocated.saturating_sub(stats.bytes_deallocated)
 }

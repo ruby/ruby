@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative '../rubygems'
+require_relative "../rubygems"
 
 ##
 # Mixin methods for --version and --platform Gem::Command options.
@@ -24,7 +24,7 @@ module Gem::VersionOption
       end
     end
 
-    add_option('--platform PLATFORM', Gem::Platform,
+    add_option("--platform PLATFORM", Gem::Platform,
                "Specify the platform of gem to #{task}", *wrap) do
                  |value, options|
       unless options[:added_platform]
@@ -55,7 +55,7 @@ module Gem::VersionOption
       Gem::Requirement.new(*value.split(/\s*,\s*/))
     end
 
-    add_option('-v', '--version VERSION', Gem::Requirement,
+    add_option("-v", "--version VERSION", Gem::Requirement,
                "Specify version of gem to #{task}", *wrap) do
                  |value, options|
       # Allow handling for multiple --version operators

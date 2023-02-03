@@ -176,7 +176,10 @@ RSpec.describe "bundle lock" do
         build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "foo", %w[2.0.0.pre] do |s|
+          s.add_dependency "bar"
+        end
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 2.1.2.pre 3.0.0 3.1.0.pre 4.0.0.pre]
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
@@ -210,6 +213,52 @@ RSpec.describe "bundle lock" do
 
       expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
+
+    context "pre" do
+      it "defaults to major" do
+        bundle "lock --update --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+
+      it "patch preferred" do
+        bundle "lock --update --patch --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+      end
+
+      it "minor preferred" do
+        bundle "lock --update --minor --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+      end
+
+      it "major preferred" do
+        bundle "lock --update --major --pre"
+
+        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+      end
+    end
+  end
+
+  it "updates the bundler version in the lockfile without re-resolving", :rubygems => ">= 3.3.0.dev" do
+    build_repo4 do
+      build_gem "rack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    FileUtils.rm_r gem_repo4
+
+    bundle "lock --update --bundler"
+    expect(the_bundle).to include_gem "rack 1.0"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
   end
 
   it "supports adding new platforms" do
@@ -217,7 +266,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
@@ -241,7 +290,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to contain_exactly(rb, linux, java, mingw)
+    expect(lockfile.platforms).to contain_exactly(rb, linux, java, x86_mingw32)
   end
 
   it "supports adding the `ruby` platform" do
@@ -249,7 +298,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
+    expect(lockfile.platforms).to match_array(["ruby", specific_local_platform].uniq)
   end
 
   it "warns when adding an unknown platform" do
@@ -262,16 +311,71 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
 
     bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
+    expect(lockfile.platforms).to match_array([x86_mingw32, specific_local_platform].uniq)
+  end
+
+  it "also cleans up redundant platform gems when removing platforms" do
+    build_repo4 do
+      build_gem "nokogiri", "1.12.0"
+      build_gem "nokogiri", "1.12.0" do |s|
+        s.platform = "x86_64-darwin"
+      end
+    end
+
+    simulate_platform "x86_64-darwin-22" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "nokogiri"
+      G
+    end
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0)
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        ruby
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-darwin-22" do
+      bundle "lock --remove-platform ruby"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.12.0-x86_64-darwin)
+
+      PLATFORMS
+        x86_64-darwin
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platforms.join(" ")}", :raise_on_error => false
+    bundle "lock --remove-platform #{specific_local_platform}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
@@ -280,7 +384,7 @@ RSpec.describe "bundle lock" do
     build_repo4 do
       build_gem "ffi", "1.9.14"
       build_gem "ffi", "1.9.14" do |s|
-        s.platform = mingw
+        s.platform = x86_mingw32
       end
 
       build_gem "gssapi", "0.1"
@@ -312,7 +416,7 @@ RSpec.describe "bundle lock" do
       gem "gssapi"
     G
 
-    simulate_platform(mingw) { bundle :lock }
+    simulate_platform(x86_mingw32) { bundle :lock }
 
     expect(lockfile).to eq <<~G
       GEM
@@ -541,11 +645,9 @@ RSpec.describe "bundle lock" do
   end
 
   it "respects lower bound ruby requirements" do
-    skip "this spec does not work with prereleases because their version is actually lower than their reported `RUBY_VERSION`" if RUBY_PATCHLEVEL == -1
-
     build_repo4 do
       build_gem "our_private_gem", "0.1.0" do |s|
-        s.required_ruby_version = ">= #{RUBY_VERSION}"
+        s.required_ruby_version = ">= #{Gem.ruby_version}"
       end
     end
 
@@ -595,6 +697,283 @@ RSpec.describe "bundle lock" do
       bundle "lock"
 
       expect(read_lockfile).to eq(@lockfile.sub("foo (1.0)", "foo (2.0)").sub(/foo$/, "foo (= 2.0)"))
+    end
+  end
+
+  context "when a system gem has incorrect dependencies, different from the lockfile" do
+    before do
+      build_repo4 do
+        build_gem "debug", "1.6.3" do |s|
+          s.add_dependency "irb", ">= 1.3.6"
+        end
+
+        build_gem "irb", "1.5.0"
+      end
+
+      system_gems "irb-1.5.0", :gem_repo => gem_repo4
+      system_gems "debug-1.6.3", :gem_repo => gem_repo4
+
+      # simulate gemspec with wrong empty dependencies
+      debug_gemspec_path = system_gem_path("specifications/debug-1.6.3.gemspec")
+      debug_gemspec = Gem::Specification.load(debug_gemspec_path.to_s)
+      debug_gemspec.dependencies.clear
+      File.write(debug_gemspec_path, debug_gemspec.to_ruby)
+    end
+
+    it "respects the existing lockfile, even when reresolving" do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "debug"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      simulate_platform "arm64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            debug (1.6.3)
+              irb (>= 1.3.6)
+            irb (1.5.0)
+
+        PLATFORMS
+          arm64-darwin-22
+          x86_64-linux
+
+        DEPENDENCIES
+          debug
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
+  it "properly shows resolution errors including OR requirements" do
+    build_repo4 do
+      build_gem "activeadmin", "2.13.1" do |s|
+        s.add_dependency "railties", ">= 6.1", "< 7.1"
+      end
+      build_gem "actionpack", "6.1.4"
+      build_gem "actionpack", "7.0.3.1"
+      build_gem "actionpack", "7.0.4"
+      build_gem "railties", "6.1.4" do |s|
+        s.add_dependency "actionpack", "6.1.4"
+      end
+      build_gem "rails", "7.0.3.1" do |s|
+        s.add_dependency "railties", "7.0.3.1"
+      end
+      build_gem "rails", "7.0.4" do |s|
+        s.add_dependency "railties", "7.0.4"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "rails", ">= 7.0.3.1"
+      gem "activeadmin", "2.13.1"
+    G
+
+    bundle "lock", :raise_on_error => false
+
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+      Because rails >= 7.0.4 depends on railties = 7.0.4
+        and rails < 7.0.4 depends on railties = 7.0.3.1,
+        railties = 7.0.3.1 OR = 7.0.4 is required.
+      So, because railties = 7.0.3.1 OR = 7.0.4 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally,
+        version solving has failed.
+    ERR
+  end
+
+  it "is able to display some explanation on crazy irresolvable cases" do
+    build_repo4 do
+      build_gem "activeadmin", "2.13.1" do |s|
+        s.add_dependency "ransack", "= 3.1.0"
+      end
+
+      # Activemodel is missing as a dependency in lockfile
+      build_gem "ransack", "3.1.0" do |s|
+        s.add_dependency "activemodel", ">= 6.0.4"
+        s.add_dependency "activesupport", ">= 6.0.4"
+      end
+
+      %w[6.0.4 7.0.2.3 7.0.3.1 7.0.4].each do |version|
+        build_gem "activesupport", version
+
+        # Activemodel is only available on 6.0.4
+        if version == "6.0.4"
+          build_gem "activemodel", version do |s|
+            s.add_dependency "activesupport", version
+          end
+        end
+
+        build_gem "rails", version do |s|
+          # Depednencies of Rails 7.0.2.3 are in reverse order
+          if version == "7.0.2.3"
+            s.add_dependency "activesupport", version
+            s.add_dependency "activemodel", version
+          else
+            s.add_dependency "activemodel", version
+            s.add_dependency "activesupport", version
+          end
+        end
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "rails", ">= 7.0.2.3"
+      gem "activeadmin", "= 2.13.1"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          activeadmin (2.13.1)
+            ransack (= 3.1.0)
+          ransack (3.1.0)
+            activemodel (>= 6.0.4)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        activeadmin (= 2.13.1)
+        ransack (= 3.1.0)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock", :raise_on_error => false
+
+    expect(err).to eq <<~ERR.strip
+      Could not find compatible versions
+
+          Because every version of activemodel depends on activesupport = 6.0.4
+            and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
+            every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
+          And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
+            rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
+      (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
+            and rails >= 7.0.4 depends on activemodel = 7.0.4,
+            rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
+
+          Because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3
+            and rails >= 7.0.3.1, < 7.0.4 depends on activesupport = 7.0.3.1,
+            rails >= 7.0.2.3, < 7.0.4 requires activemodel = 7.0.2.3 or activesupport = 7.0.3.1.
+          And because rails >= 7.0.4 depends on activesupport = 7.0.4
+            and every version of activemodel depends on activesupport = 6.0.4,
+            activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
+          And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
+            rails >= 7.0.2.3 is forbidden.
+          So, because Gemfile depends on rails >= 7.0.2.3,
+            version solving has failed.
+    ERR
+  end
+
+  it "does not accidentally resolves to prereleases" do
+    build_repo4 do
+      build_gem "autoproj", "2.0.3" do |s|
+        s.add_dependency "autobuild", ">= 1.10.0.a"
+        s.add_dependency "tty-prompt"
+      end
+
+      build_gem "tty-prompt", "0.6.0"
+      build_gem "tty-prompt", "0.7.0"
+
+      build_gem "autobuild", "1.10.0.b3"
+      build_gem "autobuild", "1.10.1" do |s|
+        s.add_dependency "tty-prompt", "~> 0.6.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "autoproj", ">= 2.0.0"
+    G
+
+    bundle "lock"
+    expect(lockfile).to_not include("autobuild (1.10.0.b3)")
+    expect(lockfile).to include("autobuild (1.10.1)")
+  end
+
+  it "deals with platform specific incompatibilities" do
+    build_repo4 do
+      build_gem "activerecord", "6.0.6"
+      build_gem "activerecord-jdbc-adapter", "60.4" do |s|
+        s.platform = "java"
+        s.add_dependency "activerecord", "~> 6.0.0"
+      end
+      build_gem "activerecord-jdbc-adapter", "61.0" do |s|
+        s.platform = "java"
+        s.add_dependency "activerecord", "~> 6.1.0"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "activerecord", "6.0.6"
+      gem "activerecord-jdbc-adapter", "61.0"
+    G
+
+    simulate_platform "universal-java-19" do
+      bundle "lock", :raise_on_error => false
+    end
+
+    expect(err).to include("Could not find compatible versions")
+    expect(err).not_to include("ERROR REPORT TEMPLATE")
+  end
+
+  context "when re-resolving to include prereleases" do
+    before do
+      build_repo4 do
+        build_gem "tzinfo-data", "1.2022.7"
+        build_gem "rails", "7.1.0.alpha" do |s|
+          s.add_dependency "activesupport"
+        end
+        build_gem "activesupport", "7.1.0.alpha"
+      end
+    end
+
+    it "does not end up including gems scoped to other platforms in the lockfile" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "rails"
+        gem "tzinfo-data", platform: :windows
+      G
+
+      simulate_platform "x86_64-darwin-22" do
+        bundle "lock"
+      end
+
+      expect(lockfile).not_to include("tzinfo-data (1.2022.7)")
     end
   end
 end

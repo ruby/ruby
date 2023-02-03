@@ -173,7 +173,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 

@@ -9,8 +9,20 @@ module IRB
 
   module ExtendCommand
     class Ls < Nop
+      category "Context"
+      description "Show methods, constants, and variables. `-g [query]` or `-G [query]` allows you to filter out the output."
+
+      def self.transform_args(args)
+        if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)
+          args = match[:args]
+          "#{args}#{',' unless args.chomp.empty?} grep: /#{match[:grep]}/"
+        else
+          args
+        end
+      end
+
       def execute(*arg, grep: nil)
-        o = Output.new(grep: grep, colorable: colorable)
+        o = Output.new(grep: grep)
 
         obj    = arg.empty? ? irb_context.workspace.main : arg.first
         locals = arg.empty? ? irb_context.workspace.binding.local_variables : []
@@ -21,6 +33,7 @@ module IRB
         o.dump("instance variables", obj.instance_variables)
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals)
+        nil
       end
 
       def dump_methods(o, klass, obj)
@@ -45,8 +58,7 @@ module IRB
       class Output
         MARGIN = "  "
 
-        def initialize(grep: nil, colorable: true)
-          @colorable = colorable
+        def initialize(grep: nil)
           @grep = grep
           @line_width = screen_width - MARGIN.length # right padding
         end
@@ -57,7 +69,7 @@ module IRB
           return if strs.empty?
 
           # Attempt a single line
-          print "#{Color.colorize(name, [:BOLD, :BLUE], colorable: @colorable)}: "
+          print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
           if fits_on_line?(strs, cols: strs.size, offset: "#{name}: ".length)
             puts strs.join(MARGIN)
             return

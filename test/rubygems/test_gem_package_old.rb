@@ -1,19 +1,19 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 unless Gem.java_platform? # jruby can't require the simple_gem file
-  require 'rubygems/simple_gem'
+  require "rubygems/simple_gem"
 
   class TestGemPackageOld < Gem::TestCase
     def setup
       super
 
-      File.open 'old_format.gem', 'wb' do |io|
+      File.open "old_format.gem", "wb" do |io|
         io.write SIMPLE_GEM
       end
 
-      @package = Gem::Package::Old.new 'old_format.gem'
-      @destination = File.join @tempdir, 'extract'
+      @package = Gem::Package::Old.new "old_format.gem"
+      @destination = File.join @tempdir, "extract"
 
       FileUtils.mkdir_p @destination
     end
@@ -23,7 +23,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_contents_security_policy
-      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -35,7 +35,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     def test_extract_files
       @package.extract_files @destination
 
-      extracted = File.join @destination, 'lib/foo.rb'
+      extracted = File.join @destination, "lib/foo.rb"
       assert_path_exist extracted
 
       mask = 0100644 & (~File.umask)
@@ -44,7 +44,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_extract_files_security_policy
-      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -54,11 +54,11 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_spec
-      assert_equal 'testing', @package.spec.name
+      assert_equal "testing", @package.spec.name
     end
 
     def test_spec_security_policy
-      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
       @package.security_policy = Gem::Security::AlmostNoSecurity
 
@@ -68,7 +68,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
     end
 
     def test_verify
-      pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+      pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
       assert @package.verify
 
@@ -82,8 +82,8 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
         @package.verify
       end
 
-      assert_equal 'old format gems do not contain signatures ' +
-                   'and cannot be verified',
+      assert_equal "old format gems do not contain signatures " +
+                   "and cannot be verified",
                    e.message
     end
   end

@@ -51,7 +51,7 @@ module Psych
           :UseVersion => true, :UseHeader => true, :SortKeys => true
         )
       ))
-    rescue Psych::DisallowedClass, Psych::BadAlias
+    rescue Psych::DisallowedClass, Psych::BadAlias, Psych::AliasesNotEnabled
       assert_to_yaml obj, yaml, :unsafe_load
     end
 
@@ -61,7 +61,7 @@ module Psych
     def assert_parse_only( obj, yaml )
       begin
         assert_equal obj, Psych::load( yaml )
-      rescue Psych::DisallowedClass, Psych::BadAlias
+      rescue Psych::DisallowedClass, Psych::BadAlias, Psych::AliasesNotEnabled
         assert_equal obj, Psych::unsafe_load( yaml )
       end
       assert_equal obj, Psych::parse( yaml ).transform
@@ -79,7 +79,7 @@ module Psych
           assert_equal(obj, Psych.load(v.tree.yaml))
           assert_equal(obj, Psych::load(Psych.dump(obj)))
           assert_equal(obj, Psych::load(obj.to_yaml))
-        rescue Psych::DisallowedClass, Psych::BadAlias
+        rescue Psych::DisallowedClass, Psych::BadAlias, Psych::AliasesNotEnabled
           assert_equal(obj, Psych.unsafe_load(v.tree.yaml))
           assert_equal(obj, Psych::unsafe_load(Psych.dump(obj)))
           assert_equal(obj, Psych::unsafe_load(obj.to_yaml))

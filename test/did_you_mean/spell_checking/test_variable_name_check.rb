@@ -137,4 +137,16 @@ class VariableNameCheckTest < Test::Unit::TestCase
     error = assert_raise(NameError){ foo }
     assert_empty error.corrections
   end
+
+  def test_exclude_duplicates_with_same_name
+    error = assert_raise(NameError) do
+      eval(<<~RUBY, binding, __FILE__, __LINE__)
+        bar = 1
+        def bar;end
+        zar
+      RUBY
+    end
+
+    assert_correction [:bar], error.corrections
+  end
 end

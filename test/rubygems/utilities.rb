@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'tempfile'
-require 'rubygems'
-require 'rubygems/remote_fetcher'
+require "tempfile"
+require "rubygems"
+require "rubygems/remote_fetcher"
 
 ##
 # A fake Gem::RemoteFetcher for use in tests or to avoid real live HTTP
@@ -39,26 +39,34 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path and 'file' == path.scheme
+    return Gem.read_binary path.path if URI === path && "file" == path.scheme
 
-    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name
+    if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
         "mismatch for scheme #{path.scheme} and class #{path.class}"
     end
 
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path.start_with?("https://", "http://")
+    raise ArgumentError, "need full URI" unless path.start_with?("https://", "http://")
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    if @data[path].kind_of?(Array) && @data[path].first.kind_of?(Array)
+    if @data[path].kind_of?(Array)
       @data[path].shift
     else
       @data[path]
     end
+  end
+
+  def create_response(uri)
+    data = find_data(uri)
+    response = data.respond_to?(:call) ? data.call : data
+    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.kind_of?(Net::HTTPResponse)
+
+    response
   end
 
   def fetch_path(path, mtime = nil, head = false)
@@ -67,7 +75,7 @@ class Gem::FakeFetcher
     if data.respond_to?(:call)
       data.call
     else
-      if path.to_s.end_with?(".gz") and not data.nil? and not data.empty?
+      if path.to_s.end_with?(".gz") && !data.nil? && !data.empty?
         data = Gem::Util.gunzip data
       end
       data
@@ -76,7 +84,7 @@ class Gem::FakeFetcher
 
   def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
-      File.open(path, 'wb') {|io| io.write data } if path and update
+      File.open(path, "wb") {|io| io.write data } if path && update
       data
     else
       Gem.read_binary(path) if path
@@ -85,32 +93,22 @@ class Gem::FakeFetcher
 
   # Thanks, FakeWeb!
   def open_uri_or_path(path)
-    data = find_data(path)
-    body, code, msg = data
+    find_data(path)
 
-    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
-    response.instance_variable_set(:@body, body)
-    response.instance_variable_set(:@read, true)
-    response
+    create_response(uri)
   end
 
   def request(uri, request_class, last_modified = nil)
-    data = find_data(uri)
-    body, code, msg = (data.respond_to?(:call) ? data.call : data)
-
     @last_request = request_class.new uri.request_uri
     yield @last_request if block_given?
 
-    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
-    response.instance_variable_set(:@body, body)
-    response.instance_variable_set(:@read, true)
-    response
+    create_response(uri)
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[FakeFetcher', ']' do
+    q.group 2, "[FakeFetcher", "]" do
       q.breakable
-      q.text 'URIs:'
+      q.text "URIs:"
 
       q.breakable
       q.pp @data.keys
@@ -121,7 +119,7 @@ class Gem::FakeFetcher
     path = path.to_s
     @paths << path
 
-    raise ArgumentError, 'need full URI' unless path =~ %r{^http://}
+    raise ArgumentError, "need full URI" unless path =~ %r{^http://}
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -161,6 +159,30 @@ class Gem::FakeFetcher
     spec, source = found.first
 
     download spec, source.uri.to_s
+  end
+end
+
+##
+# The HTTPResponseFactory allows easy creation of Net::HTTPResponse instances in RubyGems tests:
+#
+# Example:
+#
+#   HTTPResponseFactory.create(
+#     body: "",
+#     code: 301,
+#     msg: "Moved Permanently",
+#     headers: { "location" => "http://example.com" }
+#   )
+#
+
+class HTTPResponseFactory
+  def self.create(body:, code:, msg:, headers: {})
+    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
+    response.instance_variable_set(:@body, body)
+    response.instance_variable_set(:@read, true)
+    headers.each {|name, value| response[name] = value }
+
+    response
   end
 end
 
@@ -288,16 +310,16 @@ class Gem::TestCase::SpecFetcherSetup
   # Creates a legacy platform spec with the name 'pl' and version 1
 
   def legacy_platform
-    spec 'pl', 1 do |s|
-      s.platform = Gem::Platform.new 'i386-linux'
-      s.instance_variable_set :@original_platform, 'i386-linux'
+    spec "pl", 1 do |s|
+      s.platform = Gem::Platform.new "i386-linux"
+      s.instance_variable_set :@original_platform, "i386-linux"
     end
   end
 
   def setup_fetcher # :nodoc:
-    require 'zlib'
-    require 'socket'
-    require 'rubygems/remote_fetcher'
+    require "zlib"
+    require "socket"
+    require "rubygems/remote_fetcher"
 
     unless @test.fetcher
       @test.fetcher = Gem::FakeFetcher.new
@@ -338,7 +360,7 @@ class Gem::TestCase::SpecFetcherSetup
   end
 
   def write_spec(spec) # :nodoc:
-    File.open spec.spec_file, 'w' do |io|
+    File.open spec.spec_file, "w" do |io|
       io.write spec.to_ruby_for_cache
     end
   end
@@ -354,7 +376,7 @@ class TempIO < Tempfile
   ##
   # Creates a new TempIO that will be initialized to contain +string+.
 
-  def initialize(string = '')
+  def initialize(string = "")
     super "TempIO"
     binmode
     write string

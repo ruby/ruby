@@ -1,8 +1,31 @@
 # frozen_string_literal: false
-# HTTP request class.
-# This class wraps together the request header and the request path.
-# You cannot use this class directly. Instead, you should use one of its
-# subclasses: Net::HTTP::Get, Net::HTTP::Post, Net::HTTP::Head.
+
+# This class is the base class for \Net::HTTP request classes;
+# it wraps together the request path and the request headers.
+#
+# The class should not be used directly;
+# instead you should use its subclasses.
+#
+# Subclasses for HTTP requests:
+#
+# - Net::HTTP::Get
+# - Net::HTTP::Head
+# - Net::HTTP::Post
+# - Net::HTTP::Put
+# - Net::HTTP::Delete
+# - Net::HTTP::Options
+# - Net::HTTP::Trace
+# - Net::HTTP::Patch
+#
+# Subclasses for WebDAV requests:
+#
+# - Net::HTTP::Propfind
+# - Net::HTTP::Proppatch
+# - Net::HTTP::Mkcol
+# - Net::HTTP::Copy
+# - Net::HTTP::Move
+# - Net::HTTP::Lock
+# - Net::HTTP::Unlock
 #
 class Net::HTTPRequest < Net::HTTPGenericRequest
   # Creates an HTTP request object for +path+.
@@ -18,4 +41,3 @@ class Net::HTTPRequest < Net::HTTPGenericRequest
           path, initheader
   end
 end
-

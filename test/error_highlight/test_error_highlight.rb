@@ -25,11 +25,13 @@ class ErrorHighlightTest < Test::Unit::TestCase
 
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
+      omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
       assert_equal(expected_msg.chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
+      omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
       assert_equal(expected_msg.chomp, err.message)
     end
@@ -816,6 +818,54 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
+  def test_COLON2_3
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ErrorHighlightTest::NotDefined::Foo
+                        ^^^^^^^^^^^^
+    END
+
+      ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  def test_COLON2_4
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ::ErrorHighlightTest::NotDefined::Foo
+                          ^^^^^^^^^^^^
+    END
+
+      ::ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
+    def test_COLON2_5
+      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+      assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  else
+    def test_COLON2_5
+      assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+        ErrorHighlightTest::NotDefined::NotDefined
+                          ^^^^^^^^^^^^
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  end
+
   def test_COLON3
     assert_error_message(NameError, <<~END) do
 uninitialized constant NotDefined
@@ -987,11 +1037,9 @@ undefined method `あいうえお' for nil:NilClass
     end
   end
 
-  if false
-
   def test_args_CALL_1
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       1.+(nil)
           ^^^
@@ -1004,7 +1052,7 @@ nil can't be coerced into Integer
   def test_args_CALL_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v[nil]
         ^^^
@@ -1017,7 +1065,7 @@ no implicit conversion from nil to integer
   def test_args_ATTRASGN_1
     v = []
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 1, expected 2..3)
+wrong number of arguments (given 1, expected 2..3) (ArgumentError)
 
       v [ ] = 1
          ^^^^^^
@@ -1030,7 +1078,7 @@ wrong number of arguments (given 1, expected 2..3)
   def test_args_ATTRASGN_2
     v = []
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v [nil] = 1
          ^^^^^^^^
@@ -1042,7 +1090,7 @@ no implicit conversion from nil to integer
 
   def test_args_ATTRASGN_3
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of String into Integer
+no implicit conversion of String into Integer (TypeError)
 
       $stdin.lineno = "str"
                       ^^^^^
@@ -1054,7 +1102,7 @@ no implicit conversion of String into Integer
 
   def test_args_OPCALL
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       1 + nil
           ^^^
@@ -1066,7 +1114,7 @@ nil can't be coerced into Integer
 
   def test_args_FCALL_1
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of Symbol into String
+no implicit conversion of Symbol into String (TypeError)
 
       "str".instance_eval { gsub("foo", :sym) }
                                  ^^^^^^^^^^^
@@ -1078,7 +1126,7 @@ no implicit conversion of Symbol into String
 
   def test_args_FCALL_2
     assert_error_message(TypeError, <<~END) do
-no implicit conversion of Symbol into String
+no implicit conversion of Symbol into String (TypeError)
 
       "str".instance_eval { gsub "foo", :sym }
                                  ^^^^^^^^^^^
@@ -1092,7 +1140,7 @@ no implicit conversion of Symbol into String
     v = []
 
     assert_error_message(TypeError, <<~END) do
-no implicit conversion from nil to integer
+no implicit conversion from nil to integer (TypeError)
 
       v [nil] += 42
          ^^^^^^^^^^
@@ -1106,7 +1154,7 @@ no implicit conversion from nil to integer
     v = []
 
     assert_error_message(ArgumentError, <<~END) do
-wrong number of arguments (given 0, expected 1..2)
+wrong number of arguments (given 0, expected 1..2) (ArgumentError)
 
       v [ ] += 42
          ^^^^^^^^
@@ -1120,7 +1168,7 @@ wrong number of arguments (given 0, expected 1..2)
     v = [1]
 
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       v [0] += nil
          ^^^^^^^^^
@@ -1135,7 +1183,7 @@ nil can't be coerced into Integer
     def v.foo; 1; end
 
     assert_error_message(TypeError, <<~END) do
-nil can't be coerced into Integer
+nil can't be coerced into Integer (TypeError)
 
       v.foo += nil
                ^^^
@@ -1145,12 +1193,10 @@ nil can't be coerced into Integer
     end
   end
 
-  end
-
   def test_custom_formatter
     custom_formatter = Object.new
     def custom_formatter.message_for(spot)
-      "\n\n" + spot.inspect
+      "\n\n" + spot.except(:script_lines).inspect
     end
 
     original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
@@ -1230,5 +1276,63 @@ undefined method `foo' for nil:NilClass
         end
       end
     end
+  end
+
+  def raise_name_error
+    1.time
+  end
+
+  def test_spot_with_backtrace_location
+    lineno = __LINE__
+    begin
+      raise_name_error
+    rescue NameError => exc
+    end
+
+    spot = ErrorHighlight.spot(exc).except(:script_lines)
+    assert_equal(lineno - 4, spot[:first_lineno])
+    assert_equal(lineno - 4, spot[:last_lineno])
+    assert_equal(5, spot[:first_column])
+    assert_equal(10, spot[:last_column])
+    assert_equal("    1.time\n", spot[:snippet])
+
+    spot = ErrorHighlight.spot(exc, backtrace_location: exc.backtrace_locations[1]).except(:script_lines)
+    assert_equal(lineno + 2, spot[:first_lineno])
+    assert_equal(lineno + 2, spot[:last_lineno])
+    assert_equal(6, spot[:first_column])
+    assert_equal(22, spot[:last_column])
+    assert_equal("      raise_name_error\n", spot[:snippet])
+  end
+
+  def test_spot_with_node
+    omit unless RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location)
+
+    begin
+      raise_name_error
+    rescue NameError => exc
+    end
+
+    bl = exc.backtrace_locations.first
+    expected_spot = ErrorHighlight.spot(exc, backtrace_location: bl)
+    ast = RubyVM::AbstractSyntaxTree.parse_file(__FILE__, keep_script_lines: true)
+    node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(bl)
+    node = find_node_by_id(ast, node_id)
+    actual_spot = ErrorHighlight.spot(node)
+
+    assert_equal expected_spot, actual_spot
+  end
+
+  private
+
+  def find_node_by_id(node, node_id)
+    return node if node.node_id == node_id
+
+    node.children.each do |child|
+      next unless child.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      found = find_node_by_id(child, node_id)
+      return found if found
+    end
+
+    return false
   end
 end

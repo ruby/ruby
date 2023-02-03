@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverVendorSet < Gem::TestCase
   def setup
@@ -40,7 +40,7 @@ class TestGemResolverVendorSet < Gem::TestCase
 
     @set.add_vendor_gem name, directory
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = Gem::Resolver::DependencyRequest.new dependency, nil
 
@@ -58,15 +58,15 @@ class TestGemResolverVendorSet < Gem::TestCase
   end
 
   def test_find_all_prerelease
-    name, _, directory = vendor_gem 'a', '1.a'
+    name, _, directory = vendor_gem "a", "1.a"
 
     @set.add_vendor_gem name, directory
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_empty @set.find_all req
 
-    req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a", ">= 0.a"), nil
 
     refute_empty @set.find_all req
   end
@@ -75,7 +75,7 @@ class TestGemResolverVendorSet < Gem::TestCase
     error = Object.const_defined?(:KeyError) ? KeyError : IndexError
 
     assert_raise error do
-      @set.load_spec 'b', v(1), Gem::Platform::RUBY, nil
+      @set.load_spec "b", v(1), Gem::Platform::RUBY, nil
     end
   end
 end

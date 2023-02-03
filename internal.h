@@ -25,6 +25,9 @@
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
 
+#define UNDEF_P         RB_UNDEF_P
+#define NIL_OR_UNDEF_P  RB_NIL_OR_UNDEF_P
+
 #include "ruby/ruby.h"
 
 /* Following macros were formerly defined in this header but moved to somewhere
@@ -40,16 +43,12 @@
 /* internal/gc.h */
 #undef NEWOBJ_OF
 #undef RB_NEWOBJ_OF
-#undef RB_OBJ_WRITE
 
 /* internal/hash.h */
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
 #undef RHASH_TBL
 #undef RHASH_EMPTY_P
-
-/* internal/object.h */
-#undef ROBJECT_IV_INDEX_TBL
 
 /* internal/struct.h */
 #undef RSTRUCT_LEN
@@ -106,4 +105,8 @@ RUBY_SYMBOL_EXPORT_END
 #define RBOOL(v) ((v) ? Qtrue : Qfalse)
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
+#ifndef __MINGW32__
+#undef memcpy
+#define memcpy ruby_nonempty_memcpy
+#endif
 #endif /* RUBY_INTERNAL_H */

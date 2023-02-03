@@ -47,7 +47,7 @@ class Gem::BasicSpecification
   # directory.
 
   def gem_build_complete_path # :nodoc:
-    File.join extension_dir, 'gem.build_complete'
+    File.join extension_dir, "gem.build_complete"
   end
 
   ##
@@ -77,7 +77,7 @@ class Gem::BasicSpecification
 
       if Gem::Platform::RUBY == platform || Gem::Platform.local === platform
         warn "Ignoring #{full_name} because its extensions are not built. " +
-          "Try: gem pristine #{name} --version #{version}"
+             "Try: gem pristine #{name} --version #{version}"
       end
 
       return false
@@ -103,7 +103,7 @@ class Gem::BasicSpecification
 
   def extensions_dir
     Gem.default_ext_dir_for(base_dir) ||
-      File.join(base_dir, 'extensions', Gem::Platform.local.to_s,
+      File.join(base_dir, "extensions", Gem::Platform.local.to_s,
                 Gem.extension_api_version)
   end
 
@@ -131,7 +131,7 @@ class Gem::BasicSpecification
   # default Ruby platform.
 
   def full_name
-    if platform == Gem::Platform::RUBY or platform.nil?
+    if platform == Gem::Platform::RUBY || platform.nil?
       "#{name}-#{version}".dup.tap(&Gem::UNTAINT)
     else
       "#{name}-#{version}-#{platform}".dup.tap(&Gem::UNTAINT)

@@ -321,8 +321,10 @@ rb_fiddle_handle_s_sym(VALUE self, VALUE sym)
     return fiddle_handle_sym(RTLD_NEXT, sym);
 }
 
-static VALUE
-fiddle_handle_sym(void *handle, VALUE symbol)
+typedef void (*fiddle_void_func)(void);
+
+static fiddle_void_func
+fiddle_handle_find_func(void *handle, VALUE symbol)
 {
 #if defined(HAVE_DLERROR)
     const char *err;
@@ -330,13 +332,13 @@ fiddle_handle_sym(void *handle, VALUE symbol)
 #else
 # define CHECK_DLERROR
 #endif
-    void (*func)();
+    fiddle_void_func func;
     const char *name = StringValueCStr(symbol);
 
 #ifdef HAVE_DLERROR
     dlerror();
 #endif
-    func = (void (*)())(VALUE)dlsym(handle, name);
+    func = (fiddle_void_func)(VALUE)dlsym(handle, name);
     CHECK_DLERROR;
 #if defined(FUNC_STDCALL)
     if( !func ){
@@ -379,6 +381,53 @@ fiddle_handle_sym(void *handle, VALUE symbol)
 	xfree(name_n);
     }
 #endif
+
+    return func;
+}
+
+static VALUE
+rb_fiddle_handle_s_sym_defined(VALUE self, VALUE sym)
+{
+    fiddle_void_func func;
+
+    func = fiddle_handle_find_func(RTLD_NEXT, sym);
+
+    if( func ) {
+	return PTR2NUM(func);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+static VALUE
+rb_fiddle_handle_sym_defined(VALUE self, VALUE sym)
+{
+    struct dl_handle *fiddle_handle;
+    fiddle_void_func func;
+
+    TypedData_Get_Struct(self, struct dl_handle, &fiddle_handle_data_type, fiddle_handle);
+    if( ! fiddle_handle->open ){
+	rb_raise(rb_eFiddleDLError, "closed handle");
+    }
+
+    func = fiddle_handle_find_func(fiddle_handle->ptr, sym);
+
+    if( func ) {
+	return PTR2NUM(func);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+static VALUE
+fiddle_handle_sym(void *handle, VALUE symbol)
+{
+    fiddle_void_func func;
+
+    func = fiddle_handle_find_func(handle, symbol);
+
     if( !func ){
 	rb_raise(rb_eFiddleDLError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
     }
@@ -468,6 +517,7 @@ Init_fiddle_handle(void)
     rb_cHandle = rb_define_class_under(mFiddle, "Handle", rb_cObject);
     rb_define_alloc_func(rb_cHandle, rb_fiddle_handle_s_allocate);
     rb_define_singleton_method(rb_cHandle, "sym", rb_fiddle_handle_s_sym, 1);
+    rb_define_singleton_method(rb_cHandle, "sym_defined?", rb_fiddle_handle_s_sym_defined, 1);
     rb_define_singleton_method(rb_cHandle, "[]", rb_fiddle_handle_s_sym,  1);
 
     /* Document-const: NEXT
@@ -526,6 +576,7 @@ Init_fiddle_handle(void)
     rb_define_method(rb_cHandle, "close", rb_fiddle_handle_close, 0);
     rb_define_method(rb_cHandle, "sym",  rb_fiddle_handle_sym, 1);
     rb_define_method(rb_cHandle, "[]",  rb_fiddle_handle_sym,  1);
+    rb_define_method(rb_cHandle, "sym_defined?", rb_fiddle_handle_sym_defined, 1);
     rb_define_method(rb_cHandle, "file_name", rb_fiddle_handle_file_name, 0);
     rb_define_method(rb_cHandle, "disable_close", rb_fiddle_handle_disable_close, 0);
     rb_define_method(rb_cHandle, "enable_close", rb_fiddle_handle_enable_close, 0);

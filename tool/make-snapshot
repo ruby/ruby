@@ -22,6 +22,7 @@ $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
+$no7z ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -146,7 +147,7 @@ unless destdir = ARGV.shift
 end
 revisions = ARGV.empty? ? [nil] : ARGV
 
-if $exported
+if defined?($exported)
   abort "#{File.basename $0}: -exported option is deprecated; use -srcdir instead"
 end
 
@@ -294,7 +295,7 @@ def package(vcs, rev, destdir, tmp = nil)
   if info = vcs.get_revisions(url)
     modified = info[2]
   else
-    modified = Time.now - 10
+    _, _, modified = VCS::Null.new(nil).get_revisions(url)
   end
   if !revision and info
     revision = info
@@ -345,12 +346,8 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  open("#{v}/revision.h", "wb") {|f|
-    short = vcs.short_revision(revision)
-    f.puts "#define RUBY_REVISION #{short.inspect}"
-    unless short == revision
-      f.puts "#define RUBY_FULL_REVISION #{revision.inspect}"
-    end
+  File.open("#{v}/revision.h", "wb") {|f|
+    f.puts vcs.revision_header(revision, modified)
   }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
@@ -391,6 +388,7 @@ def package(vcs, rev, destdir, tmp = nil)
     return
   end
   def (clean = []).add(n) push(n); n end
+  def clean.create(file, content = "") File.binwrite(add(file), content) end
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
       vcs.export_changelog(url, nil, revision, "ChangeLog")
@@ -419,6 +417,7 @@ def package(vcs, rev, destdir, tmp = nil)
       f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
       f.puts "RUBY_VERSION='#{version}'"
     end
+    puts "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), "" if $VERBOSE
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)
@@ -438,14 +437,13 @@ def package(vcs, rev, destdir, tmp = nil)
       rescue Errno::ENOENT
         # use fallback file
       end
-      File.open(clean.add("config.status"), "w") {|f|
-        f.print status
-      }
+      clean.create("config.status", status)
+      clean.create("noarch-fake.rb", "require_relative 'cross'\n")
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
-      File.open("#{hdrdir}/config.h", "w") {}
+      File.binwrite("#{hdrdir}/config.h", "")
       FileUtils.mkpath(defaults = "#{extout}/rubygems/defaults")
-      File.open("#{defaults}/operating_system.rb", "w") {}
-      File.open("#{defaults}/ruby.rb", "w") {}
+      File.binwrite("#{defaults}/operating_system.rb", "")
+      File.binwrite("#{defaults}/ruby.rb", "")
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
       mk = (IO.read("template/Makefile.in") rescue IO.read("Makefile.in")).
@@ -481,11 +479,9 @@ update-gems:
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time:
 touch-unicode-files:
       APPEND
-      open(clean.add("Makefile"), "w") do |f|
-        f.puts mk
-      end
-      File.open(clean.add("revision.tmp"), "w") {}
-      File.open(clean.add(".revision.time"), "w") {}
+      clean.create("Makefile", mk)
+      clean.create("revision.tmp")
+      clean.create(".revision.time")
       ENV["CACHE_SAVE"] = "no"
       make = MAKE.new(args)
       return unless make.run("update-download")
@@ -619,7 +615,7 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     success = false
     next
   end
-  str = open(name, "rb") {|f| f.read}
+  str = File.binread(name)
   pathname = Pathname(name)
   basename = pathname.basename.to_s
   extname = pathname.extname.sub(/\A\./, '')

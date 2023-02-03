@@ -24,6 +24,32 @@ describe :regexp_new, shared: true do
   end
 end
 
+describe :regexp_new_non_string_or_regexp, shared: true do
+  it "calls #to_str method for non-String/Regexp argument" do
+    obj = Object.new
+    def obj.to_str() "a" end
+
+    Regexp.send(@method, obj).should == /a/
+  end
+
+  it "raises TypeError if there is no #to_str method for non-String/Regexp argument" do
+    obj = Object.new
+    -> { Regexp.send(@method, obj) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+
+    -> { Regexp.send(@method, 1) }.should raise_error(TypeError, "no implicit conversion of Integer into String")
+    -> { Regexp.send(@method, 1.0) }.should raise_error(TypeError, "no implicit conversion of Float into String")
+    -> { Regexp.send(@method, :symbol) }.should raise_error(TypeError, "no implicit conversion of Symbol into String")
+    -> { Regexp.send(@method, []) }.should raise_error(TypeError, "no implicit conversion of Array into String")
+  end
+
+  it "raises TypeError if #to_str returns non-String value" do
+    obj = Object.new
+    def obj.to_str() [] end
+
+    -> { Regexp.send(@method, obj) }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+end
+
 describe :regexp_new_string, shared: true do
   it "uses the String argument as an unescaped literal to construct a Regexp object" do
     Regexp.send(@method, "^hi{2,3}fo.o$").should == /^hi{2,3}fo.o$/
@@ -97,6 +123,16 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
+  it "does not try to convert the second argument to Integer with #to_int method call" do
+    ScratchPad.clear
+    obj = Object.new
+    def obj.to_int() ScratchPad.record(:called) end
+
+    Regexp.send(@method, "Hi", obj)
+
+    ScratchPad.recorded.should == nil
+  end
+
   ruby_version_is ""..."3.2" do
     it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
       r = Regexp.send(@method, 'Hi', Object.new)
@@ -161,48 +197,50 @@ describe :regexp_new_string, shared: true do
     end
   end
 
-  it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
-    -> {
-      Regexp.send(@method, 'Hi', nil, 'e').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'euc').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'E').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'EUC').encoding.should == Encoding::US_ASCII
-    }.should complain(/encoding option is ignored/)
-  end
+  ruby_version_is ""..."3.2" do
+    it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
+      -> {
+        Regexp.send(@method, 'Hi', nil, 'e').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'euc').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'E').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'EUC').encoding.should == Encoding::US_ASCII
+      }.should complain(/encoding option is ignored/)
+    end
 
-  it "ignores the third argument if it is 's' or 'sjis' (case-insensitive)" do
-    -> {
-      Regexp.send(@method, 'Hi', nil, 's').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'sjis').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'S').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'SJIS').encoding.should == Encoding::US_ASCII
-    }.should complain(/encoding option is ignored/)
-  end
+    it "ignores the third argument if it is 's' or 'sjis' (case-insensitive)" do
+      -> {
+        Regexp.send(@method, 'Hi', nil, 's').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'sjis').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'S').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'SJIS').encoding.should == Encoding::US_ASCII
+      }.should complain(/encoding option is ignored/)
+    end
 
-  it "ignores the third argument if it is 'u' or 'utf8' (case-insensitive)" do
-    -> {
-      Regexp.send(@method, 'Hi', nil, 'u').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'utf8').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'U').encoding.should == Encoding::US_ASCII
-      Regexp.send(@method, 'Hi', nil, 'UTF8').encoding.should == Encoding::US_ASCII
-    }.should complain(/encoding option is ignored/)
-  end
+    it "ignores the third argument if it is 'u' or 'utf8' (case-insensitive)" do
+      -> {
+        Regexp.send(@method, 'Hi', nil, 'u').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'utf8').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'U').encoding.should == Encoding::US_ASCII
+        Regexp.send(@method, 'Hi', nil, 'UTF8').encoding.should == Encoding::US_ASCII
+      }.should complain(/encoding option is ignored/)
+    end
 
-  it "uses US_ASCII encoding if third argument is 'n' or 'none' (case insensitive) and only ascii characters" do
-    Regexp.send(@method, 'Hi', nil, 'n').encoding.should == Encoding::US_ASCII
-    Regexp.send(@method, 'Hi', nil, 'none').encoding.should == Encoding::US_ASCII
-    Regexp.send(@method, 'Hi', nil, 'N').encoding.should == Encoding::US_ASCII
-    Regexp.send(@method, 'Hi', nil, 'NONE').encoding.should == Encoding::US_ASCII
-  end
+    it "uses US_ASCII encoding if third argument is 'n' or 'none' (case insensitive) and only ascii characters" do
+      Regexp.send(@method, 'Hi', nil, 'n').encoding.should == Encoding::US_ASCII
+      Regexp.send(@method, 'Hi', nil, 'none').encoding.should == Encoding::US_ASCII
+      Regexp.send(@method, 'Hi', nil, 'N').encoding.should == Encoding::US_ASCII
+      Regexp.send(@method, 'Hi', nil, 'NONE').encoding.should == Encoding::US_ASCII
+    end
 
-  it "uses ASCII_8BIT encoding if third argument is 'n' or 'none' (case insensitive) and non-ascii characters" do
-    a = "(?:[\x8E\xA1-\xFE])"
-    str = "\A(?:#{a}|x*)\z"
+    it "uses ASCII_8BIT encoding if third argument is 'n' or 'none' (case insensitive) and non-ascii characters" do
+      a = "(?:[\x8E\xA1-\xFE])"
+      str = "\A(?:#{a}|x*)\z"
 
-    Regexp.send(@method, str, nil, 'N').encoding.should == Encoding::BINARY
-    Regexp.send(@method, str, nil, 'n').encoding.should == Encoding::BINARY
-    Regexp.send(@method, str, nil, 'none').encoding.should == Encoding::BINARY
-    Regexp.send(@method, str, nil, 'NONE').encoding.should == Encoding::BINARY
+      Regexp.send(@method, str, nil, 'N').encoding.should == Encoding::BINARY
+      Regexp.send(@method, str, nil, 'n').encoding.should == Encoding::BINARY
+      Regexp.send(@method, str, nil, 'none').encoding.should == Encoding::BINARY
+      Regexp.send(@method, str, nil, 'NONE').encoding.should == Encoding::BINARY
+    end
   end
 
   describe "with escaped characters" do
@@ -562,8 +600,10 @@ describe :regexp_new_regexp, shared: true do
       Regexp.send(@method, /Hi/n).encoding.should == Encoding::US_ASCII
     end
 
-    it "sets the encoding to source String's encoding if the Regexp literal has the 'n' option and the source String is not ASCII only" do
-      Regexp.send(@method, Regexp.new("\\xff", nil, 'n')).encoding.should == Encoding::BINARY
+    ruby_version_is ''...'3.2' do
+      it "sets the encoding to source String's encoding if the Regexp literal has the 'n' option and the source String is not ASCII only" do
+        Regexp.send(@method, Regexp.new("\\xff", nil, 'n')).encoding.should == Encoding::BINARY
+      end
     end
   end
 end

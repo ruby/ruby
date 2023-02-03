@@ -50,6 +50,49 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([], events)
   end
 
+  def test_c_return_no_binding
+    binding = :none
+    TracePoint.new(:c_return){|tp|
+      binding = tp.binding
+    }.enable{
+      1.object_id
+    }
+    assert_nil(binding)
+  end
+
+  def test_c_call_no_binding
+    binding = :none
+    TracePoint.new(:c_call){|tp|
+      binding = tp.binding
+    }.enable{
+      1.object_id
+    }
+    assert_nil(binding)
+  end
+
+  def test_c_call_removed_method
+    # [Bug #19305]
+    klass = Class.new do
+      attr_writer :bar
+      alias_method :set_bar, :bar=
+      remove_method :bar=
+    end
+
+    obj = klass.new
+    method_id = nil
+    parameters = nil
+
+    TracePoint.new(:c_call) { |tp|
+      method_id = tp.method_id
+      parameters = tp.parameters
+    }.enable {
+      obj.set_bar(1)
+    }
+
+    assert_equal(:bar=, method_id)
+    assert_equal([[:req]], parameters)
+  end
+
   def test_call
     events = []
     name = "#{self.class}\##{__method__}"
@@ -459,7 +502,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     begin
     eval <<-EOF.gsub(/^.*?: /, ""), nil, 'xyzzy'
     1: trace = TracePoint.trace(*trace_events){|tp| next if !target_thread?
-    2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
+    2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding&.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
     3: }
     4: 1.times{|;_local_var| _local_var = :inner
     5:   tap{}
@@ -488,29 +531,29 @@ class TestSetTraceFunc < Test::Unit::TestCase
     answer_events = [
      #
      [:line,     4, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
-     [:c_call,   4, 'xyzzy', Integer,     :times,           1,           :outer, :nothing],
+     [:c_call,   4, 'xyzzy', Integer,     :times,           1,           nil, :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_return, 4, "xyzzy", Integer,     :times,           1,           :outer, 1],
+     [:c_return, 4, "xyzzy", Integer,     :times,           1,           nil, 1],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
-     [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, :outer, :nothing],
-     [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, :outer, nil],
-     [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      :outer, :nothing],
-     [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      :outer, nil],
+     [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, :nothing],
+     [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, nil],
+     [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      nil, :nothing],
+     [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      nil, nil],
      [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     8, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     9, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
-     [:c_call,   9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, :nothing],
-     [:c_return, 9, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, nil],
+     [:c_call,   9, "xyzzy", Module,      :method_added,    xyzzy.class, nil, :nothing],
+     [:c_return, 9, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:line,    13, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
-     [:c_call,  13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, :nothing],
-     [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, nil],
+     [:c_call,  13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, :nothing],
+     [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, :outer, :nothing],
-     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       :outer, :nothing],
-     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       :outer, nil],
-     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, :outer, xyzzy],
+     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, :nothing],
+     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, :nothing],
+     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
+     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, nil, xyzzy],
      [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
      [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
      [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
@@ -521,17 +564,17 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
      [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  20, "xyzzy", Kernel,      :raise,           self,        :outer, :nothing],
-     [:c_call,  20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, :nothing],
-     [:c_call,  20, "xyzzy", Exception,   :initialize,      raised_exc,  :outer, :nothing],
-     [:c_return,20, "xyzzy", Exception,   :initialize,      raised_exc,  :outer, raised_exc],
-     [:c_return,20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, raised_exc],
-     [:c_return,20, "xyzzy", Kernel,      :raise,           self,        :outer, nil],
-     [:c_call,  20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, :nothing],
-     [:c_return,20, "xyzzy", Exception,   :backtrace,       raised_exc,  :outer, nil],
+     [:c_call,  20, "xyzzy", Kernel,      :raise,           self,        nil, :nothing],
+     [:c_call,  20, "xyzzy", Exception,   :exception,       RuntimeError, nil, :nothing],
+     [:c_call,  20, "xyzzy", Exception,   :initialize,      raised_exc,  nil, :nothing],
+     [:c_return,20, "xyzzy", Exception,   :initialize,      raised_exc,  nil, raised_exc],
+     [:c_return,20, "xyzzy", Exception,   :exception,       RuntimeError, nil, raised_exc],
+     [:c_return,20, "xyzzy", Kernel,      :raise,           self,        nil, nil],
+     [:c_call,  20, "xyzzy", Exception,   :backtrace,       raised_exc,  nil, :nothing],
+     [:c_return,20, "xyzzy", Exception,   :backtrace,       raised_exc,  nil, nil],
      [:raise,   20, "xyzzy", TestSetTraceFunc, :trace_by_tracepoint, self, :outer, raised_exc],
-     [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError,:outer, :nothing],
-     [:c_return,20, "xyzzy", Module,      :===,             RuntimeError,:outer, true],
+     [:c_call,  20, "xyzzy", Module,      :===,             RuntimeError, nil, :nothing],
+     [:c_return,20, "xyzzy", Module,      :===,             RuntimeError, nil, true],
      [:line,    21, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
      ]
 
@@ -1648,7 +1691,7 @@ CODE
       Bug10724.new
     }
 
-    assert_equal([:call, :return], evs)
+    assert_equal([:call, :call, :return, :return], evs)
   end
 
   require 'fiber'
@@ -2140,17 +2183,16 @@ CODE
     m2t_q.push 1
     t.join
 
-    assert_equal ["c-return", base_line + 31], events[0]
-    assert_equal ["line", base_line + 32],     events[1]
-    assert_equal ["line", base_line + 33],     events[2]
-    assert_equal ["call", base_line + -6],     events[3]
-    assert_equal ["return", base_line + -4],   events[4]
-    assert_equal ["line", base_line + 34],     events[5]
-    assert_equal ["line", base_line + 35],     events[6]
-    assert_equal ["c-call", base_line + 35],   events[7] # Thread.current
-    assert_equal ["c-return", base_line + 35], events[8] # Thread.current
-    assert_equal ["c-call", base_line + 35],   events[9] # Thread#set_trace_func
-    assert_equal nil,                          events[10]
+    assert_equal ["line", base_line + 32],     events[0]
+    assert_equal ["line", base_line + 33],     events[1]
+    assert_equal ["call", base_line + -6],     events[2]
+    assert_equal ["return", base_line + -4],   events[3]
+    assert_equal ["line", base_line + 34],     events[4]
+    assert_equal ["line", base_line + 35],     events[5]
+    assert_equal ["c-call", base_line + 35],   events[6] # Thread.current
+    assert_equal ["c-return", base_line + 35], events[7] # Thread.current
+    assert_equal ["c-call", base_line + 35],   events[8] # Thread#set_trace_func
+    assert_equal nil,                          events[9]
   end
 
   def test_lineno_in_optimized_insn

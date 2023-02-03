@@ -89,6 +89,7 @@ if exist %dest% (
     )
 )
 for %%I in (%1) do echo %%~I updated
+del /f %dest%
 copy %src% %dest% > nul
 del %src%
 

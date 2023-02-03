@@ -4,7 +4,7 @@ SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile verconf.mk
-NULLCMD = type nul
+NULLCMD = exit /b0.		# exit ignores the rest
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
@@ -16,6 +16,23 @@ empty =
 MFLAGS=-l
 !endif
 
+!if "$(BASERUBY)" == ""
+! if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
+! else
+!   include baseruby.mk
+! endif
+! if [del baseruby.mk]
+! endif
+!else if "$(BASERUBY)" == "no" || [($(BASERUBY) -eexit) > nul 2> nul]
+BASERUBY =
+!endif
+!if "$(BASERUBY)" == ""
+BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+HAVE_BASERUBY = no
+!else
+HAVE_BASERUBY = yes
+!endif
+
 !ifndef REVISION_FORCE
 !if "$(HAVE_BASERUBY)" == "yes"
 REVISION_FORCE = PHONY
@@ -24,6 +41,14 @@ REVISION_FORCE = PHONY
 
 !ifndef CROSS_COMPILING
 CROSS_COMPILING = no
+!else if "$(CROSS_COMPILING)" == "yes"
+! if "$(HAVE_BASERUBY)" != "yes"
+!   error executable host ruby is required for cross-compiling
+! endif
+!else
+! if "$(CROSS_COMPILING)" != "no"
+!   error Bad CROSS_COMPILING
+! endif
 !endif
 !ifndef win_srcdir
 win_srcdir = $(srcdir)/win32
@@ -83,10 +108,12 @@ PURIFY =
 AUTOCONF = autoconf
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
+RM1 = del
 RMDIR = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMDIRS = $(COMSPEC) /C $(srcdir:/=\)\win32\rmdirs.bat
 RMALL = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat -f -r
 MAKEDIRS = $(COMSPEC) /E:ON /C $(srcdir:/=\)\win32\makedirs.bat
+TOUCH = $(BASERUBY) -run -e touch --
 CP = copy > nul
 MV = move > nul
 RM1 = del /f /q
@@ -96,6 +123,8 @@ BASERUBY = ruby
 !if !defined(TEST_RUNNABLE)
 TEST_RUNNABLE = yes
 !endif
+
+CAT_DEPEND = type
 
 !if !defined(MACHINE)
 MACHINE = x86
@@ -148,7 +177,10 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).0+$(ABI_VERSION)
+ruby_version = $(MAJOR).$(MINOR).0
+!endif
+!if defined(ABI_VERSION)
+ruby_version = $(ruby_version)+$(ABI_VERSION)
 !endif
 !if !defined(RUBY_VERSION_NAME)
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
@@ -277,6 +309,9 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
+!if defined(USE_GMP)
+LIBS = $(LIBS) gmp.lib
+!endif
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
@@ -316,33 +351,7 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 !ifndef MJIT_SUPPORT
-MJIT_SUPPORT = yes
-!endif
-!if "$(CPPOUTFLAG)" == ">"
-MJIT_HEADER_FLAGS =
-!else
-MJIT_HEADER_FLAGS = -P
-!endif
-MJIT_HEADER_SUFFIX =
-MJIT_HEADER_ARCH =
-MJIT_HEADER_INSTALL_DIR = include/$(RUBY_VERSION_NAME)/$(arch)
-MJIT_PRECOMPILED_HEADER_NAME = rb_mjit_header-$(RUBY_PROGRAM_VERSION).pch
-MJIT_PRECOMPILED_HEADER = $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME)
-!ifndef MJIT_CC
-MJIT_CC = $(CC)
-!endif
-!ifndef MJIT_OPTFLAGS
-# TODO: Use only $(OPTFLAGS) for performance. It requires to modify flags for precompiled header too.
-# For now, using flags used for building precompiled header to make JIT succeed.
-MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
-!endif
-!ifndef MJIT_DEBUGFLAGS
-# TODO: Make this work... Another header for debug build needs to be installed first.
-MJIT_DEBUGFLAGS = $(empty) $(DEBUGFLAGS) $(empty)
-MJIT_DEBUGFLAGS = $(MJIT_DEBUGFLAGS: -Zi = -Z7 )
-!endif
-!ifndef MJIT_LDSHARED
-MJIT_LDSHARED = $(MJIT_CC) -LD
+MJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -378,11 +387,15 @@ RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
+yes_baseruby = $(HAVE_BASERUBY:no=)
+no_baseruby = $(HAVE_BASERUBY:yes=)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
+BOOTSTRAPRUBY_OPT = -r./$(arch)-fake
 !else
 BOOTSTRAPRUBY = $(MINIRUBY)
+BOOTSTRAPRUBY_OPT =
 XRUBY = $(RUNRUBY)
 !endif
 BTESTRUBY = $(MINIRUBY) -r./$(arch)-fake
@@ -624,6 +637,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #endif
 !endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
+!if defined(ABI_VERSION)
+#define RUBY_ABI_VERSION $(ABI_VERSION)
+!endif
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -634,12 +650,19 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
 #define HAVE_MEMORY_H 1
+!if $(MSC_VER) >= 1920
+#define HAVE_AFUNIX_H 1
+!endif
 !if $(MSC_VER) >= 1400
 #define HAVE_LONG_LONG 1
 !else
 #define ULL_TO_DOUBLE(n) ((double)(unsigned long)((n)>>32) * (1I64 << 32) + (unsigned long)(n))
 !endif
 #define HAVE_OFF_T 1
+#define rb_off_t __int64
+#define SIGNEDNESS_OF_OFF_T -1
+#define OFFT2NUM(v) LL2NUM(v)
+#define NUM2OFFT(v) NUM2LL(v)
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONG 4
@@ -705,9 +728,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define ALWAYS_INLINE(x) __forceinline x
 #define WARN_UNUSED_RESULT(x) x
 #define MAYBE_UNUSED(x) x
-!if !defined(VS2022_FP_BUG)
 #define HAVE___ASSUME 1
-!endif
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x
@@ -908,15 +929,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(EXTSTATIC)" == "static"
 #define EXTSTATIC 1
 !endif
+!if "$(USE_GMP)" != ""
+#define USE_GMP 1
+!endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-!if "$(MJIT_SUPPORT)" == "yes"
-#define USE_MJIT 1
-!else
 #define USE_MJIT 0
-!endif
 #endif /* $(guard) */
 <<
 
@@ -984,7 +1004,7 @@ s,@target_alias@,$(ARCH)-$(PLATFORM),;t t
 s,@target_cpu@,$(ARCH),;t t
 s,@target_vendor@,pc,;t t
 s,@target_os@,$(PLATFORM),;t t
-s,@NULLCMD@,:,;t t
+s,@NULLCMD@,$(NULLCMD),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
@@ -1112,6 +1132,10 @@ s,@ruby_pc@,$(ruby_pc),;t t
 s,@MJIT_SUPPORT@,$(MJIT_SUPPORT),;t t
 <<KEEP
 
+!if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
+$(RBCONFIG): $(PREP)
+!endif
+
 miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
@@ -1191,7 +1215,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 
 $(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
-		$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb \
+		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
 
 {$(win_srcdir)}.def.lib:
@@ -1235,10 +1259,8 @@ clean-enc distclean-enc realclean-enc:
 	-$(Q)$(MAKE) $(MAKE_ENC) $(@:-enc=)
 !endif
 
-$(RBCONFIG): $(PREP)
-
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
-		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
+		@$(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
@@ -1323,6 +1345,10 @@ win32/win32.$(OBJEXT): {$(VPATH)}id.h
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 file.$(OBJEXT) win32/win32.$(OBJEXT): {$(VPATH)}win32/file.h
 
+!if "$(srcdir)" != "." && "$(HAVE_BASERUBY)" == "yes"
+revision.h: $(REVISION_H)
+!endif
+
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(ECHO) compiling ext/extinit.c
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
@@ -1332,44 +1358,8 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-main: mjit-headers
-yes-mjit-headers: $(MJIT_PRECOMPILED_HEADER)
-clean-local::
-	$(Q)$(RM) $(MJIT_PRECOMPILED_HEADER_NAME) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.time) mjit_config.h
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.pch
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.$(OBJEXT)
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
-	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.pch
-	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.$(OBJEXT)
-
-# Non-mswin environment is not using prebuilt precompiled header because upgrading compiler
-# or changing compiler options may break MJIT so build (currently only by --mjit-debug though).
-#
-# But mswin is building precompiled header because cl.exe cannot leave macro after preprocess.
-# As a workaround to use macro without installing many source files, it uses precompiled header
-# without sufficient guard for a broken build.
-#
-# TODO: Fix the above issue by including VC version in header name, and create another header
-# for --mjit-debug as well.
-$(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
-	$(ECHO) building $(@F:.time=.pch)
-	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS: -Zi = -Z7 ) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
-	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fd$(@F:.time=.pdb) -Fp$(@F:.time=.pch).new -Z7
-	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
-
-$(MJIT_PRECOMPILED_HEADER_NAME): $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time
-
-$(MJIT_PRECOMPILED_HEADER): $(MJIT_PRECOMPILED_HEADER_NAME)
-	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $@
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-	$(Q) $(MAKEDIRS) $(arch_hdrdir)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile.inc
+	  vmtc.inc vm.inc mjit_sp_inc.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \
@@ -1393,46 +1383,3 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
-
-mjit_config.h: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
-	@echo making <<$@
-#ifndef RUBY_MJIT_CONFIG_H
-#define RUBY_MJIT_CONFIG_H 1
-
-#define MJIT_CONFIG_ESCAPED_EQ "="
-#define MJIT_HEADER_INSTALL_DIR "/$(MJIT_HEADER_INSTALL_DIR)"
-#define MJIT_MIN_HEADER_NAME "$(MJIT_MIN_HEADER_NAME)"
-#define MJIT_PRECOMPILED_HEADER_NAME "$(MJIT_PRECOMPILED_HEADER_NAME)"
-<<KEEP
-	@
-	@(set sep=#define MJIT_CC_COMMON ) & \
-	for %I in ($(MJIT_CC)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_CC_COMMON */>> $@
-	@
-	@(set sep=#define MJIT_CFLAGS ) & \
-	for %I in ($(RUNTIMEFLAG) $(ARCH_FLAG)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_CFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_OPTFLAGS ) & \
-	for %I in ($(MJIT_OPTFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_OPTFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_DEBUGFLAGS ) & \
-	for %I in ($(MJIT_DEBUGFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_DEBUGFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_LDSHARED ) & \
-	for %I in ($(MJIT_LDSHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_LDSHARED */>> $@
-	@
-	@(set sep=#define MJIT_DLDFLAGS ) & \
-	for %I in ($(DLDFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_DLDFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_LIBS ) & \
-	for %I in ($(LIBRUBYARG_SHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_LIBS */>> $@
-	@
-	@echo.>> $@
-	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
-	@$(Q:@=: :) type $@

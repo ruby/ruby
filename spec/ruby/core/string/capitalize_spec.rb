@@ -10,6 +10,7 @@ describe "String#capitalize" do
     "hello".capitalize.should == "Hello"
     "HELLO".capitalize.should == "Hello"
     "123ABC".capitalize.should == "123abc"
+    "abcdef"[1...-1].capitalize.should == "Bcde"
   end
 
   describe "full Unicode case mapping" do
@@ -34,6 +35,10 @@ describe "String#capitalize" do
   describe "ASCII-only case mapping" do
     it "does not capitalize non-ASCII characters" do
       "ßet".capitalize(:ascii).should == "ßet"
+    end
+
+    it "handles non-ASCII substrings properly" do
+      "garçon"[1...-1].capitalize(:ascii).should == "Arço"
     end
   end
 
@@ -85,6 +90,10 @@ describe "String#capitalize" do
       StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(String)
       StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(String)
     end
+  end
+
+  it "returns a String in the same encoding as self" do
+    "h".encode("US-ASCII").capitalize.encoding.should == Encoding::US_ASCII
   end
 end
 

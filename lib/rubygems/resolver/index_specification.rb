@@ -21,7 +21,8 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     @name = name
     @version = version
     @source = source
-    @platform = platform.to_s
+    @platform = Gem::Platform.new(platform.to_s)
+    @original_platform = platform.to_s
 
     @spec = nil
   end
@@ -66,11 +67,11 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   end
 
   def inspect # :nodoc:
-    '#<%s %s source %s>' % [self.class, full_name, @source]
+    "#<%s %s source %s>" % [self.class, full_name, @source]
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Index specification', ']' do
+    q.group 2, "[Index specification", "]" do
       q.breakable
       q.text full_name
 
@@ -80,7 +81,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
       end
 
       q.breakable
-      q.text 'source '
+      q.text "source "
       q.pp @source
     end
   end
@@ -91,7 +92,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   def spec # :nodoc:
     @spec ||=
       begin
-        tuple = Gem::NameTuple.new @name, @version, @platform
+        tuple = Gem::NameTuple.new @name, @version, @original_platform
 
         @source.fetch_spec tuple
       end

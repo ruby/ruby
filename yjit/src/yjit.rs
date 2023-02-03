@@ -22,7 +22,7 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
 }
 
 /// Is YJIT on? The interpreter uses this function to decide whether to increment
-/// ISEQ call counters. See mjit_exec().
+/// ISEQ call counters. See jit_exec().
 /// This is used frequently since it's used on every method call in the interpreter.
 #[no_mangle]
 pub extern "C" fn rb_yjit_enabled_p() -> raw::c_int {
@@ -50,12 +50,12 @@ pub extern "C" fn rb_yjit_init_rust() {
 
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
-    // TODO: set a panic handler so the we don't print a message
-    //       everytime we panic.
     let result = std::panic::catch_unwind(|| {
         Invariants::init();
         CodegenGlobals::init();
         YjitExitLocations::init();
+
+        rb_bug_panic_hook();
 
         // YJIT enabled and initialized successfully
         YJIT_ENABLED.store(true, Ordering::Release);
@@ -65,6 +65,31 @@ pub extern "C" fn rb_yjit_init_rust() {
         println!("YJIT: rb_yjit_init_rust() panicked. Aborting.");
         std::process::abort();
     }
+}
+
+/// At the moment, we abort in all cases we panic.
+/// To aid with getting diagnostics in the wild without requiring
+/// people to set RUST_BACKTRACE=1, register a panic hook that crash using rb_bug().
+/// rb_bug() might not be as good at printing a call trace as Rust's stdlib, but
+/// it dumps some other info that might be relevant.
+///
+/// In case we want to start doing fancier exception handling with panic=unwind,
+/// we can revisit this later. For now, this helps to get us good bug reports.
+fn rb_bug_panic_hook() {
+    use std::panic;
+    use std::io::{stderr, Write};
+
+    // Probably the default hook. We do this very early during process boot.
+    let previous_hook = panic::take_hook();
+
+    panic::set_hook(Box::new(move |panic_info| {
+        // Not using `eprintln` to avoid double panic.
+        let _ = stderr().write_all(b"ruby: YJIT has panicked. More info to follow...\n");
+
+        previous_hook(panic_info);
+
+        unsafe { rb_bug(b"YJIT panicked\0".as_ref().as_ptr() as *const raw::c_char); }
+    }));
 }
 
 /// Called from C code to begin compiling a function
@@ -79,6 +104,18 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *con
     }
 }
 
+/// Free and recompile all existing JIT code
+#[no_mangle]
+pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if !yjit_enabled_p() {
+        return Qnil;
+    }
+
+    let cb = CodegenGlobals::get_inline_cb();
+    cb.code_gc();
+    Qnil
+}
+
 /// Simulate a situation where we are out of executable memory
 #[no_mangle]
 pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
@@ -91,8 +128,8 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
     if cfg!(debug_assertions) {
         let cb = CodegenGlobals::get_inline_cb();
         let ocb = CodegenGlobals::get_outlined_cb().unwrap();
-        cb.set_pos(cb.get_mem_size() - 1);
-        ocb.set_pos(ocb.get_mem_size() - 1);
+        cb.set_pos(cb.get_mem_size());
+        ocb.set_pos(ocb.get_mem_size());
     }
 
     return Qnil;

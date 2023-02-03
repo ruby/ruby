@@ -356,9 +356,9 @@ int onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, c
 #define ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e)   (enc)->precise_mbc_enc_len(p,e,enc)
 
 ONIG_EXTERN
-int onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, const struct OnigEncodingTypeST* enc);
+int onigenc_mbclen(const OnigUChar* p,const OnigUChar* e, const struct OnigEncodingTypeST* enc);
 
-#define ONIGENC_MBC_ENC_LEN(enc,p,e)           onigenc_mbclen_approximate(p,e,enc)
+#define ONIGENC_MBC_ENC_LEN(enc,p,e)           onigenc_mbclen(p,e,enc)
 #define ONIGENC_MBC_MAXLEN(enc)               ((enc)->max_enc_len)
 #define ONIGENC_MBC_MAXLEN_DIST(enc)           ONIGENC_MBC_MAXLEN(enc)
 #define ONIGENC_MBC_MINLEN(enc)               ((enc)->min_enc_len)
@@ -744,6 +744,8 @@ typedef struct {
 typedef struct {
   int lower;
   int upper;
+  long base_num;
+  long inner_num;
 } OnigRepeatRange;
 
 typedef void (*OnigWarnFunc)(const char* s);
@@ -851,6 +853,8 @@ ONIG_EXTERN
 OnigPosition onig_search_gpos(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* global_pos, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option);
 ONIG_EXTERN
 OnigPosition onig_match(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* at, OnigRegion* region, OnigOptionType option);
+ONIG_EXTERN
+int onig_check_linear_time(OnigRegex reg);
 ONIG_EXTERN
 OnigRegion* onig_region_new(void);
 ONIG_EXTERN

@@ -7,8 +7,7 @@
 - Ruby (the same version as the building target version) (baseruby)
 - GNU make
 - [WASI SDK](https://github.com/WebAssembly/wasi-sdk) 14.0 or later
-- [Binaryen](https://github.com/WebAssembly/binaryen) **version 91**
-  - See also: https://github.com/WebAssembly/binaryen/issues/4401
+- [Binaryen](https://github.com/WebAssembly/binaryen) version 106 or later
 - Linux or macOS build machine
 
 ### Steps
@@ -53,6 +52,16 @@ Note: it may take a long time (~20 sec) for the first time for JIT compilation
 ```
 $ wasmtime ruby-wasm32-wasi/usr/local/bin/ruby --mapdir /::./ruby-wasm32-wasi/ -- -e 'puts RUBY_PLATFORM'
 wasm32-wasi
+```
+
+Note: you cannot run the built ruby without a WebAssembly runtime, because of the difference of the binary file type.
+
+```
+$ ruby-wasm32-wasi/usr/local/bin/ruby -e 'puts "a"'
+bash: ruby-wasm32-wasi/usr/local/bin/ruby: cannot execute binary file: Exec format error
+
+$ file ruby-wasm32-wasi/usr/local/bin/ruby
+ruby-wasm32-wasi/usr/local/bin/ruby: WebAssembly (wasm) binary module version 0x1 (MVP)
 ```
 
 ## Current Limitation

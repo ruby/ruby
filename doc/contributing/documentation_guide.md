@@ -92,7 +92,7 @@ involving new files `doc/*.rdoc`:
 
     Example:
 
-    ```c
+    ```
     /*
      *  call-seq:
      *    each_byte {|byte| ... } -> self
@@ -137,6 +137,19 @@ or [list](rdoc-ref:RDoc::Markup@Simple+Lists)
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
+### \Method Names
+
+For a method name in text:
+
+- For a method in the current class or module,
+  use a double-colon for a singleton method,
+  or a hash mark for an instance method:
+  <tt>::bar</tt>, <tt>#baz</tt>.
+- Otherwise, include the class or module name
+  and use a dot for a singleton method,
+  or a hash mark for an instance method:
+  <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
@@ -150,6 +163,28 @@ We might consider whether to suppress when:
   (e.g., _Array_ in the documentation for class `Array`).
 - The same reference is repeated many times
   (e.g., _RDoc_ on this page).
+
+### HTML Tags
+
+In general, avoid using HTML tags (even in formats where it's allowed)
+because `ri` (the Ruby Interactive reference tool)
+may not render them properly.
+
+### Tables
+
+In particular, avoid building tables with HTML tags
+(<tt><table></tt>, etc.).
+
+Alternatives are:
+
+- The GFM (GitHub Flavored Markdown) table extension,
+  which is enabled by default. See
+  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+
+- A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
+  using spaces and punctuation to format the text.
+  Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+  will not be honored.
 
 ## Documenting Classes and Modules
 
@@ -215,59 +250,85 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[`:call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
+[`call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
+
+For a singleton method, use the form:
+
+```
+class_name.method_name(method_args) {|block_args| ... } -> return_type
+```
 
 Example:
 
-```c
+```
 *  call-seq:
-*    array.count -> integer
-*    array.count(obj) -> integer
-*    array.count {|element| ... } -> integer
+*    Hash.new(default_value = nil) -> new_hash
+*    Hash.new {|hash, key| ... } -> new_hash
 ```
 
-When creating the `call-seq`, use the form
+For an instance method, use the form
+(omitting any prefix, just as RDoc does for a Ruby-coded method):
 
 ```
-receiver_type.method_name(arguments) {|block_arguments|} -> return_type
+method_name(method_args) {|block_args| ... } -> return_type
 ```
-
-Omit the parentheses for cases where the method does not accept arguments,
-and omit the block for cases where a block is not accepted.
-
-In the cases where method can return multiple different types, separate the
-types with "or".  If the method can return any type, use "object".  If the
-method returns the receiver, use "self".
-
-In cases where the method accepts optional arguments, use a `call-seq` with
-an optional argument if the method has the same behavior when an argument is
-omitted as when the argument is passed with the default value.  For example,
-use:
+For example, in Array, use:
 
 ```
-obj.respond_to?(symbol, include_all=false) -> true or false
+*  call-seq:
+*    count -> integer
+*    count(obj) -> integer
+*    count {|element| ... } -> integer
 ```
 
-Instead of:
-
 ```
-obj.respond_to?(symbol) -> true or false
-obj.respond_to?(symbol, include_all) -> true or false
+* call-seq:
+*    <=> other -> -1, 0, 1, or nil
 ```
 
-However, as shown above for `Array#count`, use separate lines if the
-behavior is different if the argument is omitted.
+Arguments:
 
-Omit aliases from the `call-seq`, but mention them near the end (see below).
+- If the method does not accept arguments, omit the parentheses.
+- If the method accepts optional arguments:
 
+    - Separate each argument name and its default value with ` = `
+      (equal-sign with surrounding spaces).
+    - If the method has the same behavior with either an omitted
+      or an explicit argument, use a `call-seq` with optional arguments.
+      For example, use:
 
-A `call-seq` block should have `{|x| ... }`, not `{|x| block }` or `{|x| code }`.
+        ```
+        respond_to?(symbol, include_all = false) -> true or false
+        ```
 
-A `call-seq` output should:
+    - If the behavior is different with an omitted or an explicit argument,
+      use a `call-seq` with separate lines.
+      For example, in Enumerable, use:
 
-- Have `self`, not `receiver` or `array`.
-- Begin with `new_` if and only if the output object is a new instance
-  of the receiver's class, to emphasize that the output object is not `self`.
+        ```
+        *    max    -> element
+        *    max(n) -> array
+        ```
+
+Block:
+
+- If the method does not accept a block, omit the block.
+- If the method accepts a block, the `call-seq` should have `{|args| ... }`,
+  not `{|args| block }` or `{|args| code }`.
+
+Return types:
+
+- If the method can return multiple different types,
+  separate the types with "or" and, if necessary, commas.
+- If the method can return multiple types, use +object+.
+- If the method returns the receiver, use +self+.
+- If the method returns an object of the same class,
+  prefix `new_` if an only if the object is not  +self+;
+  example: `new_array`.
+
+Aliases:
+
+- Omit aliases from the `call-seq`, but mention them near the end (see below).
 
 ### Synopsis
 
@@ -341,7 +402,7 @@ that is a common case, such as `Hash#fetch` raising a `KeyError`.
 
 Mention aliases in the form
 
-```c
+```
 // Array#find_index is an alias for Array#index.
 ```
 
@@ -350,12 +411,22 @@ Mention aliases in the form
 In some cases, it is useful to document which methods are related to
 the current method.  For example, documentation for `Hash#[]` might
 mention `Hash#fetch` as a related method, and `Hash#merge` might mention
-`Hash#merge!` as a related method.  Consider which methods may be related
-to the current method, and if you think the reader would benefit it,
-at the end of the method documentation, add a line starting with
-"Related: " (e.g. "Related: #fetch").  Don't list more than three
-related methods. If you think more than three methods are related,
-pick the three you think are most important and list those three.
+`Hash#merge!` as a related method.
+
+- Consider which methods may be related
+  to the current method, and if you think the reader would benefit it,
+  at the end of the method documentation, add a line starting with
+  "Related: " (e.g. "Related: #fetch.").
+- Don't list more than three related methods.
+  If you think more than three methods are related,
+  list the three you think are most important.
+- Consider adding:
+
+    - A phrase suggesting how the related method is similar to,
+      or different from,the current method.
+      See an example at Time#getutc.
+    - Example code that illustrates the similarities and differences.
+      See examples at Time#ctime, Time#inspect, Time#to_s.
 
 ### Methods Accepting Multiple Argument Types
 

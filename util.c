@@ -45,8 +45,8 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
         if ((s[0] < '0') || ('7' < s[0])) {
             break;
         }
-	retval <<= 3;
-	retval |= *s++ - '0';
+        retval <<= 3;
+        retval |= *s++ - '0';
     }
     *retlen = (size_t)(s - start);
     return retval;
@@ -65,9 +65,9 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
         if (d < 0 || 15 < d) {
             break;
         }
-	retval <<= 4;
-	retval |= d;
-	s++;
+        retval <<= 4;
+        retval |= d;
+        s++;
     }
     *retlen = (size_t)(s - start);
     return retval;
@@ -107,15 +107,15 @@ ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *ov
     *overflow = 0;
 
     if (!len) {
-	*retlen = 0;
-	return 0;
+        *retlen = 0;
+        return 0;
     }
 
     do {
-	int d = ruby_digit36_to_number_table[(unsigned char)*str++];
+        int d = ruby_digit36_to_number_table[(unsigned char)*str++];
         if (d == -1 || base <= d) {
-	    --str;
-	    break;
+            --str;
+            break;
         }
         if (mul_overflow < ret)
             *overflow = 1;
@@ -218,6 +218,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
+#if !defined HAVE_GNU_QSORT_R
 #if defined HAVE_QSORT_S && defined RUBY_MSVCRT_VERSION
 /* In contrast to its name, Visual Studio qsort_s is incompatible with
  * C11 in the order of the comparison function's arguments, and same
@@ -263,7 +264,7 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     qsort_s(base, nel, size, cmp, d);
 }
 # define HAVE_GNU_QSORT_R 1
-#elif !defined HAVE_GNU_QSORT_R
+#else
 /* mm.c */
 
 #define mmtype long
@@ -416,57 +417,57 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
       register char *m1;
       register char *m3;
       if (n >= 200) {
-	n = size*(n>>3); /* number of bytes in splitting 8 */
-	{
-	  register char *p1 = l  + n;
-	  register char *p2 = p1 + n;
-	  register char *p3 = p2 + n;
-	  m1 = med3(p1, p2, p3);
-	  p1 = m  + n;
-	  p2 = p1 + n;
-	  p3 = p2 + n;
-	  m3 = med3(p1, p2, p3);
-	}
+        n = size*(n>>3); /* number of bytes in splitting 8 */
+        {
+          register char *p1 = l  + n;
+          register char *p2 = p1 + n;
+          register char *p3 = p2 + n;
+          m1 = med3(p1, p2, p3);
+          p1 = m  + n;
+          p2 = p1 + n;
+          p3 = p2 + n;
+          m3 = med3(p1, p2, p3);
+        }
       }
       else {
-	n = size*(n>>2); /* number of bytes in splitting 4 */
-	m1 = l + n;
-	m3 = m + n;
+        n = size*(n>>2); /* number of bytes in splitting 4 */
+        m1 = l + n;
+        m3 = m + n;
       }
       m = med3(m1, m, m3);
     }
 
     if ((t = (*cmp)(l,m,d)) < 0) {                           /*3-5-?*/
       if ((t = (*cmp)(m,r,d)) < 0) {                         /*3-5-7*/
-	if (chklim && nel >= chklim) {   /* check if already ascending order */
-	  char *p;
-	  chklim = 0;
-	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) > 0) goto fail;
-	  goto nxt;
-	}
-	fail: goto loopA;                                    /*3-5-7*/
+        if (chklim && nel >= chklim) {   /* check if already ascending order */
+          char *p;
+          chklim = 0;
+          for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) > 0) goto fail;
+          goto nxt;
+        }
+        fail: goto loopA;                                    /*3-5-7*/
       }
       if (t > 0) {
-	if ((*cmp)(l,r,d) <= 0) {mmswap(m,r); goto loopA;}     /*3-5-4*/
-	mmrot3(r,m,l); goto loopA;                           /*3-5-2*/
+        if ((*cmp)(l,r,d) <= 0) {mmswap(m,r); goto loopA;}     /*3-5-4*/
+        mmrot3(r,m,l); goto loopA;                           /*3-5-2*/
       }
       goto loopB;                                            /*3-5-5*/
     }
 
     if (t > 0) {                                             /*7-5-?*/
       if ((t = (*cmp)(m,r,d)) > 0) {                         /*7-5-3*/
-	if (chklim && nel >= chklim) {   /* check if already ascending order */
-	  char *p;
-	  chklim = 0;
-	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) < 0) goto fail2;
-	  while (l<r) {mmswap(l,r); l+=size; r-=size;}  /* reverse region */
-	  goto nxt;
-	}
-	fail2: mmswap(l,r); goto loopA;                      /*7-5-3*/
+        if (chklim && nel >= chklim) {   /* check if already ascending order */
+          char *p;
+          chklim = 0;
+          for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) < 0) goto fail2;
+          while (l<r) {mmswap(l,r); l+=size; r-=size;}  /* reverse region */
+          goto nxt;
+        }
+        fail2: mmswap(l,r); goto loopA;                      /*7-5-3*/
       }
       if (t < 0) {
-	if ((*cmp)(l,r,d) <= 0) {mmswap(l,m); goto loopB;}   /*7-5-8*/
-	mmrot3(l,m,r); goto loopA;                           /*7-5-6*/
+        if ((*cmp)(l,r,d) <= 0) {mmswap(l,m); goto loopB;}   /*7-5-8*/
+        mmrot3(l,m,r); goto loopA;                           /*7-5-6*/
       }
       mmswap(l,r); goto loopA;                               /*7-5-5*/
     }
@@ -485,18 +486,18 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right */
     for (;;) {
       for (;;) {
-	if ((l += size) == r)
-	  {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
-	if (l == m) continue;
-	if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
-	if (t < 0) eq_l = 0;
+        if ((l += size) == r)
+          {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
+        if (l == m) continue;
+        if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
+        if (t < 0) eq_l = 0;
       }
       for (;;) {
-	if (l == (r -= size))
-	  {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
-	if (r == m) {m = l; break;}
-	if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
-	if (t == 0) break;
+        if (l == (r -= size))
+          {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
+        if (r == m) {m = l; break;}
+        if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
+        if (t == 0) break;
       }
       mmswap(l,r);    /* swap left and right */
     }
@@ -504,18 +505,18 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     loopB: eq_l = 1; eq_r = 1;  /* splitting type B */ /* left < median <= right */
     for (;;) {
       for (;;) {
-	if (l == (r -= size))
-	  {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
-	if (r == m) continue;
-	if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
-	if (t > 0) eq_r = 0;
+        if (l == (r -= size))
+          {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
+        if (r == m) continue;
+        if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
+        if (t > 0) eq_r = 0;
       }
       for (;;) {
-	if ((l += size) == r)
-	  {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
-	if (l == m) {m = r; break;}
-	if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
-	if (t == 0) break;
+        if ((l += size) == r)
+          {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
+        if (l == m) {m = r; break;}
+        if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
+        if (t == 0) break;
       }
       mmswap(l,r);    /* swap left and right */
     }
@@ -523,14 +524,15 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     fin:
     if (eq_l == 0)                         /* need to sort left side */
       if (eq_r == 0)                       /* need to sort right side */
-	if (l-L < R-r) {PUSH(r,R); R = l;} /* sort left side first */
-	else           {PUSH(L,l); L = r;} /* sort right side first */
+        if (l-L < R-r) {PUSH(r,R); R = l;} /* sort left side first */
+        else           {PUSH(L,l); L = r;} /* sort right side first */
       else R = l;                          /* need to sort left side only */
     else if (eq_r == 0) L = r;             /* need to sort right side only */
     else goto nxt;                         /* need not to sort both sides */
   }
 }
-#endif /* HAVE_GNU_QSORT_R */
+#endif
+#endif /* !HAVE_GNU_QSORT_R */
 
 char *
 ruby_strdup(const char *str)
@@ -556,15 +558,15 @@ ruby_getcwd(void)
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
-	int e = errno;
-	if (e != ERANGE) {
-	    xfree(buf);
-	    DATA_PTR(guard) = NULL;
-	    rb_syserr_fail(e, "getcwd");
-	}
-	size *= 2;
-	DATA_PTR(guard) = buf;
-	buf = xrealloc(buf, size);
+        int e = errno;
+        if (e != ERANGE) {
+            xfree(buf);
+            DATA_PTR(guard) = NULL;
+            rb_syserr_fail(e, "getcwd");
+        }
+        size *= 2;
+        DATA_PTR(guard) = buf;
+        buf = xrealloc(buf, size);
     }
 # else
     VALUE guard = Data_Wrap_Struct((VALUE)0, NULL, free, NULL);
@@ -582,9 +584,9 @@ ruby_getcwd(void)
     char *buf = xmalloc(PATH_MAX+1);
 
     if (!getwd(buf)) {
-	int e = errno;
-	xfree(buf);
-	rb_syserr_fail(e, "getwd");
+        int e = errno;
+        xfree(buf);
+        rb_syserr_fail(e, "getwd");
     }
 #endif
     return buf;
@@ -598,12 +600,12 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 
     if (!str) return;
     for (; *str; str = end) {
-	while (ISSPACE(*str) || *str == ',') str++;
-	if (!*str) break;
-	end = str;
-	while (*end && !ISSPACE(*end) && *end != ',') end++;
-	len = (int)(end - str);	/* assume no string exceeds INT_MAX */
-	(*func)(str, len, arg);
+        while (ISSPACE(*str) || *str == ',') str++;
+        if (!*str) break;
+        end = str;
+        while (*end && !ISSPACE(*end) && *end != ',') end++;
+        len = (int)(end - str);	/* assume no string exceeds INT_MAX */
+        (*func)(str, len, arg);
     }
 }
 

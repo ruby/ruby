@@ -1,17 +1,17 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/available_set'
+require_relative "helper"
+require "rubygems/available_set"
 
 class TestGemResolverIndexSpecification < Gem::TestCase
   def test_initialize
     set     = Gem::Resolver::IndexSet.new
     source  = Gem::Source.new @gem_repo
-    version = Gem::Version.new '3.0.3'
+    version = Gem::Version.new "3.0.3"
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, 'rails', version, source, Gem::Platform::RUBY)
+      set, "rails", version, source, Gem::Platform::RUBY)
 
-    assert_equal 'rails',             spec.name
+    assert_equal "rails",             spec.name
     assert_equal version,             spec.version
     assert_equal Gem::Platform::RUBY, spec.platform
 
@@ -21,24 +21,24 @@ class TestGemResolverIndexSpecification < Gem::TestCase
   def test_initialize_platform
     set     = Gem::Resolver::IndexSet.new
     source  = Gem::Source::Local.new
-    version = Gem::Version.new '3.0.3'
+    version = Gem::Version.new "3.0.3"
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, 'rails', version, source, Gem::Platform.local)
+      set, "rails", version, source, Gem::Platform.local)
 
-    assert_equal Gem::Platform.local.to_s, spec.platform
+    assert_equal Gem::Platform.local, spec.platform
   end
 
   def test_install
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
     set    = Gem::Resolver::IndexSet.new
     source = Gem::Source.new @gem_repo
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, 'a', v(2), source, Gem::Platform::RUBY)
+      set, "a", v(2), source, Gem::Platform::RUBY)
 
     called = false
 
@@ -46,15 +46,15 @@ class TestGemResolverIndexSpecification < Gem::TestCase
       called = installer
     end
 
-    assert_path_exist File.join @gemhome, 'specifications', 'a-2.gemspec'
+    assert_path_exist File.join @gemhome, "specifications", "a-2.gemspec"
 
     assert_kind_of Gem::Installer, called
   end
 
   def test_spec
     specs = spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', 2 do |s|
+      fetcher.spec "a", 2
+      fetcher.spec "a", 2 do |s|
         s.platform = Gem::Platform.local
       end
     end
@@ -64,7 +64,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
 
     set = Gem::Resolver::IndexSet.new
     i_spec = Gem::Resolver::IndexSpecification.new \
-      set, 'a', version, source, Gem::Platform.local
+      set, "a", version, source, Gem::Platform.local
 
     spec = i_spec.spec
 
@@ -72,7 +72,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
   end
 
   def test_spec_local
-    a_2_p = util_spec 'a', 2 do |s|
+    a_2_p = util_spec "a", 2 do |s|
       s.platform = Gem::Platform.local
     end
 
@@ -83,7 +83,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     set.always_install << a_2_p
 
     i_spec = Gem::Resolver::IndexSpecification.new \
-      set, 'a', v(2), source, Gem::Platform.local
+      set, "a", v(2), source, Gem::Platform.local
 
     spec = i_spec.spec
 

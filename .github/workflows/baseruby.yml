@@ -4,17 +4,24 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 jobs:
   baseruby:
@@ -32,14 +39,15 @@ jobs:
 #         - ruby-2.7
           - ruby-3.0
           - ruby-3.1
+          - ruby-3.2
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: .downloaded-cache
           key: downloaded-cache
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@ee26e27437bde475b19a6bf8cb73c9fa658876a2 # v1.134.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
@@ -51,7 +59,7 @@ jobs:
       - run: make incs
       - run: make all
       - run: make test
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
@@ -59,7 +67,7 @@ jobs:
               "env": "${{ github.workflow }} / BASERUBY @ ${{ matrix.ruby }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

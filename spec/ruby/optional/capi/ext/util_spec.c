@@ -7,15 +7,18 @@ extern "C" {
 #endif
 
 VALUE util_spec_rb_scan_args(VALUE self, VALUE argv, VALUE fmt, VALUE expected, VALUE acc) {
-  int i, result, argc = (int)RARRAY_LEN(argv);
-  VALUE args[6], failed, a1, a2, a3, a4, a5, a6;
+  int result, argc;
+  VALUE a1, a2, a3, a4, a5, a6;
 
-  failed = rb_intern("failed");
-  a1 = a2 = a3 = a4 = a5 = a6 = failed;
+  argc = (int) RARRAY_LEN(argv);
+  VALUE* args = RARRAY_PTR(argv);
+  /* the line above can be replaced with this for Ruby implementations which do not support RARRAY_PTR() yet
+    VALUE args[6];
+    for(int i = 0; i < argc; i++) {
+      args[i] = rb_ary_entry(argv, i);
+    } */
 
-  for(i = 0; i < argc; i++) {
-    args[i] = rb_ary_entry(argv, i);
-  }
+  a1 = a2 = a3 = a4 = a5 = a6 = INT2FIX(-1);
 
 #ifdef RB_SCAN_ARGS_KEYWORDS
   if (*RSTRING_PTR(fmt) == 'k') {

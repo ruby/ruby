@@ -14,6 +14,7 @@
 *.inc
 *.log
 *.o
+*.o.tmp
 *.obj
 *.old
 *.orig
@@ -25,6 +26,7 @@
 *.sav
 *.sl
 *.so
+*.so.*
 *.swp
 *.yarb
 *~
@@ -48,6 +50,7 @@ y.tab.c
 *.gcno
 *.gcov
 *.vscode
+!misc/.vscode
 lcov*.info
 
 # /
@@ -121,6 +124,7 @@ lcov*.info
 /repack
 /revision.h
 /revision.tmp
+/ripper.tmp.y
 /riscos
 /rubicon
 /ruby
@@ -145,6 +149,8 @@ lcov*.info
 
 /bin/*.exe
 /bin/*.dll
+/bin/goruby
+/bin/ruby
 
 # /benchmark/
 /benchmark/bm_require.data
@@ -219,6 +225,9 @@ lcov*.info
 /lib/ruby/[1-9]*.*
 /lib/ruby/vendor_ruby
 
+# /misc/
+/misc/**/__pycache__
+
 # /spec/bundler
 /.rspec_status
 
@@ -230,9 +239,14 @@ lcov*.info
 /win32/*.ico
 
 # MJIT
-/rb_mjit_header.h
-/mjit_config.h
 /include/ruby-*/*/rb_mjit_min_header-*.h
+/lib/ruby_vm/mjit/instruction.rb
+/mjit_config.h
+/rb_mjit_header.h*
+
+# YJIT
+/yjit-bench
+/yjit_exit_locations.dump
 
 # /wasm/
 /wasm/tests/*.wasm

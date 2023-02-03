@@ -35,6 +35,12 @@ describe "String#strip!" do
     a.should == "hello"
   end
 
+  it "makes a string empty if it is only whitespace" do
+    "".strip!.should == nil
+    " ".strip.should == ""
+    "  ".strip.should == ""
+  end
+
   ruby_version_is '3.0' do
     it "removes leading and trailing NULL bytes and whitespace" do
       a = "\000 goodbye \000"

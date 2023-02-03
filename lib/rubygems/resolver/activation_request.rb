@@ -93,7 +93,7 @@ class Gem::Resolver::ActivationRequest
   end
 
   def inspect # :nodoc:
-    '#<%s for %p from %s>' % [
+    "#<%s for %p from %s>" % [
       self.class, @spec, @request
     ]
   end
@@ -130,12 +130,12 @@ class Gem::Resolver::ActivationRequest
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Activation request', ']' do
+    q.group 2, "[Activation request", "]" do
       q.breakable
       q.pp @spec
 
       q.breakable
-      q.text ' for '
+      q.text " for "
       q.pp @request
     end
   end

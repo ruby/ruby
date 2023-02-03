@@ -15,19 +15,22 @@ module Bundler
       end
 
       print = options[:print]
-      ui = Bundler.ui
-      Bundler.ui = UI::Silent.new if print
+      previous_ui_level = Bundler.ui.level
+      Bundler.ui.level = "silent" if print
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       update = options[:update]
       conservative = options[:conservative]
+      bundler = options[:bundler]
 
       if update.is_a?(Array) # unlocking specific gems
         Bundler::CLI::Common.ensure_all_gems_in_lockfile!(update)
         update = { :gems => update, :conservative => conservative }
-      elsif update
-        update = { :conservative => conservative } if conservative
+      elsif update && conservative
+        update = { :conservative => conservative }
+      elsif update && bundler
+        update = { :bundler => bundler }
       end
       definition = Bundler.definition(update)
 
@@ -61,7 +64,7 @@ module Bundler
         definition.lock(file)
       end
 
-      Bundler.ui = ui
+      Bundler.ui.level = previous_ui_level
     end
   end
 end

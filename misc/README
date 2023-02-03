@@ -4,3 +4,4 @@ rb_optparse.zsh    zsh completion script
 ruby-style.el      Ruby's C/C++ mode style for emacs
 lldb_cruby.py      LLDB port of debug utility
 test_lldb_cruby.rb test file for LLDB port
+.vscode            example VSCode config to debug Ruby

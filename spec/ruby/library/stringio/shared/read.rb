@@ -89,6 +89,12 @@ describe :stringio_read_no_arguments, shared: true do
     @io.send(@method)
     @io.pos.should eql(7)
   end
+
+  it "correctly update the current position in bytes when multi-byte characters are used" do
+    @io.print("example\u03A3") # Overwrite the original string with 8 characters containing 9 bytes.
+    @io.send(@method)
+    @io.pos.should eql(9)
+  end
 end
 
 describe :stringio_read_nil, shared: true do

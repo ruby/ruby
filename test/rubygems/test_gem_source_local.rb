@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/source'
+require_relative "helper"
+require "rubygems/source"
 
-require 'fileutils'
+require "fileutils"
 
 class TestGemSourceLocal < Gem::TestCase
   def setup
@@ -10,9 +10,9 @@ class TestGemSourceLocal < Gem::TestCase
 
     @sl = Gem::Source::Local.new
 
-    @a, @a_gem = util_gem "a", '1'
-    @ap, @ap_gem = util_gem "a", '2.a'
-    @b, @b_gem = util_gem "b", '1'
+    @a, @a_gem = util_gem "a", "1"
+    @ap, @ap_gem = util_gem "a", "2.a"
+    @b, @b_gem = util_gem "b", "1"
 
     FileUtils.mv @a_gem, @tempdir
     FileUtils.mv @ap_gem, @tempdir
@@ -84,7 +84,7 @@ class TestGemSourceLocal < Gem::TestCase
   end
 
   def test_spaceship
-    a1 = quick_gem 'a', '1'
+    a1 = quick_gem "a", "1"
     util_build_gem a1
 
     remote    = Gem::Source.new @gem_repo
@@ -92,15 +92,15 @@ class TestGemSourceLocal < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, local.<=>(local), 'local <=> local')
+    assert_equal(0, local.<=>(local), "local <=> local")
 
-    assert_equal(-1, remote.<=>(local), 'remote <=> local')
-    assert_equal(1, local.<=>(remote), 'local <=> remote')
+    assert_equal(-1, remote.<=>(local), "remote <=> local")
+    assert_equal(1, local.<=>(remote), "local <=> remote")
 
-    assert_equal(1, installed.<=>(local), 'installed <=> local')
-    assert_equal(-1, local.<=>(installed), 'local <=> installed')
+    assert_equal(1, installed.<=>(local), "installed <=> local")
+    assert_equal(-1, local.<=>(installed), "local <=> installed")
 
-    assert_equal(-1, specific.<=>(local), 'specific <=> local')
-    assert_equal(1, local.<=>(specific), 'local <=> specific')
+    assert_equal(-1, specific.<=>(local), "specific <=> local")
+    assert_equal(1, local.<=>(specific), "local <=> specific")
   end
 end

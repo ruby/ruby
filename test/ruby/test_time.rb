@@ -53,6 +53,91 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, 1, "+09:99") }
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, "+09:99") }
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, "+09:99") }
+
+    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], Time.new(2000, 1, 1, 0, 0, 0, "-00:00").to_a)
+    assert_equal([0, 0, 0, 2, 1, 2000, 0, 2, false, "UTC"], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a)
+  end
+
+  def test_new_from_string
+    assert_raise(ArgumentError) { Time.new(2021, 1, 1, "+09:99") }
+
+    t = Time.utc(2020, 12, 24, 15, 56, 17)
+    assert_equal(t, Time.new("2020-12-24T15:56:17Z"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +09:00"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +09:01:30"))
+    assert_equal(t, Time.new("2020-12-25 00:56:17 +0900"))
+    assert_equal(t, Time.new("2020-12-25 00:57:47 +090130"))
+    assert_equal(t, Time.new("2020-12-25T00:56:17+09:00"))
+    assert_raise_with_message(ArgumentError, /missing sec part/) {
+      Time.new("2020-12-25 00:56 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /missing min part/) {
+      Time.new("2020-12-25 00 +09:00")
+    }
+
+    assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
+
+    assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
+    assert_equal(0.123456789r, Time.new("2021-12-25 00:00:00.123456789876 +09:00").subsec)
+    assert_equal(0.123r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: 3).subsec)
+    assert_equal(0.123456789876r, Time.new("2021-12-25 00:00:00.123456789876 +09:00", precision: nil).subsec)
+    assert_raise_with_message(ArgumentError, "subsecond expected after dot: 00:56:17. ") {
+      Time.new("2020-12-25 00:56:17. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /year must be 4 or more/) {
+      Time.new("021-12-25 00:00:00.123456 +09:00")
+    }
+    assert_raise_with_message(ArgumentError, /fraction min is.*56\./) {
+      Time.new("2020-12-25 00:56. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /fraction hour is.*00\./) {
+      Time.new("2020-12-25 00. +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:017\b/) {
+      Time.new("2020-12-25 00:56:017 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits sec.*:9\b/) {
+      Time.new("2020-12-25 00:56:9 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /sec out of range/) {
+      Time.new("2020-12-25 00:56:64 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:056\b/) {
+      Time.new("2020-12-25 00:056:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits min.*:5\b/) {
+      Time.new("2020-12-25 00:5:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /min out of range/) {
+      Time.new("2020-12-25 00:64:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b000\b/) {
+      Time.new("2020-12-25 000:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits hour.*\b0\b/) {
+      Time.new("2020-12-25 0:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /hour out of range/) {
+      Time.new("2020-12-25 33:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b025\b/) {
+      Time.new("2020-12-025 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mday.*\b5\b/) {
+      Time.new("2020-12-5 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mday out of range/) {
+      Time.new("2020-12-33 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b012\b/) {
+      Time.new("2020-012-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /two digits mon.*\b1\b/) {
+      Time.new("2020-1-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /mon out of range/) {
+      Time.new("2020-17-25 00:56:17 +0900")
+    }
   end
 
   def test_time_add()
@@ -1326,5 +1411,23 @@ class TestTime < Test::Unit::TestCase
     assert_equal expect, ObjectSpace.memsize_of(t)
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
+  end
+
+  def test_deconstruct_keys
+    t = in_timezone('JST-9') { Time.local(2022, 10, 16, 14, 1, 30, 500) }
+    assert_equal(
+      {year: 2022, month: 10, day: 16, wday: 0, yday: 289,
+        hour: 14, min: 1, sec: 30, subsec: 1/2000r, dst: false, zone: 'JST'},
+      t.deconstruct_keys(nil)
+    )
+
+    assert_equal(
+      {year: 2022, month: 10, sec: 30},
+      t.deconstruct_keys(%i[year month sec nonexistent])
+    )
+  end
+
+  def test_parse_zero_bigint
+    assert_equal 0, Time.new("2020-10-28T16:48:07.000Z").nsec, '[Bug #19390]'
   end
 end

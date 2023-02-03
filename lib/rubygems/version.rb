@@ -155,7 +155,7 @@ require_relative "deprecate"
 class Gem::Version
   include Comparable
 
-  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'.freeze # :nodoc:
+  VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?' # :nodoc:
   ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze # :nodoc:
 
   ##
@@ -171,9 +171,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4" if version.nil?
-    end
+    nil_versions_are_discouraged! if version.nil?
 
     !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
   end
@@ -190,6 +188,8 @@ class Gem::Version
     if self === input # check yourself before you wreck yourself
       input
     elsif input.nil?
+      nil_versions_are_discouraged!
+
       nil
     else
       new input
@@ -205,6 +205,14 @@ class Gem::Version
 
     @@all[version] ||= super
   end
+
+  def self.nil_versions_are_discouraged!
+    unless Gem::Deprecate.skip
+      warn "nil versions are discouraged and will be deprecated in Rubygems 4"
+    end
+  end
+
+  private_class_method :nil_versions_are_discouraged!
 
   ##
   # Constructs a Version from the +version+ string.  A version string is a
@@ -244,7 +252,7 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql?(other)
-    self.class === other and @version == other._version
+    self.class === other && @version == other._version
   end
 
   def hash # :nodoc:
@@ -276,7 +284,7 @@ class Gem::Version
   end
 
   def yaml_initialize(tag, map) # :nodoc:
-    @version = map['version']
+    @version = map["version"]
     @segments = nil
     @hash = nil
   end
@@ -286,7 +294,7 @@ class Gem::Version
   end
 
   def encode_with(coder) # :nodoc:
-    coder.add 'version', @version
+    coder.add "version", @version
   end
 
   ##
@@ -311,7 +319,7 @@ class Gem::Version
     @@release[self] ||= if prerelease?
       segments = self.segments
       segments.pop while segments.any? {|s| String === s }
-      self.class.new segments.join('.')
+      self.class.new segments.join(".")
     else
       self
     end

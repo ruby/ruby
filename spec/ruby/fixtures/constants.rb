@@ -75,6 +75,13 @@ module ConstantSpecs
     CS_CONST10 = :const10_8
   end
 
+  # Included in ContainerA
+  module ModuleIncludePrepended
+    prepend ModuleD
+
+    CS_CONST11 = :const11_8
+  end
+
   # The following classes/modules have all the constants set "statically".
   # Contrast with the classes below where the constants are set as the specs
   # are run.
@@ -167,6 +174,10 @@ module ConstantSpecs
     def self.const10; CS_CONST10; end
 
     def const10; CS_CONST10; end
+  end
+
+  class ContainerPrepend
+    include ModuleIncludePrepended
   end
 
   class ContainerA::ChildA

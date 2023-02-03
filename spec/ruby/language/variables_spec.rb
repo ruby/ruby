@@ -849,4 +849,22 @@ describe "Instance variables" do
       -> { obj.foobar }.should_not complain(verbose: true)
     end
   end
+
+  describe "global variable" do
+    context "when global variable is uninitialized" do
+      it "warns about accessing uninitialized global variable in verbose mode" do
+        obj = Object.new
+        def obj.foobar; a = $specs_uninitialized_global_variable; end
+
+        -> { obj.foobar }.should complain(/warning: global variable `\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+      end
+
+      it "doesn't warn at lazy initialization" do
+        obj = Object.new
+        def obj.foobar; $specs_uninitialized_global_variable_lazy ||= 42; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
+    end
+  end
 end

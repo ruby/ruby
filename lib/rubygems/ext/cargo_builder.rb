@@ -4,58 +4,129 @@
 # over the `cargo rustc` command which takes care of building Rust code in a way
 # that Ruby can use.
 class Gem::Ext::CargoBuilder < Gem::Ext::Builder
-  attr_reader :spec
+  attr_accessor :spec, :runner, :profile
 
-  def initialize(spec)
-    @spec = spec
+  def initialize
+    require_relative "../command"
+    require_relative "cargo_builder/link_flag_converter"
+
+    @runner = self.class.method(:run)
+    @profile = :release
   end
 
-  def build(_extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
-    require "rubygems/command"
+  def build(extension, dest_path, results, args = [], lib_dir = nil, cargo_dir = Dir.pwd)
+    require "tempfile"
     require "fileutils"
+
+    # Where's the Cargo.toml of the crate we're building
+    cargo_toml = File.join(cargo_dir, "Cargo.toml")
+    # What's the crate's name
+    crate_name = cargo_crate_name(cargo_dir, cargo_toml, results)
+
+    begin
+      # Create a tmp dir to do the build in
+      tmp_dest = Dir.mktmpdir(".gem.", cargo_dir)
+
+      # Run the build
+      cmd = cargo_command(cargo_toml, tmp_dest, args, crate_name)
+      runner.call(cmd, results, "cargo", cargo_dir, build_env)
+
+      # Where do we expect Cargo to write the compiled library
+      dylib_path = cargo_dylib_path(tmp_dest, crate_name)
+
+      # Helpful error if we didn't find the compiled library
+      raise DylibNotFoundError, tmp_dest unless File.exist?(dylib_path)
+
+      # Cargo and Ruby differ on how the library should be named, rename from
+      # what Cargo outputs to what Ruby expects
+      dlext_name = "#{crate_name}.#{makefile_config("DLEXT")}"
+      dlext_path = File.join(File.dirname(dylib_path), dlext_name)
+      FileUtils.cp(dylib_path, dlext_path)
+
+      nesting = extension_nesting(extension)
+
+      # TODO: remove in RubyGems 4
+      if Gem.install_extension_in_lib && lib_dir
+        nested_lib_dir = File.join(lib_dir, nesting)
+        FileUtils.mkdir_p nested_lib_dir
+        FileUtils.cp_r dlext_path, nested_lib_dir, remove_destination: true
+      end
+
+      # move to final destination
+      nested_dest_path = File.join(dest_path, nesting)
+      FileUtils.mkdir_p nested_dest_path
+      FileUtils.cp_r dlext_path, nested_dest_path, remove_destination: true
+    ensure
+      # clean up intermediary build artifacts
+      FileUtils.rm_rf tmp_dest if tmp_dest
+    end
+
+    results
+  end
+
+  def build_env
+    build_env = rb_config_env
+    build_env["RUBY_STATIC"] = "true" if ruby_static? && ENV.key?("RUBY_STATIC")
+    cfg = "--cfg=rb_sys_gem --cfg=rubygems --cfg=rubygems_#{Gem::VERSION.tr(".", "_")}"
+    build_env["RUSTFLAGS"] = [ENV["RUSTFLAGS"], cfg].compact.join(" ")
+    build_env
+  end
+
+  def cargo_command(cargo_toml, dest_path, args = [], crate_name = nil)
     require "shellwords"
 
-    build_crate(dest_path, results, args, cargo_dir)
-    ext_path = rename_cdylib_for_ruby_compatibility(dest_path)
-    finalize_directory(ext_path, dest_path, lib_dir, cargo_dir)
-    results
+    cmd = []
+    cmd += [cargo, "rustc"]
+    cmd += ["--crate-type", "cdylib"]
+    cmd += ["--target", ENV["CARGO_BUILD_TARGET"]] if ENV["CARGO_BUILD_TARGET"]
+    cmd += ["--target-dir", dest_path]
+    cmd += ["--manifest-path", cargo_toml]
+    cmd += ["--lib"]
+    cmd += ["--profile", profile.to_s]
+    cmd += ["--locked"]
+    cmd += Gem::Command.build_args
+    cmd += args
+    cmd += ["--"]
+    cmd += [*cargo_rustc_args(dest_path, crate_name)]
+    cmd
   end
 
   private
 
-  def build_crate(dest_path, results, args, cargo_dir)
-    manifest = File.join(cargo_dir, "Cargo.toml")
-
-    given_ruby_static = ENV["RUBY_STATIC"]
-
-    ENV["RUBY_STATIC"] = "true" if ruby_static? && !given_ruby_static
-
-    cargo = ENV.fetch("CARGO", "cargo")
-
-    cmd = []
-    cmd += [cargo, "rustc"]
-    cmd += ["--target-dir", dest_path]
-    cmd += ["--manifest-path", manifest]
-    cmd += ["--lib", "--release", "--locked"]
-    cmd += ["--"]
-    cmd += [*cargo_rustc_args(dest_path)]
-    cmd += Gem::Command.build_args
-    cmd += args
-
-    self.class.run cmd, results, self.class.class_name, cargo_dir
-    results
-  ensure
-    ENV["RUBY_STATIC"] = given_ruby_static
+  def cargo
+    ENV.fetch("CARGO", "cargo")
   end
 
-  def cargo_rustc_args(dest_dir)
+  # returns the directory nesting of the extension, ignoring the first part, so
+  # "ext/foo/bar/Cargo.toml" becomes "foo/bar"
+  def extension_nesting(extension)
+    parts = extension.to_s.split(Regexp.union([File::SEPARATOR, File::ALT_SEPARATOR].compact))
+
+    parts = parts.each_with_object([]) do |segment, final|
+      next if segment == "."
+      if segment == ".."
+        raise Gem::InstallError, "extension outside of gem root" if final.empty?
+        next final.pop
+      end
+      final << segment
+    end
+
+    File.join(parts[1...-1])
+  end
+
+  def rb_config_env
+    result = {}
+    RbConfig::CONFIG.each {|k, v| result["RBCONFIG_#{k}"] = v }
+    result
+  end
+
+  def cargo_rustc_args(dest_dir, crate_name)
     [
       *linker_args,
       *mkmf_libpath,
-      *rustc_dynamic_linker_flags(dest_dir),
+      *rustc_dynamic_linker_flags(dest_dir, crate_name),
       *rustc_lib_flags(dest_dir),
       *platform_specific_rustc_args(dest_dir),
-      *debug_flags,
     ]
   end
 
@@ -73,6 +144,9 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       # run on one that isn't the missing libraries will cause the extension
       # to fail on start.
       flags += ["-C", "link-arg=-static-libgcc"]
+    elsif darwin_target?
+      # Ventura does not always have this flag enabled
+      flags += ["-C", "link-arg=-Wl,-undefined,dynamic_lookup"]
     end
 
     flags
@@ -81,18 +155,27 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   # We want to use the same linker that Ruby uses, so that the linker flags from
   # mkmf work properly.
   def linker_args
-    # Have to handle CC="cl /nologo" on mswin
     cc_flag = Shellwords.split(makefile_config("CC"))
     linker = cc_flag.shift
     link_args = cc_flag.flat_map {|a| ["-C", "link-arg=#{a}"] }
 
+    return mswin_link_args if linker == "cl"
+
     ["-C", "linker=#{linker}", *link_args]
+  end
+
+  def mswin_link_args
+    args = []
+    args += ["-l", makefile_config("LIBRUBYARG_SHARED").chomp(".lib")]
+    args += split_flags("LIBS").flat_map {|lib| ["-l", lib.chomp(".lib")] }
+    args += split_flags("LOCAL_LIBS").flat_map {|lib| ["-l", lib.chomp(".lib")] }
+    args
   end
 
   def libruby_args(dest_dir)
     libs = makefile_config(ruby_static? ? "LIBRUBYARG_STATIC" : "LIBRUBYARG_SHARED")
     raw_libs = Shellwords.split(libs)
-    raw_libs.flat_map {|l| ldflag_to_link_modifier(l, dest_dir) }
+    raw_libs.flat_map {|l| ldflag_to_link_modifier(l) }
   end
 
   def ruby_static?
@@ -101,68 +184,84 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     makefile_config("ENABLE_SHARED") == "no"
   end
 
-  # Ruby expects the dylib to follow a file name convention for loading
-  def rename_cdylib_for_ruby_compatibility(dest_path)
-    dylib_path = validate_cargo_build!(dest_path)
-    dlext_name = "#{spec.name}.#{makefile_config("DLEXT")}"
-    new_name = dylib_path.gsub(File.basename(dylib_path), dlext_name)
-    FileUtils.cp(dylib_path, new_name)
-    new_name
-  end
-
-  def validate_cargo_build!(dir)
+  def cargo_dylib_path(dest_path, crate_name)
     prefix = so_ext == "dll" ? "" : "lib"
-    dylib_path = File.join(dir, "release", "#{prefix}#{cargo_crate_name}.#{so_ext}")
-
-    raise DylibNotFoundError, dir unless File.exist?(dylib_path)
-
-    dylib_path
+    path_parts = [dest_path]
+    path_parts << ENV["CARGO_BUILD_TARGET"] if ENV["CARGO_BUILD_TARGET"]
+    path_parts += ["release", "#{prefix}#{crate_name}.#{so_ext}"]
+    File.join(*path_parts)
   end
 
-  def cargo_crate_name
-    spec.metadata.fetch('cargo_crate_name', spec.name).tr('-', '_')
+  def cargo_crate_name(cargo_dir, manifest_path, results)
+    require "open3"
+    Gem.load_yaml
+
+    output, status =
+      begin
+        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", :chdir => cargo_dir)
+      rescue => error
+        raise Gem::InstallError, "cargo metadata failed #{error.message}"
+      end
+
+    unless status.success?
+      if Gem.configuration.really_verbose
+        puts output
+      else
+        results << output
+      end
+
+      exit_reason =
+        if status.exited?
+          ", exit code #{status.exitstatus}"
+        elsif status.signaled?
+          ", uncaught signal #{status.termsig}"
+        end
+
+      raise Gem::InstallError, "cargo metadata failed#{exit_reason}"
+    end
+
+    # cargo metadata output is specified as json, but with the
+    # --format-version 1 option the output is compatible with YAML, so we can
+    # avoid the json dependency
+    metadata = Gem::SafeYAML.safe_load(output)
+    package = metadata["packages"].find {|pkg| normalize_path(pkg["manifest_path"]) == manifest_path }
+    unless package
+      found = metadata["packages"].map {|md| "#{md["name"]} at #{md["manifest_path"]}" }
+      raise Gem::InstallError, <<-EOF
+failed to determine cargo package name
+
+looking for: #{manifest_path}
+
+found:
+#{found.join("\n")}
+EOF
+    end
+    package["name"].tr("-", "_")
   end
 
-  def rustc_dynamic_linker_flags(dest_dir)
+  def normalize_path(path)
+    return path unless File::ALT_SEPARATOR
+
+    path.tr(File::ALT_SEPARATOR, File::SEPARATOR)
+  end
+
+  def rustc_dynamic_linker_flags(dest_dir, crate_name)
     split_flags("DLDFLAGS")
-      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir) }
+      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }
       .compact
-      .flat_map {|arg| ldflag_to_link_modifier(arg, dest_dir) }
+      .flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
 
   def rustc_lib_flags(dest_dir)
-    split_flags("LIBS").flat_map {|arg| ldflag_to_link_modifier(arg, dest_dir) }
+    split_flags("LIBS").flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
 
   def split_flags(var)
     Shellwords.split(RbConfig::CONFIG.fetch(var, ""))
   end
 
-  def ldflag_to_link_modifier(arg, dest_dir)
-    flag = arg[0..1]
-    val = arg[2..-1]
-
-    case flag
-    when "-L" then ["-L", "native=#{val}"]
-    when "-l" then ["-l", val.to_s]
-    when "-F" then ["-l", "framework=#{val}"]
-    else ["-C", "link_arg=#{arg}"]
-    end
-  end
-
-  def link_flag(link_name)
-    # These are provided by the CRT with MSVC
-    # @see https://github.com/rust-lang/pkg-config-rs/blob/49a4ac189aafa365167c72e8e503565a7c2697c2/src/lib.rs#L622
-    return [] if msvc_target? && ["m", "c", "pthread"].include?(link_name)
-
-    if link_name.include?("ruby")
-      # Specify the lib kind and give it the name "ruby" for linking
-      kind = ruby_static? ? "static" : "dylib"
-
-      ["-l", "#{kind}=ruby:#{link_name}"]
-    else
-      ["-l", link_name]
-    end
+  def ldflag_to_link_modifier(arg)
+    LinkFlagConverter.convert(arg)
   end
 
   def msvc_target?
@@ -182,29 +281,33 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     !!Gem::WIN_PATTERNS.find {|r| target_platform =~ r }
   end
 
-  # Intepolate substition vars in the arg (i.e. $(DEFFILE))
-  def maybe_resolve_ldflag_variable(input_arg, dest_dir)
-    str = input_arg.gsub(/\$\((\w+)\)/) do |var_name|
-      case var_name
-      # On windows, it is assumed that mkmf has setup an exports file for the
-      # extension, so we have to to create one ourselves.
-      when "DEFFILE"
-        write_deffile(dest_dir)
-      else
-        RbConfig::CONFIG[var_name]
-      end
-    end.strip
+  # Interpolate substitution vars in the arg (i.e. $(DEFFILE))
+  def maybe_resolve_ldflag_variable(input_arg, dest_dir, crate_name)
+    var_matches = input_arg.match(/\$\((\w+)\)/)
 
-    str == "" ? nil : str
+    return input_arg unless var_matches
+
+    var_name = var_matches[1]
+
+    return input_arg if var_name.nil? || var_name.chomp.empty?
+
+    case var_name
+    # On windows, it is assumed that mkmf has setup an exports file for the
+    # extension, so we have to to create one ourselves.
+    when "DEFFILE"
+      write_deffile(dest_dir, crate_name)
+    else
+      RbConfig::CONFIG[var_name]
+    end
   end
 
-  def write_deffile(dest_dir)
-    deffile_path = File.join(dest_dir, "#{spec.name}-#{RbConfig::CONFIG["arch"]}.def")
+  def write_deffile(dest_dir, crate_name)
+    deffile_path = File.join(dest_dir, "#{crate_name}-#{RbConfig::CONFIG["arch"]}.def")
     export_prefix = makefile_config("EXPORT_PREFIX") || ""
 
     File.open(deffile_path, "w") do |f|
       f.puts "EXPORTS"
-      f.puts "#{export_prefix.strip}Init_#{spec.name}"
+      f.puts "#{export_prefix.strip}Init_#{crate_name}"
     end
 
     deffile_path
@@ -237,47 +340,6 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
     return unless val
 
     RbConfig.expand(val.dup)
-  end
-
-  # Good balance between binary size and debugability
-  def debug_flags
-    ["-C", "debuginfo=1"]
-  end
-
-  # Copied from ExtConfBuilder
-  def finalize_directory(ext_path, dest_path, lib_dir, extension_dir)
-    require "fileutils"
-    require "tempfile"
-
-    begin
-      tmp_dest = Dir.mktmpdir(".gem.", extension_dir)
-
-      # Some versions of `mktmpdir` return absolute paths, which will break make
-      # if the paths contain spaces.
-      #
-      # As such, we convert to a relative path.
-      tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
-
-      full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
-
-      # TODO: remove in RubyGems 4
-      if Gem.install_extension_in_lib && lib_dir
-        FileUtils.mkdir_p lib_dir
-        FileUtils.cp_r ext_path, lib_dir, remove_destination: true
-      end
-
-      FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
-        destent = ent.class.new(dest_path, ent.rel)
-        destent.exist? || FileUtils.mv(ent.path, destent.path)
-      end
-    ensure
-      FileUtils.rm_rf tmp_dest if tmp_dest
-    end
-  end
-
-  def get_relative_path(path, base)
-    path[0..base.length - 1] = "." if path.start_with?(base)
-    path
   end
 
   # Error raised when no cdylib artifact was created

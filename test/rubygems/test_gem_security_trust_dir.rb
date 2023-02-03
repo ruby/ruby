@@ -1,17 +1,17 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
+  warn "Skipping Gem::Security::TrustDir tests.  openssl not found."
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-  CHILD_CERT = load_cert 'child'
+  CHILD_CERT = load_cert "child"
 
   def setup
     super
 
-    @dest_dir = File.join @tempdir, 'trust'
+    @dest_dir = File.join @tempdir, "trust"
 
     @trust_dir = Gem::Security::TrustDir.new @dest_dir
   end
@@ -70,7 +70,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     assert_path_exist @dest_dir
 
     mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end
@@ -91,7 +91,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
     @trust_dir.verify
 
     mask = 040700 & (~File.umask)
-    mask |= 0200000 if /aix/ =~ RUBY_PLATFORM
+    mask |= 0200000 if RUBY_PLATFORM.include?("aix")
 
     assert_equal mask, File.stat(@dest_dir).mode unless win_platform?
   end

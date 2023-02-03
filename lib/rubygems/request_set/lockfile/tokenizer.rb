@@ -1,5 +1,5 @@
-# frozen_string_literal: true
-require_relative 'parser'
+#) frozen_string_literal: true
+require_relative "parser"
 
 class Gem::RequestSet::Lockfile::Tokenizer
   Token = Struct.new :type, :value, :column, :line
@@ -26,7 +26,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   end
 
   def skip(type)
-    @tokens.shift while not @tokens.empty? and peek.type == type
+    @tokens.shift while !@tokens.empty? && peek.type == type
   end
 
   ##
@@ -57,7 +57,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   private
 
   def tokenize(input)
-    require 'strscan'
+    require "strscan"
     s = StringScanner.new input
 
     until s.eos? do

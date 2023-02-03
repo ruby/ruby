@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
+return unless RUBY_PATCHLEVEL < 0
+
 class TestABI < Test::Unit::TestCase
   def test_require_lib_with_incorrect_abi_on_dev_ruby
     omit "ABI is not checked" unless abi_checking_supported?
 
     assert_separately [], <<~RUBY
       err = assert_raise(LoadError) { require "-test-/abi" }
-      assert_match(/ABI version of binary is incompatible with this Ruby/, err.message)
+      assert_match(/incompatible ABI version/, err.message)
+      assert_include err.message, "/-test-/abi."
     RUBY
   end
 
@@ -23,7 +26,8 @@ class TestABI < Test::Unit::TestCase
 
     assert_separately [{ "RUBY_ABI_CHECK" => "1" }], <<~RUBY
       err = assert_raise(LoadError) { require "-test-/abi" }
-      assert_match(/ABI version of binary is incompatible with this Ruby/, err.message)
+      assert_match(/incompatible ABI version/, err.message)
+      assert_include err.message, "/-test-/abi."
     RUBY
   end
 

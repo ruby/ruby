@@ -26,14 +26,14 @@ constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *
         goto str;
     }
     else if (!NIL_P(tmp = rb_check_string_type(arg))) {
-	arg = tmp;
+        arg = tmp;
       str:
         ptr = RSTRING_PTR(arg);
         if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1)
-	    rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);
+            rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);
     }
     else {
-	ret = NUM2INT(arg);
+        ret = NUM2INT(arg);
     }
     return ret;
 }

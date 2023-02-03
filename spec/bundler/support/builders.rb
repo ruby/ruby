@@ -94,8 +94,8 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
+          s.platform = Gem::Platform.local
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Gem::Platform.local}'"
         end
 
         build_gem "platform_specific" do |s|
@@ -110,15 +110,27 @@ module Spec
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mswin32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 MSWIN'"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mswin32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mswin64"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mswin64'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mingw32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mingw32"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw32'"
+        end
+
+        build_gem "platform_specific" do |s|
+          s.platform = "x64-mingw-ucrt"
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw-ucrt'"
         end
 
         build_gem "platform_specific" do |s|
@@ -286,10 +298,6 @@ module Spec
       end
     end
 
-    def build_dep(name, requirements = Gem::Requirement.default, type = :runtime)
-      Bundler::Dependency.new(name, :version => requirements)
-    end
-
     def build_lib(name, *args, &blk)
       build_with(LibBuilder, name, args, &blk)
     end
@@ -444,8 +452,7 @@ module Spec
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"
 
-
-          # exit 1 unless with_config("simple")
+          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
 
           extension_name = "#{name}_c"
           if extra_lib_dir = with_config("ext-lib")
@@ -525,7 +532,7 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
-        default_branch = options[:default_branch] || "master"
+        default_branch = options[:default_branch] || "main"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))

@@ -170,7 +170,7 @@ Tue Dec 22 14:31:28 2015  Toru Iwase  <tietew@tietew.net>
 	  should return unfrozen new string.
 	  [ruby-core:72426] [Bug #11858]
 
-Tue Dec 22 05:39:58 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 22 05:39:58 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* ext/cgi/escape/escape.c (preserve_original_state): Preserve
 	  original state for tainted and frozen.  [Fix GH-1166]
@@ -208,7 +208,7 @@ Mon Dec 21 09:33:17 2015  Karol Bucek  <kares@users.noreply.github.com>
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket): fix
 	  NotImplementedError typo.  [Fix GH-1165]
 
-Sun Dec 20 20:54:51 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Sun Dec 20 20:54:51 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* cgi/escape/escape.c: Optimize CGI.escapeHTML for
 	  ASCII-compatible encodings.  [Fix GH-1164]
@@ -476,7 +476,7 @@ Tue Dec 15 17:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  to the correct one in the IANA registry (IBM037)
 	  and added an alias (ebcdic-cp-us)
 
-Tue Dec 15 16:19:26 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 15 16:19:26 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* lib/erb.rb: Render erb with array buffer for function call optimization.
 	  [fix GH-1143]
@@ -488,7 +488,7 @@ Tue Dec 15 13:50:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_oct): [DOC] mention radix indicators.
 	  [ruby-core:71310] [Bug #11648]
 
-Tue Dec 15 12:20:30 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+Tue Dec 15 12:20:30 2015  Takashi Kokubun  <k0kubun@ruby-lang.org>
 
 	* lib/erb.rb: Simplify regexp to optimize erb scanner.
 	  [fix GH-1144]
@@ -2670,7 +2670,7 @@ Sat Nov  7 09:51:38 2015  Koichi Sasada  <ko1@atdot.net>
 	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
 	  maintain trace_running counter on internal events.
 
-	  This patch is made by Takashi Kokubun <takashikkbn@gmail.com>.
+	  This patch is made by Takashi Kokubun <k0kubun@ruby-lang.org>.
 	  [Bug #11603] https://github.com/ruby/ruby/pull/1059
 
 Sat Nov  7 03:32:27 2015  Koichi Sasada  <ko1@atdot.net>

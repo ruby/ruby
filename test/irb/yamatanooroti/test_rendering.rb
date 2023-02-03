@@ -216,7 +216,28 @@ begin
       EOC
     end
 
-    private def write_irbrc(content)
+    def test_assignment_expression_truncate
+      write_irbrc <<~'LINES'
+        puts 'start IRB'
+      LINES
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      # Assignment expression code that turns into non-assignment expression after evaluation
+      code = "a /'/i if false; a=1; x=1000.times.to_a#'.size"
+      write(code + "\n")
+      close
+      assert_screen(<<~EOC)
+        start IRB
+        irb(main):001:0> #{code}
+        =>
+        [0,
+        ...
+        irb(main):002:0>
+      EOC
+    end
+
+    private
+
+    def write_irbrc(content)
       File.open(@irbrc_file, 'w') do |f|
         f.write content
       end

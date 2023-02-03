@@ -60,6 +60,8 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert_not_equal s1.fileno, r.fileno
       r.close
     end
+  rescue NotImplementedError => error
+    omit error.message
   end
 
   def test_fd_passing_n
@@ -334,62 +336,70 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_noname_path
-    s1, s2 = UNIXSocket.pair
-    assert_equal("", s1.path)
-    assert_equal("", s2.path)
-  ensure
-    s1.close
-    s2.close
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "unnamed pipe is emulated on windows"
+    end
+
+    UNIXSocket.pair do |s1, s2|
+      assert_equal("", s1.path)
+      assert_equal("", s2.path)
+    end
   end
 
   def test_noname_addr
-    s1, s2 = UNIXSocket.pair
-    assert_equal(["AF_UNIX", ""], s1.addr)
-    assert_equal(["AF_UNIX", ""], s2.addr)
-  ensure
-    s1.close
-    s2.close
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "unnamed pipe is emulated on windows"
+    end
+
+    UNIXSocket.pair do |s1, s2|
+      assert_equal(["AF_UNIX", ""], s1.addr)
+      assert_equal(["AF_UNIX", ""], s2.addr)
+    end
   end
 
   def test_noname_peeraddr
-    s1, s2 = UNIXSocket.pair
-    assert_equal(["AF_UNIX", ""], s1.peeraddr)
-    assert_equal(["AF_UNIX", ""], s2.peeraddr)
-  ensure
-    s1.close
-    s2.close
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "unnamed pipe is emulated on windows"
+    end
+
+    UNIXSocket.pair do |s1, s2|
+      assert_equal(["AF_UNIX", ""], s1.peeraddr)
+      assert_equal(["AF_UNIX", ""], s2.peeraddr)
+    end
   end
 
   def test_noname_unpack_sockaddr_un
-    s1, s2 = UNIXSocket.pair
-    n = nil
-    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
-    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
-    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getsockname) != ""
-    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getpeername) != ""
-    assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getpeername) != ""
-  ensure
-    s1.close
-    s2.close
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "unnamed pipe is emulated on windows"
+    end
+
+    UNIXSocket.pair do |s1, s2|
+      n = nil
+      assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
+      assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getsockname) != ""
+      assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getsockname) != ""
+      assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s1.getpeername) != ""
+      assert_equal("", Socket.unpack_sockaddr_un(n)) if (n = s2.getpeername) != ""
+    end
   end
 
   def test_noname_recvfrom
-    s1, s2 = UNIXSocket.pair
-    s2.write("a")
-    assert_equal(["a", ["AF_UNIX", ""]], s1.recvfrom(10))
-  ensure
-    s1.close
-    s2.close
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "unnamed pipe is emulated on windows"
+    end
+
+    UNIXSocket.pair do |s1, s2|
+      s2.write("a")
+      assert_equal(["a", ["AF_UNIX", ""]], s1.recvfrom(10))
+    end
   end
 
   def test_noname_recv_nonblock
-    s1, s2 = UNIXSocket.pair
-    s2.write("a")
-    IO.select [s1]
-    assert_equal("a", s1.recv_nonblock(10))
-  ensure
-    s1.close
-    s2.close
+    UNIXSocket.pair do |s1, s2|
+      s2.write("a")
+      IO.select [s1]
+      assert_equal("a", s1.recv_nonblock(10))
+    end
   end
 
   def test_too_long_path
@@ -429,12 +439,18 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     rv = s1.recv(100, 0, buf)
     assert_equal buf.object_id, rv.object_id
     assert_equal "BBBBBB", rv
+  rescue Errno::EPROTOTYPE => error
+    omit error.message
   ensure
     s1.close if s1
     s2.close if s2
   end
 
   def test_dgram_pair_sendrecvmsg_errno_set
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit("AF_UNIX + SOCK_DGRAM is not supported on windows")
+    end
+
     s1, s2 = to_close = UNIXSocket.pair(Socket::SOCK_DGRAM)
     pipe = IO.pipe
     to_close.concat(pipe)
@@ -457,9 +473,17 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_epipe # [ruby-dev:34619]
+    # This is a good example of why reporting the exact `errno` is a terrible
+    # idea for platform abstractions.
+    if RUBY_PLATFORM =~ /mswin|mingw/
+      error = Errno::ESHUTDOWN
+    else
+      error = Errno::EPIPE
+    end
+
     UNIXSocket.pair {|s1, s2|
       s1.shutdown(Socket::SHUT_WR)
-      assert_raise(Errno::EPIPE) { s1.write "a" }
+      assert_raise(error) { s1.write "a" }
       assert_equal(nil, s2.read(1))
       s2.write "a"
       assert_equal("a", s1.read(1))
@@ -491,6 +515,45 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       assert(s1.close_on_exec?)
       assert(s2.close_on_exec?)
     }
+  end
+
+  if /mingw|mswin/ =~ RUBY_PLATFORM
+
+    def test_unix_socket_with_encoding
+      Dir.mktmpdir do |tmpdir|
+        path = "#{tmpdir}/sockäöü".encode("cp850")
+        UNIXServer.open(path) do |serv|
+          assert File.socket?(path)
+          assert File.stat(path).socket?
+          assert File.lstat(path).socket?
+          assert_equal path.encode("utf-8"), serv.path
+          UNIXSocket.open(path) do |s1|
+            s2 = serv.accept
+            s2.close
+          end
+        end
+      end
+    end
+
+    def test_windows_unix_socket_pair_with_umlaut
+      otmp = ENV['TMP']
+      ENV['TMP'] = File.join(Dir.tmpdir, "äöü€")
+      FileUtils.mkdir_p ENV['TMP']
+
+      s1, = UNIXSocket.pair
+      assert !s1.path.empty?
+      assert !File.exist?(s1.path)
+    ensure
+      FileUtils.rm_rf ENV['TMP']
+      ENV['TMP'] = otmp
+    end
+
+    def test_windows_unix_socket_pair_paths
+      s1, s2 = UNIXSocket.pair
+      assert !s1.path.empty?
+      assert s2.path.empty?
+      assert !File.exist?(s1.path)
+    end
   end
 
   def test_initialize

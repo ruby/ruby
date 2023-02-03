@@ -65,11 +65,11 @@ rb_encoding* rb_nkf_enc_get(const char *name)
 {
     int idx = rb_enc_find_index(name);
     if (idx < 0) {
-	nkf_encoding *nkf_enc = nkf_enc_find(name);
-	idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
-	if (idx < 0) {
-	    idx = rb_define_dummy_encoding(name);
-	}
+        nkf_encoding *nkf_enc = nkf_enc_find(name);
+        idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
+        if (idx < 0) {
+            idx = rb_define_dummy_encoding(name);
+        }
     }
     return rb_enc_from_index(idx);
 }
@@ -83,40 +83,40 @@ int nkf_split_options(const char *arg)
     int is_single_quoted = FALSE;
     int is_double_quoted = FALSE;
     for(i = 0; arg[i]; i++){
-	if(j == 255){
-	    return -1;
-	}else if(is_single_quoted){
-	    if(arg[i] == '\''){
-		is_single_quoted = FALSE;
-	    }else{
-		option[j++] = arg[i];
-	    }
-	}else if(is_escaped){
-	    is_escaped = FALSE;
-	    option[j++] = arg[i];
-	}else if(arg[i] == '\\'){
-	    is_escaped = TRUE;
-	}else if(is_double_quoted){
-	    if(arg[i] == '"'){
-		is_double_quoted = FALSE;
-	    }else{
-		option[j++] = arg[i];
-	    }
-	}else if(arg[i] == '\''){
-	    is_single_quoted = TRUE;
-	}else if(arg[i] == '"'){
-	    is_double_quoted = TRUE;
-	}else if(arg[i] == ' '){
-	    option[j] = '\0';
-	    options(option);
-	    j = 0;
-	}else{
-	    option[j++] = arg[i];
-	}
+        if(j == 255){
+            return -1;
+        }else if(is_single_quoted){
+            if(arg[i] == '\''){
+                is_single_quoted = FALSE;
+            }else{
+                option[j++] = arg[i];
+            }
+        }else if(is_escaped){
+            is_escaped = FALSE;
+            option[j++] = arg[i];
+        }else if(arg[i] == '\\'){
+            is_escaped = TRUE;
+        }else if(is_double_quoted){
+            if(arg[i] == '"'){
+                is_double_quoted = FALSE;
+            }else{
+                option[j++] = arg[i];
+            }
+        }else if(arg[i] == '\''){
+            is_single_quoted = TRUE;
+        }else if(arg[i] == '"'){
+            is_double_quoted = TRUE;
+        }else if(arg[i] == ' '){
+            option[j] = '\0';
+            options(option);
+            j = 0;
+        }else{
+            option[j++] = arg[i];
+        }
     }
     if(j){
-	option[j] = '\0';
-	options(option);
+        option[j] = '\0';
+        options(option);
     }
     return count;
 }
@@ -170,9 +170,9 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     rb_str_set_len(tmp, output_ctr);
 
     if (mimeout_f)
-	rb_enc_associate(tmp, rb_usascii_encoding());
+        rb_enc_associate(tmp, rb_usascii_encoding());
     else
-	rb_enc_associate(tmp, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+        rb_enc_associate(tmp, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
 
     return tmp;
 }

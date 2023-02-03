@@ -82,6 +82,7 @@ module DirSpecs
 
         special/test{1}/file[1]
         special/{}/special
+        special/test\ +()[]{}/hello_world.erb
       ]
 
       platform_is_not :windows do

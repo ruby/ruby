@@ -46,4 +46,26 @@ describe "String#rpartition with String" do
     ->{ "hello".rpartition(5) }.should raise_error(TypeError)
     ->{ "hello".rpartition(nil) }.should raise_error(TypeError)
   end
+
+  it "handles a pattern in a superset encoding" do
+    string = "hello".force_encoding(Encoding::US_ASCII)
+
+    result = string.rpartition("é")
+
+    result.should == ["", "", "hello"]
+    result[0].encoding.should == Encoding::US_ASCII
+    result[1].encoding.should == Encoding::US_ASCII
+    result[2].encoding.should == Encoding::US_ASCII
+  end
+
+  it "handles a pattern in a subset encoding" do
+    pattern = "o".force_encoding(Encoding::US_ASCII)
+
+    result = "héllo world".rpartition(pattern)
+
+    result.should == ["héllo w", "o", "rld"]
+    result[0].encoding.should == Encoding::UTF_8
+    result[1].encoding.should == Encoding::US_ASCII
+    result[2].encoding.should == Encoding::UTF_8
+  end
 end

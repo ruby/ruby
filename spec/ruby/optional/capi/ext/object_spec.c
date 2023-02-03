@@ -301,6 +301,13 @@ static VALUE so_is_rb_type_p_data(VALUE self, VALUE obj) {
   return Qfalse;
 }
 
+static VALUE so_is_rb_type_p_file(VALUE self, VALUE obj) {
+  if(rb_type_p(obj, T_FILE)) {
+    return Qtrue;
+  }
+  return Qfalse;
+}
+
 static VALUE so_is_builtin_type_object(VALUE self, VALUE obj) {
   if(BUILTIN_TYPE(obj) == T_OBJECT) {
     return Qtrue;
@@ -384,6 +391,18 @@ static VALUE object_spec_rb_equal(VALUE self, VALUE a, VALUE b) {
 
 static VALUE object_spec_rb_class_inherited_p(VALUE self, VALUE mod, VALUE arg) {
   return rb_class_inherited_p(mod, arg);
+}
+
+static int foreach_f(ID key, VALUE val, VALUE ary) {
+  rb_ary_push(ary, ID2SYM(key));
+  rb_ary_push(ary, val);
+  return ST_CONTINUE;
+}
+
+static VALUE object_spec_rb_ivar_foreach(VALUE self, VALUE obj) {
+  VALUE ary = rb_ary_new();
+  rb_ivar_foreach(obj, foreach_f, ary);
+  return ary;
 }
 
 static VALUE speced_allocator(VALUE klass) {
@@ -478,6 +497,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_is_rb_type_p_module", so_is_rb_type_p_module, 1);
   rb_define_method(cls, "rb_is_rb_type_p_class", so_is_rb_type_p_class, 1);
   rb_define_method(cls, "rb_is_rb_type_p_data", so_is_rb_type_p_data, 1);
+  rb_define_method(cls, "rb_is_rb_type_p_file", so_is_rb_type_p_file, 1);
   rb_define_method(cls, "rb_is_builtin_type_object", so_is_builtin_type_object, 1);
   rb_define_method(cls, "rb_is_builtin_type_array", so_is_builtin_type_array, 1);
   rb_define_method(cls, "rb_is_builtin_type_module", so_is_builtin_type_module, 1);
@@ -500,6 +520,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "speced_allocator?", speced_allocator_p, 1);
   rb_define_method(cls, "custom_alloc_func?", custom_alloc_func_p, 1);
   rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
+  rb_define_method(cls, "rb_ivar_foreach", object_spec_rb_ivar_foreach, 1);
 }
 
 #ifdef __cplusplus

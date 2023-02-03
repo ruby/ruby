@@ -90,6 +90,7 @@ module DRbBase
   end
 
   def teardown
+    return if @omitted
     @ext.stop_service if defined?(@ext) && @ext
     if defined?(@service_name) && @service_name
       @drb_service.manager.unregist(@service_name)
@@ -216,6 +217,7 @@ module DRbCore
   def test_06_timeout
     omit if RUBY_PLATFORM.include?("armv7l-linux")
     omit if RUBY_PLATFORM.include?("sparc-solaris2.10")
+    omit if RUBY_PLATFORM.include?("freebsd")
     omit if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # expecting a certain delay is difficult for --jit-wait CI
     Timeout.timeout(60) do
       ten = Onecky.new(10)

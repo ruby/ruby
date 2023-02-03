@@ -372,12 +372,20 @@ class RDoc::Parser::C < RDoc::Parser
         next
       end
 
+      var_name = $~[:var_name]
       type = $~[:module] ? :module : :class
       class_name = $~[:class_name]
       parent_name = $~[:parent_name] || $~[:path]
       under = $~[:under]
+      attributes = $~[:attributes]
 
-      handle_class_module($~[:var_name], type, class_name, parent_name, under)
+      handle_class_module(var_name, type, class_name, parent_name, under)
+      if attributes and !parent_name # rb_struct_define *not* without_accessor
+        true_flag = 'Qtrue'
+        attributes.scan(/"\K\w+(?=")/) do |attr_name|
+          handle_attr var_name, attr_name, true_flag, true_flag
+        end
+      end
     end
   end
 
@@ -720,7 +728,7 @@ class RDoc::Parser::C < RDoc::Parser
         ((?>/\*.*?\*/\s+))
         (static\s+)?
         void\s+
-        Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xmi then
+        Init(?:VM)?_(?i:#{class_name})\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xm then
       comment = $1.sub(%r%Document-(?:class|module):\s+#{class_name}%, '')
     elsif @content =~ %r%Document-(?:class|module):\s+#{class_name}\s*?
                          (?:<\s+[:,\w]+)?\n((?>.*?\*/))%xm then
@@ -1047,23 +1055,6 @@ class RDoc::Parser::C < RDoc::Parser
 
     @known_classes[sclass_var]     = class_name
     @singleton_classes[sclass_var] = class_name
-  end
-
-  ##
-  # Normalizes tabs in +body+
-
-  def handle_tab_width(body)
-    if /\t/ =~ body
-      tab_width = @options.tab_width
-      body.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) do
-          ' ' * (tab_width * $&.length - $`.length % tab_width)
-        end && $~
-        line
-      end.join "\n"
-    else
-      body
-    end
   end
 
   ##

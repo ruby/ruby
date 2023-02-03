@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 class ERB
-  VERSION = '2.2.3'
+  VERSION = '4.0.2'
   private_constant :VERSION
 end

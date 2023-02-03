@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverIndexSet < Gem::TestCase
   def setup
@@ -17,7 +17,7 @@ class TestGemResolverIndexSet < Gem::TestCase
   end
 
   def test_initialize_source
-    set = @DR::IndexSet.new 'http://alternate.example'
+    set = @DR::IndexSet.new "http://alternate.example"
 
     fetcher = set.instance_variable_get :@f
 
@@ -28,14 +28,14 @@ class TestGemResolverIndexSet < Gem::TestCase
 
   def test_find_all
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'b', 1
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "b", 1
     end
 
     set = @DR::IndexSet.new
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = @DR::DependencyRequest.new dependency, nil
 
@@ -46,15 +46,15 @@ class TestGemResolverIndexSet < Gem::TestCase
 
   def test_find_all_local
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'b', 1
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "b", 1
     end
 
     set = @DR::IndexSet.new
     set.remote = false
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = @DR::DependencyRequest.new dependency, nil
 
@@ -63,12 +63,12 @@ class TestGemResolverIndexSet < Gem::TestCase
 
   def test_find_all_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', '1.a'
+      fetcher.spec "a", "1.a"
     end
 
     set = @DR::IndexSet.new
 
-    dependency = dep 'a'
+    dependency = dep "a"
 
     req = @DR::DependencyRequest.new dependency, nil
 

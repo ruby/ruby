@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "internal/missing.h"
 #if defined HAVE_DLADDR
 #include <dlfcn.h>
 #endif
@@ -23,23 +24,23 @@ stub_options(int argc, char **argv)
      * use argv[0] as is */
 #elif defined __linux__
     {
-	char selfexe[MAXPATHLEN];
-	ssize_t len = readlink("/proc/self/exe", selfexe, sizeof(selfexe));
-	if (len < 0) {
-	    perror("readlink(\"/proc/self/exe\")");
-	    return NULL;
-	}
-	selfexe[len] = '\0';
-	cmd = selfexe;
+        char selfexe[MAXPATHLEN];
+        ssize_t len = readlink("/proc/self/exe", selfexe, sizeof(selfexe));
+        if (len < 0) {
+            perror("readlink(\"/proc/self/exe\")");
+            return NULL;
+        }
+        selfexe[len] = '\0';
+        cmd = selfexe;
     }
 #elif defined HAVE_DLADDR
     {
-	Dl_info dli;
-	if (!dladdr(stub_options, &dli)) {
-	    perror("dladdr");
-	    return NULL;
-	}
-	cmd = (char *)dli.dli_fname;
+        Dl_info dli;
+        if (!dladdr(stub_options, &dli)) {
+            perror("dladdr");
+            return NULL;
+        }
+        cmd = (char *)dli.dli_fname;
     }
 #endif
 

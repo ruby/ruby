@@ -7,6 +7,7 @@ class Reline::ANSI
   CAPNAME_KEY_BINDINGS = {
     'khome' => :ed_move_to_beg,
     'kend'  => :ed_move_to_end,
+    'kdch1' => :key_delete,
     'kcuu1' => :ed_prev_history,
     'kcud1' => :ed_next_history,
     'kcuf1' => :ed_next_char,
@@ -29,8 +30,8 @@ class Reline::ANSI
     false
   end
 
-  def self.set_default_key_bindings(config)
-    if Reline::Terminfo.enabled?
+  def self.set_default_key_bindings(config, allow_terminfo: true)
+    if allow_terminfo && Reline::Terminfo.enabled?
       set_default_key_bindings_terminfo(config)
     else
       set_default_key_bindings_comprehensive_list(config)
@@ -150,7 +151,7 @@ class Reline::ANSI
     until c = @@input.raw(intr: true) { @@input.wait_readable(0.1) && @@input.getbyte }
       Reline.core.line_editor.resize
     end
-    (c == 0x16 && @@input.raw(min: 0, tim: 0, &:getbyte)) || c
+    (c == 0x16 && @@input.raw(min: 0, time: 0, &:getbyte)) || c
   rescue Errno::EIO
     # Maybe the I/O has been closed.
     nil

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../query_utils'
-require_relative '../deprecate'
+require_relative "../command"
+require_relative "../query_utils"
+require_relative "../deprecate"
 
 class Gem::Commands::QueryCommand < Gem::Command
   extend Gem::Deprecate
@@ -17,15 +17,15 @@ class Gem::Commands::QueryCommand < Gem::Command
     alert_warning message unless Gem::Deprecate.skip
   end
 
-  def initialize(name = 'query',
-                 summary = 'Query gem information in local or remote repositories')
+  def initialize(name = "query",
+                 summary = "Query gem information in local or remote repositories")
     super name, summary,
          :domain => :local, :details => false, :versions => true,
          :installed => nil, :version => Gem::Requirement.default
 
-    add_option('-n', '--name-matches REGEXP',
-               'Name of gem(s) to query on matches the',
-               'provided REGEXP') do |value, options|
+    add_option("-n", "--name-matches REGEXP",
+               "Name of gem(s) to query on matches the",
+               "provided REGEXP") do |value, options|
       options[:name] = /#{value}/i
     end
 

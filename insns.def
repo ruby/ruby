@@ -109,14 +109,14 @@ getblockparam
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
 
     if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-	val = rb_vm_bh_to_procval(ec, VM_ENV_BLOCK_HANDLER(ep));
-	vm_env_write(ep, -(int)idx, val);
-	VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+        val = rb_vm_bh_to_procval(ec, VM_ENV_BLOCK_HANDLER(ep));
+        vm_env_write(ep, -(int)idx, val);
+        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
     }
     else {
-	val = *(ep - idx);
-	RB_DEBUG_COUNTER_INC(lvar_get);
-	(void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
+        val = *(ep - idx);
+        RB_DEBUG_COUNTER_INC(lvar_get);
+        (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
     }
 }
 
@@ -150,35 +150,35 @@ getblockparamproxy
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
 
     if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
+        VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
-	if (block_handler) {
-	    switch (vm_block_handler_type(block_handler)) {
-	      case block_handler_type_iseq:
-	      case block_handler_type_ifunc:
-		val = rb_block_param_proxy;
-		break;
-	      case block_handler_type_symbol:
-		val = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
-		goto INSN_LABEL(set);
-	      case block_handler_type_proc:
-		val = VM_BH_TO_PROC(block_handler);
-		goto INSN_LABEL(set);
-	      default:
-		VM_UNREACHABLE(getblockparamproxy);
-	    }
-	}
-	else {
-	    val = Qnil;
-	  INSN_LABEL(set):
-	    vm_env_write(ep, -(int)idx, val);
-	    VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
-	}
+        if (block_handler) {
+            switch (vm_block_handler_type(block_handler)) {
+              case block_handler_type_iseq:
+              case block_handler_type_ifunc:
+                val = rb_block_param_proxy;
+                break;
+              case block_handler_type_symbol:
+                val = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
+                goto INSN_LABEL(set);
+              case block_handler_type_proc:
+                val = VM_BH_TO_PROC(block_handler);
+                goto INSN_LABEL(set);
+              default:
+                VM_UNREACHABLE(getblockparamproxy);
+            }
+        }
+        else {
+            val = Qnil;
+          INSN_LABEL(set):
+            vm_env_write(ep, -(int)idx, val);
+            VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+        }
     }
     else {
-	val = *(ep - idx);
-	RB_DEBUG_COUNTER_INC(lvar_get);
-	(void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
+        val = *(ep - idx);
+        RB_DEBUG_COUNTER_INC(lvar_get);
+        (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
     }
 }
 
@@ -251,6 +251,29 @@ setclassvariable
 {
     vm_ensure_not_refinement_module(GET_SELF());
     vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
+}
+
+DEFINE_INSN
+opt_getconstant_path
+(IC ic)
+()
+(VALUE val)
+// attr bool leaf = false; /* may autoload or raise */
+{
+    const ID *segments = ic->segments;
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+    } else {
+        ruby_vm_constant_cache_misses++;
+        val = vm_get_ev_const_chain(ec, segments);
+        vm_ic_track_const_chain(GET_CFP(), ic, segments);
+        // Because leaf=false, we need to undo the PC increment to get the address to this instruction
+        // INSN_ATTR(width) == 2
+        vm_ic_update(GET_ISEQ(), ic, val, GET_EP(), GET_PC() - 2);
+    }
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -597,6 +620,25 @@ swap
     /* none */
 }
 
+/* reverse stack top N order. */
+DEFINE_INSN
+opt_reverse
+(rb_num_t n)
+(...)
+(...)
+// attr rb_snum_t sp_inc = 0;
+{
+    rb_num_t i;
+    VALUE *sp = STACK_ADDR_FROM_TOP(n);
+
+    for (i=0; i<n/2; i++) {
+	VALUE v0 = sp[i];
+	VALUE v1 = TOPN(i);
+	sp[i] = v1;
+	TOPN(i) = v0;
+    }
+}
+
 /* for stack caching. */
 DEFINE_INSN_IF(STACK_CACHING)
 reput
@@ -655,7 +697,7 @@ defined
 {
     val = Qnil;
     if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
-      val = pushval;
+        val = pushval;
     }
 }
 
@@ -715,8 +757,8 @@ defineclass
 
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
-		  GET_BLOCK_HANDLER(),
-		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
+                  GET_BLOCK_HANDLER(),
+                  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
                   ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
                   ISEQ_BODY(class_iseq)->local_table_size,
                   ISEQ_BODY(class_iseq)->stack_max);
@@ -920,19 +962,19 @@ leave
         const VALUE *const bp = vm_base_ptr(GET_CFP());
         if (GET_SP() != bp) {
             vm_stack_consistency_error(ec, GET_CFP(), bp);
-	}
+        }
     }
 
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
-	rb_ec_thread_ptr(ec)->retval = val;
-	return 0;
+        rb_ec_thread_ptr(ec)->retval = val;
+        return 0;
 #else
-	return val;
+        return val;
 #endif
     }
     else {
-	RESTORE_REGS();
+        RESTORE_REGS();
     }
 }
 
@@ -981,8 +1023,8 @@ branchif
 // attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (RTEST(val)) {
-	RUBY_VM_CHECK_INTS(ec);
-	JUMP(dst);
+        RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
     }
 }
 
@@ -996,8 +1038,8 @@ branchunless
 // attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (!RTEST(val)) {
-	RUBY_VM_CHECK_INTS(ec);
-	JUMP(dst);
+        RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
     }
 }
 
@@ -1011,54 +1053,14 @@ branchnil
 // attr bool leaf = leafness_of_check_ints; /* has rb_threadptr_execute_interrupts() */
 {
     if (NIL_P(val)) {
-	RUBY_VM_CHECK_INTS(ec);
-	JUMP(dst);
+        RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
     }
 }
 
 /**********************************************************/
 /* for optimize                                           */
 /**********************************************************/
-
-/* push inline-cached value and go to dst if it is valid */
-DEFINE_INSN
-opt_getinlinecache
-(OFFSET dst, IC ic)
-()
-(VALUE val)
-{
-    struct iseq_inline_constant_cache_entry *ice = ic->entry;
-
-    // If there isn't an entry, then we're going to walk through the ISEQ
-    // starting at this instruction until we get to the associated
-    // opt_setinlinecache and associate this inline cache with every getconstant
-    // listed in between. We're doing this here instead of when the instructions
-    // are first compiled because it's possible to turn off inline caches and we
-    // want this to work in either case.
-    if (!ice) {
-        vm_ic_compile(GET_CFP(), ic);
-    }
-
-    if (ice && vm_ic_hit_p(ice, GET_EP())) {
-        val = ice->value;
-        JUMP(dst);
-    }
-    else {
-        ruby_vm_constant_cache_misses++;
-        val = Qnil;
-    }
-}
-
-/* set inline cache */
-DEFINE_INSN
-opt_setinlinecache
-(IC ic)
-(VALUE val)
-(VALUE val)
-// attr bool leaf = false;
-{
-    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
-}
 
 /* run iseq only once */
 DEFINE_INSN
@@ -1081,7 +1083,7 @@ opt_case_dispatch
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
     if (dst) {
-	JUMP(dst);
+        JUMP(dst);
     }
 }
 
@@ -1340,12 +1342,12 @@ opt_aset_with
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
     if (tmp != Qundef) {
-	val = tmp;
+        val = tmp;
     }
     else {
 #ifndef MJIT_HEADER
-	TOPN(0) = rb_str_resurrect(key);
-	PUSH(val);
+        TOPN(0) = rb_str_resurrect(key);
+        PUSH(val);
 #endif
         CALL_SIMPLE_METHOD();
     }
@@ -1364,7 +1366,7 @@ opt_aref_with
 
     if (val == Qundef) {
 #ifndef MJIT_HEADER
-	PUSH(rb_str_resurrect(key));
+        PUSH(rb_str_resurrect(key));
 #endif
         CALL_SIMPLE_METHOD();
     }
@@ -1467,9 +1469,9 @@ opt_call_c_function
     reg_cfp = (funcptr)(ec, reg_cfp);
 
     if (reg_cfp == 0) {
-	VALUE err = ec->errinfo;
-	ec->errinfo = Qnil;
-	THROW_EXCEPTION(err);
+        VALUE err = ec->errinfo;
+        ec->errinfo = Qnil;
+        THROW_EXCEPTION(err);
     }
 
     RESTORE_REGS();

@@ -93,7 +93,7 @@ class Gem::Resolver::Specification
   # specification.
 
   def install(options = {})
-    require_relative '../installer'
+    require_relative "../installer"
 
     gem = download options
 

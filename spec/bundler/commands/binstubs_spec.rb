@@ -188,7 +188,7 @@ RSpec.describe "bundle binstubs <gem>" do
             lockfile lockfile.gsub(/BUNDLED WITH\n   .*$/m, "BUNDLED WITH\n   2.3.0")
           end
 
-          it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev" do
+          it "installs and runs the exact version of bundler", :rubygems => ">= 3.3.0.dev", :realworld => true do
             sys_exec "bin/bundle install --verbose", :artifice => "vcr"
             expect(exitstatus).not_to eq(42)
             expect(out).to include("Bundler 2.999.999 is running, but your lockfile was generated with 2.3.0. Installing Bundler 2.3.0 and restarting using that version.")
@@ -224,7 +224,7 @@ RSpec.describe "bundle binstubs <gem>" do
       context "when update --bundler is called" do
         before { lockfile.gsub(system_bundler_version, "1.1.1") }
 
-        it "calls through to the latest bundler version" do
+        it "calls through to the latest bundler version", :realworld do
           sys_exec "bin/bundle update --bundler", :env => { "DEBUG" => "1" }
           using_bundler_line = /Using bundler ([\w\.]+)\n/.match(out)
           expect(using_bundler_line).to_not be_nil
@@ -369,6 +369,7 @@ RSpec.describe "bundle binstubs <gem>" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
+        gem "rails"
       G
     end
 
@@ -394,6 +395,26 @@ RSpec.describe "bundle binstubs <gem>" do
         bundle "binstubs rack --standalone --all-platforms"
         expect(bundled_app("bin/rackup")).to exist
         expect(bundled_app("bin/rackup.cmd")).to exist
+      end
+    end
+
+    context "when the gem is bundler" do
+      it "warns without generating a standalone binstub" do
+        bundle "binstubs bundler --standalone"
+        expect(bundled_app("bin/bundle")).not_to exist
+        expect(bundled_app("bin/bundler")).not_to exist
+        expect(err).to include("Sorry, Bundler can only be run via RubyGems.")
+      end
+    end
+
+    context "when specified --all option" do
+      it "generates standalone binstubs for all gems except bundler" do
+        bundle "binstubs --standalone --all"
+        expect(bundled_app("bin/rackup")).to exist
+        expect(bundled_app("bin/rails")).to exist
+        expect(bundled_app("bin/bundle")).not_to exist
+        expect(bundled_app("bin/bundler")).not_to exist
+        expect(err).not_to include("Sorry, Bundler can only be run via RubyGems.")
       end
     end
   end

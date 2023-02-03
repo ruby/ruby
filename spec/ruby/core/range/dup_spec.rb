@@ -2,10 +2,12 @@ require_relative '../../spec_helper'
 
 describe "Range#dup" do
   it "duplicates the range" do
-    copy = (1..3).dup
+    original = (1..3)
+    copy = original.dup
     copy.begin.should == 1
     copy.end.should == 3
     copy.should_not.exclude_end?
+    copy.should_not.equal?(original)
 
     copy = ("a"..."z").dup
     copy.begin.should == "a"

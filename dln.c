@@ -41,6 +41,10 @@ static void dln_loaderror(const char *format, ...);
 # include <strings.h>
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #ifndef xmalloc
 void *xmalloc();
 void *xcalloc();
@@ -58,7 +62,7 @@ void *xrealloc();
 #include <sys/stat.h>
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+# define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -110,8 +114,8 @@ init_funcname_len(const char **file)
 
     /* Load the file as an object one */
     for (base = p; *p; p++) { /* Find position of last '/' */
-	if (*p == '.' && !dot) dot = p;
-	if (isdirsep(*p)) base = p+1, dot = NULL;
+        if (*p == '.' && !dot) dot = p;
+        if (isdirsep(*p)) base = p+1, dot = NULL;
     }
     *file = base;
     /* Delete suffix if it exists */
@@ -126,7 +130,7 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
     const size_t plen = sizeof(funcname_prefix);\
     char *const tmp = ALLOCA_N(char, plen+flen+1);\
     if (!tmp) {\
-	dln_memerror();\
+        dln_memerror();\
     }\
     memcpy(tmp, funcname_prefix, plen);\
     memcpy(tmp+plen, base, flen);\
@@ -170,14 +174,14 @@ dln_strerror(char *message, size_t size)
     size_t len = snprintf(message, size, "%d: ", error);
 
 #define format_message(sublang) FormatMessage(\
-	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
-	NULL, error, MAKELANGID(LANG_NEUTRAL, (sublang)),		\
-	message + len, size - len, NULL)
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
+        NULL, error, MAKELANGID(LANG_NEUTRAL, (sublang)),		\
+        message + len, size - len, NULL)
     if (format_message(SUBLANG_ENGLISH_US) == 0)
-	format_message(SUBLANG_DEFAULT);
+        format_message(SUBLANG_DEFAULT);
     for (p = message + len; *p; p++) {
-	if (*p == '\n' || *p == '\r')
-	    *p = ' ';
+        if (*p == '\n' || *p == '\r')
+            *p = ' ';
     }
     return message;
 }
@@ -200,18 +204,18 @@ aix_loaderror(const char *pathname)
     snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
     if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
-	ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
-	ERRBUF_APPEND("/usr/sbin/execerror ruby ");
-	for (i=0; message[i]; i++) {
-	    ERRBUF_APPEND("\"");
-	    ERRBUF_APPEND(message[i]);
-	    ERRBUF_APPEND("\" ");
-	}
-	ERRBUF_APPEND("\n");
+        ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
+        ERRBUF_APPEND("/usr/sbin/execerror ruby ");
+        for (i=0; message[i]; i++) {
+            ERRBUF_APPEND("\"");
+            ERRBUF_APPEND(message[i]);
+            ERRBUF_APPEND("\" ");
+        }
+        ERRBUF_APPEND("\n");
     }
     else {
-	ERRBUF_APPEND(strerror(errno));
-	ERRBUF_APPEND("[loadquery failed]");
+        ERRBUF_APPEND(strerror(errno));
+        ERRBUF_APPEND("[loadquery failed]");
     }
     dln_loaderror("%s", errbuf);
 }
@@ -229,22 +233,22 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
     desc = ImageDirectoryEntryToData(ext, TRUE, IMAGE_DIRECTORY_ENTRY_IMPORT, &size);
     if (!desc) return 0;
     while (desc->Name) {
-	PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
-	PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
-	for (; piat->u1.Function; piat++, pint++) {
-	    static const char prefix[] = "rb_";
-	    PIMAGE_IMPORT_BY_NAME pii;
-	    const char *name;
+        PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
+        PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
+        for (; piat->u1.Function; piat++, pint++) {
+            static const char prefix[] = "rb_";
+            PIMAGE_IMPORT_BY_NAME pii;
+            const char *name;
 
-	    if (IMAGE_SNAP_BY_ORDINAL(pint->u1.Ordinal)) continue;
-	    pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
-	    name = (const char *)pii->Name;
-	    if (strncmp(name, prefix, sizeof(prefix) - 1) == 0) {
-		FARPROC addr = GetProcAddress(mine, name);
-		if (addr) return (FARPROC)piat->u1.Function == addr;
-	    }
-	}
-	desc++;
+            if (IMAGE_SNAP_BY_ORDINAL(pint->u1.Ordinal)) continue;
+            pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
+            name = (const char *)pii->Name;
+            if (strncmp(name, prefix, sizeof(prefix) - 1) == 0) {
+                FARPROC addr = GetProcAddress(mine, name);
+                if (addr) return (FARPROC)piat->u1.Function == addr;
+            }
+        }
+        desc++;
     }
     return 1;
 }
@@ -252,11 +256,11 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 
 #if defined(DLN_NEEDS_ALT_SEPARATOR) && DLN_NEEDS_ALT_SEPARATOR
 #define translit_separator(src) do { \
-	char *tmp = ALLOCA_N(char, strlen(src) + 1), *p = tmp, c; \
-	do { \
-	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
-	} while (c); \
-	(src) = tmp; \
+        char *tmp = ALLOCA_N(char, strlen(src) + 1), *p = tmp, c; \
+        do { \
+            *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
+        } while (c); \
+        (src) = tmp; \
     } while (0)
 #else
 #define translit_separator(str) (void)(str)
@@ -273,7 +277,7 @@ dln_incompatible_func(void *handle, const char *funcname, void *const fp, const 
     if (!ex) return false;
     if (ex == fp) return false;
     if (dladdr(ex, &dli)) {
-	*libname = dli.dli_fname;
+        *libname = dli.dli_fname;
     }
     return true;
 }
@@ -287,15 +291,28 @@ dln_incompatible_library_p(void *handle, const char **libname)
 {
 #define check_func(func) \
     if (dln_incompatible_func(handle, EXTERNAL_PREFIX #func, (void *)&func, libname)) \
-	return true
+        return true
     check_func(ruby_xmalloc);
     return false;
 }
 COMPILER_WARNING_POP
 #endif
 
-#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+#if !defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+/* assume others than old Mac OS X have no problem */
+# define dln_disable_dlclose() false
+
+#elif !defined(MAC_OS_X_VERSION_10_11) || \
+    (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_11)
+/* targeting older versions only */
+# define dln_disable_dlclose() true
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11
+/* targeting newer versions only */
+# define dln_disable_dlclose() false
+
+#else
+/* support both versions, and check at runtime */
 # include <sys/sysctl.h>
 
 static bool
@@ -308,8 +325,6 @@ dln_disable_dlclose(void)
     if (rev < MAC_OS_X_VERSION_10_11) return true;
     return false;
 }
-#else
-# define dln_disable_dlclose() false
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
@@ -326,7 +341,7 @@ dln_open(const char *file)
     /* Convert the file path to wide char */
     WCHAR *winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
     if (!winfile) {
-	dln_memerror();
+        dln_memerror();
     }
 
     /* Load file */
@@ -334,15 +349,15 @@ dln_open(const char *file)
     free(winfile);
 
     if (!handle) {
-	error = dln_strerror();
-	goto failed;
+        error = dln_strerror();
+        goto failed;
     }
 
 # if defined(RUBY_EXPORT)
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
-	FreeLibrary(handle);
-	error = incompatible;
-	goto failed;
+        FreeLibrary(handle);
+        error = incompatible;
+        goto failed;
     }
 # endif
 
@@ -367,24 +382,24 @@ dln_open(const char *file)
 
 # if defined(RUBY_EXPORT)
     {
-	const char *libruby_name = NULL;
-	if (dln_incompatible_library_p(handle, &libruby_name)) {
-	    if (dln_disable_dlclose()) {
-		/* dlclose() segfaults */
-		if (libruby_name) {
-		    dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
-		}
-		dln_fatalerror("%s - %s", incompatible, file);
-	    }
-	    else {
-		dlclose(handle);
-		if (libruby_name) {
-		    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
-		}
-		error = incompatible;
-		goto failed;
-	    }
-	}
+        const char *libruby_name = NULL;
+        if (dln_incompatible_library_p(handle, &libruby_name)) {
+            if (dln_disable_dlclose()) {
+                /* dlclose() segfaults */
+                if (libruby_name) {
+                    dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
+                }
+                dln_fatalerror("%s - %s", incompatible, file);
+            }
+            else {
+                dlclose(handle);
+                if (libruby_name) {
+                    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+                }
+                error = incompatible;
+                goto failed;
+            }
+        }
     }
 # endif
 #endif
@@ -445,7 +460,7 @@ dln_load(const char *file)
     unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
     unsigned long long binary_abi_version = (*abi_version_fct)();
     if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
-        dln_loaderror("ABI version of binary is incompatible with this Ruby. Try rebuilding this binary.");
+        dln_loaderror("incompatible ABI version of binary - %s", file);
     }
 #endif
 
@@ -460,17 +475,17 @@ dln_load(const char *file)
 
 #elif defined(_AIX)
     {
-	void (*init_fct)(void);
+        void (*init_fct)(void);
 
-	init_fct = (void(*)(void))load((char*)file, 1, 0);
-	if (init_fct == NULL) {
-	    aix_loaderror(file);
-	}
-	if (loadbind(0, (void*)dln_load, (void*)init_fct) == -1) {
-	    aix_loaderror(file);
-	}
-	(*init_fct)();
-	return (void*)init_fct;
+        init_fct = (void(*)(void))load((char*)file, 1, 0);
+        if (init_fct == NULL) {
+            aix_loaderror(file);
+        }
+        if (loadbind(0, (void*)dln_load, (void*)init_fct) == -1) {
+            aix_loaderror(file);
+        }
+        (*init_fct)();
+        return (void*)init_fct;
     }
 #else
     dln_notimplement();

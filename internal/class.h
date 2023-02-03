@@ -9,11 +9,12 @@
  * @brief      Internal header for Class.
  */
 #include "id_table.h"           /* for struct rb_id_table */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "internal/serial.h"    /* for rb_serial_t */
+#include "internal/static_assert.h"
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
+#include "shape.h"
 
 #ifdef RCLASS_SUPER
 # undef RCLASS_SUPER
@@ -24,12 +25,7 @@ struct rb_subclass_entry {
     struct rb_subclass_entry *next;
     struct rb_subclass_entry *prev;
 };
-
-struct rb_iv_index_tbl_entry {
-    uint32_t index;
-    rb_serial_t class_serial;
-    VALUE class_value;
-};
+typedef struct rb_subclass_entry rb_subclass_entry_t;
 
 struct rb_cvar_class_tbl_entry {
     uint32_t index;
@@ -38,11 +34,7 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
-    struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
-    struct st_table *iv_tbl;
-#if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
-    struct rb_id_table *m_tbl;
-#endif
+    VALUE *iv_ptr;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci, cc1], cc2, ...] */
@@ -57,63 +49,49 @@ struct rb_classext_struct {
      * included. Hopefully that makes sense.
      */
     struct rb_subclass_entry *module_subclass_entry;
-#if SIZEOF_SERIAL_T != SIZEOF_VALUE && !USE_RVARGC /* otherwise class_serial is in struct RClass */
-    rb_serial_t class_serial;
-#endif
     const VALUE origin_;
     const VALUE refined_class;
     rb_alloc_func_t allocator;
     const VALUE includer;
+#if !SHAPE_IN_BASIC_FLAGS
+    shape_id_t shape_id;
+#endif
+    uint32_t max_iv_count;
+    unsigned char variation_count;
+    bool permanent_classpath;
+    VALUE classpath;
 };
+typedef struct rb_classext_struct rb_classext_t;
+
+STATIC_ASSERT(shape_max_variations, SHAPE_MAX_VARIATIONS < (1 << (sizeof(((rb_classext_t *)0)->variation_count) * CHAR_BIT)));
 
 struct RClass {
     struct RBasic basic;
     VALUE super;
-#if !USE_RVARGC
-    struct rb_classext_struct *ptr;
-#endif
-#if SIZEOF_SERIAL_T == SIZEOF_VALUE
-    /* Class serial is as wide as VALUE.  Place it here. */
-    rb_serial_t class_serial;
-#else
-    /* Class serial does not fit into struct RClass. Place m_tbl instead. */
     struct rb_id_table *m_tbl;
-# if USE_RVARGC
-    rb_serial_t *class_serial_ptr;
-# endif
+#if SIZE_POOL_COUNT == 1
+    struct rb_classext_struct *ptr;
 #endif
 };
 
-typedef struct rb_subclass_entry rb_subclass_entry_t;
-typedef struct rb_classext_struct rb_classext_t;
+#if RCLASS_EXT_EMBEDDED
+// Assert that classes can be embedded in size_pools[2] (which has 160B slot size)
+STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
+#endif
 
-#if USE_RVARGC
+#if RCLASS_EXT_EMBEDDED
 #  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #else
 #  define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #endif
-#define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
-#if SIZEOF_SERIAL_T == SIZEOF_VALUE
-# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
-#else
-# define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
-#endif
+#define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)
-#define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
-#if SIZEOF_SERIAL_T == SIZEOF_VALUE
-# define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
-#else
-# if USE_RVARGC
-#  define RCLASS_SERIAL(c) (*RCLASS(c)->class_serial_ptr)
-# else
-#  define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
-# endif
-#endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 #define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)
 #define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->module_subclass_entry)
@@ -207,6 +185,16 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
     RB_OBJ_WRITE(klass, &RCLASS(klass)->super, super);
     rb_class_update_superclasses(klass);
     return super;
+}
+
+static inline void
+RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
+{
+    assert(BUILTIN_TYPE(klass) == T_CLASS || BUILTIN_TYPE(klass) == T_MODULE);
+    assert(classpath == 0 || BUILTIN_TYPE(classpath) == T_STRING);
+
+    RB_OBJ_WRITE(klass, &(RCLASS_EXT(klass)->classpath), classpath);
+    RCLASS_EXT(klass)->permanent_classpath = permanent;
 }
 
 #endif /* INTERNAL_CLASS_H */

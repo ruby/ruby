@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate rb_sys;
 
 use rb_sys::{
@@ -6,8 +5,6 @@ use rb_sys::{
 };
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_long};
-
-ruby_extension!();
 
 #[inline]
 unsafe fn cstr_to_string(str: *const c_char) -> String {
@@ -23,6 +20,18 @@ unsafe extern "C" fn pub_reverse(_klass: VALUE, mut input: VALUE) -> VALUE {
 
     rb_utf8_str_new(reversed_cstring.as_ptr(), size)
 }
+
+#[cfg(rubygems)]
+#[no_mangle]
+pub extern "C" fn hello_from_rubygems() {}
+
+#[cfg(rubygems_0_0_0)]
+#[no_mangle]
+pub extern "C" fn should_never_exist() {}
+
+#[cfg(rubygems_x_x_x)]
+#[no_mangle]
+pub extern "C" fn hello_from_rubygems_version() {}
 
 #[allow(non_snake_case)]
 #[no_mangle]

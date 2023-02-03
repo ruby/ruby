@@ -58,7 +58,36 @@ module Fiddle
   #
   # See Fiddle::Handle.new for more.
   def dlopen library
-    Fiddle::Handle.new library
+    begin
+      Fiddle::Handle.new(library)
+    rescue DLError => error
+      case RUBY_PLATFORM
+      when /linux/
+        case error.message
+        when /\A(\/.+?): (?:invalid ELF header|file too short)/
+          # This may be a linker script:
+          # https://sourceware.org/binutils/docs/ld.html#Scripts
+          path = $1
+        else
+          raise
+        end
+      else
+        raise
+      end
+
+      File.open(path) do |input|
+        input.each_line do |line|
+          case line
+          when /\A\s*(?:INPUT|GROUP)\s*\(\s*([^\s,\)]+)/
+            # TODO: Should we support multiple files?
+            return dlopen($1)
+          end
+        end
+      end
+
+      # Not found
+      raise
+    end
   end
   module_function :dlopen
 
@@ -67,4 +96,8 @@ module Fiddle
   RTLD_GLOBAL = Handle::RTLD_GLOBAL # :nodoc:
   RTLD_LAZY   = Handle::RTLD_LAZY   # :nodoc:
   RTLD_NOW    = Handle::RTLD_NOW    # :nodoc:
+
+  Fiddle::Types.constants.each do |type|
+    const_set "TYPE_#{type}", Fiddle::Types.const_get(type)
+  end
 end

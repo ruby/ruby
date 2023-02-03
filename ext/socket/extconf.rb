@@ -316,6 +316,7 @@ end
   netpacket/packet.h
   net/ethernet.h
   sys/un.h
+  afunix.h
   ifaddrs.h
   sys/ioctl.h
   sys/sockio.h
@@ -346,10 +347,22 @@ have_type("struct sockaddr_storage", headers)
 
 have_type("struct addrinfo", headers)
 
-if have_type("socklen_t", headers)
-  if try_static_assert("sizeof(socklen_t) >= sizeof(long)", headers)
-    $defs << "-DRSTRING_SOCKLEN=(socklen_t)RSTRING_LEN"
+def check_socklen(headers)
+  def (fmt = "none").%(x)
+    x || self
   end
+  s = checking_for("RSTRING_SOCKLEN", fmt) do
+    if try_static_assert("sizeof(socklen_t) >= sizeof(long)", headers)
+      "RSTRING_LEN"
+    else
+      "RSTRING_LENINT"
+    end
+  end
+  $defs << "-DRSTRING_SOCKLEN=(socklen_t)"+s
+end
+
+if have_type("socklen_t", headers)
+  check_socklen(headers)
 end
 
 have_type("struct in_pktinfo", headers) {|src|
@@ -551,7 +564,7 @@ EOS
   end
 
   if !have_macro("IPPROTO_IPV6", headers) && have_const("IPPROTO_IPV6", headers)
-    IO.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
+    File.read(File.join(File.dirname(__FILE__), "mkconstants.rb")).sub(/\A.*^__END__$/m, '').split(/\r?\n/).grep(/\AIPPROTO_\w*/){$&}.each {|name|
       have_const(name, headers) unless $defs.include?("-DHAVE_CONST_#{name.upcase}")
     }
   end
@@ -655,12 +668,20 @@ EOS
   end
 
   hdr = "netinet6/in6.h"
-  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+  /darwin/ =~ RUBY_PLATFORM and
+  checking_for("if apple's #{hdr} needs s6_addr patch") {!try_compile(<<"SRC", nil, :werror=>true)} and
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
-    in6 = File.read("/usr/include/#{hdr}")
+  checking_for("fixing apple's #{hdr}", "%s") do
+    file = xpopen(%w"clang -include netinet/in.h -E -xc -", in: IO::NULL) do |f|
+      re = %r[^# *\d+ *"(.*/netinet/in\.h)"]
+      Logging.message "  grep(#{re})\n"
+      f.read[re, 1]
+    end
+    Logging.message "Substitute from #{file}\n"
+
+    in6 = File.read(file)
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)
         if r.zero?
@@ -670,12 +691,12 @@ SRC
         end
       end
       FileUtils.mkdir_p(File.dirname(hdr))
-      open(hdr, "w") {|f| f.write(in6)}
+      File.write(hdr, in6)
       $distcleanfiles << hdr
       $distcleandirs << File.dirname(hdr)
-      puts "done"
+      "done"
     else
-      puts "not needed"
+      "not needed"
     end
   end
   create_makefile("socket")

@@ -1,6 +1,6 @@
 raise 'should be run without RubyGems' if defined?(Gem)
 
-def deprecated(n=1)
+public def deprecated(n=1)
   # puts nil, caller(0), nil
   warn "use X instead", uplevel: n
 end

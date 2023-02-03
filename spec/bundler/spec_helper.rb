@@ -23,7 +23,6 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/sudo"
 
 $debug = false
 
@@ -40,7 +39,6 @@ RSpec.configure do |config|
   config.include Spec::Matchers
   config.include Spec::Path
   config.include Spec::Platforms
-  config.include Spec::Sudo
   config.include Spec::Permissions
 
   # Enable flags like --only-failures and --next-failure
@@ -60,6 +58,8 @@ RSpec.configure do |config|
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
+
+    c.max_formatted_output_length = 1000
   end
 
   config.mock_with :rspec do |mocks|
@@ -96,27 +96,21 @@ RSpec.configure do |config|
   end
 
   config.around :each do |example|
-    begin
-      FileUtils.cp_r pristine_system_gem_path, system_gem_path
+    FileUtils.cp_r pristine_system_gem_path, system_gem_path
 
-      with_gem_path_as(system_gem_path) do
-        Bundler.ui.silence { example.run }
+    with_gem_path_as(system_gem_path) do
+      Bundler.ui.silence { example.run }
 
-        all_output = all_commands_output
-        if example.exception && !all_output.empty?
-          message = all_output + "\n" + example.exception.message
-          (class << example.exception; self; end).send(:define_method, :message) do
-            message
-          end
+      all_output = all_commands_output
+      if example.exception && !all_output.empty?
+        message = all_output + "\n" + example.exception.message
+        (class << example.exception; self; end).send(:define_method, :message) do
+          message
         end
       end
-    ensure
-      reset!
     end
-  end
-
-  config.before :each, :sudo => true do
-    Spec::Sudo.write_safe_config
+  ensure
+    reset!
   end
 
   config.after :suite do

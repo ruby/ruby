@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/source_list'
-require_relative 'helper'
+require "rubygems"
+require "rubygems/source_list"
+require_relative "helper"
 
 class TestGemSourceList < Gem::TestCase
   def setup
@@ -45,7 +45,7 @@ class TestGemSourceList < Gem::TestCase
   def test_clear
     sl = Gem::SourceList.new
 
-    sl << 'http://source.example'
+    sl << "http://source.example"
 
     sl.clear
 
@@ -76,7 +76,7 @@ class TestGemSourceList < Gem::TestCase
 
     assert_empty sl
 
-    sl << 'http://source.example'
+    sl << "http://source.example"
 
     refute_empty sl
   end

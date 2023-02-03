@@ -1,7 +1,6 @@
 # The Ruby Spec Suite
 
 [![Actions Build Status](https://github.com/ruby/spec/workflows/CI/badge.svg)](https://github.com/ruby/spec/actions)
-[![Gitter](https://badges.gitter.im/ruby/spec.svg)](https://gitter.im/ruby/spec)
 
 The Ruby Spec Suite, abbreviated `ruby/spec`, is a test suite for the behavior of the Ruby programming language.
 
@@ -144,10 +143,9 @@ The file `/etc/services` is required for socket specs (package `netbase` on Debi
 
 ### Socket specs from rubysl-socket
 
-Most specs under `library/socket` were imported from [the rubysl-socket project](https://github.com/rubysl/rubysl-socket).
+Most specs under `library/socket` were imported from the rubysl-socket project (which is no longer on GitHub).
 The 3 copyright holders of rubysl-socket, Yorick Peterse, Chuck Remes and
-Brian Shirai, [agreed to relicense those specs](https://github.com/rubysl/rubysl-socket/issues/15)
-under the MIT license in ruby/spec.
+Brian Shirai, agreed to relicense those specs under the MIT license in ruby/spec.
 
 ### History and RubySpec
 

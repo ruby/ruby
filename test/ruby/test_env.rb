@@ -69,25 +69,20 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_clone
-    warning = /ENV\.clone is deprecated; use ENV\.to_h instead/
-    clone = assert_deprecated_warning(warning) {
+    message = /Cannot clone ENV/
+    assert_raise_with_message(TypeError, message) {
       ENV.clone
     }
-    assert_same(ENV, clone)
-
-    clone = assert_deprecated_warning(warning) {
+    assert_raise_with_message(TypeError, message) {
       ENV.clone(freeze: false)
     }
-    assert_same(ENV, clone)
-
-    clone = assert_deprecated_warning(warning) {
+    assert_raise_with_message(TypeError, message) {
       ENV.clone(freeze: nil)
     }
-    assert_same(ENV, clone)
-
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, message) {
       ENV.clone(freeze: true)
     }
+
     assert_raise(ArgumentError) {
       ENV.clone(freeze: 1)
     }
@@ -685,37 +680,6 @@ class TestEnv < Test::Unit::TestCase
         #{str_for_yielding_exception_class("ENV.dup")}
       end
       #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
-    end;
-  end
-
-  def test_clone_in_ractor
-    assert_ractor(<<-"end;")
-      r = Ractor.new do
-        original_warning_state = Warning[:deprecated]
-        Warning[:deprecated] = false
-
-        begin
-          Ractor.yield ENV.clone.object_id
-          Ractor.yield ENV.clone(freeze: false).object_id
-          Ractor.yield ENV.clone(freeze: nil).object_id
-
-          #{str_for_yielding_exception_class("ENV.clone(freeze: true)")}
-          #{str_for_yielding_exception_class("ENV.clone(freeze: 1)")}
-          #{str_for_yielding_exception_class("ENV.clone(foo: false)")}
-          #{str_for_yielding_exception_class("ENV.clone(1)")}
-          #{str_for_yielding_exception_class("ENV.clone(1, foo: false)")}
-
-        ensure
-          Warning[:deprecated] = original_warning_state
-        end
-      end
-      assert_equal(ENV.object_id, r.take)
-      assert_equal(ENV.object_id, r.take)
-      assert_equal(ENV.object_id, r.take)
-      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
-      4.times do
-        #{str_for_assert_raise_on_yielded_exception_class(ArgumentError, "r")}
-      end
     end;
   end
 

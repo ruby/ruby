@@ -136,11 +136,7 @@ module Bundler
 
         mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
+        content = ERB.new(template, :trim_mode => "-").result(binding)
 
         File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
         if Gem.win_platform? || options[:all_platforms]
@@ -183,11 +179,7 @@ module Bundler
 
         mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
-        content = if RUBY_VERSION >= "2.6"
-          ERB.new(template, :trim_mode => "-").result(binding)
-        else
-          ERB.new(template, nil, "-").result(binding)
-        end
+        content = ERB.new(template, :trim_mode => "-").result(binding)
 
         File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
         if Gem.win_platform? || options[:all_platforms]
@@ -226,31 +218,24 @@ module Bundler
 
       requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.map do |spec|
-        begin
-          Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
-        rescue TypeError
-          error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-          raise Gem::InvalidSpecificationException, error_message
-        end
+        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
       end.flatten
       Bundler.rubygems.load_plugin_files(path_plugin_files)
       Bundler.rubygems.load_env_plugins
     end
 
     def ensure_specs_are_compatible!
-      system_ruby = Bundler::RubyVersion.system
-      rubygems_version = Bundler.rubygems.version
       @definition.specs.each do |spec|
-        if required_ruby_version = spec.required_ruby_version
-          unless required_ruby_version.satisfied_by?(system_ruby.gem_version)
-            raise InstallError, "#{spec.full_name} requires ruby version #{required_ruby_version}, " \
-              "which is incompatible with the current version, #{system_ruby}"
-          end
+        unless spec.matches_current_ruby?
+          raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
+            "which is incompatible with the current version, #{Gem.ruby_version}"
         end
-        next unless required_rubygems_version = spec.required_rubygems_version
-        unless required_rubygems_version.satisfied_by?(rubygems_version)
-          raise InstallError, "#{spec.full_name} requires rubygems version #{required_rubygems_version}, " \
-            "which is incompatible with the current version, #{rubygems_version}"
+        unless spec.matches_current_rubygems?
+          raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
+            "which is incompatible with the current version, #{Gem.rubygems_version}"
         end
       end
     end
@@ -264,11 +249,14 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
+      @definition.resolution_mode = options
+
       if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 
-      options["local"] ? @definition.resolve_with_cache! : @definition.resolve_remotely!
+      @definition.setup_sources_for_resolve
+
       true
     end
 

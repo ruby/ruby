@@ -37,6 +37,9 @@ module IRB
       width ||= str.length
 
       case str
+      when ''
+      when ',', '=>', '[', ']', '{', '}', '..', '...', /\A@\w+\z/
+        super(str, width)
       when /\A#</, '=', '>'
         super(Color.colorize(str, [:GREEN]), width)
       else

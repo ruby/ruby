@@ -9,6 +9,10 @@ describe "String#swapcase" do
    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
+  it "returns a String in the same encoding as self" do
+    "Hello".encode("US-ASCII").swapcase.encoding.should == Encoding::US_ASCII
+  end
+
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äÖü".swapcase.should == "ÄöÜ"
@@ -27,6 +31,10 @@ describe "String#swapcase" do
   describe "ASCII-only case mapping" do
     it "does not swapcase non-ASCII characters" do
       "aßet".swapcase(:ascii).should == "AßET"
+    end
+
+    it "works with substrings" do
+      "prefix aTé"[-3..-1].swapcase(:ascii).should == "Até"
     end
   end
 

@@ -14,6 +14,11 @@ class TestBeginEndBlock < Test::Unit::TestCase
     assert_in_out_err(["-p", "-eBEGIN{p :begin}", "-eEND{p :end}"], "foo\nbar\n", %w(:begin foo bar :end))
   end
 
+  def test_endblock_variable
+    assert_in_out_err(["-n", "-ea = :ok", "-eEND{p a}"], "foo\n", %w(:ok))
+    assert_in_out_err(["-p", "-ea = :ok", "-eEND{p a}"], "foo\n", %w(foo :ok))
+  end
+
   def test_begininmethod
     assert_raise_with_message(SyntaxError, /BEGIN is permitted only at toplevel/) do
       eval("def foo; BEGIN {}; end")

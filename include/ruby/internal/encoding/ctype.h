@@ -36,8 +36,8 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @param[in]  p          Pointer to a possibly-middle of a character.
  * @param[in]  end        End of the string.
  * @param[in]  enc        Encoding.
- * @retval     0          It isn't.
- * @retval     otherwise  It is.
+ * @retval     false      It isn't.
+ * @retval     true       It is.
  */
 static inline bool
 rb_enc_is_newline(const char *p,  const char *e, rb_encoding *enc)
@@ -53,11 +53,11 @@ rb_enc_is_newline(const char *p,  const char *e, rb_encoding *enc)
  * encoding.  The "character type" here is a set of macros defined in onigmo.h,
  * like `ONIGENC_CTYPE_PUNCT`.
  *
- * @param[in]  c    An `OnigCodePoint` value.
- * @param[in]  t    An `OnigCtype` value.
- * @param[in]  enc  A `rb_encoding*` value.
- * @retval     1    `c` is of `t` in `enc`.
- * @retval     0    Otherwise.
+ * @param[in]  c          An `OnigCodePoint` value.
+ * @param[in]  t          An `OnigCtype` value.
+ * @param[in]  enc        A `rb_encoding*` value.
+ * @retval     true       `c` is of `t` in `enc`.
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isctype(OnigCodePoint c, OnigCtype t, rb_encoding *enc)
@@ -68,10 +68,10 @@ rb_enc_isctype(OnigCodePoint c, OnigCtype t, rb_encoding *enc)
 /**
  * Identical to rb_isascii(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     0    `c` is out of range of ASCII character set in `enc`.
- * @retval     1    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     false      `c` is out of range of ASCII character set in `enc`.
+ * @retval     true       Otherwise.
  *
  * @internal
  *
@@ -87,10 +87,10 @@ rb_enc_isascii(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isalpha(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "ALPHA".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "ALPHA".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isalpha(OnigCodePoint c, rb_encoding *enc)
@@ -101,10 +101,10 @@ rb_enc_isalpha(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_islower(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "LOWER".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "LOWER".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_islower(OnigCodePoint c, rb_encoding *enc)
@@ -115,10 +115,10 @@ rb_enc_islower(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isupper(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "UPPER".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "UPPER".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isupper(OnigCodePoint c, rb_encoding *enc)
@@ -127,12 +127,26 @@ rb_enc_isupper(OnigCodePoint c, rb_encoding *enc)
 }
 
 /**
+ * Identical to rb_iscntrl(), except it additionally takes an encoding.
+ *
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "CNTRL".
+ * @retval     false      Otherwise.
+ */
+static inline bool
+rb_enc_iscntrl(OnigCodePoint c, rb_encoding *enc)
+{
+    return ONIGENC_IS_CODE_CNTRL(enc, c);
+}
+
+/**
  * Identical to rb_ispunct(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "PUNCT".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "PUNCT".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_ispunct(OnigCodePoint c, rb_encoding *enc)
@@ -143,10 +157,10 @@ rb_enc_ispunct(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isalnum(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "ANUM".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "ANUM".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isalnum(OnigCodePoint c, rb_encoding *enc)
@@ -157,10 +171,10 @@ rb_enc_isalnum(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isprint(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "PRINT".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "PRINT".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isprint(OnigCodePoint c, rb_encoding *enc)
@@ -171,10 +185,10 @@ rb_enc_isprint(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isspace(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "PRINT".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "PRINT".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isspace(OnigCodePoint c, rb_encoding *enc)
@@ -185,10 +199,10 @@ rb_enc_isspace(OnigCodePoint c, rb_encoding *enc)
 /**
  * Identical to rb_isdigit(), except it additionally takes an encoding.
  *
- * @param[in]  c    A code point.
- * @param[in]  enc  An encoding.
- * @retval     1    `enc` classifies `c` as "DIGIT".
- * @retval     0    Otherwise.
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "DIGIT".
+ * @retval     false      Otherwise.
  */
 static inline bool
 rb_enc_isdigit(OnigCodePoint c, rb_encoding *enc)
@@ -235,6 +249,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define rb_enc_isdigit    rb_enc_isdigit
 #define rb_enc_islower    rb_enc_islower
 #define rb_enc_isprint    rb_enc_isprint
+#define rb_enc_iscntrl    rb_enc_iscntrl
 #define rb_enc_ispunct    rb_enc_ispunct
 #define rb_enc_isspace    rb_enc_isspace
 #define rb_enc_isupper    rb_enc_isupper

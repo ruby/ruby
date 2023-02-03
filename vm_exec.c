@@ -55,7 +55,7 @@ static void vm_insns_counter_count_insn(int insn) {}
 #elif defined(__GNUC__) && defined(__i386__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
 
-#elif defined(__GNUC__) && defined(__powerpc64__)
+#elif defined(__GNUC__) && (defined(__powerpc64__) || defined(__POWERPC__))
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
 #elif defined(__GNUC__) && defined(__aarch64__)
@@ -92,7 +92,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
-#elif defined(__GNUC__) && defined(__powerpc64__)
+#elif defined(__GNUC__) && (defined(__powerpc64__) || defined(__POWERPC__))
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
@@ -129,7 +129,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
     if (UNLIKELY(ec == 0)) {
-	return (VALUE)insns_address_table;
+        return (VALUE)insns_address_table;
     }
 #endif
     reg_cfp = ec->cfp;
@@ -176,22 +176,22 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     rb_thread_t *th;
 
     while (1) {
-	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
+        reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
-	if (UNLIKELY(reg_cfp == 0)) {
-	    break;
-	}
+        if (UNLIKELY(reg_cfp == 0)) {
+            break;
+        }
     }
 
-    if ((th = rb_ec_thread_ptr(ec))->retval != Qundef) {
-	VALUE ret = th->retval;
-	th->retval = Qundef;
-	return ret;
+    if (!UNDEF_P((th = rb_ec_thread_ptr(ec))->retval)) {
+        VALUE ret = th->retval;
+        th->retval = Qundef;
+        return ret;
     }
     else {
-	VALUE err = ec->errinfo;
-	ec->errinfo = Qnil;
-	return err;
+        VALUE err = ec->errinfo;
+        ec->errinfo = Qnil;
+        return err;
     }
 }
 #endif

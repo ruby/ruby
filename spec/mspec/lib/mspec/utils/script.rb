@@ -283,7 +283,6 @@ class MSpecScript
 
     script = new
     script.load_default
-    script.try_load '~/.mspecrc'
     script.options
     script.signals
     script.register

@@ -1,15 +1,22 @@
 require 'rbconfig'
 require 'timeout'
 require 'fileutils'
+require_relative 'lib/colorize'
+
+ENV.delete("GNUMAKEFLAGS")
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').reject(&:empty?)
 
+ENV["GEM_PATH"] = [File.realpath('.bundle'), File.realpath('../.bundle', __dir__)].join(File::PATH_SEPARATOR)
+
+colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
 gem_dir = File.realpath('../../gems', __FILE__)
 dummy_rake_compiler_dir = File.realpath('../dummy-rake-compiler', __FILE__)
+rubylib = [File.expand_path(dummy_rake_compiler_dir), ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
 exit_code = 0
 ruby = ENV['RUBY'] || RbConfig.ruby
 failed = []
@@ -19,42 +26,35 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
   puts "#{github_actions ? "##[group]" : "\n"}Testing the #{gem} gem"
 
-  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"
+  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
 
-  if gem == "typeprof"
-    rbs_build_dir = 'ext/-test-/gems/rbs'
-    raise "need to run rbs test suite before typeprof" unless File.readable?("#{rbs_build_dir}/rbs_extension.#{RbConfig::CONFIG['DLEXT']}")
-    ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
-  end
+  toplib = gem
+  case gem
+  when "typeprof"
 
-  if gem == "rbs"
-    test_command << " stdlib_test validate"
-
+  when "rbs"
+    test_command << " stdlib_test validate RBS_SKIP_TESTS=#{__dir__}/rbs_skip_tests"
     first_timeout *= 3
 
-    # copied from debug gem
-    build_dir = 'ext/-test-/gems/rbs'
-    FileUtils.mkdir_p(build_dir)
-    extconf_path = File.expand_path('../../gems/src/rbs/ext/rbs_extension/extconf.rb', __FILE__)
-    system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
-    system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
-    ENV["RUBYLIB"] = [File.expand_path(dummy_rake_compiler_dir), File.expand_path(build_dir), ENV.fetch("RUBYLIB", nil)].compact.join(":")
+  when "debug"
+    # Since debug gem requires debug.so in child processes without
+    # acitvating the gem, we preset necessary paths in RUBYLIB
+    # environment variable.
+    load_path = true
+
+  when /\Anet-/
+    toplib = gem.tr("-", "/")
+
   end
 
-  if gem == "minitest"
-    # Tentatively exclude some tests that conflict with error_highlight
-    # https://github.com/seattlerb/minitest/pull/880
-    test_command << " 'TESTOPTS=-e /test_stub_value_block_args_5__break_if_not_passed|test_no_method_error_on_unexpected_methods/'"
-  end
-
-  if gem == "debug"
-    build_dir = 'ext/-test-/gems/debug'
-    FileUtils.mkdir_p(build_dir)
-    extconf_path = File.expand_path('../../gems/src/debug/ext/debug/extconf.rb', __FILE__)
-    system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
-    system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
-    ENV["RUBYLIB"] = [File.expand_path(build_dir + "/.."), ENV.fetch("RUBYLIB", nil)].compact.join(":")
+  if load_path
+    libs = IO.popen([ruby, "-e", "old = $:.dup; require '#{toplib}'; puts $:-old"], &:read)
+    next unless $?.success?
+    puts libs
+    ENV["RUBYLIB"] = [libs.split("\n"), rubylib].join(File::PATH_SEPARATOR)
+  else
+    ENV["RUBYLIB"] = rubylib
   end
 
   print "[command]" if github_actions
@@ -69,18 +69,28 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       break Timeout.timeout(sec) {Process.wait(pid)}
     rescue Timeout::Error
     end
+  rescue Interrupt
+    exit_code = Signal.list["INT"]
+    Process.kill("-KILL", pid)
+    Process.wait(pid)
+    break
   end
 
+  print "##[endgroup]\n" if github_actions
   unless $?.success?
-    puts "Tests failed with exit code #{$?.exitstatus}"
+
+    mesg = "Tests failed " +
+           ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
+              "with exit code #{$?.exitstatus}")
+    puts colorize.decorate(mesg, "fail")
     if allowed_failures.include?(gem)
-      puts "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
+      mesg = "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
+      puts colorize.decorate(mesg, "skip")
     else
       failed << gem
-      exit_code = $?.exitstatus
+      exit_code = $?.exitstatus if $?.exitstatus
     end
   end
-  print "##[endgroup]\n" if github_actions
 end
 
 puts "Failed gems: #{failed.join(', ')}" unless failed.empty?

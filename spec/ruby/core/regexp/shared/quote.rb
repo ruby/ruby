@@ -12,6 +12,16 @@ describe :regexp_quote, shared: true do
     Regexp.send(@method, :symbol).should == 'symbol'
   end
 
+  it "works with substrings" do
+    str = ".+[]()"[1...-1]
+    Regexp.send(@method, str).should == '\+\[\]\('
+  end
+
+  it "works for broken strings" do
+    Regexp.send(@method, "a.\x85b.".force_encoding("US-ASCII")).should =="a\\.\x85b\\.".force_encoding("US-ASCII")
+    Regexp.send(@method, "a.\x80".force_encoding("UTF-8")).should == "a\\.\x80".force_encoding("UTF-8")
+  end
+
   it "sets the encoding of the result to US-ASCII if there are only US-ASCII characters present in the input String" do
     str = "abc".force_encoding("euc-jp")
     Regexp.send(@method, str).encoding.should == Encoding::US_ASCII

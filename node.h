@@ -125,6 +125,7 @@ enum node_type {
     NODE_ARYPTN,
     NODE_HSHPTN,
     NODE_FNDPTN,
+    NODE_ERROR,
     NODE_LAST
 };
 
@@ -155,25 +156,25 @@ typedef struct rb_ast_id_table {
 typedef struct RNode {
     VALUE flags;
     union {
-	struct RNode *node;
-	ID id;
-	VALUE value;
-	rb_ast_id_table_t *tbl;
+        struct RNode *node;
+        ID id;
+        VALUE value;
+        rb_ast_id_table_t *tbl;
     } u1;
     union {
-	struct RNode *node;
-	ID id;
-	long argc;
-	VALUE value;
+        struct RNode *node;
+        ID id;
+        long argc;
+        VALUE value;
     } u2;
     union {
-	struct RNode *node;
-	ID id;
-	long state;
-	struct rb_args_info *args;
-	struct rb_ary_pattern_info *apinfo;
-	struct rb_fnd_pattern_info *fpinfo;
-	VALUE value;
+        struct RNode *node;
+        ID id;
+        long state;
+        struct rb_args_info *args;
+        struct rb_ary_pattern_info *apinfo;
+        struct rb_fnd_pattern_info *fpinfo;
+        VALUE value;
     } u3;
     rb_code_location_t nd_loc;
     int node_id;
@@ -383,9 +384,9 @@ typedef struct RNode {
 #define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
 #define NEW_ERRINFO(loc) NEW_NODE(NODE_ERRINFO,0,0,0,loc)
 #define NEW_DEFINED(e,loc) NEW_NODE(NODE_DEFINED,e,0,0,loc)
-#define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
 #define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
+#define NEW_ERROR(loc) NEW_NODE(NODE_ERROR,0,0,0,loc)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
@@ -420,6 +421,8 @@ void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+void rb_ast_set_tokens(rb_ast_t*, VALUE);
+VALUE rb_ast_tokens(rb_ast_t *ast);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
 rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);
@@ -460,6 +463,7 @@ struct rb_args_info {
     NODE *opt_args;
     unsigned int no_kwarg: 1;
     unsigned int ruby2_keywords: 1;
+    unsigned int forwarding: 1;
 
     VALUE imemo;
 };

@@ -9,17 +9,22 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
-  def src.value(name)
-    eval(self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
-  end
-  arg['versions'] = version = {}
-  File.read(File.join(arg['srcdir'], 'version.c')).
-    scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
-    version[n] = src.value(v)
-  end
-  arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit')
-  arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit')
+else
+  src = ""
 end
+def src.value(name)
+  unless val = self[/\bruby_#{name}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1]
+    return
+  end
+  eval(val.gsub(/#/, '\\#').gsub(/((?:\G|[^\\])(?:\\\\)*)\n/, '\1'))
+end
+arg['versions'] = version = {}
+File.read(File.join(arg['srcdir'], 'version.c')).
+  scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
+  version[n] = arg[v] || src.value(v) || (s ? v : 0)
+end
+arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit') || 'description_with_mjit'
+arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit') || 'description_with_yjit'
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
 =begin

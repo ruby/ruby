@@ -1,39 +1,39 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../version_option"
 
 class Gem::Commands::ContentsCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
-    super 'contents', 'Display the contents of the installed gems',
+    super "contents", "Display the contents of the installed gems",
           :specdirs => [], :lib_only => false, :prefix => true,
           :show_install_dir => false
 
     add_version_option
 
-    add_option('--all',
+    add_option("--all",
                "Contents for all gems") do |all, options|
       options[:all] = all
     end
 
-    add_option('-s', '--spec-dir a,b,c', Array,
+    add_option("-s", "--spec-dir a,b,c", Array,
                "Search for gems under specific paths") do |spec_dirs, options|
       options[:specdirs] = spec_dirs
     end
 
-    add_option('-l', '--[no-]lib-only',
+    add_option("-l", "--[no-]lib-only",
                "Only return files in the Gem's lib_dirs") do |lib_only, options|
       options[:lib_only] = lib_only
     end
 
-    add_option('--[no-]prefix',
+    add_option("--[no-]prefix",
                "Don't include installed path prefix") do |prefix, options|
       options[:prefix] = prefix
     end
 
-    add_option('--[no-]show-install-dir',
-               'Show only the gem install dir') do |show, options|
+    add_option("--[no-]show-install-dir",
+               "Show only the gem install dir") do |show, options|
       options[:show_install_dir] = show
     end
 
@@ -77,7 +77,7 @@ prefix or only the files that are requireable.
           gem_contents name
         end
 
-      terminate_interaction 1 unless found or names.length > 1
+      terminate_interaction 1 unless found || names.length > 1
     end
   end
 
@@ -105,11 +105,11 @@ prefix or only the files that are requireable.
       case file
       when /\A#{spec.bindir}\//
         # $' is POSTMATCH
-        [RbConfig::CONFIG['bindir'], $']
+        [RbConfig::CONFIG["bindir"], $']
       when /\.so\z/
-        [RbConfig::CONFIG['archdir'], file]
+        [RbConfig::CONFIG["archdir"], file]
       else
-        [RbConfig::CONFIG['rubylibdir'], file]
+        [RbConfig::CONFIG["rubylibdir"], file]
       end
     end
   end

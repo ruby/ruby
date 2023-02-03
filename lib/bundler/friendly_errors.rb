@@ -29,13 +29,13 @@ module Bundler
         Bundler.ui.error error.message
         Bundler.ui.trace error.orig_exception
       when BundlerError
-        Bundler.ui.error error.message, :wrap => true
-        Bundler.ui.trace error
+        if Bundler.ui.debug?
+          Bundler.ui.trace error
+        else
+          Bundler.ui.error error.message, :wrap => true
+        end
       when Thor::Error
         Bundler.ui.error error.message
-      when LoadError
-        raise error unless error.message =~ /cannot load such file -- openssl|openssl.so|libcrypto.so/
-        Bundler.ui.error "\nCould not load OpenSSL. #{error.class}: #{error}\n#{error.backtrace.join("\n  ")}"
       when Interrupt
         Bundler.ui.error "\nQuitting..."
         Bundler.ui.trace error
@@ -95,7 +95,7 @@ module Bundler
     def serialized_exception_for(e)
       <<-EOS.gsub(/^ {8}/, "")
         #{e.class}: #{e.message}
-          #{e.backtrace && e.backtrace.join("\n          ").chomp}
+          #{e.backtrace&.join("\n          ")&.chomp}
       EOS
     end
 

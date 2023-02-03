@@ -243,7 +243,7 @@ module Bundler
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          if executables && executables.include?(File.basename(caller.first.split(":").first))
+          if executables&.include?(File.basename(caller.first.split(":").first))
             break
           end
 
@@ -502,10 +502,6 @@ module Bundler
     def build(spec, skip_validation = false)
       require "rubygems/package"
       Gem::Package.build(spec, skip_validation)
-    end
-
-    def repository_subdirectories
-      Gem::REPOSITORY_SUBDIRECTORIES
     end
 
     def path_separator

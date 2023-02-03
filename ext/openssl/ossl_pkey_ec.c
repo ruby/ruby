@@ -227,7 +227,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ec_key_get_group(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_GROUP *group;
 
     GetEC(self, ec);
@@ -272,7 +272,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
  */
 static VALUE ossl_ec_key_get_private_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const BIGNUM *bn;
 
     GetEC(self, ec);
@@ -323,7 +323,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
  */
 static VALUE ossl_ec_key_get_public_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_POINT *point;
 
     GetEC(self, ec);
@@ -375,7 +375,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
  */
 static VALUE ossl_ec_key_is_public(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -391,7 +391,7 @@ static VALUE ossl_ec_key_is_public(VALUE self)
  */
 static VALUE ossl_ec_key_is_private(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -411,9 +411,11 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(argc, argv, self, 0);
     else
@@ -429,9 +431,11 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_ec_key_to_der(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
@@ -479,16 +483,28 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 #ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
-    int ret;
+    const EC_KEY *ec;
 
     GetPKey(self, pkey);
+    GetEC(self, ec);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
-    ret = EVP_PKEY_public_check(pctx);
+        ossl_raise(eECError, "EVP_PKEY_CTX_new");
+
+    if (EC_KEY_get0_private_key(ec) != NULL) {
+        if (EVP_PKEY_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_check");
+        }
+    }
+    else {
+        if (EVP_PKEY_public_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_public_check");
+        }
+    }
+
     EVP_PKEY_CTX_free(pctx);
-    if (ret != 1)
-        ossl_raise(eECError, "EVP_PKEY_public_check");
 #else
     EC_KEY *ec;
 
@@ -664,10 +680,11 @@ static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
     GetECGroup(a, group1);
     GetECGroup(b, group2);
 
-    if (EC_GROUP_cmp(group1, group2, ossl_bn_ctx) == 1)
-       return Qfalse;
-
-    return Qtrue;
+    switch (EC_GROUP_cmp(group1, group2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_GROUP, "EC_GROUP_cmp");
+    }
 }
 
 /*
@@ -1228,10 +1245,13 @@ static VALUE ossl_ec_point_eql(VALUE a, VALUE b)
     GetECPoint(b, point2);
     GetECGroup(group_v1, group);
 
-    if (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx) == 1)
-        return Qfalse;
+    switch (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_POINT, "EC_POINT_cmp");
+    }
 
-    return Qtrue;
+    UNREACHABLE;
 }
 
 /*
@@ -1249,7 +1269,7 @@ static VALUE ossl_ec_point_is_at_infinity(VALUE self)
     switch (EC_POINT_is_at_infinity(group, point)) {
     case 1: return Qtrue;
     case 0: return Qfalse;
-    default: ossl_raise(cEC_POINT, "EC_POINT_is_at_infinity");
+    default: ossl_raise(eEC_POINT, "EC_POINT_is_at_infinity");
     }
 
     UNREACHABLE;
@@ -1270,7 +1290,7 @@ static VALUE ossl_ec_point_is_on_curve(VALUE self)
     switch (EC_POINT_is_on_curve(group, point, ossl_bn_ctx)) {
     case 1: return Qtrue;
     case 0: return Qfalse;
-    default: ossl_raise(cEC_POINT, "EC_POINT_is_on_curve");
+    default: ossl_raise(eEC_POINT, "EC_POINT_is_on_curve");
     }
 
     UNREACHABLE;
@@ -1293,7 +1313,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
 #if !OSSL_OPENSSL_PREREQ(3, 0, 0)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_make_affine");
+        ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif
 
     return self;
@@ -1312,7 +1332,7 @@ static VALUE ossl_ec_point_invert(VALUE self)
     GetECPointGroup(self, group);
 
     if (EC_POINT_invert(group, point, ossl_bn_ctx) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_invert");
+        ossl_raise(eEC_POINT, "EC_POINT_invert");
 
     return self;
 }
@@ -1330,7 +1350,7 @@ static VALUE ossl_ec_point_set_to_infinity(VALUE self)
     GetECPointGroup(self, group);
 
     if (EC_POINT_set_to_infinity(group, point) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_set_to_infinity");
+        ossl_raise(eEC_POINT, "EC_POINT_set_to_infinity");
 
     return self;
 }

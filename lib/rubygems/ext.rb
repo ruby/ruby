@@ -10,10 +10,10 @@
 
 module Gem::Ext; end
 
-require_relative 'ext/build_error'
-require_relative 'ext/builder'
-require_relative 'ext/configure_builder'
-require_relative 'ext/ext_conf_builder'
-require_relative 'ext/rake_builder'
-require_relative 'ext/cmake_builder'
-require_relative 'ext/cargo_builder'
+require_relative "ext/build_error"
+require_relative "ext/builder"
+require_relative "ext/configure_builder"
+require_relative "ext/ext_conf_builder"
+require_relative "ext/rake_builder"
+require_relative "ext/cmake_builder"
+require_relative "ext/cargo_builder"

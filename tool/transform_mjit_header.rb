@@ -169,10 +169,6 @@ module MJITHeader
     RUBY_PLATFORM =~ /mswin|mingw|msys/
   end
 
-  def self.cl_exe?(cc)
-    cc =~ /\Acl(\z| |\.exe)/
-  end
-
   # If code has macro which only supported compilers predefine, return true.
   def self.supported_header?(code)
     SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{Regexp.escape(macro)}\b/ }
@@ -220,13 +216,9 @@ end
 cc      = ARGV[0]
 code    = File.binread(ARGV[1]) # Current version of the header file.
 outfile = ARGV[2]
-if MJITHeader.cl_exe?(cc)
-  cflags = '-DMJIT_HEADER -Zs'
-else
-  cflags = '-S -DMJIT_HEADER -fsyntax-only -Werror=implicit-function-declaration -Werror=implicit-int -Wfatal-errors'
-end
+cflags = '-S -DMJIT_HEADER -fsyntax-only -Werror=implicit-function-declaration -Werror=implicit-int -Wfatal-errors'
 
-if !MJITHeader.cl_exe?(cc) && !MJITHeader.supported_header?(code)
+if !MJITHeader.supported_header?(code)
   puts "This compiler (#{cc}) looks not supported for MJIT. Giving up to generate MJIT header."
   MJITHeader.write("#error MJIT does not support '#{cc}' yet", outfile)
   exit
@@ -234,7 +226,7 @@ end
 
 MJITHeader.remove_predefined_macros!(code)
 
-if MJITHeader.windows? # transformation is broken with Windows headers for now
+if MJITHeader.windows? # transformation is broken on Windows and the platform is not supported
   MJITHeader.remove_harmful_macros!(code)
   MJITHeader.check_code!(code, cc, cflags, 'initial')
   puts "\nSkipped transforming external functions to static on Windows."

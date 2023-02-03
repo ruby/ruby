@@ -61,9 +61,9 @@ exported_object_registry_free(void *ptr)
 const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
     "memory_view/exported_object_registry",
     {
-	exported_object_registry_mark,
-	exported_object_registry_free,
-	0,
+        exported_object_registry_mark,
+        exported_object_registry_free,
+        0,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -120,9 +120,9 @@ static ID id_memory_view;
 static const rb_data_type_t memory_view_entry_data_type = {
     "memory_view/entry",
     {
-	0,
-	0,
-	0,
+        0,
+        0,
+        0,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };

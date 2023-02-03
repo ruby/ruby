@@ -99,17 +99,56 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
     /* First check DER */
     if (OSSL_DECODER_from_bio(dctx, bio) == 1)
         goto out;
+    OSSL_BIO_reset(bio);
 
     /* Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed */
-    OSSL_BIO_reset(bio);
     if (OSSL_DECODER_CTX_set_input_type(dctx, "PEM") != 1)
         goto out;
-    while (OSSL_DECODER_from_bio(dctx, bio) != 1) {
-        if (BIO_eof(bio))
+    /*
+     * First check for private key formats. This is to keep compatibility with
+     * ruby/openssl < 3.0 which decoded the following as a private key.
+     *
+     *     $ openssl ecparam -name prime256v1 -genkey -outform PEM
+     *     -----BEGIN EC PARAMETERS-----
+     *     BggqhkjOPQMBBw==
+     *     -----END EC PARAMETERS-----
+     *     -----BEGIN EC PRIVATE KEY-----
+     *     MHcCAQEEIAG8ugBbA5MHkqnZ9ujQF93OyUfL9tk8sxqM5Wv5tKg5oAoGCCqGSM49
+     *     AwEHoUQDQgAEVcjhJfkwqh5C7kGuhAf8XaAjVuG5ADwb5ayg/cJijCgs+GcXeedj
+     *     86avKpGH84DXUlB23C/kPt+6fXYlitUmXQ==
+     *     -----END EC PRIVATE KEY-----
+     *
+     * While the first PEM block is a proper encoding of ECParameters, thus
+     * OSSL_DECODER_from_bio() would pick it up, ruby/openssl used to return
+     * the latter instead. Existing applications expect this behavior.
+     *
+     * Note that normally, the input is supposed to contain a single decodable
+     * PEM block only, so this special handling should not create a new problem.
+     */
+    OSSL_DECODER_CTX_set_selection(dctx, EVP_PKEY_KEYPAIR);
+    while (1) {
+        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
+        if (BIO_eof(bio))
+            break;
         pos2 = BIO_tell(bio);
         if (pos2 < 0 || pos2 <= pos)
+            break;
+        ossl_clear_error();
+        pos = pos2;
+    }
+
+    OSSL_BIO_reset(bio);
+    OSSL_DECODER_CTX_set_selection(dctx, 0);
+    while (1) {
+        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
+        if (BIO_eof(bio))
+            break;
+        pos2 = BIO_tell(bio);
+        if (pos2 < 0 || pos2 <= pos)
+            break;
+        ossl_clear_error();
         pos = pos2;
     }
 
@@ -200,6 +239,7 @@ static VALUE
 pkey_ctx_apply_options0(VALUE args_v)
 {
     VALUE *args = (VALUE *)args_v;
+    Check_Type(args[1], T_HASH);
 
     rb_block_call(args[1], rb_intern("each"), 0, NULL,
                   pkey_ctx_apply_options_i, args[0]);
@@ -670,7 +710,7 @@ ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 	}
     }
     else {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 5, 0)
 	if (!PEM_write_bio_PrivateKey_traditional(bio, pkey, enc, NULL, 0,
 						  ossl_pem_passwd_cb,
 						  (void *)pass)) {
@@ -911,7 +951,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
                        RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
@@ -1016,7 +1056,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
                            RSTRING_LEN(sig), (unsigned char *)RSTRING_PTR(data),
                            RSTRING_LEN(data));

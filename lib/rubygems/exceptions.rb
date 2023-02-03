@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'deprecate'
-require_relative 'unknown_command_spell_checker'
+require_relative "deprecate"
+require_relative "unknown_command_spell_checker"
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -27,7 +27,7 @@ class Gem::UnknownCommandError < Gem::Exception
       if DidYouMean.respond_to?(:correct_error)
         DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
       else
-        DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
+        DidYouMean::SPELL_CHECKERS["Gem::UnknownCommandError"] =
           Gem::UnknownCommandSpellChecker
 
         prepend DidYouMean::Correctable
@@ -154,7 +154,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 
   def build_message # :nodoc:
     requester  = @request.requester
-    requester  = requester ? requester.spec.full_name : 'The user'
+    requester  = requester ? requester.spec.full_name : "The user"
     dependency = @request.dependency
 
     message = "#{requester} requires #{dependency} but it conflicted:\n".dup
@@ -221,14 +221,12 @@ class Gem::SystemExitException < SystemExit
   ##
   # The exit code for the process
 
-  attr_accessor :exit_code
+  alias exit_code status
 
   ##
   # Creates a new SystemExitException with the given +exit_code+
 
   def initialize(exit_code)
-    @exit_code = exit_code
-
     super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
   end
 end
@@ -254,7 +252,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Gem::Resolver::DependencyRequest +dep+
 
   def initialize(dep, platform_mismatch=nil)
-    if platform_mismatch and !platform_mismatch.empty?
+    if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
     else

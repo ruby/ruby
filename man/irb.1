@@ -173,8 +173,19 @@ The default value is 16.
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -compact
+.Bl -tag -compact -width "XDG_CONFIG_HOME"
+.It Ev IRB_LANG
+The locale used for
+.Nm .
+.Pp
 .It Ev IRBRC
+The path to the personal initialization file.
+.Pp
+.It Ev XDG_CONFIG_HOME
+.Nm
+respects XDG_CONFIG_HOME. If this is set, load
+.Pa $XDG_CONFIG_HOME/irb/irbrc
+as a personal initialization file.
 .Pp
 .El
 .Pp
@@ -186,7 +197,17 @@ depends on same variables as
 .Sh FILES
 .Bl -tag -compact
 .It Pa ~/.irbrc
-Personal irb initialization.
+Personal irb initialization. If
+.Ev IRBRC
+is set, read
+.Pa $IRBRC
+instead. If
+.Ev IRBRC
+is not set and
+.Ev XDG_CONFIG_HOME
+is set,
+.Pa $XDG_CONFIG_HOME/irb/irbrc
+is loaded.
 .Pp
 .El
 .Pp

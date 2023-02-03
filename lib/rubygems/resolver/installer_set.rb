@@ -61,13 +61,12 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
     found = find_all request
 
     found.delete_if do |s|
-      s.version.prerelease? and not s.local?
+      s.version.prerelease? && !s.local?
     end unless dependency.prerelease?
 
     found = found.select do |s|
-      Gem::Source::SpecificFile === s.source or
-        Gem::Platform::RUBY == s.platform or
-        Gem::Platform.local === s.platform
+      Gem::Source::SpecificFile === s.source ||
+        Gem::Platform.match_spec?(s)
     end
 
     found = found.sort_by do |s|
@@ -111,14 +110,14 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   # Should local gems should be considered?
 
   def consider_local? # :nodoc:
-    @domain == :both or @domain == :local
+    @domain == :both || @domain == :local
   end
 
   ##
   # Should remote gems should be considered?
 
   def consider_remote? # :nodoc:
-    @domain == :both or @domain == :remote
+    @domain == :both || @domain == :remote
   end
 
   ##
@@ -137,8 +136,8 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
 
     dep = req.dependency
 
-    return res if @ignore_dependencies and
-              @always_install.none? {|spec| dep.match? spec }
+    return res if @ignore_dependencies &&
+                  @always_install.none? {|spec| dep.match? spec }
 
     name = dep.name
 
@@ -168,10 +167,6 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       end
     end
 
-    res.delete_if do |spec|
-      spec.version.prerelease? and not dep.prerelease?
-    end
-
     res.concat @remote_set.find_all req if consider_remote?
 
     res
@@ -190,7 +185,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   def inspect # :nodoc:
     always_install = @always_install.map {|s| s.full_name }
 
-    '#<%s domain: %s specs: %p always install: %p>' % [
+    "#<%s domain: %s specs: %p always install: %p>" % [
       self.class, @domain, @specs.keys, always_install
     ]
   end
@@ -219,16 +214,16 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[InstallerSet', ']' do
+    q.group 2, "[InstallerSet", "]" do
       q.breakable
       q.text "domain: #{@domain}"
 
       q.breakable
-      q.text 'specs: '
+      q.text "specs: "
       q.pp @specs.keys
 
       q.breakable
-      q.text 'always install: '
+      q.text "always install: "
       q.pp @always_install
     end
   end

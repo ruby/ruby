@@ -4,7 +4,7 @@ require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
-# http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/23633
+# https://blade.ruby-lang.org/ruby-core/23633
 
 describe "Array#rindex" do
   it "returns the first index backwards from the end where element == to object" do

@@ -10,19 +10,19 @@ require_relative "version"
 
 class Gem::Requirement
   OPS = { #:nodoc:
-    "="  =>  lambda {|v, r| v == r },
-    "!=" =>  lambda {|v, r| v != r },
-    ">"  =>  lambda {|v, r| v >  r },
-    "<"  =>  lambda {|v, r| v <  r },
-    ">=" =>  lambda {|v, r| v >= r },
-    "<=" =>  lambda {|v, r| v <= r },
-    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump },
+    "=" => lambda {|v, r| v == r },
+    "!=" => lambda {|v, r| v != r },
+    ">" => lambda {|v, r| v >  r },
+    "<" => lambda {|v, r| v <  r },
+    ">=" => lambda {|v, r| v >= r },
+    "<=" => lambda {|v, r| v <= r },
+    "~>" => lambda {|v, r| v >= r && v.release < r.bump },
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
 
   quoted = OPS.keys.map {|k| Regexp.quote k }.join "|"
-  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*".freeze # :nodoc:
+  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*" # :nodoc:
 
   ##
   # A regular expression that matches a requirement
@@ -61,7 +61,7 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
-    when '!' then
+    when "!" then
       source_set
     else
       if input.respond_to? :to_str
@@ -73,11 +73,11 @@ class Gem::Requirement
   end
 
   def self.default
-    new '>= 0'
+    new ">= 0"
   end
 
   def self.default_prerelease
-    new '>= 0.a'
+    new ">= 0.a"
   end
 
   ###
@@ -218,7 +218,7 @@ class Gem::Requirement
   end
 
   def encode_with(coder) # :nodoc:
-    coder.add 'requirements', @requirements
+    coder.add "requirements", @requirements
   end
 
   ##
@@ -230,7 +230,7 @@ class Gem::Requirement
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 1, 'Gem::Requirement.new(', ')' do
+    q.group 1, "Gem::Requirement.new(", ")" do
       q.pp as_list
     end
   end
@@ -253,7 +253,7 @@ class Gem::Requirement
   def specific?
     return true if @requirements.length > 1 # GIGO, > 1, > 2 is silly
 
-    not %w[> >=].include? @requirements.first.first # grab the operator
+    !%w[> >=].include? @requirements.first.first # grab the operator
   end
 
   def to_s # :nodoc:

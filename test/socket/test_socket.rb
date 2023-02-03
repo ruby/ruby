@@ -583,7 +583,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end
+  end unless RUBY_PLATFORM.include?("freebsd")
 
   def test_connect_timeout
     host = "127.0.0.1"

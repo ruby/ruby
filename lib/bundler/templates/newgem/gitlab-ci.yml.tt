@@ -1,9 +1,18 @@
-image: ruby:<%= RUBY_VERSION %>
+default:
+  image: ruby:<%= RUBY_VERSION %>
 
-before_script:
-  - gem install bundler -v <%= Bundler::VERSION %>
-  - bundle install
+  before_script:
+<%- if config[:ext] == 'rust' -%>
+    - apt-get update && apt-get install -y clang
+    - gem update --system '<%= ::Gem.rubygems_version %>'
+<%- end -%>
+    - gem install bundler -v <%= Bundler::VERSION %>
+    - bundle install
 
 example_job:
+<%- if config[:ext] == 'rust' -%>
+  variables:
+    RB_SYS_FORCE_INSTALL_RUST_TOOLCHAIN: 'true'
+<%- end -%>
   script:
     - bundle exec rake

@@ -4,6 +4,9 @@ require 'ripper'
 require 'stringio'
 require_relative 'ruby_vm/helpers/c_escape'
 
+SUBLIBS = {}
+REQUIRED = {}
+
 def string_literal(lit, str = [])
   while lit
     case lit.first
@@ -84,7 +87,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
       tree = tree[2]
       next
     when :method_add_arg
-      _, mid, (_, (_, args)) = tree
+      _method_add_arg, mid, (_arg_paren, args) = tree
       case mid.first
       when :call
         _, recv, sep, mid = mid
@@ -92,6 +95,11 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         _, mid = mid
       else
         mid = nil
+      end
+      # w/  trailing comma: [[:method_add_arg, ...]]
+      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]], false]
+      if args && args.first == :args_add_block
+        args = args[1]
       end
     when :vcall
       _, mid = tree
@@ -174,6 +182,21 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         end
 
         bs[func_name] = [argc, cfunc_name] if func_name
+      elsif /\Arequire(?:_relative)\z/ =~ mid and args.size == 1 and
+           (arg1 = args[0])[0] == :string_literal and
+           (arg1 = arg1[1])[0] == :string_content and
+           (arg1 = arg1[1])[0] == :@tstring_content and
+           sublib = arg1[1]
+        if File.exist?(f = File.join(@dir, sublib)+".rb")
+          puts "- #{@base}.rb requires #{sublib}"
+          if REQUIRED[sublib]
+            warn "!!! #{sublib} is required from #{REQUIRED[sublib]} already; ignored"
+          else
+            REQUIRED[sublib] = @base
+            (SUBLIBS[@base] ||= []) << sublib
+          end
+          ARGV.push(f)
+        end
       end
       break unless tree = args
     end
@@ -242,7 +265,9 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 end
 
 def mk_builtin_header file
+  @dir = File.dirname(file)
   base = File.basename(file, '.rb')
+  @base = base
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
@@ -251,10 +276,10 @@ def mk_builtin_header file
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   begin
-    f = open(ofile, 'w')
-  rescue Errno::EACCES
+    f = File.open(ofile, 'w')
+  rescue SystemCallError # EACCES, EPERM, EROFS, etc.
     # Fall back to the current directory
-    f = open(File.basename(ofile), 'w')
+    f = File.open(File.basename(ofile), 'w')
   end
   begin
     if File::ALT_SEPARATOR
@@ -300,10 +325,10 @@ def mk_builtin_header file
            . map {|i|", argv[#{i}]"} \
            . join('')
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(FILE *f, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'mjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
       f.puts %'{'
-      f.puts %'    fprintf(f, "    VALUE self = GET_SELF();\\n");'
-      f.puts %'    fprintf(f, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
+      f.puts %'    rb_str_catf(buf, "    VALUE self = GET_SELF();\\n");'
+      f.puts %'    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
       if inlines.has_key? cfunc_name
         body_lineno, text, locals, func_name = inlines[cfunc_name]
         lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
@@ -311,25 +336,33 @@ def mk_builtin_header file
         str.gsub(/^(?!#)/, '    ').each_line {|i|
           j = RubyVM::CEscape.rstring2cstr(i).dup
           j.sub!(/^    return\b/ , '    val =')
-          f.printf(%'        fprintf(f, "%%s", %s);\n', j)
+          f.printf(%'        rb_str_catf(buf, "%%s", %s);\n', j)
         }
         f.puts(%'        return;')
         f.puts(%'    }')
       end
       if argc > 0
         f.puts %'    if (index == -1) {'
-        f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
         f.puts %'    }'
         f.puts %'    else {'
-        f.puts %'        fprintf(f, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
-        f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
+        f.puts %'        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
+        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end
-      f.puts %'    fprintf(f, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
-      f.puts %'    fprintf(f, "    val = f(ec, self#{argv});\\n");'
+      f.puts %'    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
+      f.puts %'    rb_str_catf(buf, "    val = f(ec, self#{argv});\\n");'
       f.puts %'}'
       f.puts
     }
+
+    if SUBLIBS[base]
+      f.puts "// sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts %[#include #{(sub+".rbinc").dump}]
+      end
+      f.puts
+    end
 
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
@@ -353,6 +386,14 @@ def mk_builtin_header file
       f.puts "  if (0) rb_builtin_function_check_arity#{argc}(#{cfunc_name});"
     }
     f.puts "COMPILER_WARNING_POP"
+
+    if SUBLIBS[base]
+      f.puts
+      f.puts "  // sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts "  Init_builtin_#{sub}();"
+      end
+    end
 
     f.puts
     f.puts "  // load"

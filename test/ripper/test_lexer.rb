@@ -100,6 +100,20 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
   end
 
+  def test_end_of_script_char
+    all_assertions do |all|
+      ["a", %w"[a ]", %w"{, }", "if"].each do |src, append|
+        expected = Ripper.lex(src).map {|e| e[1]}
+        ["\0b", "\4b", "\32b"].each do |eof|
+          c = "#{src}#{eof}#{append}"
+          all.for(c) do
+            assert_equal expected, Ripper.lex(c).map {|e| e[1]}
+          end
+        end
+      end
+    end
+  end
+
   def test_slice
     assert_equal "string\#{nil}\n",
       Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)
@@ -227,5 +241,27 @@ class TestRipper::Lexer < Test::Unit::TestCase
       EOS
     EOF
     assert_equal([[5, 0], :on_heredoc_end, "EOS\n", state(:EXPR_BEG)], Ripper.lex(s).last, bug)
+  end
+
+  def test_tokenize_with_here_document
+    bug = '[Bug #18963]'
+    code = %[
+<<A + "hello
+A
+world"
+]
+    assert_equal(code, Ripper.tokenize(code).join(""), bug)
+  end
+
+  def test_heredoc_inside_block_param
+    bug = '[Bug #19399]'
+    code = <<~CODE
+      a do |b
+        <<-C
+        C
+        |
+      end
+    CODE
+    assert_equal(code, Ripper.tokenize(code).join(""), bug)
   end
 end

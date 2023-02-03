@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemSourceFetchProblem < Gem::TestCase
   def test_exception
     source = Gem::Source.new @gem_repo
-    error  = RuntimeError.new 'test'
+    error  = RuntimeError.new "test"
 
     sf = Gem::SourceFetchProblem.new source, error
 
@@ -12,25 +12,25 @@ class TestGemSourceFetchProblem < Gem::TestCase
       raise sf
     end
 
-    assert_equal 'test', e.message
+    assert_equal "test", e.message
   end
 
   def test_password_redacted
-    source = Gem::Source.new 'https://username:secret@gemsource.com'
-    error  = RuntimeError.new 'test'
+    source = Gem::Source.new "https://username:secret@gemsource.com"
+    error  = RuntimeError.new "test"
 
     sf = Gem::SourceFetchProblem.new source, error
 
-    refute_match sf.wordy, 'secret'
+    refute_match sf.wordy, "secret"
   end
 
   def test_source_password_no_redacted
-    source = Gem::Source.new 'https://username:secret@gemsource.com'
-    error  = RuntimeError.new 'test'
+    source = Gem::Source.new "https://username:secret@gemsource.com"
+    error  = RuntimeError.new "test"
 
     sf = Gem::SourceFetchProblem.new source, error
     sf.wordy
 
-    assert_match 'secret', source.uri.to_s
+    assert_match "secret", source.uri.to_s
   end
 end

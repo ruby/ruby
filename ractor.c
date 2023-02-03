@@ -17,6 +17,7 @@
 #include "gc.h"
 #include "transient_heap.h"
 #include "yjit.h"
+#include "mjit.h"
 
 VALUE rb_cRactor;
 
@@ -74,7 +75,9 @@ static void
 ractor_lock_self(rb_ractor_t *cr, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
+#if RACTOR_CHECK_MODE > 0
     VM_ASSERT(cr->sync.locked_by != cr->pub.self);
+#endif
     ractor_lock(cr, file, line);
 }
 
@@ -94,7 +97,9 @@ static void
 ractor_unlock_self(rb_ractor_t *cr, const char *file, int line)
 {
     VM_ASSERT(cr == GET_RACTOR());
+#if RACTOR_CHECK_MODE > 0
     VM_ASSERT(cr->sync.locked_by == cr->pub.self);
+#endif
     ractor_unlock(cr, file, line);
 }
 
@@ -263,7 +268,7 @@ static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
-	ractor_free,
+        ractor_free,
         ractor_memsize,
         NULL, // update
     },
@@ -493,13 +498,13 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
 }
 
 static bool
-ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
+ractor_sleeping_by(const rb_ractor_t *r, enum rb_ractor_wait_status wait_status)
 {
     return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
 }
 
 static bool
-ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
+ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_locking(r);
 
@@ -547,7 +552,7 @@ ractor_sleep_interrupt(void *ptr)
 
 #if USE_RUBY_DEBUG_LOG
 static const char *
-wait_status_str(enum ractor_wait_status wait_status)
+wait_status_str(enum rb_ractor_wait_status wait_status)
 {
     switch ((int)wait_status) {
       case wait_none: return "none";
@@ -563,7 +568,7 @@ wait_status_str(enum ractor_wait_status wait_status)
 }
 
 static const char *
-wakeup_status_str(enum ractor_wakeup_status wakeup_status)
+wakeup_status_str(enum rb_ractor_wakeup_status wakeup_status)
 {
     switch (wakeup_status) {
       case wakeup_none: return "none";
@@ -724,7 +729,7 @@ ractor_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
     VM_ASSERT(cr == rb_ec_ractor_ptr(ec));
     VALUE v;
 
-    while ((v = ractor_try_receive(ec, cr)) == Qundef) {
+    while (UNDEF_P(v = ractor_try_receive(ec, cr))) {
         ractor_receive_wait(ec, cr);
     }
 
@@ -871,7 +876,7 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
         }
         RACTOR_UNLOCK_SELF(cr);
 
-        if (v != Qundef) {
+        if (!UNDEF_P(v)) {
             struct receive_block_data data = {
                 .cr = cr,
                 .rq = rq,
@@ -883,7 +888,7 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
             VALUE result = rb_ensure(receive_if_body, (VALUE)&data,
                                      receive_if_ensure, (VALUE)&data);
 
-            if (result != Qundef) return result;
+            if (!UNDEF_P(result)) return result;
             index++;
         }
 
@@ -1035,7 +1040,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
                 VM_ASSERT(r->sync.wait.taken_basket.type == basket_type_none);
 
                 if (basket->type == basket_type_move) {
-                    enum ractor_wait_status prev_wait_status = r->sync.wait.status;
+                    enum rb_ractor_wait_status prev_wait_status = r->sync.wait.status;
                     r->sync.wait.status = wait_moving;
 
                     RACTOR_UNLOCK(r);
@@ -1090,8 +1095,8 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
     VALUE ret = Qundef;
     int i;
     bool interrupted = false;
-    enum ractor_wait_status wait_status = 0;
-    bool yield_p = (yielded_value != Qundef) ? true : false;
+    enum rb_ractor_wait_status wait_status = 0;
+    bool yield_p = !UNDEF_P(yielded_value) ? true : false;
     const int alen = rs_len + (yield_p ? 1 : 0);
 
     struct ractor_select_action {
@@ -1148,7 +1153,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
               case ractor_select_action_take:
                 rv = actions[i].v;
                 v = ractor_try_take(ec, RACTOR_PTR(rv));
-                if (v != Qundef) {
+                if (!UNDEF_P(v)) {
                     *ret_r = rv;
                     ret = v;
                     goto cleanup;
@@ -1156,7 +1161,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
                 break;
               case ractor_select_action_receive:
                 v = ractor_try_receive(ec, cr);
-                if (v != Qundef) {
+                if (!UNDEF_P(v)) {
                     *ret_r = ID2SYM(rb_intern("receive"));
                     ret = v;
                     goto cleanup;
@@ -1264,7 +1269,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         }
 
         // check results
-        enum ractor_wakeup_status wakeup_status = cr->sync.wait.wakeup_status;
+        enum rb_ractor_wakeup_status wakeup_status = cr->sync.wait.wakeup_status;
         cr->sync.wait.wakeup_status = wakeup_none;
 
         switch (wakeup_status) {
@@ -1320,7 +1325,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         goto restart;
     }
 
-    VM_ASSERT(ret != Qundef);
+    VM_ASSERT(!UNDEF_P(ret));
     return ret;
 }
 
@@ -1434,12 +1439,6 @@ cancel_single_ractor_mode(void)
     }
 
     ruby_single_main_ractor = NULL;
-
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
-        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
-                         "Ractor is experimental, and the behavior may change in future versions of Ruby! "
-                         "Also there are many implementation issues.");
-    }
 }
 
 static void
@@ -1514,7 +1513,7 @@ rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = ruby_mimmalloc(sizeof(rb_ractor_t));
     if (r == NULL) {
-	fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
+        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
     }
     MEMZERO(r, rb_ractor_t, 1);
@@ -1608,6 +1607,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->debug = cr->debug;
 
     rb_yjit_before_ractor_spawn();
+    rb_mjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -2250,6 +2250,19 @@ obj_hash_traverse_i(VALUE key, VALUE val, VALUE ptr)
     return ST_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+obj_hash_iv_traverse_i(VALUE val, void *ptr)
+{
+    struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
+
+    if (obj_traverse_i(val, d->data)) {
+        d->stop = true;
+        return ID_TABLE_STOP;
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static void
 obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
@@ -2265,7 +2278,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
@@ -2291,7 +2304,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
         for (uint32_t i = 0; i < ivtbl->numiv; i++) {
             VALUE val = ivtbl->ivptr[i];
-            if (val != Qundef && obj_traverse_i(val, data)) return 1;
+            if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
         }
     }
 
@@ -2308,12 +2321,22 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_OBJECT:
         {
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            if (rb_shape_obj_too_complex(obj)) {
+                struct obj_traverse_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                };
+                rb_id_table_foreach_values(ROBJECT_IV_HASH(obj), obj_hash_iv_traverse_i, &d);
+                if (d.stop) return 1;
+            }
+            else {
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                VALUE val = ptr[i];
-                if (val != Qundef && obj_traverse_i(val, data)) return 1;
+                for (uint32_t i=0; i<len; i++) {
+                    VALUE val = ptr[i];
+                    if (!UNDEF_P(val) && obj_traverse_i(val, data)) return 1;
+                }
             }
         }
         break;
@@ -2658,12 +2681,36 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
     return ST_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+obj_iv_hash_traverse_replace_foreach_i(VALUE val, void *data)
+{
+    return ID_TABLE_REPLACE;
+}
+
+static enum rb_id_table_iterator_result
+obj_iv_hash_traverse_replace_i(VALUE *val, void *ptr, int exists)
+{
+    struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
+    struct obj_traverse_replace_data *data = d->data;
+
+    if (obj_traverse_replace_i(*val, data)) {
+        d->stop = true;
+        return ID_TABLE_STOP;
+    }
+    else if (*val != data->replacement) {
+        VALUE v = *val = data->replacement;
+        RB_OBJ_WRITTEN(d->src, Qundef, v);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
 static struct st_table *
 obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
@@ -2681,7 +2728,7 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     int *pcnt = (int *)ptr;
 
     if (!rb_ractor_shareable_p(obj)) {
-        pcnt++;
+        *pcnt++;
     }
 }
 
@@ -2737,7 +2784,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         struct gen_ivtbl *ivtbl;
         rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
         for (uint32_t i = 0; i < ivtbl->numiv; i++) {
-            if (ivtbl->ivptr[i] != Qundef) {
+            if (!UNDEF_P(ivtbl->ivptr[i])) {
                 CHECK_AND_REPLACE(ivtbl->ivptr[i]);
             }
         }
@@ -2758,16 +2805,30 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
+            if (rb_shape_obj_too_complex(obj)) {
+                struct rb_id_table * table = ROBJECT_IV_HASH(obj);
+                struct obj_traverse_replace_callback_data d = {
+                    .stop = false,
+                    .data = data,
+                    .src = obj,
+                };
+                rb_id_table_foreach_values_with_replace(table,
+                                                        obj_iv_hash_traverse_replace_foreach_i,
+                                                        obj_iv_hash_traverse_replace_i,
+                                                        (void *)&d);
+            }
+            else {
 #if USE_TRANSIENT_HEAP
-            if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
+                if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
 #endif
 
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+                uint32_t len = ROBJECT_IV_COUNT(obj);
+                VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                if (ptr[i] != Qundef) {
-                    CHECK_AND_REPLACE(ptr[i]);
+                for (uint32_t i=0; i<len; i++) {
+                    if (!UNDEF_P(ptr[i])) {
+                        CHECK_AND_REPLACE(ptr[i]);
+                    }
                 }
             }
         }
@@ -2971,7 +3032,7 @@ static VALUE
 ractor_move(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, move_enter, move_leave, true);
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
@@ -3002,7 +3063,7 @@ static VALUE
 ractor_copy(VALUE obj)
 {
     VALUE val = rb_obj_traverse_replace(obj, copy_enter, copy_leave, false);
-    if (val != Qundef) {
+    if (!UNDEF_P(val)) {
         return val;
     }
     else {
@@ -3134,7 +3195,7 @@ static bool
 ractor_local_ref(rb_ractor_local_key_t key, void **pret)
 {
     if (rb_ractor_main_p()) {
-        if ((VALUE)key->main_cache != Qundef) {
+        if (!UNDEF_P((VALUE)key->main_cache)) {
             *pret = key->main_cache;
             return true;
         }

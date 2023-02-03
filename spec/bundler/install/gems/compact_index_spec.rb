@@ -163,6 +163,25 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
+  it "shows proper path when permission errors happen", :permissions do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem "rack"
+    G
+
+    versions = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
+    FileUtils.mkdir_p(File.dirname(versions))
+    FileUtils.touch(versions)
+    FileUtils.chmod("-r", versions)
+
+    bundle :install, :artifice => "compact_index", :raise_on_error => false
+
+    expect(err).to include(
+      "There was an error while trying to read from `#{versions}`. It is likely that you need to grant read permissions for that path."
+    )
+  end
+
   it "falls back when the user's home directory does not exist or is not writable" do
     ENV["HOME"] = tmp("missing_home").to_s
 
@@ -498,18 +517,6 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-  end
-
-  it "should install when EndpointSpecification has a bin dir owned by root", :sudo => true do
-    sudo "mkdir -p #{system_gem_path("bin")}"
-    sudo "chown -R root #{system_gem_path("bin")}"
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rails"
-    G
-    bundle :install, :artifice => "compact_index"
-    expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
   it "installs the binstubs", :bundler => "< 3" do

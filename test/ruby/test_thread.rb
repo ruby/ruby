@@ -29,13 +29,19 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_inspect
+    m = Thread::Mutex.new
+    m.lock
     line = __LINE__+1
-    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
+    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start do
+      m.synchronize {}
+    end
+    Thread.pass until th.stop?
     s = th.inspect
     assert_include(s, "::C\u{30b9 30ec 30c3 30c9}:")
     assert_include(s, " #{__FILE__}:#{line} ")
     assert_equal(s, th.to_s)
   ensure
+    m.unlock
     th.join
   end
 
@@ -966,6 +972,8 @@ _eom
   end
 
   def test_thread_timer_and_interrupt
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
     bug5757 = '[ruby-dev:44985]'
     pid = nil
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
@@ -1244,6 +1252,21 @@ q.pop
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
 
+  def test_fork_value
+    bug18902 = "[Bug #18902]"
+    th = Thread.start { sleep 2 }
+    begin
+      pid = fork do
+        th.value
+      end
+      _, status = Process.wait2(pid)
+      assert_predicate(status, :success?, bug18902)
+    ensure
+      th.kill
+      th.join
+    end
+  end if Process.respond_to?(:fork)
+
   def test_fork_while_locked
     m = Thread::Mutex.new
     thrs = []
@@ -1492,5 +1515,13 @@ q.pop
         end
       end
     };
+  end
+
+  def test_pending_interrupt?
+    t = Thread.handle_interrupt(Exception => :never) { Thread.new { Thread.stop } }
+    t.raise(StandardError)
+    assert_equal(true, t.pending_interrupt?)
+    assert_equal(true, t.pending_interrupt?(Exception))
+    assert_equal(false, t.pending_interrupt?(ArgumentError))
   end
 end

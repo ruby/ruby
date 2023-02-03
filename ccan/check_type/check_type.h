@@ -44,7 +44,7 @@
  *		 ((encl_type *)						\
  *		  ((char *)(mbr_ptr) - offsetof(enclosing_type, mbr))))
  */
-#if HAVE_TYPEOF
+#if defined(HAVE_TYPEOF) && HAVE_TYPEOF
 #define ccan_check_type(expr, type)			\
 	((typeof(expr) *)0 != (type *)0)
 

@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'exceptions'
-require_relative 'openssl'
+require_relative "exceptions"
+require_relative "openssl"
 
 ##
 # = Signing gems
@@ -334,7 +334,7 @@ module Gem::Security
   ##
   # Used internally to select the signing digest from all computed digests
 
-  DIGEST_NAME = 'SHA256' # :nodoc:
+  DIGEST_NAME = "SHA256" # :nodoc:
 
   ##
   # Length of keys created by RSA and DSA keys
@@ -344,18 +344,18 @@ module Gem::Security
   ##
   # Default algorithm to use when building a key pair
 
-  DEFAULT_KEY_ALGORITHM = 'RSA'
+  DEFAULT_KEY_ALGORITHM = "RSA"
 
   ##
   # Named curve used for Elliptic Curve
 
-  EC_NAME = 'secp384r1'
+  EC_NAME = "secp384r1"
 
   ##
   # Cipher used to encrypt the key pair used to sign gems.
   # Must be in the list returned by OpenSSL::Cipher.ciphers
 
-  KEY_CIPHER = OpenSSL::Cipher.new('AES-256-CBC') if defined?(OpenSSL::Cipher)
+  KEY_CIPHER = OpenSSL::Cipher.new("AES-256-CBC") if defined?(OpenSSL::Cipher)
 
   ##
   # One day in seconds
@@ -376,10 +376,10 @@ module Gem::Security
   # * The certificate contains a subject key identifier
 
   EXTENSIONS = {
-    'basicConstraints'     => 'CA:FALSE',
-    'keyUsage'             =>
-      'keyEncipherment,dataEncipherment,digitalSignature',
-    'subjectKeyIdentifier' => 'hash',
+    "basicConstraints" => "CA:FALSE",
+    "keyUsage" =>
+      "keyEncipherment,dataEncipherment,digitalSignature",
+    "subjectKeyIdentifier" => "hash",
   }.freeze
 
   def self.alt_name_or_x509_entry(certificate, x509_entry)
@@ -434,13 +434,6 @@ module Gem::Security
   end
 
   ##
-  # In Ruby 2.3 EC doesn't implement the private_key? but not the private? method
-
-  if defined?(OpenSSL::PKey::EC) && Gem::Version.new(String.new(RUBY_VERSION)) < Gem::Version.new("2.4.0")
-    OpenSSL::PKey::EC.send(:alias_method, :private?, :private_key?)
-  end
-
-  ##
   # Creates a self-signed certificate with an issuer and subject from +email+,
   # a subject alternative name of +email+ and the given +extensions+ for the
   # +key+.
@@ -473,7 +466,7 @@ module Gem::Security
       OpenSSL::Digest.new(algorithm)
     end
   else
-    require 'digest'
+    require "digest"
 
     def self.create_digest(algorithm = DIGEST_NAME)
       Digest.const_get(algorithm).new
@@ -487,18 +480,12 @@ module Gem::Security
   def self.create_key(algorithm)
     if defined?(OpenSSL::PKey)
       case algorithm.downcase
-      when 'dsa'
+      when "dsa"
         OpenSSL::PKey::DSA.new(RSA_DSA_KEY_LENGTH)
-      when 'rsa'
+      when "rsa"
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
-      when 'ec'
-        if RUBY_VERSION >= "2.4.0"
-          OpenSSL::PKey::EC.generate(EC_NAME)
-        else
-          domain_key = OpenSSL::PKey::EC.new(EC_NAME)
-          domain_key.generate_key
-          domain_key
-        end
+      when "ec"
+        OpenSSL::PKey::EC.generate(EC_NAME)
       else
         raise Gem::Security::Exception,
         "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
@@ -510,11 +497,11 @@ module Gem::Security
   # Turns +email_address+ into an OpenSSL::X509::Name
 
   def self.email_to_name(email_address)
-    email_address = email_address.gsub(/[^\w@.-]+/i, '_')
+    email_address = email_address.gsub(/[^\w@.-]+/i, "_")
 
-    cn, dcs = email_address.split '@'
+    cn, dcs = email_address.split "@"
 
-    dcs = dcs.split '.'
+    dcs = dcs.split "."
 
     OpenSSL::X509::Name.new([
       ["CN", cn],
@@ -571,17 +558,17 @@ module Gem::Security
     signee_key     = certificate.public_key
 
     alt_name = certificate.extensions.find do |extension|
-      extension.oid == 'subjectAltName'
+      extension.oid == "subjectAltName"
     end
 
-    extensions = extensions.merge 'subjectAltName' => alt_name.value if
+    extensions = extensions.merge "subjectAltName" => alt_name.value if
       alt_name
 
     issuer_alt_name = signing_cert.extensions.find do |extension|
-      extension.oid == 'subjectAltName'
+      extension.oid == "subjectAltName"
     end
 
-    extensions = extensions.merge 'issuerAltName' => issuer_alt_name.value if
+    extensions = extensions.merge "issuerAltName" => issuer_alt_name.value if
       issuer_alt_name
 
     signed = create_cert signee_subject, signee_key, age, extensions, serial
@@ -597,7 +584,7 @@ module Gem::Security
   def self.trust_dir
     return @trust_dir if @trust_dir
 
-    dir = File.join Gem.user_home, '.gem', 'trust'
+    dir = File.join Gem.user_home, ".gem", "trust"
 
     @trust_dir ||= Gem::Security::TrustDir.new dir
   end
@@ -617,8 +604,8 @@ module Gem::Security
   def self.write(pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER)
     path = File.expand_path path
 
-    File.open path, 'wb', permissions do |io|
-      if passphrase and cipher
+    File.open path, "wb", permissions do |io|
+      if passphrase && cipher
         io.write pemmable.to_pem cipher, passphrase
       else
         io.write pemmable.to_pem
@@ -633,9 +620,9 @@ module Gem::Security
 end
 
 if Gem::HAVE_OPENSSL
-  require_relative 'security/policy'
-  require_relative 'security/policies'
-  require_relative 'security/trust_dir'
+  require_relative "security/policy"
+  require_relative "security/policies"
+  require_relative "security/trust_dir"
 end
 
-require_relative 'security/signer'
+require_relative "security/signer"

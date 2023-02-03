@@ -16,10 +16,10 @@ describe "File.atime" do
   end
 
   platform_is :linux, :windows do
-    platform_is_not :"powerpc64le-linux" do # https://bugs.ruby-lang.org/issues/17926
+    unless ENV.key?('TRAVIS') # https://bugs.ruby-lang.org/issues/17926
       ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
       it "returns the last access time for the named file with microseconds" do
-        supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d+)/, 1], 10)
+        supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
         if supports_subseconds != 0
           expected_time = Time.at(Time.now.to_i + 0.123456)
           File.utime expected_time, 0, @file

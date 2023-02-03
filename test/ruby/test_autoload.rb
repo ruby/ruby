@@ -65,6 +65,24 @@ p Foo::Bar
     }
   end
 
+  def test_autoload_p_with_static_extensions
+    require 'rbconfig'
+    omit unless RbConfig::CONFIG['EXTSTATIC'] == 'static'
+    begin
+      require 'fcntl.so'
+    rescue LoadError
+      omit('fcntl not included in the build')
+    end
+
+    assert_separately(['--disable-all'], <<~RUBY)
+      autoload :Fcntl, 'fcntl.so'
+
+      assert_equal('fcntl.so', autoload?(:Fcntl))
+      assert(Object.const_defined?(:Fcntl))
+      assert_equal('constant', defined?(Fcntl), '[Bug #19115]')
+    RUBY
+  end
+
   def test_autoload_with_unqualified_file_name # [ruby-core:69206]
     Object.send(:remove_const, :A) if Object.const_defined?(:A)
 

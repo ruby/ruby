@@ -11,24 +11,24 @@ module Fiddle
       TYPE_LONG  => ALIGN_LONG,
       TYPE_FLOAT => ALIGN_FLOAT,
       TYPE_DOUBLE => ALIGN_DOUBLE,
-      -TYPE_CHAR  => ALIGN_CHAR,
-      -TYPE_SHORT => ALIGN_SHORT,
-      -TYPE_INT   => ALIGN_INT,
-      -TYPE_LONG  => ALIGN_LONG,
+      TYPE_UCHAR  => ALIGN_CHAR,
+      TYPE_USHORT => ALIGN_SHORT,
+      TYPE_UINT   => ALIGN_INT,
+      TYPE_ULONG  => ALIGN_LONG,
     }
 
     PACK_MAP = {
-      TYPE_VOIDP => "l!",
+      TYPE_VOIDP => "L!",
       TYPE_CHAR  => "c",
       TYPE_SHORT => "s!",
       TYPE_INT   => "i!",
       TYPE_LONG  => "l!",
       TYPE_FLOAT => "f",
       TYPE_DOUBLE => "d",
-      -TYPE_CHAR  => "c",
-      -TYPE_SHORT => "s!",
-      -TYPE_INT   => "i!",
-      -TYPE_LONG  => "l!",
+      TYPE_UCHAR  => "C",
+      TYPE_USHORT => "S!",
+      TYPE_UINT   => "I!",
+      TYPE_ULONG  => "L!",
     }
 
     SIZE_MAP = {
@@ -39,16 +39,17 @@ module Fiddle
       TYPE_LONG  => SIZEOF_LONG,
       TYPE_FLOAT => SIZEOF_FLOAT,
       TYPE_DOUBLE => SIZEOF_DOUBLE,
-      -TYPE_CHAR  => SIZEOF_CHAR,
-      -TYPE_SHORT => SIZEOF_SHORT,
-      -TYPE_INT   => SIZEOF_INT,
-      -TYPE_LONG  => SIZEOF_LONG,
+      TYPE_UCHAR  => SIZEOF_CHAR,
+      TYPE_USHORT => SIZEOF_SHORT,
+      TYPE_UINT   => SIZEOF_INT,
+      TYPE_ULONG  => SIZEOF_LONG,
     }
     if defined?(TYPE_LONG_LONG)
-      ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_MAP[-TYPE_LONG_LONG] = ALIGN_LONG_LONG
-      PACK_MAP[TYPE_LONG_LONG] = PACK_MAP[-TYPE_LONG_LONG] = "q"
-      SIZE_MAP[TYPE_LONG_LONG] = SIZE_MAP[-TYPE_LONG_LONG] = SIZEOF_LONG_LONG
-      PACK_MAP[TYPE_VOIDP] = "q" if SIZEOF_LONG_LONG == SIZEOF_VOIDP
+      ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_MAP[TYPE_ULONG_LONG] = ALIGN_LONG_LONG
+      PACK_MAP[TYPE_LONG_LONG] = "q"
+      PACK_MAP[TYPE_ULONG_LONG] = "Q"
+      SIZE_MAP[TYPE_LONG_LONG] = SIZE_MAP[TYPE_ULONG_LONG] = SIZEOF_LONG_LONG
+      PACK_MAP[TYPE_VOIDP] = "Q" if SIZEOF_LONG_LONG == SIZEOF_VOIDP
     end
 
     def align(addr, align)

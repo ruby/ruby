@@ -101,6 +101,10 @@ module Bundler
       source_list_for(source).find {|s| equivalent_source?(source, s) }
     end
 
+    def get_with_fallback(source)
+      get(source) || default_source
+    end
+
     def lock_sources
       lock_other_sources + lock_rubygems_sources
     end
@@ -157,11 +161,17 @@ module Bundler
     end
 
     def map_sources(replacement_sources)
-      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
+      rubygems, git, plugin = [@rubygems_sources, @git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
           replacement_sources.find {|s| s == source } || source
         end
       end
+
+      path = @path_sources.map do |source|
+        replacement_sources.find {|s| s == (source.is_a?(Source::Gemspec) ? source.as_path_source : source) } || source
+      end
+
+      [rubygems, path, git, plugin]
     end
 
     def global_replacement_source(replacement_sources)
@@ -202,7 +212,7 @@ module Bundler
     def warn_on_git_protocol(source)
       return if Bundler.settings["git.allow_insecure"]
 
-      if source.uri =~ /^git\:/
+      if /^git\:/.match?(source.uri)
         Bundler.ui.warn "The git source `#{source.uri}` uses the `git` protocol, " \
           "which transmits data without encryption. Disable this warning with " \
           "`bundle config set --local git.allow_insecure true`, or switch to the `https` " \

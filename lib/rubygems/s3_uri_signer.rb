@@ -1,4 +1,4 @@
-require_relative 'openssl'
+require_relative "openssl"
 
 ##
 # S3URISigner implements AWS SigV4 for S3 Source to avoid a dependency on the aws-sdk-* gems
@@ -138,14 +138,14 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_credentials_json
-    require 'net/http'
-    require_relative 'request'
-    require_relative 'request/connection_pools'
-    require 'json'
+    require "net/http"
+    require_relative "request"
+    require_relative "request/connection_pools"
+    require "json"
 
     iam_info = ec2_metadata_request(EC2_IAM_INFO)
     # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
-    role_name = iam_info['InstanceProfileArn'].split('/').last
+    role_name = iam_info["InstanceProfileArn"].split("/").last
     ec2_metadata_request(EC2_IAM_SECURITY_CREDENTIALS + role_name)
   end
 

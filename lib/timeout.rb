@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.3.0"
+  VERSION = "0.3.1"
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
@@ -120,6 +120,8 @@ module Timeout
         requests.reject!(&:done?)
       end
     end
+    ThreadGroup::Default.add(watcher)
+    watcher.name = "Timeout stdlib thread"
     watcher.thread_variable_set(:"\0__detached_thread__", true)
     watcher
   end

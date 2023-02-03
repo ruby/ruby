@@ -29,6 +29,16 @@ describe "IO#syswrite on a file" do
     end
   end
 
+  it "does not modify the passed argument" do
+    File.open(@filename, "w") do |f|
+      f.set_encoding(Encoding::IBM437)
+      # A character whose codepoint differs between UTF-8 and IBM437
+      f.syswrite("ƒ".freeze)
+    end
+
+    File.binread(@filename).bytes.should == [198, 146]
+  end
+
   it "warns if called immediately after a buffered IO#write" do
     @file.write("abcde")
     -> { @file.syswrite("fghij") }.should complain(/syswrite/)

@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   change-ws.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require_relative "nop"
@@ -19,12 +13,18 @@ module IRB
   module ExtendCommand
 
     class CurrentWorkingWorkspace < Nop
+      category "IRB"
+      description "Show the current workspace."
+
       def execute(*obj)
         irb_context.main
       end
     end
 
     class ChangeWorkspace < Nop
+      category "IRB"
+      description "Change the current workspace to an object."
+
       def execute(*obj)
         irb_context.change_workspace(*obj)
         irb_context.main

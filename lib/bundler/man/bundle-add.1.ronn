@@ -3,7 +3,7 @@ bundle-add(1) -- Add gem to the Gemfile and run bundle install
 
 ## SYNOPSIS
 
-`bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE] [--git=GIT] [--github=GITHUB] [--branch=BRANCH] [--ref=REF] [--skip-install] [--strict] [--optimistic]
+`bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE] [--path=PATH] [--git=GIT] [--github=GITHUB] [--branch=BRANCH] [--ref=REF] [--skip-install] [--strict] [--optimistic]
 
 ## DESCRIPTION
 Adds the named gem to the Gemfile and run `bundle install`. `bundle install` can be avoided by using the flag `--skip-install`.
@@ -32,6 +32,9 @@ bundle add rails --group "development, test"
 
 * `--require`, `-r`:
   Adds require path to gem. Provide false, or a path as a string.
+
+* `--path`:
+  Specify the file system path for the added gem.
 
 * `--git`:
   Specify the git source for the added gem.

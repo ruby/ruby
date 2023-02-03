@@ -163,7 +163,7 @@ module Bundler
         "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
     end
 
-    def pretty_dependency(dep, print_source = false)
+    def pretty_dependency(dep)
       msg = String.new(dep.name)
       msg << " (#{dep.requirement})" unless dep.requirement == Gem::Requirement.default
 
@@ -172,7 +172,6 @@ module Bundler
         msg << " " << platform_string if !platform_string.empty? && platform_string != Gem::Platform::RUBY
       end
 
-      msg << " from the `#{dep.source}` source" if print_source && dep.source
       msg
     end
 
@@ -285,6 +284,7 @@ module Bundler
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
+      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__) unless RUBY_VERSION < "2.7"
     end
 
     def set_path

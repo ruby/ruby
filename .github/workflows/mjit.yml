@@ -3,30 +3,37 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
+permissions:
+  contents: read
+
 jobs:
   make:
     strategy:
       matrix:
-        test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--mjit", "--mjit-wait" ]
+        test_task: [check] # to make job names consistent
+        mjit_opts: [--mjit-wait]
       fail-fast: false
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --mjit-debug=-ggdb3'
+      RUN_OPTS: '--disable-gems ${{ matrix.mjit_opts }} --mjit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
@@ -40,10 +47,10 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: src
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -62,31 +69,30 @@ jobs:
       - run: make incs
       - run: make
       - run: sudo make -s install
-      - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - name: Run test-all
-        run: |
-          ulimit -c unlimited
-          make -s test-all RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 60
+      # - name: Run test-all
+      #   run: |
+      #     ulimit -c unlimited
+      #     make -s test-all RUN_OPTS="$RUN_OPTS"
+      #   timeout-minutes: 60
       - name: Run test-spec
         run: |
-          ulimit -c unlimited
+          unset GNUMAKEFLAGS
           make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.jit_opts }}",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.mjit_opts }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

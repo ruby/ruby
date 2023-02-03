@@ -2,15 +2,14 @@ gnumake = yes
 
 include Makefile
 
-ENABLE_SHARED=@ENABLE_SHARED@
-DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
+DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
 windres-cpp := $(CPP) -xc
 windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
 	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
 WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 
-ifeq (@target_os@,cygwin)
+ifeq ($(target_os),cygwin)
   DLL_BASE_NAME := $(LIBRUBY_SO:.dll=)
 else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
@@ -38,7 +37,7 @@ WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
 include $(srcdir)/template/GNUmakefile.in
 
-SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
+SOLIBS := $(DLL_BASE_NAME).res.$(OBJEXT) $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
 RUBYDEF = $(DLL_BASE_NAME).def
@@ -47,26 +46,26 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
-$(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
+$(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.$(OBJEXT)
 
-%.res.@OBJEXT@: %.rc
+%.res.$(OBJEXT): %.rc
 	$(ECHO) compiling $@
 	$(Q) $(WINDRES) --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
-%.rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
+%.rc: $(BOOTSTRAPRUBY_FAKE) $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/win32/resource.rb \
+	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
 	  -so_name=$(DLL_BASE_NAME) -output=$(*F) \
 	  . $(icondirs) $(srcdir)/win32
 
-$(PROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
-$(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
+$(PROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
+$(WPROGRAM): $(RUBYW_INSTALL_NAME).res.$(OBJEXT)
 	@rm -f $@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
-$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
+$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(ECHO) creating $@
@@ -78,7 +77,7 @@ $(RUBY_EXP): $(LIBRUBY_A)
 
 GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 
-ifeq (@target_os@,mingw32)
+ifeq ($(target_os),mingw32)
 $(OBJS) $(MAINOBJ): win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): win32/dir.h
@@ -89,16 +88,17 @@ MSYS2_ARG_CONV_EXCL_PARAM = --exclude=;--name=
 yes-test-ruby:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 yes-test-all:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 yes-test-almost: export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
+test/% spec/%/ spec/%_spec.rb: export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 
 endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
 
-$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
+$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(BOOTSTRAPRUBY_FAKE) $(RBCONFIG)
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
+	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 clean-local::
 	@$(RM) $(RUBYDEF)
-	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
+	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.$(OBJEXT))
 	@$(RM) $(RCFILES)

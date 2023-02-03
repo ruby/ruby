@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb/color_printer'
 require 'rubygems'
 require 'stringio'
 
+require_relative "helper"
+
 module TestIRB
-  class TestColorPrinter < Test::Unit::TestCase
+  class TestColorPrinter < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     RED       = "\e[31m"
@@ -14,6 +15,10 @@ module TestIRB
     CYAN      = "\e[36m"
 
     def setup
+      super
+      if IRB.respond_to?(:conf)
+        @colorize, IRB.conf[:USE_COLORIZE] = IRB.conf[:USE_COLORIZE], true
+      end
       @get_screen_size = Reline.method(:get_screen_size)
       Reline.instance_eval { undef :get_screen_size }
       def Reline.get_screen_size
@@ -24,6 +29,10 @@ module TestIRB
     def teardown
       Reline.instance_eval { undef :get_screen_size }
       Reline.define_singleton_method(:get_screen_size, @get_screen_size)
+      if instance_variable_defined?(:@colorize)
+        IRB.conf[:USE_COLORIZE] = @colorize
+      end
+      super
     end
 
     IRBTestColorPrinter = Struct.new(:a)

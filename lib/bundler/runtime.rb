@@ -125,7 +125,6 @@ module Bundler
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
-        spec.source.send(:fetch_gem, spec) if Bundler.settings[:cache_all_platforms] && spec.source.respond_to?(:fetch_gem, true)
         spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
       end
 

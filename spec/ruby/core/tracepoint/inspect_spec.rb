@@ -16,6 +16,15 @@ describe 'TracePoint#inspect' do
     TracePoint.new(:line) {}.inspect.should == '#<TracePoint:disabled>'
   end
 
+  it "shows only whether it's enabled when outside the TracePoint handler" do
+    trace = TracePoint.new(:line) {}
+    trace.enable
+
+    trace.inspect.should == '#<TracePoint:enabled>'
+
+    trace.disable
+  end
+
   it 'returns a String showing the event, path and line' do
     inspect = nil
     line = nil

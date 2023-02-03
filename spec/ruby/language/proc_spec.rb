@@ -237,4 +237,11 @@ describe "A Proc" do
       end
     end
   end
+
+  describe "taking |required keyword arguments, **kw| arguments" do
+    it "raises ArgumentError for missing required argument" do
+      p = proc { |a:, **kw| [a, kw] }
+      -> { p.call() }.should raise_error(ArgumentError)
+    end
+  end
 end

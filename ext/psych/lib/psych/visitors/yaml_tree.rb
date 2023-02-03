@@ -192,12 +192,13 @@ module Psych
         register o, @emitter.scalar(o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY)
       end
 
+      def visit_Date o
+        register o, visit_Integer(o.gregorian)
+      end
+
       def visit_DateTime o
-        formatted = if o.offset.zero?
-                      o.strftime("%Y-%m-%d %H:%M:%S.%9N Z".freeze)
-                    else
-                      o.strftime("%Y-%m-%d %H:%M:%S.%9N %:z".freeze)
-                    end
+        t = o.italy
+        formatted = format_time t, t.offset.zero?
         tag = '!ruby/object:DateTime'
         register o, @emitter.scalar(formatted, nil, tag, false, false, Nodes::Scalar::ANY)
       end
@@ -235,7 +236,6 @@ module Psych
       end
       alias :visit_TrueClass :visit_Integer
       alias :visit_FalseClass :visit_Integer
-      alias :visit_Date :visit_Integer
 
       def visit_Float o
         if o.nan?
@@ -482,8 +482,8 @@ module Psych
         @emitter.end_mapping
       end
 
-      def format_time time
-        if time.utc?
+      def format_time time, utc = time.utc?
+        if utc
           time.strftime("%Y-%m-%d %H:%M:%S.%9N Z")
         else
           time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
@@ -568,7 +568,7 @@ module Psych
           raise BadAlias, "Tried to dump an aliased object"
         end
 
-        unless @permitted_classes[target.class]
+        unless Symbol === target || @permitted_classes[target.class]
           raise DisallowedClass.new('dump', target.class.name || target.class.inspect)
         end
 
@@ -576,7 +576,7 @@ module Psych
       end
 
       def visit_Symbol sym
-        unless @permitted_symbols[sym]
+        unless @permitted_classes[Symbol] || @permitted_symbols[sym]
           raise DisallowedClass.new('dump', "Symbol(#{sym.inspect})")
         end
 

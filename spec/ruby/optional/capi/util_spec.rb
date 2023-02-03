@@ -15,8 +15,9 @@ describe "C-API Util function" do
     end
 
     it "assigns the required arguments scanned" do
-      @o.rb_scan_args([1, 2], "2", 2, @acc).should == 2
-      ScratchPad.recorded.should == [1, 2]
+      obj = Object.new
+      @o.rb_scan_args([obj, 2], "2", 2, @acc).should == 2
+      ScratchPad.recorded.should == [obj, 2]
     end
 
     it "raises an ArgumentError if there are insufficient arguments" do

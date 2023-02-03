@@ -41,6 +41,7 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 Mountain Daylight Time 2000',false],[2000,8,28,2,29,34,'Mountain Daylight Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 Mexico Standard Time 2000',false],[2000,8,28,2,29,34,'Mexico Standard Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 E. Australia Standard Time 2000',false],[2000,8,28,2,29,34,'E. Australia Standard Time',10*3600,6], __LINE__],
+     [['Sat Aug 28 02:29:34 W.  Central  Africa  Standard  Time 2000',false],[2000,8,28,2,29,34,'W. Central Africa Standard Time',1*3600,6], __LINE__],
 
      # part of iso 8601
      [['1999-05-23 23:55:21',false],[1999,5,23,23,55,21,nil,nil,nil], __LINE__],
@@ -132,6 +133,7 @@ class TestDateParse < Test::Unit::TestCase
      [['19990523235521.123[-9]',false],[1999,5,23,23,55,21,'-9',-(9*3600),nil], __LINE__],
      [['19990523235521.123[+9]',false],[1999,5,23,23,55,21,'+9',+(9*3600),nil], __LINE__],
      [['19990523235521.123[9]',false],[1999,5,23,23,55,21,'9',+(9*3600),nil], __LINE__],
+     [['19990523235521.123[9 ]',false],[1999,5,23,23,55,21,'9 ',+(9*3600),nil], __LINE__],
      [['19990523235521.123[-9.50]',false],[1999,5,23,23,55,21,'-9.50',-(9*3600+30*60),nil], __LINE__],
      [['19990523235521.123[+9.50]',false],[1999,5,23,23,55,21,'+9.50',+(9*3600+30*60),nil], __LINE__],
      [['19990523235521.123[-5:EST]',false],[1999,5,23,23,55,21,'EST',-5*3600,nil], __LINE__],
@@ -140,6 +142,7 @@ class TestDateParse < Test::Unit::TestCase
      [['235521.123',false],[nil,nil,nil,23,55,21,nil,nil,nil], __LINE__],
      [['235521.123[-9]',false],[nil,nil,nil,23,55,21,'-9',-9*3600,nil], __LINE__],
      [['235521.123[+9]',false],[nil,nil,nil,23,55,21,'+9',+9*3600,nil], __LINE__],
+     [['235521.123[-9 ]',false],[nil,nil,nil,23,55,21,'-9 ',-9*3600,nil], __LINE__],
      [['235521.123[-5:EST]',false],[nil,nil,nil,23,55,21,'EST',-5*3600,nil], __LINE__],
      [['235521.123[+9:JST]',false],[nil,nil,nil,23,55,21,'JST',+9*3600,nil], __LINE__],
 

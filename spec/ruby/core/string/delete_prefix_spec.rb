@@ -21,6 +21,10 @@ describe "String#delete_prefix" do
     r.should == s
   end
 
+  it "does not remove partial bytes, only full characters" do
+    "\xe3\x81\x82".delete_prefix("\xe3").should == "\xe3\x81\x82"
+  end
+
   it "doesn't set $~" do
     $~ = nil
 
@@ -46,6 +50,10 @@ describe "String#delete_prefix" do
       s = StringSpecs::MyString.new('hello')
       s.delete_prefix('hell').should be_an_instance_of(String)
     end
+  end
+
+  it "returns a String in the same encoding as self" do
+    'hello'.encode("US-ASCII").delete_prefix('hell').encoding.should == Encoding::US_ASCII
   end
 end
 

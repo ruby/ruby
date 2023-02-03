@@ -1,11 +1,5 @@
 # frozen_string_literal: true
-require 'abbrev'
 require 'optparse'
-
-begin
-  require 'readline'
-rescue LoadError
-end
 
 require_relative '../../rdoc'
 
@@ -1080,6 +1074,10 @@ or the PAGER environment variable.
   def interactive
     puts "\nEnter the method name you want to look up."
 
+    begin
+      require 'readline'
+    rescue LoadError
+    end
     if defined? Readline then
       Readline.completion_proc = method :complete
       puts "You can use tab to autocomplete."
@@ -1302,7 +1300,6 @@ or the PAGER environment variable.
         yield pager
       ensure
         pager.close
-        @jruby_pager_process.wait_for if @jruby_pager_process
       end
     else
       yield $stdout

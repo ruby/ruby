@@ -1,6 +1,0 @@
-type: lib/benchmark_driver/runner/mjit_exec
-num_methods: [1]
-#num_methods: (1..100).to_a + [200, 300, 400, 500, 600, 700, 800, 900, 1000]
-loop_count: 50000000
-from_jit: false
-to_jit: true

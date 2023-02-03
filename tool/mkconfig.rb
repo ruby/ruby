@@ -122,8 +122,16 @@ File.foreach "config.status" do |line|
       universal, val = val, 'universal' if universal
     when /^arch$/
       if universal
-        platform = val.sub(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]}])
+        platform = val.sub(/universal/, '$(arch)')
       end
+    when /^target_cpu$/
+      if universal
+        val = 'cpu'
+      end
+    when /^target$/
+      val = '"$(target_cpu)-$(target_vendor)-$(target_os)"'
+    when /^host(?:_(?:os|vendor|cpu|alias))?$/
+      val = %["$(#{name.sub(/^host/, 'target')})"]
     when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
@@ -185,11 +193,13 @@ print "  # Ruby installed directory.\n"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  # DESTDIR on make install.\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
-print <<'ARCH' if universal
+print <<"UNIVERSAL", <<'ARCH' if universal
+  universal = #{universal}
+UNIVERSAL
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
   arch = arch_flag && arch_flag[/\A\s*-arch\s+(\S+)\s*\z/, 1]
+  cpu = arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || RUBY_PLATFORM[/\A[^-]*/]
 ARCH
-print "  universal = #{universal}\n" if universal
 print "  # The hash configurations stored.\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
@@ -268,7 +278,7 @@ EOS
 print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
-print <<EOS if /darwin/ =~ arch
+print prefix.start_with?("/System/") ? <<EOS : <<EOS if /darwin/ =~ arch
   if sdkroot = ENV["SDKROOT"]
     sdkroot = sdkroot.dup
   elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
@@ -278,6 +288,8 @@ print <<EOS if /darwin/ =~ arch
     sdkroot.chomp!
   end
   CONFIG["SDKROOT"] = sdkroot
+EOS
+  CONFIG["SDKROOT"] = ""
 EOS
 print <<EOS
   CONFIG["platform"] = #{platform || '"$(arch)"'}

@@ -16,6 +16,8 @@ bundle-viz(1) -- Generates a visual dependency graph for your Gemfile
 
 The associated gems must also be installed via [`bundle install(1)`](bundle-install.1.html).
 
+`viz` command was deprecated in Bundler 2.2. Use [bundler-graph plugin](https://github.com/rubygems/bundler-graph) instead.
+
 ## OPTIONS
 
 * `--file`, `-f`:

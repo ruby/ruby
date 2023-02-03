@@ -1,18 +1,18 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping Gem::Security::Signer tests.  openssl not found.'
+  warn "Skipping Gem::Security::Signer tests.  openssl not found."
 end
 
 class TestGemSecuritySigner < Gem::TestCase
-  ALTERNATE_KEY  = load_key 'alternate'
-  CHILD_KEY      = load_key 'child'
-  GRANDCHILD_KEY = load_key 'grandchild'
+  ALTERNATE_KEY  = load_key "alternate"
+  CHILD_KEY      = load_key "child"
+  GRANDCHILD_KEY = load_key "grandchild"
 
-  CHILD_CERT      = load_cert 'child'
-  GRANDCHILD_CERT = load_cert 'grandchild'
-  EXPIRED_CERT    = load_cert 'expired'
+  CHILD_CERT      = load_cert "child"
+  GRANDCHILD_CERT = load_cert "grandchild"
+  EXPIRED_CERT    = load_cert "expired"
 
   def setup
     super
@@ -42,7 +42,7 @@ class TestGemSecuritySigner < Gem::TestCase
 
   def test_initialize_cert_chain_invalid
     assert_raise OpenSSL::X509::CertificateError do
-      Gem::Security::Signer.new nil, ['garbage']
+      Gem::Security::Signer.new nil, ["garbage"]
     end
   end
 
@@ -54,12 +54,12 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_default
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
-    private_key_path = File.join Gem.user_home, '.gem', 'gem-private_key.pem'
+    private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    public_cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
+    public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
     signer = Gem::Security::Signer.new nil, nil
@@ -87,7 +87,7 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_extract_name
     signer = Gem::Security::Signer.new nil, nil
 
-    assert_equal 'child@example', signer.extract_name(CHILD_CERT)
+    assert_equal "child@example", signer.extract_name(CHILD_CERT)
   end
 
   def test_load_cert_chain
@@ -117,25 +117,25 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_sign
     signer = Gem::Security::Signer.new PRIVATE_KEY, [PUBLIC_CERT]
 
-    signature = signer.sign 'hello'
+    signature = signer.sign "hello"
 
     expected = <<-EXPECTED
-cHze2sEfRysoUMCfGVAx/7o8jxj5liJJ2ptNxe2jf3l+EZvyjdqpXo9Ndzxx
-6xLp2rxLG4K2//ip4aCH5Sh7hnia+F5u6iuLBETPlklPrmw5dnuKZxolz+vM
-0O1aOZsQHcVzQoESTGjkms3KZk+gn3lg0sSBbAV5/LyDYoHCEjxlcA5D+Olb
-rDmRyBMOnMS+q489OZ5Hr6B2YJJ3QbUwIZNhUeNmOxIBEYTrrKkZ92qkxbRN
-qhlqFP4jR6zXFeyBCOr0KpTiWBNuxBFXDsxmhGyt2BOIjD6qmKn7RSIfYg/U
-toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
+FmrCYxEXW3dgYYNMxPdS16VrdXT+d5nyXTVlRm64ZHSgMxMAaPtQJsVYv73m
+DWHTzNnLhhINSpgBMLh5a4atM52yxVdkPUTgqIH+LeIPBXn8xaP5JLmfDcmI
+tBpc/9DhS3v9iKCX40igAArFu7Gg3swbgQ61SP+U22LvG5nDQZQz3sudtsw3
+qKPykFVaYjrRwzvBdSdJ1PwlAsanSwcwS/GKPtmE/ykZ6X5XOx7wvCDL/zGy
+B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
+9EaVo7pDJLEM487+xg1CAZHRhwshd6II00XEzG/jBQ==
     EXPECTED
 
-    assert_equal expected, [signature].pack('m')
+    assert_equal expected, [signature].pack("m")
   end
 
   def test_sign_expired
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
     e = assert_raise Gem::Security::Exception do
-      signer.sign 'hello'
+      signer.sign "hello"
     end
 
     assert_match "certificate /CN=nobody/DC=example not valid after 1970-01-01 00:00:00 UTC", e.message
@@ -143,17 +143,17 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
 
   def test_sign_expired_auto_update
     pend if Gem.java_platform?
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), :mode => 0700
 
-    private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
+    private_key_path = File.join(Gem.user_home, ".gem", "gem-private_key.pem")
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
+    cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
     Gem::Security.write EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    signer.sign 'hello'
+    signer.sign "hello"
 
     cert = OpenSSL::X509::Certificate.new File.read cert_path
 
@@ -163,14 +163,14 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
 
     expired_path =
-      File.join Gem.user_home, '.gem', "gem-public_cert.pem.expired.#{expiry}"
+      File.join Gem.user_home, ".gem", "gem-public_cert.pem.expired.#{expiry}"
 
     assert_path_exist expired_path
     assert_equal EXPIRED_CERT.to_pem, File.read(expired_path)
   end
 
   def test_sign_expired_auto_update_exists
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), :mode => 0700
 
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
     expired_path =
@@ -178,16 +178,16 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
 
     Gem::Security.write EXPIRED_CERT, expired_path
 
-    private_key_path = File.join(Gem.user_home, 'gem-private_key.pem')
+    private_key_path = File.join(Gem.user_home, "gem-private_key.pem")
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    cert_path = File.join Gem.user_home, 'gem-public_cert.pem'
+    cert_path = File.join Gem.user_home, "gem-public_cert.pem"
     Gem::Security.write EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
     e = assert_raise Gem::Security::Exception do
-      signer.sign 'hello'
+      signer.sign "hello"
     end
 
     assert_match %r{certificate /CN=nobody/DC=example not valid}, e.message
@@ -196,14 +196,14 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_no_key
     signer = Gem::Security::Signer.new nil, nil
 
-    assert_nil signer.sign 'stuff'
+    assert_nil signer.sign "stuff"
   end
 
   def test_sign_wrong_key
     signer = Gem::Security::Signer.new ALTERNATE_KEY, [PUBLIC_CERT]
 
     assert_raise Gem::Security::Exception do
-      signer.sign 'hello'
+      signer.sign "hello"
     end
   end
 
@@ -211,7 +211,7 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
     signer = Gem::Security::Signer.new ALTERNATE_KEY, []
 
     assert_raise Gem::Security::Exception do
-      signer.sign 'hello'
+      signer.sign "hello"
     end
   end
 end if Gem::HAVE_OPENSSL

@@ -8,46 +8,55 @@
 YJIT - Yet Another Ruby JIT
 ===========================
 
-**DISCLAIMER: Please note that this project is experimental. It is very much a work in progress, it may cause your software to crash, and current performance results will vary widely, especially on larger applications.**
-
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
 It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
 Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
-To simplify development, we currently support only macOS and Linux on x86-64, but an ARM64 backend
-is part of future plans.
+YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
+<p align="center"><b>
+    If you're using YJIT in production, please
+    <a href="mailto:maxime.chevalierboisvert@shopify.com">share your success stories with us!</a>
+ </b></p>
+
 If you wish to learn more about the approach taken, here are some conference talks and publications:
+- RubyKaigi 2022 keynote: [Stories from developing YJIT](https://www.youtube.com/watch?v=EMchdR9C8XM)
+- RubyKaigi 2022 talk: [Building a Lightweight IR and Backend for YJIT](https://www.youtube.com/watch?v=BbLGqTxTRp0)
 - RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
+- VMIL 2021 paper: [YJIT: A Basic Block Versioning JIT Compiler for CRuby](https://dl.acm.org/doi/10.1145/3486606.3486781)
 - MoreVMs 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=vucLAqv7qpc)
 - ECOOP 2016 talk: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://www.youtube.com/watch?v=sRNBY7Ss97A)
 - ECOOP 2016 paper: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf)
 - ECOOP 2015 talk: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://www.youtube.com/watch?v=S-aHBuoiYE0)
 - ECOOP 2015 paper: [Simple and Effective Type Check Removal through Lazy Basic Block Versioning](https://arxiv.org/pdf/1411.0352.pdf)
 
-To cite this repository in your publications, please use this bibtex snippet:
+To cite YJIT in your publications, please cite the VMIL 2021 paper:
 
 ```
-@misc{yjit_ruby_jit,
-  author = {Chevalier-Boisvert, Maxime and Wu, Alan and Patterson, Aaron},
-  title = {YJIT - Yet Another Ruby JIT},
-  year = {2021},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Shopify/yjit}},
+@inproceedings{yjit_vmil2021,
+author = {Chevalier-Boisvert, Maxime and Gibbs, Noah and Boussier, Jean and Wu, Si Xing (Alan) and Patterson, Aaron and Newton, Kevin and Hawthorn, John},
+title = {YJIT: A Basic Block Versioning JIT Compiler for CRuby},
+year = {2021},
+isbn = {9781450391092},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3486606.3486781},
+doi = {10.1145/3486606.3486781},
+booktitle = {Proceedings of the 13th ACM SIGPLAN International Workshop on Virtual Machines and Intermediate Languages},
+pages = {25–32},
+numpages = {8},
+keywords = {ruby, dynamically typed, compiler, optimization, just-in-time, bytecode},
+location = {Chicago, IL, USA},
+series = {VMIL 2021}
 }
 ```
 
 ## Current Limitations
 
-YJIT is a work in progress and as such may not yet be mature enough for mission-critical software. Below is a list of known limitations, all of which we plan to eventually address:
-
-- No garbage collection for generated code.
-- Currently supports only macOS and Linux.
-- Currently supports only x86-64 CPUs.
-
-Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
+YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state
+information.
+You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options). There is a slight performance tradeoff because allocating less executable memory could result in the generated machine code being collected more often.
 
 ## Installation
 
@@ -57,6 +66,7 @@ You will need to install:
 - A C compiler such as GCC or Clang
 - GNU Make and Autoconf
 - The Rust compiler `rustc` and Cargo (if you want to build in dev/debug mode)
+  - The Rust version must be [>= 1.58.0](../../yjit/Cargo.toml).
 
 To install the Rust build toolchain, we suggest following the [recommended installation method][rust-install]. Rust also provides first class [support][editor-tools] for many source code editors.
 
@@ -67,51 +77,53 @@ To install the Rust build toolchain, we suggest following the [recommended insta
 
 Start by cloning the `ruby/ruby` repository:
 
-```
+```sh
 git clone https://github.com/ruby/ruby yjit
 cd yjit
 ```
 
 The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
 
-```
+```sh
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
-./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc
+./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
 or
 
-```
+```sh
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc
+./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
 On macOS, you may need to specify where to find some libraries:
 
-```
+```sh
 # Install dependencies
 brew install openssl readline libyaml
 
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
 make -j install
 ```
 
 Typically configure will choose the default C compiler. To specify the C compiler, use
-```
+
+```sh
 # Choosing a specific c compiler
 export CC=/path/to/my/chosen/c/compiler
 ```
+
 before running `./configure`.
 
 You can test that YJIT works correctly by running:
 
-```
+```sh
 # Quick tests found in /bootstraptest
 make btest
 
@@ -126,30 +138,40 @@ make -j test-all
 Once YJIT is built, you can either use `./miniruby` from within your build directory, or switch to the YJIT version of `ruby`
 by using the `chruby` tool:
 
-```
+```sh
 chruby ruby-yjit
 ruby myscript.rb
 ```
 
 You can dump statistics about compilation and execution by running YJIT with the `--yjit-stats` command-line option:
 
-```
+```sh
 ./miniruby --yjit-stats myscript.rb
 ```
 
 The machine code generated for a given method can be printed by adding `puts RubyVM::YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
-
 
 ### Command-Line Options
 
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 2)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 256 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program (must compile with `cppflags=-DRUBY_DEBUG` to use this)
+- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
+- `--yjit-stats`: produce statistics after the execution of a program (incurs a run-time cost)
+- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
 - `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
 - `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
+
+Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
+This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
+
+You can verify that YJIT is enabled by checking that `ruby -v --yjit` includes the string `+YJIT`:
+
+```sh
+ruby -v --yjit
+ruby 3.3.0dev (2023-01-31T15:11:10Z master 2a0bf269c9) +YJIT dev [x86_64-darwin22]
+```
 
 ### Benchmarking
 
@@ -157,40 +179,29 @@ We have collected a set of benchmarks and implemented a simple benchmarking harn
 
 ### Performance Tips
 
-This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
+This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase. You should ideally start by profiling your application using a tool such as [stackprof](https://github.com/tmm1/stackprof) so that you can determine which methods make up most of the execution time. You can then refactor the specific methods that make up the largest fractions of the execution time. We do not recommend modifying your entire codebase based on the current limitations of YJIT.
 
 - Use exceptions for error recovery only, not as part of normal control-flow
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
-- Use while loops if you can, instead of `integer.times`
 - Minimize layers of indirection
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
-- CRuby method calls are costly. Favor larger methods over smaller methods.
 - Try to write code so that the same variables always have the same type
+- Use while loops if you can, instead of `integer.times`
+  - This is not idiomatic Ruby, but could help in hot methods
+- CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
 
-You can also compile YJIT in debug mode and use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
-
-### Memory Statistics
-
-YJIT, including in production configuration, keeps track of the size of generated code. If you check YJIT.runtime_stats you can see them:
-
-```
-$ RUBYOPT="--yjit" irb
-irb(main):001:0> RubyVM::YJIT.runtime_stats
-=> {:inline_code_size=>331945, :outlined_code_size=>272980}
-```
-
-These are the size in bytes of generated inlined code and generated outlined code. If the combined sizes for generated code are very close to the total YJIT exec-mem-size (see above), YJIT will stop generating code once the limit is reached. Try to make sure you have enough exec-mem-size for the program you're running. By default YJIT will allocate 268,435,456 bytes (256 MiB) of space for generated inlined and outlined code.
+You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
 ### Other Statistics
 
-If you compile Ruby with RUBY_DEBUG and/or YJIT_STATS defined and run with "--yjit --yjit-stats", YJIT will track and return performance statistics in RubyVM::YJIT.runtime_stats.
+If you compile Ruby with `RUBY_DEBUG` and/or `YJIT_STATS` defined and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
 
-```
+```rb
 $ RUBYOPT="--yjit --yjit-stats" irb
-irb(main):001:0> YJIT.runtime_stats
+irb(main):001:0> RubyVM::YJIT.runtime_stats
 =>
 {:inline_code_size=>340745,
  :outlined_code_size=>297664,
@@ -241,8 +252,6 @@ The YJIT source code is divided between:
 - `yjit/src/options.rs`: handling of command-line options
 - `yjit/bindgen/src/main.rs`: C bindings exposed to the Rust codebase through bindgen
 - `yjit/src/cruby.rs`: C bindings manually exposed to the Rust codebase
-- `misc/test_yjit_asm.sh`: script to compile and run the in-memory assembler tests
-- `misc/yjit_asm_tests.c`: tests for the in-memory assembler
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
@@ -273,49 +282,49 @@ There are 3 test suites:
 
 The tests can be run in parallel like this:
 
-```
+```sh
 make -j test-all RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 Or single-threaded like this, to more easily identify which specific test is failing:
 
-```
+```sh
 make test-all TESTOPTS=--verbose RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 To debug a single test in `test-all`:
 
-```
+```sh
 make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 You can also run one specific test in `btest`:
 
-```
+```sh
 make btest BTESTS=bootstraptest/test_ractor.rb RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 There are shortcuts to run/debug your own test/repro in `test.rb`:
 
-```
+```sh
 make run  # runs ./miniruby test.rb
 make lldb # launches ./miniruby test.rb in lldb
 ```
 
 You can use the Intel syntax for disassembly in LLDB, keeping it consistent with YJIT's disassembly:
 
-```
+```sh
 echo "settings set target.x86-disassembly-flavor intel" >> ~/.lldbinit
 ```
 
-## Running YJIT on M1
+## Running x86 YJIT on Apple's Rosetta
 
-It is possible to run YJIT on an Apple M1 via Rosetta.  You can find basic
+For development purposes, it is possible to run x86 YJIT on an Apple M1 via Rosetta.  You can find basic
 instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
 
-```
+```sh
 $ softwareupdate --install-rosetta
 ```
 
@@ -323,13 +332,13 @@ Now any command can be run with Rosetta via the `arch` command line tool.
 
 Then you can start your shell in an x86 environment:
 
-```
+```sh
 $ arch -x86_64 zsh
 ```
 
 You can double check your current architecture via the `arch` command:
 
-```
+```sh
 $ arch -x86_64 zsh
 $ arch
 i386
@@ -337,16 +346,15 @@ i386
 
 You may need to set the default target for `rustc` to x86-64, e.g.
 
-```
+```sh
 $ rustup default stable-x86_64-apple-darwin
 ```
 
 While in your i386 shell, install Cargo and Homebrew, then hack away!
 
-### M1 Caveats
+### Rosetta Caveats
 
 1. You must install a version of Homebrew for each architecture
 2. Cargo will install in $HOME/.cargo by default, and I don't know a good way to change architectures after install
-3. `dev` won't work if you have i386 Homebrew installed on an M1
 
 If you use Fish shell you can [read this link](https://tenderlovemaking.com/2022/01/07/homebrew-rosetta-and-ruby.html) for information on making the dev environment easier.

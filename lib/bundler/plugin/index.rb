@@ -146,7 +146,7 @@ module Bundler
       # @param [Boolean] is the index file global index
       def load_index(index_file, global = false)
         SharedHelpers.filesystem_access(index_file, :read) do |index_f|
-          valid_file = index_f && index_f.exist? && !index_f.size.zero?
+          valid_file = index_f&.exist? && !index_f.size.zero?
           break unless valid_file
 
           data = index_f.read
@@ -167,11 +167,11 @@ module Bundler
       # to be only String key value pairs)
       def save_index
         index = {
-          "commands"     => @commands,
-          "hooks"        => @hooks,
-          "load_paths"   => @load_paths,
+          "commands" => @commands,
+          "hooks" => @hooks,
+          "load_paths" => @load_paths,
           "plugin_paths" => @plugin_paths,
-          "sources"      => @sources,
+          "sources" => @sources,
         }
 
         require_relative "../yaml_serializer"

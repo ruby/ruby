@@ -121,4 +121,4 @@ class Gem::Package::TarReader
   end
 end
 
-require_relative 'tar_reader/entry'
+require_relative "tar_reader/entry"

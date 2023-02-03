@@ -20,6 +20,7 @@ struct rb_thread_struct;        /* in vm_core.h */
 #define COVERAGE_TARGET_BRANCHES 2
 #define COVERAGE_TARGET_METHODS  4
 #define COVERAGE_TARGET_ONESHOT_LINES 8
+#define COVERAGE_TARGET_EVAL 16
 
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);

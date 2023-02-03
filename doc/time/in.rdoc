@@ -1,7 +1,0 @@
-- <tt>in: zone</tt>: a timezone _zone_, which may be:
-  - A string offset from UTC.
-  - A single letter offset from UTC, in the range <tt>'A'..'Z'</tt>,
-    <tt>'J'</tt> (the so-called military timezone) excluded.
-  - An integer number of seconds.
-  - A timezone object;
-    see {Timezone Argument}[#class-Time-label-Timezone+Argument] for details.

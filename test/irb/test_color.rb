@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb/color'
 require 'rubygems'
 require 'stringio'
 
+require_relative "helper"
+
 module TestIRB
-  class TestColor < Test::Unit::TestCase
+  class TestColor < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     UNDERLINE = "\e[4m"
@@ -16,6 +17,20 @@ module TestIRB
     BLUE      = "\e[34m"
     MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
+
+    def setup
+      super
+      if IRB.respond_to?(:conf)
+        @colorize, IRB.conf[:USE_COLORIZE] = IRB.conf[:USE_COLORIZE], true
+      end
+    end
+
+    def teardown
+      if instance_variable_defined?(:@colorize)
+        IRB.conf[:USE_COLORIZE] = @colorize
+      end
+      super
+    end
 
     def test_colorize
       text = "text"
@@ -88,6 +103,9 @@ module TestIRB
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
         "__END__" => "#{GREEN}__END__#{CLEAR}",
+        "foo\n__END__\nbar" => "foo\n#{GREEN}__END__#{CLEAR}\nbar",
+        "foo\n<<A\0\0bar\nA\nbaz" => "foo\n#{RED}<<A#{CLEAR}^@^@bar\n#{RED}A#{CLEAR}\nbaz",
+        "<<A+1\nA" => "#{RED}<<A#{CLEAR}+#{BLUE}#{BOLD}1#{CLEAR}\n#{RED}A#{CLEAR}",
       }
 
       # specific to Ruby 2.7+
@@ -111,12 +129,24 @@ module TestIRB
           "class bad; end" => "#{GREEN}class#{CLEAR} #{RED}#{REVERSE}bad#{CLEAR}; #{GREEN}end#{CLEAR}",
           "def req(@a) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}@a#{CLEAR}) #{GREEN}end#{CLEAR}",
         })
-      else
-        tests.merge!({
-          "[1]]]\u0013" => "[1]]]^S",
+        if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2.0')
+          tests.merge!({
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}#{RED}#{REVERSE})#{CLEAR} #{RED}#{REVERSE}end#{CLEAR}",
           })
+        end
+      else
+        if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
+          tests.merge!({
+            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}]^S",
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}) end",
+          })
+        else
+          tests.merge!({
+            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]]]^S",
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{CYAN}#{BOLD}true#{CLEAR}) end",
+          })
+        end
         tests.merge!({
-          "def req(true) end" => "def req(true) end",
           "nil = 1" => "#{CYAN}#{BOLD}nil#{CLEAR} = #{BLUE}#{BOLD}1#{CLEAR}",
           "alias $x $1" => "#{GREEN}alias#{CLEAR} #{GREEN}#{BOLD}$x#{CLEAR} $1",
           "class bad; end" => "#{GREEN}class#{CLEAR} bad; #{GREEN}end#{CLEAR}",
@@ -125,24 +155,31 @@ module TestIRB
       end
 
       tests.each do |code, result|
-        if colorize_code_supported?
-          assert_equal_with_term(result, code, complete: true)
-          assert_equal_with_term(result, code, complete: false)
+        assert_equal_with_term(result, code, complete: true)
+        assert_equal_with_term(result, code, complete: false)
 
-          assert_equal_with_term(code, code, complete: true, tty: false)
-          assert_equal_with_term(code, code, complete: false, tty: false)
+        assert_equal_with_term(code, code, complete: true, tty: false)
+        assert_equal_with_term(code, code, complete: false, tty: false)
 
-          assert_equal_with_term(code, code, complete: true, colorable: false)
+        assert_equal_with_term(code, code, complete: true, colorable: false)
 
-          assert_equal_with_term(code, code, complete: false, colorable: false)
+        assert_equal_with_term(code, code, complete: false, colorable: false)
 
-          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
+        assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
 
-          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
-        else
-          assert_equal_with_term(code, code)
-        end
+        assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
       end
+    end
+
+    def test_colorize_code_with_local_variables
+      code = "a /(b +1)/i"
+      result_without_lvars = "a #{RED}#{BOLD}/#{CLEAR}#{RED}(b +1)#{CLEAR}#{RED}#{BOLD}/i#{CLEAR}"
+      result_with_lvar = "a /(b #{BLUE}#{BOLD}+1#{CLEAR})/i"
+      result_with_lvars = "a /(b +#{BLUE}#{BOLD}1#{CLEAR})/i"
+
+      assert_equal_with_term(result_without_lvars, code)
+      assert_equal_with_term(result_with_lvar, code, local_variables: ['a'])
+      assert_equal_with_term(result_with_lvars, code, local_variables: ['a', 'b'])
     end
 
     def test_colorize_code_complete_true
@@ -171,26 +208,22 @@ module TestIRB
         "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}bar#{CLEAR}",
         "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
-        if colorize_code_supported?
-          assert_equal_with_term(result, code, complete: false)
+        assert_equal_with_term(result, code, complete: false)
 
-          assert_equal_with_term(code, code, complete: false, tty: false)
+        assert_equal_with_term(code, code, complete: false, tty: false)
 
-          assert_equal_with_term(code, code, complete: false, colorable: false)
+        assert_equal_with_term(code, code, complete: false, colorable: false)
 
-          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
+        assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
 
-          unless complete_option_supported?
-            assert_equal_with_term(result, code, complete: true)
+        unless complete_option_supported?
+          assert_equal_with_term(result, code, complete: true)
 
-            assert_equal_with_term(code, code, complete: true, tty: false)
+          assert_equal_with_term(code, code, complete: true, tty: false)
 
-            assert_equal_with_term(code, code, complete: true, colorable: false)
+          assert_equal_with_term(code, code, complete: true, colorable: false)
 
-            assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
-          end
-        else
-          assert_equal_with_term(code, code)
+          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
         end
       end
     end
@@ -216,11 +249,6 @@ module TestIRB
     end
 
     private
-
-    # `#colorize_code` is supported only for Ruby 2.5+. It just returns the original code in 2.4-.
-    def colorize_code_supported?
-      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
-    end
 
     # `complete: true` is the same as `complete: false` in Ruby 2.6-
     def complete_option_supported?

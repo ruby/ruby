@@ -1,10 +1,11 @@
 use std::ffi::CStr;
 
 // Command-line options
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct Options {
-    // Size of the executable memory block to allocate in MiB
+    // Size of the executable memory block to allocate in bytes
+    // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
 
     // Number of method calls after which to start generating code
@@ -30,6 +31,12 @@ pub struct Options {
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
+    /// Dump all compiled instructions of target cbs.
+    pub dump_disasm: Option<DumpDisasm>,
+
+    /// Print when specific ISEQ items are compiled or invalidated
+    pub dump_iseq_disasm: Option<String>,
+
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
 
@@ -42,17 +49,27 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 256,
-    call_threshold: 10,
+    exec_mem_size: 64 * 1024 * 1024,
+    call_threshold: 30,
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
+    dump_disasm: None,
     verify_ctx: false,
     global_constant_state: false,
+    dump_iseq_disasm: None,
 };
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum DumpDisasm {
+    // Dump to stdout
+    Stdout,
+    // Dump to "yjit_{pid}.log" file under the specified directory
+    File(String),
+}
 
 /// Macro to get an option value by name
 macro_rules! get_option {
@@ -63,6 +80,16 @@ macro_rules! get_option {
     };
 }
 pub(crate) use get_option;
+
+/// Macro to reference an option value by name; we assume it's a cloneable type like String or an Option of same.
+macro_rules! get_option_ref {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($option_name:ident) => {
+        unsafe { &($crate::options::OPTIONS.$option_name) }
+    };
+}
+pub(crate) use get_option_ref;
 
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
@@ -84,8 +111,15 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     match (opt_name, opt_val) {
         ("", "") => (), // Simply --yjit
 
-        ("exec-mem-size", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.exec_mem_size = n },
+        ("exec-mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                if n == 0 || n > 2 * 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                unsafe { OPTIONS.exec_mem_size = n * 1024 * 1024 }
+            }
             Err(_) => {
                 return None;
             }
@@ -103,6 +137,20 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => {
                 return None;
             }
+        },
+
+        ("dump-disasm", _) => match opt_val.to_string().as_str() {
+            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
+            directory => {
+                let pid = std::process::id();
+                let path = format!("{directory}/yjit_{pid}.log");
+                println!("YJIT disasm dump: {path}");
+                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+            }
+         },
+
+        ("dump-iseq-disasm", _) => unsafe {
+            OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
         },
 
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },

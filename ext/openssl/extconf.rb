@@ -13,7 +13,7 @@
 
 require "mkmf"
 
-dir_config("openssl")
+dir_config_given = dir_config("openssl").any?
 dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
@@ -25,8 +25,9 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG")
 end
+$defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
-have_func("rb_io_maybe_wait") # Ruby 3.1
+have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
 
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
@@ -92,7 +93,7 @@ def find_openssl_library
 end
 
 Logging::message "=== Checking for required stuff... ===\n"
-pkg_config_found = pkg_config("openssl") && have_header("openssl/ssl.h")
+pkg_config_found = !dir_config_given && pkg_config("openssl") && have_header("openssl/ssl.h")
 
 if !pkg_config_found && !find_openssl_library
   Logging::message "=== Checking for required stuff failed. ===\n"
@@ -120,8 +121,13 @@ if is_libressl && ($mswin || $mingw)
 end
 
 Logging::message "=== Checking for OpenSSL features... ===\n"
+evp_h = "openssl/evp.h".freeze
+x509_h = "openssl/x509.h".freeze
+ts_h = "openssl/ts.h".freeze
+ssl_h = "openssl/ssl.h".freeze
+
 # compile options
-have_func("RAND_egd")
+have_func("RAND_egd()", "openssl/rand.h")
 engines = %w{dynamic 4758cca aep atalla chil
              cswift nuron sureware ubsec padlock capi gmp gost cryptodev}
 engines.each { |name|
@@ -132,63 +138,58 @@ engines.each { |name|
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")
 end
-have_func("EVP_MD_CTX_new")
-have_func("EVP_MD_CTX_free")
-have_func("EVP_MD_CTX_pkey_ctx")
-have_func("X509_STORE_get_ex_data")
-have_func("X509_STORE_set_ex_data")
-have_func("X509_STORE_get_ex_new_index")
-have_func("X509_CRL_get0_signature")
-have_func("X509_REQ_get0_signature")
-have_func("X509_REVOKED_get0_serialNumber")
-have_func("X509_REVOKED_get0_revocationDate")
-have_func("X509_get0_tbs_sigalg")
-have_func("X509_STORE_CTX_get0_untrusted")
-have_func("X509_STORE_CTX_get0_cert")
-have_func("X509_STORE_CTX_get0_chain")
-have_func("OCSP_SINGLERESP_get0_id")
-have_func("SSL_CTX_get_ciphers")
-have_func("X509_up_ref")
-have_func("X509_CRL_up_ref")
-have_func("X509_STORE_up_ref")
-have_func("SSL_SESSION_up_ref")
-have_func("EVP_PKEY_up_ref")
-have_func("SSL_CTX_set_min_proto_version(NULL, 0)", "openssl/ssl.h")
-have_func("SSL_CTX_get_security_level")
-have_func("X509_get0_notBefore")
-have_func("SSL_SESSION_get_protocol_version")
-have_func("TS_STATUS_INFO_get0_status")
-have_func("TS_STATUS_INFO_get0_text")
-have_func("TS_STATUS_INFO_get0_failure_info")
-have_func("TS_VERIFY_CTS_set_certs(NULL, NULL)", "openssl/ts.h")
-have_func("TS_VERIFY_CTX_set_store")
-have_func("TS_VERIFY_CTX_add_flags")
-have_func("TS_RESP_CTX_set_time_cb")
-have_func("EVP_PBE_scrypt")
-have_func("SSL_CTX_set_post_handshake_auth")
+have_func("EVP_MD_CTX_new()", evp_h)
+have_func("EVP_MD_CTX_free(NULL)", evp_h)
+have_func("EVP_MD_CTX_pkey_ctx(NULL)", evp_h)
+have_func("X509_STORE_get_ex_data(NULL, 0)", x509_h)
+have_func("X509_STORE_set_ex_data(NULL, 0, NULL)", x509_h)
+have_func("X509_STORE_get_ex_new_index(0, NULL, NULL, NULL, NULL)", x509_h)
+have_func("X509_CRL_get0_signature(NULL, NULL, NULL)", x509_h)
+have_func("X509_REQ_get0_signature(NULL, NULL, NULL)", x509_h)
+have_func("X509_REVOKED_get0_serialNumber(NULL)", x509_h)
+have_func("X509_REVOKED_get0_revocationDate(NULL)", x509_h)
+have_func("X509_get0_tbs_sigalg(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_untrusted(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_cert(NULL)", x509_h)
+have_func("X509_STORE_CTX_get0_chain(NULL)", x509_h)
+have_func("OCSP_SINGLERESP_get0_id(NULL)", "openssl/ocsp.h")
+have_func("SSL_CTX_get_ciphers(NULL)", ssl_h)
+have_func("X509_up_ref(NULL)", x509_h)
+have_func("X509_CRL_up_ref(NULL)", x509_h)
+have_func("X509_STORE_up_ref(NULL)", x509_h)
+have_func("SSL_SESSION_up_ref(NULL)", ssl_h)
+have_func("EVP_PKEY_up_ref(NULL)", evp_h)
+have_func("SSL_CTX_set_min_proto_version(NULL, 0)", ssl_h)
+have_func("SSL_CTX_get_security_level(NULL)", ssl_h)
+have_func("X509_get0_notBefore(NULL)", x509_h)
+have_func("SSL_SESSION_get_protocol_version(NULL)", ssl_h)
+have_func("TS_STATUS_INFO_get0_status(NULL)", ts_h)
+have_func("TS_STATUS_INFO_get0_text(NULL)", ts_h)
+have_func("TS_STATUS_INFO_get0_failure_info(NULL)", ts_h)
+have_func("TS_VERIFY_CTS_set_certs(NULL, NULL)", ts_h)
+have_func("TS_VERIFY_CTX_set_store(NULL, NULL)", ts_h)
+have_func("TS_VERIFY_CTX_add_flags(NULL, 0)", ts_h)
+have_func("TS_RESP_CTX_set_time_cb(NULL, NULL, NULL)", ts_h)
+have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
+have_func("SSL_CTX_set_post_handshake_auth(NULL, 0)", ssl_h)
 
 # added in 1.1.1
-have_func("EVP_PKEY_check")
+have_func("EVP_PKEY_check(NULL)", evp_h)
+have_func("EVP_PKEY_new_raw_private_key(0, NULL, (unsigned char *)\"\", 0)", evp_h)
+have_func("SSL_CTX_set_ciphersuites(NULL, \"\")", ssl_h)
 
 # added in 3.0.0
-openssl_3 =
-have_func("SSL_set0_tmp_dh_pkey")
-have_func("ERR_get_error_all")
-have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", "openssl/ts.h")
-have_func("SSL_CTX_load_verify_file")
-have_func("BN_check_prime")
-have_func("EVP_MD_CTX_get0_md")
-have_func("EVP_MD_CTX_get_pkey_ctx")
-have_func("EVP_PKEY_eq")
-have_func("EVP_PKEY_dup")
+have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
+have_func("ERR_get_error_all(NULL, NULL, NULL, NULL, NULL)", "openssl/err.h")
+have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", ts_h)
+have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
+have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")
+have_func("EVP_MD_CTX_get0_md(NULL)", evp_h)
+have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
+have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
+have_func("EVP_PKEY_dup(NULL)", evp_h)
 
 Logging::message "=== Checking done. ===\n"
-
-if openssl_3
-  if $warnflags.sub!(/-W\K(?=deprecated-declarations)/, 'no-')
-    $warnflags << " -Wno-incompatible-pointer-types-discards-qualifiers"
-  end
-end
 
 create_header
 create_makefile("openssl")

@@ -1,0 +1,40 @@
+module RubyVM::MJIT # :nodoc: all
+  Instruction = Struct.new(
+    :name,
+    :bin,
+    :len,
+    :expr,
+    :declarations,
+    :preamble,
+    :opes,
+    :pops,
+    :rets,
+    :always_leaf?,
+    :leaf_without_check_ints?,
+    :handles_sp?,
+  )
+
+  INSNS = {
+% RubyVM::Instructions.each_with_index do |insn, i|
+%   next if insn.name.start_with?('trace_')
+    <%= i %> => Instruction.new(
+      name: :<%= insn.name %>,
+      bin: <%= i %>, # BIN(<%= insn.name %>)
+      len: <%= insn.width %>, # insn_len
+      expr: <<-EXPR,
+<%= insn.expr.expr.dump.sub(/\A"/, '').sub(/"\z/, '').gsub(/\\n/, "\n").gsub(/\\t/, ' ' * 8) %>
+      EXPR
+      declarations: <%= insn.declarations.inspect %>,
+      preamble: <%= insn.preamble.map(&:expr).inspect %>,
+      opes: <%= insn.opes.inspect %>,
+      pops: <%= insn.pops.inspect %>,
+      rets: <%= insn.rets.inspect %>,
+      always_leaf?: <%= insn.always_leaf? %>,
+      leaf_without_check_ints?: <%= insn.leaf_without_check_ints? %>,
+      handles_sp?: <%= insn.handles_sp? %>,
+    ),
+% end
+  }
+
+  private_constant(*constants)
+end

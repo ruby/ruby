@@ -34,7 +34,7 @@
 struct kwtable {short name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
-static const struct kwtable *reserved_word(/*const char *, unsigned int*/);
+static const struct kwtable *reserved_word(register const char *str, register size_t len);
 #define rb_reserved_word(str, len) reserved_word(str, len)
 #line 9 "defs/keywords"
 struct kwtable;

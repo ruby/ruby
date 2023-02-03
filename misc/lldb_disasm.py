@@ -63,6 +63,7 @@ class IseqDisassembler:
         self.internal_dict = internal_dict
 
         self.target = debugger.GetSelectedTarget()
+        self.insns_address_table = self.__get_insns_address_table()
         self.process = self.target.GetProcess()
         self.thread = self.process.GetSelectedThread()
         self.frame = self.thread.GetSelectedFrame()
@@ -88,7 +89,7 @@ class IseqDisassembler:
         tIntPtr = target.FindFirstType("intptr_t")
         size = target.EvaluateExpression('ruby_vminsn_type::VM_INSTRUCTION_SIZE').unsigned
         sizeOfIntPtr = tIntPtr.GetByteSize()
-        addr_of_table = target.FindSymbols("vm_exec_core.insns_address_table")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        addr_of_table = self.insns_address_table.GetStartAddress().GetLoadAddress(target)
 
         my_dict = {}
 
@@ -220,6 +221,15 @@ class IseqDisassembler:
         else:
             print('error getting insn name', error)
 
+    def __get_insns_address_table(self):
+        module = self.target.FindSymbols("vm_exec_core")[0].GetModule()
+
+        for symbol in module:
+            if "insns_address_table" in symbol.name and symbol.GetType() == lldb.eSymbolTypeData:
+                print(f"found symbol {symbol.name}")
+                return symbol
+
+
 def disasm(debugger, command, result, internal_dict):
     disassembler = IseqDisassembler(debugger, command, result, internal_dict)
     frame = disassembler.frame
@@ -234,7 +244,6 @@ def disasm(debugger, command, result, internal_dict):
         return
 
     disassembler.disasm(val);
-
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_disasm.disasm rbdisasm")

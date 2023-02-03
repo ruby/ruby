@@ -47,12 +47,19 @@ class TestCall < Test::Unit::TestCase
     assert_equal(5, o.y)
     o&.z ||= 6
     assert_equal(6, o.z)
+    o&.z &&= 7
+    assert_equal(7, o.z)
 
     o = nil
     assert_nil(o&.x)
     assert_nothing_raised(NoMethodError) {o&.x = raise}
+    assert_nothing_raised(NoMethodError) {o&.x = raise; nil}
     assert_nothing_raised(NoMethodError) {o&.x *= raise}
     assert_nothing_raised(NoMethodError) {o&.x *= raise; nil}
+    assert_nothing_raised(NoMethodError) {o&.x ||= raise}
+    assert_nothing_raised(NoMethodError) {o&.x ||= raise; nil}
+    assert_nothing_raised(NoMethodError) {o&.x &&= raise}
+    assert_nothing_raised(NoMethodError) {o&.x &&= raise; nil}
   end
 
   def test_safe_call_evaluate_arguments_only_method_call_is_made
@@ -107,5 +114,89 @@ class TestCall < Test::Unit::TestCase
     assert_equal([1, 2, b], aaa(*ary, &ary.pop), bug16504)
     ary = [1, 2, b]
     assert_equal([0, 1, 2, b], aaa(0, *ary, &ary.pop), bug16504)
+  end
+
+  def test_call_cfunc_splat_large_array_bug_4040
+    a = 1380.times.to_a # Greater than VM_ARGC_STACK_MAX
+
+    assert_equal(a, [].push(*a))
+    assert_equal(a, [].push(a[0], *a[1..]))
+    assert_equal(a, [].push(a[0], a[1], *a[2..]))
+    assert_equal(a, [].push(*a[0..1], *a[2..]))
+    assert_equal(a, [].push(*a[...-1], a[-1]))
+    assert_equal(a, [].push(a[0], *a[1...-1], a[-1]))
+    assert_equal(a, [].push(a[0], a[1], *a[2...-1], a[-1]))
+    assert_equal(a, [].push(*a[0..1], *a[2...-1], a[-1]))
+    assert_equal(a, [].push(*a[...-2], a[-2], a[-1]))
+    assert_equal(a, [].push(a[0], *a[1...-2], a[-2], a[-1]))
+    assert_equal(a, [].push(a[0], a[1], *a[2...-2], a[-2], a[-1]))
+    assert_equal(a, [].push(*a[0..1], *a[2...-2], a[-2], a[-1]))
+
+    kw = {x: 1}
+    a_kw = a + [kw]
+
+    assert_equal(a_kw, [].push(*a, **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1..], **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2..], **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2..], **kw))
+    assert_equal(a_kw, [].push(*a[...-1], a[-1], **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1...-1], a[-1], **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-1], a[-1], **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-1], a[-1], **kw))
+    assert_equal(a_kw, [].push(*a[...-2], a[-2], a[-1], **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1...-2], a[-2], a[-1], **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-2], a[-2], a[-1], **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-2], a[-2], a[-1], **kw))
+
+    assert_equal(a_kw, [].push(*a, x: 1))
+    assert_equal(a_kw, [].push(a[0], *a[1..], x: 1))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2..], x: 1))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2..], x: 1))
+    assert_equal(a_kw, [].push(*a[...-1], a[-1], x: 1))
+    assert_equal(a_kw, [].push(a[0], *a[1...-1], a[-1], x: 1))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-1], a[-1], x: 1))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-1], a[-1], x: 1))
+    assert_equal(a_kw, [].push(*a[...-2], a[-2], a[-1], x: 1))
+    assert_equal(a_kw, [].push(a[0], *a[1...-2], a[-2], a[-1], x: 1))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-2], a[-2], a[-1], x: 1))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-2], a[-2], a[-1], x: 1))
+
+    a_kw[-1][:y] = 2
+    kw = {y: 2}
+
+    assert_equal(a_kw, [].push(*a, x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1..], x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2..], x: 1, **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2..], x: 1, **kw))
+    assert_equal(a_kw, [].push(*a[...-1], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1...-1], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-1], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-1], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(*a[...-2], a[-2], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], *a[1...-2], a[-2], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(a[0], a[1], *a[2...-2], a[-2], a[-1], x: 1, **kw))
+    assert_equal(a_kw, [].push(*a[0..1], *a[2...-2], a[-2], a[-1], x: 1, **kw))
+
+    kw = {}
+
+    assert_equal(a, [].push(*a, **kw))
+    assert_equal(a, [].push(a[0], *a[1..], **kw))
+    assert_equal(a, [].push(a[0], a[1], *a[2..], **kw))
+    assert_equal(a, [].push(*a[0..1], *a[2..], **kw))
+    assert_equal(a, [].push(*a[...-1], a[-1], **kw))
+    assert_equal(a, [].push(a[0], *a[1...-1], a[-1], **kw))
+    assert_equal(a, [].push(a[0], a[1], *a[2...-1], a[-1], **kw))
+    assert_equal(a, [].push(*a[0..1], *a[2...-1], a[-1], **kw))
+    assert_equal(a, [].push(*a[...-2], a[-2], a[-1], **kw))
+    assert_equal(a, [].push(a[0], *a[1...-2], a[-2], a[-1], **kw))
+    assert_equal(a, [].push(a[0], a[1], *a[2...-2], a[-2], a[-1], **kw))
+    assert_equal(a, [].push(*a[0..1], *a[2...-2], a[-2], a[-1], **kw))
+
+    a_kw = a + [Hash.ruby2_keywords_hash({})]
+    assert_equal(a, [].push(*a_kw))
+
+    # Single test with value that would cause SystemStackError.
+    # Not all tests use such a large array to reduce testing time.
+    assert_equal(1380888, [].push(*1380888.times.to_a).size)
   end
 end

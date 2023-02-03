@@ -65,5 +65,15 @@ describe "Range.new" do
 
       range_exclude.should_not == range_include
     end
+
+    ruby_version_is "3.0" do
+      it "creates a frozen range if the class is Range.class" do
+        Range.new(1, 2).should.frozen?
+      end
+
+      it "does not create a frozen range if the class is not Range.class" do
+        Class.new(Range).new(1, 2).should_not.frozen?
+      end
+    end
   end
 end

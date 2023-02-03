@@ -307,7 +307,7 @@ module Psych
   # A Psych::DisallowedClass exception will be raised if the yaml contains a
   # class that isn't in the +permitted_classes+ list.
   #
-  # A Psych::BadAlias exception will be raised if the yaml contains aliases
+  # A Psych::AliasesNotEnabled exception will be raised if the yaml contains aliases
   # but the +aliases+ keyword argument is set to false.
   #
   # +filename+ will be used in the exception message if any exception is raised

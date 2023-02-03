@@ -144,6 +144,38 @@ class PStoreTest < Test::Unit::TestCase
     assert_equal(bug5311, @pstore.transaction {@pstore["Bug5311"]}, bug5311)
   end
 
+  def test_key_p
+    [:key?, :root?].each do |method|
+      clear_store
+      @pstore.transaction do
+        @pstore[:foo] = 0
+        assert_equal(true, @pstore.send(method, :foo))
+        assert_equal(false, @pstore.send(method, :bar))
+      end
+    end
+  end
+
+  def test_keys
+    [:keys, :roots].each do |method|
+      clear_store
+      @pstore.transaction do
+        assert_equal([], @pstore.send(method))
+      end
+      @pstore.transaction do
+        @pstore[:foo] = 0
+        assert_equal([:foo], @pstore.send(method))
+      end
+    end
+  end
+
+  def clear_store
+    @pstore.transaction do
+      @pstore.keys.each do |key|
+        @pstore.delete(key)
+      end
+    end
+  end
+
   def second_file
     File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end

@@ -1,13 +1,14 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'tempfile'
 require 'rubygems'
 require 'irb'
 require 'irb/workspace'
 require 'irb/color'
 
+require_relative "helper"
+
 module TestIRB
-  class TestWorkSpace < Test::Unit::TestCase
+  class TestWorkSpace < TestCase
     def test_code_around_binding
       IRB.conf[:USE_COLORIZE] = false
       Tempfile.create('irb') do |f|

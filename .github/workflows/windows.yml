@@ -3,17 +3,24 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
 
 jobs:
   make:
@@ -33,7 +40,7 @@ jobs:
     steps:
       - run: md build
         working-directory:
-      - uses: msys2/setup-msys2@v2
+      - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
           update: true
@@ -44,14 +51,14 @@ jobs:
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
@@ -61,7 +68,7 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-chocolatey-${{ env.OS_VER }}-${{ github.sha }}
@@ -80,10 +87,10 @@ jobs:
           git config --global core.eol lf
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: src
-      - uses: actions/cache@v3
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -105,6 +112,8 @@ jobs:
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
+      - name: compiler version
+        run: cl
       - name: link libraries
         run: |
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
@@ -124,15 +133,13 @@ jobs:
           YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
+      - run: nmake test-spec
+        timeout-minutes: 10
       - run: nmake test-all
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-        continue-on-error: ${{ matrix.continue-on-error || false }}
-      - run: nmake test-spec
-        timeout-minutes: 10
-        continue-on-error: ${{ matrix.continue-on-error || false }}
-      - uses: k0kubun/action-slack@v2.0.0
+      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
         with:
           payload: |
             {
@@ -140,7 +147,7 @@ jobs:
               "env": "VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref }}".split('/').reverse()[0]
+              "branch": "${{ github.ref_name }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot

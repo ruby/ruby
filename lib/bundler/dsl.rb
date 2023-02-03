@@ -16,7 +16,7 @@ module Bundler
     VALID_PLATFORMS = Bundler::Dependency::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms type source install_if gemfile].freeze
+                    platform platforms type source install_if gemfile force_ruby_platform].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}.freeze
 
@@ -41,7 +41,7 @@ module Bundler
     end
 
     def eval_gemfile(gemfile, contents = nil)
-      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile && @gemfile.parent)
+      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
       original_gemfile = @gemfile
       @gemfile = expanded_gemfile_path
       @gemfiles << expanded_gemfile_path
@@ -67,7 +67,6 @@ module Bundler
 
       gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
       gemspecs.reject! {|s| s.name != name } if name
-      Index.sort_specs(gemspecs)
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 
       case specs_by_name_and_version.size
@@ -278,8 +277,8 @@ module Bundler
         if repo_name =~ GITHUB_PULL_REQUEST_URL
           {
             "git" => "https://github.com/#{$1}.git",
-            "branch" => "refs/pull/#{$2}/head",
-            "ref" => nil,
+            "branch" => nil,
+            "ref" => "refs/pull/#{$2}/head",
             "tag" => nil,
           }
         else
@@ -325,7 +324,7 @@ module Bundler
       if name.is_a?(Symbol)
         raise GemfileError, %(You need to specify gem names as Strings. Use 'gem "#{name}"' instead)
       end
-      if name =~ /\s/
+      if /\s/.match?(name)
         raise GemfileError, %('#{name}' is not a valid gem name because it contains whitespace)
       end
       raise GemfileError, %(an empty gem name is not valid) if name.empty?
@@ -465,12 +464,12 @@ module Bundler
 
     def multiple_global_source_warning
       if Bundler.feature_flag.bundler_3_mode?
-        msg = "This Gemfile contains multiple primary sources. " \
+        msg = "This Gemfile contains multiple global sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple primary sources. " \
+        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple global sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."
@@ -511,9 +510,7 @@ module Bundler
       #         be raised.
       #
       def contents
-        @contents ||= begin
-          dsl_path && File.exist?(dsl_path) && File.read(dsl_path)
-        end
+        @contents ||= dsl_path && File.exist?(dsl_path) && File.read(dsl_path)
       end
 
       # The message of the exception reports the content of podspec for the

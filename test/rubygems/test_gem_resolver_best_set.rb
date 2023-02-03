@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverBestSet < Gem::TestCase
   def setup
@@ -16,14 +16,14 @@ class TestGemResolverBestSet < Gem::TestCase
 
   def test_find_all_index
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'b', 1
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "b", 1
     end
 
     set = @DR::BestSet.new
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = @DR::DependencyRequest.new dependency, nil
 
@@ -34,7 +34,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
   def test_find_all_fallback
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
+      fetcher.spec "a", 1
     end
 
     set = @DR::BestSet.new
@@ -43,7 +43,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set.sets << Gem::Resolver::APISet.new(api_uri)
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = @DR::DependencyRequest.new dependency, nil
 
@@ -54,15 +54,15 @@ class TestGemResolverBestSet < Gem::TestCase
 
   def test_find_all_local
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'b', 1
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "b", 1
     end
 
     set = @DR::BestSet.new
     set.remote = false
 
-    dependency = dep 'a', '~> 1'
+    dependency = dep "a", "~> 1"
 
     req = @DR::DependencyRequest.new dependency, nil
 
@@ -73,7 +73,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
   def test_prefetch
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
+      fetcher.spec "a", 1
     end
 
     set = @DR::BestSet.new
@@ -85,7 +85,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
   def test_prefetch_local
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
+      fetcher.spec "a", 1
     end
 
     set = @DR::BestSet.new
@@ -99,14 +99,14 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './info/'
+    api_uri = URI(@gem_repo) + "./info/"
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
 
-    error_uri = api_uri + 'a'
+    error_uri = api_uri + "a"
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
+    error = Gem::RemoteFetcher::FetchError.new "bogus", error_uri
 
     set.replace_failed_api_set error
 
@@ -124,7 +124,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set.sets << index_set
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', @gem_repo
+    error = Gem::RemoteFetcher::FetchError.new "bogus", @gem_repo
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
       set.replace_failed_api_set error
@@ -136,16 +136,16 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set_uri_with_credentials
     set = @DR::BestSet.new
 
-    api_uri = URI(@gem_repo) + './info/'
-    api_uri.user = 'user'
-    api_uri.password = 'pass'
+    api_uri = URI(@gem_repo) + "./info/"
+    api_uri.user = "user"
+    api_uri.password = "pass"
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
 
-    error_uri = api_uri + 'a'
+    error_uri = api_uri + "a"
 
-    error = Gem::RemoteFetcher::FetchError.new 'bogus', error_uri
+    error = Gem::RemoteFetcher::FetchError.new "bogus", error_uri
 
     set.replace_failed_api_set error
 

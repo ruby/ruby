@@ -19,11 +19,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
  */
 
 /*
- * Definitions for NT port of Perl
- */
-
-
-/*
  * Ok now we can include the normal include files.
  */
 
@@ -195,7 +190,6 @@ struct stati128 {
   long st_ctimensec;
 };
 
-#define off_t __int64
 #define stat stati128
 #undef SIZEOF_STRUCT_STAT_ST_INO
 #define SIZEOF_STRUCT_STAT_ST_INO sizeof(unsigned __int64)
@@ -303,7 +297,6 @@ extern DWORD  rb_w32_osver(void);
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);
 extern ssize_t rb_w32_ureadlink(const char *, char *, size_t);
-extern ssize_t rb_w32_wreadlink(const WCHAR *, WCHAR *, size_t);
 extern int rb_w32_usymlink(const char *src, const char *link);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern int clock_gettime(clockid_t, struct timespec *);
@@ -394,6 +387,7 @@ scalb(double a, long b)
 #endif
 
 #define S_IFLNK 0xa000
+#define S_IFSOCK 0xc000
 
 /*
  * define this so we can do inplace editing
@@ -401,9 +395,9 @@ scalb(double a, long b)
 
 #define SUFFIX
 
-extern int rb_w32_ftruncate(int fd, off_t length);
-extern int rb_w32_truncate(const char *path, off_t length);
-extern int rb_w32_utruncate(const char *path, off_t length);
+extern int rb_w32_ftruncate(int fd, rb_off_t length);
+extern int rb_w32_truncate(const char *path, rb_off_t length);
+extern int rb_w32_utruncate(const char *path, rb_off_t length);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
@@ -702,10 +696,10 @@ extern char *rb_w32_strerror(int);
 #endif
 
 struct tms {
-	long	tms_utime;
-	long	tms_stime;
-	long	tms_cutime;
-	long	tms_cstime;
+        long	tms_utime;
+        long	tms_stime;
+        long	tms_cutime;
+        long	tms_cstime;
 };
 
 int rb_w32_times(struct tms *);
@@ -722,7 +716,7 @@ int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
-off_t  rb_w32_lseek(int, off_t, int);
+rb_off_t  rb_w32_lseek(int, rb_off_t, int);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
 int  rb_w32_uutimes(const char *, const struct timeval *);
 int  rb_w32_uutimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
@@ -815,7 +809,7 @@ double rb_w32_pow(double x, double y);
 #define MAP_ANON	0x1000
 #define MAP_ANONYMOUS	MAP_ANON
 
-extern void *rb_w32_mmap(void *, size_t, int, int, int, off_t);
+extern void *rb_w32_mmap(void *, size_t, int, int, int, rb_off_t);
 extern int rb_w32_munmap(void *, size_t);
 extern int rb_w32_mprotect(void *, size_t, int);
 

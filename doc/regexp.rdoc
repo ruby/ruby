@@ -28,7 +28,7 @@ Specifically, <tt>/st/</tt> requires that the string contains the letter
 _s_ followed by the letter _t_, so it matches _haystack_, also.
 
 Note that any Regexp matching will raise a RuntimeError if timeout is set and
-exceeded. See "Timeout" section in detail.
+exceeded. See {"Timeout"}[#label-Timeout] section in detail.
 
 == \Regexp Interpolation
 
@@ -405,6 +405,15 @@ a single one that matches any of the expressions. Each expression is an
     /\w(and|or)\w/.match("furandi")    #=> #<MatchData "randi" 1:"and">
     /\w(and|or)\w/.match("dissemblance") #=> nil
 
+== Condition
+
+The <tt>(?(</tt><i>cond</i><tt>)</tt><i>yes</i><tt>|</tt><i>no</i><tt>)</tt>
+syntax matches _yes_ part if _cond_ is captured, otherwise matches _no_ part.
+In the case _no_ part is empty, also <tt>|</tt> can be omitted.
+
+The _cond_ may be a backreference number or a captured name.  A backreference
+number is an absolute position, but can not be a relative position.
+
 == Character Properties
 
 The <tt>\p{}</tt> construct matches characters with the named property,
@@ -550,12 +559,16 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>(?<!</tt><i>pat</i><tt>)</tt> - <i>Negative lookbehind</i>
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
-* <tt>\K</tt> - Uses an positive lookbehind of the content preceding
-  <tt>\K</tt> in the regexp.  For example, the following two regexps are
-  almost equivalent:
 
-      /ab\Kc/
-      /(?<=ab)c/
+* <tt>\K</tt> - <i>Match reset</i>: the matched content preceding
+  <tt>\K</tt> in the regexp is excluded from the result.  For example,
+  the following two regexps are almost equivalent:
+
+      /ab\Kc/ =~ "abc"     #=> 0
+      /(?<=ab)c/ =~ "abc"  #=> 2
+
+  These match same string and <i>$&</i> equals <tt>"c"</tt>, while the
+  matched position is different.
 
   As are the following two regexps:
 
@@ -777,7 +790,7 @@ with <i>a{0,29}</i>:
 
 == Timeout
 
-There are two APIs to set timeout. One is Timeout.timeout=, which is
+There are two APIs to set timeout. One is Regexp.timeout=, which is
 process-global configuration of timeout for Regexp matching.
 
     Regexp.timeout = 3
@@ -792,6 +805,6 @@ The other is timeout keyword of Regexp.new.
 
 When using Regexps to process untrusted input, you should use the timeout
 feature to avoid excessive backtracking. Otherwise, a malicious user can
-provide input to Regexp causing Denail-of-Service attack.
+provide input to Regexp causing Denial-of-Service attack.
 Note that the timeout is not set by default because an appropriate limit
 highly depends on an application requirement and context.

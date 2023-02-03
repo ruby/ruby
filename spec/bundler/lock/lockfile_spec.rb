@@ -386,7 +386,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("foo-1.0")}
-        revision: #{git.ref_for("master")}
+        revision: #{git.ref_for("main")}
         specs:
           foo (1.0)
 
@@ -457,7 +457,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("foo-1.0")}
-        revision: #{git.ref_for("master")}
+        revision: #{git.ref_for("main")}
         specs:
           foo (1.0)
 
@@ -617,7 +617,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("bar-1.0")}
-        revision: #{bar.ref_for("master")}
+        revision: #{bar.ref_for("main")}
         specs:
           bar (1.0)
 
@@ -982,7 +982,7 @@ RSpec.describe "the lockfile format" do
           rack (1.0.0)
 
       PLATFORMS
-        #{lockfile_platforms_for(["java"] + local_platforms)}
+        #{lockfile_platforms_for(["java", specific_local_platform])}
 
       DEPENDENCIES
         rack
@@ -1174,7 +1174,7 @@ RSpec.describe "the lockfile format" do
   it "captures the Ruby version in the lockfile" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
-      ruby '#{RUBY_VERSION}'
+      ruby '#{Gem.ruby_version}'
       gem "rack", "> 0.9", "< 1.0"
     G
 
@@ -1191,7 +1191,7 @@ RSpec.describe "the lockfile format" do
         rack (> 0.9, < 1.0)
 
       RUBY VERSION
-         ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}
+         #{Bundler::RubyVersion.system}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1219,6 +1219,59 @@ RSpec.describe "the lockfile format" do
 
     expect(err).to include("Downloading rack_middleware-1.0 revealed dependencies not in the API or the lockfile (#{Gem::Dependency.new("rack", "= 0.9.1")}).").
       and include("Either installing with `--full-index` or running `bundle update rack_middleware` should fix the problem.")
+  end
+
+  it "auto-heals when the lockfile is missing specs" do
+    build_repo4 do
+      build_gem "minitest-bisect", "1.6.0" do |s|
+        s.add_dependency "path_expander", "~> 1.1"
+      end
+
+      build_gem "path_expander", "1.1.1"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "minitest-bisect"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          minitest-bisect (1.6.0)
+            path_expander (~> 1.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        minitest-bisect
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+    expect(out).to include("re-resolving dependencies because your lock file is missing some gems")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          minitest-bisect (1.6.0)
+            path_expander (~> 1.1)
+          path_expander (1.1.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        minitest-bisect
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   describe "a line ending" do

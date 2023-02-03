@@ -45,6 +45,8 @@ class Reline::Config
     attr_accessor v
   end
 
+  attr_accessor :autocompletion
+
   def initialize
     @additional_key_bindings = {} # from inputrc
     @additional_key_bindings[:emacs] = {}
@@ -91,15 +93,7 @@ class Reline::Config
   end
 
   def editing_mode_is?(*val)
-    (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
-  end
-
-  def autocompletion=(val)
-    @autocompletion = val
-  end
-
-  def autocompletion
-    @autocompletion
+    val.any?(@editing_mode_label)
   end
 
   def keymap

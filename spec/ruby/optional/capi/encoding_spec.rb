@@ -63,6 +63,48 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_strlen" do
+    before :each do
+      @str = 'こにちわ' # Each codepoint in this string is 3 bytes in UTF-8
+    end
+
+    it "returns the correct string length for the encoding" do
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_8).should == 4
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::BINARY).should == 12
+    end
+
+    it "returns the string length based on a fixed-width encoding's character length, even if the encoding is incompatible" do
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_16BE).should == 6
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_16LE).should == 6
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_32BE).should == 3
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_32LE).should == 3
+    end
+
+    it "does not consider strings to be NUL-terminated" do
+      s = "abc\0def"
+      @s.rb_enc_strlen(s, s.bytesize, Encoding::US_ASCII).should == 7
+      @s.rb_enc_strlen(s, s.bytesize, Encoding::UTF_8).should == 7
+    end
+
+    describe "handles broken strings" do
+      it "combines valid character and invalid character counts in UTF-8" do
+        # The result is 3 because `rb_enc_strlen` counts the first valid character and then adds
+        # the byte count for the invalid character that follows for 1 + 2.
+        @s.rb_enc_strlen(@str, 5, Encoding::UTF_8).should == 3
+      end
+
+      it "combines valid character and invalid character counts in UTF-16" do
+        @s.rb_enc_strlen(@str, 5, Encoding::UTF_16BE).should == 3
+      end
+
+      it "rounds up for fixed-width encodings" do
+        @s.rb_enc_strlen(@str, 7, Encoding::UTF_32BE).should == 2
+        @s.rb_enc_strlen(@str, 7, Encoding::UTF_32LE).should == 2
+        @s.rb_enc_strlen(@str, 5, Encoding::BINARY).should == 5
+      end
+    end
+  end
+
   describe "rb_enc_find" do
     it "returns the encoding of an Encoding" do
       @s.rb_enc_find("UTF-8").should == "UTF-8"
@@ -128,10 +170,16 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_mbc_to_codepoint" do
     it "returns the correct codepoint for the given character and size" do
-       @s.rb_enc_mbc_to_codepoint("é", 2).should == 0x00E9
-       @s.rb_enc_mbc_to_codepoint("éa", 2).should == 0x00E9
-       @s.rb_enc_mbc_to_codepoint("éa", 1).should == 0xC3
-       @s.rb_enc_mbc_to_codepoint("éa", 3).should == 0x00E9
+       @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
+    end
+
+    it "returns 0 if p == e" do
+      @s.rb_enc_mbc_to_codepoint("").should == 0
+    end
+
+    it "returns the raw byte if incomplete character in UTF-8" do
+      @s.rb_enc_mbc_to_codepoint("\xC3").should == 0xC3
+      @s.rb_enc_mbc_to_codepoint("\x80").should == 0x80
     end
   end
 
@@ -613,15 +661,15 @@ describe "C-API Encoding function" do
     it 'converts a Unicode codepoint to a UTF-8 C string' do
       str = ' ' * 6
       {
-        0  => "\x01",
-        0x7f => "\xC2\x80",
-        0x7ff => "\xE0\xA0\x80",
-        0xffff => "\xF0\x90\x80\x80",
-        0x1fffff => "\xF8\x88\x80\x80\x80",
-        0x3ffffff => "\xFC\x84\x80\x80\x80\x80",
+        1  => "\x01",
+        0x80 => "\xC2\x80",
+        0x800 => "\xE0\xA0\x80",
+        0x10000 => "\xF0\x90\x80\x80",
+        0x200000 => "\xF8\x88\x80\x80\x80",
+        0x4000000 => "\xFC\x84\x80\x80\x80\x80",
       }.each do |num, result|
-        len = @s.rb_uv_to_utf8(str, num + 1)
-        str[0..len-1].should == result
+        len = @s.rb_uv_to_utf8(str, num)
+        str.byteslice(0, len).should == result
       end
     end
   end
@@ -630,6 +678,7 @@ describe "C-API Encoding function" do
     it "returns the correct case fold for the given string" do
       @s.ONIGENC_MBC_CASE_FOLD("lower").should == ["l", 1]
       @s.ONIGENC_MBC_CASE_FOLD("Upper").should == ["u", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("ABC"[1..-1]).should == ["b", 1]
     end
 
     it "works with other encodings" do

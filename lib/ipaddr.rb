@@ -40,14 +40,14 @@ require 'socket'
 #   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
-  VERSION = "1.2.4"
+  VERSION = "1.2.5"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
   # 128 bit mask for IPv6
   IN6MASK = 0xffffffffffffffffffffffffffffffff
   # Format string for IPv6
-  IN6FORMAT = (["%.4x"] * 8).join(':')
+  IN6FORMAT = (["%.4x"] * 8).join(':').freeze
 
   # Regexp _internally_ used for parsing IPv4 address.
   RE_IPV4ADDRLIKE = %r{
@@ -736,7 +736,7 @@ end
 unless Socket.const_defined? :AF_INET6
   class Socket < BasicSocket
     # IPv6 protocol family
-    AF_INET6 = Object.new
+    AF_INET6 = Object.new.freeze
   end
 
   class << IPSocket

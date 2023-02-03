@@ -423,6 +423,10 @@ class MSpecOptions
       end
       MSpec.register :load, obj
     end
+
+    on("--print-skips", "Print skips") do
+      config[:print_skips] = true
+    end
   end
 
   def interrupt

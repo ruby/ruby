@@ -15,6 +15,7 @@ module Bundler
     end
 
     def self.output_fund_metadata_summary
+      return if Bundler.settings["ignore_funding_requests"]
       definition = Bundler.definition
       current_dependencies = definition.requested_dependencies
       current_specs = definition.specs
@@ -110,6 +111,7 @@ module Bundler
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
         gvp.strict = options[:strict] || options["filter-strict"]
+        gvp.pre = options[:pre]
       end
     end
 

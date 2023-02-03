@@ -45,11 +45,48 @@ describe :stringio_write_string, shared: true do
     @io.pos.should eql(4)
   end
 
+  it "handles concurrent writes correctly" do
+    @io = StringIO.new
+    n = 8
+    go = false
+    threads = n.times.map { |i|
+      Thread.new {
+        Thread.pass until go
+        @io.write i.to_s
+      }
+    }
+    go = true
+    threads.each(&:join)
+    @io.string.size.should == n.times.map(&:to_s).join.size
+  end
+
   ruby_version_is ""..."3.0" do
     it "does not taint self when the passed argument is tainted" do
       @io.send(@method, "test".taint)
       @io.tainted?.should be_false
     end
+  end
+
+  it "handles writing non-ASCII UTF-8 after seek" do
+    @io.binmode
+    @io << "\x80"
+    @io.pos = 0
+    @io << "\x81"
+    @io.string.should == "\x812345".b
+  end
+
+  it "handles writing with position < buffer size" do
+    @io.pos = 2
+    @io.write "abc"
+    @io.string.should == "12abc"
+
+    @io.pos = 2
+    @io.write "de"
+    @io.string.should == "12dec"
+
+    @io.pos = 2
+    @io.write "fghi"
+    @io.string.should == "12fghi"
   end
 end
 

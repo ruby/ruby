@@ -41,6 +41,14 @@
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
+/* enable matching optimization by using cache. */
+#define USE_CACHE_MATCH_OPT
+
+#ifdef USE_CACHE_MATCH_OPT
+#  define NUM_CACHE_OPCODE_FAIL -1
+#  define NUM_CACHE_OPCODE_UNINIT -2
+#endif
+
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
     defined(ONIG_DEBUG_STATISTICS) || defined(ONIG_DEBUG_MEMLEAK)
@@ -49,10 +57,11 @@
 # endif
 #endif
 
+/* __POWERPC__ added to accommodate Darwin case. */
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || defined(__aarch64__) || \
+     defined(__powerpc64__) || defined(__POWERPC__) || defined(__aarch64__) || \
      defined(__mc68020__)
 #  define UNALIGNED_WORD_ACCESS 1
 # else
@@ -378,6 +387,7 @@ typedef unsigned int  BitStatusType;
 
 
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
+#define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
 #define DIGITVAL(code)    ((code) - '0')
 #define ODIGITVAL(code)   DIGITVAL(code)
@@ -819,6 +829,7 @@ typedef intptr_t OnigStackIndex;
 
 typedef struct _OnigStackType {
   unsigned int type;
+  OnigStackIndex null_check;
   union {
     struct {
       UChar *pcode;      /* byte code position */
@@ -862,6 +873,14 @@ typedef struct _OnigStackType {
   } u;
 } OnigStackType;
 
+#ifdef USE_CACHE_MATCH_OPT
+typedef struct {
+  UChar *addr;
+  long num;
+  int outer_repeat;
+} OnigCacheIndex;
+#endif
+
 typedef struct {
   void* stack_p;
   size_t stack_n;
@@ -883,6 +902,14 @@ typedef struct {
   int128_t end_time;
 #else
   uint64_t end_time;
+#endif
+#ifdef USE_CACHE_MATCH_OPT
+  long            num_fail;
+  int             enable_cache_match_opt;
+  long            num_cache_opcode;
+  long            num_cache_table;
+  OnigCacheIndex* cache_index_table;
+  uint8_t*        match_cache;
 #endif
 } OnigMatchArg;
 

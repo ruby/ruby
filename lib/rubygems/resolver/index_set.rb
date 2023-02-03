@@ -53,14 +53,14 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[IndexSet', ']' do
+    q.group 2, "[IndexSet", "]" do
       q.breakable
-      q.text 'sources:'
+      q.text "sources:"
       q.breakable
       q.pp @f.sources
 
       q.breakable
-      q.text 'specs:'
+      q.text "specs:"
 
       q.breakable
 

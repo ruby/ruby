@@ -11,17 +11,9 @@ end
 
 describe "Regexp.new given a Regexp" do
   it_behaves_like :regexp_new_regexp, :new
-  it_behaves_like :regexp_new_string_binary, :compile
+  it_behaves_like :regexp_new_string_binary, :new
 end
 
-describe "Regexp.new given an Integer" do
-  it "raises a TypeError" do
-    -> { Regexp.new(1) }.should raise_error(TypeError)
-  end
-end
-
-describe "Regexp.new given a Float" do
-  it "raises a TypeError" do
-    -> { Regexp.new(1.0) }.should raise_error(TypeError)
-  end
+describe "Regexp.new given a non-String/Regexp" do
+  it_behaves_like :regexp_new_non_string_or_regexp, :new
 end

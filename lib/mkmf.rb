@@ -89,26 +89,16 @@ module MakeMakefile
 
   unless defined? $configure_args
     $configure_args = {}
-    args = CONFIG["configure_args"]
-    if ENV["CONFIGURE_ARGS"]
-      args << " " << ENV["CONFIGURE_ARGS"]
+    args = CONFIG["configure_args"].shellsplit
+    if arg = ENV["CONFIGURE_ARGS"]
+      args.push(*arg.shellsplit)
     end
-    for arg in Shellwords::shellwords(args)
+    args.delete_if {|a| /\A--(?:top(?:src)?|src|cur)dir(?=\z|=)/ =~ a}
+    for arg in args.concat(ARGV)
       arg, val = arg.split('=', 2)
       next unless arg
       arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
-        val or next
-        arg.downcase!
-      end
-      next if /^--(?:top|topsrc|src|cur)dir$/ =~ arg
-      $configure_args[arg] = val || true
-    end
-    for arg in ARGV
-      arg, val = arg.split('=', 2)
-      next unless arg
-      arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
+      if arg.sub!(/\A(?!--)/, '--')
         val or next
         arg.downcase!
       end
@@ -981,7 +971,11 @@ SRC
   # Internal use only.
   #
   def checking_for(m, fmt = nil)
-    f = caller[0][/in `([^<].*)'$/, 1] and f << ": " #` for vim #'
+    if f = caller_locations(1, 1).first.base_label and /\A\w/ =~ f
+      f += ": "
+    else
+      f = ""
+    end
     m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
     message "%s", m
     a = r = nil
@@ -1762,7 +1756,7 @@ SRC
     hdr << "#endif\n"
     hdr = hdr.join("")
     log_src(hdr, "#{header} is")
-    unless (IO.read(header) == hdr rescue false)
+    unless (File.read(header) == hdr rescue false)
       File.open(header, "wb") do |hfile|
         hfile.write(hdr)
       end
@@ -1855,66 +1849,73 @@ SRC
   # invoked with the options and a stripped output string is returned without
   # modifying any of the global values mentioned above.
   def pkg_config(pkg, *options)
-    _, ldir = dir_config(pkg)
-    if ldir
-      pkg_config_path = "#{ldir}/pkgconfig"
-      if File.directory?(pkg_config_path)
-        Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
-        envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
-      end
+    fmt = "not found"
+    def fmt.%(x)
+      x ? x.inspect : self
     end
-    if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
-      # if and only if package specific config command is given
-    elsif ($PKGCONFIG ||=
-           (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
-           find_executable0(pkgconfig) && pkgconfig) and
-        xsystem([*envs, $PKGCONFIG, "--exists", pkg])
-      # default to pkg-config command
-      pkgconfig = $PKGCONFIG
-      args = [pkg]
-    elsif find_executable0(pkgconfig = "#{pkg}-config")
-      # default to package specific config command, as a last resort.
-    else
-      pkgconfig = nil
-    end
-    if pkgconfig
-      get = proc {|opts|
-        opts = Array(opts).map { |o| "--#{o}" }
-        opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
-        Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
-        opts.strip if $?.success?
-      }
-    end
-    orig_ldflags = $LDFLAGS
-    if get and !options.empty?
-      get[options]
-    elsif get and try_ldflags(ldflags = get['libs'])
-      if incflags = get['cflags-only-I']
-        $INCFLAGS << " " << incflags
-        cflags = get['cflags-only-other']
-      else
-        cflags = get['cflags']
-      end
-      libs = get['libs-only-l']
-      if cflags
-        $CFLAGS += " " << cflags
-        $CXXFLAGS += " " << cflags
-      end
-      if libs
-        ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
-      else
-        libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
-      end
-      $libs += " " << libs
 
-      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
-      Logging::message "package configuration for %s\n", pkg
-      Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
-                       incflags, cflags, ldflags, libs
-      [[incflags, cflags].join(' '), ldflags, libs]
-    else
-      Logging::message "package configuration for %s is not found\n", pkg
-      nil
+    checking_for "pkg-config for #{pkg}", fmt do
+      _, ldir = dir_config(pkg)
+      if ldir
+        pkg_config_path = "#{ldir}/pkgconfig"
+        if File.directory?(pkg_config_path)
+          Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
+          envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
+        end
+      end
+      if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
+      # if and only if package specific config command is given
+      elsif ($PKGCONFIG ||=
+             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || "pkg-config"}) &&
+             find_executable0(pkgconfig) && pkgconfig) and
+           xsystem([*envs, $PKGCONFIG, "--exists", pkg])
+        # default to pkg-config command
+        pkgconfig = $PKGCONFIG
+        args = [pkg]
+      elsif find_executable0(pkgconfig = "#{pkg}-config")
+      # default to package specific config command, as a last resort.
+      else
+        pkgconfig = nil
+      end
+      if pkgconfig
+        get = proc {|opts|
+          opts = Array(opts).map { |o| "--#{o}" }
+          opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
+          Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
+          opts.strip if $?.success?
+        }
+      end
+      orig_ldflags = $LDFLAGS
+      if get and !options.empty?
+        get[options]
+      elsif get and try_ldflags(ldflags = get['libs'])
+        if incflags = get['cflags-only-I']
+          $INCFLAGS << " " << incflags
+          cflags = get['cflags-only-other']
+        else
+          cflags = get['cflags']
+        end
+        libs = get['libs-only-l']
+        if cflags
+          $CFLAGS += " " << cflags
+          $CXXFLAGS += " " << cflags
+        end
+        if libs
+          ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
+        else
+          libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
+        end
+        $libs += " " << libs
+
+        $LDFLAGS = [orig_ldflags, ldflags].join(' ')
+        Logging::message "package configuration for %s\n", pkg
+        Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
+                         incflags, cflags, ldflags, libs
+        [[incflags, cflags].join(' '), ldflags, libs]
+      else
+        Logging::message "package configuration for %s is not found\n", pkg
+        nil
+      end
     end
   end
 
@@ -2076,6 +2077,11 @@ sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby.sub(%r[\A#{Regexp.quote(RbConfig::CONFIG['bindir'])}(?=/|\z)]) {'$(bindir)'}}
 RUBY = $(ruby#{sep})
+BUILTRUBY = #{if defined?($builtruby) && $builtruby
+    $builtruby
+  else
+    File.join('$(bindir)', CONFIG["RUBY_INSTALL_NAME"] + CONFIG['EXEEXT'])
+  end}
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
@@ -2373,11 +2379,19 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     install_dirs.each {|d| conf << ("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
     sodir = $extout ? '$(TARGET_SO_DIR)' : '$(RUBYARCHDIR)'
     n = '$(TARGET_SO_DIR)$(TARGET)'
+    cleanobjs = ["$(OBJS)"]
+    if $extmk
+      %w[bc i s].each {|ex| cleanobjs << "$(OBJS:.#{$OBJEXT}=.#{ex})"}
+    end
+    if target
+      config_string('cleanobjs') {|t| cleanobjs << t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")}
+    end
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
-CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
+CLEANOBJS     = #{cleanobjs.join(' ')} *.bak
+TARGET_SO_DIR_TIMESTAMP = #{timestamp_file(sodir, target_prefix)}
 " #"
 
     conf = yield(conf) if block_given?
@@ -2411,7 +2425,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
     if target
       f = "$(DLLIB)"
       dest = "$(TARGET_SO)"
-      stamp = timestamp_file(dir, target_prefix)
+      stamp = '$(TARGET_SO_DIR_TIMESTAMP)'
       if $extout
         mfile.puts dest
         mfile.print "clean-so::\n"
@@ -2480,7 +2494,9 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
         end
       end
     end
-    dirs.unshift(sodir) if target and !dirs.include?(sodir)
+    if target and !dirs.include?(sodir)
+      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t$(Q) $(TOUCH) $@\n"
+    end
     dirs.each do |d|
       t = timestamp_file(d, target_prefix)
       mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
@@ -2524,7 +2540,7 @@ site-install-rb: install-rb
     mfile.print "$(TARGET_SO): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file(sodir, target_prefix)}" if $extout
+    mfile.print " $(TARGET_SO_DIR_TIMESTAMP)" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
@@ -2594,6 +2610,7 @@ site-install-rb: install-rb
     $INCFLAGS << " -I$(hdrdir)/ruby/backward" unless $extmk
     $INCFLAGS << " -I$(hdrdir) -I$(srcdir)"
     $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
+    config_string("ADDITIONAL_DLDFLAGS") {|flags| $DLDFLAGS << " " << flags} unless $extmk
     $LIBEXT = config['LIBEXT'].dup
     $OBJEXT = config["OBJEXT"].dup
     $EXEEXT = config["EXEEXT"].dup

@@ -1,11 +1,12 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'irb'
 require 'irb/ext/save-history'
 require 'readline'
 
+require_relative "helper"
+
 module TestIRB
-  class TestHistory < Test::Unit::TestCase
+  class TestHistory < TestCase
     def setup
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end
@@ -14,38 +15,10 @@ module TestIRB
       IRB.conf[:RC_NAME_GENERATOR] = nil
     end
 
-    class TestInputMethod < ::IRB::InputMethod
+    class TestInputMethodWithHistory < TestInputMethod
       HISTORY = Array.new
 
       include IRB::HistorySavingAbility
-
-      attr_reader :list, :line_no
-
-      def initialize(list = [])
-        super("test")
-        @line_no = 0
-        @list = list
-      end
-
-      def gets
-        @list[@line_no]&.tap {@line_no += 1}
-      end
-
-      def eof?
-        @line_no >= @list.size
-      end
-
-      def encoding
-        Encoding.default_external
-      end
-
-      def reset
-        @line_no = 0
-      end
-
-      def winsize
-        [10, 20]
-      end
     end
 
     def test_history_save_1
@@ -158,6 +131,31 @@ module TestIRB
       end
     end
 
+    def test_history_concurrent_use_not_present
+      backup_home = ENV["HOME"]
+      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
+      backup_irbrc = ENV.delete("IRBRC")
+      IRB.conf[:LC_MESSAGES] = IRB::Locale.new
+      IRB.conf[:SAVE_HISTORY] = 1
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
+        ENV["HOME"] = tmpdir
+        io = TestInputMethodWithHistory.new
+        io.class::HISTORY.clear
+        io.load_history
+        io.class::HISTORY.concat(%w"line1 line2")
+
+        history_file = IRB.rc_file("_history")
+        assert_not_send [File, :file?, history_file]
+        File.write(history_file, "line0\n")
+        io.save_history
+        assert_equal(%w"line0 line1 line2", File.read(history_file).split)
+      end
+    ensure
+      ENV["HOME"] = backup_home
+      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
+      ENV["IRBRC"] = backup_irbrc
+    end
+
     private
 
     def assert_history(expected_history, initial_irb_history, input)
@@ -166,13 +164,13 @@ module TestIRB
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       actual_history = nil
-      Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
-        open(IRB.rc_file("_history"), "w") do |f|
+        File.open(IRB.rc_file("_history"), "w") do |f|
           f.write(initial_irb_history)
         end
 
-        io = TestInputMethod.new
+        io = TestInputMethodWithHistory.new
         io.class::HISTORY.clear
         io.load_history
         if block_given?
@@ -184,7 +182,7 @@ module TestIRB
         io.save_history
 
         io.load_history
-        open(IRB.rc_file("_history"), "r") do |f|
+        File.open(IRB.rc_file("_history"), "r") do |f|
           actual_history = f.read
         end
       end

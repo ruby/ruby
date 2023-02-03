@@ -3,7 +3,7 @@ describe :dir_chroot_as_root, shared: true do
     DirSpecs.create_mock_dirs
 
     @real_root = "../" * (File.dirname(__FILE__).count('/') - 1)
-    @ref_dir = File.join("/", Dir.new('/').entries.first)
+    @ref_dir = File.join("/", File.basename(Dir["/*"].first))
   end
 
   after :all do
@@ -14,10 +14,13 @@ describe :dir_chroot_as_root, shared: true do
     DirSpecs.delete_mock_dirs
   end
 
+  # Pending until https://github.com/ruby/ruby/runs/8075149420 is fixed
+  compilations_ci = ENV["GITHUB_WORKFLOW"] == "Compilations"
+
   it "can be used to change the process' root directory" do
     -> { Dir.send(@method, File.dirname(__FILE__)) }.should_not raise_error
     File.should.exist?("/#{File.basename(__FILE__)}")
-  end
+  end unless compilations_ci
 
   it "returns 0 if successful" do
     Dir.send(@method, '/').should == 0
@@ -31,7 +34,7 @@ describe :dir_chroot_as_root, shared: true do
     Dir.send(@method, @real_root)
     File.should.exist?(@ref_dir)
     File.should_not.exist?("/#{File.basename(__FILE__)}")
-  end
+  end unless compilations_ci
 
   it "calls #to_path on non-String argument" do
     p = mock('path')

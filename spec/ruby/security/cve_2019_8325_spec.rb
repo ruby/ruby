@@ -5,8 +5,17 @@ require 'rubygems/command_manager'
 
 describe "CVE-2019-8325 is resisted by" do
   describe "sanitising error message components" do
+    before :each do
+      @ui = Gem::SilentUI.new
+    end
+
+    after :each do
+      @ui.close
+    end
+
     it "for the 'while executing' message" do
       manager = Gem::CommandManager.new
+      manager.ui = @ui
       def manager.process_args(args, build_args)
         raise StandardError, "\e]2;nyan\a"
       end
@@ -26,6 +35,7 @@ describe "CVE-2019-8325 is resisted by" do
 
     it "for the 'loading command' message" do
       manager = Gem::CommandManager.new
+      manager.ui = @ui
       def manager.require(x)
         raise 'foo'
       end

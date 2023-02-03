@@ -449,8 +449,6 @@ RSpec.describe "Bundler.require with platform specific dependencies" do
   end
 
   it "requires gems pinned to multiple platforms, including the current one" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 

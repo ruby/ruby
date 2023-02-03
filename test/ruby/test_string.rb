@@ -661,6 +661,27 @@ CODE
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
+  def test_string_interpolations_across_size_pools_get_embedded
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    require 'objspace'
+    base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    small_obj_size = (base_slot_size / 2)
+    large_obj_size = base_slot_size * 2
+
+    a = "a" * small_obj_size
+    b = "a" * large_obj_size
+
+    res = "#{a}, #{b}"
+    dump_res = ObjectSpace.dump(res)
+    dump_orig = ObjectSpace.dump(a)
+    new_slot_size = Integer(dump_res.match(/"slot_size":(\d+)/)[1])
+    orig_slot_size = Integer(dump_orig.match(/"slot_size":(\d+)/)[1])
+
+    assert_match(/"embedded":true/, dump_res)
+    assert_operator(new_slot_size, :>, orig_slot_size)
+  end
+
   def test_count
     a = S("hello world")
     assert_equal(5, a.count(S("lo")))
@@ -885,6 +906,18 @@ CODE
       assert_not_same(a, b)
       assert_not_predicate(b, :frozen?)
     end
+  end
+
+  class StringWithIVSet < String
+    def set_iv
+      @foo = 1
+    end
+  end
+
+  def test_ivar_set_after_frozen_dup
+    str = StringWithIVSet.new.freeze
+    str.dup.set_iv
+    assert_raise(FrozenError) { str.set_iv }
   end
 
   def test_each
@@ -1121,14 +1154,19 @@ CODE
     assert_equal(S("world"), res[1])
 
     res = []
-    S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
-    assert_equal(S("hello\n"), res[0])
-    assert_equal(S("world"),   res[1])
+    S("hello\n\n\nworld\n").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world\n"), res[1])
 
     res = []
-    S("hello\r\n\r\nworld").each_line(S(''), chomp: true) {|x| res << x}
-    assert_equal(S("hello\r\n"), res[0])
-    assert_equal(S("world"),     res[1])
+    S("hello\r\n\r\nworld\r\n").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world\r\n"), res[1])
+
+    res = []
+    S("hello\r\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
 
     res = []
     S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}
@@ -1582,6 +1620,15 @@ CODE
     assert_nil($~)
 
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
+  end
+
+  def test_scan_segv
+    bug19159 = '[Bug #19159]'
+    assert_nothing_raised(Exception, bug19159) do
+      ObjectSpace.each_object(MatchData).to_a
+      "".scan(//)
+      ObjectSpace.each_object(MatchData).to_a.inspect
+    end
   end
 
   def test_size
@@ -2609,6 +2656,11 @@ CODE
     assert_equal '"\x0012"', s.inspect, bug8290
   end
 
+  def test_inspect_next_line
+    bug16842 = '[ruby-core:98231]'
+    assert_equal '"\\u0085"', 0x85.chr(Encoding::UTF_8).inspect, bug16842
+  end
+
   def test_partition
     assert_equal(%w(he l lo), S("hello").partition(/l/))
     assert_equal(%w(he l lo), S("hello").partition("l"))
@@ -2795,6 +2847,11 @@ CODE
     assert_equal("\u3042", s5)
 
     assert_raise(Encoding::CompatibilityError) { S("\u3042".encode("ISO-2022-JP")).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc \x80 ".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc\x80 ".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc \x80".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("\x80".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S(" \x80 ".force_encoding('UTF-8')).rstrip! }
   end
 
   def test_lstrip
@@ -3397,42 +3454,86 @@ CODE
   end
 
   def test_bytesplice
-    assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), -5, 0, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), 0, 0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0, 1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0, 5, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0, 6, "xxx")
+    assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "bye")
+    assert_bytesplice_result("byehello", S("hello"), -5, 0, "bye")
+    assert_bytesplice_result("byehello", S("hello"), 0, 0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0, 1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0, 5, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0, 6, "bye")
 
-    assert_bytesplice_raise(RangeError, S("hello"), -6...-6, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), -5...-5, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), 0...0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0..0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0...1, "xxx")
-    assert_bytesplice_result("xxxllo", S("hello"), 0..1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0..-1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0...5, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0...6, "xxx")
+    assert_bytesplice_raise(IndexError, S("hello"), -5, 0, "bye", -4, 0)
+    assert_bytesplice_result("byehello", S("hello"), 0, 0, "bye", 0, 3)
+    assert_bytesplice_result("yehello", S("hello"), 0, 0, "bye", 1, 3)
+    assert_bytesplice_result("yehello", S("hello"), 0, 0, "bye", 1, 2)
+    assert_bytesplice_result("ehello", S("hello"), 0, 0, "bye", 2, 1)
+    assert_bytesplice_result("hello", S("hello"), 0, 0, "bye", 3, 0)
+    assert_bytesplice_result("hello", s = S("hello"), 0, 5, s, 0, 5)
+    assert_bytesplice_result("elloo", s = S("hello"), 0, 4, s, 1, 4)
+    assert_bytesplice_result("llolo", s = S("hello"), 0, 3, s, 2, 3)
+    assert_bytesplice_result("lollo", s = S("hello"), 0, 2, s, 3, 2)
+    assert_bytesplice_result("oello", s = S("hello"), 0, 1, s, 4, 1)
+    assert_bytesplice_result("hhell", s = S("hello"), 1, 4, s, 0, 4)
+    assert_bytesplice_result("hehel", s = S("hello"), 2, 3, s, 0, 3)
+    assert_bytesplice_result("helhe", s = S("hello"), 3, 2, s, 0, 2)
+    assert_bytesplice_result("hellh", s = S("hello"), 4, 1, s, 0, 1)
 
-    assert_bytesplice_raise(TypeError, S("hello"), 0, "xxx")
+    assert_bytesplice_raise(RangeError, S("hello"), -6...-6, "bye")
+    assert_bytesplice_result("byehello", S("hello"), -5...-5, "bye")
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0..0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0...1, "bye")
+    assert_bytesplice_result("byello", S("hello"), 0..1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0..-1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0...5, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0...6, "bye")
+    assert_bytesplice_result("llolo", s = S("hello"), 0..2, s, 2..4)
 
-    assert_bytesplice_raise(IndexError, S("こんにちは"), -16, 0, "xxx")
-    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), -15, 0, "xxx")
-    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), 0, 0, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 1, 0, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 1, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 2, "xxx")
-    assert_bytesplice_result("xxxんにちは", S("こんにちは"), 0, 3, "xxx")
-    assert_bytesplice_result("こんにちはxxx", S("こんにちは"), 15, 0, "xxx")
+    assert_bytesplice_raise(RangeError, S("hello"), -5...-5, "bye", -6...-6)
+    assert_bytesplice_result("byehello", S("hello"), -5...-5, "bye", 0..-1)
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye", 0..-1)
+    assert_bytesplice_result("bhello", S("hello"), 0...0, "bye", 0..0)
+    assert_bytesplice_result("byhello", S("hello"), 0...0, "bye", 0..1)
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye", 0..2)
+    assert_bytesplice_result("yehello", S("hello"), 0...0, "bye", 1..2)
+
+    assert_bytesplice_raise(TypeError, S("hello"), 0, "bye")
+
+    assert_bytesplice_raise(IndexError, S("こんにちは"), -16, 0, "bye")
+    assert_bytesplice_result("byeこんにちは", S("こんにちは"), -15, 0, "bye")
+    assert_bytesplice_result("byeこんにちは", S("こんにちは"), 0, 0, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 1, 0, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 1, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 2, "bye")
+    assert_bytesplice_result("byeんにちは", S("こんにちは"), 0, 3, "bye")
+    assert_bytesplice_result("こんにちはbye", S("こんにちは"), 15, 0, "bye")
+
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 0, "さようなら", -16, 0)
+    assert_bytesplice_result("こんにちはさようなら", S("こんにちは"), 15, 0, "さようなら", 0, 15)
+    assert_bytesplice_result("さようなら", S("こんにちは"), 0, 15, "さようなら", 0, 15)
+    assert_bytesplice_result("さんにちは", S("こんにちは"), 0, 3, "さようなら", 0, 3)
+    assert_bytesplice_result("さようちは", S("こんにちは"), 0, 9, "さようなら", 0, 9)
+    assert_bytesplice_result("ようなちは", S("こんにちは"), 0, 9, "さようなら", 3, 9)
+    assert_bytesplice_result("ようちは", S("こんにちは"), 0, 9, "さようなら", 3, 6)
+    assert_bytesplice_result("ようならちは", S("こんにちは"), 0, 9, "さようなら", 3, 12)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", -16, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 1, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 2, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 0, 1)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 0, 2)
+    assert_bytesplice_result("にちはちは", s = S("こんにちは"), 0, 9, s, 6, 9)
 
     assert_bytesplice_result("", S(""), 0, 0, "")
     assert_bytesplice_result("xxx", S(""), 0, 0, "xxx")
+
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0)
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0..-1)
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0..-1, "bye", 0, 3)
   end
 
   private
 
   def assert_bytesplice_result(expected, s, *args)
-    assert_equal(args.last, s.send(:bytesplice, *args))
+    assert_equal(expected, s.send(:bytesplice, *args))
     assert_equal(expected, s)
   end
 

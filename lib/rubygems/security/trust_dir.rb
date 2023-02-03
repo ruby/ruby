@@ -8,7 +8,7 @@ class Gem::Security::TrustDir
   # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
-    :trust_dir    => 0700,
+    :trust_dir => 0700,
     :trusted_cert => 0600,
   }.freeze
 
@@ -41,7 +41,7 @@ class Gem::Security::TrustDir
   def each_certificate
     return enum_for __method__ unless block_given?
 
-    glob = File.join @dir, '*.pem'
+    glob = File.join @dir, "*.pem"
 
     Dir[glob].each do |certificate_file|
       begin
@@ -92,7 +92,7 @@ class Gem::Security::TrustDir
 
     destination = cert_path certificate
 
-    File.open destination, 'wb', 0600 do |io|
+    File.open destination, "wb", 0600 do |io|
       io.write certificate.to_pem
       io.chmod(@permissions[:trusted_cert])
     end
@@ -104,7 +104,7 @@ class Gem::Security::TrustDir
   # permissions.
 
   def verify
-    require 'fileutils'
+    require "fileutils"
     if File.exist? @dir
       raise Gem::Security::Exception,
         "trust directory #{@dir} is not a directory" unless

@@ -283,8 +283,9 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--jit-min-calls=5/ || # This always fails with --jit-wait --jit-min-calls=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
+} unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') || # https://bugs.ruby-lang.org/issues/17878
+  true # too flaky everywhere http://ci.rvm.jp/results/trunk@ruby-sp1/4321096
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -479,6 +480,7 @@ assert_equal 'ok', %q{
 }
 
 # multiple Ractors can receive (wait) from one Ractor
+yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
@@ -501,7 +503,8 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-}
+} unless /mswin/ =~ RUBY_PLATFORM || # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
+  yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3603398545/jobs/6071549328#step:18:33
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
@@ -1471,21 +1474,6 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
-# enc_table
-assert_equal "#{N/10}", %Q{
-  Ractor.new do
-    loop do
-      Encoding.find("test-enc-#{rand(5_000)}").inspect
-    rescue ArgumentError => e
-    end
-  end
-
-  src = Encoding.find("UTF-8")
-  #{N/10}.times{|i|
-    src.replicate("test-enc-\#{i}")
-  }
-}
-
 # Generic ivtbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
@@ -1500,7 +1488,7 @@ assert_equal "#{n}#{n}", %Q{
       end
     end
   }.map{|r| r.take}.join
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3692339025/jobs/6251137785
 
 # NameError
 assert_equal "ok", %q{
@@ -1541,7 +1529,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-}
+} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3575374374/jobs/6011846425
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
@@ -1577,6 +1565,51 @@ assert_equal "ok", %q{
   rescue Ractor::IsolationError
     "ok"
   end
+}
+
+assert_equal "ok", %q{
+  module M
+    def foo
+      @foo
+    end
+  end
+
+  class A
+    include M
+
+    def initialize
+      100.times { |i| instance_variable_set(:"@var_#{i}", "bad: #{i}") }
+      @foo = 2
+    end
+  end
+
+  class B
+    include M
+
+    def initialize
+      @foo = 1
+    end
+  end
+
+  Ractor.new do
+    b = B.new
+    100_000.times do
+      raise unless b.foo == 1
+    end
+  end
+
+  a = A.new
+  100_000.times do
+    raise unless a.foo == 2
+  end
+
+  "ok"
+}
+
+assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
+  Warning[:experimental] = $VERBOSE = true
+  STDERR.reopen(STDOUT)
+  eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
 }
 
 end # if !ENV['GITHUB_WORKFLOW']

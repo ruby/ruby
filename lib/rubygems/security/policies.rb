@@ -5,13 +5,13 @@ module Gem::Security
   # No security policy: all package signature checks are disabled.
 
   NoSecurity = Policy.new(
-    'No Security',
-    :verify_data      => false,
-    :verify_signer    => false,
-    :verify_chain     => false,
-    :verify_root      => false,
-    :only_trusted     => false,
-    :only_signed      => false
+    "No Security",
+    :verify_data => false,
+    :verify_signer => false,
+    :verify_chain => false,
+    :verify_root => false,
+    :only_trusted => false,
+    :only_signed => false
   )
 
   ##
@@ -23,13 +23,13 @@ module Gem::Security
   # easily spoofed, and is not recommended.
 
   AlmostNoSecurity = Policy.new(
-    'Almost No Security',
-    :verify_data      => true,
-    :verify_signer    => false,
-    :verify_chain     => false,
-    :verify_root      => false,
-    :only_trusted     => false,
-    :only_signed      => false
+    "Almost No Security",
+    :verify_data => true,
+    :verify_signer => false,
+    :verify_chain => false,
+    :verify_root => false,
+    :only_trusted => false,
+    :only_signed => false
   )
 
   ##
@@ -40,13 +40,13 @@ module Gem::Security
   # is not recommended.
 
   LowSecurity = Policy.new(
-    'Low Security',
-    :verify_data      => true,
-    :verify_signer    => true,
-    :verify_chain     => false,
-    :verify_root      => false,
-    :only_trusted     => false,
-    :only_signed      => false
+    "Low Security",
+    :verify_data => true,
+    :verify_signer => true,
+    :verify_chain => false,
+    :verify_root => false,
+    :only_trusted => false,
+    :only_signed => false
   )
 
   ##
@@ -59,13 +59,13 @@ module Gem::Security
   # gem off as unsigned.
 
   MediumSecurity = Policy.new(
-    'Medium Security',
-    :verify_data      => true,
-    :verify_signer    => true,
-    :verify_chain     => true,
-    :verify_root      => true,
-    :only_trusted     => true,
-    :only_signed      => false
+    "Medium Security",
+    :verify_data => true,
+    :verify_signer => true,
+    :verify_chain => true,
+    :verify_root => true,
+    :only_trusted => true,
+    :only_signed => false
   )
 
   ##
@@ -78,37 +78,37 @@ module Gem::Security
   # a reasonable guarantee that the contents of the gem have not been altered.
 
   HighSecurity = Policy.new(
-    'High Security',
-    :verify_data      => true,
-    :verify_signer    => true,
-    :verify_chain     => true,
-    :verify_root      => true,
-    :only_trusted     => true,
-    :only_signed      => true
+    "High Security",
+    :verify_data => true,
+    :verify_signer => true,
+    :verify_chain => true,
+    :verify_root => true,
+    :only_trusted => true,
+    :only_signed => true
   )
 
   ##
   # Policy used to verify a certificate and key when signing a gem
 
   SigningPolicy = Policy.new(
-    'Signing Policy',
-    :verify_data      => false,
-    :verify_signer    => true,
-    :verify_chain     => true,
-    :verify_root      => true,
-    :only_trusted     => false,
-    :only_signed      => false
+    "Signing Policy",
+    :verify_data => false,
+    :verify_signer => true,
+    :verify_chain => true,
+    :verify_root => true,
+    :only_trusted => false,
+    :only_signed => false
   )
 
   ##
   # Hash of configured security policies
 
   Policies = {
-    'NoSecurity'       => NoSecurity,
-    'AlmostNoSecurity' => AlmostNoSecurity,
-    'LowSecurity'      => LowSecurity,
-    'MediumSecurity'   => MediumSecurity,
-    'HighSecurity'     => HighSecurity,
+    "NoSecurity" => NoSecurity,
+    "AlmostNoSecurity" => AlmostNoSecurity,
+    "LowSecurity" => LowSecurity,
+    "MediumSecurity" => MediumSecurity,
+    "HighSecurity" => HighSecurity,
     # SigningPolicy is not intended for use by `gem -P` so do not list it
   }.freeze
 

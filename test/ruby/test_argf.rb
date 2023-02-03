@@ -143,6 +143,17 @@ class TestArgf < Test::Unit::TestCase
     };
   end
 
+  def test_lineno_after_shebang
+    expected = %w"1 1 1 2 2 2 3 3 1 4 4 2"
+    assert_in_out_err(["--enable=gems", "-", @t1.path, @t2.path], "#{<<~"{#"}\n#{<<~'};'}", expected)
+    #!/usr/bin/env ruby
+    {#
+      ARGF.each do |line|
+        puts [$., ARGF.lineno, ARGF.file.lineno]
+      end
+    };
+  end
+
   def test_new_lineno_each
     f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
     result = []

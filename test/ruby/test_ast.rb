@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
+require 'pp'
 
 class RubyVM
   module AbstractSyntaxTree
@@ -131,6 +132,34 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+    define_method("test_all_tokens:#{path}") do
+      node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+      tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
+      tokens_bytes = tokens.map { _1[2]}.join.bytes
+      source_bytes = File.read("#{SRCDIR}/#{path}").bytes
+
+      assert_equal(source_bytes, tokens_bytes)
+
+      (tokens.count - 1).times do |i|
+        token_0 = tokens[i]
+        token_1 = tokens[i + 1]
+        end_pos = token_0.last[2..3]
+        beg_pos = token_1.last[0..1]
+
+        if end_pos[0] == beg_pos[0]
+          # When both tokens are same line, column should be consecutives
+          assert_equal(beg_pos[1], end_pos[1], "#{token_0}. #{token_1}")
+        else
+          # Line should be next
+          assert_equal(beg_pos[0], end_pos[0] + 1, "#{token_0}. #{token_1}")
+          # It should be on the beginning of the line
+          assert_equal(0, beg_pos[1], "#{token_0}. #{token_1}")
+        end
+      end
+    end
+  end
+
   private def parse(src)
     EnvUtil.suppress_warning {
       RubyVM::AbstractSyntaxTree.parse(src)
@@ -183,6 +212,25 @@ class TestAst < Test::Unit::TestCase
         RubyVM::AbstractSyntaxTree.parse_file(f.path)
       end
     end
+  end
+
+  def test_node_id_for_location
+    exception = begin
+                  raise
+                rescue => e
+                  e
+                end
+    loc = exception.backtrace_locations.first
+    node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+    node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+
+    assert_equal node.node_id, node_id
+  end
+
+  def test_node_id_for_backtrace_location_raises_argument_error
+    bug19262 = '[ruby-core:111435]'
+
+    assert_raise(TypeError, bug19262) { RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(1) }
   end
 
   def test_of_proc_and_method
@@ -447,6 +495,30 @@ class TestAst < Test::Unit::TestCase
     assert_not_equal(type1, type2)
   end
 
+  def test_rest_arg
+    rest_arg = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-4]
+    end
+
+    assert_equal(nil, rest_arg.call(''))
+    assert_equal(:r, rest_arg.call('*r'))
+    assert_equal(:r, rest_arg.call('a, *r'))
+    assert_equal(:*, rest_arg.call('*'))
+    assert_equal(:*, rest_arg.call('a, *'))
+  end
+
+  def test_block_arg
+    block_arg = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1].children[-1]
+    end
+
+    assert_equal(nil, block_arg.call(''))
+    assert_equal(:block, block_arg.call('&block'))
+    assert_equal(:&, block_arg.call('&'))
+  end
+
   def test_keyword_rest
     kwrest = lambda do |arg_str|
       node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
@@ -455,9 +527,19 @@ class TestAst < Test::Unit::TestCase
     end
 
     assert_equal(nil, kwrest.call(''))
-    assert_equal([nil], kwrest.call('**'))
+    assert_equal([:**], kwrest.call('**'))
     assert_equal(false, kwrest.call('**nil'))
     assert_equal([:a], kwrest.call('**a'))
+  end
+
+  def test_argument_forwarding
+    forwarding = lambda do |arg_str|
+      node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
+      node = node.children.last.children.last.children[1]
+      node ? [node.children[-4], node.children[-2]&.children, node.children[-1]] : []
+    end
+
+    assert_equal([:*, nil, :&], forwarding.call('...'))
   end
 
   def test_ranges_numbered_parameter
@@ -542,6 +624,27 @@ dummy
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
+  def test_keep_tokens_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_tokens: true)
+    1.times do
+    end
+    __END__
+    dummy
+    END
+
+    expected = [
+      [:tINTEGER, "1"],
+      [:".", "."],
+      [:tIDENTIFIER, "times"],
+      [:tSP, " "],
+      [:keyword_do, "do"],
+      [:tIGNORED_NL, "\n"],
+      [:keyword_end, "end"],
+      [:nl, "\n"],
+    ]
+    assert_equal(expected, node.all_tokens.map { [_2, _3]})
+  end
+
   def test_encoding_with_keep_script_lines
     # Stop a warning "possibly useless use of a literal in void context"
     verbose_bak, $VERBOSE = $VERBOSE, nil
@@ -564,5 +667,418 @@ dummy
   def test_e_option
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
+  end
+
+  def test_error_tolerant
+    verbose_bak, $VERBOSE = $VERBOSE, false
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      class A
+        def m
+          if;
+          a = 10
+        end
+      end
+    STR
+    assert_nil($!)
+
+    assert_equal(:SCOPE, node.type)
+  ensure
+    $VERBOSE = verbose_bak
+  end
+
+  def test_error_tolerant_end_is_short_for_method_define
+    assert_error_tolerant(<<~STR, <<~EXP)
+      def m
+        m2
+    STR
+      (SCOPE@1:0-2:4
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-2:4
+          mid: :m
+          body:
+            (SCOPE@1:0-2:4
+             tbl: []
+             args:
+               (ARGS@1:5-1:5
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:4 :m2))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_singleton_method_define
+    assert_error_tolerant(<<~STR, <<~EXP)
+      def obj.m
+        m2
+    STR
+      (SCOPE@1:0-2:4
+       tbl: []
+       args: nil
+       body:
+         (DEFS@1:0-2:4 (VCALL@1:4-1:7 :obj) :m
+            (SCOPE@1:0-2:4
+             tbl: []
+             args:
+               (ARGS@1:9-1:9
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:4 :m2))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_begin
+    assert_error_tolerant(<<~STR, <<~EXP)
+      begin
+        a = 1
+    STR
+      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_if
+    assert_error_tolerant(<<~STR, <<~EXP)
+      if cond
+        a = 1
+    STR
+      (SCOPE@1:0-2:7
+       tbl: [:a]
+       args: nil
+       body:
+         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)) nil))
+    EXP
+
+    assert_error_tolerant(<<~STR, <<~EXP)
+      if cond
+        a = 1
+      else
+    STR
+      (SCOPE@1:0-3:4
+       tbl: [:a]
+       args: nil
+       body:
+         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            (BEGIN@3:4-3:4 nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_unless
+    assert_error_tolerant(<<~STR, <<~EXP)
+      unless cond
+        a = 1
+    STR
+      (SCOPE@1:0-2:7
+       tbl: [:a]
+       args: nil
+       body:
+         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            nil))
+    EXP
+
+    assert_error_tolerant(<<~STR, <<~EXP)
+      unless cond
+        a = 1
+      else
+    STR
+      (SCOPE@1:0-3:4
+       tbl: [:a]
+       args: nil
+       body:
+         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            (BEGIN@3:4-3:4 nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_while
+    assert_error_tolerant(<<~STR, <<~EXP)
+      while true
+        m
+    STR
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body: (WHILE@1:0-2:3 (TRUE@1:6-1:10) (VCALL@2:2-2:3 :m) true))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_until
+    assert_error_tolerant(<<~STR, <<~EXP)
+      until true
+        m
+    STR
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body: (UNTIL@1:0-2:3 (TRUE@1:6-1:10) (VCALL@2:2-2:3 :m) true))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_case
+    assert_error_tolerant(<<~STR, <<~EXP)
+      case a
+      when 1
+    STR
+      (SCOPE@1:0-2:6
+       tbl: []
+       args: nil
+       body:
+         (CASE@1:0-2:6 (VCALL@1:5-1:6 :a)
+            (WHEN@2:0-2:6 (LIST@2:5-2:6 (LIT@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
+               nil)))
+    EXP
+
+
+    assert_error_tolerant(<<~STR, <<~EXP)
+      case
+      when a == 1
+    STR
+      (SCOPE@1:0-2:11
+       tbl: []
+       args: nil
+       body:
+         (CASE2@1:0-2:11 nil
+            (WHEN@2:0-2:11
+               (LIST@2:5-2:11
+                  (OPCALL@2:5-2:11 (VCALL@2:5-2:6 :a) :==
+                     (LIST@2:10-2:11 (LIT@2:10-2:11 1) nil)) nil)
+               (BEGIN@2:11-2:11 nil) nil)))
+    EXP
+
+
+    assert_error_tolerant(<<~STR, <<~EXP)
+      case a
+      in {a: String}
+    STR
+      (SCOPE@1:0-2:14
+       tbl: []
+       args: nil
+       body:
+         (CASE3@1:0-2:14 (VCALL@1:5-1:6 :a)
+            (IN@2:0-2:14
+               (HSHPTN@2:4-2:13
+                const: nil
+                kw:
+                  (HASH@2:4-2:13
+                     (LIST@2:4-2:13 (LIT@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
+                kwrest: nil) (BEGIN@2:14-2:14 nil) nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_for
+    assert_error_tolerant(<<~STR, <<~EXP)
+      for i in ary
+        m
+    STR
+      (SCOPE@1:0-2:3
+       tbl: [:i]
+       args: nil
+       body:
+         (FOR@1:0-2:3 (VCALL@1:9-1:12 :ary)
+            (SCOPE@1:0-2:3
+             tbl: [nil]
+             args:
+               (ARGS@1:4-1:5
+                pre_num: 1
+                pre_init: (LASGN@1:4-1:5 :i (DVAR@1:4-1:5 nil))
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:3 :m))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_class
+    assert_error_tolerant(<<~STR, <<~EXP)
+      class C
+    STR
+      (SCOPE@1:0-1:7
+       tbl: []
+       args: nil
+       body:
+         (CLASS@1:0-1:7 (COLON2@1:6-1:7 nil :C) nil
+            (SCOPE@1:0-1:7 tbl: [] args: nil body: (BEGIN@1:7-1:7 nil))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_module
+    assert_error_tolerant(<<~STR, <<~EXP)
+      module M
+    STR
+      (SCOPE@1:0-1:8
+       tbl: []
+       args: nil
+       body:
+         (MODULE@1:0-1:8 (COLON2@1:7-1:8 nil :M)
+            (SCOPE@1:0-1:8 tbl: [] args: nil body: (BEGIN@1:8-1:8 nil))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do
+    assert_error_tolerant(<<~STR, <<~EXP)
+      m do
+        a
+    STR
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (ITER@1:0-2:3 (FCALL@1:0-1:1 :m nil)
+            (SCOPE@1:2-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do_block
+    assert_error_tolerant(<<~STR, <<~EXP)
+      m 1 do
+        a
+    STR
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (LIT@1:2-1:3 1) nil))
+            (SCOPE@1:4-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do_LAMBDA
+    assert_error_tolerant(<<~STR, <<~EXP)
+      -> do
+        a
+    STR
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (LAMBDA@1:0-2:3
+            (SCOPE@1:2-2:3
+             tbl: []
+             args:
+               (ARGS@1:2-1:2
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:3 :a))))
+    EXP
+  end
+
+  def test_error_tolerant_treat_end_as_keyword_based_on_indent
+    assert_error_tolerant(<<~STR, <<~EXP)
+      module Z
+        class Foo
+          foo.
+        end
+
+        def bar
+        end
+      end
+    STR
+      (SCOPE@1:0-8:3
+       tbl: []
+       args: nil
+       body:
+         (MODULE@1:0-8:3 (COLON2@1:7-1:8 nil :Z)
+            (SCOPE@1:0-8:3
+             tbl: []
+             args: nil
+             body:
+               (BLOCK@1:8-7:5 (BEGIN@1:8-1:8 nil)
+                  (CLASS@2:2-4:5 (COLON2@2:8-2:11 nil :Foo) nil
+                     (SCOPE@2:2-4:5
+                      tbl: []
+                      args: nil
+                      body: (BLOCK@2:11-4:5 (BEGIN@2:11-2:11 nil) (ERROR@3:4-4:5))))
+                  (DEFN@6:2-7:5
+                   mid: :bar
+                   body:
+                     (SCOPE@6:2-7:5
+                      tbl: []
+                      args:
+                        (ARGS@6:9-6:9
+                         pre_num: 0
+                         pre_init: nil
+                         opt: nil
+                         first_post: nil
+                         post_num: 0
+                         post_init: nil
+                         rest: nil
+                         kw: nil
+                         kwrest: nil
+                         block: nil)
+                      body: nil))))))
+    EXP
+  end
+
+  def test_error_tolerant_expr_value_can_be_error
+    assert_error_tolerant(<<~STR, <<~EXP)
+      def m
+        if
+      end
+    STR
+      (SCOPE@1:0-3:3
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-3:3
+          mid: :m
+          body:
+            (SCOPE@1:0-3:3
+             tbl: []
+             args:
+               (ARGS@1:5-1:5
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (IF@2:2-3:3 (ERROR@3:0-3:3) nil nil))))
+    EXP
+  end
+
+  def assert_error_tolerant(src, expected)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, false
+      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+    ensure
+      $VERBOSE = verbose_bak
+    end
+    assert_nil($!)
+    str = ""
+    PP.pp(node, str, 80)
+    assert_equal(expected, str)
   end
 end

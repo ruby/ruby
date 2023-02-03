@@ -17,6 +17,12 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
 #define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
 
+#define ISEQ_MBITS_SIZE sizeof(iseq_bits_t)
+#define ISEQ_MBITS_BITLENGTH (ISEQ_MBITS_SIZE * CHAR_BIT)
+#define ISEQ_MBITS_SET(buf, i) (buf[(i) / ISEQ_MBITS_BITLENGTH] |= ((iseq_bits_t)1 << ((i) % ISEQ_MBITS_BITLENGTH)))
+#define ISEQ_MBITS_SET_P(buf, i) ((buf[(i) / ISEQ_MBITS_BITLENGTH] >> ((i) % ISEQ_MBITS_BITLENGTH)) & 0x1)
+#define ISEQ_MBITS_BUFLEN(size) roomof(size, ISEQ_MBITS_BITLENGTH)
+
 #ifndef USE_ISEQ_NODE_ID
 #define USE_ISEQ_NODE_ID 1
 #endif
@@ -25,6 +31,7 @@ RUBY_EXTERN const int ruby_api_version[];
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
+typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 
@@ -70,21 +77,20 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
-			   RUBY_EVENT_CLASS | \
-			   RUBY_EVENT_END   | \
-			   RUBY_EVENT_CALL  | \
-			   RUBY_EVENT_RETURN| \
+                           RUBY_EVENT_CLASS | \
+                           RUBY_EVENT_END   | \
+                           RUBY_EVENT_CALL  | \
+                           RUBY_EVENT_RETURN| \
                            RUBY_EVENT_C_CALL| \
                            RUBY_EVENT_C_RETURN| \
-			   RUBY_EVENT_B_CALL| \
-			   RUBY_EVENT_B_RETURN| \
+                           RUBY_EVENT_B_CALL| \
+                           RUBY_EVENT_B_RETURN| \
                            RUBY_EVENT_COVERAGE_LINE| \
                            RUBY_EVENT_COVERAGE_BRANCH)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
-#define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
@@ -114,6 +120,7 @@ struct iseq_compile_data {
     int node_level;
     int isolated_depth;
     unsigned int ci_index;
+    unsigned int ic_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
@@ -127,10 +134,10 @@ static inline struct iseq_compile_data *
 ISEQ_COMPILE_DATA(const rb_iseq_t *iseq)
 {
     if (iseq->flags & ISEQ_USE_COMPILE_DATA) {
-	return iseq->aux.compile_data;
+        return iseq->aux.compile_data;
     }
     else {
-	return NULL;
+        return NULL;
     }
 }
 
@@ -177,13 +184,9 @@ VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
 VALUE rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func * ifunc);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
-			    VALUE locals, VALUE args,
-			    VALUE exception, VALUE body);
-void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
-
-/* iseq.c */
-typedef bool rb_iseq_each_i(VALUE *code, VALUE insn, size_t index, void *data);
-void rb_iseq_each(const rb_iseq_t *iseq, size_t start_index, rb_iseq_each_i iterator, void *data);
+                            VALUE locals, VALUE args,
+                            VALUE exception, VALUE body);
+void rb_iseq_mark_and_update_insn_storage(struct iseq_compile_data_storage *arena);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
@@ -236,28 +239,29 @@ struct iseq_insn_info_entry {
     rb_event_flag_t events;
 };
 
-struct iseq_catch_table_entry {
-    enum catch_type {
-	CATCH_TYPE_RESCUE = INT2FIX(1),
-	CATCH_TYPE_ENSURE = INT2FIX(2),
-	CATCH_TYPE_RETRY  = INT2FIX(3),
-	CATCH_TYPE_BREAK  = INT2FIX(4),
-	CATCH_TYPE_REDO   = INT2FIX(5),
-	CATCH_TYPE_NEXT   = INT2FIX(6)
-    } type;
+/*
+ * iseq type:
+ *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
+ *     use iseq as continuation.
+ *
+ *   CATCH_TYPE_BREAK (iter):
+ *     use iseq as key.
+ *
+ *   CATCH_TYPE_BREAK (while), CATCH_TYPE_RETRY,
+ *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
+ *     NULL.
+ */
+enum rb_catch_type {
+    CATCH_TYPE_RESCUE = INT2FIX(1),
+    CATCH_TYPE_ENSURE = INT2FIX(2),
+    CATCH_TYPE_RETRY  = INT2FIX(3),
+    CATCH_TYPE_BREAK  = INT2FIX(4),
+    CATCH_TYPE_REDO   = INT2FIX(5),
+    CATCH_TYPE_NEXT   = INT2FIX(6)
+};
 
-    /*
-     * iseq type:
-     *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
-     *     use iseq as continuation.
-     *
-     *   CATCH_TYPE_BREAK (iter):
-     *     use iseq as key.
-     *
-     *   CATCH_TYPE_BREAK (while), CATCH_TYPE_RETRY,
-     *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
-     *     NULL.
-     */
+struct iseq_catch_table_entry {
+    enum rb_catch_type type;
     rb_iseq_t *iseq;
 
     unsigned int start;
@@ -275,12 +279,12 @@ static inline int
 iseq_catch_table_bytes(int n)
 {
     enum {
-	catch_table_entry_size = sizeof(struct iseq_catch_table_entry),
-	catch_table_entries_max = (INT_MAX - offsetof(struct iseq_catch_table, entries)) / catch_table_entry_size
+        catch_table_entry_size = sizeof(struct iseq_catch_table_entry),
+        catch_table_entries_max = (INT_MAX - offsetof(struct iseq_catch_table, entries)) / catch_table_entry_size
     };
     if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
     return (int)(offsetof(struct iseq_catch_table, entries) +
-		 n * catch_table_entry_size);
+                 n * catch_table_entry_size);
 }
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)

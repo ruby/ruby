@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'dependency'
-require_relative 'exceptions'
-require_relative 'util/list'
+require_relative "dependency"
+require_relative "exceptions"
+require_relative "util/list"
 
 ##
 # Given a set of Gem::Dependency objects as +needed+ and a way to query the
@@ -10,14 +10,14 @@ require_relative 'util/list'
 # all the requirements.
 
 class Gem::Resolver
-  require_relative 'resolver/molinillo'
+  require_relative "resolver/molinillo"
 
   ##
   # If the DEBUG_RESOLVER environment variable is set then debugging mode is
   # enabled for the resolver.  This will display information about the state
   # of the resolver while a set of dependencies is being resolved.
 
-  DEBUG_RESOLVER = !ENV['DEBUG_RESOLVER'].nil?
+  DEBUG_RESOLVER = !ENV["DEBUG_RESOLVER"].nil?
 
   ##
   # Set to true if all development dependencies should be considered.
@@ -74,7 +74,7 @@ class Gem::Resolver
 
     case sets.length
     when 0 then
-      raise ArgumentError, 'one set in the composition must be non-nil'
+      raise ArgumentError, "one set in the composition must be non-nil"
     when 1 then
       sets.first
     else
@@ -124,7 +124,7 @@ class Gem::Resolver
     data = yield
     $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
     unless data.empty?
-      require 'pp'
+      require "pp"
       PP.pp data, $stderr
     end
   end
@@ -153,10 +153,10 @@ class Gem::Resolver
     s.fetch_development_dependencies if @development
 
     s.dependencies.reverse_each do |d|
-      next if d.type == :development and not @development
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && !@development
+      next if d.type == :development && @development_shallow &&
               act.development?
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && @development_shallow &&
               act.parent
 
       reqs << Gem::Resolver::DependencyRequest.new(d, act)
@@ -173,7 +173,7 @@ class Gem::Resolver
   include Molinillo::UI
 
   def output
-    @output ||= debug? ? $stdout : File.open(IO::NULL, 'w')
+    @output ||= debug? ? $stdout : File.open(IO::NULL, "w")
   end
 
   def debug?
@@ -192,7 +192,7 @@ class Gem::Resolver
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
   ensure
-    @output.close if defined?(@output) and !debug?
+    @output.close if defined?(@output) && !debug?
   end
 
   ##
@@ -246,7 +246,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
+        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }.
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end
@@ -318,30 +318,30 @@ class Gem::Resolver
   private :amount_constrained
 end
 
-require_relative 'resolver/activation_request'
-require_relative 'resolver/conflict'
-require_relative 'resolver/dependency_request'
-require_relative 'resolver/requirement_list'
-require_relative 'resolver/stats'
+require_relative "resolver/activation_request"
+require_relative "resolver/conflict"
+require_relative "resolver/dependency_request"
+require_relative "resolver/requirement_list"
+require_relative "resolver/stats"
 
-require_relative 'resolver/set'
-require_relative 'resolver/api_set'
-require_relative 'resolver/composed_set'
-require_relative 'resolver/best_set'
-require_relative 'resolver/current_set'
-require_relative 'resolver/git_set'
-require_relative 'resolver/index_set'
-require_relative 'resolver/installer_set'
-require_relative 'resolver/lock_set'
-require_relative 'resolver/vendor_set'
-require_relative 'resolver/source_set'
+require_relative "resolver/set"
+require_relative "resolver/api_set"
+require_relative "resolver/composed_set"
+require_relative "resolver/best_set"
+require_relative "resolver/current_set"
+require_relative "resolver/git_set"
+require_relative "resolver/index_set"
+require_relative "resolver/installer_set"
+require_relative "resolver/lock_set"
+require_relative "resolver/vendor_set"
+require_relative "resolver/source_set"
 
-require_relative 'resolver/specification'
-require_relative 'resolver/spec_specification'
-require_relative 'resolver/api_specification'
-require_relative 'resolver/git_specification'
-require_relative 'resolver/index_specification'
-require_relative 'resolver/installed_specification'
-require_relative 'resolver/local_specification'
-require_relative 'resolver/lock_specification'
-require_relative 'resolver/vendor_specification'
+require_relative "resolver/specification"
+require_relative "resolver/spec_specification"
+require_relative "resolver/api_specification"
+require_relative "resolver/git_specification"
+require_relative "resolver/index_specification"
+require_relative "resolver/installed_specification"
+require_relative "resolver/local_specification"
+require_relative "resolver/lock_specification"
+require_relative "resolver/vendor_specification"

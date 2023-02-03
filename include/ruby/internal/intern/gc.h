@@ -26,7 +26,7 @@
 # include <stddef.h>                       /* size_t */
 #endif
 
-#if HAVE_SYS_TYPES_H
+#ifdef HAVE_SYS_TYPES_H
 # include <sys/types.h>                    /* ssize_t */
 #endif
 
@@ -71,7 +71,7 @@ RBIMPL_ATTR_NONNULL((1))
  *              addressable.
  * @param[out]  start  Pointer to an array of objects.
  * @param[out]  end    Pointer that terminates the array of objects.
- * @post        Objects from `start` to `end`, both inclusive, are marked.
+ * @post        Objects from `start` (included) to `end` (excluded) are marked.
  *
  * @internal
  *

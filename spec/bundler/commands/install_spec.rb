@@ -285,7 +285,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "installs gems for windows" do
-        simulate_platform mswin
+        simulate_platform x86_mswin32
 
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -293,7 +293,7 @@ RSpec.describe "bundle install with gem sources" do
         G
 
         run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 MSWIN")
+        expect(out).to eq("1.0 x86-mswin32")
       end
     end
 
@@ -522,14 +522,14 @@ RSpec.describe "bundle install with gem sources" do
           ruby '~> 1.2'
           source "#{file_uri_for(gem_repo1)}"
         G
-        expect(err).to include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified ~> 1.2")
+        expect(err).to include("Your Ruby version is #{Gem.ruby_version}, but your Gemfile specified ~> 1.2")
       end
     end
 
     context "and using a supported Ruby version" do
       before do
         install_gemfile <<-G
-          ruby '~> #{RUBY_VERSION}'
+          ruby '~> #{Gem.ruby_version}'
           source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -555,7 +555,7 @@ RSpec.describe "bundle install with gem sources" do
 
       it "updates Gemfile.lock with updated yet still compatible ruby version" do
         install_gemfile <<-G
-          ruby '~> #{RUBY_VERSION[0..2]}'
+          ruby '~> #{current_ruby_minor}'
           source "#{file_uri_for(gem_repo1)}"
         G
 
@@ -723,6 +723,36 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when bundle extensions path does not have write access", :permissions do
+    let(:extensions_path) { bundled_app("vendor/#{Bundler.ruby_scope}/extensions/#{Gem::Platform.local}/#{Gem.extension_api_version}") }
+
+    before do
+      FileUtils.mkdir_p(extensions_path)
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'simple_binary'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", extensions_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", extensions_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to create `#{extensions_path.join("simple_binary-1.0")}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories and write permissions for `#{extensions_path}`."
+      )
+    end
+  end
+
   describe "when the path of a specific gem is not writable", :permissions do
     let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
     let(:foo_path) { gems_path.join("foo-1.0.0") }
@@ -883,7 +913,7 @@ RSpec.describe "bundle install with gem sources" do
       gemfile <<-G
         source "https://gem.repo4"
 
-        ruby "#{RUBY_VERSION}"
+        ruby "#{Gem.ruby_version}"
 
         gem "loofah", "~> 2.12.0"
       G
@@ -970,6 +1000,50 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  context "with only option" do
+    before do
+      bundle "config set only a:b"
+    end
+
+    it "installs only gems of the specified groups" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rails"
+        gem "rack", group: :a
+        gem "rake", group: :b
+        gem "yard", group: :c
+      G
+
+      expect(out).to include("Installing rack")
+      expect(out).to include("Installing rake")
+      expect(out).not_to include("Installing yard")
+    end
+  end
+
+  context "with --prefer-local flag" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.1"
+        build_gem "foo", "1.0.0"
+        build_gem "bar", "1.0.0"
+      end
+
+      system_gems "foo-1.0.0", :path => default_bundle_path, :gem_repo => gem_repo4
+    end
+
+    it "fetches remote sources only when not available locally" do
+      install_gemfile <<-G, :"prefer-local" => true, :verbose => true
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "foo"
+        gem "bar"
+      G
+
+      expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
+    end
+  end
+
   context "with a symlinked configured as bundle path and a gem with symlinks" do
     before do
       symlinked_bundled_app = tmp("bundled_app-symlink")
@@ -1000,6 +1074,33 @@ RSpec.describe "bundle install with gem sources" do
 
         gem "binman"
       G
+    end
+  end
+
+  context "when a gem has equivalent versions with inconsistent dependencies" do
+    before do
+      build_repo4 do
+        build_gem "autobuild", "1.10.rc2" do |s|
+          s.add_dependency "utilrb", ">= 1.6.0"
+        end
+
+        build_gem "autobuild", "1.10.0.rc2" do |s|
+          s.add_dependency "utilrb", ">= 2.0"
+        end
+      end
+    end
+
+    it "does not crash unexpectedly" do
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "autobuild", "1.10.rc2"
+      G
+
+      bundle "install --jobs 1", :raise_on_error => false
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+      expect(err).to include("Could not find compatible versions")
     end
   end
 end

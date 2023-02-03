@@ -339,6 +339,10 @@ class RDoc::Options
 
   attr_reader :visibility
 
+  ##
+  # Indicates if files of test suites should be skipped
+  attr_accessor :skip_tests
+
   def initialize loaded_options = nil # :nodoc:
     init_ivars
     override loaded_options if loaded_options
@@ -386,6 +390,7 @@ class RDoc::Options
     @write_options = false
     @encoding = Encoding::UTF_8
     @charset = @encoding.name
+    @skip_tests = true
   end
 
   def init_with map # :nodoc:
@@ -774,6 +779,13 @@ Usage: #{opt.program_name} [options] [names...]
              "Do not process files or directories",
              "matching PATTERN.") do |value|
         @exclude << value
+      end
+
+      opt.separator nil
+
+      opt.on("--no-skipping-tests", nil,
+             "Don't skip generating documentation for test and spec files") do |value|
+        @skip_tests = false
       end
 
       opt.separator nil

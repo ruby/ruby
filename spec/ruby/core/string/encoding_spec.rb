@@ -10,6 +10,7 @@ describe "String#encoding" do
   it "is equal to the source encoding by default" do
     s = StringSpecs::ISO88599Encoding.new
     s.cedilla.encoding.should == s.source_encoding
+    s.cedilla.encode("utf-8").should == 350.chr(Encoding::UTF_8) # S-cedilla
   end
 
   it "returns the given encoding if #force_encoding has been called" do

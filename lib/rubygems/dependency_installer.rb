@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'dependency_list'
-require_relative 'package'
-require_relative 'installer'
-require_relative 'spec_fetcher'
-require_relative 'user_interaction'
-require_relative 'available_set'
-require_relative 'deprecate'
+require_relative "../rubygems"
+require_relative "dependency_list"
+require_relative "package"
+require_relative "installer"
+require_relative "spec_fetcher"
+require_relative "user_interaction"
+require_relative "available_set"
+require_relative "deprecate"
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.
@@ -16,16 +16,16 @@ class Gem::DependencyInstaller
   extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
-    :env_shebang         => false,
-    :document            => %w[ri],
-    :domain              => :both, # HACK dup
-    :force               => false,
-    :format_executable   => false, # HACK dup
+    :env_shebang => false,
+    :document => %w[ri],
+    :domain => :both, # HACK dup
+    :force => false,
+    :format_executable => false, # HACK dup
     :ignore_dependencies => false,
-    :prerelease          => false,
-    :security_policy     => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
-    :wrappers            => true,
-    :build_args          => nil,
+    :prerelease => false,
+    :security_policy => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
+    :wrappers => true,
+    :build_args => nil,
     :build_docs_in_background => false,
     :install_as_default => false,
   }.freeze
@@ -109,7 +109,7 @@ class Gem::DependencyInstaller
   # gems should be considered.
 
   def consider_local?
-    @domain == :both or @domain == :local
+    @domain == :both || @domain == :local
   end
 
   ##
@@ -117,7 +117,7 @@ class Gem::DependencyInstaller
   # gems should be considered.
 
   def consider_remote?
-    @domain == :both or @domain == :remote
+    @domain == :both || @domain == :remote
   end
 
   ##
@@ -197,7 +197,7 @@ class Gem::DependencyInstaller
 
   def in_background(what) # :nodoc:
     fork_happened = false
-    if @build_docs_in_background and Process.respond_to?(:fork)
+    if @build_docs_in_background && Process.respond_to?(:fork)
       begin
         Process.fork do
           yield
@@ -230,22 +230,22 @@ class Gem::DependencyInstaller
     @installed_gems = []
 
     options = {
-      :bin_dir             => @bin_dir,
-      :build_args          => @build_args,
-      :document            => @document,
-      :env_shebang         => @env_shebang,
-      :force               => @force,
-      :format_executable   => @format_executable,
+      :bin_dir => @bin_dir,
+      :build_args => @build_args,
+      :document => @document,
+      :env_shebang => @env_shebang,
+      :force => @force,
+      :format_executable => @format_executable,
       :ignore_dependencies => @ignore_dependencies,
-      :prerelease          => @prerelease,
-      :security_policy     => @security_policy,
-      :user_install        => @user_install,
-      :wrappers            => @wrappers,
-      :build_root          => @build_root,
-      :install_as_default  => @install_as_default,
-      :dir_mode            => @dir_mode,
-      :data_mode           => @data_mode,
-      :prog_mode           => @prog_mode,
+      :prerelease => @prerelease,
+      :security_policy => @security_policy,
+      :user_install => @user_install,
+      :wrappers => @wrappers,
+      :build_root => @build_root,
+      :install_as_default => @install_as_default,
+      :dir_mode => @dir_mode,
+      :data_mode => @data_mode,
+      :prog_mode => @prog_mode,
     }
     options[:install_dir] = @install_dir if @only_install_dir
 
@@ -268,7 +268,7 @@ class Gem::DependencyInstaller
   end
 
   def install_development_deps # :nodoc:
-    if @development and @dev_shallow
+    if @development && @dev_shallow
       :shallow
     elsif @development
       :all
@@ -289,7 +289,7 @@ class Gem::DependencyInstaller
     installer_set.force = @force
 
     if consider_local?
-      if dep_or_name =~ /\.gem$/ and File.file? dep_or_name
+      if dep_or_name =~ /\.gem$/ && File.file?(dep_or_name)
         src = Gem::Source::SpecificFile.new dep_or_name
         installer_set.add_local dep_or_name, src.spec, src
         version = src.spec.version if version == Gem::Requirement.default

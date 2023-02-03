@@ -649,7 +649,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
-      skip("statx(2) is prohibited by seccomp")
+      omit("statx(2) is prohibited by seccomp")
     end
     assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
   end if File.respond_to?(:birthtime)
@@ -1517,9 +1517,12 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(File.zero?(f), test(?z, f), f)
 
       stat = File.stat(f)
-      assert_equal(stat.atime, File.atime(f), f)
-      assert_equal(stat.ctime, File.ctime(f), f)
-      assert_equal(stat.mtime, File.mtime(f), f)
+      unless stat.chardev?
+        # /dev/null may be accessed by other processes
+        assert_equal(stat.atime, File.atime(f), f)
+        assert_equal(stat.ctime, File.ctime(f), f)
+        assert_equal(stat.mtime, File.mtime(f), f)
+      end
       assert_bool_equal(stat.blockdev?, File.blockdev?(f), f)
       assert_bool_equal(stat.chardev?, File.chardev?(f), f)
       assert_bool_equal(stat.directory?, File.directory?(f), f)

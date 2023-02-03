@@ -67,6 +67,12 @@ describe "Kernel#instance_variable_get when passed Symbol" do
   it "raises a NameError when the passed Symbol is an invalid instance variable name" do
     -> { @obj.instance_variable_get(:"@0") }.should raise_error(NameError)
   end
+
+  it "returns nil or raises for frozen objects" do
+    nil.instance_variable_get(:@foo).should == nil
+    -> { nil.instance_variable_get(:foo) }.should raise_error(NameError)
+    :foo.instance_variable_get(:@foo).should == nil
+  end
 end
 
 describe "Kernel#instance_variable_get when passed String" do

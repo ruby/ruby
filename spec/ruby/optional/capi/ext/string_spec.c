@@ -437,6 +437,12 @@ VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   return capacities;
 }
 
+VALUE string_spec_RSTRING_PTR_null_terminate(VALUE self, VALUE str, VALUE min_length) {
+  char* ptr = RSTRING_PTR(str);
+  char* end = ptr + RSTRING_LEN(str);
+  return rb_str_new(end, FIX2LONG(min_length));
+}
+
 VALUE string_spec_StringValue(VALUE self, VALUE str) {
   return StringValue(str);
 }
@@ -662,6 +668,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "RSTRING_PTR_after_funcall", string_spec_RSTRING_PTR_after_funcall, 2);
   rb_define_method(cls, "RSTRING_PTR_after_yield", string_spec_RSTRING_PTR_after_yield, 1);
   rb_define_method(cls, "RSTRING_PTR_read", string_spec_RSTRING_PTR_read, 2);
+  rb_define_method(cls, "RSTRING_PTR_null_terminate", string_spec_RSTRING_PTR_null_terminate, 2);
   rb_define_method(cls, "StringValue", string_spec_StringValue, 1);
   rb_define_method(cls, "SafeStringValue", string_spec_SafeStringValue, 1);
   rb_define_method(cls, "rb_str_hash", string_spec_rb_str_hash, 1);

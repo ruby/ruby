@@ -152,7 +152,7 @@ class TestGc < Test::Unit::TestCase
       GC.stat_heap(i, stat_heap)
       GC.stat(stat)
 
-      assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
@@ -229,6 +229,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal :force,  h[:major_by] if use_rgengc?
     assert_equal :method, h[:gc_by]
     assert_equal true,    h[:immediate_sweep]
+    assert_equal true,    h.key?(:need_major_by)
 
     GC.stress = true
     assert_equal :force, GC.latest_gc_info[:major_by]
@@ -244,6 +245,25 @@ class TestGc < Test::Unit::TestCase
     assert_equal info[:gc_by], GC.latest_gc_info(:gc_by)
     assert_raise(ArgumentError){ GC.latest_gc_info(:invalid) }
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) {GC.latest_gc_info(:"\u{30eb 30d3 30fc}")}
+  end
+
+  def test_latest_gc_info_need_major_by
+    return unless use_rgengc?
+    omit 'stress' if GC.stress
+
+    3.times { GC.start }
+    assert_nil GC.latest_gc_info(:need_major_by)
+
+    # allocate objects until need_major_by is set or major GC happens
+    major_count = GC.stat(:major_gc_count)
+    objects = []
+    while GC.stat(:major_gc_count) == major_count && GC.latest_gc_info(:need_major_by).nil?
+      objects.append(100.times.map { '*' })
+    end
+
+    assert_not_nil GC.latest_gc_info(:need_major_by)
+    GC.start(full_mark: false) # should be upgraded to major
+    assert_not_nil GC.latest_gc_info(:major_by)
   end
 
   def test_stress_compile_send
@@ -284,6 +304,11 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter
+    env = {
+      "RUBY_GC_HEAP_INIT_SLOTS" => "100"
+    }
+    assert_in_out_err([env, "-W0", "-e", "exit"], "", [], [], "[Bug #19284]")
+
     env = {
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
       "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
@@ -400,6 +425,40 @@ class TestGc < Test::Unit::TestCase
     GC.start
     assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
     eom
+  end
+
+  def test_thrashing_for_young_objects
+    # This test prevents bugs like [Bug #18929]
+
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'RUBY'
+      # Grow the heap
+      @ary = 100_000.times.map { Object.new }
+
+      # Warmup to make sure heap stabilizes
+      1_000_000.times { Object.new }
+
+      before_stats = GC.stat
+      before_stat_heap = GC.stat_heap
+
+      1_000_000.times { Object.new }
+
+      # Previous loop may have caused GC to be in an intermediate state,
+      # running a minor GC here will guarantee that GC will be complete
+      GC.start(full_mark: false)
+
+      after_stats = GC.stat
+      after_stat_heap = GC.stat_heap
+
+      # Debugging output to for failures in trunk-repeat50@phosphorus-docker
+      debug_msg = "before_stats: #{before_stats}\nbefore_stat_heap: #{before_stat_heap}\nafter_stats: #{after_stats}\nafter_stat_heap: #{after_stat_heap}"
+
+      # Should not be thrashing in page creation
+      assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
+      assert_equal 0, after_stats[:heap_tomb_pages], debug_msg
+      assert_equal 0, after_stats[:total_freed_pages], debug_msg
+      # Only young objects, so should not trigger major GC
+      assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
+    RUBY
   end
 
   def test_gc_internals

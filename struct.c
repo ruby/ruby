@@ -28,7 +28,11 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
+/* Note: Data is a stricter version of the Struct: no attr writers & no
+   hash-alike/array-alike behavior. It shares most of the implementation
+   on the C level, but is unrelated on the Ruby level. */
 VALUE rb_cStruct;
+static VALUE rb_cData;
 static ID id_members, id_back_members, id_keyword_init;
 
 static VALUE struct_alloc(VALUE);
@@ -40,11 +44,11 @@ struct_ivar_get(VALUE c, ID id)
     VALUE ivar = rb_attr_get(c, id);
 
     if (!NIL_P(ivar))
-	return ivar;
+        return ivar;
 
     for (;;) {
         c = rb_class_superclass(c);
-        if (c == 0 || c == rb_cStruct)
+        if (c == rb_cStruct || c == rb_cData || !RTEST(c))
             return Qnil;
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);
@@ -66,10 +70,10 @@ rb_struct_s_members(VALUE klass)
     VALUE members = struct_ivar_get(klass, id_members);
 
     if (NIL_P(members)) {
-	rb_raise(rb_eTypeError, "uninitialized struct");
+        rb_raise(rb_eTypeError, "uninitialized struct");
     }
     if (!RB_TYPE_P(members, T_ARRAY)) {
-	rb_raise(rb_eTypeError, "corrupted struct");
+        rb_raise(rb_eTypeError, "corrupted struct");
     }
     return members;
 }
@@ -80,8 +84,8 @@ rb_struct_members(VALUE s)
     VALUE members = rb_struct_s_members(rb_obj_class(s));
 
     if (RSTRUCT_LEN(s) != RARRAY_LEN(members)) {
-	rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
-		 RARRAY_LEN(members), RSTRUCT_LEN(s));
+        rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
+                 RARRAY_LEN(members), RSTRUCT_LEN(s));
     }
     return members;
 }
@@ -107,33 +111,33 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
     const long members_length = RARRAY_LEN(members);
 
     if (members_length <= AREF_HASH_THRESHOLD) {
-	back = members;
+        back = members;
     }
     else {
-	long i, j, mask = 64;
-	VALUE name;
+        long i, j, mask = 64;
+        VALUE name;
 
-	while (mask < members_length * AREF_HASH_UNIT) mask *= 2;
+        while (mask < members_length * AREF_HASH_UNIT) mask *= 2;
 
-	back = rb_ary_tmp_new(mask + 1);
-	rb_ary_store(back, mask, INT2FIX(members_length));
-	mask -= 2;			  /* mask = (2**k-1)*2 */
+        back = rb_ary_hidden_new(mask + 1);
+        rb_ary_store(back, mask, INT2FIX(members_length));
+        mask -= 2;			  /* mask = (2**k-1)*2 */
 
-	for (i=0; i < members_length; i++) {
-	    name = RARRAY_AREF(members, i);
+        for (i=0; i < members_length; i++) {
+            name = RARRAY_AREF(members, i);
 
-	    j = struct_member_pos_ideal(name, mask);
+            j = struct_member_pos_ideal(name, mask);
 
-	    for (;;) {
-		if (!RTEST(RARRAY_AREF(back, j))) {
-		    rb_ary_store(back, j, name);
-		    rb_ary_store(back, j + 1, INT2FIX(i));
-		    break;
-		}
-		j = struct_member_pos_probe(j, mask);
-	    }
-	}
-	OBJ_FREEZE_RAW(back);
+            for (;;) {
+                if (!RTEST(RARRAY_AREF(back, j))) {
+                    rb_ary_store(back, j, name);
+                    rb_ary_store(back, j + 1, INT2FIX(i));
+                    break;
+                }
+                j = struct_member_pos_probe(j, mask);
+            }
+        }
+        OBJ_FREEZE_RAW(back);
     }
     rb_ivar_set(klass, id_members, members);
     rb_ivar_set(klass, id_back_members, back);
@@ -148,30 +152,30 @@ struct_member_pos(VALUE s, VALUE name)
     long j, mask;
 
     if (UNLIKELY(NIL_P(back))) {
-	rb_raise(rb_eTypeError, "uninitialized struct");
+        rb_raise(rb_eTypeError, "uninitialized struct");
     }
     if (UNLIKELY(!RB_TYPE_P(back, T_ARRAY))) {
-	rb_raise(rb_eTypeError, "corrupted struct");
+        rb_raise(rb_eTypeError, "corrupted struct");
     }
 
     mask = RARRAY_LEN(back);
 
     if (mask <= AREF_HASH_THRESHOLD) {
-	if (UNLIKELY(RSTRUCT_LEN(s) != mask)) {
-	    rb_raise(rb_eTypeError,
-		     "struct size differs (%ld required %ld given)",
-		     mask, RSTRUCT_LEN(s));
-	}
-	for (j = 0; j < mask; j++) {
+        if (UNLIKELY(RSTRUCT_LEN(s) != mask)) {
+            rb_raise(rb_eTypeError,
+                     "struct size differs (%ld required %ld given)",
+                     mask, RSTRUCT_LEN(s));
+        }
+        for (j = 0; j < mask; j++) {
             if (RARRAY_AREF(back, j) == name)
-		return (int)j;
-	}
-	return -1;
+                return (int)j;
+        }
+        return -1;
     }
 
     if (UNLIKELY(RSTRUCT_LEN(s) != FIX2INT(RARRAY_AREF(back, mask-1)))) {
-	rb_raise(rb_eTypeError, "struct size differs (%d required %ld given)",
-		 FIX2INT(RARRAY_AREF(back, mask-1)), RSTRUCT_LEN(s));
+        rb_raise(rb_eTypeError, "struct size differs (%d required %ld given)",
+                 FIX2INT(RARRAY_AREF(back, mask-1)), RSTRUCT_LEN(s));
     }
 
     mask -= 3;
@@ -182,9 +186,9 @@ struct_member_pos(VALUE s, VALUE name)
         if (e == name)
             return FIX2INT(RARRAY_AREF(back, j + 1));
         if (!RTEST(e)) {
-	    return -1;
-	}
-	j = struct_member_pos_probe(j, mask);
+            return -1;
+        }
+        j = struct_member_pos_probe(j, mask);
     }
 }
 
@@ -231,7 +235,7 @@ rb_struct_getmember(VALUE obj, ID id)
     VALUE slot = ID2SYM(id);
     int i = struct_member_pos(obj, slot);
     if (i != -1) {
-	return RSTRUCT_GET(obj, i);
+        return RSTRUCT_GET(obj, i);
     }
     rb_name_err_raise("`%1$s' is not a struct member", obj, ID2SYM(id));
 
@@ -262,13 +266,13 @@ new_struct(VALUE name, VALUE super)
     ID id;
     name = rb_str_to_str(name);
     if (!rb_is_const_name(name)) {
-	rb_name_err_raise("identifier %1$s needs to be constant",
-			  super, name);
+        rb_name_err_raise("identifier %1$s needs to be constant",
+                          super, name);
     }
     id = rb_to_id(name);
     if (rb_const_defined_at(super, id)) {
-	rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
-	rb_mod_remove_const(super, ID2SYM(id));
+        rb_warn("redefining constant %"PRIsVALUE"::%"PRIsVALUE, super, name);
+        rb_mod_remove_const(super, ID2SYM(id));
     }
     return rb_define_class_id_under(super, id, super);
 }
@@ -292,9 +296,32 @@ rb_struct_s_inspect(VALUE klass)
 {
     VALUE inspect = rb_class_name(klass);
     if (RTEST(rb_struct_s_keyword_init(klass))) {
-	rb_str_cat_cstr(inspect, "(keyword_init: true)");
+        rb_str_cat_cstr(inspect, "(keyword_init: true)");
     }
     return inspect;
+}
+
+static VALUE
+rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
+{
+    if (rb_keyword_given_p()) {
+        if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+            rb_error_arity(argc, 0, 0);
+        }
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+    else {
+        VALUE members = struct_ivar_get(klass, id_members);
+        int num_members = RARRAY_LENINT(members);
+
+        rb_check_arity(argc, 0, num_members);
+        VALUE arg_hash = rb_hash_new_with_size(argc);
+        for (long i=0; i<argc; i++) {
+            VALUE k = rb_ary_entry(members, i), v = argv[i];
+            rb_hash_aset(arg_hash, k, v);
+        }
+        return rb_class_new_instance_kw(1, &arg_hash, klass, RB_PASS_KEYWORDS);
+    }
 }
 
 #if 0 /* for RDoc */
@@ -340,13 +367,39 @@ setup_struct(VALUE nstr, VALUE members)
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
         ID id = SYM2ID(sym);
-	VALUE off = LONG2NUM(i);
+        VALUE off = LONG2NUM(i);
 
         define_aref_method(nstr, sym, off);
         define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
     }
 
     return nstr;
+}
+
+static VALUE
+setup_data(VALUE subclass, VALUE members)
+{
+    long i, len;
+
+    members = struct_set_members(subclass, members);
+
+    rb_define_alloc_func(subclass, struct_alloc);
+    VALUE sclass = rb_singleton_class(subclass);
+    rb_undef_method(sclass, "define");
+    rb_define_method(sclass, "new", rb_data_s_new, -1);
+    rb_define_method(sclass, "[]", rb_data_s_new, -1);
+    rb_define_method(sclass, "members", rb_struct_s_members_m, 0);
+    rb_define_method(sclass, "inspect", rb_struct_s_inspect, 0); // FIXME: just a separate method?..
+
+    len = RARRAY_LEN(members);
+    for (i=0; i< len; i++) {
+        VALUE sym = RARRAY_AREF(members, i);
+        VALUE off = LONG2NUM(i);
+
+        define_aref_method(subclass, sym, off);
+    }
+
+    return subclass;
 }
 
 VALUE
@@ -360,18 +413,15 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL_RAW(list);
-
     RBASIC_CLEAR_CLASS(list);
-    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
-	VALUE sym = rb_sym_intern_ascii_cstr(mem);
-	if (st_insert(tbl, sym, Qtrue)) {
-	    rb_raise(rb_eArgError, "duplicate member: %s", mem);
-	}
+        VALUE sym = rb_sym_intern_ascii_cstr(mem);
+        if (RTEST(rb_hash_has_key(list, sym))) {
+            rb_raise(rb_eArgError, "duplicate member: %s", mem);
+        }
+        rb_hash_aset(list, sym, Qtrue);
     }
     ary = rb_hash_keys(list);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(ary);
     OBJ_FREEZE_RAW(ary);
     return ary;
@@ -383,24 +433,24 @@ struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super,
     VALUE klass;
 
     if (class_name) {
-	if (outer) {
-	    klass = rb_define_class_under(outer, class_name, super);
-	}
-	else {
-	    klass = rb_define_class(class_name, super);
-	}
+        if (outer) {
+            klass = rb_define_class_under(outer, class_name, super);
+        }
+        else {
+            klass = rb_define_class(class_name, super);
+        }
     }
     else {
-	klass = anonymous_struct(super);
+        klass = anonymous_struct(super);
     }
 
     struct_set_members(klass, members);
 
     if (alloc) {
-	rb_define_alloc_func(klass, alloc);
+        rb_define_alloc_func(klass, alloc);
     }
     else {
-	rb_define_alloc_func(klass, struct_alloc);
+        rb_define_alloc_func(klass, struct_alloc);
     }
 
     return klass;
@@ -462,8 +512,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
- *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(*member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
  *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
  *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
@@ -471,8 +521,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
- *  - May have initialization via ordinary arguments (the default)
- *    or via keyword arguments (if <tt>keyword_init: true</tt> is given).
+ *  - May have initialization via ordinary arguments, or via keyword arguments
  *
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
@@ -541,6 +590,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
  *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
  *
+ *      # Initialization with keyword arguments:
+ *      Foo.new(foo: 0)         # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(foo: 0, bar: 1) # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(foo: 0, bar: 1, baz: 2)
+ *      # Raises ArgumentError: unknown keywords: baz
+ *
  *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
  *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
@@ -555,19 +610,30 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  <b>Keyword Argument</b>
  *
  *  By default, the arguments for initializing an instance of the new subclass
- *  are ordinary arguments (not keyword arguments).
- *  With optional keyword argument <tt>keyword_init: true</tt>,
- *  the new subclass is initialized with keyword arguments:
+ *  can be both positional and keyword arguments.
  *
- *    # Without keyword_init: true.
- *    Foo = Struct.new('Foo', :foo, :bar)
- *    Foo                     # => Struct::Foo
- *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
- *    # With keyword_init: true.
- *    Bar = Struct.new(:foo, :bar, keyword_init: true)
- *    Bar # =>                # => Bar(keyword_init: true)
- *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
+ *  Optional keyword argument <tt>keyword_init:</tt> allows to force only one
+ *  type of arguments to be accepted:
  *
+ *    KeywordsOnly = Struct.new(:foo, :bar, keyword_init: true)
+ *    KeywordsOnly.new(bar: 1, foo: 0)
+ *    # => #<struct KeywordsOnly foo=0, bar=1>
+ *    KeywordsOnly.new(0, 1)
+ *    # Raises ArgumentError: wrong number of arguments
+ *
+ *    PositionalOnly = Struct.new(:foo, :bar, keyword_init: false)
+ *    PositionalOnly.new(0, 1)
+ *    # => #<struct PositionalOnly foo=0, bar=1>
+ *    PositionalOnly.new(bar: 1, foo: 0)
+ *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # Note that no error is raised, but arguments treated as one hash value
+ *
+ *    # Same as not providing keyword_init:
+ *    Any = Struct.new(:foo, :bar, keyword_init: nil)
+ *    Any.new(foo: 1, bar: 2)
+ *    # => #<struct Any foo=1, bar=2>
+ *    Any.new(1, 2)
+ *    # => #<struct Any foo=1, bar=2>
  */
 
 static VALUE
@@ -576,27 +642,26 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
-    st_table *tbl;
     VALUE opt;
 
     argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
     name = argv[0];
     if (SYMBOL_P(name)) {
-	name = Qnil;
+        name = Qnil;
     }
     else {
-	--argc;
-	++argv;
+        --argc;
+        ++argv;
     }
 
     if (!NIL_P(opt)) {
-	static ID keyword_ids[1];
+        static ID keyword_ids[1];
 
-	if (!keyword_ids[0]) {
-	    keyword_ids[0] = rb_intern("keyword_init");
-	}
+        if (!keyword_ids[0]) {
+            keyword_ids[0] = rb_intern("keyword_init");
+        }
         rb_get_kwargs(opt, keyword_ids, 0, 1, &keyword_init);
-        if (keyword_init == Qundef) {
+        if (UNDEF_P(keyword_init)) {
             keyword_init = Qnil;
         }
         else if (RTEST(keyword_init)) {
@@ -606,26 +671,24 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
-	VALUE mem = rb_to_symbol(argv[i]);
+        VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
         }
-	if (st_insert(tbl, mem, Qtrue)) {
-	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
-	}
+        if (RTEST(rb_hash_has_key(rest, mem))) {
+            rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
+        }
+        rb_hash_aset(rest, mem, Qtrue);
     }
     rest = rb_hash_keys(rest);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     if (NIL_P(name)) {
-	st = anonymous_struct(klass);
+        st = anonymous_struct(klass);
     }
     else {
-	st = new_struct(name, klass);
+        st = new_struct(name, klass);
     }
     setup_struct(st, rest);
     rb_ivar_set(st, id_keyword_init, keyword_init);
@@ -642,7 +705,7 @@ num_members(VALUE klass)
     VALUE members;
     members = struct_ivar_get(klass, id_members);
     if (!RB_TYPE_P(members, T_ARRAY)) {
-	rb_raise(rb_eTypeError, "broken members");
+        rb_raise(rb_eTypeError, "broken members");
     }
     return RARRAY_LEN(members);
 }
@@ -663,14 +726,14 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
     struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
     int i = rb_struct_pos(args->self, &key);
     if (i < 0) {
-	if (NIL_P(args->unknown_keywords)) {
-	    args->unknown_keywords = rb_ary_new();
-	}
-	rb_ary_push(args->unknown_keywords, key);
+        if (NIL_P(args->unknown_keywords)) {
+            args->unknown_keywords = rb_ary_new();
+        }
+        rb_ary_push(args->unknown_keywords, key);
     }
     else {
-	rb_struct_modify(args->self);
-	RSTRUCT_SET(args->self, i, val);
+        rb_struct_modify(args->self);
+        RSTRUCT_SET(args->self, i, val);
     }
     return ST_CONTINUE;
 }
@@ -689,41 +752,41 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     bool keyword_init = false;
     switch (rb_struct_s_keyword_init(klass)) {
       default:
-	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
-	}
-	keyword_init = true;
-	break;
+        if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+            rb_error_arity(argc, 0, 0);
+        }
+        keyword_init = true;
+        break;
       case Qfalse:
         break;
       case Qnil:
-	if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+        if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
             break;
         }
-	keyword_init = rb_keyword_given_p();
+        keyword_init = rb_keyword_given_p();
         break;
     }
     if (keyword_init) {
-	struct struct_hash_set_arg arg;
-	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
-	arg.self = self;
-	arg.unknown_keywords = Qnil;
-	rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
-	if (arg.unknown_keywords != Qnil) {
-	    rb_raise(rb_eArgError, "unknown keywords: %s",
-		     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
-	}
+        struct struct_hash_set_arg arg;
+        rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+        arg.self = self;
+        arg.unknown_keywords = Qnil;
+        rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+        if (arg.unknown_keywords != Qnil) {
+            rb_raise(rb_eArgError, "unknown keywords: %s",
+                     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
+        }
     }
     else {
-	if (n < argc) {
-	    rb_raise(rb_eArgError, "struct size differs");
-	}
+        if (n < argc) {
+            rb_raise(rb_eArgError, "struct size differs");
+        }
         for (long i=0; i<argc; i++) {
-	    RSTRUCT_SET(self, i, argv[i]);
-	}
-	if (n > argc) {
-	    rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
-	}
+            RSTRUCT_SET(self, i, argv[i]);
+        }
+        if (n > argc) {
+            rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
+        }
     }
     return Qnil;
 }
@@ -732,6 +795,7 @@ VALUE
 rb_struct_initialize(VALUE self, VALUE values)
 {
     rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
+    if (rb_obj_is_kind_of(self, rb_cData)) OBJ_FREEZE_RAW(self);
     RB_GC_GUARD(values);
     return Qnil;
 }
@@ -784,7 +848,7 @@ struct_alloc(VALUE klass)
     if (0 < n && n <= RSTRUCT_EMBED_LEN_MAX) {
         RBASIC(st)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
         RBASIC(st)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
-	rb_mem_clear((VALUE *)st->as.ary, n);
+        rb_mem_clear((VALUE *)st->as.ary, n);
     }
     else {
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
@@ -810,12 +874,12 @@ rb_struct_new(VALUE klass, ...)
 
     size = rb_long2int(num_members(klass));
     if (size > numberof(tmpargs)) {
-	tmpargs[0] = rb_ary_tmp_new(size);
-	mem = RARRAY_PTR(tmpargs[0]);
+        tmpargs[0] = rb_ary_hidden_new(size);
+        mem = RARRAY_PTR(tmpargs[0]);
     }
     va_start(args, klass);
     for (i=0; i<size; i++) {
-	mem[i] = va_arg(args, VALUE);
+        mem[i] = va_arg(args, VALUE);
     }
     va_end(args);
 
@@ -857,7 +921,7 @@ rb_struct_each(VALUE s)
 
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     for (i=0; i<RSTRUCT_LEN(s); i++) {
-	rb_yield(RSTRUCT_GET(s, i));
+        rb_yield(RSTRUCT_GET(s, i));
     }
     return s;
 }
@@ -894,60 +958,61 @@ rb_struct_each_pair(VALUE s)
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     members = rb_struct_members(s);
     if (rb_block_pair_yield_optimizable()) {
-	for (i=0; i<RSTRUCT_LEN(s); i++) {
-	    VALUE key = rb_ary_entry(members, i);
-	    VALUE value = RSTRUCT_GET(s, i);
-	    rb_yield_values(2, key, value);
-	}
+        for (i=0; i<RSTRUCT_LEN(s); i++) {
+            VALUE key = rb_ary_entry(members, i);
+            VALUE value = RSTRUCT_GET(s, i);
+            rb_yield_values(2, key, value);
+        }
     }
     else {
-	for (i=0; i<RSTRUCT_LEN(s); i++) {
-	    VALUE key = rb_ary_entry(members, i);
-	    VALUE value = RSTRUCT_GET(s, i);
-	    rb_yield(rb_assoc_new(key, value));
-	}
+        for (i=0; i<RSTRUCT_LEN(s); i++) {
+            VALUE key = rb_ary_entry(members, i);
+            VALUE value = RSTRUCT_GET(s, i);
+            rb_yield(rb_assoc_new(key, value));
+        }
     }
     return s;
 }
 
 static VALUE
-inspect_struct(VALUE s, VALUE dummy, int recur)
+inspect_struct(VALUE s, VALUE prefix, int recur)
 {
     VALUE cname = rb_class_path(rb_obj_class(s));
-    VALUE members, str = rb_str_new2("#<struct ");
+    VALUE members;
+    VALUE str = prefix;
     long i, len;
     char first = RSTRING_PTR(cname)[0];
 
     if (recur || first != '#') {
-	rb_str_append(str, cname);
+        rb_str_append(str, cname);
     }
     if (recur) {
-	return rb_str_cat2(str, ":...>");
+        return rb_str_cat2(str, ":...>");
     }
 
     members = rb_struct_members(s);
     len = RSTRUCT_LEN(s);
 
     for (i=0; i<len; i++) {
-	VALUE slot;
-	ID id;
+        VALUE slot;
+        ID id;
 
-	if (i > 0) {
-	    rb_str_cat2(str, ", ");
-	}
-	else if (first != '#') {
-	    rb_str_cat2(str, " ");
-	}
-	slot = RARRAY_AREF(members, i);
-	id = SYM2ID(slot);
-	if (rb_is_local_id(id) || rb_is_const_id(id)) {
-	    rb_str_append(str, rb_id2str(id));
-	}
-	else {
-	    rb_str_append(str, rb_inspect(slot));
-	}
-	rb_str_cat2(str, "=");
-	rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
+        if (i > 0) {
+            rb_str_cat2(str, ", ");
+        }
+        else if (first != '#') {
+            rb_str_cat2(str, " ");
+        }
+        slot = RARRAY_AREF(members, i);
+        id = SYM2ID(slot);
+        if (rb_is_local_id(id) || rb_is_const_id(id)) {
+            rb_str_append(str, rb_id2str(id));
+        }
+        else {
+            rb_str_append(str, rb_inspect(slot));
+        }
+        rb_str_cat2(str, "=");
+        rb_str_append(str, rb_inspect(RSTRUCT_GET(s, i)));
     }
     rb_str_cat2(str, ">");
 
@@ -971,7 +1036,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 static VALUE
 rb_struct_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, 0);
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct "));
 }
 
 /*
@@ -1063,7 +1128,7 @@ rb_struct_deconstruct_keys(VALUE s, VALUE keys)
         return rb_struct_to_h(s);
     }
     if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
-	rb_raise(rb_eTypeError,
+        rb_raise(rb_eTypeError,
                  "wrong argument type %"PRIsVALUE" (expected Array or nil)",
                  rb_obj_class(keys));
 
@@ -1091,11 +1156,11 @@ rb_struct_init_copy(VALUE copy, VALUE s)
 
     if (!OBJ_INIT_COPY(copy, s)) return copy;
     if (RSTRUCT_LEN(copy) != RSTRUCT_LEN(s)) {
-	rb_raise(rb_eTypeError, "struct size mismatch");
+        rb_raise(rb_eTypeError, "struct size mismatch");
     }
 
     for (i=0, len=RSTRUCT_LEN(copy); i<len; i++) {
-	RSTRUCT_SET(copy, i, RSTRUCT_GET(s, i));
+        RSTRUCT_SET(copy, i, RSTRUCT_GET(s, i));
     }
 
     return copy;
@@ -1108,29 +1173,29 @@ rb_struct_pos(VALUE s, VALUE *name)
     VALUE idx = *name;
 
     if (SYMBOL_P(idx)) {
-	return struct_member_pos(s, idx);
+        return struct_member_pos(s, idx);
     }
     else if (RB_TYPE_P(idx, T_STRING)) {
-	idx = rb_check_symbol(name);
-	if (NIL_P(idx)) return -1;
-	return struct_member_pos(s, idx);
+        idx = rb_check_symbol(name);
+        if (NIL_P(idx)) return -1;
+        return struct_member_pos(s, idx);
     }
     else {
-	long len;
-	i = NUM2LONG(idx);
-	len = RSTRUCT_LEN(s);
-	if (i < 0) {
-	    if (i + len < 0) {
-		*name = LONG2FIX(i);
-		return -1;
-	    }
-	    i += len;
-	}
-	else if (len <= i) {
-	    *name = LONG2FIX(i);
-	    return -1;
-	}
-	return (int)i;
+        long len;
+        i = NUM2LONG(idx);
+        len = RSTRUCT_LEN(s);
+        if (i < 0) {
+            if (i + len < 0) {
+                *name = LONG2FIX(i);
+                return -1;
+            }
+            i += len;
+        }
+        else if (len <= i) {
+            *name = LONG2FIX(i);
+            return -1;
+        }
+        return (int)i;
     }
 }
 
@@ -1138,18 +1203,18 @@ static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
     if (FIXNUM_P(idx)) {
-	long i = FIX2INT(idx), len = RSTRUCT_LEN(s);
-	if (i < 0) {
-	    rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
-		     i, len);
-	}
-	else {
-	    rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
-		     i, len);
-	}
+        long i = FIX2INT(idx), len = RSTRUCT_LEN(s);
+        if (i < 0) {
+            rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
+                     i, len);
+        }
+        else {
+            rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
+                     i, len);
+        }
     }
     else {
-	rb_name_err_raise("no member '%1$s' in struct", s, idx);
+        rb_name_err_raise("no member '%1$s' in struct", s, idx);
     }
 }
 
@@ -1321,9 +1386,9 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
     RETURN_SIZED_ENUMERATOR(s, 0, 0, struct_enum_size);
     result = rb_ary_new();
     for (i = 0; i < RSTRUCT_LEN(s); i++) {
-	if (RTEST(rb_yield(RSTRUCT_GET(s, i)))) {
-	    rb_ary_push(result, RSTRUCT_GET(s, i));
-	}
+        if (RTEST(rb_yield(RSTRUCT_GET(s, i)))) {
+            rb_ary_push(result, RSTRUCT_GET(s, i));
+        }
     }
 
     return result;
@@ -1370,7 +1435,7 @@ rb_struct_equal(VALUE s, VALUE s2)
     if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
     if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
-	rb_bug("inconsistent struct"); /* should never happen */
+        rb_bug("inconsistent struct"); /* should never happen */
     }
 
     return rb_exec_recursive_paired(recursive_equal, s, s2, s2);
@@ -1406,7 +1471,7 @@ rb_struct_hash(VALUE s)
     len = RSTRUCT_LEN(s);
     for (i = 0; i < len; i++) {
         n = rb_hash(RSTRUCT_GET(s, i));
-	h = rb_hash_uint(h, NUM2LONG(n));
+        h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
     return ST2FIX(h);
@@ -1451,7 +1516,7 @@ rb_struct_eql(VALUE s, VALUE s2)
     if (!RB_TYPE_P(s2, T_STRUCT)) return Qfalse;
     if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
     if (RSTRUCT_LEN(s) != RSTRUCT_LEN(s2)) {
-	rb_bug("inconsistent struct"); /* should never happen */
+        rb_bug("inconsistent struct"); /* should never happen */
     }
 
     return rb_exec_recursive_paired(recursive_eql, s, s2, s2);
@@ -1519,6 +1584,516 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: Data
+ *
+ *  \Class \Data provides a convenient way to define simple classes
+ *  for value-alike objects.
+ *
+ *  The simplest example of usage:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *
+ *     # Positional arguments constructor is provided
+ *     distance = Measure.new(100, 'km')
+ *     #=> #<data Measure amount=100, unit="km">
+ *
+ *     # Keyword arguments constructor is provided
+ *     weight = Measure.new(amount: 50, unit: 'kg')
+ *     #=> #<data Measure amount=50, unit="kg">
+ *
+ *     # Alternative form to construct an object:
+ *     speed = Measure[10, 'mPh']
+ *     #=> #<data Measure amount=10, unit="mPh">
+ *
+ *     # Works with keyword arguments, too:
+ *     area = Measure[amount: 1.5, unit: 'm^2']
+ *     #=> #<data Measure amount=1.5, unit="m^2">
+ *
+ *     # Argument accessors are provided:
+ *     distance.amount #=> 100
+ *     distance.unit #=> "km"
+ *
+ *  Constructed object also has a reasonable definitions of #==
+ *  operator, #to_h hash conversion, and #deconstruct/#deconstruct_keys
+ *  to be used in pattern matching.
+ *
+ *  ::define method accepts an optional block and evaluates it in
+ *  the context of the newly defined class. That allows to define
+ *  additional methods:
+ *
+ *     Measure = Data.define(:amount, :unit) do
+ *       def <=>(other)
+ *         return unless other.is_a?(self.class) && other.unit == unit
+ *         amount <=> other.amount
+ *       end
+ *
+ *       include Comparable
+ *     end
+ *
+ *     Measure[3, 'm'] < Measure[5, 'm'] #=> true
+ *     Measure[3, 'm'] < Measure[5, 'kg']
+ *     # comparison of Measure with Measure failed (ArgumentError)
+ *
+ *  Data provides no member writers, or enumerators: it is meant
+ *  to be a storage for immutable atomic values. But note that
+ *  if some of data members is of a mutable class, Data does no additional
+ *  immutability enforcement:
+ *
+ *     Event = Data.define(:time, :weekdays)
+ *     event = Event.new('18:00', %w[Tue Wed Fri])
+ *     #=> #<data Event time="18:00", weekdays=["Tue", "Wed", "Fri"]>
+ *
+ *     # There is no #time= or #weekdays= accessors, but changes are
+ *     # still possible:
+ *     event.weekdays << 'Sat'
+ *     event
+ *     #=> #<data Event time="18:00", weekdays=["Tue", "Wed", "Fri", "Sat"]>
+ *
+ *  See also Struct, which is a similar concept, but has more
+ *  container-alike API, allowing to change contents of the object
+ *  and enumerate it.
+ */
+
+/*
+ * call-seq:
+ *   define(*symbols) -> class
+ *
+ *  Defines a new \Data class.
+ *
+ *     measure = Data.define(:amount, :unit)
+ *     #=> #<Class:0x00007f70c6868498>
+ *     measure.new(1, 'km')
+ *     #=> #<data amount=1, unit="km">
+ *
+ *     # It you store the new class in the constant, it will
+ *     # affect #inspect and will be more natural to use:
+ *     Measure = Data.define(:amount, :unit)
+ *     #=> Measure
+ *     Measure.new(1, 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *
+ *  Note that member-less \Data is acceptable and might be a useful technique
+ *  for defining several homogenous data classes, like
+ *
+ *     class HTTPFetcher
+ *       Response = Data.define(:body)
+ *       NotFound = Data.define
+ *       # ... implementation
+ *     end
+ *
+ *  Now, different kinds of responses from +HTTPFetcher+ would have consistent
+ *  representation:
+ *
+ *      #<data HTTPFetcher::Response body="<html...">
+ *      #<data HTTPFetcher::NotFound>
+ *
+ *  And are convenient to use in pattern matching:
+ *
+ *     case fetcher.get(url)
+ *     in HTTPFetcher::Response(body)
+ *       # process body variable
+ *     in HTTPFetcher::NotFound
+ *       # handle not found case
+ *     end
+ */
+
+static VALUE
+rb_data_s_def(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE rest;
+    long i;
+    VALUE data_class;
+
+    rest = rb_ident_hash_new();
+    RBASIC_CLEAR_CLASS(rest);
+    for (i=0; i<argc; i++) {
+        VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
+        }
+        if (RTEST(rb_hash_has_key(rest, mem))) {
+            rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
+        }
+        rb_hash_aset(rest, mem, Qtrue);
+    }
+    rest = rb_hash_keys(rest);
+    RBASIC_CLEAR_CLASS(rest);
+    OBJ_FREEZE_RAW(rest);
+    data_class = anonymous_struct(klass);
+    setup_data(data_class, rest);
+    if (rb_block_given_p()) {
+        rb_mod_module_eval(0, 0, data_class);
+    }
+
+    return data_class;
+}
+
+/*
+ *  call-seq:
+ *    DataClass::members -> array_of_symbols
+ *
+ *  Returns an array of member names of the data class:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *     Measure.members # => [:amount, :unit]
+ *
+ */
+
+#define rb_data_s_members_m rb_struct_s_members_m
+
+
+/*
+ * call-seq:
+ *   new(*args) -> instance
+ *   new(**kwargs) -> instance
+ *   ::[](*args) -> instance
+ *   ::[](**kwargs) -> instance
+ *
+ *  Constructors for classes defined with ::define accept both positional and
+ *  keyword arguments.
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *
+ *     Measure.new(1, 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *     Measure.new(amount: 1, unit: 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *     # Alternative shorter intialization with []
+ *     Measure[1, 'km']
+ *     #=> #<data Measure amount=1, unit="km">
+ *     Measure[amount: 1, unit: 'km']
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *  All arguments are mandatory (unlike Struct), and converted to keyword arguments:
+ *
+ *     Measure.new(amount: 1)
+ *     # in `initialize': missing keyword: :unit (ArgumentError)
+ *
+ *     Measure.new(1)
+ *     # in `initialize': missing keyword: :unit (ArgumentError)
+ *
+ *  Note that <tt>Measure#initialize</tt> always receives keyword arguments, and that
+ *  mandatory arguments are checked in +initialize+, not in +new+. This can be
+ *  important for redefining initialize in order to convert arguments or provide
+ *  defaults:
+ *
+ *     Measure = Data.define(:amount, :unit) do
+ *       NONE = Data.define
+ *
+ *       def initialize(amount:, unit: NONE.new)
+ *         super(amount: Float(amount), unit:)
+ *       end
+ *     end
+ *
+ *     Measure.new('10', 'km') # => #<data Measure amount=10.0, unit="km">
+ *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data NONE>>
+ *
+ */
+
+static VALUE
+rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE klass = rb_obj_class(self);
+    rb_struct_modify(self);
+    VALUE members = struct_ivar_get(klass, id_members);
+    size_t num_members = RARRAY_LEN(members);
+
+    if (argc == 0) {
+        if (num_members > 0) {
+            rb_exc_raise(rb_keyword_error_new("missing", members));
+        }
+        return Qnil;
+    }
+    if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+        rb_error_arity(argc, 0, 0);
+    }
+
+    if (RHASH_SIZE(argv[0]) < num_members) {
+        VALUE missing = rb_ary_diff(members, rb_hash_keys(argv[0]));
+        rb_exc_raise(rb_keyword_error_new("missing", missing));
+    }
+
+    struct struct_hash_set_arg arg;
+    rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
+    arg.self = self;
+    arg.unknown_keywords = Qnil;
+    rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    if (arg.unknown_keywords != Qnil) {
+        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
+    }
+    OBJ_FREEZE_RAW(self);
+    return Qnil;
+}
+
+/* :nodoc: */
+static VALUE
+rb_data_init_copy(VALUE copy, VALUE s)
+{
+    copy = rb_struct_init_copy(copy, s);
+    RB_OBJ_FREEZE_RAW(copy);
+    return copy;
+}
+
+/*
+ *  call-seq:
+ *   with(**kwargs) -> instance
+ *
+ *  Returns a shallow copy of +self+ --- the instance variables of
+ *  +self+ are copied, but not the objects they reference.
+ *
+ *  If the method is supplied any keyword arguments, the copy will
+ *  be created with the respective field values updated to use the
+ *  supplied keyword argument values. Note that it is an error to
+ *  supply a keyword that the Data class does not have as a member.
+ *
+ *    Point = Data.define(:x, :y)
+ *
+ *    origin = Point.new(x: 0, y: 0)
+ *
+ *    up = origin.with(x: 1)
+ *    right = origin.with(y: 1)
+ *    up_and_right = up.with(y: 1)
+ *
+ *    p origin       # #<data Point x=0, y=0>
+ *    p up           # #<data Point x=1, y=0>
+ *    p right        # #<data Point x=0, y=1>
+ *    p up_and_right # #<data Point x=1, y=1>
+ *
+ *    out = origin.with(z: 1) # ArgumentError: unknown keyword: :z
+ *    some_point = origin.with(1, 2) # ArgumentError: expected keyword arguments, got positional arguments
+ *
+ */
+
+static VALUE
+rb_data_with(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE kwargs;
+    rb_scan_args(argc, argv, "0:", &kwargs);
+    if (NIL_P(kwargs)) {
+        return self;
+    }
+
+    VALUE copy = rb_obj_alloc(rb_obj_class(self));
+    rb_struct_init_copy(copy, self);
+
+    struct struct_hash_set_arg arg;
+    arg.self = copy;
+    arg.unknown_keywords = Qnil;
+    rb_hash_foreach(kwargs, struct_hash_set_i, (VALUE)&arg);
+    // Freeze early before potentially raising, so that we don't leave an
+    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
+    RB_OBJ_FREEZE_RAW(copy);
+
+    if (arg.unknown_keywords != Qnil) {
+        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
+    }
+
+    return copy;
+}
+
+/*
+ *  call-seq:
+ *    inspect -> string
+ *    to_s -> string
+ *
+ *  Returns a string representation of +self+:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *
+ *    p distance  # uses #inspect underneath
+ *    #<data Measure amount=10, unit="km">
+ *
+ *    puts distance  # uses #to_s underneath, same representation
+ *    #<data Measure amount=10, unit="km">
+ *
+ */
+
+static VALUE
+rb_data_inspect(VALUE s)
+{
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data "));
+}
+
+/*
+ *  call-seq:
+ *    self == other -> true or false
+ *
+ *  Returns  +true+ if +other+ is the same class as +self+, and all members are
+ *  equal.
+ *
+ *  Examples:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'] == Measure[1, 'km'] #=> true
+ *    Measure[1, 'km'] == Measure[2, 'km'] #=> false
+ *    Measure[1, 'km'] == Measure[1, 'm']  #=> false
+ *
+ *    Measurement = Data.define(:amount, :unit)
+ *    # Even though Measurement and Measure have the same "shape"
+ *    # their instances are never equal
+ *    Measure[1, 'km'] == Measurement[1, 'km'] #=> false
+ */
+
+#define rb_data_equal rb_struct_equal
+
+/*
+ *  call-seq:
+ *    self.eql?(other) -> true or false
+ *
+ *  Equality check that is used when two items of data are keys of a Hash.
+ *
+ *  The subtle difference with #== is that members are also compared with their
+ *  #eql? method, which might be important in some cases:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'] == Measure[1.0, 'km'] #=> true, they are equal as values
+ *    # ...but...
+ *    Measure[1, 'km'].eql? Measure[1.0, 'km'] #=> false, they represent different hash keys
+ *
+ *  See also Object#eql? for further explanations of the method usage.
+ */
+
+#define rb_data_eql rb_struct_eql
+
+/*
+ *  call-seq:
+ *    hash -> integer
+ *
+ *  Redefines Object#hash (used to distinguish objects as Hash keys) so that
+ *  data objects of the same class with same content would have the same +hash+
+ *  value, and represented the same Hash key.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'].hash == Measure[1, 'km'].hash #=> true
+ *    Measure[1, 'km'].hash == Measure[10, 'km'].hash #=> false
+ *    Measure[1, 'km'].hash == Measure[1, 'm'].hash #=> false
+ *    Measure[1, 'km'].hash == Measure[1.0, 'km'].hash #=> false
+ *
+ *    # Structurally similar data class, but shouldn't be considered
+ *    # the same hash key
+ *    Measurement = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'].hash == Measurement[1, 'km'].hash #=> false
+ */
+
+#define rb_data_hash rb_struct_hash
+
+/*
+ *  call-seq:
+ *    to_h -> hash
+ *    to_h {|name, value| ... } -> hash
+ *
+ *  Returns Hash representation of the data object.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *    distance = Measure[10, 'km']
+ *
+ *    distance.to_h
+ *    #=> {:amount=>10, :unit=>"km"}
+ *
+ *  Like Enumerable#to_h, if the block is provided, it is expected to
+ *  produce key-value pairs to construct a hash:
+ *
+ *
+ *    distance.to_h { |name, val| [name.to_s, val.to_s] }
+ *    #=> {"amount"=>"10", "unit"=>"km"}
+ *
+ *  Note that there is a useful symmetry between #to_h and #initialize:
+ *
+ *   distance2 = Measure.new(**distance.to_h)
+ *   #=> #<data Measure amount=10, unit="km">
+ *   distance2 == distance
+ *   #=> true
+ */
+
+#define rb_data_to_h rb_struct_to_h
+
+/*
+ *  call-seq:
+ *    members -> array_of_symbols
+ *
+ *  Returns the member names from +self+ as an array:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *     distance = Measure[10, 'km']
+ *
+ *     distance.members #=> [:amount, :unit]
+ *
+ */
+
+#define rb_data_members_m rb_struct_members_m
+
+/*
+ *  call-seq:
+ *    deconstruct     -> array
+ *
+ *  Returns the values in +self+ as an array, to use in pattern matching:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *    distance.deconstruct #=> [10, "km"]
+ *
+ *    # usage
+ *    case distance
+ *    in n, 'km' # calls #deconstruct underneath
+ *      puts "It is #{n} kilometers away"
+ *    else
+ *      puts "Don't know how to handle it"
+ *    end
+ *    # prints "It is 10 kilometers away"
+ *
+ *  Or, with checking the class, too:
+ *
+ *    case distance
+ *    in Measure(n, 'km')
+ *      puts "It is #{n} kilometers away"
+ *    # ...
+ *    end
+ */
+
+#define rb_data_deconstruct rb_struct_to_a
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *    distance.deconstruct_keys(nil) #=> {:amount=>10, :unit=>"km"}
+ *    distance.deconstruct_keys([:amount]) #=> {:amount=>10}
+ *
+ *    # usage
+ *    case distance
+ *    in amount:, unit: 'km' # calls #deconstruct_keys underneath
+ *      puts "It is #{amount} kilometers away"
+ *    else
+ *      puts "Don't know how to handle it"
+ *    end
+ *    # prints "It is 10 kilometers away"
+ *
+ *  Or, with checking the class, too:
+ *
+ *    case distance
+ *    in Measure(amount:, unit: 'km')
+ *      puts "It is #{amount} kilometers away"
+ *    # ...
+ *    end
+ */
+
+#define rb_data_deconstruct_keys rb_struct_deconstruct_keys
+
+/*
  *  Document-class: Struct
  *
  *  \Class \Struct provides a convenient way to create a simple class
@@ -1566,6 +2141,9 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
+ *
+ *  See also Data, which is a somewhat similar, but stricter concept for defining immutable
+ *  value objects.
  *
  *  Here, class \Struct provides methods that are useful for:
  *
@@ -1662,6 +2240,34 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
+
+    rb_cData = rb_define_class("Data", rb_cObject);
+
+    rb_undef_method(CLASS_OF(rb_cData), "new");
+    rb_undef_alloc_func(rb_cData);
+    rb_define_singleton_method(rb_cData, "define", rb_data_s_def, -1);
+
+#if 0 /* for RDoc */
+    rb_define_singleton_method(rb_cData, "members", rb_data_s_members_m, 0);
+#endif
+
+    rb_define_method(rb_cData, "initialize", rb_data_initialize_m, -1);
+    rb_define_method(rb_cData, "initialize_copy", rb_data_init_copy, 1);
+
+    rb_define_method(rb_cData, "==", rb_data_equal, 1);
+    rb_define_method(rb_cData, "eql?", rb_data_eql, 1);
+    rb_define_method(rb_cData, "hash", rb_data_hash, 0);
+
+    rb_define_method(rb_cData, "inspect", rb_data_inspect, 0);
+    rb_define_alias(rb_cData,  "to_s", "inspect");
+    rb_define_method(rb_cData, "to_h", rb_data_to_h, 0);
+
+    rb_define_method(rb_cData, "members", rb_data_members_m, 0);
+
+    rb_define_method(rb_cData, "deconstruct", rb_data_deconstruct, 0);
+    rb_define_method(rb_cData, "deconstruct_keys", rb_data_deconstruct_keys, 1);
+
+    rb_define_method(rb_cData, "with", rb_data_with, -1);
 }
 
 #undef rb_intern

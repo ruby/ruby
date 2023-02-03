@@ -1,10 +1,11 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../install_update_options'
-require_relative '../dependency_installer'
-require_relative '../local_remote_options'
-require_relative '../validator'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../install_update_options"
+require_relative "../dependency_installer"
+require_relative "../local_remote_options"
+require_relative "../validator"
+require_relative "../version_option"
+require_relative "../update_suggestion"
 
 ##
 # Gem installer command line tool
@@ -17,19 +18,20 @@ class Gem::Commands::InstallCommand < Gem::Command
   include Gem::VersionOption
   include Gem::LocalRemoteOptions
   include Gem::InstallUpdateOptions
+  include Gem::UpdateSuggestion
 
   def initialize
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
       :format_executable => false,
-      :lock              => true,
+      :lock => true,
       :suggest_alternate => true,
-      :version           => Gem::Requirement.default,
-      :without_groups    => [],
+      :version => Gem::Requirement.default,
+      :without_groups => [],
     })
 
     defaults.merge!(install_update_options)
 
-    super 'install', 'Install a gem into the local repository', defaults
+    super "install", "Install a gem into the local repository", defaults
 
     add_install_update_options
     add_local_remote_options
@@ -46,8 +48,8 @@ class Gem::Commands::InstallCommand < Gem::Command
 
   def defaults_str # :nodoc:
     "--both --version '#{Gem::Requirement.default}' --no-force\n" +
-    "--install-dir #{Gem.dir} --lock\n" +
-    install_update_defaults_str
+      "--install-dir #{Gem.dir} --lock\n" +
+      install_update_defaults_str
   end
 
   def description # :nodoc:
@@ -134,15 +136,15 @@ You can use `i` command instead of `install`.
   end
 
   def check_install_dir # :nodoc:
-    if options[:install_dir] and options[:user_install]
+    if options[:install_dir] && options[:user_install]
       alert_error "Use --install-dir or --user-install but not both"
       terminate_interaction 1
     end
   end
 
   def check_version # :nodoc:
-    if options[:version] != Gem::Requirement.default and
-         get_all_gem_names.size > 1
+    if options[:version] != Gem::Requirement.default &&
+       get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
                   " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1
@@ -157,7 +159,7 @@ You can use `i` command instead of `install`.
 
     @installed_specs = []
 
-    ENV.delete 'GEM_PATH' if options[:install_dir].nil?
+    ENV.delete "GEM_PATH" if options[:install_dir].nil?
 
     check_install_dir
     check_version
@@ -168,11 +170,13 @@ You can use `i` command instead of `install`.
 
     show_installed
 
+    say update_suggestion if eglible_for_update?
+
     terminate_interaction exit_code
   end
 
   def install_from_gemdeps # :nodoc:
-    require_relative '../request_set'
+    require_relative "../request_set"
     rs = Gem::RequestSet.new
 
     specs = rs.install_from_gemdeps options do |req, inst|
@@ -191,8 +195,8 @@ You can use `i` command instead of `install`.
   end
 
   def install_gem(name, version) # :nodoc:
-    return if options[:conservative] and
-      not Gem::Dependency.new(name, version).matching_specs.empty?
+    return if options[:conservative] &&
+              !Gem::Dependency.new(name, version).matching_specs.empty?
 
     req = Gem::Requirement.create(version)
 
@@ -247,11 +251,11 @@ You can use `i` command instead of `install`.
 
   def load_hooks # :nodoc:
     if options[:install_as_default]
-      require_relative '../install_default_message'
+      require_relative "../install_default_message"
     else
-      require_relative '../install_message'
+      require_relative "../install_message"
     end
-    require_relative '../rdoc'
+    require_relative "../rdoc"
   end
 
   def show_install_errors(errors) # :nodoc:
@@ -261,7 +265,7 @@ You can use `i` command instead of `install`.
       return unless Gem::SourceFetchProblem === x
 
       require_relative "../uri"
-      msg = "Unable to pull data from '#{Gem::Uri.new(x.source.uri).redacted}': #{x.error.message}"
+      msg = "Unable to pull data from '#{Gem::Uri.redact(x.source.uri)}': #{x.error.message}"
 
       alert_warning msg
     end
@@ -270,7 +274,7 @@ You can use `i` command instead of `install`.
   def show_installed # :nodoc:
     return if @installed_specs.empty?
 
-    gems = @installed_specs.length == 1 ? 'gem' : 'gems'
+    gems = @installed_specs.length == 1 ? "gem" : "gems"
     say "#{@installed_specs.length} #{gems} installed"
   end
 end

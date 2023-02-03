@@ -56,6 +56,8 @@ closure_memsize(const void * ptr)
 const rb_data_type_t closure_data_type = {
     "fiddle/closure",
     {0, dealloc, closure_memsize,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 struct callback_args {
@@ -90,7 +92,7 @@ with_gvl_callback(void *ptr)
 	  case TYPE_INT:
 	    rb_ary_push(params, INT2NUM(*(int *)x->args[i]));
 	    break;
-	  case -TYPE_INT:
+	  case TYPE_UINT:
 	    rb_ary_push(params, UINT2NUM(*(unsigned int *)x->args[i]));
 	    break;
 	  case TYPE_VOIDP:
@@ -101,19 +103,19 @@ with_gvl_callback(void *ptr)
 	  case TYPE_LONG:
 	    rb_ary_push(params, LONG2NUM(*(long *)x->args[i]));
 	    break;
-	  case -TYPE_LONG:
+	  case TYPE_ULONG:
 	    rb_ary_push(params, ULONG2NUM(*(unsigned long *)x->args[i]));
 	    break;
 	  case TYPE_CHAR:
 	    rb_ary_push(params, INT2NUM(*(signed char *)x->args[i]));
 	    break;
-	  case -TYPE_CHAR:
+	  case TYPE_UCHAR:
 	    rb_ary_push(params, UINT2NUM(*(unsigned char *)x->args[i]));
 	    break;
 	  case TYPE_SHORT:
 	    rb_ary_push(params, INT2NUM(*(signed short *)x->args[i]));
 	    break;
-	  case -TYPE_SHORT:
+	  case TYPE_USHORT:
 	    rb_ary_push(params, UINT2NUM(*(unsigned short *)x->args[i]));
 	    break;
 	  case TYPE_DOUBLE:
@@ -126,7 +128,7 @@ with_gvl_callback(void *ptr)
 	  case TYPE_LONG_LONG:
 	    rb_ary_push(params, LL2NUM(*(LONG_LONG *)x->args[i]));
 	    break;
-	  case -TYPE_LONG_LONG:
+	  case TYPE_ULONG_LONG:
 	    rb_ary_push(params, ULL2NUM(*(unsigned LONG_LONG *)x->args[i]));
 	    break;
 #endif
@@ -149,7 +151,7 @@ with_gvl_callback(void *ptr)
       case TYPE_LONG:
 	*(long *)x->resp = NUM2LONG(ret);
 	break;
-      case -TYPE_LONG:
+      case TYPE_ULONG:
 	*(unsigned long *)x->resp = NUM2ULONG(ret);
 	break;
       case TYPE_CHAR:
@@ -157,9 +159,9 @@ with_gvl_callback(void *ptr)
       case TYPE_INT:
 	*(ffi_sarg *)x->resp = NUM2INT(ret);
 	break;
-      case -TYPE_CHAR:
-      case -TYPE_SHORT:
-      case -TYPE_INT:
+      case TYPE_UCHAR:
+      case TYPE_USHORT:
+      case TYPE_UINT:
 	*(ffi_arg *)x->resp = NUM2UINT(ret);
 	break;
       case TYPE_VOIDP:
@@ -175,7 +177,7 @@ with_gvl_callback(void *ptr)
       case TYPE_LONG_LONG:
 	*(LONG_LONG *)x->resp = NUM2LL(ret);
 	break;
-      case -TYPE_LONG_LONG:
+      case TYPE_ULONG_LONG:
 	*(unsigned LONG_LONG *)x->resp = NUM2ULL(ret);
 	break;
 #endif
@@ -224,9 +226,27 @@ allocate(VALUE klass)
     return i;
 }
 
-static VALUE
-initialize(int rbargc, VALUE argv[], VALUE self)
+static fiddle_closure *
+get_raw(VALUE self)
 {
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    if (!closure) {
+        rb_raise(rb_eArgError, "already freed: %+"PRIsVALUE, self);
+    }
+    return closure;
+}
+
+typedef struct {
+    VALUE self;
+    int argc;
+    VALUE *argv;
+} initialize_data;
+
+static VALUE
+initialize_body(VALUE user_data)
+{
+    initialize_data *data = (initialize_data *)user_data;
     VALUE ret;
     VALUE args;
     VALUE normalized_args;
@@ -237,14 +257,14 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     ffi_status result;
     int i, argc;
 
-    if (2 == rb_scan_args(rbargc, argv, "21", &ret, &args, &abi))
-	abi = INT2NUM(FFI_DEFAULT_ABI);
+    if (2 == rb_scan_args(data->argc, data->argv, "21", &ret, &args, &abi))
+        abi = INT2NUM(FFI_DEFAULT_ABI);
 
     Check_Type(args, T_ARRAY);
 
     argc = RARRAY_LENINT(args);
 
-    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, cl);
+    TypedData_Get_Struct(data->self, fiddle_closure, &closure_data_type, cl);
 
     cl->argv = (ffi_type **)xcalloc(argc + 1, sizeof(ffi_type *));
 
@@ -257,8 +277,8 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     cl->argv[argc] = NULL;
 
     ret = rb_fiddle_type_ensure(ret);
-    rb_iv_set(self, "@ctype", ret);
-    rb_iv_set(self, "@args", normalized_args);
+    rb_iv_set(data->self, "@ctype", ret);
+    rb_iv_set(data->self, "@args", normalized_args);
 
     cif = &cl->cif;
     pcl = cl->pcl;
@@ -269,38 +289,75 @@ initialize(int rbargc, VALUE argv[], VALUE self)
                           rb_fiddle_int_to_ffi_type(NUM2INT(ret)),
                           cl->argv);
 
-    if (FFI_OK != result)
-	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
+    if (FFI_OK != result) {
+        rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
+    }
 
 #if USE_FFI_CLOSURE_ALLOC
     result = ffi_prep_closure_loc(pcl, cif, callback,
-		(void *)self, cl->code);
+                                  (void *)(data->self), cl->code);
 #else
-    result = ffi_prep_closure(pcl, cif, callback, (void *)self);
+    result = ffi_prep_closure(pcl, cif, callback, (void *)(data->self));
     cl->code = (void *)pcl;
     i = mprotect(pcl, sizeof(*pcl), PROT_READ | PROT_EXEC);
     if (i) {
-	rb_sys_fail("mprotect");
+        rb_sys_fail("mprotect");
     }
 #endif
 
-    if (FFI_OK != result)
-	rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
+    if (FFI_OK != result) {
+        rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
+    }
 
-    return self;
+    return data->self;
+}
+
+static VALUE
+initialize_rescue(VALUE user_data, VALUE exception)
+{
+    initialize_data *data = (initialize_data *)user_data;
+    dealloc(RTYPEDDATA_DATA(data->self));
+    RTYPEDDATA_DATA(data->self) = NULL;
+    rb_exc_raise(exception);
+    return data->self;
+}
+
+static VALUE
+initialize(int argc, VALUE *argv, VALUE self)
+{
+    initialize_data data;
+    data.self = self;
+    data.argc = argc;
+    data.argv = argv;
+    return rb_rescue(initialize_body, (VALUE)&data,
+                     initialize_rescue, (VALUE)&data);
 }
 
 static VALUE
 to_i(VALUE self)
 {
-    fiddle_closure * cl;
-    void *code;
+    fiddle_closure *closure = get_raw(self);
+    return PTR2NUM(closure->code);
+}
 
-    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, cl);
+static VALUE
+closure_free(VALUE self)
+{
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    if (closure) {
+        dealloc(closure);
+        RTYPEDDATA_DATA(self) = NULL;
+    }
+    return RUBY_Qnil;
+}
 
-    code = cl->code;
-
-    return PTR2NUM(code);
+static VALUE
+closure_freed_p(VALUE self)
+{
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    return closure ? RUBY_Qfalse : RUBY_Qtrue;
 }
 
 void
@@ -353,8 +410,24 @@ Init_fiddle_closure(void)
     /*
      * Document-method: to_i
      *
-     * Returns the memory address for this closure
+     * Returns the memory address for this closure.
      */
     rb_define_method(cFiddleClosure, "to_i", to_i, 0);
+
+    /*
+     * Document-method: free
+     *
+     * Free this closure explicitly. You can't use this closure anymore.
+     *
+     * If this closure is already freed, this does nothing.
+     */
+    rb_define_method(cFiddleClosure, "free", closure_free, 0);
+
+    /*
+     * Document-method: freed?
+     *
+     * Whether this closure was freed explicitly.
+     */
+    rb_define_method(cFiddleClosure, "freed?", closure_freed_p, 0);
 }
 /* vim: set noet sw=4 sts=4 */

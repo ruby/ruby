@@ -1,18 +1,6 @@
 #![cfg(test)]
 
 use crate::asm::x86_64::*;
-use std::fmt;
-
-/// Produce hex string output from the bytes in a code block
-impl<'a> fmt::LowerHex for super::CodeBlock {
-    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        for pos in 0..self.write_pos {
-            let byte = unsafe { self.mem_block.start_ptr().raw_ptr().add(pos).read() };
-            fmtr.write_fmt(format_args!("{:02x}", byte))?;
-        }
-        Ok(())
-    }
-}
 
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
@@ -109,6 +97,7 @@ fn test_cmp() {
     check_bytes("39f9", |cb| cmp(cb, ECX, EDI));
     check_bytes("493b1424", |cb| cmp(cb, RDX, mem_opnd(64, R12, 0)));
     check_bytes("4883f802", |cb| cmp(cb, RAX, imm_opnd(2)));
+    check_bytes("81f900000080", |cb| cmp(cb, ECX, uimm_opnd(0x8000_0000)));
 }
 
 #[test]
@@ -198,6 +187,12 @@ fn test_mov() {
     check_bytes("41895814", |cb| mov(cb, mem_opnd(32, R8, 20), EBX));
     check_bytes("4d8913", |cb| mov(cb, mem_opnd(64, R11, 0), R10));
     check_bytes("48c742f8f4ffffff", |cb| mov(cb, mem_opnd(64, RDX, -8), imm_opnd(-12)));
+}
+
+#[test]
+fn test_movabs() {
+    check_bytes("49b83400000000000000", |cb| movabs(cb, R8, 0x34));
+    check_bytes("49b80000008000000000", |cb| movabs(cb, R8, 0x80000000));
 }
 
 #[test]
@@ -364,6 +359,14 @@ fn test_sub() {
 }
 
 #[test]
+#[should_panic]
+fn test_sub_uimm_too_large() {
+    // This immediate becomes a different value after
+    // sign extension, so not safe to encode.
+    check_bytes("ff", |cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
+}
+
+#[test]
 fn test_test() {
     check_bytes("84c0", |cb| test(cb, AL, AL));
     check_bytes("6685c0", |cb| test(cb, AX, AX));
@@ -425,7 +428,7 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 }
 
 #[test]
-#[cfg(feature = "asm_comments")]
+#[cfg(feature = "disasm")]
 fn block_comments() {
     let mut cb = super::CodeBlock::new_dummy(4096);
 

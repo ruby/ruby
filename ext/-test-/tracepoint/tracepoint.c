@@ -21,35 +21,35 @@ tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 
     switch (rb_tracearg_event_flag(tparg)) {
       case RUBY_INTERNAL_EVENT_NEWOBJ:
-	{
-	    VALUE obj = rb_tracearg_object(tparg);
-	    if (track->objects_count < objects_max)
-		track->objects[track->objects_count++] = obj;
-	    track->newobj_count++;
-	    break;
-	}
+        {
+            VALUE obj = rb_tracearg_object(tparg);
+            if (track->objects_count < objects_max)
+                track->objects[track->objects_count++] = obj;
+            track->newobj_count++;
+            break;
+        }
       case RUBY_INTERNAL_EVENT_FREEOBJ:
-	{
-	    track->free_count++;
-	    break;
-	}
+        {
+            track->free_count++;
+            break;
+        }
       case RUBY_INTERNAL_EVENT_GC_START:
-	{
-	    track->gc_start_count++;
-	    break;
-	}
+        {
+            track->gc_start_count++;
+            break;
+        }
       case RUBY_INTERNAL_EVENT_GC_END_MARK:
-	{
-	    track->gc_end_mark_count++;
-	    break;
-	}
+        {
+            track->gc_end_mark_count++;
+            break;
+        }
       case RUBY_INTERNAL_EVENT_GC_END_SWEEP:
-	{
-	    track->gc_end_sweep_count++;
-	    break;
-	}
+        {
+            track->gc_end_sweep_count++;
+            break;
+        }
       default:
-	rb_raise(rb_eRuntimeError, "unknown event");
+        rb_raise(rb_eRuntimeError, "unknown event");
     }
 }
 
@@ -58,9 +58,9 @@ tracepoint_track_objspace_events(VALUE self)
 {
     struct tracepoint_track track = {0, 0, 0, 0, 0,};
     VALUE tpval = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ |
-				    RUBY_INTERNAL_EVENT_GC_START | RUBY_INTERNAL_EVENT_GC_END_MARK |
-				    RUBY_INTERNAL_EVENT_GC_END_SWEEP,
-				    tracepoint_track_objspace_events_i, &track);
+                                    RUBY_INTERNAL_EVENT_GC_START | RUBY_INTERNAL_EVENT_GC_END_MARK |
+                                    RUBY_INTERNAL_EVENT_GC_END_SWEEP,
+                                    tracepoint_track_objspace_events_i, &track);
     VALUE result = rb_ary_new();
 
     rb_tracepoint_enable(tpval);

@@ -66,7 +66,7 @@ RSpec.describe "bundle install" do
     end
   end
 
-  context "with engine specified in symbol", :jruby do
+  context "with engine specified in symbol", :jruby_only do
     it "does not raise any error parsing Gemfile" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

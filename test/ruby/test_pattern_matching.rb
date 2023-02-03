@@ -464,6 +464,8 @@ END
         true
       end
     end
+
+    assert_valid_syntax("1 in ^(1\n)")
   end
 
   def test_array_pattern
@@ -1155,6 +1157,28 @@ END
       end
     end
 
+    bug18890 = assert_warning(/(?:.*:[47]: warning: unused literal ignored\n){2}/) do
+      eval("#{<<~';;;'}")
+      proc do |i|
+        case i
+        in a:
+          0 # line 4
+          a
+        in "b":
+          0 # line 7
+          b
+        else
+          false
+        end
+      end
+      ;;;
+    end
+    [{a: 42}, {b: 42}].each do |i|
+      assert_block('newline should be significant after pattern label') do
+        bug18890.call(i)
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in a:, a:
@@ -1546,6 +1570,18 @@ END
 
     assert_equal true, (1 in 1)
     assert_equal false, (1 in 2)
+  end
+
+  def test_bug18990
+    {a: 0} => a:
+    assert_equal 0, a
+    {a: 0} => a:
+    assert_equal 0, a
+
+    {a: 0} in a:
+    assert_equal 0, a
+    {a: 0} in a:
+    assert_equal 0, a
   end
 
   ################################################################

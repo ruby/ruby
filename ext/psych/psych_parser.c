@@ -79,21 +79,25 @@ static VALUE allocate(VALUE klass)
 
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
-    size_t line, column;
-    VALUE ePsychSyntaxError;
+    if (parser->error == YAML_MEMORY_ERROR) {
+	return rb_eNoMemError;
+    } else {
+	size_t line, column;
+	VALUE ePsychSyntaxError;
 
-    line = parser->context_mark.line + 1;
-    column = parser->context_mark.column + 1;
+	line = parser->context_mark.line + 1;
+	column = parser->context_mark.column + 1;
 
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+	ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
-    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
-	    path,
-	    SIZET2NUM(line),
-	    SIZET2NUM(column),
-	    SIZET2NUM(parser->problem_offset),
-	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
-	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+	return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
+		path,
+		SIZET2NUM(line),
+		SIZET2NUM(column),
+		SIZET2NUM(parser->problem_offset),
+		parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+		parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+    }
 }
 
 static VALUE transcode_string(VALUE src, int * parser_encoding)
@@ -241,18 +245,8 @@ static VALUE protected_event_location(VALUE pointer)
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
 }
 
-/*
- * call-seq:
- *    parser.parse(yaml)
- *
- * Parse the YAML document contained in +yaml+.  Events will be called on
- * the handler set on the parser instance.
- *
- * See Psych::Parser and Psych::Parser#handler
- */
-static VALUE parse(int argc, VALUE *argv, VALUE self)
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
 {
-    VALUE yaml, path;
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
@@ -260,14 +254,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-    VALUE handler = rb_iv_get(self, "@handler");
-
-    if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
-	if(rb_respond_to(yaml, id_path))
-	    path = rb_funcall(yaml, id_path, 0);
-	else
-	    path = rb_str_new2("<unknown>");
-    }
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
 
@@ -293,7 +279,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	VALUE event_args[5];
 	VALUE start_line, start_column, end_line, end_column;
 
-	if(!yaml_parser_parse(parser, &event)) {
+	if(parser->error || !yaml_parser_parse(parser, &event)) {
 	    VALUE exception;
 
 	    exception = make_exception(parser, path);
@@ -558,7 +544,7 @@ void Init_psych_parser(void)
 
     rb_require("psych/syntax_error");
 
-    rb_define_method(cPsychParser, "parse", parse, -1);
+    rb_define_private_method(cPsychParser, "_native_parse", parse, 3);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");
