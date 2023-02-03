@@ -377,7 +377,7 @@ rest_arg(rb_ast_t *ast, const NODE *rest_arg)
 static VALUE
 node_children(rb_ast_t *ast, const NODE *node)
 {
-    char name[DECIMAL_SIZE_OF_BITS(sizeof(long) * CHAR_BIT) + 2]; /* including '$' */
+    char name[sizeof("$") + DECIMAL_SIZE_OF(long)];
 
     enum node_type type = nd_type(node);
     switch (type) {
