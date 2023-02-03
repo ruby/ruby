@@ -530,7 +530,7 @@ module Net   #:nodoc:
     # \HTTP session management
     #
 
-    # Returns intger +80+, the default port to use for \HTTP requests:
+    # Returns integer +80+, the default port to use for \HTTP requests:
     #
     #   Net::HTTP.default_port # => 80
     #
@@ -1048,7 +1048,20 @@ module Net   #:nodoc:
     # Sets the write timeout, in seconds, for +self+ to integer +sec+;
     # the initial value is 60.
     #
-    # Argument +sec+ must be a non-negative numeric value.
+    # Argument +sec+ must be a non-negative numeric value:
+    #
+    #   _uri = uri.dup
+    #   _uri.path = '/posts'
+    #   body = 'bar' * 200000
+    #   data = <<EOF
+    #   {"title": "foo", "body": "#{body}", "userId": "1"}
+    #   EOF
+    #   headers = {'content-type': 'application/json'}
+    #   http = Net::HTTP.new(hostname)
+    #   http.post(_uri.path, data, headers)
+    #   # => #<Net::HTTPCreated 201 Created readbody=true>
+    #   http.write_timeout = 0
+    #   http.post(_uri.path, data, headers) # Raises Net::WriteTimeout.
     #
     def write_timeout=(sec)
       @socket.write_timeout = sec if @socket
