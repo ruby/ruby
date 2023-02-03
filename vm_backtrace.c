@@ -165,7 +165,7 @@ location_memsize(const void *ptr)
 static const rb_data_type_t location_data_type = {
     "frame_info",
     {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -757,7 +757,7 @@ location_create(rb_backtrace_location_t *srcloc, void *btobj)
     obj = TypedData_Make_Struct(rb_cBacktraceLocation, struct valued_frame_info, &location_data_type, vloc);
 
     vloc->loc = srcloc;
-    vloc->btobj = (VALUE)btobj;
+    RB_OBJ_WRITE(obj, &vloc->btobj, (VALUE)btobj);
 
     return obj;
 }
