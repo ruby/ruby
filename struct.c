@@ -413,18 +413,15 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL_RAW(list);
-
     RBASIC_CLEAR_CLASS(list);
-    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
         VALUE sym = rb_sym_intern_ascii_cstr(mem);
-        if (st_insert(tbl, sym, Qtrue)) {
+        if (RTEST(rb_hash_has_key(list, sym))) {
             rb_raise(rb_eArgError, "duplicate member: %s", mem);
         }
+        rb_hash_aset(list, sym, Qtrue);
     }
     ary = rb_hash_keys(list);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(ary);
     OBJ_FREEZE_RAW(ary);
     return ary;
@@ -645,7 +642,6 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE name, rest, keyword_init = Qnil;
     long i;
     VALUE st;
-    st_table *tbl;
     VALUE opt;
 
     argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
@@ -675,19 +671,17 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
         }
-        if (st_insert(tbl, mem, Qtrue)) {
+        if (RTEST(rb_hash_has_key(rest, mem))) {
             rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
         }
+        rb_hash_aset(rest, mem, Qtrue);
     }
     rest = rb_hash_keys(rest);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     if (NIL_P(name)) {
@@ -1710,23 +1704,20 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE rest;
     long i;
     VALUE data_class;
-    st_table *tbl;
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
         }
-        if (st_insert(tbl, mem, Qtrue)) {
+        if (RTEST(rb_hash_has_key(rest, mem))) {
             rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
         }
+        rb_hash_aset(rest, mem, Qtrue);
     }
     rest = rb_hash_keys(rest);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     data_class = anonymous_struct(klass);
