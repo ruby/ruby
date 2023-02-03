@@ -8275,7 +8275,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     }
     else {
 # define BUILTIN_INLINE_PREFIX "_bi"
-        char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
+        char inline_func[sizeof(BUILTIN_INLINE_PREFIX) + DECIMAL_SIZE_OF(int)];
         bool cconst = false;
       retry:;
         const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
