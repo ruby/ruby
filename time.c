@@ -62,10 +62,6 @@ static VALUE sym_hour, sym_min, sym_sec, sym_subsec, sym_dst, sym_zone;
 #define id_name idName
 #define UTC_ZONE Qundef
 
-#ifndef TM_IS_TIME
-#define TM_IS_TIME 1
-#endif
-
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
@@ -5546,7 +5542,6 @@ tm_from_time(VALUE klass, VALUE time)
 {
     struct time_object *tobj;
     struct vtm vtm, *v;
-#if TM_IS_TIME
     VALUE tm;
     struct time_object *ttm;
 
@@ -5562,29 +5557,6 @@ tm_from_time(VALUE klass, VALUE time)
     ttm->tm_got = 1;
     TZMODE_SET_UTC(ttm);
     return tm;
-#else
-    VALUE args[8];
-    int i = 0;
-
-    GetTimeval(time, tobj);
-    if (tobj->tm_got && TZMODE_UTC_P(tobj))
-        v = &tobj->vtm;
-    else
-        GMTIMEW(tobj->timew, v = &vtm);
-    args[i++] = v->year;
-    args[i++] = INT2FIX(v->mon);
-    args[i++] = INT2FIX(v->mday);
-    args[i++] = INT2FIX(v->hour);
-    args[i++] = INT2FIX(v->min);
-    args[i++] = INT2FIX(v->sec);
-    switch (v->isdst) {
-      case 0: args[i++] = Qfalse; break;
-      case 1: args[i++] = Qtrue; break;
-      default: args[i++] = Qnil; break;
-    }
-    args[i++] = w2v(rb_time_unmagnify(tobj->timew));
-    return rb_class_new_instance(i, args, klass);
-#endif
 }
 
 /*
@@ -5604,23 +5576,10 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
     if (rb_check_arity(argc, 1, 7) > 6) argc = 6;
     time_arg(argc, argv, &vtm);
     t = timegmw(&vtm);
-    {
-#if TM_IS_TIME
-        struct time_object *tobj = DATA_PTR(tm);
-        TZMODE_SET_UTC(tobj);
-        tobj->timew = t;
-        tobj->vtm = vtm;
-#else
-        int i = 0;
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.sec));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.min));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.hour));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mday));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mon));
-        RSTRUCT_SET(tm, i++, vtm.year);
-        RSTRUCT_SET(tm, i++, w2v(rb_time_unmagnify(t)));
-#endif
-    }
+    struct time_object *tobj = DATA_PTR(tm);
+    TZMODE_SET_UTC(tobj);
+    tobj->timew = t;
+    tobj->vtm = vtm;
     return tm;
 }
 
@@ -5634,51 +5593,13 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
 static VALUE
 tm_to_time(VALUE tm)
 {
-#if TM_IS_TIME
     struct time_object *torig = get_timeval(tm);
     VALUE dup = time_s_alloc(rb_cTime);
     struct time_object *tobj = DATA_PTR(dup);
     *tobj = *torig;
     return dup;
-#else
-    VALUE t[6];
-    const VALUE *p = RSTRUCT_CONST_PTR(tm);
-    int i;
-
-    for (i = 0; i < numberof(t); ++i) {
-        t[i] = p[numberof(t) - 1 - i];
-    }
-    return time_s_mkutc(numberof(t), t, rb_cTime);
-#endif
 }
 
-#if !TM_IS_TIME
-static VALUE
-tm_zero(VALUE tm)
-{
-    return INT2FIX(0);
-}
-
-#define tm_subsec tm_zero
-#define tm_utc_offset tm_zero
-
-static VALUE
-tm_isdst(VALUE tm)
-{
-    return Qfalse;
-}
-
-static VALUE
-tm_to_s(VALUE tm)
-{
-    const VALUE *p = RSTRUCT_CONST_PTR(tm);
-
-    return rb_sprintf("%.4"PRIsVALUE"-%.2"PRIsVALUE"-%.2"PRIsVALUE" "
-                      "%.2"PRIsVALUE":%.2"PRIsVALUE":%.2"PRIsVALUE" "
-                      "UTC",
-                      p[5], p[4], p[3], p[2], p[1], p[0]);
-}
-#else
 static VALUE
 tm_plus(VALUE tm, VALUE offset)
 {
@@ -5690,14 +5611,12 @@ tm_minus(VALUE tm, VALUE offset)
 {
     return time_add0(rb_obj_class(tm), get_timeval(tm), tm, offset, -1);
 }
-#endif
 
 static VALUE
 Init_tm(VALUE outer, const char *name)
 {
     /* :stopdoc:*/
     VALUE tm;
-#if TM_IS_TIME
     tm = rb_define_class_under(outer, name, rb_cObject);
     rb_define_alloc_func(tm, time_s_alloc);
     rb_define_method(tm, "sec", time_sec, 0);
@@ -5730,18 +5649,6 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "to_r", time_to_r, 0);
     rb_define_method(tm, "+", tm_plus, 1);
     rb_define_method(tm, "-", tm_minus, 1);
-#else
-    tm = rb_struct_define_under(outer,  "tm",
-                                        "sec", "min", "hour",
-                                        "mday", "mon", "year",
-                                        "to_i", NULL);
-    rb_define_method(tm, "subsec", tm_subsec, 0);
-    rb_define_method(tm, "utc_offset", tm_utc_offset, 0);
-    rb_define_method(tm, "to_s", tm_to_s, 0);
-    rb_define_method(tm, "inspect", tm_to_s, 0);
-    rb_define_method(tm, "isdst", tm_isdst, 0);
-    rb_define_method(tm, "dst?", tm_isdst, 0);
-#endif
     rb_define_method(tm, "initialize", tm_initialize, -1);
     rb_define_method(tm, "utc", tm_to_time, 0);
     rb_alias(tm, rb_intern_const("to_time"), rb_intern_const("utc"));
@@ -5913,11 +5820,6 @@ Init_Time(void)
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
     rb_define_private_method(scTime, "_load", time_load, 1);
-#if 0
-    /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
-    rb_define_private_method(rb_cTime, "marshal_dump", time_mdump, 0);
-    rb_define_private_method(rb_cTime, "marshal_load", time_mload, 1);
-#endif
 
     if (debug_find_time_numguess) {
         rb_define_hooked_variable("$find_time_numguess", (VALUE *)&find_time_numguess,
