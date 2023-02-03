@@ -4396,6 +4396,12 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     return val;
 }
 
+VALUE
+rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv)
+{
+    return vm_yield_with_cfunc(ec, captured, captured->self, argc, argv, 0, VM_BLOCK_HANDLER_NONE, NULL);
+}
+
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {

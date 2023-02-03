@@ -6339,7 +6339,16 @@ fn gen_invokeblock(
         let side_exit = get_side_exit(jit, ocb, ctx);
         let tag_opnd = asm.and(block_handler_opnd, 0x3.into()); // block_handler is a tagged pointer
         asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
-        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_tag_changed));
+        let tag_changed_exit = counted_exit!(ocb, side_exit, invokeblock_tag_changed);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            ctx,
+            asm,
+            ocb,
+            SEND_MAX_CHAIN_DEPTH,
+            tag_changed_exit,
+        );
 
         // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
@@ -6380,8 +6389,61 @@ fn gen_invokeblock(
             Some(captured_opnd),
         )
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
-        gen_counter_incr!(asm, invokeblock_ifunc);
-        CantCompile
+        // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
+        if flags & VM_CALL_ARGS_SPLAT != 0 {
+            gen_counter_incr!(asm, invokeblock_ifunc_args_splat);
+            return CantCompile;
+        }
+        if flags & VM_CALL_KW_SPLAT != 0 {
+            gen_counter_incr!(asm, invokeblock_ifunc_kw_splat);
+            return CantCompile;
+        }
+
+        asm.comment("get local EP");
+        let ep_opnd = gen_get_lep(jit, asm);
+        let block_handler_opnd = asm.load(
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+        );
+
+        asm.comment("guard block_handler type");
+        let side_exit = get_side_exit(jit, ocb, ctx);
+        let tag_opnd = asm.and(block_handler_opnd, 0x3.into()); // block_handler is a tagged pointer
+        asm.cmp(tag_opnd, 0x3.into()); // VM_BH_IFUNC_P
+        let tag_changed_exit = counted_exit!(ocb, side_exit, invokeblock_tag_changed);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            ctx,
+            asm,
+            ocb,
+            SEND_MAX_CHAIN_DEPTH,
+            tag_changed_exit,
+        );
+
+        // The cfunc may not be leaf
+        jit_prepare_routine_call(jit, ctx, asm);
+
+        extern "C" {
+            fn rb_vm_yield_with_cfunc(ec: EcPtr, captured: *const rb_captured_block, argc: c_int, argv: *const VALUE) -> VALUE;
+        }
+        asm.comment("call ifunc");
+        let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
+        let argv = asm.lea(ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize));
+        let ret = asm.ccall(
+            rb_vm_yield_with_cfunc as *const u8,
+            vec![EC, captured_opnd, argc.into(), argv],
+        );
+
+        ctx.stack_pop(argc.try_into().unwrap());
+        let stack_ret = ctx.stack_push(Type::Unknown);
+        asm.mov(stack_ret, ret);
+
+        // cfunc calls may corrupt types
+        ctx.clear_local_types();
+
+        // Share the successor with other chains
+        jump_to_next_insn(jit, ctx, asm, ocb);
+        EndBlock
     } else if comptime_handler.symbol_p() {
         gen_counter_incr!(asm, invokeblock_symbol);
         CantCompile
