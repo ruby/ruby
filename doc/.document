@@ -3,6 +3,7 @@
 *.rdoc
 contributing
 NEWS
+csv
 syntax
 optparse
 rdoc
