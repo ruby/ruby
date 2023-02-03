@@ -246,7 +246,10 @@ make_counters! {
     invokesuper_block,
 
     invokeblock_none,
-    invokeblock_iseq_arg0_splat,
+    invokeblock_iseq_arg0_has_kw,
+    invokeblock_iseq_arg0_args_splat,
+    invokeblock_iseq_arg0_not_array,
+    invokeblock_iseq_arg0_wrong_len,
     invokeblock_iseq_block_changed,
     invokeblock_tag_changed,
     invokeblock_ifunc_args_splat,
