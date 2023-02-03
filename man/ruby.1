@@ -550,7 +550,12 @@ There are currently 4 possible areas where the GC may be tuned by
 the following 11 environment variables:
 .Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
-Initial allocation slots.  Introduced in Ruby 2.1, default: 10000.
+Initial allocation slots. Applies to all slot sizes.  Introduced in Ruby 2.1, default: 10000.
+.Pp
+.It Ev RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS
+Initial allocation of slots in a specific size pool.
+The available size pools can be found in `GC.stat_heap`.
+Introduced in Ruby 3.3.
 .Pp
 .It Ev RUBY_GC_HEAP_FREE_SLOTS
 Prepare at least this amount of slots after GC.

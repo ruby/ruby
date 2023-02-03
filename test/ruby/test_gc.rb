@@ -315,6 +315,21 @@ class TestGc < Test::Unit::TestCase
     }
     assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
 
+    env = {}
+    GC.stat_heap.each do |_, s|
+      env["RUBY_GC_HEAP_INIT_SIZE_#{s[:slot_size]}_SLOTS"] = "200000"
+    end
+    assert_normal_exit("exit", "", :child_env => env)
+
+    env["RUBY_GC_HEAP_INIT_SLOTS"] = "100000"
+    assert_normal_exit("exit", "", :child_env => env)
+
+    env = {}
+    GC.stat_heap.each do |_, s|
+      env["RUBY_GC_HEAP_INIT_SIZE_#{s[:slot_size]}_SLOTS"] = "0"
+    end
+    assert_normal_exit("exit", "", :child_env => env)
+
     env = {
       "RUBYOPT" => "",
       "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
