@@ -11748,15 +11748,28 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 }
 
 static void
-gc_set_initial_pages(rb_objspace_t *objspace)
+gc_set_initial_pages(rb_objspace_t *objspace, int global_heap_init_slots)
 {
     gc_rest(objspace);
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        char env_key[sizeof("RUBY_GC_HEAP_INIT_SIZE_" "_SLOTS") + DECIMAL_SIZE_OF_BITS(sizeof(size_pool->slot_size) * CHAR_BIT)];
+        snprintf(env_key, sizeof(env_key), "RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS", size_pool->slot_size);
 
-        if (gc_params.heap_init_slots > size_pool->eden_heap.total_slots) {
-            size_t slots = gc_params.heap_init_slots - size_pool->eden_heap.total_slots;
+        size_t pool_init_slots = 0;
+        if (!get_envparam_size(env_key, &pool_init_slots, 0)) {
+            if (global_heap_init_slots) {
+                // If we use the global init slot we ponderate it by slot size
+                pool_init_slots = gc_params.heap_init_slots / (size_pool->slot_size / BASE_SLOT_SIZE);
+            }
+            else {
+                continue;
+            }
+        }
+
+        if (pool_init_slots > size_pool->eden_heap.total_slots) {
+            size_t slots = pool_init_slots - size_pool->eden_heap.total_slots;
             int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
             size_pool->allocatable_pages = slots * multiple / HEAP_PAGE_OBJ_LIMIT;
         }
@@ -11822,7 +11835,10 @@ ruby_gc_set_params(void)
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
     if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
-        gc_set_initial_pages(objspace);
+        gc_set_initial_pages(objspace, TRUE);
+    }
+    else {
+        gc_set_initial_pages(objspace, FALSE);
     }
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);
