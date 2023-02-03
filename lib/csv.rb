@@ -106,7 +106,7 @@ require_relative "csv/writer"
 #
 # If you are familiar with \CSV data and have a particular task in mind,
 # you may want to go directly to the:
-# - {Recipes for CSV}[doc/csv/recipes/recipes_rdoc.html].
+# - {Recipes for CSV}[CSV/recipes/recipes_rdoc.html].
 #
 # Otherwise, read on here, about the API: classes, methods, and constants.
 #
