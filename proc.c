@@ -108,7 +108,6 @@ proc_mark_and_move(void *ptr)
 {
     rb_proc_t *proc = ptr;
     block_mark_and_move((struct rb_block *)&proc->block);
-    RUBY_MARK_LEAVE("proc");
 }
 
 typedef struct {
@@ -285,10 +284,8 @@ binding_mark_and_move(void *ptr)
 {
     rb_binding_t *bind = ptr;
 
-    RUBY_MARK_ENTER("binding");
     block_mark_and_move((struct rb_block *)&bind->block);
     rb_gc_mark_and_move((VALUE *)&bind->pathobj);
-    RUBY_MARK_LEAVE("binding");
 }
 
 static size_t
@@ -1558,25 +1555,14 @@ proc_to_proc(VALUE self)
 }
 
 static void
-bm_mark(void *ptr)
+bm_mark_and_move(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_gc_mark_movable(data->recv);
-    rb_gc_mark_movable(data->klass);
-    rb_gc_mark_movable(data->iclass);
-    rb_gc_mark_movable(data->owner);
-    rb_gc_mark_movable((VALUE)data->me);
-}
-
-static void
-bm_compact(void *ptr)
-{
-    struct METHOD *data = ptr;
-    UPDATE_REFERENCE(data->recv);
-    UPDATE_REFERENCE(data->klass);
-    UPDATE_REFERENCE(data->iclass);
-    UPDATE_REFERENCE(data->owner);
-    UPDATE_TYPED_REFERENCE(rb_method_entry_t *, data->me);
+    rb_gc_mark_and_move((VALUE *)&data->recv);
+    rb_gc_mark_and_move((VALUE *)&data->klass);
+    rb_gc_mark_and_move((VALUE *)&data->iclass);
+    rb_gc_mark_and_move((VALUE *)&data->owner);
+    rb_gc_mark_and_move_ptr((rb_method_entry_t **)&data->me);
 }
 
 static size_t
@@ -1588,10 +1574,10 @@ bm_memsize(const void *ptr)
 static const rb_data_type_t method_data_type = {
     "method",
     {
-        bm_mark,
+        bm_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         bm_memsize,
-        bm_compact,
+        bm_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
