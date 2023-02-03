@@ -83,6 +83,10 @@ pub struct CodeBlock {
     // for example, when there is not enough space or when a jump
     // target is too far away.
     dropped_bytes: bool,
+
+    // Keeps track of what pages we can write to after code gc.
+    // `None` means all pages are free.
+    freed_pages: Rc<Option<Vec<usize>>>,
 }
 
 /// Set of CodeBlock label states. Used for recovering the previous state.
@@ -94,7 +98,7 @@ pub struct LabelState {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>) -> Self {
         let mem_size = mem_block.borrow().virtual_region_size();
         let mut cb = Self {
             mem_block,
@@ -108,6 +112,7 @@ impl CodeBlock {
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
+            freed_pages,
         };
         cb.write_pos = cb.page_start();
         cb
@@ -120,7 +125,7 @@ impl CodeBlock {
         self.set_write_ptr(base_ptr);
 
         // Use the freed_pages list if code GC has been used. Otherwise use the next page.
-        let next_page_idx = if let Some(freed_pages) = CodegenGlobals::get_freed_pages() {
+        let next_page_idx = if let Some(freed_pages) = self.freed_pages.as_ref() {
             let current_page = self.write_pos / CODE_PAGE_SIZE;
             freed_pages.iter().find(|&&page| current_page < page).map(|&page| page)
         } else {
@@ -134,6 +139,7 @@ impl CodeBlock {
         }
 
         // Move the other CodeBlock to the same page if it'S on the furthest page
+        #[cfg(not(test))]
         self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
 
         return !self.dropped_bytes;
@@ -234,7 +240,7 @@ impl CodeBlock {
     }
 
     pub fn has_freed_page(&self, page_idx: usize) -> bool {
-        CodegenGlobals::get_freed_pages().as_ref().map_or(false, |pages| pages.contains(&page_idx)) && // code GCed
+        self.freed_pages.as_ref().as_ref().map_or(false, |pages| pages.contains(&page_idx)) && // code GCed
             self.write_pos < page_idx * CODE_PAGE_SIZE // and not written yet
     }
 
@@ -284,18 +290,12 @@ impl CodeBlock {
     /// Return the address ranges of a given address range that this CodeBlock can write.
     #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
-        // CodegenGlobals is not initialized when we write initial ocb code
-        let freed_pages = if CodegenGlobals::has_instance() {
-            CodegenGlobals::get_freed_pages().as_ref()
-        } else {
-            None
-        };
-
         let region_start = self.get_ptr(0).into_usize();
         let region_end = self.get_ptr(self.get_mem_size()).into_usize();
         let mut start = start_ptr.into_usize();
         let end = std::cmp::min(end_ptr.into_usize(), region_end);
 
+        let freed_pages = self.freed_pages.as_ref().as_ref();
         let mut addrs = vec![];
         while start < end {
             let page_idx = start.saturating_sub(region_start) / CODE_PAGE_SIZE;
@@ -558,7 +558,7 @@ impl CodeBlock {
     /// Code GC. Free code pages that are not on stack and reuse them.
     pub fn code_gc(&mut self) {
         // The previous code GC failed to free any pages. Give up.
-        if CodegenGlobals::get_freed_pages() == &Some(vec![]) {
+        if self.freed_pages.as_ref() == &Some(vec![]) {
             return;
         }
 
@@ -613,7 +613,13 @@ impl CodeBlock {
             ocb.clear_comments();
         }
 
-        CodegenGlobals::set_freed_pages(freed_pages);
+        // Track which pages are free.
+        let new_freed_pages = Rc::new(Some(freed_pages));
+        let old_freed_pages = mem::replace(&mut self.freed_pages, Rc::clone(&new_freed_pages));
+        self.other_cb().unwrap().freed_pages = new_freed_pages;
+        assert_eq!(1, Rc::strong_count(&old_freed_pages)); // will deallocate
+
+        CodegenGlobals::incr_code_gc_count();
     }
 
     pub fn inline(&self) -> bool {
@@ -643,7 +649,24 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), false)
+        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(None))
+    }
+
+    /// Stubbed CodeBlock for testing conditions that can arise due to code GC. Can't execute generated code.
+    pub fn new_dummy_with_freed_pages(mut freed_pages: Vec<usize>) -> Self {
+        use std::ptr::NonNull;
+        use crate::virtualmem::*;
+        use crate::virtualmem::tests::TestingAllocator;
+
+        freed_pages.sort_unstable();
+        let mem_size = CODE_PAGE_SIZE *
+            (1 + freed_pages.last().expect("freed_pages vec should not be empty"));
+
+        let alloc = TestingAllocator::new(mem_size);
+        let mem_start: *const u8 = alloc.mem_start();
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
+
+        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(Some(freed_pages)))
     }
 }
 

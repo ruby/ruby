@@ -7176,9 +7176,6 @@ pub struct CodegenGlobals {
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
 
-    /// Freed page indexes. None if code GC has not been used.
-    freed_pages: Option<Vec<usize>>,
-
     /// How many times code GC has been executed.
     code_gc_count: usize,
 }
@@ -7232,8 +7229,9 @@ impl CodegenGlobals {
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 
-            let cb = CodeBlock::new(mem_block.clone(), false);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true));
+            let freed_pages = Rc::new(None);
+            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
 
             assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
 
@@ -7275,7 +7273,6 @@ impl CodegenGlobals {
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
             ocb_pages,
-            freed_pages: None,
             code_gc_count: 0,
         };
 
@@ -7423,12 +7420,7 @@ impl CodegenGlobals {
         &CodegenGlobals::get_instance().ocb_pages
     }
 
-    pub fn get_freed_pages() -> &'static mut Option<Vec<usize>> {
-        &mut CodegenGlobals::get_instance().freed_pages
-    }
-
-    pub fn set_freed_pages(freed_pages: Vec<usize>) {
-        CodegenGlobals::get_instance().freed_pages = Some(freed_pages);
+    pub fn incr_code_gc_count() {
         CodegenGlobals::get_instance().code_gc_count += 1;
     }
 
