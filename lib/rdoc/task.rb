@@ -261,6 +261,7 @@ class RDoc::Task < Rake::TaskLib
         $stderr.puts "rdoc #{args.join ' '}" if Rake.application.options.trace
       end
     end
+
     self
   end
 
