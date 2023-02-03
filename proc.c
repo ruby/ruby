@@ -80,62 +80,34 @@ CLONESETUP(VALUE clone, VALUE obj)
 }
 
 static void
-block_mark(const struct rb_block *block)
-{
-    switch (vm_block_type(block)) {
-      case block_type_iseq:
-      case block_type_ifunc:
-        {
-            const struct rb_captured_block *captured = &block->as.captured;
-            RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
-            RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
-            if (captured->ep && !UNDEF_P(captured->ep[VM_ENV_DATA_INDEX_ENV]) /* cfunc_proc_t */) {
-                rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
-            }
-        }
-        break;
-      case block_type_symbol:
-        RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.symbol);
-        break;
-      case block_type_proc:
-        RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.proc);
-        break;
-    }
-}
-
-static void
-block_compact(struct rb_block *block)
+block_mark_and_move(struct rb_block *block)
 {
     switch (block->type) {
       case block_type_iseq:
       case block_type_ifunc:
         {
             struct rb_captured_block *captured = &block->as.captured;
-            captured->self = rb_gc_location(captured->self);
-            captured->code.val = rb_gc_location(captured->code.val);
+            rb_gc_mark_and_move(&captured->self);
+            rb_gc_mark_and_move(&captured->code.val);
+            if (captured->ep) {
+                rb_gc_mark_and_move((VALUE *)&captured->ep[VM_ENV_DATA_INDEX_ENV]);
+            }
         }
         break;
       case block_type_symbol:
-        block->as.symbol = rb_gc_location(block->as.symbol);
+        rb_gc_mark_and_move(&block->as.symbol);
         break;
       case block_type_proc:
-        block->as.proc = rb_gc_location(block->as.proc);
+        rb_gc_mark_and_move(&block->as.proc);
         break;
     }
 }
 
 static void
-proc_compact(void *ptr)
+proc_mark_and_move(void *ptr)
 {
     rb_proc_t *proc = ptr;
-    block_compact((struct rb_block *)&proc->block);
-}
-
-static void
-proc_mark(void *ptr)
-{
-    rb_proc_t *proc = ptr;
-    block_mark(&proc->block);
+    block_mark_and_move((struct rb_block *)&proc->block);
     RUBY_MARK_LEAVE("proc");
 }
 
@@ -156,10 +128,10 @@ proc_memsize(const void *ptr)
 static const rb_data_type_t proc_data_type = {
     "proc",
     {
-        proc_mark,
+        proc_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         proc_memsize,
-        proc_compact,
+        proc_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
@@ -309,23 +281,14 @@ binding_free(void *ptr)
 }
 
 static void
-binding_mark(void *ptr)
+binding_mark_and_move(void *ptr)
 {
     rb_binding_t *bind = ptr;
 
     RUBY_MARK_ENTER("binding");
-    block_mark(&bind->block);
-    rb_gc_mark_movable(bind->pathobj);
+    block_mark_and_move((struct rb_block *)&bind->block);
+    rb_gc_mark_and_move((VALUE *)&bind->pathobj);
     RUBY_MARK_LEAVE("binding");
-}
-
-static void
-binding_compact(void *ptr)
-{
-    rb_binding_t *bind = ptr;
-
-    block_compact((struct rb_block *)&bind->block);
-    UPDATE_REFERENCE(bind->pathobj);
 }
 
 static size_t
@@ -337,10 +300,10 @@ binding_memsize(const void *ptr)
 const rb_data_type_t ruby_binding_data_type = {
     "binding",
     {
-        binding_mark,
+        binding_mark_and_move,
         binding_free,
         binding_memsize,
-        binding_compact,
+        binding_mark_and_move,
     },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
