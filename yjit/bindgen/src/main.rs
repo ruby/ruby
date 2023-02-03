@@ -77,6 +77,9 @@ fn main() {
         // From encindex.h
         .allowlist_type("ruby_preserved_encindex")
 
+        // From include/ruby/ruby.h
+        .allowlist_function("rb_class2name")
+
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
         .allowlist_type("RBasic")
@@ -87,6 +90,9 @@ fn main() {
         // From internal.h
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
+
+        // For crashing
+        .allowlist_function("rb_bug")
 
         // From shape.h
         .allowlist_function("rb_shape_get_shape_id")
@@ -199,6 +205,7 @@ fn main() {
         // From include/ruby/internal/symbol.h
         .allowlist_function("rb_intern")
         .allowlist_function("rb_id2sym")
+        .allowlist_function("rb_id2name")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
 
@@ -410,6 +417,7 @@ fn main() {
         .allowlist_function("rb_METHOD_ENTRY_VISI")
         .allowlist_function("rb_RCLASS_ORIGIN")
         .allowlist_function("rb_method_basic_definition_p")
+        .allowlist_function("rb_yjit_array_len")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

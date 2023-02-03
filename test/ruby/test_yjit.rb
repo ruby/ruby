@@ -1058,6 +1058,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_compact_cyclic_branch
+    assert_compiles(<<~'RUBY', result: 2)
+      def foo
+        i = 0
+        while i < 2
+          i += 1
+        end
+        i
+      end
+
+      foo
+      GC.compact
+      foo
+    RUBY
+  end
+
+  def test_invalidate_cyclic_branch
+    assert_compiles(<<~'RUBY', result: 2)
+      def foo
+        i = 0
+        while i < 2
+          i += 1
+        end
+        i
+      end
+
+      foo
+      class Integer
+        def +(x) = self - -x
+      end
+      foo
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

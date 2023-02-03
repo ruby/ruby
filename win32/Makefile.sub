@@ -728,9 +728,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define ALWAYS_INLINE(x) __forceinline x
 #define WARN_UNUSED_RESULT(x) x
 #define MAYBE_UNUSED(x) x
-!if !defined(VS2022_FP_BUG)
 #define HAVE___ASSUME 1
-!endif
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x

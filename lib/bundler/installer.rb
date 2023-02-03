@@ -249,17 +249,13 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
+      @definition.resolution_mode = options
+
       if !@definition.unlocking? && !options["force"] && !Bundler.settings[:inline] && Bundler.default_lockfile.file?
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 
-      if options["local"]
-        @definition.resolve_with_cache!
-      elsif options["prefer-local"]
-        @definition.resolve_prefering_local!
-      else
-        @definition.resolve_remotely!
-      end
+      @definition.setup_sources_for_resolve
 
       true
     end

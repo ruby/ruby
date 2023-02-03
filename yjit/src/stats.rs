@@ -109,7 +109,7 @@ impl YjitExitLocations {
 
             // Increase index for exit instruction.
             idx += 1;
-            // Increase index for bookeeping value (number of times we've seen this
+            // Increase index for bookkeeping value (number of times we've seen this
             // row in a stack).
             idx += 1;
         }
@@ -218,10 +218,11 @@ make_counters! {
     send_args_splat_bmethod,
     send_args_splat_aref,
     send_args_splat_aset,
-    send_args_splat_optimized,
+    send_args_splat_opt_call,
     send_args_splat_cfunc_var_args,
     send_args_splat_cfunc_zuper,
     send_args_splat_cfunc_ruby2_keywords,
+    send_iseq_splat_arity_error,
     send_iseq_ruby2_keywords,
     send_send_not_imm,
     send_send_wrong_args,
@@ -456,7 +457,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
             #[cfg(not(feature = "stats"))]
             if counter_name == &"vm_insns_count" {
                 // If the stats feature is disabled, we don't have vm_insns_count
-                // so we are going to exlcude the key
+                // so we are going to exclude the key
                 continue;
             }
 
@@ -540,7 +541,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
             let mut prev_frame_idx = 0;
             let mut seen_already = true;
 
-            // If the previous stack lenght and current stack length are equal,
+            // If the previous stack length and current stack length are equal,
             // loop and compare the current frame to the previous frame. If they are
             // not equal, set seen_already to false and break out of the loop.
             if prev_stack_len == stack_length as i64 {

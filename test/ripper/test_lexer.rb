@@ -252,4 +252,16 @@ world"
 ]
     assert_equal(code, Ripper.tokenize(code).join(""), bug)
   end
+
+  def test_heredoc_inside_block_param
+    bug = '[Bug #19399]'
+    code = <<~CODE
+      a do |b
+        <<-C
+        C
+        |
+      end
+    CODE
+    assert_equal(code, Ripper.tokenize(code).join(""), bug)
+  end
 end

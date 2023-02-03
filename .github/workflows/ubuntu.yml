@@ -26,18 +26,15 @@ jobs:
   make:
     strategy:
       matrix:
-        # main variables included in the job name
         test_task: [check]
-        configure: [cppflags=-DRUBY_DEBUG] # default to use more assertions
         arch: ['']
-        # specify all jobs with `include` to avoid testing duplicated things
+        configure: ['cppflags=-DVM_CHECK_MODE']
+        # specifying everything else with `include` to avoid redundant tests
         include:
           - test_task: check
-          - test_task: check
             arch: i686
-            configure: '' # test without -DRUBY_DEBUG as well
           - test_task: check
-            configure: "--enable-shared --enable-load-relative"
+            configure: '--enable-shared --enable-load-relative'
           - test_task: test-all TESTS=--repeat-count=2
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
@@ -75,7 +72,7 @@ jobs:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
         with:
           path: src
-      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d # v3.2.2
+      - uses: actions/cache@627f0f41f6904a5b1efbaed9f96d9eb58e92e920 # v3.2.4
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -89,8 +86,9 @@ jobs:
       - name: Run configure
         env:
           arch: ${{matrix.arch}}
+          configure: ${{matrix.configure}}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
       - run: $SETARCH make prepare-gems

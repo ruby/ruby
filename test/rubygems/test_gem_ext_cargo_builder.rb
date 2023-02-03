@@ -31,13 +31,12 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     Dir.chdir @ext do
       ENV.update(@rust_envs)
-      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-      builder = Gem::Ext::CargoBuilder.new(spec)
-      builder.build nil, @dest_path, output
+      builder = Gem::Ext::CargoBuilder.new
+      builder.build "Cargo.toml", @dest_path, output
     end
 
     output = output.join "\n"
-    bundle = File.join(@dest_path, "release/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
+    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
 
     assert_match(/Finished/, output)
     assert_match(/release/, output)
@@ -58,13 +57,12 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     Dir.chdir @ext do
       ENV.update(@rust_envs)
-      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-      builder = Gem::Ext::CargoBuilder.new(spec)
-      builder.build nil, @dest_path, output
+      builder = Gem::Ext::CargoBuilder.new
+      builder.build "Cargo.toml", @dest_path, output
     end
 
     output = output.join "\n"
-    bundle = File.join(@dest_path, "release/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
+    bundle = File.join(@dest_path, "rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
 
     assert_ffi_handle bundle, "hello_from_rubygems"
     assert_ffi_handle bundle, "hello_from_rubygems_version"
@@ -79,22 +77,17 @@ class TestGemExtCargoBuilder < Gem::TestCase
     skip_unsupported_platforms!
     setup_rust_gem "rust_ruby_example"
 
-    output = []
-
     FileUtils.rm(File.join(@ext, "src/lib.rs"))
 
     error = assert_raise(Gem::InstallError) do
       Dir.chdir @ext do
         ENV.update(@rust_envs)
-        spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
-        builder = Gem::Ext::CargoBuilder.new(spec)
-        builder.build nil, @dest_path, output
+        builder = Gem::Ext::CargoBuilder.new
+        builder.build "Cargo.toml", @dest_path, []
       end
     end
 
-    output = output.join "\n"
-
-    assert_match "cargo failed", error.message
+    assert_match /cargo\s.*\sfailed/, error.message
   end
 
   def test_full_integration

@@ -1134,7 +1134,7 @@ mod tests {
     }
 
     #[test]
-    fn test_adds_imm_negatve() {
+    fn test_adds_imm_negative() {
         check_bytes("201c00f1", |cb| adds(cb, X0, X1, A64Opnd::new_imm(-7)));
     }
 
@@ -1159,7 +1159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_and_32b_immedaite() {
+    fn test_and_32b_immediate() {
         check_bytes("404c0012", |cb| and(cb, W0, W2, A64Opnd::new_uimm(0xfffff)));
     }
 

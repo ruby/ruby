@@ -123,6 +123,7 @@ lcov*.info
 /repack
 /revision.h
 /revision.tmp
+/ripper.tmp.y
 /riscos
 /rubicon
 /ruby
@@ -240,7 +241,7 @@ lcov*.info
 /include/ruby-*/*/rb_mjit_min_header-*.h
 /lib/ruby_vm/mjit/instruction.rb
 /mjit_config.h
-/rb_mjit_header.h
+/rb_mjit_header.h*
 
 # YJIT
 /yjit-bench

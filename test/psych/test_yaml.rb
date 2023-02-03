@@ -223,8 +223,8 @@ EOY
     &C currency: GBP
     &D departure: LAX
     &A arrival: EDI
-  - { *F: MADF, *C: AUD, *D: SYD, *A: MEL }
-  - { *F: DFSF, *C: USD, *D: JFK, *A: MCO }
+  - { *F : MADF, *C : AUD, *D : SYD, *A : MEL }
+  - { *F : DFSF, *C : USD, *D : JFK, *A : MCO }
 EOY
         )
 
@@ -233,20 +233,20 @@ EOY
 ---
 ALIASES: [&f fareref, &c currency, &d departure, &a arrival]
 FARES:
-- *f: DOGMA
-  *c: GBP
-  *d: LAX
-  *a: EDI
+- *f : DOGMA
+  *c : GBP
+  *d : LAX
+  *a : EDI
 
-- *f: MADF
-  *c: AUD
-  *d: SYD
-  *a: MEL
+- *f : MADF
+  *c : AUD
+  *d : SYD
+  *a : MEL
 
-- *f: DFSF
-  *c: USD
-  *d: JFK
-  *a: MCO
+- *f : DFSF
+  *c : USD
+  *d : JFK
+  *a : MCO
 
 EOY
         )

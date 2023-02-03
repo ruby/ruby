@@ -6008,7 +6008,22 @@ rb_int_s_isqrt(VALUE self, VALUE num)
     }
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *   Integer.try_convert(object) -> object, integer, or nil
+ *
+ * If +object+ is an \Integer object, returns +object+.
+ *   Integer.try_convert(1) # => 1
+ *
+ * Otherwise if +object+ responds to <tt>:to_int</tt>,
+ * calls <tt>object.to_int</tt> and returns the result.
+ *   Integer.try_convert(1.25) # => 1
+ *
+ * Returns +nil+ if +object+ does not respond to <tt>:to_int</tt>
+ *   Integer.try_convert([]) # => nil
+ *
+ * Raises an exception unless <tt>object.to_int</tt> returns an \Integer object.
+ */
 static VALUE
 int_s_try_convert(VALUE self, VALUE num)
 {

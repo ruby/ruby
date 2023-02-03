@@ -103,6 +103,12 @@ rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
 }
 
+long
+rb_yjit_array_len(VALUE a)
+{
+    return rb_array_len(a);
+}
+
 // `start` is inclusive and `end` is exclusive.
 void
 rb_yjit_icache_invalidate(void *start, void *end)

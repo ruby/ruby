@@ -1464,7 +1464,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath def_name defn_head defs_head
-%type <node> top_compstmt top_stmts top_stmt begin_block
+%type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -1918,30 +1918,17 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*% %*/
 		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $6) %*/
 		    }
-		| defn_head f_opt_paren_args '=' command
+		| defn_head f_opt_paren_args '=' endless_command
 		    {
 			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
-		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
-		    /*% ripper: def!(get_value($1), $2, $4) %*/
+		    /*% ripper: def!(get_value($1), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
 			local_pop(p);
 		    }
-		| defn_head f_opt_paren_args '=' command modifier_rescue arg
-		    {
-			endless_method_name(p, $<node>1, &@1);
-			restore_defun(p, $<node>1->nd_defn);
-		    /*%%%*/
-			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
-			$$ = set_defun_body(p, $1, $2, $4, &@$);
-		    /*% %*/
-		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
-		    /*% ripper: def!(get_value($1), $2, $4) %*/
-			local_pop(p);
-		    }
-		| defs_head f_opt_paren_args '=' command
+		| defs_head f_opt_paren_args '=' endless_command
 		    {
 			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
@@ -1950,22 +1937,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
-		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
-			local_pop(p);
-		    }
-		| defs_head f_opt_paren_args '=' command modifier_rescue arg
-		    {
-			endless_method_name(p, $<node>1, &@1);
-			restore_defun(p, $<node>1->nd_defn);
-		    /*%%%*/
-			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
-			$$ = set_defun_body(p, $1, $2, $4, &@$);
-		    /*%
-			$1 = get_value($1);
-		    %*/
-		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
 			local_pop(p);
 		    }
 		| backref tOP_ASGN lex_ctxt command_rhs
@@ -1975,6 +1947,20 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
 		    /*% ripper[error]: backref_error(p, RNODE($1), assign!(var_field(p, $1), $4)) %*/
+		    }
+		;
+
+endless_command : command
+		| endless_command modifier_rescue arg
+		    {
+		    /*%%%*/
+			$$ = rescued_expr(p, $1, $3, &@1, &@2, &@3);
+		    /*% %*/
+		    /*% ripper: rescue_mod!($1, $3) %*/
+		    }
+		| keyword_not opt_nl endless_command
+		    {
+			$$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
 		    }
 		;
 
@@ -2861,30 +2847,17 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*% %*/
 		    /*% ripper: ifop!($1, $3, $6) %*/
 		    }
-		| defn_head f_opt_paren_args '=' arg
+		| defn_head f_opt_paren_args '=' endless_arg
 		    {
 			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
 			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
-		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
-		    /*% ripper: def!(get_value($1), $2, $4) %*/
+		    /*% ripper: def!(get_value($1), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
 			local_pop(p);
 		    }
-		| defn_head f_opt_paren_args '=' arg modifier_rescue arg
-		    {
-			endless_method_name(p, $<node>1, &@1);
-			restore_defun(p, $<node>1->nd_defn);
-		    /*%%%*/
-			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
-			$$ = set_defun_body(p, $1, $2, $4, &@$);
-		    /*% %*/
-		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
-		    /*% ripper: def!(get_value($1), $2, $4) %*/
-			local_pop(p);
-		    }
-		| defs_head f_opt_paren_args '=' arg
+		| defs_head f_opt_paren_args '=' endless_arg
 		    {
 			endless_method_name(p, $<node>1, &@1);
 			restore_defun(p, $<node>1->nd_defn);
@@ -2893,27 +2866,26 @@ arg		: lhs '=' lex_ctxt arg_rhs
 		    /*%
 			$1 = get_value($1);
 		    %*/
-		    /*% ripper[$4]: bodystmt!($4, Qnil, Qnil, Qnil) %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
-			local_pop(p);
-		    }
-		| defs_head f_opt_paren_args '=' arg modifier_rescue arg
-		    {
-			endless_method_name(p, $<node>1, &@1);
-			restore_defun(p, $<node>1->nd_defn);
-		    /*%%%*/
-			$4 = rescued_expr(p, $4, $6, &@4, &@5, &@6);
-			$$ = set_defun_body(p, $1, $2, $4, &@$);
-		    /*%
-			$1 = get_value($1);
-		    %*/
-		    /*% ripper[$4]: bodystmt!(rescue_mod!($4, $6), Qnil, Qnil, Qnil) %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, bodystmt!($4, Qnil, Qnil, Qnil)) %*/
 			local_pop(p);
 		    }
 		| primary
 		    {
 			$$ = $1;
+		    }
+		;
+
+endless_arg	: arg %prec modifier_rescue
+		| endless_arg modifier_rescue arg
+		    {
+		    /*%%%*/
+			$$ = rescued_expr(p, $1, $3, &@1, &@2, &@3);
+		    /*% %*/
+		    /*% ripper: rescue_mod!($1, $3) %*/
+		    }
+		| keyword_not opt_nl endless_arg
+		    {
+			$$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
 		    }
 		;
 

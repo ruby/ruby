@@ -1621,12 +1621,25 @@ rb_vm_invoke_proc_with_self(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 /* special variable */
 
 static rb_control_frame_t *
-vm_normal_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
+vm_svar_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     while (cfp->pc == 0) {
-        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        if (VM_FRAME_TYPE(cfp) ==  VM_FRAME_MAGIC_IFUNC) {
+            struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
+            rb_control_frame_t *owner_cfp = ifunc->owner_cfp;
+            if (cfp < owner_cfp) {
+                cfp = ifunc->owner_cfp;
+            }
+            else {
+                return NULL;
+            }
+        }
+        else {
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+
         if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
-            return 0;
+            return NULL;
         }
     }
     return cfp;
@@ -1635,14 +1648,14 @@ vm_normal_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 static VALUE
 vm_cfp_svar_get(const rb_execution_context_t *ec, rb_control_frame_t *cfp, VALUE key)
 {
-    cfp = vm_normal_frame(ec, cfp);
+    cfp = vm_svar_frame(ec, cfp);
     return lep_svar_get(ec, cfp ? VM_CF_LEP(cfp) : 0, key);
 }
 
 static void
 vm_cfp_svar_set(const rb_execution_context_t *ec, rb_control_frame_t *cfp, VALUE key, const VALUE val)
 {
-    cfp = vm_normal_frame(ec, cfp);
+    cfp = vm_svar_frame(ec, cfp);
     lep_svar_set(ec, cfp ? VM_CF_LEP(cfp) : 0, key, val);
 }
 

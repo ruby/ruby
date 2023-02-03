@@ -118,7 +118,7 @@ module Kernel
   #     2.then.detect(&:odd?)            # => nil
   #
   def then
-    unless Primitive.block_given_p
+    unless block_given?
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -142,7 +142,7 @@ module Kernel
   #       then {|response| JSON.parse(response) }
   #
   def yield_self
-    unless Primitive.block_given_p
+    unless block_given?
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
     end
     yield(self)
@@ -178,7 +178,7 @@ module Kernel
   #      puts enum.next
   #    } #=> :ok
   def loop
-    unless Primitive.block_given_p
+    unless block_given?
       return enum_for(:loop) { Float::INFINITY }
     end
 

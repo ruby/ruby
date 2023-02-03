@@ -428,7 +428,7 @@ pub enum Insn {
     // binary OR operation.
     Or { left: Opnd, right: Opnd, out: Opnd },
 
-    /// Pad nop instructions to accomodate Op::Jmp in case the block or the insn
+    /// Pad nop instructions to accommodate Op::Jmp in case the block or the insn
     /// is invalidated.
     PadInvalPatch,
 

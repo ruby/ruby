@@ -65,7 +65,7 @@ endif
 # we rely.
 ifneq ($(findstring darwin,$(target_os)),)
 $(YJIT_LIB_SYMBOLS): $(YJIT_LIBS)
-	$(Q) $(NM) --no-llvm-bc --defined-only --extern-only $(YJIT_LIBS) | \
+	$(Q) $(tooldir)/darwin-ar $(NM) --no-llvm-bc --defined-only --extern-only $(YJIT_LIBS) | \
 	sed -n -e 's/.* //' -e '/^$(SYMBOL_PREFIX)rb_/p' \
 	-e '/^$(SYMBOL_PREFIX)rust_eh_personality/p' \
 	> $@

@@ -439,7 +439,7 @@ pub type CmePtr = *const rb_callable_method_entry_t;
 /// Basic block version
 /// Represents a portion of an iseq compiled with a given context
 /// Note: care must be taken to minimize the size of block_t objects
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Block {
     // Bytecode sequence (iseq, idx) this is a version of
     blockid: BlockId,
@@ -532,7 +532,7 @@ impl PartialEq for BlockRef {
     }
 }
 
-/// It's comparison by identity so all the requirements are statisfied
+/// It's comparison by identity so all the requirements are satisfied
 impl Eq for BlockRef {}
 
 /// This is all the data YJIT stores on an iseq
@@ -756,16 +756,6 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                 *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
-            // Update outgoing branch entries
-            mem::drop(block); // end mut borrow: target.get_blockid() might borrow it
-            let block = version.borrow();
-            for branch in &block.outgoing {
-                let mut branch = branch.borrow_mut();
-                for target in branch.targets.iter_mut().flatten() {
-                    target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
-                }
-            }
-
             // Walk over references to objects in generated code.
             for offset in &block.gc_obj_offsets {
                 let offset_to_value = offset.as_usize();
@@ -785,6 +775,16 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                         cb.write_mem(byte_code_ptr, byte)
                             .expect("patching existing code should be within bounds");
                     }
+                }
+            }
+
+            // Update outgoing branch entries
+            let outgoing_branches = block.outgoing.clone(); // clone to use after borrow
+            mem::drop(block); // end mut borrow: target.set_iseq and target.get_blockid() might (mut) borrow it
+            for branch in &outgoing_branches {
+                let mut branch = branch.borrow_mut();
+                for target in branch.targets.iter_mut().flatten() {
+                    target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
                 }
             }
         }
@@ -1473,6 +1473,22 @@ impl Context {
         }
 
         return diff;
+    }
+
+    pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
+        if jit_at_current_insn(jit) {
+            let comptime_recv = jit_peek_at_stack(jit, self, 1);
+            let comptime_arg = jit_peek_at_stack(jit, self, 0);
+            return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());
+        }
+
+        let recv_type = self.get_opnd_type(StackOpnd(1));
+        let arg_type = self.get_opnd_type(StackOpnd(0));
+        match (recv_type, arg_type) {
+            (Type::Fixnum, Type::Fixnum) => Some(true),
+            (Type::Unknown | Type::UnknownImm, Type::Unknown | Type::UnknownImm) => None,
+            _ => Some(false),
+        }
     }
 }
 
@@ -2302,6 +2318,8 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
+    mem::drop(block); // end borrow: regenerate_branch might mut borrow this
+    let block = blockref.borrow().clone();
     for branchref in &block.incoming {
         let mut branch = branchref.borrow_mut();
         let target_idx = if branch.get_target_address(0) == block_start {

@@ -43,7 +43,7 @@ int rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
-void rb_mark_generic_ivar(VALUE);
+void rb_mark_and_update_generic_ivar(VALUE);
 void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);

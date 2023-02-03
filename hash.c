@@ -567,32 +567,6 @@ RHASH_TABLE_EMPTY_P(VALUE hash)
     return RHASH_SIZE(hash) == 0;
 }
 
-int
-rb_hash_ar_table_p(VALUE hash)
-{
-    if (FL_TEST_RAW((hash), RHASH_ST_TABLE_FLAG)) {
-        HASH_ASSERT(RHASH(hash)->as.st != NULL);
-        return FALSE;
-    }
-    else {
-        return TRUE;
-    }
-}
-
-ar_table *
-rb_hash_ar_table(VALUE hash)
-{
-    HASH_ASSERT(RHASH_AR_TABLE_P(hash));
-    return RHASH(hash)->as.ar;
-}
-
-st_table *
-rb_hash_st_table(VALUE hash)
-{
-    HASH_ASSERT(!RHASH_AR_TABLE_P(hash));
-    return RHASH(hash)->as.st;
-}
-
 void
 rb_hash_st_table_set(VALUE hash, st_table *st)
 {
@@ -1602,10 +1576,12 @@ static VALUE
 hash_copy(VALUE ret, VALUE hash)
 {
     if (!RHASH_EMPTY_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash))
+        if (RHASH_AR_TABLE_P(hash)) {
             ar_copy(ret, hash);
-        else if (RHASH_ST_TABLE_P(hash))
+        }
+        else {
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
+        }
     }
     return ret;
 }

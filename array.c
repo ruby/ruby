@@ -1065,14 +1065,14 @@ ary_make_shared(VALUE ary)
              * on the transient heap. */
             VALUE *ptr = ALLOC_N(VALUE, capa);
             ARY_SET_PTR(shared, ptr);
-            ary_memcpy(shared, 0, len, RARRAY_PTR(ary));
+            ary_memcpy(shared, 0, len, RARRAY_CONST_PTR(ary));
 
             FL_UNSET_EMBED(ary);
             ARY_SET_HEAP_LEN(ary, len);
             ARY_SET_PTR(ary, ptr);
         }
         else {
-            ARY_SET_PTR(shared, RARRAY_PTR(ary));
+            ARY_SET_PTR(shared, RARRAY_CONST_PTR(ary));
         }
 
         ARY_SET_LEN(shared, capa);

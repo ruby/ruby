@@ -55,7 +55,7 @@ DESCRIPTION
       "lib/psych_jars.rb",
       "lib/psych.jar"
     ]
-    s.requirements = "jar org.yaml:snakeyaml, #{version_module::Psych::DEFAULT_SNAKEYAML_VERSION}"
+    s.requirements = "jar org.snakeyaml:snakeyaml-engine, #{version_module::Psych::DEFAULT_SNAKEYAML_VERSION}"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
   else
     s.extensions = ["ext/psych/extconf.rb"]
