@@ -515,8 +515,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
- *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(*member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
  *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
  *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
