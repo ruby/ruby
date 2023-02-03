@@ -73,6 +73,11 @@ struct rb_objspace; /* in vm_core.h */
 # define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
 #endif
 
+#define RB_OBJ_WRITE_UNALIGNED(old, slot, young) do { \
+    VALUE *_slot = UNALIGNED_MEMBER_ACCESS(slot); \
+    RB_OBJ_WRITE(old, _slot, young); \
+} while (0)
+
 // We use SIZE_POOL_COUNT number of shape IDs for transitions out of different size pools
 // The next available shape ID will be the SPECIAL_CONST_SHAPE_ID
 #if USE_RVARGC && (SIZEOF_UINT64_T == SIZEOF_VALUE)
