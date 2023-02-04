@@ -26,6 +26,8 @@ module RubyVM::MJIT
 
     # @param ocb [CodeBlock]
     def compile_leave_exit(asm)
+      asm.comment('default cfp->jit_return')
+
       # Restore callee-saved registers
       asm.pop(SP)
       asm.pop(EC)

@@ -43,7 +43,7 @@ module RubyVM::MJIT
       @cb = CodeBlock.new(mem_block: mem_block, mem_size: mem_size / 2)
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
-      @insn_compiler = InsnCompiler.new(@ocb, @exit_compiler)
+      @insn_compiler = InsnCompiler.new(@cb, @ocb, @exit_compiler)
 
       @leave_exit = Assembler.new.then do |asm|
         @exit_compiler.compile_leave_exit(asm)
@@ -58,11 +58,15 @@ module RubyVM::MJIT
       # TODO: Support has_opt
       return if iseq.body.param.flags.has_opt
 
+      jit = JITState.new(iseq:, cfp:)
       asm = Assembler.new
       asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
-      compile_block(asm, jit: JITState.new(iseq:, cfp:))
-      iseq.body.jit_func = @cb.write(asm)
+      compile_block(asm, jit:)
+      @cb.write(asm).tap do |addr|
+        jit.block.start_addr = addr
+        iseq.body.jit_func = addr
+      end
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
@@ -76,8 +80,8 @@ module RubyVM::MJIT
       cfp.pc = block_stub.pc
 
       # Prepare the jump target
+      jit = JITState.new(iseq: block_stub.iseq, cfp:)
       new_asm = Assembler.new.tap do |asm|
-        jit = JITState.new(iseq: block_stub.iseq, cfp:)
         compile_block(asm, jit:, pc: block_stub.pc, ctx: block_stub.ctx)
       end
 
@@ -95,6 +99,8 @@ module RubyVM::MJIT
           @cb.write(asm)
         end
         new_addr
+      end.tap do |addr|
+        jit.block.start_addr = addr
       end
     end
 

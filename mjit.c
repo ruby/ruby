@@ -67,6 +67,8 @@ bool mjit_stats_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool mjit_call_p = false;
+// A flag to communicate that mjit_call_p should be disabled while it's temporarily false.
+bool mjit_cancel_p = false;
 
 #include "mjit_config.h"
 
@@ -101,7 +103,14 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
 void
 mjit_cancel_all(const char *reason)
 {
-    // TODO: remove this
+    if (!mjit_enabled)
+        return;
+
+    mjit_call_p = false;
+    mjit_cancel_p = true;
+    if (mjit_opts.warnings || mjit_opts.verbose) {
+        fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
+    }
 }
 
 void
@@ -132,6 +141,8 @@ static VALUE rb_MJITCompiler = 0;
 static VALUE rb_cMJITIseqPtr = 0;
 // RubyVM::MJIT::CPointer::Struct_rb_control_frame_t
 static VALUE rb_cMJITCfpPtr = 0;
+// RubyVM::MJIT::Hooks
+static VALUE rb_mMJITHooks = 0;
 
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
@@ -305,11 +316,30 @@ rb_mjit_collect_vm_usage_insn(int insn)
 
 #endif // YJIT_STATS
 
+#define WITH_MJIT_DISABLED(stmt) do { \
+    bool original_call_p = mjit_call_p; \
+    mjit_call_p = false; \
+    stmt; \
+    mjit_call_p = original_call_p; \
+    if (mjit_cancel_p) mjit_call_p = false; \
+} while (0);
+
 void
 rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
     if (!mjit_call_p) return;
     mjit_call_p = false;
+}
+
+void
+rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_DISABLED({
+        VALUE cme_klass = rb_funcall(rb_mMJITC, rb_intern("rb_callable_method_entry_struct"), 0);
+        VALUE cme_ptr = rb_funcall(cme_klass, rb_intern("new"), 1, SIZET2NUM((size_t)cme));
+        rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, cme_ptr);
+    });
 }
 
 void
@@ -434,6 +464,7 @@ mjit_init(const struct mjit_options *opts)
                                  SIZET2NUM((size_t)rb_mjit_mem_block), UINT2NUM(MJIT_CODE_SIZE));
     rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
     rb_cMJITCfpPtr = rb_funcall(rb_mMJITC, rb_intern("rb_control_frame_t"), 0);
+    rb_mMJITHooks = rb_const_get(rb_mMJIT, rb_intern("Hooks"));
 
     mjit_call_p = true;
     mjit_stats_p = mjit_opts.stats;

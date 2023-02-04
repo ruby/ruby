@@ -365,6 +365,7 @@ generator = BindingGenerator.new(
       VM_CALL_ARGS_BLOCKARG
       VM_CALL_ARGS_SPLAT
       VM_CALL_FCALL
+      VM_CALL_KWARG
       VM_CALL_KW_SPLAT
       VM_CALL_KW_SPLAT_bit
       VM_CALL_TAILCALL

@@ -96,6 +96,11 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'UINT2NUM(METHOD_ENTRY_VISI((const rb_callable_method_entry_t *)NUM2SIZET(_cme_addr)))'
     end
 
+    def rb_simple_iseq_p(iseq)
+      _iseq_addr = iseq.to_i
+      Primitive.cexpr! 'RBOOL(rb_simple_iseq_p((rb_iseq_t *)NUM2SIZET(_iseq_addr)))'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -177,7 +182,6 @@ module RubyVM::MJIT # :nodoc: all
       _cc_addr = cc_ptr.to_i
       _iseq_addr = iseq_ptr.to_i
       Primitive.cstmt! %q{
-        extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
         CALL_INFO ci = (CALL_INFO)NUM2PTR(_ci_addr);
         CALL_CACHE cc = (CALL_CACHE)NUM2PTR(_cc_addr);
         const rb_iseq_t *iseq = (rb_iseq_t *)NUM2PTR(_iseq_addr);
@@ -323,6 +327,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.VM_CALL_FCALL
     Primitive.cexpr! %q{ UINT2NUM(VM_CALL_FCALL) }
+  end
+
+  def C.VM_CALL_KWARG
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KWARG) }
   end
 
   def C.VM_CALL_KW_SPLAT

@@ -2,10 +2,10 @@ module RubyVM::MJIT
   class InsnCompiler
     # @param ocb [CodeBlock]
     # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
-    def initialize(ocb, exit_compiler)
+    def initialize(cb, ocb, exit_compiler)
       @ocb = ocb
       @exit_compiler = exit_compiler
-      @invariants = Invariants.new(ocb, exit_compiler)
+      @invariants = Invariants.new(cb, ocb, exit_compiler)
       # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
@@ -151,7 +151,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def putnil(jit, ctx, asm)
-      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       asm.mov([SP, C.VALUE.size * ctx.stack_size], Qnil)
       ctx.stack_push(1)
       KeepCompiling
@@ -161,7 +161,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def putself(jit, ctx, asm)
-      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
       asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
       ctx.stack_push(1)
@@ -174,7 +174,7 @@ module RubyVM::MJIT
     def putobject(jit, ctx, asm, val: jit.operand(0))
       # Push it to the stack
       # TODO: GC offsets
-      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       if asm.imm32?(val)
         asm.mov([SP, C.VALUE.size * ctx.stack_size], val)
       else # 64-bit immediates can't be directly written to memory
@@ -224,7 +224,7 @@ module RubyVM::MJIT
     # @param cd `RubyVM::MJIT::CPointer::Struct_rb_call_data`
     def opt_send_without_block(jit, ctx, asm)
       cd = C.rb_call_data.new(jit.operand(0))
-      compile_send_general(jit, ctx, asm, cd)
+      jit_call_method(jit, ctx, asm, cd)
     end
 
     # objtostring
@@ -240,7 +240,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def leave(jit, ctx, asm)
-      assert_eq!(ctx.stack_size, 1)
+      assert_equal(ctx.stack_size, 1)
 
       compile_check_ints(jit, ctx, asm)
 
@@ -250,10 +250,11 @@ module RubyVM::MJIT
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], :rax)
 
       # Return a value (for compile_leave_exit)
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       asm.mov(:rax, [SP])
 
       # Set caller's SP and push a value to its stack (for JIT)
-      asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)])
+      asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # Note: SP is in the position after popping a receiver and arguments
       asm.mov([SP], :rax)
 
       # Jump to cfp->jit_return
@@ -342,7 +343,7 @@ module RubyVM::MJIT
           return CantCompile
         end
 
-        raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+        assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
         recv_index = ctx.stack_size - 2
         obj_index  = ctx.stack_size - 1
 
@@ -391,7 +392,7 @@ module RubyVM::MJIT
           return CantCompile
         end
 
-        raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+        assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
         recv_index = ctx.stack_size - 2
         obj_index  = ctx.stack_size - 1
 
@@ -489,138 +490,180 @@ module RubyVM::MJIT
       asm.jnz(side_exit(jit, ctx))
     end
 
+    # vm_call_method (vm_sendish -> vm_call_general -> vm_call_method)
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     # @param cd `RubyVM::MJIT::CPointer::Struct_rb_call_data`
-    def compile_send_general(jit, ctx, asm, cd)
+    def jit_call_method(jit, ctx, asm, cd)
       ci = cd.ci
       argc = C.vm_ci_argc(ci)
       mid = C.vm_ci_mid(ci)
       flags = C.vm_ci_flag(ci)
-
-      if flags & C.VM_CALL_KW_SPLAT != 0
-        return CantCompile
-      end
 
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
         return EndBlock
       end
 
-      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
+      if flags & C.VM_CALL_KW_SPLAT != 0
+        # recv_index calculation may not work for this
+        return CantCompile
+      end
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       recv_depth = argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1)
       recv_index = ctx.stack_size - 1 - recv_depth
 
       comptime_recv = jit.peek_at_stack(recv_depth)
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
-      # Guard known class
+      # Guard the receiver class (part of vm_search_method_fastpath)
       if comptime_recv_klass.singleton_class?
         asm.comment('guard known object with singleton class')
         asm.mov(:rax, C.to_value(comptime_recv))
         asm.cmp([SP, C.VALUE.size * recv_index], :rax)
         asm.jne(side_exit(jit, ctx))
       else
+        # TODO: support more classes
         return CantCompile
       end
 
-      # Do method lookup
+      # Do method lookup (vm_cc_cme(cc) != NULL)
       cme = C.rb_callable_method_entry(comptime_recv_klass, mid)
       if cme.nil?
-        return CantCompile
+        return CantCompile # We don't support vm_call_method_name
       end
 
+      # The main check of vm_call_method before vm_call_method_each_type
       case C.METHOD_ENTRY_VISI(cme)
       when C.METHOD_VISI_PUBLIC
         # You can always call public methods
       when C.METHOD_VISI_PRIVATE
+        # Allow only callsites without a receiver
         if flags & C.VM_CALL_FCALL == 0
-          # VM_CALL_FCALL: Callsites without a receiver of an explicit `self` receiver
           return CantCompile
         end
       when C.METHOD_VISI_PROTECTED
         return CantCompile # TODO: support this
       else
-        raise 'cmes should always have a visibility'
+        raise 'unreachable'
       end
 
-      # TODO: assume_method_lookup_stable
+      # Invalidate on redefinition (part of vm_search_method_fastpath)
+      @invariants.assume_method_lookup_stable(jit, cme)
 
-      if flags & C.VM_CALL_ARGS_SPLAT != 0 && cme.def.type != C.VM_METHOD_TYPE_ISEQ
-        return CantCompile
-      end
+      jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme)
+    end
 
+    # vm_call_method_each_type
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme)
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
-        iseq = def_iseq_ptr(cme.def)
-        frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
-        compile_send_iseq(jit, ctx, asm, iseq, ci, frame_type, cme, flags, argc)
+        jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
       else
         return CantCompile
       end
     end
 
-    def compile_send_iseq(jit, ctx, asm, iseq, ci, frame_type, cme, flags, argc)
-      # TODO: check a bunch of CantCompile cases
+    # vm_call_iseq_setup
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
+      iseq = def_iseq_ptr(cme.def)
+      opt_pc = jit_callee_setup_arg(jit, ctx, asm, ci, flags, iseq)
+      if opt_pc == CantCompile
+        # We hit some unsupported path of vm_callee_setup_arg
+        return CantCompile
+      end
 
-      compile_check_ints(jit, ctx, asm)
+      if flags & C.VM_CALL_TAILCALL != 0
+        # We don't support vm_call_iseq_setup_tailcall
+        return CantCompile
+      end
+      jit_call_iseq_setup_normal(jit, ctx, asm, ci, cme, flags, argc, iseq)
+    end
 
+    # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
+    def jit_call_iseq_setup_normal(jit, ctx, asm, ci, cme, flags, argc, iseq)
+      # Save caller SP and PC before pushing a callee frame for backtrace and side exits
+      asm.comment('save SP to caller CFP')
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
+      sp_index = ctx.stack_size - 1 - argc - ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop receiver and arguments for side exits
+      asm.lea(:rax, [SP, C.VALUE.size * sp_index])
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
+
+      asm.comment('save PC to caller CFP')
+      next_pc = jit.pc + jit.insn.len * C.VALUE.size # Use the next one for backtrace and side exits
+      asm.mov(:rax, next_pc)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
+
+      frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
+      jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
+    end
+
+    # vm_push_frame
+    #
+    # Frame structure:
+    # | args | locals | cme/cref | block_handler/prev EP | frame type (EP here) | stack bottom (SP here)
+    def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
       # TODO: stack overflow check
 
-      # TODO: more flag checks
+      local_size = iseq.body.local_table_size
+      if local_size > 0
+        # TODO: support local variables
+        return CantCompile
+      end
 
-      # Pop arguments and a receiver for the current caller frame
-      raise 'sp_offset != stack_size' if ctx.sp_offset != ctx.stack_size # TODO: handle this
-      sp_index = ctx.stack_size - argc - 1 # arguments and receiver
-      asm.comment('save SP to caller CFP')
-      asm.lea(:rax, [SP, sp_index])
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
-      # TODO: do something about ctx.sp_index
+      asm.comment('move SP register to callee SP')
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
+      sp_offset = ctx.stack_size + local_size + 3
+      asm.add(SP, C.VALUE.size * sp_offset)
 
-      asm.comment('save PC to CFP')
-      next_pc = jit.pc + jit.insn.len * C.VALUE.size
-      asm.mov(:rax, next_pc)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
-
-      # TODO: push cme, specval, frame type
-      # TODO: push callee control frame
-
-      asm.comment('switch to new CFP')
-      asm.lea(:rax, [CFP, -C.rb_control_frame_t.size])
-      asm.mov(CFP, :rax);
-      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], :rax)
-
-      asm.comment('save SP to callee CFP')
-      num_locals = 0 # TODO
-      sp_offset = C.VALUE.size * (3 + num_locals + ctx.stack_size)
-      asm.add(SP, sp_offset)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
-
-      asm.comment('save ISEQ to callee CFP')
-      asm.mov(:rax, iseq.to_i)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:iseq)], :rax)
-
-      asm.comment('save EP to callee CFP')
-      asm.lea(:rax, [SP, -C.VALUE.size])
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:ep)], :rax)
-
-      asm.comment('set frame type')
-      asm.mov([SP, C.VALUE.size * -1], C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL)
+      asm.comment('set cme')
+      asm.mov(:rax, cme.to_i)
+      asm.mov([SP, C.VALUE.size * -3], :rax)
 
       asm.comment('set specval')
       asm.mov([SP, C.VALUE.size * -2], C.VM_BLOCK_HANDLER_NONE)
 
-      # Stub the return destination from the callee
-      # TODO: set up return ctx correctly
-      jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: ctx.dup)
+      asm.comment('set frame type')
+      asm.mov([SP, C.VALUE.size * -1], frame_type)
+
+      asm.comment('move CFP register to callee CFP')
+      asm.sub(CFP, C.rb_control_frame_t.size);
+
+      # Not setting PC since JIT code will do that as needed
+      asm.comment('set SP to callee CFP')
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+      asm.comment('set ISEQ to callee CFP')
+      asm.mov(:rax, iseq.to_i)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:iseq)], :rax)
+      asm.comment('set self to callee CFP')
+      self_index = -(1 + argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) + local_size + 3)
+      asm.mov(:rax, [SP, C.VALUE.size * self_index])
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:self)], :rax)
+      asm.comment('set EP to callee CFP')
+      asm.lea(:rax, [SP, C.VALUE.size * -1])
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:ep)], :rax)
+      asm.comment('set block_code to callee CFP')
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], 0)
+      asm.comment('set BP to callee CFP')
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
+
+      # Stub cfp->jit_return
+      return_ctx = ctx.dup
+      return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
+      jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: return_ctx)
       jit_return = Assembler.new.then do |ocb_asm|
         @exit_compiler.compile_block_stub(ctx, ocb_asm, jit_return_stub)
         @ocb.write(ocb_asm)
       end
-
       jit_return_stub.change_block = proc do |jump_asm, new_addr|
-        jump_asm.comment('update cfp->jit_return')
+        jump_asm.comment('set jit_return to callee CFP')
         jump_asm.stub(jit_return_stub) do
           jump_asm.mov(:rax, new_addr)
           jump_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
@@ -628,13 +671,73 @@ module RubyVM::MJIT
       end
       jit_return_stub.change_block.call(asm, jit_return)
 
+      asm.comment('set callee CFP to ec->cfp')
+      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
+
+      # Jump to a stub for the callee ISEQ
       callee_ctx = Context.new
       compile_block_stub(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
 
       EndBlock
     end
 
-    def assert_eq!(left, right)
+    # vm_callee_setup_arg: Set up args and return opt_pc (or CantCompile)
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_callee_setup_arg(jit, ctx, asm, ci, flags, iseq)
+      if flags & C.VM_CALL_KW_SPLAT == 0
+        if C.rb_simple_iseq_p(iseq)
+          if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+            return CantCompile
+          end
+          if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
+            return CantCompile
+          end
+
+          if C.vm_ci_argc(ci) != iseq.body.param.lead_num
+            # argument_arity_error
+            return CantCompile
+          end
+
+          return 0
+        else
+          # We don't support the remaining `else if`s yet.
+          return CantCompile
+        end
+      end
+
+      # We don't support setup_parameters_complex
+      return CantCompile
+    end
+
+    # CALLER_SETUP_ARG: Return CantCompile if not supported
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_caller_setup_arg(jit, ctx, asm, flags)
+      if flags & C.VM_CALL_ARGS_SPLAT != 0
+        # We don't support vm_caller_setup_arg_splat
+        return CantCompile
+      end
+      if flags & (C.VM_CALL_KWARG | C.VM_CALL_KW_SPLAT) != 0
+        # We don't support keyword args either
+        return CantCompile
+      end
+    end
+
+    # CALLER_REMOVE_EMPTY_KW_SPLAT: Return CantCompile if not supported
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags)
+      if (flags & C.VM_CALL_KW_SPLAT) > 0
+        # We don't support removing the last Hash argument
+        return CantCompile
+      end
+    end
+
+    def assert_equal(left, right)
       if left != right
         raise "'#{left.inspect}' was not '#{right.inspect}'"
       end

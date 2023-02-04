@@ -86,6 +86,8 @@ mjit_enabled_p(rb_execution_context_t *ec, VALUE self)
     return RBOOL(mjit_enabled);
 }
 
+extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+
 #include "mjit_c.rbinc"
 
 #endif // USE_MJIT

@@ -29,5 +29,6 @@ if RubyVM::MJIT.enabled?
 
   require 'ruby_vm/mjit/c_type'
   require 'ruby_vm/mjit/compiler'
+  require 'ruby_vm/mjit/hooks'
   require 'ruby_vm/mjit/stats'
 end
