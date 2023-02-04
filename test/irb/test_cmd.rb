@@ -490,6 +490,118 @@ module TestIRB
     end
   end
 
+  class WorkspaceCommandTestCase < CommandTestCase
+    def setup
+      super
+      # create Foo under the test class's namespace so it doesn't pollute global namespace
+      self.class.class_eval <<~RUBY
+        class Foo; end
+      RUBY
+    end
+  end
+
+  class CwwsTest < WorkspaceCommandTestCase
+    def test_cwws_returns_the_current_workspace_object
+      out, err = execute_lines(
+        "cwws.class",
+      )
+
+      assert_empty err
+      assert_include(out, self.class.name)
+    end
+  end
+
+  class PushwsTest < WorkspaceCommandTestCase
+    def test_pushws_switches_to_new_workspace_and_pushes_the_current_one_to_the_stack
+      out, err = execute_lines(
+        "pushws #{self.class}::Foo.new\n",
+        "cwws.class",
+      )
+      assert_empty err
+      assert_include(out, "#{self.class}::Foo")
+    end
+
+    def test_pushws_extends_the_new_workspace_with_command_bundle
+      out, err = execute_lines(
+        "pushws Object.new\n",
+        "self.singleton_class.ancestors"
+      )
+      assert_empty err
+      assert_include(out, "IRB::ExtendCommandBundle")
+    end
+
+    def test_pushws_prints_help_message_when_no_arg_is_given
+      out, err = execute_lines(
+        "pushws\n",
+      )
+      assert_empty err
+      assert_match(/No other workspace/, out)
+    end
+  end
+
+  class WorkspacesTest < WorkspaceCommandTestCase
+    def test_workspaces_returns_the_array_of_non_main_workspaces
+      out, err = execute_lines(
+        "pushws #{self.class}::Foo.new\n",
+        "workspaces.map { |w| w.class.name }",
+      )
+
+      assert_empty err
+      # self.class::Foo would be the current workspace
+      # self.class would be the old workspace that's pushed to the stack
+      assert_include(out, "=> [\"#{self.class}\"]")
+    end
+
+    def test_workspaces_returns_empty_array_when_no_workspaces_were_added
+      out, err = execute_lines(
+        "workspaces.map(&:to_s)",
+      )
+
+      assert_empty err
+      assert_include(out, "=> []")
+    end
+  end
+
+  class PopwsTest < WorkspaceCommandTestCase
+    def test_popws_replaces_the_current_workspace_with_the_previous_one
+      out, err = execute_lines(
+        "pushws Foo.new\n",
+        "popws\n",
+        "cwws.class",
+      )
+      assert_empty err
+      assert_include(out, "=> #{self.class}")
+    end
+
+    def test_popws_prints_help_message_if_the_workspace_is_empty
+      out, err = execute_lines(
+        "popws\n",
+      )
+      assert_empty err
+      assert_match(/workspace stack empty/, out)
+    end
+  end
+
+  class ChwsTest < WorkspaceCommandTestCase
+    def test_chws_replaces_the_current_workspace
+      out, err = execute_lines(
+        "chws #{self.class}::Foo.new\n",
+        "cwws.class",
+      )
+      assert_empty err
+      assert_include(out, "=> #{self.class}::Foo")
+    end
+
+    def test_chws_does_nothing_when_receiving_no_argument
+      out, err = execute_lines(
+        "chws\n",
+        "cwws.class",
+      )
+      assert_empty err
+      assert_include(out, "=> #{self.class}")
+    end
+  end
+
   class WhereamiTest < CommandTestCase
     def test_whereami
       out, err = execute_lines(
