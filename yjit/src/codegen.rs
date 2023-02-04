@@ -5729,6 +5729,9 @@ fn gen_send_iseq(
 
     // Create a context for the callee
     let mut callee_ctx = Context::default();
+    if let Some(iseq) = block {
+        callee_ctx.set_block_iseq(iseq);
+    }
 
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {

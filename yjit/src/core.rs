@@ -14,6 +14,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::rc::{Rc};
+use std::ptr::NonNull;
 use YARVOpnd::*;
 use TempMapping::*;
 use crate::invariants::block_assumptions_free;
@@ -320,6 +321,9 @@ pub struct Context {
 
     // Mapping of temp stack entries to types we track
     temp_mapping: [TempMapping; MAX_TEMP_TYPES],
+
+    // A block that is supplied by the caller to this Context
+    block_iseq: Option<NonNull<rb_iseq_t>>,
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -852,7 +856,12 @@ fn get_num_versions(blockid: BlockId) -> usize {
             payload
                 .version_map
                 .get(insn_idx)
-                .map(|versions| versions.len())
+                .map(|versions|
+                    // Skip blocks with inlining from block version count
+                    versions.iter().filter(|version|
+                        version.borrow().ctx.block_iseq.is_none()
+                    ).count()
+                )
                 .unwrap_or(0)
         }
         None => 0,
@@ -920,6 +929,11 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
     if ctx.chain_depth > 0 {
+        return ctx.clone();
+    }
+
+    // TODO: Limit limits for block_iseq separately here
+    if ctx.block_iseq.is_some() {
         return ctx.clone();
     }
 
@@ -1471,6 +1485,11 @@ impl Context {
             diff += temp_diff;
         }
 
+        // Check block
+        if src.block_iseq != dst.block_iseq {
+            return usize::MAX;
+        }
+
         return diff;
     }
 
@@ -1488,6 +1507,10 @@ impl Context {
             (Type::Unknown | Type::UnknownImm, Type::Unknown | Type::UnknownImm) => None,
             _ => Some(false),
         }
+    }
+
+    pub fn set_block_iseq(&mut self, iseq: IseqPtr) {
+        self.block_iseq = Some(NonNull::new(iseq as *mut rb_iseq_t).unwrap());
     }
 }
 
