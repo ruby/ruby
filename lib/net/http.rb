@@ -1070,7 +1070,7 @@ module Net   #:nodoc:
     end
 
     # Returns the continue timeout value.
-    # See Net::HTTP.continue_timeout=. 
+    # See Net::HTTP.continue_timeout=.
     #
     attr_reader :continue_timeout
 
