@@ -1058,6 +1058,7 @@ module Net   #:nodoc:
     #   EOF
     #   headers = {'content-type': 'application/json'}
     #   http = Net::HTTP.new(hostname)
+    #   http.write_timeout # => 60
     #   http.post(_uri.path, data, headers)
     #   # => #<Net::HTTPCreated 201 Created readbody=true>
     #   http.write_timeout = 0
@@ -1068,12 +1069,15 @@ module Net   #:nodoc:
       @write_timeout = sec
     end
 
-    # Seconds to wait for 100 Continue response. If the \HTTP object does not
-    # receive a response in this many seconds it sends the request body. The
-    # default value is +nil+.
+    # Returns the continue timeout value.
+    # See Net::HTTP.continue_timeout=. 
+    #
     attr_reader :continue_timeout
 
-    # Setter for the continue_timeout attribute.
+    # Sets the continue timeout value,
+    # which is the number of seconds to wait for an expected 100 Continue response.
+    # If the \HTTP object does not receive a response in this many seconds
+    # it sends the request body.
     def continue_timeout=(sec)
       @socket.continue_timeout = sec if @socket
       @continue_timeout = sec
@@ -1089,7 +1093,20 @@ module Net   #:nodoc:
     # Content-Length headers. For backwards compatibility, the default is true.
     attr_accessor :ignore_eof
 
-    # Returns true if the \HTTP session has been started.
+    # Returns +true+ if the \HTTP session has been started:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.started? # => false
+    #   http.start
+    #   http.started? # => true
+    #   http.finish # => nil
+    #   http.started? # => false
+    #
+    #   Net::HTTP.start(hostname) do |http|
+    #     http.started?
+    #   end # => true
+    #   http.started? # => false
+    #
     def started?
       @started
     end
@@ -1098,15 +1115,18 @@ module Net   #:nodoc:
 
     attr_accessor :close_on_empty_response
 
-    # Returns true if SSL/TLS is being used with \HTTP.
+    # Returns +true+ if +self+ uses SSL, +false+ otherwise.
+    # See Net::HTTP#use_ssl=.
     def use_ssl?
       @use_ssl
     end
 
-    # Turn on/off SSL.
-    # This flag must be set before starting session.
-    # If you change use_ssl value after session started,
-    # IOError is raised.
+    # Sets whether a new session is to use
+    # {Transport Layer Security}[https://en.wikipedia.org/wiki/Transport_Layer_Security]:
+    #
+    # Raises IOError if attempting to change during a session.
+    #
+    # Raises OpenSSL::SSL::SSLError if the port is not an HTTPS port.
     def use_ssl=(flag)
       flag = flag ? true : false
       if started? and @use_ssl != flag
@@ -1205,7 +1225,8 @@ module Net   #:nodoc:
     # See OpenSSL::SSL::SSLContext#verify_hostname=
     attr_accessor :verify_hostname
 
-    # Returns the X.509 certificates the server presented.
+    # The X509 certificate chain (an array of strings) for the session's socket peer,
+    # or +nil+ if none.
     def peer_cert
       if not use_ssl? or not @socket
         return nil
@@ -1213,14 +1234,26 @@ module Net   #:nodoc:
       @socket.io.peer_cert
     end
 
-    # Opens a TCP connection and \HTTP session.
+    # Starts an \HTTP session.
     #
-    # When this method is called with a block, it passes the \Net::HTTP
-    # object to the block, and closes the TCP connection and \HTTP session
-    # after the block has been executed.
+    # Without a block, returns +self+:
     #
-    # When called with a block, it returns the return value of the
-    # block; otherwise, it returns self.
+    #   http = Net::HTTP.new(hostname)
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.start
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=true>
+    #   http.started? # => true
+    #   http.finish
+    #
+    # With a block, calls the block with +self+,
+    # finishes the session when the block exits,
+    # and returns the block's value:
+    #
+    #   http.start do |http|
+    #     http
+    #   end
+    #   # => #<Net::HTTP jsonplaceholder.typicode.com:80 open=false>
+    #   http.started? # => false
     #
     def start  # :yield: http
       raise IOError, 'HTTP session already opened' if @started
@@ -1356,8 +1389,15 @@ module Net   #:nodoc:
     end
     private :on_connect
 
-    # Finishes the \HTTP session and closes the TCP connection.
-    # Raises IOError if the session has not been started.
+    # Finishes the \HTTP session:
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.start
+    #   http.started? # => true
+    #   http.finish   # => nil
+    #   http.started? # => false
+    #
+    # Raises IOError if not in a session.
     def finish
       raise IOError, 'HTTP session not yet started' unless started?
       do_finish
