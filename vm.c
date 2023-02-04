@@ -1628,7 +1628,7 @@ vm_svar_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
             struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
             rb_control_frame_t *owner_cfp = ifunc->owner_cfp;
             if (cfp < owner_cfp) {
-                cfp = ifunc->owner_cfp;
+                cfp = owner_cfp;
             }
             else {
                 return NULL;

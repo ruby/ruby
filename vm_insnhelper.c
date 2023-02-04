@@ -2829,7 +2829,7 @@ vm_call_iseq_setup(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct r
     const rb_iseq_t *iseq = def_iseq_ptr(vm_cc_cme(cc)->def);
     const int param_size = ISEQ_BODY(iseq)->param.size;
     const int local_size = ISEQ_BODY(iseq)->local_table_size;
-    const int opt_pc = vm_callee_setup_arg(ec, calling, def_iseq_ptr(vm_cc_cme(cc)->def), cfp->sp - calling->argc, param_size, local_size);
+    const int opt_pc = vm_callee_setup_arg(ec, calling, iseq, cfp->sp - calling->argc, param_size, local_size);
     return vm_call_iseq_setup_2(ec, cfp, calling, opt_pc, param_size, local_size);
 }
 
