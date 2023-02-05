@@ -346,7 +346,7 @@ require 'rdoc'
 #
 # ===== Lettered Lists
 #
-# A numbered list item begins with a letters and a period.
+# A lettered list item begins with letters and a period.
 #
 # The items are automatically "re-lettered."
 #
