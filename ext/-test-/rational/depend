@@ -56,6 +56,7 @@ rat.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 rat.o: $(hdrdir)/ruby/internal/attr/noinline.h
 rat.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 rat.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+rat.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 rat.o: $(hdrdir)/ruby/internal/attr/pure.h
 rat.o: $(hdrdir)/ruby/internal/attr/restrict.h
 rat.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

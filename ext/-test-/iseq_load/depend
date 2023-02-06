@@ -52,6 +52,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/noinline.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+iseq_load.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/pure.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/restrict.h
 iseq_load.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

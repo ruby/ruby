@@ -52,6 +52,7 @@ num2int.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 num2int.o: $(hdrdir)/ruby/internal/attr/noinline.h
 num2int.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 num2int.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+num2int.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 num2int.o: $(hdrdir)/ruby/internal/attr/pure.h
 num2int.o: $(hdrdir)/ruby/internal/attr/restrict.h
 num2int.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -52,6 +52,7 @@ empty.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 empty.o: $(hdrdir)/ruby/internal/attr/noinline.h
 empty.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 empty.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+empty.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 empty.o: $(hdrdir)/ruby/internal/attr/pure.h
 empty.o: $(hdrdir)/ruby/internal/attr/restrict.h
 empty.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

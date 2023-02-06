@@ -1810,6 +1810,7 @@ addr2line.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+addr2line.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 addr2line.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -1920,6 +1921,7 @@ array.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+array.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 array.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -2120,6 +2122,7 @@ ast.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+ast.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 ast.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -2319,6 +2322,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+bignum.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 bignum.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -2502,6 +2506,7 @@ builtin.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+builtin.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 builtin.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -2696,6 +2701,7 @@ class.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+class.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 class.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -2885,6 +2891,7 @@ compar.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+compar.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 compar.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -3097,6 +3104,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+compile.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 compile.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -3304,6 +3312,7 @@ complex.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+complex.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 complex.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -3495,6 +3504,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+cont.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 cont.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -3706,6 +3716,7 @@ debug.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+debug.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 debug.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -3892,6 +3903,7 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -4075,6 +4087,7 @@ dir.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+dir.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 dir.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -4252,6 +4265,7 @@ dln.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+dln.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 dln.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -4410,6 +4424,7 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+dln_find.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -4567,6 +4582,7 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+dmydln.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -5577,6 +5593,7 @@ encoding.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+encoding.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 encoding.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -5779,6 +5796,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+enum.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 enum.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -5976,6 +5994,7 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+enumerator.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -6178,6 +6197,7 @@ error.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+error.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 error.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -6396,6 +6416,7 @@ eval.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+eval.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 eval.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -6625,6 +6646,7 @@ file.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+file.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 file.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -6844,6 +6866,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+gc.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 gc.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -7063,6 +7086,7 @@ goruby.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+goruby.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 goruby.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -7266,6 +7290,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+hash.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 hash.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -7458,6 +7483,7 @@ inits.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+inits.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 inits.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -7654,6 +7680,7 @@ io.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+io.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 io.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -7853,6 +7880,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8063,6 +8091,7 @@ iseq.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+iseq.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 iseq.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8278,6 +8307,7 @@ load.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+load.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 load.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8461,6 +8491,7 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+loadpath.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8622,6 +8653,7 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+localeinit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8792,6 +8824,7 @@ main.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+main.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 main.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -8978,6 +9011,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+marshal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 marshal.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -9166,6 +9200,7 @@ math.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+math.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 math.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -9334,6 +9369,7 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+memory_view.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -9524,6 +9560,7 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+miniinit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -9758,6 +9795,7 @@ mjit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+mjit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 mjit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -9979,6 +10017,7 @@ mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -10176,6 +10215,7 @@ node.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+node.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 node.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -10369,6 +10409,7 @@ numeric.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+numeric.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 numeric.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -10568,6 +10609,7 @@ object.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+object.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 object.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -10758,6 +10800,7 @@ pack.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+pack.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 pack.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -10962,6 +11005,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+parse.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 parse.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -11174,6 +11218,7 @@ proc.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+proc.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 proc.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -11393,6 +11438,7 @@ process.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+process.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 process.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -11611,6 +11657,7 @@ ractor.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+ractor.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 ractor.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -11817,6 +11864,7 @@ random.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+random.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 random.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12004,6 +12052,7 @@ range.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+range.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 range.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12194,6 +12243,7 @@ rational.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+rational.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 rational.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12378,6 +12428,7 @@ re.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+re.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 re.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12554,6 +12605,7 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regcomp.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12716,6 +12768,7 @@ regenc.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regenc.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regenc.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -12877,6 +12930,7 @@ regerror.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regerror.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regerror.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13038,6 +13092,7 @@ regexec.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regexec.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regexec.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13203,6 +13258,7 @@ regparse.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regparse.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regparse.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13365,6 +13421,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13577,6 +13634,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+ruby.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 ruby.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13783,6 +13841,7 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+scheduler.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -13963,6 +14022,7 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -14146,6 +14206,7 @@ shape.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+shape.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 shape.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -14355,6 +14416,7 @@ signal.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+signal.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 signal.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -14559,6 +14621,7 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+sprintf.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -14741,6 +14804,7 @@ st.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+st.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 st.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -14907,6 +14971,7 @@ strftime.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+strftime.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 strftime.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -15110,6 +15175,7 @@ string.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+string.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 string.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -15349,6 +15415,7 @@ struct.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+struct.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 struct.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -15551,6 +15618,7 @@ symbol.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+symbol.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 symbol.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -15769,6 +15837,7 @@ thread.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+thread.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 thread.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -15983,6 +16052,7 @@ time.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+time.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 time.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -16173,6 +16243,7 @@ transcode.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+transcode.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 transcode.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -16359,6 +16430,7 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -16529,6 +16601,7 @@ util.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+util.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 util.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -16719,6 +16792,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+variable.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 variable.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -16928,6 +17002,7 @@ version.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+version.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 version.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -17149,6 +17224,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+vm.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 vm.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -17374,6 +17450,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -17574,6 +17651,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -17767,6 +17845,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -17965,6 +18044,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
@@ -18182,6 +18262,7 @@ yjit.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+yjit.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
 yjit.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h

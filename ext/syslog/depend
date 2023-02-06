@@ -51,6 +51,7 @@ syslog.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 syslog.o: $(hdrdir)/ruby/internal/attr/noinline.h
 syslog.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 syslog.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+syslog.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 syslog.o: $(hdrdir)/ruby/internal/attr/pure.h
 syslog.o: $(hdrdir)/ruby/internal/attr/restrict.h
 syslog.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

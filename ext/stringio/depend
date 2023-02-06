@@ -53,6 +53,7 @@ stringio.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 stringio.o: $(hdrdir)/ruby/internal/attr/noinline.h
 stringio.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 stringio.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+stringio.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 stringio.o: $(hdrdir)/ruby/internal/attr/pure.h
 stringio.o: $(hdrdir)/ruby/internal/attr/restrict.h
 stringio.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

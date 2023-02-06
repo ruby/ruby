@@ -52,6 +52,7 @@ recursion.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 recursion.o: $(hdrdir)/ruby/internal/attr/noinline.h
 recursion.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 recursion.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+recursion.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 recursion.o: $(hdrdir)/ruby/internal/attr/pure.h
 recursion.o: $(hdrdir)/ruby/internal/attr/restrict.h
 recursion.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -55,6 +55,7 @@ sha2.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 sha2.o: $(hdrdir)/ruby/internal/attr/noinline.h
 sha2.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 sha2.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+sha2.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 sha2.o: $(hdrdir)/ruby/internal/attr/pure.h
 sha2.o: $(hdrdir)/ruby/internal/attr/restrict.h
 sha2.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -217,6 +218,7 @@ sha2init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+sha2init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/pure.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 sha2init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

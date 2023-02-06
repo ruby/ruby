@@ -52,6 +52,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -212,6 +213,7 @@ inspector.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 inspector.o: $(hdrdir)/ruby/internal/attr/noinline.h
 inspector.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 inspector.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+inspector.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 inspector.o: $(hdrdir)/ruby/internal/attr/pure.h
 inspector.o: $(hdrdir)/ruby/internal/attr/restrict.h
 inspector.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -372,6 +374,7 @@ profile_frames.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/noinline.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+profile_frames.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/pure.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/restrict.h
 profile_frames.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

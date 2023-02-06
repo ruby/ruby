@@ -51,6 +51,7 @@ beg_len_step.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/noinline.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+beg_len_step.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/pure.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/restrict.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

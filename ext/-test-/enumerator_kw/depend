@@ -52,6 +52,7 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noinline.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+enumerator_kw.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/pure.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/restrict.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -52,6 +52,7 @@ readline.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 readline.o: $(hdrdir)/ruby/internal/attr/noinline.h
 readline.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 readline.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+readline.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 readline.o: $(hdrdir)/ruby/internal/attr/pure.h
 readline.o: $(hdrdir)/ruby/internal/attr/restrict.h
 readline.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

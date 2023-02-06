@@ -52,6 +52,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -213,6 +214,7 @@ leap_second.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/noinline.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+leap_second.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/pure.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/restrict.h
 leap_second.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -377,6 +379,7 @@ new.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 new.o: $(hdrdir)/ruby/internal/attr/noinline.h
 new.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 new.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+new.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 new.o: $(hdrdir)/ruby/internal/attr/pure.h
 new.o: $(hdrdir)/ruby/internal/attr/restrict.h
 new.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

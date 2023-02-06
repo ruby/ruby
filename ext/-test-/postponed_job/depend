@@ -53,6 +53,7 @@ postponed_job.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/noinline.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+postponed_job.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/pure.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/restrict.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
