@@ -84,6 +84,15 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: 0, rm: dst_reg],
           imm: imm32(src_imm),
         )
+      # ADD r/m64, r64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+        # REX.W + 01 /r
+        # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x01,
+          mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
+        )
       else
         raise NotImplementedError, "add: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end

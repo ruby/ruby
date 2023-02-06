@@ -349,6 +349,7 @@ generator = BindingGenerator.new(
     UINT: %w[
       BOP_LT
       BOP_MINUS
+      BOP_PLUS
       INTEGER_REDEFINED_OP_FLAG
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED

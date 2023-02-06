@@ -265,6 +265,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(BOP_MINUS) }
   end
 
+  def C.BOP_PLUS
+    Primitive.cexpr! %q{ UINT2NUM(BOP_PLUS) }
+  end
+
   def C.INTEGER_REDEFINED_OP_FLAG
     Primitive.cexpr! %q{ UINT2NUM(INTEGER_REDEFINED_OP_FLAG) }
   end

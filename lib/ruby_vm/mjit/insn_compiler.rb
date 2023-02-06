@@ -87,7 +87,7 @@ module RubyVM::MJIT
       # branchnil
       # once
       # opt_case_dispatch
-      # opt_plus
+      when :opt_plus then opt_plus(jit, ctx, asm)
       when :opt_minus then opt_minus(jit, ctx, asm)
       # opt_mult
       # opt_div
@@ -250,8 +250,8 @@ module RubyVM::MJIT
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], :rax)
 
       # Return a value (for compile_leave_exit)
-      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
-      asm.mov(:rax, [SP])
+      ret_opnd = ctx.stack_pop
+      asm.mov(:rax, ret_opnd)
 
       # Set caller's SP and push a value to its stack (for JIT)
       asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # Note: SP is in the position after popping a receiver and arguments
@@ -324,7 +324,52 @@ module RubyVM::MJIT
     # branchnil
     # once
     # opt_case_dispatch
-    # opt_plus
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_plus(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_obj  = jit.peek_at_stack(0)
+
+      if fixnum?(comptime_recv) && fixnum?(comptime_obj)
+        # Generate a side exit before popping operands
+        side_exit = side_exit(jit, ctx)
+
+        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_PLUS)
+          return CantCompile
+        end
+
+        obj_opnd  = ctx.stack_pop
+        recv_opnd = ctx.stack_pop
+
+        asm.comment('guard recv is fixnum') # TODO: skip this with type information
+        asm.test(recv_opnd, C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit)
+
+        asm.comment('guard obj is fixnum') # TODO: skip this with type information
+        asm.test(obj_opnd, C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit)
+
+        asm.mov(:rax, recv_opnd)
+        asm.sub(:rax, 1) # untag
+        asm.mov(:rcx, obj_opnd)
+        asm.add(:rax, :rcx)
+        asm.jo(side_exit)
+
+        dst_opnd = ctx.stack_push
+        asm.mov(dst_opnd, :rax)
+
+        KeepCompiling
+      else
+        CantCompile # TODO: delegate to send
+      end
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -335,6 +380,7 @@ module RubyVM::MJIT
         return EndBlock
       end
 
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       comptime_recv = jit.peek_at_stack(1)
       comptime_obj  = jit.peek_at_stack(0)
 
@@ -359,7 +405,7 @@ module RubyVM::MJIT
         asm.mov(:rcx, [SP, C.VALUE.size * obj_index])
         asm.sub(:rax, :rcx)
         asm.jo(side_exit(jit, ctx))
-        asm.add(:rax, 1)
+        asm.add(:rax, 1) # re-tag
         asm.mov([SP, C.VALUE.size * recv_index], :rax)
 
         ctx.stack_pop(1)
@@ -384,6 +430,7 @@ module RubyVM::MJIT
         return EndBlock
       end
 
+      assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       comptime_recv = jit.peek_at_stack(1)
       comptime_obj  = jit.peek_at_stack(0)
 
@@ -668,7 +715,7 @@ module RubyVM::MJIT
       return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
       jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: return_ctx)
       jit_return = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_block_stub(ctx, ocb_asm, jit_return_stub)
+        @exit_compiler.compile_block_stub(return_ctx, ocb_asm, jit_return_stub)
         @ocb.write(ocb_asm)
       end
       jit_return_stub.change_block = proc do |jump_asm, new_addr|
