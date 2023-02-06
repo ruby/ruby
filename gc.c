@@ -3110,7 +3110,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, FALSE, sizeof(struct RTypedData));
+    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -3126,7 +3126,8 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED, sizeof(struct RTypedData));
+    bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
+    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, wb_protected, sizeof(struct RTypedData));
 }
 
 VALUE
