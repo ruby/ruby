@@ -1315,7 +1315,11 @@ fn guard_object_is_array(
     asm.comment("guard object is array");
 
     // Pull out the type mask
-    let flags_opnd = Opnd::mem(VALUE_BITS, object_opnd, RUBY_OFFSET_RBASIC_FLAGS);
+    let object_reg = match object_opnd {
+        Opnd::Reg(_) => object_opnd,
+        _ => asm.load(object_opnd),
+    };
+    let flags_opnd = Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS);
     let flags_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
 
     // Compare the result with T_ARRAY
@@ -1431,22 +1435,7 @@ fn gen_expandarray(
         return KeepCompiling;
     }
 
-    // Pull out the embed flag to check if it's an embedded array.
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-
-    // Move the length of the embedded array into REG1.
-    let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
-    let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
-
-    // Conditionally move the length of the heap array into REG1.
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
-    let array_len_opnd = Opnd::mem(
-        (8 * size_of::<std::os::raw::c_long>()) as u8,
-        asm.load(array_opnd),
-        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
-    );
-    let array_len_opnd = asm.csel_nz(emb_len_opnd, array_len_opnd);
+    let array_len_opnd = get_array_len(asm, array_reg);
 
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
@@ -4907,6 +4896,57 @@ fn gen_send_cfunc(
     EndBlock
 }
 
+// Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
+// and use Opnd::Mem to save registers.
+fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
+    asm.comment("get array length for embedded or heap");
+
+    // Pull out the embed flag to check if it's an embedded array.
+    let array_reg = match array_opnd {
+        Opnd::Reg(_) => array_opnd,
+        _ => asm.load(array_opnd),
+    };
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+
+    // Get the length of the array
+    let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
+    let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
+
+    // Conditionally move the length of the heap array
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+
+    let array_reg = match array_opnd {
+        Opnd::Reg(_) => array_opnd,
+        _ => asm.load(array_opnd),
+    };
+    let array_len_opnd = Opnd::mem(
+        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
+    );
+
+    // Select the array length value
+    asm.csel_nz(emb_len_opnd, array_len_opnd)
+}
+
+// Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
+    asm.comment("get array pointer for embedded or heap");
+
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_ptr_opnd = Opnd::mem(
+        (8 * size_of::<usize>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+    );
+    // Load the address of the embedded array
+    // (struct RArray *)(obj)->as.ary
+    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+    asm.csel_nz(ary_opnd, heap_ptr_opnd)
+}
+
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
@@ -4961,17 +5001,7 @@ fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, o
     // Need to repeat this here to deal with register allocation
     let array_reg = asm.load(ctx.stack_opnd(0));
 
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
-    let heap_ptr_opnd = Opnd::mem(
-        (8 * size_of::<usize>()) as u8,
-        array_reg,
-        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
-    );
-    // Load the address of the embedded array
-    // (struct RArray *)(obj)->as.ary
-    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
-    let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+    let ary_opnd = get_array_ptr(asm, array_reg);
 
     let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
 
@@ -5372,8 +5402,20 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow));
 
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
+    let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
+         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
+    };
+
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
+        // If block_arg0_splat, we still need side exits after this, but
+        // doing push_splat_args here disallows it. So bail out.
+        if block_arg0_splat {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            return CantCompile;
+        }
 
         let array = jit_peek_at_stack(jit, ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
@@ -5420,6 +5462,13 @@ fn gen_send_iseq(
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
+
+        // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
+        // but doing_kw_call means it's not a simple ISEQ.
+        if block_arg0_splat {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            return CantCompile;
+        }
 
         // Number of positional arguments the callee expects before the first
         // keyword argument
@@ -5552,6 +5601,41 @@ fn gen_send_iseq(
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
         asm.mov(ctx.stack_opnd(-1), unspec_opnd.into());
+    }
+
+    // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
+    // on vm_callee_setup_block_arg for arg_setup_block. This is done after CALLER_SETUP_ARG
+    // and CALLER_REMOVE_EMPTY_KW_SPLAT, so this implementation is put here. This may need
+    // side exits, so you still need to allow side exits here if block_arg0_splat is true.
+    // Note that you can't have side exits after this arg0 splat.
+    if block_arg0_splat {
+        let arg0_type = ctx.get_opnd_type(StackOpnd(0));
+        let arg0_opnd = ctx.stack_opnd(0);
+
+        // Only handle the case that you don't need to_ary conversion
+        let not_array_exit = counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_not_array);
+        if !arg0_type.is_heap() {
+            guard_object_is_heap(asm, arg0_opnd, not_array_exit);
+        }
+        if !arg0_type.is_array() {
+            guard_object_is_array(asm, arg0_opnd, not_array_exit);
+        }
+
+        // Only handle the same that the array length == ISEQ's lead_num (most common)
+        let arg0_len_opnd = get_array_len(asm, arg0_opnd);
+        let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
+        asm.cmp(arg0_len_opnd, lead_num.into());
+        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_wrong_len));
+
+        let arg0_reg = asm.load(arg0_opnd);
+        let array_opnd = get_array_ptr(asm, arg0_reg);
+        asm.comment("push splat arg0 onto the stack");
+        ctx.stack_pop(argc.try_into().unwrap());
+        for i in 0..lead_num {
+            let stack_opnd = ctx.stack_push(Type::Unknown);
+            asm.mov(stack_opnd, Opnd::mem(64, array_opnd, SIZEOF_VALUE_I32 * i));
+        }
+        argc = lead_num;
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
@@ -6344,13 +6428,8 @@ fn gen_invokeblock(
             tag_changed_exit,
         );
 
-        // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
-        if argc == 1 && unsafe { get_iseq_flags_has_lead(comptime_iseq) && !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_splat);
-            return CantCompile;
-        }
 
         asm.comment("guard known ISEQ");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));

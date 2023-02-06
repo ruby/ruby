@@ -145,6 +145,15 @@ impl Type {
         }
     }
 
+    /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
+    pub fn is_array(&self) -> bool {
+        match self {
+            Type::TArray => true,
+            Type::CArray => true,
+            _ => false,
+        }
+    }
+
     /// Returns an Option with the T_ value type if it is known, otherwise None
     pub fn known_value_type(&self) -> Option<ruby_value_type> {
         match self {
