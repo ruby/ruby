@@ -259,6 +259,7 @@ class RDoc::Task < Rake::TaskLib
         args = opts + @rdoc_files
 
         $stderr.puts "rdoc #{args.join ' '}" if Rake.application.options.trace
+        RDoc::RDoc.new.document args
       end
     end
 
