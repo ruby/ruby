@@ -27,12 +27,15 @@ It is simple, straightforward, and extensible.
   well as Windows, macOS, etc.) cf.
   https://github.com/ruby/ruby/blob/master/doc/maintainers.rdoc#label-Platform+Maintainers
 
-## How to get Ruby with Git
+## How to get Ruby
 
 For a complete list of ways to install Ruby, including using third-party tools
 like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
+
+Our official distribution site is https://cache.ruby-lang.org/pub/ruby/. You can download
+the whole archive of the release packages and the snapshot of the repository.
 
 The mirror of the Ruby source tree can be checked out with the following command:
 
