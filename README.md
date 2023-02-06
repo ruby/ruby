@@ -41,6 +41,8 @@ The mirror of the Ruby source tree can be checked out with the following command
 
     $ git clone https://github.com/ruby/ruby.git
 
+### Download with Git
+
 There are some other branches under development. Try the following command
 to see the list of branches:
 
