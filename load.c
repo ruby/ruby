@@ -850,8 +850,7 @@ load_lock(rb_vm_t *vm, const char *ftptr, bool warn)
         st_insert(loading_tbl, (st_data_t)ftptr, data);
         return (char *)ftptr;
     }
-
-    if (warn && rb_thread_shield_owned((VALUE)data)) {
+    if (warn) {
         VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
         rb_backtrace_each(rb_str_append, warning);
         rb_warning("%"PRIsVALUE, warning);
