@@ -54,6 +54,16 @@ module RubyVM::MJIT
 
     def add(dst, src)
       case [dst, src]
+      # ADD r/m64, imm8 (Mod 00: [reg])
+      in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+        # REX.W + 83 /0 ib
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
+          imm: imm8(src_imm),
+        )
       # ADD r/m64, imm8 (Mod 11: reg)
       in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
         # REX.W + 83 /0 ib
@@ -64,15 +74,15 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: 0, rm: dst_reg],
           imm: imm8(src_imm),
         )
-      # ADD r/m64, imm8 (Mod 00: [reg])
-      in [[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
-        # REX.W + 83 /0 ib
+      # ADD r/m64 imm32 (Mod 11: reg)
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+        # REX.W + 81 /0 id
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
           prefix: REX_W,
-          opcode: 0x83,
-          mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
-          imm: imm8(src_imm),
+          opcode: 0x81,
+          mod_rm: ModRM[mod: Mod11, reg: 0, rm: dst_reg],
+          imm: imm32(src_imm),
         )
       else
         raise NotImplementedError, "add: not-implemented operands: #{dst.inspect}, #{src.inspect}"

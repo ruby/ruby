@@ -508,6 +508,7 @@ module RubyVM::MJIT
 
       if flags & C.VM_CALL_KW_SPLAT != 0
         # recv_index calculation may not work for this
+        asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
       assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
@@ -525,12 +526,14 @@ module RubyVM::MJIT
         asm.jne(side_exit(jit, ctx))
       else
         # TODO: support more classes
+        asm.incr_counter(:send_guard_known_object)
         return CantCompile
       end
 
       # Do method lookup (vm_cc_cme(cc) != NULL)
       cme = C.rb_callable_method_entry(comptime_recv_klass, mid)
       if cme.nil?
+        asm.incr_counter(:send_missing_cme)
         return CantCompile # We don't support vm_call_method_name
       end
 
@@ -541,9 +544,11 @@ module RubyVM::MJIT
       when C.METHOD_VISI_PRIVATE
         # Allow only callsites without a receiver
         if flags & C.VM_CALL_FCALL == 0
+          asm.incr_counter(:send_private)
           return CantCompile
         end
       when C.METHOD_VISI_PROTECTED
+        asm.incr_counter(:send_protected)
         return CantCompile # TODO: support this
       else
         raise 'unreachable'
@@ -564,6 +569,7 @@ module RubyVM::MJIT
       when C.VM_METHOD_TYPE_ISEQ
         jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
       else
+        asm.incr_counter(:send_not_iseq)
         return CantCompile
       end
     end
@@ -582,6 +588,7 @@ module RubyVM::MJIT
 
       if flags & C.VM_CALL_TAILCALL != 0
         # We don't support vm_call_iseq_setup_tailcall
+        asm.incr_counter(:send_tailcall)
         return CantCompile
       end
       jit_call_iseq_setup_normal(jit, ctx, asm, ci, cme, flags, argc, iseq)
@@ -612,13 +619,14 @@ module RubyVM::MJIT
     def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
       # TODO: stack overflow check
 
-      local_size = iseq.body.local_table_size
-      if local_size > 0
-        # TODO: support local variables
-        return CantCompile
+      local_size = iseq.body.local_table_size - iseq.body.param.size
+      local_size.times do |i|
+        asm.comment('set local variables') if i == 0
+        assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
+        local_index = ctx.stack_size + i
+        asm.mov([SP, C.VALUE.size * local_index], Qnil)
       end
 
-      asm.comment('move SP register to callee SP')
       assert_equal(ctx.sp_offset, ctx.stack_size) # TODO: support SP motion
       sp_offset = ctx.stack_size + local_size + 3
       asm.add(SP, C.VALUE.size * sp_offset)
@@ -656,6 +664,7 @@ module RubyVM::MJIT
 
       # Stub cfp->jit_return
       return_ctx = ctx.dup
+      return_ctx.stack_size -= argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop args
       return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
       jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: return_ctx)
       jit_return = Assembler.new.then do |ocb_asm|
@@ -718,10 +727,12 @@ module RubyVM::MJIT
     def jit_caller_setup_arg(jit, ctx, asm, flags)
       if flags & C.VM_CALL_ARGS_SPLAT != 0
         # We don't support vm_caller_setup_arg_splat
+        asm.incr_counter(:send_args_splat)
         return CantCompile
       end
       if flags & (C.VM_CALL_KWARG | C.VM_CALL_KW_SPLAT) != 0
         # We don't support keyword args either
+        asm.incr_counter(:send_kwarg)
         return CantCompile
       end
     end

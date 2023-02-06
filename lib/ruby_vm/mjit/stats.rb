@@ -34,6 +34,8 @@ module RubyVM::MJIT
       stats = runtime_stats
       $stderr.puts("***MJIT: Printing MJIT statistics on exit***")
 
+      print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
+
       $stderr.puts "side_exit_count:       #{format('%10d', stats[:side_exit_count])}"
       $stderr.puts "total_insns_count:     #{format('%10d', stats[:total_insns_count])}" if stats.key?(:total_insns_count)
       $stderr.puts "vm_insns_count:        #{format('%10d', stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)
@@ -41,6 +43,28 @@ module RubyVM::MJIT
       $stderr.puts "ratio_in_mjit:         #{format('%9.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
 
       print_exit_counts(stats)
+    end
+
+    def print_counters(stats, prefix:, prompt:)
+      $stderr.puts("#{prompt}: ")
+      counters = stats.filter { |key, _| key.start_with?(prefix) }
+      counters.filter! { |_, value| value != 0 }
+      counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
+
+      if counters.empty?
+        $stderr.puts("    (all relevant counters are zero)")
+        return
+      end
+
+      counters = counters.to_a
+      counters.sort_by! { |(_, counter_value)| counter_value }
+      longest_name_length = counters.max_by { |(name, _)| name.length }.first.length
+      total = counters.sum { |(_, counter_value)| counter_value }
+
+      counters.reverse_each do |(name, value)|
+        percentage = value.fdiv(total) * 100
+        $stderr.printf("    %*s %10d (%4.1f%%)\n", longest_name_length, name, value, percentage)
+      end
     end
 
     def print_exit_counts(stats, how_many: 20, padding: 2)
