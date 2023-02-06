@@ -34,9 +34,19 @@ class Gem::Commands::ExecCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
-  # TODO(segiddins): add a proper description!
   def description # :nodoc:
     <<-EOF
+The exec command handles installing (if necessary) and running an executable
+from a gem, regardless of whether that gem is currently installed.
+
+The exec command can be thought of as a shortcut to running `gem install` and
+then the executable from the installed gem.
+
+For example, `gem exec rails new .` will run `rails new .` in the current
+directory, without having to manually run `gem install rails`.
+Additionally, the exec command ensures the most recent version of the gem
+is used (unless run with `--conservative`), and that the gem is not installed
+to the same gem path as user-installed gems.
     EOF
   end
 
