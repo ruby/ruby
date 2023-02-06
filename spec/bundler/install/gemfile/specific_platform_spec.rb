@@ -180,7 +180,7 @@ RSpec.describe "bundle install with specific platforms" do
       lockfile <<-L
         GIT
           remote: #{lib_path("pg_array_parser-1.0")}
-          revision: #{git.ref_for("master")}
+          revision: #{git.ref_for("main")}
           specs:
             pg_array_parser (1.0-java)
             pg_array_parser (1.0)

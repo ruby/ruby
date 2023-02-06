@@ -5,7 +5,7 @@ require_relative '../deprecate'
 
 class Gem::Commands::ServerCommand < Gem::Command
   extend Gem::Deprecate
-  rubygems_deprecate_command
+  rubygems_deprecate_command("3.3.0")
 
   def initialize
     super 'server', 'Documentation and gem repository HTTP server',

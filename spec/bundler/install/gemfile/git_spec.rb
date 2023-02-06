@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with git sources" do
-  describe "when floating on master" do
+  describe "when floating on main" do
     before :each do
       build_git "foo" do |s|
         s.executables = "foobar"
@@ -51,7 +51,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle "update foo"
 
-      sha = git.ref_for("master", 11)
+      sha = git.ref_for("main", 11)
       spec_file = default_bundle_path.join("bundler/gems/foo-1.0-#{sha}/foo.gemspec").to_s
       ruby_code = Gem::Specification.load(spec_file).to_ruby
       file_code = File.read(spec_file)
@@ -223,12 +223,12 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "works when the revision is a non-head ref" do
-      # want to ensure we don't fallback to master
+      # want to ensure we don't fallback to main
       update_git "foo", :path => lib_path("foo-1.0") do |s|
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 master~1", :dir => lib_path("foo-1.0"))
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
@@ -259,12 +259,12 @@ RSpec.describe "bundle install with git sources" do
         end
       G
 
-      # want to ensure we don't fallback to master
+      # want to ensure we don't fallback to main
       update_git "foo", :path => lib_path("foo-1.0") do |s|
         s.write("lib/foo.rb", "raise 'FAIL'")
       end
 
-      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 master~1", :dir => lib_path("foo-1.0"))
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
       # want to ensure we don't fallback to HEAD
       update_git "foo", :path => lib_path("foo-1.0"), :branch => "rando" do |s|
@@ -288,7 +288,7 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "does not download random non-head refs" do
-      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 master~1", :dir => lib_path("foo-1.0"))
+      sys_exec("git update-ref -m \"Bundler Spec!\" refs/bundler/1 main~1", :dir => lib_path("foo-1.0"))
 
       bundle "config set global_gem_cache true"
 
@@ -418,16 +418,13 @@ RSpec.describe "bundle install with git sources" do
 
   describe "when specifying local override" do
     it "uses the local repository instead of checking a new one out" do
-      # We don't generate it because we actually don't need it
-      # build_git "rack", "0.8"
-
       build_git "rack", "0.8", :path => lib_path("local-rack") do |s|
         s.write "lib/rack.rb", "puts :LOCAL"
       end
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -448,7 +445,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -468,7 +465,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -484,7 +481,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       lockfile0 = File.read(bundled_app_lock)
@@ -506,7 +503,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       lockfile0 = File.read(bundled_app_lock)
@@ -526,7 +523,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -590,12 +587,12 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install, :raise_on_error => false
-      expect(err).to match(/is using branch another but Gemfile specifies master/)
+      expect(err).to match(/is using branch another but Gemfile specifies main/)
     end
 
     it "explodes on invalid revision on install" do
@@ -607,7 +604,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -624,7 +621,7 @@ RSpec.describe "bundle install with git sources" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -873,7 +870,7 @@ RSpec.describe "bundle install with git sources" do
 
   it "ignores submodules if :submodule is not passed" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
-    system(*%W[git config --global protocol.file.allow always])
+    system("git", "config", "--global", "protocol.file.allow", "always")
 
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
@@ -895,7 +892,7 @@ RSpec.describe "bundle install with git sources" do
 
   it "handles repos with submodules" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
-    system(*%W[git config --global protocol.file.allow always])
+    system("git", "config", "--global", "protocol.file.allow", "always")
 
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
@@ -916,7 +913,7 @@ RSpec.describe "bundle install with git sources" do
 
   it "does not warn when deiniting submodules" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
-    system(*%W[git config --global protocol.file.allow always])
+    system("git", "config", "--global", "protocol.file.allow", "always")
 
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0"
@@ -1534,7 +1531,7 @@ In Gemfile:
 
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
-          gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
+          gem "foo", :git => "#{lib_path("foo")}", :branch => "main"
         G
 
         bundle :install

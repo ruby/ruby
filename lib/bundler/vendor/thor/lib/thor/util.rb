@@ -211,7 +211,7 @@ class Bundler::Thor
       #
       def globs_for(path)
         path = escape_globs(path)
-        ["#{path}/Thorfile", "#{path}/*.thor", "#{path}/tasks/*.thor", "#{path}/lib/tasks/*.thor"]
+        ["#{path}/Thorfile", "#{path}/*.thor", "#{path}/tasks/*.thor", "#{path}/lib/tasks/**/*.thor"]
       end
 
       # Return the path to the ruby interpreter taking into account multiple

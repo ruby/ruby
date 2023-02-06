@@ -203,7 +203,7 @@ RSpec.describe "real source plugins" do
               def initialize(opts)
                 super
 
-                @ref = options["ref"] || options["branch"] || options["tag"] || "master"
+                @ref = options["ref"] || options["branch"] || options["tag"] || "main"
                 @unlocked = false
               end
 
@@ -247,7 +247,7 @@ RSpec.describe "real source plugins" do
 
               def options_to_lock
                 opts = {"revision" => revision}
-                opts["ref"] = ref if ref != "master"
+                opts["ref"] = ref if ref != "main"
                 opts
               end
 
@@ -435,7 +435,7 @@ RSpec.describe "real source plugins" do
     describe "bundle cache with gitp" do
       it "copies repository to vendor cache and uses it" do
         git = build_git "foo"
-        ref = git.ref_for("master", 11)
+        ref = git.ref_for("main", 11)
 
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo2)}" # plugin source

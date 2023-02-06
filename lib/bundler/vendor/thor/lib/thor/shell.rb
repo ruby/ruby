@@ -21,7 +21,7 @@ class Bundler::Thor
   end
 
   module Shell
-    SHELL_DELEGATED_METHODS = [:ask, :error, :set_color, :yes?, :no?, :say, :say_status, :print_in_columns, :print_table, :print_wrapped, :file_collision, :terminal_width]
+    SHELL_DELEGATED_METHODS = [:ask, :error, :set_color, :yes?, :no?, :say, :say_error, :say_status, :print_in_columns, :print_table, :print_wrapped, :file_collision, :terminal_width]
     attr_writer :shell
 
     autoload :Basic, File.expand_path("shell/basic", __dir__)

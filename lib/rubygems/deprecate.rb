@@ -96,7 +96,7 @@ module Gem::Deprecate
   end
 
   # Deprecation method to deprecate Rubygems commands
-  def rubygems_deprecate_command
+  def rubygems_deprecate_command(version = Gem::Deprecate.next_rubygems_major_version)
     class_eval do
       define_method "deprecated?" do
         true
@@ -104,7 +104,7 @@ module Gem::Deprecate
 
       define_method "deprecation_warning" do
         msg = [ "#{self.command} command is deprecated",
-                ". It will be removed in Rubygems #{Gem::Deprecate.next_rubygems_major_version}.\n",
+                ". It will be removed in Rubygems #{version}.\n",
         ]
 
         alert_warning "#{msg.join}" unless Gem::Deprecate.skip
