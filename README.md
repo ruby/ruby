@@ -37,11 +37,11 @@ https://www.ruby-lang.org/en/downloads/
 Our official distribution site is https://cache.ruby-lang.org/pub/ruby/. You can download
 the whole archive of the release packages and the snapshot of the repository.
 
+### Download with Git
+
 The mirror of the Ruby source tree can be checked out with the following command:
 
     $ git clone https://github.com/ruby/ruby.git
-
-### Download with Git
 
 There are some other branches under development. Try the following command
 to see the list of branches:
