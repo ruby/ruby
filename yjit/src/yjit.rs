@@ -50,12 +50,12 @@ pub extern "C" fn rb_yjit_init_rust() {
 
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
-    // TODO: set a panic handler so the we don't print a message
-    //       everytime we panic.
     let result = std::panic::catch_unwind(|| {
         Invariants::init();
         CodegenGlobals::init();
         YjitExitLocations::init();
+
+        rb_bug_panic_hook();
 
         // YJIT enabled and initialized successfully
         YJIT_ENABLED.store(true, Ordering::Release);
@@ -65,6 +65,31 @@ pub extern "C" fn rb_yjit_init_rust() {
         println!("YJIT: rb_yjit_init_rust() panicked. Aborting.");
         std::process::abort();
     }
+}
+
+/// At the moment, we abort in all cases we panic.
+/// To aid with getting diagnostics in the wild without requiring
+/// people to set RUST_BACKTRACE=1, register a panic hook that crash using rb_bug().
+/// rb_bug() might not be as good at printing a call trace as Rust's stdlib, but
+/// it dumps some other info that might be relevant.
+///
+/// In case we want to do start doing fancier exception handling with panic=unwind,
+/// we can revisit this later. For now, this helps to get us good bug reports.
+fn rb_bug_panic_hook() {
+    use std::panic;
+    use std::io::{stderr, Write};
+
+    // Probably the default hook. We do this very early during process boot.
+    let previous_hook = panic::take_hook();
+
+    panic::set_hook(Box::new(move |panic_info| {
+        // Not using `eprintln` to avoid double panic.
+        let _ = stderr().write_all(b"ruby: YJIT has panicked. More info to follow...\n");
+
+        previous_hook(panic_info);
+
+        unsafe { rb_bug(b"YJIT panicked\0".as_ref().as_ptr() as *const raw::c_char); }
+    }));
 }
 
 /// Called from C code to begin compiling a function
