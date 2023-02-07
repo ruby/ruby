@@ -281,7 +281,7 @@ mjit_child_after_fork(void)
 void
 mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
-    // TODO: implement
+    rb_gc_mark(body->mjit_blocks);
 }
 
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
@@ -401,7 +401,7 @@ rb_mjit_block_stub_hit(VALUE block_stub, int sp_offset)
 }
 
 void *
-rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int branch_target_p)
+rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 {
     VALUE result;
 
@@ -415,7 +415,7 @@ rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int branch_target_p)
     cfp->sp += sp_offset; // preserve stack values, also using the actual sp_offset to make jit.peek_at_stack work
 
     VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
-    result = rb_funcall(rb_MJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(branch_target_p));
+    result = rb_funcall(rb_MJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(target0_p));
 
     cfp->sp -= sp_offset; // reset for consistency with the code without the stub
 

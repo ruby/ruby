@@ -81,6 +81,9 @@ module RubyVM::MJIT
             end
 
             define_method("#{member}=") do |value|
+              if to_ruby
+                value = C.to_value(value)
+              end
               self[member] = value
             end
           end

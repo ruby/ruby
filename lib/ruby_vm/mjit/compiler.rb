@@ -63,10 +63,7 @@ module RubyVM::MJIT
       asm.comment("Block: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}")
       compile_prologue(asm)
       compile_block(asm, jit:)
-      @cb.write(asm).tap do |addr|
-        jit.block.start_addr = addr
-        iseq.body.jit_func = addr
-      end
+      iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
     end
@@ -99,76 +96,62 @@ module RubyVM::MJIT
           @cb.write(asm)
         end
         new_addr
-      end.tap do |addr|
-        jit.block.start_addr = addr
       end
     end
 
     # Compile a branch stub.
     # @param branch_stub [RubyVM::MJIT::BranchStub]
     # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
-    # @param branch_target_p [TrueClass,FalseClass]
+    # @param target0_p [TrueClass,FalseClass]
     # @return [Integer] The starting address of the compiled branch stub
-    def branch_stub_hit(branch_stub, cfp, branch_target_p)
+    def branch_stub_hit(branch_stub, cfp, target0_p)
       # Update cfp->pc for `jit.at_current_insn?`
-      pc = branch_target_p ? branch_stub.branch_target_pc : branch_stub.fallthrough_pc
-      cfp.pc = pc
+      target = target0_p ? branch_stub.target0 : branch_stub.target1
+      cfp.pc = target.pc
 
       # Prepare the jump target
       new_asm = Assembler.new.tap do |asm|
         jit = JITState.new(iseq: branch_stub.iseq, cfp:)
-        compile_block(asm, jit:, pc:, ctx: branch_stub.ctx.dup)
+        compile_block(asm, jit:, pc: target.pc, ctx: target.ctx.dup)
       end
 
       # Rewrite the branch stub
       if @cb.write_addr == branch_stub.end_addr
-        # If the branch stub's jump is the last code, overwrite the jump with the new code.
+        # If the branch stub's jump is the last code, allow overwriting part of
+        # the old branch code with the new block code.
         @cb.set_write_addr(branch_stub.start_addr)
+        branch_stub.shape = target0_p ? Next0 : Next1
         Assembler.new.tap do |branch_asm|
-          if branch_target_p
-            branch_stub.branch_target_next.call(branch_asm)
-          else
-            branch_stub.fallthrough_next.call(branch_asm)
-          end
+          branch_stub.compile.call(branch_asm)
           @cb.write(branch_asm)
         end
 
-        # Compile a fallthrough over the jump
-        if branch_target_p
-          branch_stub.branch_target_addr = @cb.write(new_asm)
+        # Compile a fallthrough right after the new branch code
+        if target0_p
+          branch_stub.target0.address = @cb.write(new_asm)
         else
-          branch_stub.fallthrough_addr = @cb.write(new_asm)
+          branch_stub.target1.address = @cb.write(new_asm)
         end
       else
-        # Otherwise, just prepare the new code somewhere
-        if branch_target_p
-          unless @cb.include?(branch_stub.branch_target_addr)
-            branch_stub.branch_target_addr = @cb.write(new_asm)
-          end
+        # Otherwise, just prepare the new block somewhere
+        if target0_p
+          branch_stub.target0.address = @cb.write(new_asm)
         else
-          unless @cb.include?(branch_stub.fallthrough_addr)
-            branch_stub.fallthrough_addr = @cb.write(new_asm)
-          end
+          branch_stub.target1.address = @cb.write(new_asm)
         end
 
         # Update jump destinations
-        branch_asm = Assembler.new
-        if branch_stub.end_addr == branch_stub.branch_target_addr # branch_target_next has been used
-          branch_stub.branch_target_next.call(branch_asm)
-        elsif branch_stub.end_addr == branch_stub.fallthrough_addr # fallthrough_next has been used
-          branch_stub.fallthrough_next.call(branch_asm)
-        else
-          branch_stub.neither_next.call(branch_asm)
-        end
         @cb.with_write_addr(branch_stub.start_addr) do
+          branch_asm = Assembler.new
+          branch_stub.compile.call(branch_asm)
           @cb.write(branch_asm)
         end
       end
 
-      if branch_target_p
-        branch_stub.branch_target_addr
+      if target0_p
+        branch_stub.target0.address
       else
-        branch_stub.fallthrough_addr
+        branch_stub.target1.address
       end
     end
 

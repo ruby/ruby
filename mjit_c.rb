@@ -45,7 +45,7 @@ module RubyVM::MJIT # :nodoc: all
 
     def rb_mjit_branch_stub_hit
       Primitive.cstmt! %{
-        extern void *rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int branch_target_p);
+        extern void *rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
         return SIZET2NUM((size_t)rb_mjit_branch_stub_hit);
       }
     end
@@ -703,7 +703,7 @@ module RubyVM::MJIT # :nodoc: all
       mandatory_only_iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mandatory_only_iseq)")],
       jit_func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
       total_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)")],
-      mjit_unit: [CType::Pointer.new { self.rb_mjit_unit }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mjit_unit)")],
+      mjit_blocks: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mjit_blocks)"), true],
     )
   end
 

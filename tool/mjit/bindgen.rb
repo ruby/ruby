@@ -437,11 +437,14 @@ generator = BindingGenerator.new(
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
   },
   ruby_fields: {
+    rb_iseq_constant_body: %w[
+      mjit_blocks
+    ],
     rb_iseq_location_struct: %w[
       base_label
       label
       pathobj
-    ]
+    ],
   },
 )
 generator.generate(nodes)

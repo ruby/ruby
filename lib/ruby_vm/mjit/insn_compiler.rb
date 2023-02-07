@@ -279,45 +279,38 @@ module RubyVM::MJIT
       ctx.stack_pop(1)
 
       # Set stubs
-      # TODO: reuse already-compiled blocks jumped from different blocks
       branch_stub = BranchStub.new(
         iseq: jit.iseq,
-        ctx:  ctx.dup,
-        branch_target_pc: jit.pc + (jit.insn.len + jit.operand(0)) * C.VALUE.size,
-        fallthrough_pc:   jit.pc + jit.insn.len * C.VALUE.size,
+        shape: Default,
+        target0: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * (jit.insn.len + jit.operand(0))), # branch target
+        target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                    # fallthrough
       )
-      branch_stub.branch_target_addr = Assembler.new.then do |ocb_asm|
+      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
         @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, true)
         @ocb.write(ocb_asm)
       end
-      branch_stub.fallthrough_addr = Assembler.new.then do |ocb_asm|
+      branch_stub.target1.address = Assembler.new.then do |ocb_asm|
         @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, false)
         @ocb.write(ocb_asm)
       end
 
-      # Prepare codegen for all cases
-      branch_stub.branch_target_next = proc do |branch_asm|
+      # Jump to target0 on jz
+      branch_stub.compile = proc do |branch_asm|
+        branch_asm.comment("branchunless #{branch_stub.shape}")
         branch_asm.stub(branch_stub) do
-          branch_asm.comment('branch_target_next')
-          branch_asm.jnz(branch_stub.fallthrough_addr)
+          case branch_stub.shape
+          in Default
+            branch_asm.jz(branch_stub.target0.address)
+            branch_asm.jmp(branch_stub.target1.address)
+          in Next0
+            branch_asm.jnz(branch_stub.target1.address)
+          in Next1
+            branch_asm.jz(branch_stub.target0.address)
+          end
         end
       end
-      branch_stub.fallthrough_next = proc do |branch_asm|
-        branch_asm.stub(branch_stub) do
-          branch_asm.comment('fallthrough_next')
-          branch_asm.jz(branch_stub.branch_target_addr)
-        end
-      end
-      branch_stub.neither_next = proc do |branch_asm|
-        branch_asm.stub(branch_stub) do
-          branch_asm.comment('neither_next')
-          branch_asm.jz(branch_stub.branch_target_addr)
-          branch_asm.jmp(branch_stub.fallthrough_addr)
-        end
-      end
+      branch_stub.compile.call(asm)
 
-      # Just jump to stubs
-      branch_stub.neither_next.call(asm)
       EndBlock
     end
 
@@ -598,6 +591,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_protected)
         return CantCompile # TODO: support this
       else
+        # TODO: Change them to a constant and use case-in instead
         raise 'unreachable'
       end
 
