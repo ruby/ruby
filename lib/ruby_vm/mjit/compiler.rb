@@ -32,6 +32,8 @@ module RubyVM::MJIT
   class Compiler
     attr_accessor :write_pos
 
+    IseqBlocks = Hash.new { |h, k| h[k] = {} }
+
     def self.decode_insn(encoded)
       INSNS.fetch(C.rb_vm_insn_decode(encoded))
     end
@@ -77,14 +79,13 @@ module RubyVM::MJIT
       target = target0_p ? branch_stub.target0 : branch_stub.target1
       cfp.pc = target.pc
 
-      # Prepare the jump target
-      new_asm = Assembler.new.tap do |asm|
-        jit = JITState.new(iseq: branch_stub.iseq, cfp:)
-        compile_block(asm, jit:, pc: target.pc, ctx: target.ctx.dup)
-      end
+      # Reuse an existing block if it already exists
+      block = find_block(branch_stub.iseq, target.pc, target.ctx)
 
-      # Rewrite the branch stub
-      if @cb.write_addr == branch_stub.end_addr
+      # If the branch stub's jump is the last code, allow overwriting part of
+      # the old branch code with the new block code.
+      fallthrough = block.nil? && @cb.write_addr == branch_stub.end_addr
+      if fallthrough
         # If the branch stub's jump is the last code, allow overwriting part of
         # the old branch code with the new block code.
         @cb.set_write_addr(branch_stub.start_addr)
@@ -93,22 +94,22 @@ module RubyVM::MJIT
           branch_stub.compile.call(branch_asm)
           @cb.write(branch_asm)
         end
+      end
 
-        # Compile a fallthrough right after the new branch code
-        if target0_p
-          branch_stub.target0.address = @cb.write(new_asm)
-        else
-          branch_stub.target1.address = @cb.write(new_asm)
-        end
+      # Reuse or generate a block
+      if block
+        target.address = block.start_addr
       else
-        # Otherwise, just prepare the new block somewhere
-        if target0_p
-          branch_stub.target0.address = @cb.write(new_asm)
-        else
-          branch_stub.target1.address = @cb.write(new_asm)
+        jit = JITState.new(iseq: branch_stub.iseq, cfp:)
+        target.address = Assembler.new.then do |asm|
+          compile_block(asm, jit:, pc: target.pc, ctx: target.ctx.dup)
+          @cb.write(asm)
         end
+        set_block(branch_stub.iseq, target.pc, target.ctx, jit.block)
+      end
 
-        # Update jump destinations
+      # Re-generate the branch code for non-fallthrough cases
+      unless fallthrough
         @cb.with_write_addr(branch_stub.start_addr) do
           branch_asm = Assembler.new
           branch_stub.compile.call(branch_asm)
@@ -116,11 +117,7 @@ module RubyVM::MJIT
         end
       end
 
-      if target0_p
-        branch_stub.target0.address
-      else
-        branch_stub.target1.address
-      end
+      return target.address
     end
 
     private
@@ -183,6 +180,24 @@ module RubyVM::MJIT
       if C.mjit_opts.stats
         C.rb_mjit_counters[name][0] += 1
       end
+    end
+
+    def mjit_blocks(iseq)
+      iseq.body.mjit_blocks ||= {}
+    end
+
+    # @param [Integer] pc
+    # @param [RubyVM::MJIT::Context] ctx
+    # @return [RubyVM::MJIT::Block,NilClass]
+    def find_block(iseq, pc, ctx)
+      IseqBlocks[iseq.to_i][[pc, ctx]]
+    end
+
+    # @param [Integer] pc
+    # @param [RubyVM::MJIT::Context] ctx
+    # @param [RubyVM::MJIT::Block] block
+    def set_block(iseq, pc, ctx, block)
+      IseqBlocks[iseq.to_i][[pc, ctx]] = block
     end
   end
 end

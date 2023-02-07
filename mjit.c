@@ -281,7 +281,7 @@ mjit_child_after_fork(void)
 void
 mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
 {
-    rb_gc_mark(body->mjit_blocks);
+    // TODO: implement
 }
 
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
