@@ -5,14 +5,17 @@
 1. Install the prerequisite dependencies for building the CRuby interpreter:
 
     * C compiler
+    * OpenSSL 1.1.x or 3.0.x / LibreSSL
+    * libyaml 0.1.7 or later
+    * zlib
+
+    If you want to build from the git repository, you will also need:
+
     * autoconf - 2.67 or later
     * bison - 3.0 or later
     * gperf - 3.0.3 or later
     * ruby - 2.2 or later
         * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
-    * OpenSSL 1.1.x or 3.0.x / LibreSSL
-    * libyaml 0.1.7 or later
-    * zlib
 
 2. Install optional, recommended dependencies:
 
@@ -33,19 +36,33 @@
 
 ## Quick start guide
 
-1. Checkout the CRuby source code:
+1. Download ruby source code:
+
+    1. Build from the tarball:
+
+    Download the latest tarball from [ruby-lang.org](https://www.ruby-lang.org/en/downloads/) and
+    extract it. Example for Ruby 3.0.2:
+
+    ``` shell
+    tar -xzf ruby-3.0.2.tar.gz
+    cd ruby-3.0.2
+    ```
+
+    2. Build from the git repository:
+
+    Checkout the CRuby source code:
 
     ``` shell
     git clone https://github.com/ruby/ruby.git
     ```
 
-2. Generate the configure file:
+    Generate the configure file:
 
     ``` shell
     ./autogen.sh
     ```
 
-3. Create a `build` directory outside of the source directory:
+2. Create a `build` directory outside of the source directory:
 
     ``` shell
     mkdir build && cd build
@@ -53,13 +70,13 @@
 
     While it's not necessary to build in a separate directory, it's good practice to do so.
 
-4. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
+3. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
 
     ``` shell
     mkdir ~/.rubies
     ```
 
-5. Run configure:
+4. Run configure:
 
     ``` shell
     ../configure --prefix="${HOME}/.rubies/ruby-master"
@@ -67,13 +84,13 @@
 
     - If you are frequently building Ruby, add the `--disable-install-doc` flag to not build documentation which will speed up the build process.
 
-6. Build Ruby:
+5. Build Ruby:
 
     ``` shell
     make install
     ```
 
-7. [Run tests](testing_ruby.md) to confirm your build succeeded.
+6. [Run tests](testing_ruby.md) to confirm your build succeeded.
 
 ### Unexplainable Build Errors
 
