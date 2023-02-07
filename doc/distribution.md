@@ -28,6 +28,10 @@ $ make dist
 
 This will create several tarball in the `tmp` directory. The tarball will be named e.g. `ruby-<version>.tar.gz` (several different compression formats will be generated).
 
+## Building the Tarball
+
+See [Building Ruby](contributing/building_ruby.md).
+
 ## Updating the Ruby Standard Library
 
 The Ruby standard library is a collection of Ruby files that are included with Ruby. These files are used to provide the basic functionality of Ruby. The standard library is located in the `lib` directory and is distributed as part of the Ruby tarball.
