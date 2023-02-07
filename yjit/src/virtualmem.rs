@@ -115,6 +115,12 @@ impl<A: Allocator> VirtualMemory<A> {
         self.region_size_bytes
     }
 
+    /// The granularity at which we can control memory permission.
+    /// On Linux, this is the page size that mmap(2) talks about.
+    pub fn system_page_size(&self) -> usize {
+        self.page_size_bytes
+    }
+
     /// Write a single byte. The first write to a page makes it readable.
     pub fn write_byte(&mut self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
         let page_size = self.page_size_bytes;
@@ -200,6 +206,13 @@ impl<A: Allocator> VirtualMemory<A> {
     /// Free a range of bytes. start_ptr must be memory page-aligned.
     pub fn free_bytes(&mut self, start_ptr: CodePtr, size: u32) {
         assert_eq!(start_ptr.into_usize() % self.page_size_bytes, 0);
+
+        // Bounds check the request. We should only free memory we manage.
+        let region_range = self.region_start.as_ptr() as *const u8..self.end_ptr().raw_ptr();
+        let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1).as_usize()).raw_ptr();
+        assert!(region_range.contains(&start_ptr.raw_ptr()));
+        assert!(region_range.contains(&last_byte_to_free));
+
         self.allocator.mark_unused(start_ptr.0.as_ptr(), size);
     }
 }
