@@ -733,7 +733,7 @@ module RubyVM::MJIT
 
       # Jump to a stub for the callee ISEQ
       callee_ctx = Context.new
-      compile_block_stub(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
+      stub_next_block(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
 
       EndBlock
     end
@@ -830,6 +830,30 @@ module RubyVM::MJIT
         end
       end
       block_stub.change_block.call(asm, stub_hit)
+    end
+
+    def stub_next_block(iseq, pc, ctx, asm, comment: 'stub_next_block')
+      branch_stub = BranchStub.new(
+        iseq:,
+        shape: Default,
+        target0: BranchTarget.new(ctx:, pc:),
+      )
+      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
+        @ocb.write(ocb_asm)
+      end
+      branch_stub.compile = proc do |branch_asm|
+        branch_asm.comment(comment)
+        branch_asm.stub(branch_stub) do
+          case branch_stub.shape
+          in Default
+            branch_asm.jmp(branch_stub.target0.address)
+          in Next0
+            # Just write the block without a jump
+          end
+        end
+      end
+      branch_stub.compile.call(asm)
     end
 
     # @param jit [RubyVM::MJIT::JITState]

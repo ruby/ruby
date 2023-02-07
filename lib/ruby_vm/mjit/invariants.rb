@@ -44,6 +44,7 @@ module RubyVM::MJIT
           asm.jmp(block.entry_exit)
           @cb.write(asm)
         end
+        # TODO: re-generate branches that refer to this block
       end
     end
 
