@@ -63,7 +63,7 @@
     ./autogen.sh
     ```
 
-2. Create a `build` directory outside of the source directory:
+2. Create a `build` directory separate from the source directory:
 
     ``` shell
     mkdir build && cd build
