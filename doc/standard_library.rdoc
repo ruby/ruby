@@ -23,6 +23,14 @@ Socket:: Access underlying OS socket implementations
 
 = Default gems
 
+* default gems are shipped with Ruby releases and also available as rubygems.
+* default gems are not uninstallable from Ruby installation.
+* default gems can be updated used by rubygems.
+    * e.g. `gem update json`
+* default gems can be used with bundler environment like `clean_env`.
+* default gems can be used any version on Gemfile.
+    * e.g. `gem "json", ">= 2.6"`
+
 == Libraries
 
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
@@ -98,6 +106,12 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
 = Bundled gems
+
+* bundled gems are shipped with Ruby releases and also available as rubygems.
+* bundled gems are same as normal gems like `rails`, `rack`.
+    * They are only bundled with Ruby releases.
+    * They can be uninstallable from Ruby installation.
+    * They are needed to declare in Gemfile when use with bundler.
 
 == Libraries
 
