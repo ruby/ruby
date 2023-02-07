@@ -1977,6 +1977,7 @@ fn gen_get_ivar(
 ) -> CodegenStatus {
     // If the object has a too complex shape, we exit
     if comptime_receiver.shape_too_complex() {
+        gen_counter_incr!(asm, getivar_too_complex);
         return CantCompile;
     }
 
@@ -2209,8 +2210,13 @@ fn gen_setinstancevariable(
 
     // If the comptime receiver is frozen, writing an IV will raise an exception
     // and we don't want to JIT code to deal with that situation.
+    if comptime_receiver.is_frozen() {
+        gen_counter_incr!(asm, setivar_frozen);
+        return CantCompile;
+    }
     // If the object has a too complex shape, we will also exit
-    if comptime_receiver.is_frozen() || comptime_receiver.shape_too_complex() {
+    if comptime_receiver.shape_too_complex() {
+        gen_counter_incr!(asm, setivar_too_complex);
         return CantCompile;
     }
 
