@@ -71,12 +71,11 @@ module RubyVM::MJIT
       asm.jmp(:rax)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     # @param branch_stub [RubyVM::MJIT::BranchStub]
     # @param target0_p [TrueClass,FalseClass]
-    def compile_branch_stub(jit, ctx, asm, branch_stub, target0_p)
+    def compile_branch_stub(ctx, asm, branch_stub, target0_p)
       # Call rb_mjit_branch_stub_hit
       asm.comment("branch stub hit: #{branch_stub.iseq.body.location.label}@#{C.rb_iseq_path(branch_stub.iseq)}:#{iseq_lineno(branch_stub.iseq, target0_p ? branch_stub.target0.pc : branch_stub.target1.pc)}")
       asm.mov(:rdi, to_value(branch_stub))

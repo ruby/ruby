@@ -286,11 +286,11 @@ module RubyVM::MJIT
         target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                    # fallthrough
       )
       branch_stub.target0.address = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, true)
+        @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
         @ocb.write(ocb_asm)
       end
       branch_stub.target1.address = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_branch_stub(jit, ctx, ocb_asm, branch_stub, false)
+        @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, false)
         @ocb.write(ocb_asm)
       end
 
@@ -707,19 +707,26 @@ module RubyVM::MJIT
       return_ctx = ctx.dup
       return_ctx.stack_size -= argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop args
       return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
-      jit_return_stub = BlockStub.new(iseq: jit.iseq, pc: next_pc, ctx: return_ctx)
-      jit_return = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_block_stub(return_ctx, ocb_asm, jit_return_stub)
+      branch_stub = BranchStub.new(
+        iseq: jit.iseq,
+        shape: Default,
+        target0: BranchTarget.new(ctx: return_ctx, pc: next_pc),
+      )
+      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(return_ctx, ocb_asm, branch_stub, true)
         @ocb.write(ocb_asm)
       end
-      jit_return_stub.change_block = proc do |jump_asm, new_addr|
-        jump_asm.comment('set jit_return to callee CFP')
-        jump_asm.stub(jit_return_stub) do
-          jump_asm.mov(:rax, new_addr)
-          jump_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+      branch_stub.compile = proc do |branch_asm|
+        branch_asm.comment('set jit_return to callee CFP')
+        branch_asm.stub(branch_stub) do
+          case branch_stub.shape
+          in Default
+            branch_asm.mov(:rax, branch_stub.target0.address)
+            branch_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+          end
         end
       end
-      jit_return_stub.change_block.call(asm, jit_return)
+      branch_stub.compile.call(asm)
 
       asm.comment('set callee CFP to ec->cfp')
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
