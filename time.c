@@ -2277,7 +2277,7 @@ extract_vtm(VALUE time, VALUE orig_time, struct time_object *orig_tobj, VALUE su
 {
     wideval_t t;
     const ID id_to_i = idTo_i;
-    struct vtm *vtm = &orig_tobj->vtm; 
+    struct vtm *vtm = &orig_tobj->vtm;
 
 #define EXTRACT_VTM() do { \
         VALUE subsecx; \
