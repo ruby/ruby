@@ -36,6 +36,7 @@ module RubyVM::MJIT
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
 
+      $stderr.puts "compiled_block_count:  #{format('%10d', stats[:compiled_block_count])}"
       $stderr.puts "side_exit_count:       #{format('%10d', stats[:side_exit_count])}"
       $stderr.puts "total_insns_count:     #{format('%10d', stats[:total_insns_count])}" if stats.key?(:total_insns_count)
       $stderr.puts "vm_insns_count:        #{format('%10d', stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)

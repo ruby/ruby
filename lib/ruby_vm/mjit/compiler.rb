@@ -224,6 +224,14 @@ module RubyVM::MJIT
           raise "compiling #{insn.name} returned unexpected status: #{status.inspect}"
         end
       end
+
+      incr_counter(:compiled_block_count)
+    end
+
+    def incr_counter(name)
+      if C.mjit_opts.stats
+        C.rb_mjit_counters[name][0] += 1
+      end
     end
   end
 end

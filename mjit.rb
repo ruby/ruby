@@ -15,7 +15,10 @@ module RubyVM::MJIT
   end
 
   if Primitive.mjit_stats_enabled_p
-    at_exit { print_stats }
+    at_exit do
+      Primitive.mjit_stop_stats
+      print_stats
+    end
   end
 end
 

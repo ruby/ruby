@@ -107,6 +107,7 @@ extern uint8_t *rb_mjit_mem_block;
 #define MJIT_RUNTIME_COUNTERS(...) struct rb_mjit_runtime_counters { size_t __VA_ARGS__; };
 MJIT_RUNTIME_COUNTERS(
     vm_insns_count,
+    mjit_insns_count,
 
     send_kw_splat,
     send_guard_known_object,
@@ -118,7 +119,7 @@ MJIT_RUNTIME_COUNTERS(
     send_kwarg,
     send_tailcall,
 
-    mjit_insns_count
+    compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS
 extern struct rb_mjit_runtime_counters rb_mjit_counters;

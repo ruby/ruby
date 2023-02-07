@@ -491,6 +491,15 @@ mjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
     return RBOOL(mjit_stats_enabled);
 }
 
+// Disable anything that could impact stats. It ends up disabling JIT calls as well.
+static VALUE
+mjit_stop_stats(rb_execution_context_t *ec, VALUE self)
+{
+    mjit_call_p = false;
+    mjit_stats_p = false;
+    return Qnil;
+}
+
 #include "mjit.rbinc"
 
 #endif // USE_MJIT
