@@ -36,13 +36,6 @@ module RubyVM::MJIT # :nodoc: all
       CType::Immediate.parse("size_t").new(addr)
     end
 
-    def rb_mjit_block_stub_hit
-      Primitive.cstmt! %{
-        extern void *rb_mjit_block_stub_hit(VALUE block_stub, int sp_offset);
-        return SIZET2NUM((size_t)rb_mjit_block_stub_hit);
-      }
-    end
-
     def rb_mjit_branch_stub_hit
       Primitive.cstmt! %{
         extern void *rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);

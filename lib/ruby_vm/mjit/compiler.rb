@@ -1,6 +1,5 @@
 require 'ruby_vm/mjit/assembler'
 require 'ruby_vm/mjit/block'
-require 'ruby_vm/mjit/block_stub'
 require 'ruby_vm/mjit/branch_stub'
 require 'ruby_vm/mjit/code_block'
 require 'ruby_vm/mjit/context'
@@ -66,37 +65,6 @@ module RubyVM::MJIT
       iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
       $stderr.puts e.full_message # TODO: check verbose
-    end
-
-    # Continue compilation from a block stub.
-    # @param block_stub [RubyVM::MJIT::BlockStub]
-    # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
-    # @return [Integer] The starting address of the compiled block stub
-    def block_stub_hit(block_stub, cfp)
-      # Update cfp->pc for `jit.at_current_insn?`
-      cfp.pc = block_stub.pc
-
-      # Prepare the jump target
-      jit = JITState.new(iseq: block_stub.iseq, cfp:)
-      new_asm = Assembler.new.tap do |asm|
-        compile_block(asm, jit:, pc: block_stub.pc, ctx: block_stub.ctx)
-      end
-
-      # Rewrite the block stub
-      if @cb.write_addr == block_stub.end_addr
-        # If the block stub's jump is the last code, overwrite the jump with the new code.
-        @cb.set_write_addr(block_stub.start_addr)
-        @cb.write(new_asm)
-      else
-        # If the block stub's jump is old code, change the jump target to the new code.
-        new_addr = @cb.write(new_asm)
-        @cb.with_write_addr(block_stub.start_addr) do
-          asm = Assembler.new
-          block_stub.change_block.call(asm, new_addr)
-          @cb.write(asm)
-        end
-        new_addr
-      end
     end
 
     # Compile a branch stub.

@@ -59,20 +59,6 @@ module RubyVM::MJIT
 
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    # @param block_stub [RubyVM::MJIT::BlockStub]
-    def compile_block_stub(ctx, asm, block_stub)
-      # Call rb_mjit_block_stub_hit
-      asm.comment("block stub hit: #{block_stub.iseq.body.location.label}@#{C.rb_iseq_path(block_stub.iseq)}:#{iseq_lineno(block_stub.iseq, block_stub.pc)}")
-      asm.mov(:rdi, to_value(block_stub))
-      asm.mov(:esi, ctx.sp_offset)
-      asm.call(C.rb_mjit_block_stub_hit)
-
-      # Jump to the address returned by rb_mjit_stub_hit
-      asm.jmp(:rax)
-    end
-
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
     # @param branch_stub [RubyVM::MJIT::BranchStub]
     # @param target0_p [TrueClass,FalseClass]
     def compile_branch_stub(ctx, asm, branch_stub, target0_p)

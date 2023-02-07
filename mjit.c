@@ -375,32 +375,6 @@ rb_mjit_compile(const rb_iseq_t *iseq)
 }
 
 void *
-rb_mjit_block_stub_hit(VALUE block_stub, int sp_offset)
-{
-    VALUE result;
-
-    RB_VM_LOCK_ENTER();
-    rb_vm_barrier();
-    bool original_call_p = mjit_call_p;
-    mjit_call_p = false; // Avoid impacting JIT metrics by itself
-    mjit_stats_p = false; // Avoid impacting JIT stats by itself
-
-    rb_control_frame_t *cfp = GET_EC()->cfp;
-    cfp->sp += sp_offset; // preserve stack values, also using the actual sp_offset to make jit.peek_at_stack work
-
-    VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
-    result = rb_funcall(rb_MJITCompiler, rb_intern("block_stub_hit"), 2, block_stub, cfp_ptr);
-
-    cfp->sp -= sp_offset; // reset for consistency with the code without the stub
-
-    mjit_stats_p = mjit_opts.stats;
-    mjit_call_p = original_call_p;
-    RB_VM_LOCK_LEAVE();
-
-    return (void *)NUM2SIZET(result);
-}
-
-void *
 rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 {
     VALUE result;

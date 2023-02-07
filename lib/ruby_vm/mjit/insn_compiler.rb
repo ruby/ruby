@@ -812,24 +812,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def defer_compilation(jit, ctx, asm)
       # Make a stub to compile the current insn
-      compile_block_stub(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation: block stub')
-    end
-
-    def compile_block_stub(iseq, pc, ctx, asm, comment: 'block stub')
-      block_stub = BlockStub.new(iseq:, pc:, ctx: ctx.dup)
-
-      stub_hit = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_block_stub(ctx, ocb_asm, block_stub)
-        @ocb.write(ocb_asm)
-      end
-
-      block_stub.change_block = proc do |jump_asm, new_addr|
-        jump_asm.comment(comment)
-        jump_asm.stub(block_stub) do
-          jump_asm.jmp(new_addr)
-        end
-      end
-      block_stub.change_block.call(asm, stub_hit)
+      stub_next_block(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation')
     end
 
     def stub_next_block(iseq, pc, ctx, asm, comment: 'stub_next_block')
