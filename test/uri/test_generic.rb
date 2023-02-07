@@ -24,7 +24,8 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     assert_equal "file:///foo", URI("file:///foo").to_s
     assert_equal "postgres:///foo", URI("postgres:///foo").to_s
-    assert_equal "http:/foo", URI("http:///foo").to_s
+    assert_equal "http:///foo", URI("http:///foo").to_s
+    assert_equal "http:/foo", URI("http:/foo").to_s
   end
 
   def test_parse
@@ -157,6 +158,12 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+
+    # sec-156615
+    url = URI.parse('http:////example.com')
+    # must be empty string to identify as path-abempty, not path-absolute
+    assert_equal('', url.host)
+    assert_equal('http:////example.com', url.to_s)
   end
 
   def test_parse_scheme_with_symbols
