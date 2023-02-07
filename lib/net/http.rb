@@ -1472,12 +1472,15 @@ module Net   #:nodoc:
       attr_reader :proxy_pass
     end
 
-    # True if requests for this connection will be proxied
+    # Returns +true+ if a proxy server is defined, +false+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy?
       !!(@proxy_from_env ? proxy_uri : @proxy_address)
     end
 
-    # True if the proxy for this connection is determined from the environment
+    # Returns +true+ if the proxy server is defined in the environment,
+    # +false+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy_from_env?
       @proxy_from_env
     end
@@ -1491,7 +1494,8 @@ module Net   #:nodoc:
       @proxy_uri || nil
     end
 
-    # The address of the proxy server, if one is configured.
+    # Returns the address of the proxy server, if defined, +nil+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy_address
       if @proxy_from_env then
         proxy_uri&.hostname
@@ -1500,7 +1504,8 @@ module Net   #:nodoc:
       end
     end
 
-    # The port of the proxy server, if one is configured.
+    # Returns the port number of the proxy server, if defined, +nil+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy_port
       if @proxy_from_env then
         proxy_uri&.port
@@ -1509,7 +1514,8 @@ module Net   #:nodoc:
       end
     end
 
-    # The username of the proxy server, if one is configured.
+    # Returns the user name of the proxy server, if defined, +nil+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy_user
       if @proxy_from_env
         user = proxy_uri&.user
@@ -1519,7 +1525,8 @@ module Net   #:nodoc:
       end
     end
 
-    # The password of the proxy server, if one is configured.
+    # Returns the password of the proxy server, if defined, +nil+ otherwise;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     def proxy_pass
       if @proxy_from_env
         pass = proxy_uri&.password
