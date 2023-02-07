@@ -335,13 +335,15 @@ class TestGc < Test::Unit::TestCase
     env = {
       "RUBY_GC_HEAP_INIT_SLOTS" => "100000",
       "RUBY_GC_HEAP_FREE_SLOTS" => "10000",
-      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.9",
+      "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.4",
     }
     assert_normal_exit("exit", "", :child_env => env)
-    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
+    assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.4/, "")
 
-    # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
-    assert_in_out_err([env, "-e", "1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "") if use_rgengc?
+    if use_rgengc?
+      # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
+      assert_in_out_err([env, "--disable-gems", "-e", "GC.start; 1000_000.times{Object.new}; p(GC.stat[:minor_gc_count] < GC.stat[:major_gc_count])"], "", ['true'], //, "")
+    end
 
     env = {
       "RUBY_GC_MALLOC_LIMIT"               => "60000000",
