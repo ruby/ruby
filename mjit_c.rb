@@ -94,6 +94,39 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'RBOOL(rb_simple_iseq_p((rb_iseq_t *)NUM2SIZET(_iseq_addr)))'
     end
 
+    def SPECIAL_CONST_P(obj)
+      _value = to_value(obj)
+      Primitive.cexpr! 'RBOOL(SPECIAL_CONST_P((VALUE)NUM2SIZET(_value)))'
+    end
+
+    def BUILTIN_TYPE(obj)
+      _value = to_value(obj)
+      Primitive.cexpr! 'INT2NUM(BUILTIN_TYPE((VALUE)NUM2SIZET(_value)))'
+    end
+
+    def rb_shape_get_shape_id(obj)
+      _value = to_value(obj)
+      Primitive.cexpr! 'UINT2NUM((unsigned int)rb_shape_get_shape_id((VALUE)NUM2SIZET(_value)))'
+    end
+
+    def rb_shape_id_offset
+      Primitive.cexpr! 'INT2NUM(rb_shape_id_offset())'
+    end
+
+    def rb_shape_get_iv_index(shape_id, ivar_id)
+      Primitive.cstmt! %{
+        rb_shape_t *shape = rb_shape_get_shape_by_id((shape_id_t)NUM2SIZET(shape_id));
+        attr_index_t index;
+        bool found = rb_shape_get_iv_index(shape, (ID)NUM2SIZET(ivar_id), &index);
+        return found ? UINT2NUM(index) : Qnil;
+      }
+    end
+
+    def FL_TEST_RAW(obj, flags)
+      _value = to_value(obj)
+      Primitive.cexpr! 'RBOOL(FL_TEST_RAW((VALUE)NUM2SIZET(_value), (VALUE)NUM2SIZET(flags)))'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -278,6 +311,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PUBLIC) }
   end
 
+  def C.ROBJECT_EMBED
+    Primitive.cexpr! %q{ UINT2NUM(ROBJECT_EMBED) }
+  end
+
   def C.RUBY_EVENT_CLASS
     Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_CLASS) }
   end
@@ -308,6 +345,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.SHAPE_ROOT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
+  end
+
+  def C.T_OBJECT
+    Primitive.cexpr! %q{ UINT2NUM(T_OBJECT) }
   end
 
   def C.VM_BLOCK_HANDLER_NONE
@@ -366,8 +407,16 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(INVALID_SHAPE_ID) }
   end
 
+  def C.OBJ_TOO_COMPLEX_SHAPE_ID
+    Primitive.cexpr! %q{ ULONG2NUM(OBJ_TOO_COMPLEX_SHAPE_ID) }
+  end
+
   def C.RUBY_FIXNUM_FLAG
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
+  end
+
+  def C.RUBY_IMMEDIATE_MASK
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_IMMEDIATE_MASK) }
   end
 
   def C.SHAPE_MASK
@@ -412,6 +461,22 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.RB_BUILTIN
     @RB_BUILTIN ||= self.rb_builtin_function
+  end
+
+  def C.RObject
+    @RObject ||= CType::Struct.new(
+      "RObject", Primitive.cexpr!("SIZEOF(struct RObject)"),
+      basic: [self.RBasic, Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), basic)")],
+      as: [CType::Union.new(
+        "", Primitive.cexpr!("SIZEOF(((struct RObject *)NULL)->as)"),
+        heap: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RObject *)NULL)->as.heap)"),
+          ivptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, ivptr)")],
+          iv_index_tbl: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, iv_index_tbl)")],
+        ),
+        ary: CType::Pointer.new { self.VALUE },
+      ), Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), as)")],
+    )
   end
 
   def C.attr_index_t
@@ -799,6 +864,10 @@ module RubyVM::MJIT # :nodoc: all
       send_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_args_splat)")],
       send_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_kwarg)")],
       send_tailcall: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_tailcall)")],
+      getivar_not_embedded: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_embedded)")],
+      getivar_not_t_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_t_object)")],
+      getivar_special_const: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_special_const)")],
+      getivar_too_complex: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_too_complex)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end
@@ -848,6 +917,14 @@ module RubyVM::MJIT # :nodoc: all
     @shape_id_t ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(shape_id_t)"), Primitive.cexpr!("SIGNED_TYPE_P(shape_id_t)"))
   end
 
+  def C.RBasic
+    CType::Stub.new(:RBasic)
+  end
+
+  def C.rb_id_table
+    CType::Stub.new(:rb_id_table)
+  end
+
   def C._Bool
     CType::Bool.new
   end
@@ -890,10 +967,6 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.rb_fiber_t
     CType::Stub.new(:rb_fiber_t)
-  end
-
-  def C.rb_id_table
-    CType::Stub.new(:rb_id_table)
   end
 
   def C.rb_ensure_list_t

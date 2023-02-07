@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 11/101
+      # 13/101
       case insn.name
       # nop
       # getlocal
@@ -27,7 +27,7 @@ module RubyVM::MJIT
       # getblockparamproxy
       # getspecial
       # setspecial
-      # getinstancevariable
+      when :getinstancevariable then getinstancevariable(jit, ctx, asm)
       # setinstancevariable
       # getclassvariable
       # setclassvariable
@@ -137,7 +137,22 @@ module RubyVM::MJIT
     # getblockparamproxy
     # getspecial
     # setspecial
-    # getinstancevariable
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getinstancevariable(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      id = jit.operand(0)
+      comptime_obj = jit.peek_at_self
+
+      jit_getivar(jit, ctx, asm, comptime_obj, id)
+    end
+
     # setinstancevariable
     # getclassvariable
     # setclassvariable
@@ -242,7 +257,7 @@ module RubyVM::MJIT
     def leave(jit, ctx, asm)
       assert_equal(ctx.stack_size, 1)
 
-      compile_check_ints(jit, ctx, asm)
+      jit_check_ints(jit, ctx, asm)
 
       asm.comment('pop stack frame')
       asm.lea(:rax, [CFP, C.rb_control_frame_t.size])
@@ -520,14 +535,79 @@ module RubyVM::MJIT
     # Helpers
     #
 
+    # @param asm [RubyVM::MJIT::Assembler]
+    def guard_object_is_heap(asm, object_opnd, side_exit)
+      asm.comment('guard object is heap')
+      # Test that the object is not an immediate
+      asm.test(object_opnd, C.RUBY_IMMEDIATE_MASK)
+      asm.jnz(side_exit)
+
+      # Test that the object is not false
+      asm.cmp(object_opnd, Qfalse)
+      asm.je(side_exit)
+    end
+
+    # rb_vm_check_ints
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_check_ints(jit, ctx, asm)
+    def jit_check_ints(jit, ctx, asm)
       asm.comment('RUBY_VM_CHECK_INTS(ec)')
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
       asm.jnz(side_exit(jit, ctx))
+    end
+
+    # vm_getivar
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id)
+      side_exit = side_exit(jit, ctx)
+
+      # Guard not special const
+      if C.SPECIAL_CONST_P(comptime_obj)
+        asm.incr_counter(:getivar_special_const)
+        return CantCompile
+      end
+      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      guard_object_is_heap(asm, :rax, side_exit) # TODO: counted side exit
+
+      case C.BUILTIN_TYPE(comptime_obj)
+      when C.T_OBJECT
+        # This is the only supported case for now
+      else
+        asm.incr_counter(:getivar_not_t_object)
+        return CantCompile
+      end
+
+      shape_id = C.rb_shape_get_shape_id(comptime_obj)
+      if shape_id == C.OBJ_TOO_COMPLEX_SHAPE_ID
+        asm.incr_counter(:getivar_too_complex)
+        return CantCompile
+      end
+
+      asm.comment('guard shape')
+      asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
+      asm.jne(side_exit) # TODO: counted side exit
+
+      index = C.rb_shape_get_iv_index(shape_id, ivar_id)
+      if index
+        if C.FL_TEST_RAW(comptime_obj, C.ROBJECT_EMBED)
+          asm.mov(:rax, [:rax, C.RObject.offsetof(:as, :ary) + (index * C.VALUE.size)])
+          val_opnd = :rax
+        else
+          asm.incr_counter(:getivar_too_complex)
+          return CantCompile
+        end
+      else
+        val_opnd = Qnil
+      end
+
+      stack_opnd = ctx.stack_push
+      asm.mov(stack_opnd, val_opnd)
+
+      KeepCompiling
     end
 
     # vm_call_method (vm_sendish -> vm_call_general -> vm_call_method)
@@ -792,6 +872,7 @@ module RubyVM::MJIT
     def jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags)
       if (flags & C.VM_CALL_KW_SPLAT) > 0
         # We don't support removing the last Hash argument
+        asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
     end

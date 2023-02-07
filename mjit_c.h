@@ -119,6 +119,11 @@ MJIT_RUNTIME_COUNTERS(
     send_kwarg,
     send_tailcall,
 
+    getivar_not_embedded,
+    getivar_not_t_object,
+    getivar_special_const,
+    getivar_too_complex,
+
     compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS

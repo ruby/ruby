@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 module RubyVM::MJIT
+  # 32-bit memory access
+  class DwordPtr < Data.define(:reg, :disp); end
+
   # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
   # Mostly an x86_64 assembler, but this also has some stuff that is useful for any architecture.
   class Assembler
@@ -123,8 +126,28 @@ module RubyVM::MJIT
 
     def cmp(left, right)
       case [left, right]
-      # CMP r/m64 r64 (Mod 01: [reg]+disp8)
-      in [[Symbol => left_reg, Integer => left_disp], Symbol => right_reg]
+      # CMP r/m32, imm32 (Mod 01: [reg]+disp8)
+      in [DwordPtr[reg: left_reg, disp: left_disp], Integer => right_imm] if imm8?(left_disp) && imm32?(right_imm)
+        # 81 /7 id
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          opcode: 0x81,
+          mod_rm: ModRM[mod: Mod01, reg: 7, rm: left_reg],
+          disp: left_disp,
+          imm: imm32(right_imm),
+        )
+      # CMP r/m64, imm8 (Mod 11: reg)
+      in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm8?(right_imm)
+        # REX.W + 83 /7 ib
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: ModRM[mod: Mod11, reg: 7, rm: left_reg],
+          imm: imm8(right_imm),
+        )
+      # CMP r/m64, r64 (Mod 01: [reg]+disp8)
+      in [[Symbol => left_reg, Integer => left_disp], Symbol => right_reg] if r64?(right_reg)
         # REX.W + 39 /r
         # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
         insn(
@@ -451,6 +474,16 @@ module RubyVM::MJIT
           opcode: 0xf7,
           mod_rm: ModRM[mod: Mod01, reg: 0, rm: left_reg],
           disp: left_disp,
+          imm: imm32(right_imm),
+        )
+      # TEST r/m64, imm32 (Mod 11: reg)
+      in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm32?(right_imm)
+        # REX.W + F7 /0 id
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0xf7,
+          mod_rm: ModRM[mod: Mod11, reg: 0, rm: left_reg],
           imm: imm32(right_imm),
         )
       # TEST r/m32, r32 (Mod 11: reg)

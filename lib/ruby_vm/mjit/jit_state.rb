@@ -26,5 +26,9 @@ module RubyVM::MJIT
       value = (cfp.sp + offset).*
       C.to_ruby(value)
     end
+
+    def peek_at_self
+      C.to_ruby(cfp.self)
+    end
   end
 end

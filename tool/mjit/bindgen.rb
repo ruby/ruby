@@ -354,6 +354,7 @@ generator = BindingGenerator.new(
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
+      ROBJECT_EMBED
       RUBY_EVENT_CLASS
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
@@ -362,6 +363,7 @@ generator = BindingGenerator.new(
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
       SHAPE_ROOT
+      T_OBJECT
       VM_BLOCK_HANDLER_NONE
       VM_CALL_ARGS_BLOCKARG
       VM_CALL_ARGS_SPLAT
@@ -378,7 +380,9 @@ generator = BindingGenerator.new(
     ],
     ULONG: %w[
       INVALID_SHAPE_ID
+      OBJ_TOO_COMPLEX_SHAPE_ID
       RUBY_FIXNUM_FLAG
+      RUBY_IMMEDIATE_MASK
       SHAPE_MASK
     ],
     PTR: %w[
@@ -395,6 +399,7 @@ generator = BindingGenerator.new(
     IC
     IVC
     RB_BUILTIN
+    RObject
     attr_index_t
     compile_branch
     compile_status

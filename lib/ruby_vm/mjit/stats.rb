@@ -35,6 +35,7 @@ module RubyVM::MJIT
       $stderr.puts("***MJIT: Printing MJIT statistics on exit***")
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
+      print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
 
       $stderr.puts "compiled_block_count:  #{format('%10d', stats[:compiled_block_count])}"
       $stderr.puts "side_exit_count:       #{format('%10d', stats[:side_exit_count])}"

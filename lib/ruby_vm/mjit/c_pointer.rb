@@ -55,7 +55,14 @@ module RubyVM::MJIT
           define_singleton_method(:size) { size }
 
           # Return the offset to a field
-          define_singleton_method(:offsetof) { |field| members.fetch(field).last / 8 }
+          define_singleton_method(:offsetof) do |field, *fields|
+            member, offset = members.fetch(field)
+            offset /= 8
+            unless fields.empty?
+              offset += member.offsetof(*fields)
+            end
+            offset
+          end
 
           # Return member names
           define_singleton_method(:members) { members.keys }
@@ -126,6 +133,15 @@ module RubyVM::MJIT
         Class.new(self) do
           # Return the size of this type
           define_singleton_method(:sizeof) { sizeof }
+
+          # Part of Struct's offsetof implementation
+          define_singleton_method(:offsetof) do |*fields|
+            if fields.size == 1
+              0
+            else
+              raise NotImplementedError
+            end
+          end
 
           define_method(:initialize) do |addr|
             super(addr, sizeof, members)
