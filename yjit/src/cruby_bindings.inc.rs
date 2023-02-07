@@ -798,6 +798,7 @@ pub type vm_frame_env_flags = u32;
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
+    pub cref: *const rb_cref_t,
     pub class_value: VALUE,
 }
 pub const VM_CALL_ARGS_SPLAT_bit: vm_call_flag_bits = 0;
