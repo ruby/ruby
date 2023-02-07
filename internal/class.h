@@ -15,6 +15,9 @@
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "shape.h"
+#include "ruby_assert.h"
+#include "vm_core.h"
+#include "method.h"             /* for rb_cref_t */
 
 #ifdef RCLASS_SUPER
 # undef RCLASS_SUPER
@@ -29,6 +32,7 @@ struct rb_subclass_entry {
 struct rb_cvar_class_tbl_entry {
     uint32_t index;
     rb_serial_t global_cvar_state;
+    const rb_cref_t * cref;
     VALUE class_value;
 };
 
