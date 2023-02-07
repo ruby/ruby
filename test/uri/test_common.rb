@@ -41,18 +41,52 @@ class TestCommon < Test::Unit::TestCase
     RUBY
   end
 
+  DEFAULT_SCHEMES = ["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "WSS"].sort.freeze
+
   def test_register_scheme
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
 
     foobar = Class.new(URI::Generic)
     URI.register_scheme 'FOOBAR', foobar
     begin
-      assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS", "FOOBAR"].sort, URI.scheme_list.keys.sort)
+      assert_include(URI.scheme_list.keys, "FOOBAR")
+      assert_equal foobar, URI.parse('foobar://localhost').class
     ensure
       URI.const_get(:Schemes).send(:remove_const, :FOOBAR)
     end
 
-    assert_equal(["FILE", "FTP", "HTTP", "HTTPS", "LDAP", "LDAPS", "MAILTO", "WS"].sort, URI.scheme_list.keys.sort)
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+  end
+
+  def test_register_scheme_lowercase
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+
+    foobar = Class.new(URI::Generic)
+    URI.register_scheme 'foobarlower', foobar
+    begin
+      assert_include(URI.scheme_list.keys, "FOOBARLOWER")
+      assert_equal foobar, URI.parse('foobarlower://localhost').class
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :FOOBARLOWER)
+    end
+
+    assert_equal(DEFAULT_SCHEMES, URI.scheme_list.keys.sort)
+  end
+
+  def test_register_scheme_with_symbols
+    # Valid schemes from https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml
+    some_uri_class = Class.new(URI::Generic)
+    assert_raise(NameError) { URI.register_scheme 'ms-search', some_uri_class }
+    assert_raise(NameError) { URI.register_scheme 'microsoft.windows.camera', some_uri_class }
+    assert_raise(NameError) { URI.register_scheme 'coaps+ws', some_uri_class }
+
+    ms_search_class = Class.new(URI::Generic)
+    URI.register_scheme 'MS_SEARCH', ms_search_class
+    begin
+      assert_equal URI::Generic, URI.parse('ms-search://localhost').class
+    ensure
+      URI.const_get(:Schemes).send(:remove_const, :MS_SEARCH)
+    end
   end
 
   def test_regexp
@@ -128,6 +162,58 @@ class TestCommon < Test::Unit::TestCase
     assert_raise(ArgumentError){URI.decode_www_form_component("%a")}
     assert_raise(ArgumentError){URI.decode_www_form_component("x%a_")}
     assert_nothing_raised(ArgumentError){URI.decode_www_form_component("x"*(1024*1024))}
+  end
+
+  def test_encode_uri_component
+    assert_equal("%00%20%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+                 "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E",
+                 URI.encode_uri_component("\x00 !\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~"))
+    assert_equal("%95A", URI.encode_uri_component(
+                   "\x95\x41".force_encoding(Encoding::Shift_JIS)))
+    assert_equal("0B", URI.encode_uri_component(
+                   "\x30\x42".force_encoding(Encoding::UTF_16BE)))
+    assert_equal("%1B%24B%24%22%1B%28B", URI.encode_uri_component(
+                   "\e$B$\"\e(B".force_encoding(Encoding::ISO_2022_JP)))
+
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042", Encoding::ASCII_8BIT))
+    assert_equal("%82%A0", URI.encode_uri_component(
+                   "\u3042", Encoding::Windows_31J))
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042", Encoding::UTF_8))
+
+    assert_equal("%82%A0", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::ASCII_8BIT))
+    assert_equal("%A4%A2", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::EUC_JP))
+    assert_equal("%E3%81%82", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_8))
+    assert_equal("B0", URI.encode_uri_component(
+                   "\u3042".encode("sjis"), Encoding::UTF_16LE))
+    assert_equal("%26%23730%3B", URI.encode_uri_component(
+                   "\u02DA", Encoding::WINDOWS_1252))
+
+    # invalid
+    assert_equal("%EF%BF%BD%EF%BF%BD", URI.encode_uri_component(
+                   "\xE3\x81\xFF", "utf-8"))
+    assert_equal("%E6%9F%8A%EF%BF%BD%EF%BF%BD", URI.encode_uri_component(
+                   "\x95\x41\xff\xff".force_encoding(Encoding::Shift_JIS), "utf-8"))
+  end
+
+  def test_decode_uri_component
+    assert_equal(" +!\"\#$%&'()*+,-./09:;<=>?@AZ[\\]^_`az{|}~",
+                 URI.decode_uri_component(
+                   "%20+%21%22%23%24%25%26%27%28%29*%2B%2C-.%2F09%3A%3B%3C%3D%3E%3F%40" \
+                   "AZ%5B%5C%5D%5E_%60az%7B%7C%7D%7E"))
+    assert_equal("\xA1\xA2".force_encoding(Encoding::EUC_JP),
+                 URI.decode_uri_component("%A1%A2", "EUC-JP"))
+    assert_equal("\xE3\x81\x82\xE3\x81\x82".force_encoding("UTF-8"),
+                 URI.decode_uri_component("\xE3\x81\x82%E3%81%82".force_encoding("UTF-8")))
+
+    assert_raise(ArgumentError){URI.decode_uri_component("%")}
+    assert_raise(ArgumentError){URI.decode_uri_component("%a")}
+    assert_raise(ArgumentError){URI.decode_uri_component("x%a_")}
+    assert_nothing_raised(ArgumentError){URI.decode_uri_component("x"*(1024*1024))}
   end
 
   def test_encode_www_form
