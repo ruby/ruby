@@ -21,6 +21,7 @@
 
     * readline/editline (libedit)
     * libffi
+    * gmp (if you with to accelerate Bignum operations)
     * libexecinfo (FreeBSD)
     * rustc - 1.58.0 or later (if you wish to build [YJIT](/doc/yjit/yjit.md))
 
