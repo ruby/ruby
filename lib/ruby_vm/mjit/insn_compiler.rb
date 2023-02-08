@@ -571,7 +571,7 @@ module RubyVM::MJIT
         return CantCompile
       end
       asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
-      guard_object_is_heap(asm, :rax, side_exit) # TODO: counted side exit
+      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :getivar_not_heap))
 
       case C.BUILTIN_TYPE(comptime_obj)
       when C.T_OBJECT
@@ -589,7 +589,7 @@ module RubyVM::MJIT
 
       asm.comment('guard shape')
       asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
-      asm.jne(side_exit) # TODO: counted side exit
+      asm.jne(counted_exit(side_exit, :getivar_polymorphic))
 
       index = C.rb_shape_get_iv_index(shape_id, ivar_id)
       if index
@@ -933,6 +933,13 @@ module RubyVM::MJIT
       asm = Assembler.new
       @exit_compiler.compile_side_exit(jit, ctx, asm)
       jit.side_exits[jit.pc] = @ocb.write(asm)
+    end
+
+    def counted_exit(side_exit, name)
+      asm = Assembler.new
+      asm.incr_counter(name)
+      asm.jmp(side_exit)
+      @ocb.write(asm)
     end
 
     def def_iseq_ptr(cme_def)
