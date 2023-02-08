@@ -101,6 +101,23 @@ module RubyVM::MJIT
       end
     end
 
+    def and(dst, src)
+      case [dst, src]
+      # AND r/m64, imm8 (Mod 11: reg)
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+        # REX.W + 83 /4 ib
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg],
+          imm: imm8(src_imm),
+        )
+      else
+        raise NotImplementedError, "and: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
     # @param addr [Integer]
     def call(addr)
       # CALL rel32

@@ -283,6 +283,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
   end
 
+  def C.VM_ENV_DATA_INDEX_SPECVAL
+    Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_SPECVAL) }
+  end
+
   def C.BOP_LT
     Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
   end

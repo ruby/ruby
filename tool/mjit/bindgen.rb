@@ -345,6 +345,7 @@ generator = BindingGenerator.new(
   values: {
     INT: %w[
       NOT_COMPILED_STACK_SIZE
+      VM_ENV_DATA_INDEX_SPECVAL
     ],
     UINT: %w[
       BOP_LT

@@ -17,7 +17,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 14/101
+      # 15/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -115,6 +115,7 @@ module RubyVM::MJIT
       # opt_invokebuiltin_delegate
       # opt_invokebuiltin_delegate_leave
       when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
+      when :getlocal_WC_1 then getlocal_WC_1(jit, ctx, asm)
       # setlocal_WC_0
       # setlocal_WC_1
       when :putobject_INT2FIX_0_ then putobject_INT2FIX_0_(jit, ctx, asm)
@@ -516,12 +517,31 @@ module RubyVM::MJIT
       asm.mov(:rax, [:rax, -idx * C.VALUE.size])
 
       # Push it to the stack
-      asm.mov([SP, C.VALUE.size * ctx.stack_size], :rax)
-      ctx.stack_push(1)
+      stack_top = ctx.stack_push
+      asm.mov(stack_top, :rax)
       KeepCompiling
     end
 
-    # getlocal_WC_1
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getlocal_WC_1(jit, ctx, asm)
+      # Get operands
+      idx = jit.operand(0)
+      level = 1
+
+      # Get EP
+      ep_reg = jit_get_ep(asm, level)
+
+      # Get a local variable
+      asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
+
+      # Push it to the stack
+      stack_top = ctx.stack_push
+      asm.mov(stack_top, :rax)
+      KeepCompiling
+    end
+
     # setlocal_WC_0
     # setlocal_WC_1
 
@@ -609,6 +629,20 @@ module RubyVM::MJIT
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
       asm.jnz(side_exit(jit, ctx))
+    end
+
+    # vm_get_ep
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_get_ep(asm, level)
+      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:ep)])
+      level.times do
+        # GET_PREV_EP: ep[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03
+        asm.mov(:rax, [:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+        asm.and(:rax, ~0x03)
+      end
+      return :rax
     end
 
     # vm_getivar
