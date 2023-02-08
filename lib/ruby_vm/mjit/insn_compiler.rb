@@ -992,8 +992,35 @@ module RubyVM::MJIT
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
         jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
+      # when C.VM_METHOD_TYPE_NOTIMPLEMENTED
+      when C.VM_METHOD_TYPE_CFUNC
+        asm.incr_counter(:send_cfunc)
+        return CantCompile
+      when C.VM_METHOD_TYPE_ATTRSET
+        asm.incr_counter(:send_attrset)
+        return CantCompile
+      when C.VM_METHOD_TYPE_IVAR
+        asm.incr_counter(:send_ivar)
+        return CantCompile
+      # when C.VM_METHOD_TYPE_MISSING
+      when C.VM_METHOD_TYPE_BMETHOD
+        asm.incr_counter(:send_bmethod)
+        return CantCompile
+      when C.VM_METHOD_TYPE_ALIAS
+        asm.incr_counter(:send_alias)
+        return CantCompile
+      when C.VM_METHOD_TYPE_OPTIMIZED
+        asm.incr_counter(:send_optimized)
+        return CantCompile
+      # when C.VM_METHOD_TYPE_UNDEF
+      when C.VM_METHOD_TYPE_ZSUPER
+        asm.incr_counter(:send_zsuper)
+        return CantCompile
+      when C.VM_METHOD_TYPE_REFINED
+        asm.incr_counter(:send_refined)
+        return CantCompile
       else
-        asm.incr_counter(:send_not_iseq)
+        asm.incr_counter(:send_not_implemented_type)
         return CantCompile
       end
     end
