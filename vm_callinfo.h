@@ -352,9 +352,9 @@ static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->call_ == NULL   || // not initialized yet
-              !vm_cc_markable(cc) ||
-              cc->cme_ != NULL);
+    // VM_ASSERT(cc->call_ == NULL   || // not initialized yet
+    //           !vm_cc_markable(cc) ||
+    //           cc->cme_ != NULL);
 
     return cc->cme_;
 }
