@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 16/101
+      # 26/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -74,7 +74,7 @@ module RubyVM::MJIT
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       # objtostring
       # opt_str_freeze
-      # opt_nil_p
+      when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       # opt_newarray_max
       # opt_newarray_min
@@ -90,8 +90,8 @@ module RubyVM::MJIT
       # opt_case_dispatch
       when :opt_plus then opt_plus(jit, ctx, asm)
       when :opt_minus then opt_minus(jit, ctx, asm)
-      # opt_mult
-      # opt_div
+      when :opt_mult then opt_mult(jit, ctx, asm)
+      when :opt_div then opt_div(jit, ctx, asm)
       # opt_mod
       # opt_eq
       # opt_neq
@@ -99,19 +99,19 @@ module RubyVM::MJIT
       # opt_le
       # opt_gt
       # opt_ge
-      # opt_ltlt
+      when :opt_ltlt then opt_ltlt(jit, ctx, asm)
       # opt_and
       # opt_or
       when :opt_aref then opt_aref(jit, ctx, asm)
       # opt_aset
       # opt_aset_with
       # opt_aref_with
-      # opt_length
-      # opt_size
-      # opt_empty_p
-      # opt_succ
-      # opt_not
-      # opt_regexpmatch2
+      when :opt_length then opt_length(jit, ctx, asm)
+      when :opt_size then opt_size(jit, ctx, asm)
+      when :opt_empty_p then opt_empty_p(jit, ctx, asm)
+      when :opt_succ then opt_succ(jit, ctx, asm)
+      when :opt_not then opt_not(jit, ctx, asm)
+      when :opt_regexpmatch2 then opt_regexpmatch2(jit, ctx, asm)
       # invokebuiltin
       # opt_invokebuiltin_delegate
       # opt_invokebuiltin_delegate_leave
@@ -249,7 +249,14 @@ module RubyVM::MJIT
 
     # objtostring
     # opt_str_freeze
-    # opt_nil_p
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_nil_p(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
     # opt_str_uminus
     # opt_newarray_max
     # opt_newarray_min
@@ -380,7 +387,7 @@ module RubyVM::MJIT
 
         KeepCompiling
       else
-        CantCompile # TODO: delegate to send
+        opt_send_without_block(jit, ctx, asm)
       end
     end
 
@@ -426,12 +433,24 @@ module RubyVM::MJIT
 
         KeepCompiling
       else
-        CantCompile # TODO: delegate to send
+        opt_send_without_block(jit, ctx, asm)
       end
     end
 
-    # opt_mult
-    # opt_div
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_mult(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_div(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
     # opt_mod
     # opt_eq
     # opt_neq
@@ -478,14 +497,21 @@ module RubyVM::MJIT
 
         KeepCompiling
       else
-        CantCompile # TODO: delegate to send
+        opt_send_without_block(jit, ctx, asm)
       end
     end
 
     # opt_le
     # opt_gt
     # opt_ge
-    # opt_ltlt
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_ltlt(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
     # opt_and
     # opt_or
 
@@ -547,20 +573,56 @@ module RubyVM::MJIT
         jump_to_next_insn(jit, ctx, asm)
         EndBlock
       else
-        asm.incr_counter(:optaref_send)
-        CantCompile
+        opt_send_without_block(jit, ctx, asm)
       end
     end
 
     # opt_aset
     # opt_aset_with
     # opt_aref_with
-    # opt_length
-    # opt_size
-    # opt_empty_p
-    # opt_succ
-    # opt_not
-    # opt_regexpmatch2
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_length(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_size(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_empty_p(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_succ(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_not(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_regexpmatch2(jit, ctx, asm)
+      opt_send_without_block(jit, ctx, asm)
+    end
+
     # invokebuiltin
     # opt_invokebuiltin_delegate
     # opt_invokebuiltin_delegate_leave
