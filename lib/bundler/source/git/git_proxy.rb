@@ -139,8 +139,8 @@ module Bundler
             out, err, status = capture(command, path)
             return out if status.success?
 
-            if err.include?("couldn't find remote ref")
-              raise MissingGitRevisionError.new(command_with_no_credentials, path, explicit_ref, credential_filtered_uri)
+            if err.include?("couldn't find remote ref") || err.include?("not our ref")
+              raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
             else
               raise GitCommandError.new(command_with_no_credentials, path, err)
             end
@@ -186,8 +186,6 @@ module Bundler
         end
 
         def refspec
-          commit = pinned_to_full_sha? ? ref : @revision
-
           if commit
             @commit_ref = "refs/#{commit}-sha"
             return "#{commit}:#{@commit_ref}"
@@ -204,6 +202,10 @@ module Bundler
           end
 
           "#{reference}:#{reference}"
+        end
+
+        def commit
+          @commit ||= pinned_to_full_sha? ? ref : @revision
         end
 
         def fully_qualified_ref
