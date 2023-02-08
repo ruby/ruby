@@ -7208,9 +7208,10 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
         return;
       case imemo_callcache:
         {
-            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+            // const struct rb_callcache *cc = (const struct rb_callcache *)obj;
             // should not mark klass here
-            gc_mark(objspace, (VALUE)vm_cc_cme(cc));
+            // The method_entry owner match class so we shouldn't mark it either.
+            // gc_mark(objspace, (VALUE)vm_cc_cme(cc));
         }
         return;
       case imemo_constcache:
