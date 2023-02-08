@@ -3058,7 +3058,6 @@ compile.$(OBJEXT): {$(VPATH)}debug_counter.h
 compile.$(OBJEXT): {$(VPATH)}defines.h
 compile.$(OBJEXT): {$(VPATH)}encindex.h
 compile.$(OBJEXT): {$(VPATH)}encoding.h
-compile.$(OBJEXT): {$(VPATH)}gc.h
 compile.$(OBJEXT): {$(VPATH)}id.h
 compile.$(OBJEXT): {$(VPATH)}id_table.h
 compile.$(OBJEXT): {$(VPATH)}insns.def
@@ -3461,11 +3460,11 @@ cont.$(OBJEXT): {$(VPATH)}defines.h
 cont.$(OBJEXT): {$(VPATH)}encoding.h
 cont.$(OBJEXT): {$(VPATH)}eval_intern.h
 cont.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
-cont.$(OBJEXT): {$(VPATH)}gc.h
 cont.$(OBJEXT): {$(VPATH)}id.h
 cont.$(OBJEXT): {$(VPATH)}id_table.h
 cont.$(OBJEXT): {$(VPATH)}intern.h
 cont.$(OBJEXT): {$(VPATH)}internal.h
+cont.$(OBJEXT): {$(VPATH)}internal/gc.h
 cont.$(OBJEXT): {$(VPATH)}internal/abi.h
 cont.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -3673,11 +3672,11 @@ debug.$(OBJEXT): {$(VPATH)}defines.h
 debug.$(OBJEXT): {$(VPATH)}encindex.h
 debug.$(OBJEXT): {$(VPATH)}encoding.h
 debug.$(OBJEXT): {$(VPATH)}eval_intern.h
-debug.$(OBJEXT): {$(VPATH)}gc.h
 debug.$(OBJEXT): {$(VPATH)}id.h
 debug.$(OBJEXT): {$(VPATH)}id_table.h
 debug.$(OBJEXT): {$(VPATH)}intern.h
 debug.$(OBJEXT): {$(VPATH)}internal.h
+debug.$(OBJEXT): {$(VPATH)}internal/gc.h
 debug.$(OBJEXT): {$(VPATH)}internal/abi.h
 debug.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -6373,11 +6372,11 @@ eval.$(OBJEXT): {$(VPATH)}eval_error.c
 eval.$(OBJEXT): {$(VPATH)}eval_intern.h
 eval.$(OBJEXT): {$(VPATH)}eval_jump.c
 eval.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
-eval.$(OBJEXT): {$(VPATH)}gc.h
 eval.$(OBJEXT): {$(VPATH)}id.h
 eval.$(OBJEXT): {$(VPATH)}id_table.h
 eval.$(OBJEXT): {$(VPATH)}intern.h
 eval.$(OBJEXT): {$(VPATH)}internal.h
+eval.$(OBJEXT): {$(VPATH)}internal/gc.h
 eval.$(OBJEXT): {$(VPATH)}internal/abi.h
 eval.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -6822,7 +6821,6 @@ gc.$(OBJEXT): {$(VPATH)}defines.h
 gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
-gc.$(OBJEXT): {$(VPATH)}gc.h
 gc.$(OBJEXT): {$(VPATH)}gc.rbinc
 gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
@@ -8045,7 +8043,6 @@ iseq.$(OBJEXT): {$(VPATH)}debug_counter.h
 iseq.$(OBJEXT): {$(VPATH)}defines.h
 iseq.$(OBJEXT): {$(VPATH)}encoding.h
 iseq.$(OBJEXT): {$(VPATH)}eval_intern.h
-iseq.$(OBJEXT): {$(VPATH)}gc.h
 iseq.$(OBJEXT): {$(VPATH)}id.h
 iseq.$(OBJEXT): {$(VPATH)}id_table.h
 iseq.$(OBJEXT): {$(VPATH)}insns.def
@@ -9749,7 +9746,6 @@ mjit.$(OBJEXT): {$(VPATH)}debug_counter.h
 mjit.$(OBJEXT): {$(VPATH)}defines.h
 mjit.$(OBJEXT): {$(VPATH)}dln.h
 mjit.$(OBJEXT): {$(VPATH)}encoding.h
-mjit.$(OBJEXT): {$(VPATH)}gc.h
 mjit.$(OBJEXT): {$(VPATH)}id.h
 mjit.$(OBJEXT): {$(VPATH)}id_table.h
 mjit.$(OBJEXT): {$(VPATH)}insns.def
@@ -11175,7 +11171,6 @@ proc.$(OBJEXT): {$(VPATH)}constant.h
 proc.$(OBJEXT): {$(VPATH)}defines.h
 proc.$(OBJEXT): {$(VPATH)}encoding.h
 proc.$(OBJEXT): {$(VPATH)}eval_intern.h
-proc.$(OBJEXT): {$(VPATH)}gc.h
 proc.$(OBJEXT): {$(VPATH)}id.h
 proc.$(OBJEXT): {$(VPATH)}id_table.h
 proc.$(OBJEXT): {$(VPATH)}intern.h
@@ -11614,7 +11609,6 @@ ractor.$(OBJEXT): {$(VPATH)}constant.h
 ractor.$(OBJEXT): {$(VPATH)}debug_counter.h
 ractor.$(OBJEXT): {$(VPATH)}defines.h
 ractor.$(OBJEXT): {$(VPATH)}encoding.h
-ractor.$(OBJEXT): {$(VPATH)}gc.h
 ractor.$(OBJEXT): {$(VPATH)}id.h
 ractor.$(OBJEXT): {$(VPATH)}id_table.h
 ractor.$(OBJEXT): {$(VPATH)}intern.h
@@ -14163,7 +14157,6 @@ shape.$(OBJEXT): {$(VPATH)}constant.h
 shape.$(OBJEXT): {$(VPATH)}debug_counter.h
 shape.$(OBJEXT): {$(VPATH)}defines.h
 shape.$(OBJEXT): {$(VPATH)}encoding.h
-shape.$(OBJEXT): {$(VPATH)}gc.h
 shape.$(OBJEXT): {$(VPATH)}id.h
 shape.$(OBJEXT): {$(VPATH)}id_table.h
 shape.$(OBJEXT): {$(VPATH)}intern.h
@@ -15132,7 +15125,6 @@ string.$(OBJEXT): {$(VPATH)}debug_counter.h
 string.$(OBJEXT): {$(VPATH)}defines.h
 string.$(OBJEXT): {$(VPATH)}encindex.h
 string.$(OBJEXT): {$(VPATH)}encoding.h
-string.$(OBJEXT): {$(VPATH)}gc.h
 string.$(OBJEXT): {$(VPATH)}id.h
 string.$(OBJEXT): {$(VPATH)}id_table.h
 string.$(OBJEXT): {$(VPATH)}intern.h
@@ -15573,7 +15565,6 @@ symbol.$(OBJEXT): {$(VPATH)}constant.h
 symbol.$(OBJEXT): {$(VPATH)}debug_counter.h
 symbol.$(OBJEXT): {$(VPATH)}defines.h
 symbol.$(OBJEXT): {$(VPATH)}encoding.h
-symbol.$(OBJEXT): {$(VPATH)}gc.h
 symbol.$(OBJEXT): {$(VPATH)}id.c
 symbol.$(OBJEXT): {$(VPATH)}id.h
 symbol.$(OBJEXT): {$(VPATH)}id_table.c
@@ -15793,7 +15784,6 @@ thread.$(OBJEXT): {$(VPATH)}defines.h
 thread.$(OBJEXT): {$(VPATH)}encoding.h
 thread.$(OBJEXT): {$(VPATH)}eval_intern.h
 thread.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
-thread.$(OBJEXT): {$(VPATH)}gc.h
 thread.$(OBJEXT): {$(VPATH)}hrtime.h
 thread.$(OBJEXT): {$(VPATH)}id.h
 thread.$(OBJEXT): {$(VPATH)}id_table.h
@@ -16388,7 +16378,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}constant.h
 transient_heap.$(OBJEXT): {$(VPATH)}debug.h
 transient_heap.$(OBJEXT): {$(VPATH)}debug_counter.h
 transient_heap.$(OBJEXT): {$(VPATH)}defines.h
-transient_heap.$(OBJEXT): {$(VPATH)}gc.h
 transient_heap.$(OBJEXT): {$(VPATH)}id_table.h
 transient_heap.$(OBJEXT): {$(VPATH)}intern.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal.h
@@ -17178,7 +17167,6 @@ vm.$(OBJEXT): {$(VPATH)}defines.h
 vm.$(OBJEXT): {$(VPATH)}defs/opt_operand.def
 vm.$(OBJEXT): {$(VPATH)}encoding.h
 vm.$(OBJEXT): {$(VPATH)}eval_intern.h
-vm.$(OBJEXT): {$(VPATH)}gc.h
 vm.$(OBJEXT): {$(VPATH)}id.h
 vm.$(OBJEXT): {$(VPATH)}id_table.h
 vm.$(OBJEXT): {$(VPATH)}insns.def
@@ -17608,7 +17596,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 vm_dump.$(OBJEXT): {$(VPATH)}config.h
 vm_dump.$(OBJEXT): {$(VPATH)}constant.h
 vm_dump.$(OBJEXT): {$(VPATH)}defines.h
-vm_dump.$(OBJEXT): {$(VPATH)}gc.h
 vm_dump.$(OBJEXT): {$(VPATH)}id.h
 vm_dump.$(OBJEXT): {$(VPATH)}id_table.h
 vm_dump.$(OBJEXT): {$(VPATH)}intern.h
@@ -17802,7 +17789,6 @@ vm_sync.$(OBJEXT): {$(VPATH)}config.h
 vm_sync.$(OBJEXT): {$(VPATH)}constant.h
 vm_sync.$(OBJEXT): {$(VPATH)}debug_counter.h
 vm_sync.$(OBJEXT): {$(VPATH)}defines.h
-vm_sync.$(OBJEXT): {$(VPATH)}gc.h
 vm_sync.$(OBJEXT): {$(VPATH)}id.h
 vm_sync.$(OBJEXT): {$(VPATH)}id_table.h
 vm_sync.$(OBJEXT): {$(VPATH)}intern.h
@@ -18216,7 +18202,6 @@ yjit.$(OBJEXT): {$(VPATH)}debug.h
 yjit.$(OBJEXT): {$(VPATH)}debug_counter.h
 yjit.$(OBJEXT): {$(VPATH)}defines.h
 yjit.$(OBJEXT): {$(VPATH)}encoding.h
-yjit.$(OBJEXT): {$(VPATH)}gc.h
 yjit.$(OBJEXT): {$(VPATH)}id.h
 yjit.$(OBJEXT): {$(VPATH)}id_table.h
 yjit.$(OBJEXT): {$(VPATH)}insns.def

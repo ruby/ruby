@@ -26,10 +26,10 @@ extern int madvise(caddr_t, size_t, int);
 #include COROUTINE_H
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"

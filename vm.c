@@ -11,12 +11,12 @@
 #define vm_exec rb_vm_exec
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/inits.h"
 #include "internal/object.h"
 #include "internal/parse.h"

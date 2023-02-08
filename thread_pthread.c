@@ -11,7 +11,7 @@
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-#include "gc.h"
+#include "internal/gc.h"
 #include "mjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H

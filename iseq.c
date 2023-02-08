@@ -19,7 +19,6 @@
 #endif
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/bits.h"
@@ -27,6 +26,7 @@
 #include "internal/compile.h"
 #include "internal/error.h"
 #include "internal/file.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/parse.h"
 #include "internal/sanitizers.h"

@@ -90,7 +90,6 @@
 #include "vm_callinfo.h"
 #include "mjit.h"
 #include "mjit_c.h"
-#include "gc.h"
 #include "ruby_assert.h"
 #include "ruby/debug.h"
 #include "ruby/thread.h"
@@ -99,6 +98,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "internal/compile.h"
+#include "internal/gc.h"
 
 #include <sys/wait.h>
 #include <sys/time.h>

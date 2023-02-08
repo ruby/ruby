@@ -12,10 +12,10 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/compilers.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/sanitizers.h"

@@ -7,7 +7,6 @@
 **********************************************************************/
 
 #include "debug_counter.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/gc.h"

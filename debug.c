@@ -118,7 +118,7 @@ ruby_debug_printf(const char *format, ...)
     va_end(ap);
 }
 
-#include "gc.h"
+#include "internal/gc.h"
 
 VALUE
 ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj)
