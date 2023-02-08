@@ -52,6 +52,7 @@ bug-14384.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bug-14384.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/pure.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bug-14384.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

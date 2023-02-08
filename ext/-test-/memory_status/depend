@@ -52,6 +52,7 @@ memory_status.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/noinline.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+memory_status.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/pure.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/restrict.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

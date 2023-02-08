@@ -9,7 +9,7 @@ module Bundler
     attr_reader :autorequire
     attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref
 
-    ALL_RUBY_VERSIONS = ((18..27).to_a + (30..31).to_a).freeze
+    ALL_RUBY_VERSIONS = ((18..27).to_a + (30..33).to_a).freeze
     PLATFORM_MAP = {
       :ruby => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],
       :mri => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],

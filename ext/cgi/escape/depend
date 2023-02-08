@@ -53,6 +53,7 @@ escape.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 escape.o: $(hdrdir)/ruby/internal/attr/noinline.h
 escape.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 escape.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+escape.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 escape.o: $(hdrdir)/ruby/internal/attr/pure.h
 escape.o: $(hdrdir)/ruby/internal/attr/restrict.h
 escape.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

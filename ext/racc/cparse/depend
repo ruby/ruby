@@ -52,6 +52,7 @@ cparse.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 cparse.o: $(hdrdir)/ruby/internal/attr/noinline.h
 cparse.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 cparse.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+cparse.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 cparse.o: $(hdrdir)/ruby/internal/attr/pure.h
 cparse.o: $(hdrdir)/ruby/internal/attr/restrict.h
 cparse.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

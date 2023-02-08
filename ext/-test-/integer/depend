@@ -52,6 +52,7 @@ core_ext.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/noinline.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+core_ext.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/pure.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/restrict.h
 core_ext.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -220,6 +221,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -380,6 +382,7 @@ my_integer.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/noinline.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+my_integer.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/pure.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/restrict.h
 my_integer.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

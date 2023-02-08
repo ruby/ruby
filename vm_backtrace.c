@@ -518,7 +518,7 @@ backtrace_memsize(const void *ptr)
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
     {backtrace_mark, backtrace_free, backtrace_memsize, backtrace_update},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -640,7 +640,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     const VALUE *pc = cfp->pc;
                     loc = &bt->backtrace[bt->backtrace_size++];
                     loc->type = LOCATION_TYPE_ISEQ;
-                    loc->iseq = iseq;
+                    RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
                     loc->pc = pc;
                     bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
                     if (do_yield) {
@@ -670,6 +670,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
             if (cfp->iseq && cfp->pc && (!skip_internal || !is_internal_location(cfp))) {
                 bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
                     bt_yield_loc(loc - cfunc_counter, cfunc_counter, btobj);
                 }
@@ -728,7 +729,7 @@ rb_backtrace_to_str_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->strary) {
-        bt->strary = backtrace_to_str_ary(self);
+        RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
     }
     return bt->strary;
 }
@@ -780,7 +781,7 @@ rb_backtrace_to_location_ary(VALUE self)
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
 
     if (!bt->locary) {
-        bt->locary = backtrace_to_location_ary(self);
+        RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
     }
     return bt->locary;
 }
@@ -797,7 +798,7 @@ backtrace_load_data(VALUE self, VALUE str)
 {
     rb_backtrace_t *bt;
     GetCoreDataFromValue(self, rb_backtrace_t, bt);
-    bt->strary = str;
+    RB_OBJ_WRITE(self, &bt->strary, str);
     return self;
 }
 

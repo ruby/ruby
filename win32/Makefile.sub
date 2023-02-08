@@ -734,14 +734,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define FUNC_FASTCALL(x) __fastcall x
 !if $(MSC_VER) >= 1500
 #define RUBY_FUNCTION_NAME_STRING __FUNCTION__
-#define PACKED_STRUCT(x) __pragma(pack(push, 1)) x __pragma(pack(pop))
-!else
-#define PACKED_STRUCT(x) x
-!endif
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
-#define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
-!else
-#define PACKED_STRUCT_UNALIGNED(x) x
+#define RBIMPL_ATTR_PACKED_STRUCT_BEGIN() __pragma(pack(push, 1))
+#define RBIMPL_ATTR_PACKED_STRUCT_END() __pragma(pack(pop))
 !endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define RUBY_ALIGNAS(n) __declspec(align(n))

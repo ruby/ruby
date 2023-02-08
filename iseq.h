@@ -186,7 +186,7 @@ VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
                             VALUE locals, VALUE args,
                             VALUE exception, VALUE body);
-void rb_iseq_mark_and_update_insn_storage(struct iseq_compile_data_storage *arena);
+void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
@@ -270,10 +270,11 @@ struct iseq_catch_table_entry {
     unsigned int sp;
 };
 
-PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct iseq_catch_table {
     unsigned int size;
     struct iseq_catch_table_entry entries[FLEX_ARY_LEN];
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 static inline int
 iseq_catch_table_bytes(int n)

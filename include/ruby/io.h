@@ -49,11 +49,11 @@
 /** @endcond */
 
 #include "ruby/internal/attr/const.h"
+#include "ruby/internal/attr/packed_struct.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/attributes.h" /* PACKED_STRUCT_UNALIGNED */
 
 // IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
 #define RUBY_IO_WAIT_METHODS
@@ -88,7 +88,8 @@ typedef enum {
  * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and
  * ::rb_io_t::rbuf.  People don't manipulate it directly.
  */
-PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct rb_io_buffer_t {
 
     /** Pointer to the underlying memory region, of at least `capa` bytes. */
     char *ptr;                  /* off + len <= capa */
@@ -101,7 +102,7 @@ PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
 
     /** Designed capacity of the buffer. */
     int capa;
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 /** @alias{rb_io_buffer_t} */
 typedef struct rb_io_buffer_t rb_io_buffer_t;

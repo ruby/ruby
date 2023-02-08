@@ -53,6 +53,7 @@ zlib.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 zlib.o: $(hdrdir)/ruby/internal/attr/noinline.h
 zlib.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 zlib.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+zlib.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 zlib.o: $(hdrdir)/ruby/internal/attr/pure.h
 zlib.o: $(hdrdir)/ruby/internal/attr/restrict.h
 zlib.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

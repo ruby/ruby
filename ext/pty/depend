@@ -53,6 +53,7 @@ pty.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 pty.o: $(hdrdir)/ruby/internal/attr/noinline.h
 pty.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 pty.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+pty.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 pty.o: $(hdrdir)/ruby/internal/attr/pure.h
 pty.o: $(hdrdir)/ruby/internal/attr/restrict.h
 pty.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

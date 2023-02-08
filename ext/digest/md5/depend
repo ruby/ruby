@@ -55,6 +55,7 @@ md5.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 md5.o: $(hdrdir)/ruby/internal/attr/noinline.h
 md5.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 md5.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+md5.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 md5.o: $(hdrdir)/ruby/internal/attr/pure.h
 md5.o: $(hdrdir)/ruby/internal/attr/restrict.h
 md5.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -217,6 +218,7 @@ md5init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 md5init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 md5init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 md5init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+md5init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 md5init.o: $(hdrdir)/ruby/internal/attr/pure.h
 md5init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 md5init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

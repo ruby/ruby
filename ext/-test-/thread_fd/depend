@@ -51,6 +51,7 @@ thread_fd.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/noinline.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+thread_fd.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/pure.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/restrict.h
 thread_fd.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

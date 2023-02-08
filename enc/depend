@@ -234,6 +234,7 @@ enc/ascii.$(OBJEXT): internal/attr/noexcept.h
 enc/ascii.$(OBJEXT): internal/attr/noinline.h
 enc/ascii.$(OBJEXT): internal/attr/nonnull.h
 enc/ascii.$(OBJEXT): internal/attr/noreturn.h
+enc/ascii.$(OBJEXT): internal/attr/packed_struct.h
 enc/ascii.$(OBJEXT): internal/attr/pure.h
 enc/ascii.$(OBJEXT): internal/attr/restrict.h
 enc/ascii.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -405,6 +406,7 @@ enc/big5.$(OBJEXT): internal/attr/noexcept.h
 enc/big5.$(OBJEXT): internal/attr/noinline.h
 enc/big5.$(OBJEXT): internal/attr/nonnull.h
 enc/big5.$(OBJEXT): internal/attr/noreturn.h
+enc/big5.$(OBJEXT): internal/attr/packed_struct.h
 enc/big5.$(OBJEXT): internal/attr/pure.h
 enc/big5.$(OBJEXT): internal/attr/restrict.h
 enc/big5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -568,6 +570,7 @@ enc/cesu_8.$(OBJEXT): internal/attr/noexcept.h
 enc/cesu_8.$(OBJEXT): internal/attr/noinline.h
 enc/cesu_8.$(OBJEXT): internal/attr/nonnull.h
 enc/cesu_8.$(OBJEXT): internal/attr/noreturn.h
+enc/cesu_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/cesu_8.$(OBJEXT): internal/attr/pure.h
 enc/cesu_8.$(OBJEXT): internal/attr/restrict.h
 enc/cesu_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -739,6 +742,7 @@ enc/cp949.$(OBJEXT): internal/attr/noexcept.h
 enc/cp949.$(OBJEXT): internal/attr/noinline.h
 enc/cp949.$(OBJEXT): internal/attr/nonnull.h
 enc/cp949.$(OBJEXT): internal/attr/noreturn.h
+enc/cp949.$(OBJEXT): internal/attr/packed_struct.h
 enc/cp949.$(OBJEXT): internal/attr/pure.h
 enc/cp949.$(OBJEXT): internal/attr/restrict.h
 enc/cp949.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -900,6 +904,7 @@ enc/emacs_mule.$(OBJEXT): internal/attr/noexcept.h
 enc/emacs_mule.$(OBJEXT): internal/attr/noinline.h
 enc/emacs_mule.$(OBJEXT): internal/attr/nonnull.h
 enc/emacs_mule.$(OBJEXT): internal/attr/noreturn.h
+enc/emacs_mule.$(OBJEXT): internal/attr/packed_struct.h
 enc/emacs_mule.$(OBJEXT): internal/attr/pure.h
 enc/emacs_mule.$(OBJEXT): internal/attr/restrict.h
 enc/emacs_mule.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1062,6 +1067,7 @@ enc/encdb.$(OBJEXT): internal/attr/noexcept.h
 enc/encdb.$(OBJEXT): internal/attr/noinline.h
 enc/encdb.$(OBJEXT): internal/attr/nonnull.h
 enc/encdb.$(OBJEXT): internal/attr/noreturn.h
+enc/encdb.$(OBJEXT): internal/attr/packed_struct.h
 enc/encdb.$(OBJEXT): internal/attr/pure.h
 enc/encdb.$(OBJEXT): internal/attr/restrict.h
 enc/encdb.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1235,6 +1241,7 @@ enc/euc_jp.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_jp.$(OBJEXT): internal/attr/noinline.h
 enc/euc_jp.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_jp.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_jp.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_jp.$(OBJEXT): internal/attr/pure.h
 enc/euc_jp.$(OBJEXT): internal/attr/restrict.h
 enc/euc_jp.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1396,6 +1403,7 @@ enc/euc_kr.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_kr.$(OBJEXT): internal/attr/noinline.h
 enc/euc_kr.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_kr.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_kr.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_kr.$(OBJEXT): internal/attr/pure.h
 enc/euc_kr.$(OBJEXT): internal/attr/restrict.h
 enc/euc_kr.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1557,6 +1565,7 @@ enc/euc_tw.$(OBJEXT): internal/attr/noexcept.h
 enc/euc_tw.$(OBJEXT): internal/attr/noinline.h
 enc/euc_tw.$(OBJEXT): internal/attr/nonnull.h
 enc/euc_tw.$(OBJEXT): internal/attr/noreturn.h
+enc/euc_tw.$(OBJEXT): internal/attr/packed_struct.h
 enc/euc_tw.$(OBJEXT): internal/attr/pure.h
 enc/euc_tw.$(OBJEXT): internal/attr/restrict.h
 enc/euc_tw.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1718,6 +1727,7 @@ enc/gb18030.$(OBJEXT): internal/attr/noexcept.h
 enc/gb18030.$(OBJEXT): internal/attr/noinline.h
 enc/gb18030.$(OBJEXT): internal/attr/nonnull.h
 enc/gb18030.$(OBJEXT): internal/attr/noreturn.h
+enc/gb18030.$(OBJEXT): internal/attr/packed_struct.h
 enc/gb18030.$(OBJEXT): internal/attr/pure.h
 enc/gb18030.$(OBJEXT): internal/attr/restrict.h
 enc/gb18030.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -1879,6 +1889,7 @@ enc/gb2312.$(OBJEXT): internal/attr/noexcept.h
 enc/gb2312.$(OBJEXT): internal/attr/noinline.h
 enc/gb2312.$(OBJEXT): internal/attr/nonnull.h
 enc/gb2312.$(OBJEXT): internal/attr/noreturn.h
+enc/gb2312.$(OBJEXT): internal/attr/packed_struct.h
 enc/gb2312.$(OBJEXT): internal/attr/pure.h
 enc/gb2312.$(OBJEXT): internal/attr/restrict.h
 enc/gb2312.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2040,6 +2051,7 @@ enc/gbk.$(OBJEXT): internal/attr/noexcept.h
 enc/gbk.$(OBJEXT): internal/attr/noinline.h
 enc/gbk.$(OBJEXT): internal/attr/nonnull.h
 enc/gbk.$(OBJEXT): internal/attr/noreturn.h
+enc/gbk.$(OBJEXT): internal/attr/packed_struct.h
 enc/gbk.$(OBJEXT): internal/attr/pure.h
 enc/gbk.$(OBJEXT): internal/attr/restrict.h
 enc/gbk.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2202,6 +2214,7 @@ enc/iso_8859_1.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_1.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_1.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2364,6 +2377,7 @@ enc/iso_8859_10.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_10.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_10.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2525,6 +2539,7 @@ enc/iso_8859_11.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_11.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_11.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2687,6 +2702,7 @@ enc/iso_8859_13.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_13.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_13.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -2849,6 +2865,7 @@ enc/iso_8859_14.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_14.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_14.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3011,6 +3028,7 @@ enc/iso_8859_15.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_15.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_15.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3173,6 +3191,7 @@ enc/iso_8859_16.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_16.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_16.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3335,6 +3354,7 @@ enc/iso_8859_2.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_2.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_2.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3497,6 +3517,7 @@ enc/iso_8859_3.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_3.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_3.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3659,6 +3680,7 @@ enc/iso_8859_4.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_4.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_4.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3820,6 +3842,7 @@ enc/iso_8859_5.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_5.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -3981,6 +4004,7 @@ enc/iso_8859_6.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_6.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_6.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4142,6 +4166,7 @@ enc/iso_8859_7.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_7.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_7.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4303,6 +4328,7 @@ enc/iso_8859_8.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4465,6 +4491,7 @@ enc/iso_8859_9.$(OBJEXT): internal/attr/noexcept.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/noinline.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/nonnull.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/noreturn.h
+enc/iso_8859_9.$(OBJEXT): internal/attr/packed_struct.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/pure.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/restrict.h
 enc/iso_8859_9.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4626,6 +4653,7 @@ enc/koi8_r.$(OBJEXT): internal/attr/noexcept.h
 enc/koi8_r.$(OBJEXT): internal/attr/noinline.h
 enc/koi8_r.$(OBJEXT): internal/attr/nonnull.h
 enc/koi8_r.$(OBJEXT): internal/attr/noreturn.h
+enc/koi8_r.$(OBJEXT): internal/attr/packed_struct.h
 enc/koi8_r.$(OBJEXT): internal/attr/pure.h
 enc/koi8_r.$(OBJEXT): internal/attr/restrict.h
 enc/koi8_r.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4787,6 +4815,7 @@ enc/koi8_u.$(OBJEXT): internal/attr/noexcept.h
 enc/koi8_u.$(OBJEXT): internal/attr/noinline.h
 enc/koi8_u.$(OBJEXT): internal/attr/nonnull.h
 enc/koi8_u.$(OBJEXT): internal/attr/noreturn.h
+enc/koi8_u.$(OBJEXT): internal/attr/packed_struct.h
 enc/koi8_u.$(OBJEXT): internal/attr/pure.h
 enc/koi8_u.$(OBJEXT): internal/attr/restrict.h
 enc/koi8_u.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -4951,6 +4980,7 @@ enc/shift_jis.$(OBJEXT): internal/attr/noexcept.h
 enc/shift_jis.$(OBJEXT): internal/attr/noinline.h
 enc/shift_jis.$(OBJEXT): internal/attr/nonnull.h
 enc/shift_jis.$(OBJEXT): internal/attr/noreturn.h
+enc/shift_jis.$(OBJEXT): internal/attr/packed_struct.h
 enc/shift_jis.$(OBJEXT): internal/attr/pure.h
 enc/shift_jis.$(OBJEXT): internal/attr/restrict.h
 enc/shift_jis.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5111,6 +5141,7 @@ enc/trans/big5.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/big5.$(OBJEXT): internal/attr/noinline.h
 enc/trans/big5.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/big5.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/big5.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/big5.$(OBJEXT): internal/attr/pure.h
 enc/trans/big5.$(OBJEXT): internal/attr/restrict.h
 enc/trans/big5.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5270,6 +5301,7 @@ enc/trans/cesu_8.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/noinline.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/cesu_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/pure.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/restrict.h
 enc/trans/cesu_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5429,6 +5461,7 @@ enc/trans/chinese.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/chinese.$(OBJEXT): internal/attr/noinline.h
 enc/trans/chinese.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/chinese.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/chinese.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/chinese.$(OBJEXT): internal/attr/pure.h
 enc/trans/chinese.$(OBJEXT): internal/attr/restrict.h
 enc/trans/chinese.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5588,6 +5621,7 @@ enc/trans/ebcdic.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/noinline.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/ebcdic.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/pure.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/restrict.h
 enc/trans/ebcdic.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5747,6 +5781,7 @@ enc/trans/emoji.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -5906,6 +5941,7 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6065,6 +6101,7 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6224,6 +6261,7 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6383,6 +6421,7 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noinline.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/pure.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/restrict.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6542,6 +6581,7 @@ enc/trans/escape.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/escape.$(OBJEXT): internal/attr/noinline.h
 enc/trans/escape.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/escape.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/escape.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/escape.$(OBJEXT): internal/attr/pure.h
 enc/trans/escape.$(OBJEXT): internal/attr/restrict.h
 enc/trans/escape.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6701,6 +6741,7 @@ enc/trans/gb18030.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/noinline.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/gb18030.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/pure.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/restrict.h
 enc/trans/gb18030.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -6860,6 +6901,7 @@ enc/trans/gbk.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/gbk.$(OBJEXT): internal/attr/noinline.h
 enc/trans/gbk.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/gbk.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/gbk.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/gbk.$(OBJEXT): internal/attr/pure.h
 enc/trans/gbk.$(OBJEXT): internal/attr/restrict.h
 enc/trans/gbk.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7019,6 +7061,7 @@ enc/trans/iso2022.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noinline.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/iso2022.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/pure.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/restrict.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7178,6 +7221,7 @@ enc/trans/japanese.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7337,6 +7381,7 @@ enc/trans/japanese_euc.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese_euc.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese_euc.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7496,6 +7541,7 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noinline.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/japanese_sjis.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/pure.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/restrict.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7655,6 +7701,7 @@ enc/trans/korean.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/korean.$(OBJEXT): internal/attr/noinline.h
 enc/trans/korean.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/korean.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/korean.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/korean.$(OBJEXT): internal/attr/pure.h
 enc/trans/korean.$(OBJEXT): internal/attr/restrict.h
 enc/trans/korean.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7813,6 +7860,7 @@ enc/trans/newline.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/newline.$(OBJEXT): internal/attr/noinline.h
 enc/trans/newline.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/newline.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/newline.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/newline.$(OBJEXT): internal/attr/pure.h
 enc/trans/newline.$(OBJEXT): internal/attr/restrict.h
 enc/trans/newline.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -7972,6 +8020,7 @@ enc/trans/single_byte.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/noinline.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/single_byte.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/pure.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/restrict.h
 enc/trans/single_byte.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8131,6 +8180,7 @@ enc/trans/transdb.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/transdb.$(OBJEXT): internal/attr/noinline.h
 enc/trans/transdb.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/transdb.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/transdb.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/transdb.$(OBJEXT): internal/attr/pure.h
 enc/trans/transdb.$(OBJEXT): internal/attr/restrict.h
 enc/trans/transdb.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8291,6 +8341,7 @@ enc/trans/utf8_mac.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/noinline.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/utf8_mac.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/pure.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/restrict.h
 enc/trans/utf8_mac.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8450,6 +8501,7 @@ enc/trans/utf_16_32.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/noinline.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/nonnull.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/noreturn.h
+enc/trans/utf_16_32.$(OBJEXT): internal/attr/packed_struct.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/pure.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/restrict.h
 enc/trans/utf_16_32.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8612,6 +8664,7 @@ enc/unicode.$(OBJEXT): internal/attr/noexcept.h
 enc/unicode.$(OBJEXT): internal/attr/noinline.h
 enc/unicode.$(OBJEXT): internal/attr/nonnull.h
 enc/unicode.$(OBJEXT): internal/attr/noreturn.h
+enc/unicode.$(OBJEXT): internal/attr/packed_struct.h
 enc/unicode.$(OBJEXT): internal/attr/pure.h
 enc/unicode.$(OBJEXT): internal/attr/restrict.h
 enc/unicode.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8774,6 +8827,7 @@ enc/us_ascii.$(OBJEXT): internal/attr/noexcept.h
 enc/us_ascii.$(OBJEXT): internal/attr/noinline.h
 enc/us_ascii.$(OBJEXT): internal/attr/nonnull.h
 enc/us_ascii.$(OBJEXT): internal/attr/noreturn.h
+enc/us_ascii.$(OBJEXT): internal/attr/packed_struct.h
 enc/us_ascii.$(OBJEXT): internal/attr/pure.h
 enc/us_ascii.$(OBJEXT): internal/attr/restrict.h
 enc/us_ascii.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -8946,6 +9000,7 @@ enc/utf_16be.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_16be.$(OBJEXT): internal/attr/noinline.h
 enc/utf_16be.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_16be.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_16be.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_16be.$(OBJEXT): internal/attr/pure.h
 enc/utf_16be.$(OBJEXT): internal/attr/restrict.h
 enc/utf_16be.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9108,6 +9163,7 @@ enc/utf_16le.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_16le.$(OBJEXT): internal/attr/noinline.h
 enc/utf_16le.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_16le.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_16le.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_16le.$(OBJEXT): internal/attr/pure.h
 enc/utf_16le.$(OBJEXT): internal/attr/restrict.h
 enc/utf_16le.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9270,6 +9326,7 @@ enc/utf_32be.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_32be.$(OBJEXT): internal/attr/noinline.h
 enc/utf_32be.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_32be.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_32be.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_32be.$(OBJEXT): internal/attr/pure.h
 enc/utf_32be.$(OBJEXT): internal/attr/restrict.h
 enc/utf_32be.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9432,6 +9489,7 @@ enc/utf_32le.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_32le.$(OBJEXT): internal/attr/noinline.h
 enc/utf_32le.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_32le.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_32le.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_32le.$(OBJEXT): internal/attr/pure.h
 enc/utf_32le.$(OBJEXT): internal/attr/restrict.h
 enc/utf_32le.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9594,6 +9652,7 @@ enc/utf_8.$(OBJEXT): internal/attr/noexcept.h
 enc/utf_8.$(OBJEXT): internal/attr/noinline.h
 enc/utf_8.$(OBJEXT): internal/attr/nonnull.h
 enc/utf_8.$(OBJEXT): internal/attr/noreturn.h
+enc/utf_8.$(OBJEXT): internal/attr/packed_struct.h
 enc/utf_8.$(OBJEXT): internal/attr/pure.h
 enc/utf_8.$(OBJEXT): internal/attr/restrict.h
 enc/utf_8.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9766,6 +9825,7 @@ enc/windows_1250.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1250.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1250.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1250.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1250.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1250.$(OBJEXT): internal/attr/pure.h
 enc/windows_1250.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1250.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -9927,6 +9987,7 @@ enc/windows_1251.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1251.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1251.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1251.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1251.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1251.$(OBJEXT): internal/attr/pure.h
 enc/windows_1251.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1251.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10089,6 +10150,7 @@ enc/windows_1252.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1252.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1252.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1252.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1252.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1252.$(OBJEXT): internal/attr/pure.h
 enc/windows_1252.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1252.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10250,6 +10312,7 @@ enc/windows_1253.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1253.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1253.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1253.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1253.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1253.$(OBJEXT): internal/attr/pure.h
 enc/windows_1253.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1253.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10412,6 +10475,7 @@ enc/windows_1254.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1254.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1254.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1254.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1254.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1254.$(OBJEXT): internal/attr/pure.h
 enc/windows_1254.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1254.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10574,6 +10638,7 @@ enc/windows_1257.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_1257.$(OBJEXT): internal/attr/noinline.h
 enc/windows_1257.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_1257.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_1257.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_1257.$(OBJEXT): internal/attr/pure.h
 enc/windows_1257.$(OBJEXT): internal/attr/restrict.h
 enc/windows_1257.$(OBJEXT): internal/attr/returns_nonnull.h
@@ -10738,6 +10803,7 @@ enc/windows_31j.$(OBJEXT): internal/attr/noexcept.h
 enc/windows_31j.$(OBJEXT): internal/attr/noinline.h
 enc/windows_31j.$(OBJEXT): internal/attr/nonnull.h
 enc/windows_31j.$(OBJEXT): internal/attr/noreturn.h
+enc/windows_31j.$(OBJEXT): internal/attr/packed_struct.h
 enc/windows_31j.$(OBJEXT): internal/attr/pure.h
 enc/windows_31j.$(OBJEXT): internal/attr/restrict.h
 enc/windows_31j.$(OBJEXT): internal/attr/returns_nonnull.h

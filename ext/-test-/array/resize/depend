@@ -51,6 +51,7 @@ resize.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 resize.o: $(hdrdir)/ruby/internal/attr/noinline.h
 resize.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 resize.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+resize.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 resize.o: $(hdrdir)/ruby/internal/attr/pure.h
 resize.o: $(hdrdir)/ruby/internal/attr/restrict.h
 resize.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

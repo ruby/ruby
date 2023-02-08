@@ -52,6 +52,7 @@ wait.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 wait.o: $(hdrdir)/ruby/internal/attr/noinline.h
 wait.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 wait.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+wait.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 wait.o: $(hdrdir)/ruby/internal/attr/pure.h
 wait.o: $(hdrdir)/ruby/internal/attr/restrict.h
 wait.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

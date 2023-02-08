@@ -52,6 +52,7 @@ arity.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 arity.o: $(hdrdir)/ruby/internal/attr/noinline.h
 arity.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 arity.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+arity.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 arity.o: $(hdrdir)/ruby/internal/attr/pure.h
 arity.o: $(hdrdir)/ruby/internal/attr/restrict.h
 arity.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -212,6 +213,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

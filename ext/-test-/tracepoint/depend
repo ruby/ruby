@@ -52,6 +52,7 @@ gc_hook.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/noinline.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+gc_hook.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/pure.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/restrict.h
 gc_hook.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -212,6 +213,7 @@ tracepoint.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/noinline.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+tracepoint.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/pure.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/restrict.h
 tracepoint.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

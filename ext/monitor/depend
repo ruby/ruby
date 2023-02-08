@@ -51,6 +51,7 @@ monitor.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 monitor.o: $(hdrdir)/ruby/internal/attr/noinline.h
 monitor.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 monitor.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+monitor.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 monitor.o: $(hdrdir)/ruby/internal/attr/pure.h
 monitor.o: $(hdrdir)/ruby/internal/attr/restrict.h
 monitor.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

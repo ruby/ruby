@@ -52,6 +52,7 @@ instrumentation.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/noinline.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+instrumentation.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/pure.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/restrict.h
 instrumentation.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

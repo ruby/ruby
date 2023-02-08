@@ -52,6 +52,7 @@ usrmarshal.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/noinline.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+usrmarshal.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/pure.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/restrict.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
