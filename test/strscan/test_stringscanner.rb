@@ -7,11 +7,7 @@
 require 'strscan'
 require 'test/unit'
 
-class TestStringScanner < Test::Unit::TestCase
-  def create_string_scanner(string, *args)
-    StringScanner.new(string, *args)
-  end
-
+module StringScannerTests
   def test_s_new
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
@@ -753,19 +749,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil(s.values_at(0, -1, 5, 2))
   end
 
-  def test_fixed_anchor_true
-    assert_equal(true,  StringScanner.new("a", fixed_anchor: true).fixed_anchor?)
-  end
-
-  def test_fixed_anchor_false
-    assert_equal(false, StringScanner.new("a").fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", true).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", false).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", {}).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", fixed_anchor: nil).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", fixed_anchor: false).fixed_anchor?)
-  end
-
   def test_scan_aref_repeatedly
     s = StringScanner.new('test string')
     assert_equal "test",   s.scan(/\w(\w)(\w*)/)
@@ -794,7 +777,30 @@ class TestStringScanner < Test::Unit::TestCase
   end
 end
 
-class TestStringScannerFixedAnchor < TestStringScanner
+class TestStringScanner < Test::Unit::TestCase
+  include StringScannerTests
+
+  def create_string_scanner(string, *args)
+    StringScanner.new(string, *args)
+  end
+
+  def test_fixed_anchor_true
+    assert_equal(true,  StringScanner.new("a", fixed_anchor: true).fixed_anchor?)
+  end
+
+  def test_fixed_anchor_false
+    assert_equal(false, StringScanner.new("a").fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", true).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", false).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", {}).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", fixed_anchor: nil).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", fixed_anchor: false).fixed_anchor?)
+  end
+end
+
+class TestStringScannerFixedAnchor < Test::Unit::TestCase
+  include StringScannerTests
+
   def create_string_scanner(string, *args)
     StringScanner.new(string, fixed_anchor: true)
   end
