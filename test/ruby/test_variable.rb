@@ -33,6 +33,12 @@ class TestVariable < Test::Unit::TestCase
     end
   end
 
+  Athena = Gods.clone
+
+  def test_cloned_classes_copy_cvar_cache
+    assert_equal "Cronus", Athena.new.ruler0
+  end
+
   def test_setting_class_variable_on_module_through_inheritance
     mod = Module.new
     mod.class_variable_set(:@@foo, 1)
