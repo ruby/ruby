@@ -1,8 +1,7 @@
 module RubyVM::MJIT
   class ExitCompiler
     def initialize
-      # TODO: Use GC offsets
-      @gc_refs = []
+      @gc_refs = [] # TODO: GC offsets?
     end
 
     # Used for invalidating a block on entry.

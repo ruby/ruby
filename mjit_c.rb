@@ -467,6 +467,14 @@ module RubyVM::MJIT # :nodoc: all
     @RB_BUILTIN ||= self.rb_builtin_function
   end
 
+  def C.RBasic
+    @RBasic ||= CType::Struct.new(
+      "RBasic", Primitive.cexpr!("SIZEOF(struct RBasic)"),
+      flags: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct RBasic *)NULL)), flags)")],
+      klass: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct RBasic *)NULL)), klass)")],
+    )
+  end
+
   def C.RObject
     @RObject ||= CType::Struct.new(
       "RObject", Primitive.cexpr!("SIZEOF(struct RObject)"),
@@ -859,15 +867,21 @@ module RubyVM::MJIT # :nodoc: all
       "rb_mjit_runtime_counters", Primitive.cexpr!("SIZEOF(struct rb_mjit_runtime_counters)"),
       vm_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), vm_insns_count)")],
       mjit_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), mjit_insns_count)")],
+      send_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_args_splat)")],
+      send_klass_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_klass_megamorphic)")],
       send_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_kw_splat)")],
-      send_guard_known_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_known_object)")],
+      send_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_kwarg)")],
       send_missing_cme: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_missing_cme)")],
+      send_not_iseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_not_iseq)")],
       send_private: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_private)")],
       send_protected: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_protected)")],
-      send_not_iseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_not_iseq)")],
-      send_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_args_splat)")],
-      send_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_kwarg)")],
       send_tailcall: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_tailcall)")],
+      send_guard_nil: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_nil)")],
+      send_guard_true: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_true)")],
+      send_guard_false: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_false)")],
+      send_guard_integer: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_integer)")],
+      send_guard_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_symbol)")],
+      send_guard_float: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_float)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],
       getivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_heap)")],
       getivar_not_t_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_t_object)")],
@@ -920,10 +934,6 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.shape_id_t
     @shape_id_t ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(shape_id_t)"), Primitive.cexpr!("SIGNED_TYPE_P(shape_id_t)"))
-  end
-
-  def C.RBasic
-    CType::Stub.new(:RBasic)
   end
 
   def C.rb_id_table

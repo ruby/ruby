@@ -400,6 +400,7 @@ generator = BindingGenerator.new(
     IC
     IVC
     RB_BUILTIN
+    RBasic
     RObject
     attr_index_t
     compile_branch

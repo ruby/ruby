@@ -6,6 +6,7 @@ module RubyVM::MJIT
       @ocb = ocb
       @exit_compiler = exit_compiler
       @invariants = Invariants.new(cb, ocb, exit_compiler)
+      @gc_refs = [] # TODO: GC offsets?
       # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
@@ -150,7 +151,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def getinstancevariable(jit, ctx, asm)
-      # Specialize on compile-time receiver, and split a block for chain guards
+      # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
         return EndBlock
@@ -578,7 +579,12 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 10)
-      assert_equal(opcode, :jne) # TODO: support more
+      case opcode
+      when :je, :jne, :jnz
+        # ok
+      else
+        raise ArgumentError, "jit_chain_guard: unexpected opcode #{opcode.inspect}"
+      end
 
       if ctx.chain_depth < limit
         deeper = ctx.dup
@@ -598,13 +604,64 @@ module RubyVM::MJIT
           branch_asm.stub(branch_stub) do
             case branch_stub.shape
             in Default
-              asm.jne(branch_stub.target0.address)
+              asm.public_send(opcode, branch_stub.target0.address)
             end
           end
         end
         branch_stub.compile.call(asm)
       else
-        asm.jne(side_exit)
+        asm.public_send(opcode, side_exit)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_guard_known_class(jit, ctx, asm, known_klass, obj_opnd, comptime_obj, side_exit, limit: 5)
+      if known_klass == NilClass
+        asm.incr_counter(:send_guard_nil)
+        return CantCompile
+      elsif known_klass == TrueClass
+        asm.incr_counter(:send_guard_true)
+        return CantCompile
+      elsif known_klass == FalseClass
+        asm.incr_counter(:send_guard_false)
+        return CantCompile
+      elsif known_klass == Integer
+        asm.incr_counter(:send_guard_integer)
+        return CantCompile
+      elsif known_klass == Symbol
+        asm.incr_counter(:send_guard_symbol)
+        return CantCompile
+      elsif known_klass == Float
+        asm.incr_counter(:send_guard_float)
+        return CantCompile
+      elsif known_klass.singleton_class?
+        asm.comment('guard known object with singleton class')
+        asm.mov(:rax, C.to_value(comptime_obj))
+        asm.cmp(obj_opnd, :rax)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
+      else
+        # If obj_opnd isn't already a register, load it.
+        if obj_opnd.is_a?(Array)
+          asm.mov(:rax, obj_opnd)
+          obj_opnd = :rax
+        end
+
+        # Check that the receiver is a heap object
+        # Note: if we get here, the class doesn't have immediate instances.
+        asm.comment('guard not immediate')
+        asm.test(obj_opnd, C.RUBY_IMMEDIATE_MASK)
+        jit_chain_guard(:jnz, jit, ctx, asm, side_exit, limit:)
+        asm.cmp(obj_opnd, Qfalse)
+        jit_chain_guard(:je, jit, ctx, asm, side_exit, limit:)
+
+        # Bail if receiver class is different from known_klass
+        klass_opnd = [obj_opnd, C.RBasic.offsetof(:klass)]
+        asm.comment('guard known class')
+        asm.mov(:rcx, to_value(known_klass))
+        asm.cmp(klass_opnd, :rcx)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       end
     end
 
@@ -714,11 +771,16 @@ module RubyVM::MJIT
       mid = C.vm_ci_mid(ci)
       flags = C.vm_ci_flag(ci)
 
+      # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
         return EndBlock
       end
 
+      # Generate a side exit
+      side_exit = side_exit(jit, ctx)
+
+      # Calculate a receiver index
       if flags & C.VM_CALL_KW_SPLAT != 0
         # recv_index calculation may not work for this
         asm.incr_counter(:send_kw_splat)
@@ -726,18 +788,14 @@ module RubyVM::MJIT
       end
       recv_index = argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1)
 
+      # Get a compile-time receiver and its class
       comptime_recv = jit.peek_at_stack(recv_index)
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
       # Guard the receiver class (part of vm_search_method_fastpath)
-      if comptime_recv_klass.singleton_class?
-        asm.comment('guard known object with singleton class')
-        asm.mov(:rax, C.to_value(comptime_recv))
-        asm.cmp([SP, C.VALUE.size * (ctx.sp_offset - 1 - recv_index)], :rax)
-        asm.jne(side_exit(jit, ctx))
-      else
-        # TODO: support more classes
-        asm.incr_counter(:send_guard_known_object)
+      recv_opnd = [SP, C.VALUE.size * (ctx.sp_offset - 1 - recv_index)]
+      megamorphic_exit = counted_exit(side_exit, :send_klass_megamorphic)
+      if jit_guard_known_class(jit, ctx, asm, comptime_recv_klass, recv_opnd, comptime_recv, megamorphic_exit) == CantCompile
         return CantCompile
       end
 
@@ -1028,6 +1086,11 @@ module RubyVM::MJIT
 
     def def_iseq_ptr(cme_def)
       C.rb_iseq_check(cme_def.body.iseq.iseqptr)
+    end
+
+    def to_value(obj)
+      @gc_refs << obj
+      C.to_value(obj)
     end
   end
 end
