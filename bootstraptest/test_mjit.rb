@@ -8,3 +8,9 @@ assert_equal 'true', %q{
   lt(1, 2)
   lt('a', 'b')
 }
+
+assert_equal '3', %q{
+  def foo = 2
+  def bar = 1 + foo + nil.to_i
+  bar
+}
