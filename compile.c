@@ -17,7 +17,6 @@
 #endif
 
 #include "encindex.h"
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -25,6 +24,7 @@
 #include "internal/complex.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"

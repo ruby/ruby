@@ -54,7 +54,7 @@
 #endif
 
 #if HASH_DEBUG
-#include "gc.h"
+#include "internal/gc.h"
 #endif
 
 #define SET_DEFAULT(hash, ifnone) ( \

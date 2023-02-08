@@ -23,7 +23,6 @@
 
 #include "debug_counter.h"
 #include "encindex.h"
-#include "gc.h"
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"

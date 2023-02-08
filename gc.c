@@ -97,7 +97,6 @@
 #include "constant.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"

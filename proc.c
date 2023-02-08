@@ -10,11 +10,11 @@
 **********************************************************************/
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
