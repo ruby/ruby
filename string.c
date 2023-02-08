@@ -413,10 +413,21 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
         /* because of lazy sweep, str may be unmarked already and swept
          * at next time */
 
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // When using MMTk, the fstring_table is handled like other weak tables.
+            // Entries of dead fstrings are removed, and entries of live fstrings are forwarded.
+            // It ensures mutators never see dangling pointers in the table.
+            RUBY_ASSERT(mmtk_is_mmtk_object((MMTk_Address)(str)));
+        } else {
+#endif
         if (rb_objspace_garbage_object_p(str)) {
             arg->fstr = Qundef;
             return ST_DELETE;
         }
+#if USE_MMTK
+        }
+#endif
 
         arg->fstr = str;
         return ST_STOP;
@@ -1588,6 +1599,18 @@ rb_str_tmp_new(long len)
 void
 rb_str_free(VALUE str)
 {
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+    // Vanilla Ruby deletes string from fstring_table when it is found dead.
+    // This behaves like weak table.
+    // However, with MMTk, rb_str_free is called during weak reference processing,
+    // at which time live objects have been forwarded
+    // but entries of fstring_table are not forwarded, yet.
+    // (Note: fstring_table entries are not marked in rb_vm_mark().)
+    // If we attempt to access fstring_table now,
+    // it may see pointers to from-space objects, and crash.
+    // We instead handle fstring_table in rb_mmtk_update_global_weak_tables.
+#endif
     if (FL_TEST(str, RSTRING_FSTR)) {
         st_data_t fstr = (st_data_t)str;
 
@@ -1598,6 +1621,9 @@ rb_str_free(VALUE str)
         }
         RB_VM_LOCK_LEAVE();
     }
+#if USE_MMTK
+    }
+#endif
 
     if (STR_EMBED_P(str)) {
         RB_DEBUG_COUNTER_INC(obj_str_embed);

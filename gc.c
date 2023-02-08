@@ -15942,6 +15942,23 @@ rb_mmtk_on_obj_to_id_tbl_delete(st_data_t key, st_data_t value, void *arg)
 }
 
 static void
+rb_mmtk_on_fstring_table_delete(st_data_t key, st_data_t value, void *arg)
+{
+#if USE_RUBY_DEBUG_LOG
+    RUBY_DEBUG_LOG("Deleting from fstring_table: %p [%.60s]", (void*)key,
+        // NOTE: At this stage, dead objects are not cleared, yet,
+        // so we can still read their contents.
+        // But type information objects (klass, etc.) have been relocated (if copying GC),
+        // and dead objects are not scanned,
+        // so we can't do any assertions about types now.
+        RB_FL_ANY_RAW((VALUE)key, RSTRING_NOEMBED) ?
+        // as.heap.ptr points to off-heap xmalloc-ed buffer.  It is not be moved.
+        RSTRING(key)->as.heap.ptr :
+        RSTRING(key)->as.embed.ary);
+#endif
+}
+
+static void
 rb_mmtk_update_global_weak_tables(void)
 {
     rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_key_only);
@@ -15964,6 +15981,12 @@ rb_mmtk_update_global_weak_tables(void)
     rb_mmtk_update_weak_table(&rb_objspace.obj_to_id_tbl,
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
+                              NULL);
+
+    // Update the fstring_table, and remove dead objects.
+    rb_mmtk_update_weak_table(&GET_VM()->frozen_strings,
+                              true,
+                              rb_mmtk_on_fstring_table_delete,
                               NULL);
 
     // Now that dead objects are removed, we forward keys and values now.
