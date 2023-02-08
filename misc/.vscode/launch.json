@@ -6,7 +6,7 @@
             "name": "Run ruby",
             "request": "launch",
             "program": "${workspaceFolder}/ruby",
-            "args": ["-e", "p 1"],
+            "args": ["test.rb"],
             "preLaunchTask": "${defaultBuildTask}"
         }
     ]
