@@ -17,9 +17,9 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 13/101
+      # 14/101
       case insn.name
-      # nop
+      when :nop then nop(jit, ctx, asm)
       # getlocal
       # setlocal
       # getblockparam
@@ -129,7 +129,14 @@ module RubyVM::MJIT
     # Insns
     #
 
-    # nop
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def nop(jit, ctx, asm)
+      # Do nothing
+      KeepCompiling
+    end
+
     # getlocal
     # setlocal
     # getblockparam
