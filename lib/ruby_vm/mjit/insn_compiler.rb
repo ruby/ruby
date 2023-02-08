@@ -947,7 +947,7 @@ module RubyVM::MJIT
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
       # Guard the receiver class (part of vm_search_method_fastpath)
-      recv_opnd = [SP, C.VALUE.size * (ctx.sp_offset - 1 - recv_index)]
+      recv_opnd = ctx.stack_opnd(recv_index)
       megamorphic_exit = counted_exit(side_exit, :send_klass_megamorphic)
       if jit_guard_known_class(jit, ctx, asm, comptime_recv_klass, recv_opnd, comptime_recv, megamorphic_exit) == CantCompile
         return CantCompile
