@@ -10736,7 +10736,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 void
-rb_iseq_mark_and_update_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);

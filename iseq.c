@@ -283,7 +283,7 @@ rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
 }
 
 void
-rb_iseq_mark_and_update(rb_iseq_t *iseq, bool reference_updating)
+rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 {
     RUBY_MARK_ENTER("iseq");
 
@@ -379,7 +379,7 @@ rb_iseq_mark_and_update(rb_iseq_t *iseq, bool reference_updating)
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
         const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-        rb_iseq_mark_and_update_insn_storage(compile_data->insn.storage_head);
+        rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
 
         rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
         rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
