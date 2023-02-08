@@ -880,7 +880,7 @@ RSpec.describe "bundle lock" do
             and rails >= 7.0.2.3, < 7.0.3.1 depends on activesupport = 7.0.2.3,
             every version of activemodel is incompatible with rails >= 7.0.2.3, < 7.0.3.1.
           And because rails >= 7.0.2.3, < 7.0.3.1 depends on activemodel = 7.0.2.3,
-            rails >= 7.0.2.3, < 7.0.3.1 is forbidden.
+            rails >= 7.0.2.3, < 7.0.3.1 cannot be used.
       (1) So, because rails >= 7.0.3.1, < 7.0.4 depends on activemodel = 7.0.3.1
             and rails >= 7.0.4 depends on activemodel = 7.0.4,
             rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4.
@@ -892,7 +892,7 @@ RSpec.describe "bundle lock" do
             and every version of activemodel depends on activesupport = 6.0.4,
             activemodel != 7.0.2.3 is incompatible with rails >= 7.0.2.3.
           And because rails >= 7.0.2.3 requires activemodel = 7.0.3.1 OR = 7.0.4 (1),
-            rails >= 7.0.2.3 is forbidden.
+            rails >= 7.0.2.3 cannot be used.
           So, because Gemfile depends on rails >= 7.0.2.3,
             version solving has failed.
     ERR
