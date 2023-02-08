@@ -38,8 +38,6 @@ options:
   -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
   -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
   -unicode_version=VER  Unicode version to generate encodings
-  -svn[=URL]            make snapshot from SVN repository
-                        (#{SVNURL})
   -help, --help         show this message
 version:
   master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
@@ -69,7 +67,6 @@ if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
   ENV["GNUMAKEFLAGS"] = (mflags unless mflags.empty?)
 end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
-SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
 # https git clone is disabled at git.ruby-lang.org/ruby.git.
 GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
@@ -589,20 +586,18 @@ ensure
   Dir.chdir(pwd)
 end
 
-if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
-  abort "#{File.basename $0}: -srcdir, -svn, and -git are exclusive"
+if [$srcdir, ($git||=nil)].compact.size > 1
+  abort "#{File.basename $0}: -srcdir and -git are exclusive"
 end
 if $srcdir
   vcs = VCS.detect($srcdir)
-elsif $svn
-  vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
 elsif $git
   abort "#{File.basename $0}: use -srcdir with cloned local repository"
 else
   begin
     vcs = VCS.detect(File.expand_path("../..", __FILE__))
   rescue VCS::NotFoundError
-    vcs = VCS::SVN.new(SVNURL)
+    abort "#{File.expand_path("../..", __FILE__)}: cannot find git repository"
   end
 end
 
