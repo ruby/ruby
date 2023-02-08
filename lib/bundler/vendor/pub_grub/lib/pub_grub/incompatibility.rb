@@ -76,9 +76,13 @@ module Bundler::PubGrub
         elsif terms.length == 1
           term = terms[0]
           if term.positive?
-            "#{terms[0].to_s(allow_every: true)} is forbidden"
+            if term.constraint.any?
+              "#{term.package} cannot be used"
+            else
+              "#{term.to_s(allow_every: true)} cannot be used"
+            end
           else
-            "#{terms[0].invert} is required"
+            "#{term.invert} is required"
           end
         else
           if terms.all?(&:positive?)

@@ -432,7 +432,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       Because every version of sorbet depends on sorbet-static = 0.5.6433
         and sorbet-static = 0.5.6433 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally for any resolution platforms (arm64-darwin-21),
-        every version of sorbet is forbidden.
+        sorbet cannot be used.
       So, because Gemfile depends on sorbet = 0.5.6433,
         version solving has failed.
 
