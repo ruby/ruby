@@ -110,12 +110,12 @@ module Bundler
 
       warning = []
       warning << "Your lockfile doesn't include a valid resolution."
-      warning << "You can fix this by regenerating your lockfile or trying to manually editing the bad locked gems to a version that satisfies all dependencies."
+      warning << "You can fix this by regenerating your lockfile or manually editing the bad locked gems to a version that satisfies all dependencies."
       warning << "The unmet dependencies are:"
 
       unmet_dependencies.each do |spec, unmet_spec_dependencies|
         unmet_spec_dependencies.each do |unmet_spec_dependency|
-          warning << "* #{unmet_spec_dependency}, depended upon #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
+          warning << "* #{unmet_spec_dependency}, dependency of #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
         end
       end
 
