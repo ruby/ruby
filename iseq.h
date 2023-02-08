@@ -270,10 +270,11 @@ struct iseq_catch_table_entry {
     unsigned int sp;
 };
 
-PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct iseq_catch_table {
     unsigned int size;
     struct iseq_catch_table_entry entries[FLEX_ARY_LEN];
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 static inline int
 iseq_catch_table_bytes(int n)

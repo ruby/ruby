@@ -1754,12 +1754,13 @@ localtimew(wideval_t timew, struct vtm *result)
 #define TIME_TZMODE_FIXOFF 2
 #define TIME_TZMODE_UNINITIALIZED 3
 
-PACKED_STRUCT_UNALIGNED(struct time_object {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
     unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:uninitialized */
     unsigned int tm_got:1;
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 #define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))
