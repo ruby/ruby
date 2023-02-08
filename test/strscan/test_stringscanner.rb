@@ -155,8 +155,10 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_string
-    s = create_string_scanner('test')
-    assert_equal 'test', s.string
+    s = create_string_scanner('test string')
+    assert_equal 'test string', s.string
+    s.scan(/test/)
+    assert_equal 'test string', s.string
     s.string = 'a'
     assert_equal 'a', s.string
     s.scan(/a/)
