@@ -18,5 +18,13 @@ module RubyVM::MJIT
       self.sp_offset -= size
       [SP, C.VALUE.size * self.sp_offset]
     end
+
+    def stack_opnd(depth_from_top)
+      [SP, C.VALUE.size * (self.sp_offset - 1 - depth_from_top)]
+    end
+
+    def sp_opnd(offset_bytes)
+      [SP, (C.VALUE.size * self.sp_offset) + offset_bytes]
+    end
   end
 end

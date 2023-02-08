@@ -127,6 +127,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'RBOOL(FL_TEST_RAW((VALUE)NUM2SIZET(_value), (VALUE)NUM2SIZET(flags)))'
     end
 
+    def rb_hash_aref
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aref)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -287,6 +291,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_SPECVAL) }
   end
 
+  def C.BOP_AREF
+    Primitive.cexpr! %q{ UINT2NUM(BOP_AREF) }
+  end
+
   def C.BOP_LT
     Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
   end
@@ -297,6 +305,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.BOP_PLUS
     Primitive.cexpr! %q{ UINT2NUM(BOP_PLUS) }
+  end
+
+  def C.HASH_REDEFINED_OP_FLAG
+    Primitive.cexpr! %q{ UINT2NUM(HASH_REDEFINED_OP_FLAG) }
   end
 
   def C.INTEGER_REDEFINED_OP_FLAG
@@ -887,6 +899,10 @@ module RubyVM::MJIT # :nodoc: all
       getivar_not_t_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_t_object)")],
       getivar_special_const: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_special_const)")],
       getivar_too_complex: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_too_complex)")],
+      optaref_argc_not_one: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_argc_not_one)")],
+      optaref_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_array)")],
+      optaref_not_hash: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_not_hash)")],
+      optaref_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_send)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end

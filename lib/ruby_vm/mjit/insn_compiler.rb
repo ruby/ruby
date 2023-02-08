@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 15/101
+      # 16/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -102,7 +102,7 @@ module RubyVM::MJIT
       # opt_ltlt
       # opt_and
       # opt_or
-      # opt_aref
+      when :opt_aref then opt_aref(jit, ctx, asm)
       # opt_aset
       # opt_aset_with
       # opt_aref_with
@@ -488,7 +488,70 @@ module RubyVM::MJIT
     # opt_ltlt
     # opt_and
     # opt_or
-    # opt_aref
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_aref(jit, ctx, asm)
+      cd = C.rb_call_data.new(jit.operand(0))
+      argc = C.vm_ci_argc(cd.ci)
+
+      if argc != 1
+        asm.incr_counter(:optaref_argc_not_one)
+        return CantCompile
+      end
+
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_obj  = jit.peek_at_stack(0)
+
+      side_exit = side_exit(jit, ctx)
+
+      if comptime_recv.class == Array && fixnum?(comptime_obj)
+        asm.incr_counter(:optaref_array)
+        CantCompile
+      elsif comptime_recv.class == Hash
+        unless @invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
+          return CantCompile
+        end
+
+        recv_opnd = ctx.stack_opnd(1)
+
+        # Guard that the receiver is a Hash
+        not_hash_exit = counted_exit(side_exit, :optaref_not_hash)
+        if jit_guard_known_class(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_hash_exit) == CantCompile
+          return CantCompile
+        end
+
+        # Prepare to call rb_hash_aref(). It might call #hash on the key.
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        asm.comment('call rb_hash_aref')
+        key_opnd = ctx.stack_opnd(0)
+        recv_opnd = ctx.stack_opnd(1)
+        asm.mov(:rdi, recv_opnd)
+        asm.mov(:rsi, key_opnd)
+        asm.call(C.rb_hash_aref)
+
+        # Pop the key and the receiver
+        ctx.stack_pop(2)
+
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, :rax)
+
+        # Let guard chains share the same successor
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
+      else
+        asm.incr_counter(:optaref_send)
+        CantCompile
+      end
+    end
+
     # opt_aset
     # opt_aset_with
     # opt_aref_with
@@ -662,6 +725,35 @@ module RubyVM::MJIT
         asm.mov(:rcx, to_value(known_klass))
         asm.cmp(klass_opnd, :rcx)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_prepare_routine_call(jit, ctx, asm)
+      jit_save_pc(jit, asm)
+      jit_save_sp(jit, ctx, asm)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_save_pc(jit, asm)
+      next_pc = jit.pc + jit.insn.len * C.VALUE.size # Use the next one for backtrace and side exits
+      asm.comment('save PC to CFP')
+      asm.mov(:rax, next_pc)
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_save_sp(jit, ctx, asm)
+      if ctx.sp_offset != 0
+        asm.comment('save SP to CFP')
+        asm.lea(SP, ctx.sp_opnd(0))
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+        ctx.sp_offset = 0
       end
     end
 

@@ -132,6 +132,11 @@ MJIT_RUNTIME_COUNTERS(
     getivar_special_const,
     getivar_too_complex,
 
+    optaref_argc_not_one,
+    optaref_array,
+    optaref_not_hash,
+    optaref_send,
+
     compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS
