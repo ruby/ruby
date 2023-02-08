@@ -135,12 +135,13 @@ module RubyVM::MJIT
           define_singleton_method(:sizeof) { sizeof }
 
           # Part of Struct's offsetof implementation
-          define_singleton_method(:offsetof) do |*fields|
-            if fields.size == 1
-              0
-            else
-              raise NotImplementedError
+          define_singleton_method(:offsetof) do |field, *fields|
+            member = members.fetch(field)
+            offset = 0
+            unless fields.empty?
+              offset += member.offsetof(*fields)
             end
+            offset
           end
 
           define_method(:initialize) do |addr|

@@ -575,7 +575,7 @@ module RubyVM::MJIT
 
       case C.BUILTIN_TYPE(comptime_obj)
       when C.T_OBJECT
-        # This is the only supported case for now
+        # This is the only supported case for now (ROBJECT_IVPTR)
       else
         asm.incr_counter(:getivar_not_t_object)
         return CantCompile
@@ -593,13 +593,17 @@ module RubyVM::MJIT
 
       index = C.rb_shape_get_iv_index(shape_id, ivar_id)
       if index
+        # See ROBJECT_IVPTR
         if C.FL_TEST_RAW(comptime_obj, C.ROBJECT_EMBED)
+          # Access embedded array
           asm.mov(:rax, [:rax, C.RObject.offsetof(:as, :ary) + (index * C.VALUE.size)])
-          val_opnd = :rax
         else
-          asm.incr_counter(:getivar_too_complex)
-          return CantCompile
+          # Pull out an ivar table on heap
+          asm.mov(:rax, [:rax, C.RObject.offsetof(:as, :heap, :ivptr)])
+          # Read the table
+          asm.mov(:rax, [:rax, index * C.VALUE.size])
         end
+        val_opnd = :rax
       else
         val_opnd = Qnil
       end
