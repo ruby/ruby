@@ -8,9 +8,15 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/openssl"
   spec.license       = "Ruby"
 
-  spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "LICENSE.txt"]
-  spec.require_paths = ["lib"]
-  spec.extensions    = ["ext/openssl/extconf.rb"]
+  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    spec.platform    = "java"
+    spec.files       = []
+    spec.add_runtime_dependency('jruby-openssl', '~> 0.14')
+  else
+    spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "LICENSE.txt"]
+    spec.require_paths = ["lib"]
+    spec.extensions    = ["ext/openssl/extconf.rb"]
+  end
 
   spec.extra_rdoc_files = Dir["*.md"]
   spec.rdoc_options = ["--main", "README.md"]
