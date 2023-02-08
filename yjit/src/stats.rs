@@ -168,6 +168,7 @@ make_counters! {
     exec_instruction,
 
     send_keywords,
+    send_klass_megamorphic,
     send_kw_splat,
     send_args_splat_super,
     send_iseq_zsuper,
