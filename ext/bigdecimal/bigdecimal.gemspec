@@ -12,17 +12,8 @@ Gem::Specification.new do |s|
   s.licenses       = ["Ruby", "bsd-2-clause"]
 
   s.require_paths = %w[lib]
-  s.extensions    = %w[ext/bigdecimal/extconf.rb]
   s.files         = %w[
     bigdecimal.gemspec
-    ext/bigdecimal/bigdecimal.c
-    ext/bigdecimal/bigdecimal.h
-    ext/bigdecimal/bits.h
-    ext/bigdecimal/feature.h
-    ext/bigdecimal/missing.c
-    ext/bigdecimal/missing.h
-    ext/bigdecimal/missing/dtoa.c
-    ext/bigdecimal/static_assert.h
     lib/bigdecimal.rb
     lib/bigdecimal/jacobian.rb
     lib/bigdecimal/ludcmp.rb
@@ -33,6 +24,21 @@ Gem::Specification.new do |s|
     sample/nlsolve.rb
     sample/pi.rb
   ]
+  if Gem::Platform === s.platform and s.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    s.platform      = 'java'
+  else
+    s.extensions    = %w[ext/bigdecimal/extconf.rb]
+    s.files += %w[
+      ext/bigdecimal/bigdecimal.c
+      ext/bigdecimal/bigdecimal.h
+      ext/bigdecimal/bits.h
+      ext/bigdecimal/feature.h
+      ext/bigdecimal/missing.c
+      ext/bigdecimal/missing.h
+      ext/bigdecimal/missing/dtoa.c
+      ext/bigdecimal/static_assert.h
+    ]
+  end
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
 end
