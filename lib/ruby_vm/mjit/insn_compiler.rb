@@ -859,7 +859,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id)
+    def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id, obj_opnd = nil)
       side_exit = side_exit(jit, ctx)
       starting_ctx = ctx.dup # copy for jit_chain_guard
 
@@ -868,7 +868,11 @@ module RubyVM::MJIT
         asm.incr_counter(:getivar_special_const)
         return CantCompile
       end
-      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      if obj_opnd.nil? # getivar
+        asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      else # attr_reader
+        asm.mov(:rax, obj_opnd)
+      end
       guard_object_is_heap(asm, :rax, counted_exit(side_exit, :getivar_not_heap))
 
       case C.BUILTIN_TYPE(comptime_obj)
@@ -891,7 +895,7 @@ module RubyVM::MJIT
 
       index = C.rb_shape_get_iv_index(shape_id, ivar_id)
       if index
-        # See ROBJECT_IVPTR
+        asm.comment('ROBJECT_IVPTR')
         if C.FL_TEST_RAW(comptime_obj, C.ROBJECT_EMBED)
           # Access embedded array
           asm.mov(:rax, [:rax, C.RObject.offsetof(:as, :ary) + (index * C.VALUE.size)])
@@ -906,6 +910,9 @@ module RubyVM::MJIT
         val_opnd = Qnil
       end
 
+      if obj_opnd
+        ctx.stack_pop # pop receiver for attr_reader
+      end
       stack_opnd = ctx.stack_push
       asm.mov(stack_opnd, val_opnd)
 
@@ -981,14 +988,14 @@ module RubyVM::MJIT
       # Invalidate on redefinition (part of vm_search_method_fastpath)
       @invariants.assume_method_lookup_stable(jit, cme)
 
-      jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme)
+      jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme, comptime_recv, recv_opnd)
     end
 
     # vm_call_method_each_type
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme)
+    def jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme, comptime_recv, recv_opnd)
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
         jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
@@ -1000,8 +1007,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_attrset)
         return CantCompile
       when C.VM_METHOD_TYPE_IVAR
-        asm.incr_counter(:send_ivar)
-        return CantCompile
+        jit_call_ivar(jit, ctx, asm, ci, cme, flags, argc, comptime_recv, recv_opnd)
       # when C.VM_METHOD_TYPE_MISSING
       when C.VM_METHOD_TYPE_BMETHOD
         asm.incr_counter(:send_bmethod)
@@ -1046,6 +1052,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_call_iseq_setup_normal(jit, ctx, asm, ci, cme, flags, argc, iseq)
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
@@ -1060,6 +1069,36 @@ module RubyVM::MJIT
 
       frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
       jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
+    end
+
+    # vm_call_ivar
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_ivar(jit, ctx, asm, ci, cme, flags, argc, comptime_recv, recv_opnd)
+      if flags & C.VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_ivar_splat)
+        return CantCompile
+      end
+
+      if argc != 0
+        asm.incr_counter(:send_ivar_arity)
+        return CantCompile
+      end
+
+      if flags & C.VM_CALL_OPT_SEND != 0
+        asm.incr_counter(:send_ivar_opt_send)
+        return CantCompile
+      end
+
+      ivar_id = cme.def.body.attr.id
+
+      if flags & C.VM_CALL_OPT_SEND != 0
+        asm.incr_counter(:send_ivar_blockarg)
+        return CantCompile
+      end
+
+      jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd)
     end
 
     # vm_push_frame

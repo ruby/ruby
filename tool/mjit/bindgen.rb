@@ -376,6 +376,7 @@ generator = BindingGenerator.new(
       VM_CALL_KW_SPLAT_bit
       VM_CALL_TAILCALL
       VM_CALL_TAILCALL_bit
+      VM_CALL_OPT_SEND
       VM_ENV_FLAG_LOCAL
       VM_FRAME_MAGIC_METHOD
       VM_METHOD_TYPE_CFUNC
@@ -407,6 +408,7 @@ generator = BindingGenerator.new(
   types: %w[
     CALL_DATA
     IC
+    ID
     IVC
     RB_BUILTIN
     RBasic
@@ -442,6 +444,7 @@ generator = BindingGenerator.new(
     rb_serial_t
     rb_shape
     rb_shape_t
+    rb_method_attr_t
   ],
   dynamic_types: %w[
     VALUE

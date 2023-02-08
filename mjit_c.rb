@@ -395,6 +395,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KW_SPLAT_bit) }
   end
 
+  def C.VM_CALL_OPT_SEND
+    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_OPT_SEND) }
+  end
+
   def C.VM_CALL_TAILCALL
     Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL) }
   end
@@ -497,6 +501,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.IC
     @IC ||= self.iseq_inline_constant_cache
+  end
+
+  def C.ID
+    @ID ||= CType::Immediate.parse("unsigned long")
   end
 
   def C.IVC
@@ -856,6 +864,14 @@ module RubyVM::MJIT # :nodoc: all
     @rb_iseq_t ||= self.rb_iseq_struct
   end
 
+  def C.rb_method_attr_t
+    @rb_method_attr_t ||= CType::Struct.new(
+      "rb_method_attr_struct", Primitive.cexpr!("SIZEOF(struct rb_method_attr_struct)"),
+      id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_method_attr_struct *)NULL)), id)")],
+      location: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_method_attr_struct *)NULL)), location)")],
+    )
+  end
+
   def C.rb_method_definition_struct
     @rb_method_definition_struct ||= CType::Struct.new(
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
@@ -917,13 +933,17 @@ module RubyVM::MJIT # :nodoc: all
       send_tailcall: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_tailcall)")],
       send_not_implemented_type: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_not_implemented_type)")],
       send_cfunc: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc)")],
-      send_ivar: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar)")],
       send_attrset: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_attrset)")],
       send_bmethod: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_bmethod)")],
       send_alias: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_alias)")],
       send_optimized: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized)")],
       send_zsuper: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_zsuper)")],
       send_refined: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_refined)")],
+      send_ivar: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar)")],
+      send_ivar_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_splat)")],
+      send_ivar_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_arity)")],
+      send_ivar_opt_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_opt_send)")],
+      send_ivar_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_blockarg)")],
       send_guard_nil: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_nil)")],
       send_guard_true: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_true)")],
       send_guard_false: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_false)")],
@@ -994,10 +1014,6 @@ module RubyVM::MJIT # :nodoc: all
 
   def C._Bool
     CType::Bool.new
-  end
-
-  def C.ID
-    CType::Stub.new(:ID)
   end
 
   def C.rb_thread_struct
@@ -1086,10 +1102,6 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.rb_method_cfunc_t
     CType::Stub.new(:rb_method_cfunc_t)
-  end
-
-  def C.rb_method_attr_t
-    CType::Stub.new(:rb_method_attr_t)
   end
 
   def C.rb_method_alias_t
