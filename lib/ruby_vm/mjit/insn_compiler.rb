@@ -149,6 +149,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def getinstancevariable(jit, ctx, asm)
+      # Specialize on compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
         return EndBlock
@@ -554,6 +555,51 @@ module RubyVM::MJIT
       asm.je(side_exit)
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 10)
+      assert_equal(opcode, :jne) # TODO: support more
+
+      if ctx.chain_depth < limit
+        deeper = ctx.dup
+        deeper.chain_depth += 1
+
+        branch_stub = BranchStub.new(
+          iseq: jit.iseq,
+          shape: Default,
+          target0: BranchTarget.new(ctx: deeper, pc: jit.pc),
+        )
+        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+          @exit_compiler.compile_branch_stub(deeper, ocb_asm, branch_stub, true)
+          @ocb.write(ocb_asm)
+        end
+        branch_stub.compile = proc do |branch_asm|
+          branch_asm.comment('jit_chain_guard')
+          branch_asm.stub(branch_stub) do
+            case branch_stub.shape
+            in Default
+              asm.jne(branch_stub.target0.address)
+            end
+          end
+        end
+        branch_stub.compile.call(asm)
+      else
+        asm.jne(side_exit)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jump_to_next_insn(jit, ctx, asm)
+      reset_depth = ctx.dup
+      reset_depth.chain_depth = 0
+
+      next_pc = jit.pc + jit.insn.len * C.VALUE.size
+      stub_next_block(jit.iseq, next_pc, reset_depth, asm, comment: 'jump_to_next_insn')
+    end
+
     # rb_vm_check_ints
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -571,6 +617,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id)
       side_exit = side_exit(jit, ctx)
+      starting_ctx = ctx.dup # copy for jit_chain_guard
 
       # Guard not special const
       if C.SPECIAL_CONST_P(comptime_obj)
@@ -596,7 +643,7 @@ module RubyVM::MJIT
 
       asm.comment('guard shape')
       asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
-      asm.jne(counted_exit(side_exit, :getivar_polymorphic))
+      jit_chain_guard(:jne, jit, starting_ctx, asm, counted_exit(side_exit, :getivar_megamorphic))
 
       index = C.rb_shape_get_iv_index(shape_id, ivar_id)
       if index
@@ -618,7 +665,9 @@ module RubyVM::MJIT
       stack_opnd = ctx.stack_push
       asm.mov(stack_opnd, val_opnd)
 
-      KeepCompiling
+      # Let guard chains share the same successor
+      jump_to_next_insn(jit, ctx, asm)
+      EndBlock
     end
 
     # vm_call_method (vm_sendish -> vm_call_general -> vm_call_method)
