@@ -8,11 +8,12 @@ module RubyVM::MJIT
     # Used for invalidating a block on entry.
     # @param pc [Integer]
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_entry_exit(pc, asm, cause:)
+    def compile_entry_exit(pc, ctx, asm, cause:)
       # Increment per-insn exit counter
       incr_insn_exit(pc, asm)
 
-      # TODO: Saving pc and sp may be needed later
+      # Fix pc/sp offsets for the interpreter
+      save_pc_and_sp(pc, ctx, asm, reset_sp_offset: false)
 
       # Restore callee-saved registers
       asm.comment("#{cause}: entry exit")
@@ -45,7 +46,7 @@ module RubyVM::MJIT
       incr_insn_exit(jit.pc, asm)
 
       # Fix pc/sp offsets for the interpreter
-      save_pc_and_sp(jit, ctx.dup, asm) # dup to avoid sp_offset update
+      save_pc_and_sp(jit.pc, ctx.dup, asm) # dup to avoid sp_offset update
 
       # Restore callee-saved registers
       asm.comment("exit to interpreter on #{pc_to_insn(jit.pc).name}")
@@ -93,17 +94,19 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def save_pc_and_sp(jit, ctx, asm)
+    def save_pc_and_sp(pc, ctx, asm, reset_sp_offset: true)
       # Update pc (TODO: manage PC offset?)
       asm.comment("save PC#{' and SP' if ctx.sp_offset != 0} to CFP")
-      asm.mov(:rax, jit.pc) # rax = jit.pc
+      asm.mov(:rax, pc) # rax = jit.pc
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax) # cfp->pc = rax
 
       # Update sp
       if ctx.sp_offset != 0
         asm.add(SP, C.VALUE.size * ctx.sp_offset) # sp += stack_size
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP) # cfp->sp = sp
-        ctx.sp_offset = 0
+        if reset_sp_offset
+          ctx.sp_offset = 0
+        end
       end
     end
 

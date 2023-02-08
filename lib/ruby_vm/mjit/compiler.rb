@@ -149,7 +149,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
-      jit.block = Block.new(pc:)
+      jit.block = Block.new(pc:, ctx: ctx.dup)
       asm.block(jit.block)
 
       # Compile each insn

@@ -41,6 +41,7 @@ module RubyVM::MJIT
       @cme_blocks.fetch(cme.to_i, []).each do |block|
         @cb.with_write_addr(block.start_addr) do
           asm = Assembler.new
+          asm.comment('on_cme_invalidate')
           asm.jmp(block.entry_exit)
           @cb.write(asm)
         end
@@ -53,9 +54,10 @@ module RubyVM::MJIT
     # @param block [RubyVM::MJIT::Block]
     def ensure_block_entry_exit(block, cause:)
       if block.entry_exit.nil?
-        asm = Assembler.new
-        @exit_compiler.compile_entry_exit(block.pc, asm, cause:)
-        block.entry_exit = @ocb.write(asm)
+        block.entry_exit = Assembler.new.then do |asm|
+          @exit_compiler.compile_entry_exit(block.pc, block.ctx, asm, cause:)
+          @ocb.write(asm)
+        end
       end
     end
   end
