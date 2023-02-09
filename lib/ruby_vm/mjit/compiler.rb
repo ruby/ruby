@@ -182,10 +182,6 @@ module RubyVM::MJIT
       end
     end
 
-    def mjit_blocks(iseq)
-      iseq.body.mjit_blocks ||= {}
-    end
-
     # @param [Integer] pc
     # @param [RubyVM::MJIT::Context] ctx
     # @return [RubyVM::MJIT::Block,NilClass]

@@ -184,8 +184,28 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod01, reg: right_reg, rm: left_reg],
           disp: left_disp,
         )
+      # CMP r/m64, r64 (Mod 11: reg)
+      in [Symbol => left_reg, Symbol => right_reg] if r64?(left_reg) && r64?(right_reg)
+        # REX.W + 39 /r
+        # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x39,
+          mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
+        )
       else
         raise NotImplementedError, "cmp: not-implemented operands: #{left.inspect}, #{right.inspect}"
+      end
+    end
+
+    def jbe(dst)
+      case dst
+      # JBE rel32
+      in Integer => dst_addr
+        # 0F 86 cd
+        insn(opcode: [0x0f, 0x86], imm: rel32(dst_addr))
+      else
+        raise NotImplementedError, "jbe: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -277,7 +297,17 @@ module RubyVM::MJIT
           prefix: REX_W,
           opcode: 0x8d,
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
-          disp: src_disp,
+          disp: imm8(src_disp),
+        )
+      # LEA r64,m (Mod 10: [reg]+disp32)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm32?(src_disp)
+        # REX.W + 8D /r
+        # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x8d,
+          mod_rm: ModRM[mod: Mod10, reg: dst_reg, rm: src_reg],
+          disp: imm32(src_disp),
         )
       else
         raise NotImplementedError, "lea: not-implemented operands: #{dst.inspect}, #{src.inspect}"

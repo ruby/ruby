@@ -1165,16 +1165,26 @@ module RubyVM::MJIT
     #
     # Frame structure:
     # | args | locals | cme/cref | block_handler/prev EP | frame type (EP here) | stack bottom (SP here)
+    #
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
-      # TODO: stack overflow check
-
+      # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max) 
+      asm.comment('stack overflow check')
       local_size = iseq.body.local_table_size - iseq.body.param.size
+      asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + iseq.body.stack_max)))
+      asm.cmp(CFP, :rax)
+      asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
+
       local_size.times do |i|
         asm.comment('set local variables') if i == 0
         local_index = ctx.sp_offset + i
         asm.mov([SP, C.VALUE.size * local_index], Qnil)
       end
 
+      # This moves SP register. Don't side-exit after this.
+      asm.comment('move SP register to callee stack')
       sp_offset = ctx.sp_offset + local_size + 3
       asm.add(SP, C.VALUE.size * sp_offset)
 

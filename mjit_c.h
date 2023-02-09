@@ -125,6 +125,7 @@ MJIT_RUNTIME_COUNTERS(
     send_optimized,
     send_zsuper,
     send_refined,
+    send_stackoverflow,
 
     send_ivar,
     send_ivar_splat,
