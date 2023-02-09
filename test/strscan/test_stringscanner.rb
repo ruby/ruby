@@ -465,7 +465,10 @@ module StringScannerTests
     assert_equal 'foo', s['a']
     assert_equal 'bar', s['b']
     assert_raise(IndexError) { s['c'] }
-    assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    # see https://github.com/jruby/jruby/issues/7644
+    unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG['host_os'] =~ /mswin|win32|mingw/
+      assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    end
   end
 
   def test_pre_match
