@@ -7603,8 +7603,6 @@ impl CodegenGlobals {
             let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
             let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
 
-            assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
-
             (cb, ocb)
         };
 
