@@ -15,13 +15,14 @@ module Bundler::PubGrub
       package.hash ^ range.hash
     end
 
+    def ==(other)
+      package == other.package &&
+        range == other.range
+    end
+
     def eql?(other)
       package.eql?(other.package) &&
         range.eql?(other.range)
-    end
-
-    def ==(other)
-      package == other.package && range == other.range
     end
 
     class << self
