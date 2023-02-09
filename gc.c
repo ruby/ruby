@@ -10623,9 +10623,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_STRING:
         {
-#if USE_RVARGC
-#endif
-
             if (STR_SHARED_P(obj)) {
 #if USE_RVARGC
                 VALUE old_root = any->as.string.as.heap.aux.shared;
