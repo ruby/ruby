@@ -428,13 +428,31 @@ module Net   #:nodoc:
   #     http = Net::HTTP.new('example.com', nil, 'my.proxy', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
   #     http.proxy_address # => nil
   #
-  # == Compression
+  # == Compression and Decompression
   #
-  # \Net::HTTP automatically adds Accept-Encoding for compression of response
-  # bodies and automatically decompresses gzip and deflate responses unless a
-  # Range header was sent.
+  # \Net::HTTP does not compress the body of a request before sending.
   #
-  # Compression can be disabled through the Accept-Encoding: identity header.
+  # By default, \Net::HTTP adds header <tt>'Accept-Encoding'</tt>
+  # to a new {request object}[rdoc-ref:Net::HTTPRequest]:
+  #
+  #   Net::HTTP::Get.new(uri)['Accept-Encoding']
+  #   # => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+  #
+  # This requests the server to zip-encode the response body if there is one;
+  # the server is not required to do so.
+  #
+  # \Net::HTTP does not automatically decompress a response body
+  # if the response has header <tt>'Content-Range'</tt>.
+  #
+  # Otherwise decompression (or not) depends on the value of header
+  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-encoding-response-header]:
+  #
+  # - <tt>'deflate'</tt>, <tt>'gzip'</tt>, or <tt>'x-gzip'</tt>:
+  #   decompresses the body and deletes the header.
+  # - <tt>'none'</tt> or <tt>'identity'</tt>:
+  #   does not decompress the body, but deletes the header.
+  # - Any other value:
+  #   leaves the body and header unchanged.
   #
   class HTTP < Protocol
 
