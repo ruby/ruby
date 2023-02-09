@@ -5931,6 +5931,8 @@ fn gen_send_general(
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(recv_idx);
     let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
+
+    let megamorphic_exit = counted_exit!(ocb, side_exit, send_klass_megamorphic);
     jit_guard_known_klass(
         jit,
         ctx,
@@ -5941,7 +5943,7 @@ fn gen_send_general(
         recv_opnd,
         comptime_recv,
         SEND_MAX_DEPTH,
-        side_exit,
+        megamorphic_exit,
     );
 
     // Do method lookup
