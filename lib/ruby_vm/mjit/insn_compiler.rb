@@ -581,13 +581,6 @@ module RubyVM::MJIT
         asm.incr_counter(:optaref_array)
         CantCompile
       elsif comptime_recv.class == Hash
-        # jit_prepare_routine_call seems to break something. Disabled until we figure it out.
-        disabled = true
-        if disabled
-          asm.incr_counter(:optaref_hash)
-          return CantCompile
-        end
-
         unless @invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
           return CantCompile
         end
