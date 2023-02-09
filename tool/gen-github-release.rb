@@ -25,16 +25,15 @@ diff[:commits].each do |c|
     url = "https://bugs.ruby-lang.org/issues/#{$1}"
     title = Nokogiri::HTML(URI.open(url)).title
     title.gsub!(/ - Ruby master - Ruby Issue Tracking System/, "")
-  end
-
-  if c[:commit][:message] =~ /\(#(\d*)\)/
+  elsif c[:commit][:message] =~ /\(#(\d*)\)/
     url = "https://github.com/ruby/ruby/pull/#{$1}"
     title = Nokogiri::HTML(URI.open(url)).title
     title.gsub!(/ · ruby\/ruby · GitHub/, "")
+  else
+    next
   end
-
-  next unless url && title
-
   puts "* [#{title}](#{url})"
+rescue OpenURI::HTTPError
+  puts "Error: #{url}"
 end
 
