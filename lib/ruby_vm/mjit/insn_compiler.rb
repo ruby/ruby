@@ -56,7 +56,7 @@ module RubyVM::MJIT
       # newhash
       # newrange
       # pop
-      # dup
+      when :dup then dup(jit, ctx, asm)
       # dupn
       # swap
       # opt_reverse
@@ -222,7 +222,18 @@ module RubyVM::MJIT
     # newhash
     # newrange
     # pop
-    # dup
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def dup(jit, ctx, asm)
+      val1 = ctx.stack_opnd(0)
+      val2 = ctx.stack_push
+      asm.mov(:rax, val1)
+      asm.mov(val2, :rax)
+      KeepCompiling
+    end
+
     # dupn
     # swap
     # opt_reverse

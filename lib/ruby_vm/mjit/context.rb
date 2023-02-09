@@ -7,16 +7,16 @@ module RubyVM::MJIT
     def initialize(stack_size: 0, sp_offset: 0, chain_depth: 0) = super
 
     def stack_push(size = 1)
-      opnd = [SP, C.VALUE.size * self.sp_offset]
       self.stack_size += size
       self.sp_offset += size
-      opnd
+      stack_opnd(0)
     end
 
     def stack_pop(size = 1)
+      opnd = stack_opnd(0)
       self.stack_size -= size
       self.sp_offset -= size
-      [SP, C.VALUE.size * self.sp_offset]
+      opnd
     end
 
     def stack_opnd(depth_from_top)
