@@ -131,6 +131,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aref)'
     end
 
+    def rb_vm_setinstancevariable
+      Primitive.cstmt! %{
+        extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
+        return SIZET2NUM((size_t)rb_vm_setinstancevariable);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff

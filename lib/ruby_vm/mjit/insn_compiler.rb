@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 26/101
+      # 28/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -29,7 +29,7 @@ module RubyVM::MJIT
       # getspecial
       # setspecial
       when :getinstancevariable then getinstancevariable(jit, ctx, asm)
-      # setinstancevariable
+      when :setinstancevariable then setinstancevariable(jit, ctx, asm)
       # getclassvariable
       # setclassvariable
       # opt_getconstant_path
@@ -163,7 +163,29 @@ module RubyVM::MJIT
       jit_getivar(jit, ctx, asm, comptime_obj, id)
     end
 
-    # setinstancevariable
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def setinstancevariable(jit, ctx, asm)
+      id = jit.operand(0)
+      ivc = jit.operand(1)
+
+      # rb_vm_setinstancevariable could raise exceptions
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      val_opnd = ctx.stack_pop
+
+      asm.comment('rb_vm_setinstancevariable')
+      asm.mov(:rdi, jit.iseq.to_i)
+      asm.mov(:rsi, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      asm.mov(:rdx, id)
+      asm.mov(:rcx, val_opnd)
+      asm.mov(:r8, ivc)
+      asm.call(C.rb_vm_setinstancevariable)
+
+      KeepCompiling
+    end
+
     # getclassvariable
     # setclassvariable
     # opt_getconstant_path
