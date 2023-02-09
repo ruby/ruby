@@ -19,6 +19,8 @@ Note: We're only listing outstanding class updates.
 
     * `Dir.fchdir` added for changing the directory to the directory specified
       by the provided directory file descriptor. [[Feature #19347]]
+    * `Dir#chdir` added for changing the directory to the directory specified
+      by the provided `Dir` object. [[Feature #19347]]
 
 * String
 

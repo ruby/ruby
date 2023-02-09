@@ -972,7 +972,7 @@ nogvl_chdir(void *ptr)
 }
 
 static void
-dir_chdir(VALUE path)
+dir_chdir0(VALUE path)
 {
     if (chdir(RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
@@ -990,7 +990,7 @@ static VALUE
 chdir_yield(VALUE v)
 {
     struct chdir_data *args = (void *)v;
-    dir_chdir(args->new_path);
+    dir_chdir0(args->new_path);
     args->done = TRUE;
     chdir_blocking++;
     if (NIL_P(chdir_thread))
@@ -1006,7 +1006,7 @@ chdir_restore(VALUE v)
         chdir_blocking--;
         if (chdir_blocking == 0)
             chdir_thread = Qnil;
-        dir_chdir(args->old_path);
+        dir_chdir0(args->old_path);
     }
     return Qnil;
 }
@@ -1222,6 +1222,30 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
 #else
 #define dir_s_fchdir rb_f_notimplement
 #endif
+
+/*
+ *  call-seq:
+ *     dir.chdir -> nil
+ *
+ *  Changes the current working directory to the receiver.
+ *
+ *     # Assume current directory is /path
+ *     Dir.new("testdir").chdir
+ *     Dir.pwd # => '/path/testdir'
+ */
+static VALUE
+dir_chdir(VALUE dir)
+{
+#if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
+    dir_s_fchdir(rb_cDir, dir_fileno(dir));
+#else
+    struct dir_data *dirp;
+    dirp = dir_get(dir);
+    dir_s_chdir(1, &dirp->path, rb_cDir);
+#endif
+
+    return Qnil;
+}
 
 #ifndef _WIN32
 VALUE
@@ -3502,6 +3526,7 @@ Init_Dir(void)
     rb_define_method(rb_cDir,"pos", dir_tell, 0);
     rb_define_method(rb_cDir,"pos=", dir_set_pos, 1);
     rb_define_method(rb_cDir,"close", dir_close, 0);
+    rb_define_method(rb_cDir,"chdir", dir_chdir, 0);
 
     rb_define_singleton_method(rb_cDir,"fchdir", dir_s_fchdir, 1);
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);
