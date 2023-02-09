@@ -588,6 +588,44 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
     return dir_close(dir);
 }
 
+# if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+/*
+ *  call-seq:
+ *     Dir.fdopendir(integer) -> aDir
+ *
+ *  Returns a Dir representing the directory specified by the given
+ *  directory file descriptor. Note that the returned Dir will not
+ *  have an associated path.
+ *
+ *     d1 = Dir.new('..')
+ *     d2 = Dir.for_fd(d1.fileno)
+ *     d1.path # => '..'
+ *     d2.path # => nil
+ *     d1.chdir{Dir.pwd} == d2.chdir{Dir.pwd} # => true
+ *
+ *  This method uses fdopendir() function defined by POSIX 2008.
+ *  NotImplementedError is raised on other platforms, such as Windows,
+ *  which doesn't provide the function.
+ *
+ */
+static VALUE
+dir_s_for_fd(VALUE klass, VALUE fd)
+{
+    struct dir_data *dp;
+    VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
+
+    if (!(dp->dir = fdopendir(NUM2INT(fd)))) {
+        rb_sys_fail("fdopendir");
+        UNREACHABLE_RETURN(Qnil);
+    }
+
+    RB_OBJ_WRITE(dir, &dp->path, Qnil);
+    return dir;
+}
+#else
+#define dir_s_for_fd rb_f_notimplement
+#endif
+
 NORETURN(static void dir_closed(void));
 
 static void
@@ -3507,6 +3545,7 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
+    rb_define_singleton_method(rb_cDir,"for_fd", dir_s_for_fd, 1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
     rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
