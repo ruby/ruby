@@ -5256,7 +5256,7 @@ rb_str_drop_bytes(VALUE str, long len)
 }
 
 static void
-rb_str_splice_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
+rb_str_update_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
 {
     char *sptr;
     long slen;
@@ -5298,9 +5298,9 @@ rb_str_splice_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
 }
 
 static inline void
-rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
+rb_str_update_0(VALUE str, long beg, long len, VALUE val)
 {
-    rb_str_splice_1(str, beg, len, val, 0, RSTRING_LEN(val));
+    rb_str_update_1(str, beg, len, val, 0, RSTRING_LEN(val));
 }
 
 void
@@ -5336,7 +5336,7 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     /* error check */
     beg = p - RSTRING_PTR(str);	/* physical position */
     len = e - p;		/* physical length */
-    rb_str_splice_0(str, beg, len, val);
+    rb_str_update_0(str, beg, len, val);
     rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
@@ -5373,7 +5373,7 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     len = end - start;
     StringValue(val);
     enc = rb_enc_check_str(str, val);
-    rb_str_splice_0(str, start, len, val);
+    rb_str_update_0(str, start, len, val);
     rb_enc_associate(str, enc);
 }
 
@@ -6367,7 +6367,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     str_check_beg_len(val, &vbeg, &vlen);
     enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
-    rb_str_splice_1(str, beg, len, val, vbeg, vlen);
+    rb_str_update_1(str, beg, len, val, vbeg, vlen);
     rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
