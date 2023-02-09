@@ -147,6 +147,7 @@ MJIT_RUNTIME_COUNTERS(
 
     optaref_argc_not_one,
     optaref_array,
+    optaref_hash,
     optaref_not_hash,
     optaref_send,
 
