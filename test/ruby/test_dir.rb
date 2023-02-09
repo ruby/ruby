@@ -96,7 +96,7 @@ class TestDir < Test::Unit::TestCase
     d.close
   end
 
-  def test_chdir
+  def test_class_chdir
     pwd = Dir.pwd
     setup_envs
 
@@ -132,6 +132,45 @@ class TestDir < Test::Unit::TestCase
     rescue
       abort("cannot return the original directory: #{ pwd }")
     end
+  end
+
+  def test_instance_chdir
+    pwd = Dir.pwd
+    dir = Dir.new(pwd)
+    root_dir = Dir.new(@root)
+    setup_envs
+
+    ENV["HOME"] = pwd
+    root_dir.chdir do
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+
+      assert_equal(@root, Dir.pwd)
+
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir }.join }
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir{} }.join }
+
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_equal(pwd, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+      assert_equal(@root, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+
+      root_dir.chdir do
+        assert_equal(@root, Dir.pwd)
+      end
+      assert_equal(pwd, Dir.pwd)
+    end
+  ensure
+    begin
+      dir.chdir
+    rescue
+      abort("cannot return the original directory: #{ pwd }")
+    end
+    dir.close
+    root_dir.close
   end
 
   def test_chdir_conflict
