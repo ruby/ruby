@@ -336,9 +336,13 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jump(jit, ctx, asm)
-      # TODO: check ints for backward branches
+      # Check for interrupts, but only on backward branches that may create loops
+      jump_offset = jit.operand(0)
+      if jump_offset < 0
+        jit_check_ints(jit, ctx, asm)
+      end
 
-      pc = jit.pc + C.VALUE.size * (jit.insn.len + jit.operand(0))
+      pc = jit.pc + C.VALUE.size * (jit.insn.len + jump_offset)
       stub_next_block(jit.iseq, pc, ctx, asm)
       EndBlock
     end
@@ -349,7 +353,12 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def branchunless(jit, ctx, asm)
-      # TODO: check ints for backward branches
+      # Check for interrupts, but only on backward branches that may create loops
+      jump_offset = jit.operand(0)
+      if jump_offset < 0
+        jit_check_ints(jit, ctx, asm)
+      end
+
       # TODO: skip check for known truthy
 
       # This `test` sets ZF only for Qnil and Qfalse, which let jz jump.
@@ -360,7 +369,7 @@ module RubyVM::MJIT
       branch_stub = BranchStub.new(
         iseq: jit.iseq,
         shape: Default,
-        target0: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * (jit.insn.len + jit.operand(0))), # branch target
+        target0: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * (jit.insn.len + jump_offset)), # branch target
         target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                    # fallthrough
       )
       branch_stub.target0.address = Assembler.new.then do |ocb_asm|
