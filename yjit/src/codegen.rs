@@ -4273,6 +4273,31 @@ fn jit_rb_str_concat(
     true
 }
 
+// Codegen for rb_ary_empty_p()
+fn jit_rb_ary_empty_p(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let array_opnd = ctx.stack_pop(1);
+    let array_reg = asm.load(array_opnd);
+    let len_opnd = get_array_len(asm, array_reg);
+
+    asm.test(len_opnd, len_opnd);
+    let bool_val = asm.csel_z(Qtrue.into(), Qfalse.into());
+
+    let out_opnd = ctx.stack_push(Type::UnknownImm);
+    asm.store(out_opnd, bool_val);
+
+    return true;
+}
+
 fn jit_obj_respond_to(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -7697,6 +7722,9 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+            // rb_ary_empty_p() method in array.c
+            self.yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
 
             self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
             self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
