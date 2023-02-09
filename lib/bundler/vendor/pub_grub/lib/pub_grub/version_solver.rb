@@ -125,6 +125,7 @@ module Bundler::PubGrub
       package = next_package_to_try
       unsatisfied_term = solution.unsatisfied.find { |t| t.package == package }
       version = source.versions_for(package, unsatisfied_term.constraint.range).first
+      logger.debug { "attempting #{package} #{version}" }
 
       if version.nil?
         add_incompatibility source.no_versions_incompatibility_for(package, unsatisfied_term)
@@ -148,9 +149,11 @@ module Bundler::PubGrub
       end
 
       unless conflict
-        logger.info { "selecting #{package} #{version}" }
+        logger.info { "selected #{package} #{version}" }
 
         solution.decide(package, version)
+      else
+        logger.info { "conflict: #{conflict.inspect}" }
       end
 
       package
