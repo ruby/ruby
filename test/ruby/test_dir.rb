@@ -639,6 +639,21 @@ class TestDir < Test::Unit::TestCase
     }
   end
 
+  def test_for_fd
+    if Dir.respond_to? :for_fd
+      begin
+        new_dir = Dir.new('..')
+        for_fd_dir = Dir.for_fd(new_dir.fileno)
+        assert_equal(new_dir.chdir{Dir.pwd}, for_fd_dir.chdir{Dir.pwd})
+      ensure
+        new_dir&.close
+        for_fd_dir&.close
+      end
+    else
+      assert_raise(NotImplementedError) { Dir.for_fd(0) }
+    end
+  end
+
   def test_empty?
     assert_not_send([Dir, :empty?, @root])
     a = File.join(@root, "a")

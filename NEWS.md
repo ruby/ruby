@@ -17,6 +17,8 @@ Note: We're only listing outstanding class updates.
 
 * Dir
 
+    * `Dir.for_fd` added for returning a Dir object for the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
     * `Dir.fchdir` added for changing the directory to the directory specified
       by the provided directory file descriptor. [[Feature #19347]]
     * `Dir#chdir` added for changing the directory to the directory specified
