@@ -4289,8 +4289,8 @@ fn jit_rb_ary_empty_p(
     let array_reg = asm.load(array_opnd);
     let len_opnd = get_array_len(asm, array_reg);
 
-    asm.cmp(len_opnd, 0.into());
-    let bool_val = asm.csel_e(Qtrue.into(), Qfalse.into());
+    asm.test(len_opnd, len_opnd);
+    let bool_val = asm.csel_z(Qtrue.into(), Qfalse.into());
 
     let out_opnd = ctx.stack_push(Type::UnknownImm);
     asm.store(out_opnd, bool_val);
