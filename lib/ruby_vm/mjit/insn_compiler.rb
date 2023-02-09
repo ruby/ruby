@@ -342,8 +342,8 @@ module RubyVM::MJIT
       # TODO: skip check for known truthy
 
       # This `test` sets ZF only for Qnil and Qfalse, which let jz jump.
-      asm.test([SP, C.VALUE.size * (ctx.stack_size - 1)], ~Qnil)
-      ctx.stack_pop(1)
+      val = ctx.stack_pop
+      asm.test(val, ~Qnil)
 
       # Set stubs
       branch_stub = BranchStub.new(
