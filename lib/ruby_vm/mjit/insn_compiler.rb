@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 29/101
+      # 30/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -82,7 +82,7 @@ module RubyVM::MJIT
       # invokeblock
       when :leave then leave(jit, ctx, asm)
       # throw
-      # jump
+      when :jump then jump(jit, ctx, asm)
       # branchif
       when :branchunless then branchunless(jit, ctx, asm)
       # branchnil
@@ -331,7 +331,18 @@ module RubyVM::MJIT
     end
 
     # throw
-    # jump
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jump(jit, ctx, asm)
+      # TODO: check ints for backward branches
+
+      pc = jit.pc + C.VALUE.size * (jit.insn.len + jit.operand(0))
+      stub_next_block(jit.iseq, pc, ctx, asm)
+      EndBlock
+    end
+
     # branchif
 
     # @param jit [RubyVM::MJIT::JITState]
