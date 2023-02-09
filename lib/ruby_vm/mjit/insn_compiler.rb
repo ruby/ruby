@@ -18,7 +18,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 28/101
+      # 29/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -55,7 +55,7 @@ module RubyVM::MJIT
       # splatarray
       # newhash
       # newrange
-      # pop
+      when :pop then pop(jit, ctx, asm)
       when :dup then dup(jit, ctx, asm)
       # dupn
       # swap
@@ -243,7 +243,14 @@ module RubyVM::MJIT
     # splatarray
     # newhash
     # newrange
-    # pop
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def pop(jit, ctx, asm)
+      ctx.stack_pop
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
