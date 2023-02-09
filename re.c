@@ -282,7 +282,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
     return rb_memsearch_qs(x0, m, y0, n);
 }
 
-#define REG_LITERAL FL_USER5
 #define REG_ENCODING_NONE FL_USER6
 
 #define KCODE_FIXED FL_USER4
@@ -3191,8 +3190,6 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     rb_encoding *a_enc = rb_ascii8bit_encoding();
 
     rb_check_frozen(obj);
-    if (FL_TEST(obj, REG_LITERAL))
-        rb_raise(rb_eSecurityError, "can't modify literal regexp");
     if (re->ptr)
         rb_raise(rb_eTypeError, "already initialized regexp");
     re->ptr = 0;
@@ -3358,7 +3355,6 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
         rb_set_errinfo(rb_reg_error_desc(str, options, err));
         return Qnil;
     }
-    FL_SET(re, REG_LITERAL);
     rb_obj_freeze(re);
     return re;
 }
