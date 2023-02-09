@@ -264,6 +264,7 @@ make_counters! {
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
     getivar_megamorphic,
+    getivar_too_complex,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
@@ -272,6 +273,7 @@ make_counters! {
     setivar_not_object,
     setivar_frozen,
     setivar_megamorphic,
+    setivar_too_complex,
 
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
