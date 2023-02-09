@@ -1940,6 +1940,38 @@ assert_equal '[:A, :Btwo]', %q{
   ins.foo
 }
 
+# invokesuper with a block
+assert_equal 'true', %q{
+  class A
+    def foo = block_given?
+  end
+
+  class B < A
+    def foo = super()
+  end
+
+  B.new.foo { }
+  B.new.foo { }
+}
+
+# invokesuper in a block
+assert_equal '[0, 2]', %q{
+  class A
+    def foo(x) = x * 2
+  end
+
+  class B < A
+    def foo
+      2.times.map do |x|
+        super(x)
+      end
+    end
+  end
+
+  B.new.foo
+  B.new.foo
+}
+
 # Call to fixnum
 assert_equal '[true, false]', %q{
   def is_odd(obj)

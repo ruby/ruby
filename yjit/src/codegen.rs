@@ -6623,22 +6623,15 @@ fn gen_invokesuper(
     // Guard that the receiver has the same class as the one from compile time
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    let cfp = unsafe { get_ec_cfp(jit.ec.unwrap()) };
-    let ep = unsafe { get_cfp_ep(cfp) };
-    let cref_me = unsafe { *ep.offset(VM_ENV_DATA_INDEX_ME_CREF.try_into().unwrap()) };
-    let me_as_value = VALUE(me as usize);
-    if cref_me != me_as_value {
-        // This will be the case for super within a block
-        return CantCompile;
-    }
-
     asm.comment("guard known me");
-    let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
+    let lep_opnd = gen_get_lep(jit, asm);
     let ep_me_opnd = Opnd::mem(
         64,
-        ep_opnd,
+        lep_opnd,
         SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
     );
+
+    let me_as_value = VALUE(me as usize);
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed));
 
@@ -6650,11 +6643,9 @@ fn gen_invokesuper(
         // TODO: this could properly forward the current block handler, but
         // would require changes to gen_send_*
         asm.comment("guard no block given");
-        // EP is in REG0 from above
-        let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
         let ep_specval_opnd = Opnd::mem(
             64,
-            ep_opnd,
+            lep_opnd,
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
