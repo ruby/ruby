@@ -5344,8 +5344,6 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
         ENC_CODERANGE_SET(str, cr);
 }
 
-#define rb_str_splice(str, beg, len, val) rb_str_update(str, beg, len, val)
-
 static void
 rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
 {
@@ -5396,7 +5394,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
             rb_raise(rb_eIndexError, "string not matched");
         }
         beg = rb_str_sublen(str, beg);
-        rb_str_splice(str, beg, str_strlen(indx, NULL), val);
+        rb_str_update(str, beg, str_strlen(indx, NULL), val);
         return val;
 
       default:
@@ -5404,7 +5402,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
         {
             long beg, len;
             if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 2)) {
-                rb_str_splice(str, beg, len, val);
+                rb_str_update(str, beg, len, val);
                 return val;
             }
         }
@@ -5412,7 +5410,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
       case T_FIXNUM:
         idx = NUM2LONG(indx);
-        rb_str_splice(str, idx, 1, val);
+        rb_str_update(str, idx, 1, val);
         return val;
     }
 }
@@ -5454,7 +5452,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
             rb_str_subpat_set(str, argv[0], argv[1], argv[2]);
         }
         else {
-            rb_str_splice(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+            rb_str_update(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
         }
         return argv[2];
     }
@@ -5491,7 +5489,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
     else if (pos < 0) {
         pos++;
     }
-    rb_str_splice(str, pos, 0, str2);
+    rb_str_update(str, pos, 0, str2);
     return str;
 }
 
