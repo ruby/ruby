@@ -318,8 +318,11 @@ make_counters! {
 
     num_gc_obj_refs,
 
-    x86_call_rel32,
-    x86_call_reg,
+    num_send,
+    num_send_known_class,
+    num_send_polymorphic,
+    num_send_x86_rel32,
+    num_send_x86_reg,
 }
 
 //===========================================================================
