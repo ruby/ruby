@@ -1642,7 +1642,13 @@ module FileUtils
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
-        copy_file s, d
+        if d.end_with?('/')
+          mkdir_p d
+          copy_file s, d + File.basename(s)
+        else
+          mkdir_p File.expand_path('..', d)
+          copy_file s, d
+        end
         File.utime st.atime, st.mtime, d if preserve
         File.chmod fu_mode(mode, st), d if mode
         File.chown uid, gid, d if uid or gid
