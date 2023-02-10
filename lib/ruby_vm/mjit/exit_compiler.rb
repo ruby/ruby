@@ -139,6 +139,8 @@ module RubyVM::MJIT
 
     def iseq_lineno(iseq, pc)
       C.rb_iseq_line_no(iseq, (pc - iseq.body.iseq_encoded.to_i) / C.VALUE.size)
+    rescue RangeError # bignum too big to convert into `unsigned long long' (RangeError)
+      -1
     end
   end
 end
