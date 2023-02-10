@@ -2866,6 +2866,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal("foo\nbar\nbaz\n", File.read(t.path))
       assert_equal("foo\nba", File.read(t.path, 6))
       assert_equal("bar\n", File.read(t.path, 4, 4))
+
+      assert_raise(ArgumentError) { File.read(t.path, -1) }
+      assert_raise(ArgumentError) { File.read(t.path, 1, -1) }
     }
   end
 
