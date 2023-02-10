@@ -9,6 +9,7 @@ module Bundler
       spec
     end
 
+    attr_reader :checksum
     attr_accessor :stub, :ignored
 
     def source=(source)
@@ -90,6 +91,16 @@ module Bundler
 
     def raw_require_paths
       stub.raw_require_paths
+    end
+
+    def add_checksum(checksum)
+      @checksum ||= checksum
+    end
+
+    def to_checksum
+      return Bundler::Checksum.new(name, version, platform, ["sha256-#{checksum}"]) if checksum
+
+      _remote_specification&.to_checksum
     end
 
     private

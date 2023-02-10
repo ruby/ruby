@@ -15,7 +15,7 @@ module Spec
         end
 
         checksum = sha256_checksum(gem_file)
-        @checksums << Bundler::Checksum.new(gem_name, gem_version, platform, checksum)
+        @checksums << Bundler::Checksum.new(gem_name, gem_version, platform, [checksum])
       end
 
       def to_lock

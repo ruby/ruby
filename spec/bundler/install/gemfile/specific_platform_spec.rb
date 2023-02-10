@@ -621,6 +621,10 @@ RSpec.describe "bundle install with specific platforms" do
         nokogiri
         sorbet-static
 
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.0", "x86_64-darwin"}
+        #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10601", "x86_64-darwin"}
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -822,6 +826,10 @@ RSpec.describe "bundle install with specific platforms" do
         DEPENDENCIES
           sorbet-static (= 0.5.10549)
 
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-20"}
+          #{checksum_for_repo_gem gem_repo4, "sorbet-static", "0.5.10549", "universal-darwin-21"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -868,7 +876,29 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "lock --update"
 
-    expect(lockfile).to eq(original_lockfile)
+    updated_lockfile = <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.13.8)
+          nokogiri (1.13.8-#{Gem::Platform.local})
+
+      PLATFORMS
+        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+
+      DEPENDENCIES
+        nokogiri
+        tzinfo (~> 1.2)
+
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.8"}
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.13.8", "arm64-darwin-22"}
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    expect(lockfile).to eq(updated_lockfile)
   end
 
   it "does not remove ruby when adding a new gem to the Gemfile" do
@@ -1007,6 +1037,9 @@ RSpec.describe "bundle install with specific platforms" do
 
         DEPENDENCIES
           nokogiri (= 1.14.0)
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.14.0"}
 
         BUNDLED WITH
            #{Bundler::VERSION}

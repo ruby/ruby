@@ -92,7 +92,8 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri (~> 1.11)
 
       CHECKSUMS
-        nokogiri (1.11.1)
+        #{checksum_for_repo_gem gem_repo4, "mini_portile2", "2.5.0"}
+        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1"}
         #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform}
         #{checksum_for_repo_gem gem_repo4, "racca", "1.5.2"}
 

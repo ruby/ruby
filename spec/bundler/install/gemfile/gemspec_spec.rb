@@ -451,6 +451,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
             expected_checksums = construct_checksum_section do |c|
               c.repo_gem gem_repo2, "platform_specific", "1.0"
+              c.repo_gem gem_repo2, "platform_specific", "1.0", "java"
               c.repo_gem gem_repo2, "platform_specific", "1.0", x64_mingw32
             end
 
@@ -494,6 +495,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
             expected_checksums = construct_checksum_section do |c|
               c.repo_gem gem_repo2, "platform_specific", "1.0"
+              c.repo_gem gem_repo2, "platform_specific", "1.0", "java"
               c.repo_gem gem_repo2, "platform_specific", "1.0", x64_mingw32
             end
 
@@ -539,6 +541,7 @@ RSpec.describe "bundle install from an existing gemspec" do
             expected_checksums = construct_checksum_section do |c|
               c.repo_gem gem_repo2, "indirect_platform_specific", "1.0"
               c.repo_gem gem_repo2, "platform_specific", "1.0"
+              c.repo_gem gem_repo2, "platform_specific", "1.0", "java"
               c.repo_gem gem_repo2, "platform_specific", "1.0", x64_mingw32
             end
 
@@ -718,6 +721,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         CHECKSUMS
           activeadmin (2.9.0)
+          #{checksum_for_repo_gem gem_repo4, "jruby-openssl", "0.10.7", "java"}
           #{checksum_for_repo_gem gem_repo4, "railties", "6.1.4"}
 
         BUNDLED WITH

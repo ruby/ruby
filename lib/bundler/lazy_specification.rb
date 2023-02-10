@@ -20,11 +20,7 @@ module Bundler
     end
 
     def full_name
-      @full_name ||= if platform == Gem::Platform::RUBY
-        "#{@name}-#{@version}"
-      else
-        "#{@name}-#{@version}-#{platform}"
-      end
+      @full_name ||= GemHelpers.spec_full_name(@name, @version, platform)
     end
 
     def ==(other)
@@ -61,12 +57,7 @@ module Bundler
 
     def to_lock
       out = String.new
-
-      if platform == Gem::Platform::RUBY
-        out << "    #{name} (#{version})\n"
-      else
-        out << "    #{name} (#{version}-#{platform})\n"
-      end
+      out << "    #{GemHelpers.lock_name(name, version, platform)}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development
@@ -76,17 +67,18 @@ module Bundler
       out
     end
 
-    #def materialize_for_checksum
-      #if @specification
-        #yield
-      #else
-        #materialize_for_installation
+    def materialize_for_checksum(&blk)
+      #
+      # See comment about #ruby_platform_materializes_to_ruby_platform?
+      # If the old lockfile format is present where there is no specific
+      # platform, then we should skip locking checksums as it is not
+      # deterministic which platform variant is locked.
+      #
+      return unless ruby_platform_materializes_to_ruby_platform?
 
-        #yield
-
-        #@specification = nil
-      #end
-    #end
+      s = materialize_for_installation
+      yield s if block_given?
+    end
 
     def materialize_for_installation
       source.local!
@@ -134,30 +126,12 @@ module Bundler
     end
 
     def to_s
-      @to_s ||= if platform == Gem::Platform::RUBY
-        "#{name} (#{version})"
-      else
-        "#{name} (#{version}-#{platform})"
-      end
+      @__to_s ||= GemHelpers.lock_name(name, version, platform)
     end
 
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
-    end
-
-    def to_checksum
-      return nil unless @specification
-
-      #
-      # See comment about #ruby_platform_materializes_to_ruby_platform?
-      # If the old lockfile format is present where there is no specific
-      # platform, then we should skip locking checksums as it is not
-      # deterministic which platform variant is locked.
-      #
-      return nil unless ruby_platform_materializes_to_ruby_platform?
-
-      @specification.to_checksum
     end
 
     private

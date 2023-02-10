@@ -1567,6 +1567,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
     it "upgrades the lockfile correctly" do
       bundle "lock --update", :artifice => "compact_index"
 
+      expected_checksums = construct_checksum_section do |c|
+        c.repo_gem gem_repo2, "capybara", "2.5.0"
+        c.repo_gem gem_repo4, "mime-types", "3.0.0"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: https://gem.repo2/
@@ -1587,6 +1592,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           mime-types (~> 3.0)!
 
         CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}

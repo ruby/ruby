@@ -291,6 +291,8 @@ RSpec.describe "bundle update" do
           country_select
 
         CHECKSUMS
+          #{checksum_for_repo_gem(gem_repo4, "countries", "3.1.0")}
+          #{checksum_for_repo_gem(gem_repo4, "country_select", "5.1.0")}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -560,6 +562,7 @@ RSpec.describe "bundle update" do
           activesupport (~> 6.0.0)
 
         CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1282,7 +1285,7 @@ RSpec.describe "bundle update --bundler" do
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
-    excepted_checksum = checksum_for_repo_gem(gem_repo4, "rack", "1.0")
+    expected_checksum = checksum_for_repo_gem(gem_repo4, "rack", "1.0")
 
     FileUtils.rm_r gem_repo4
 
@@ -1302,7 +1305,7 @@ RSpec.describe "bundle update --bundler" do
         rack
 
       CHECKSUMS
-        #{excepted_checksum}
+        #{expected_checksum}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1714,6 +1717,14 @@ RSpec.describe "bundle update conservative" do
     it "should only change direct dependencies when updating the lockfile with --conservative" do
       bundle "lock --update --conservative"
 
+      expected_checksums = construct_checksum_section do |c|
+        c.repo_gem gem_repo4, "isolated_dep", "2.0.1"
+        c.repo_gem gem_repo4, "isolated_owner", "1.0.2"
+        c.repo_gem gem_repo4, "shared_dep", "5.0.1"
+        c.repo_gem gem_repo4, "shared_owner_a", "3.0.2"
+        c.repo_gem gem_repo4, "shared_owner_b", "4.0.2"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
@@ -1736,6 +1747,7 @@ RSpec.describe "bundle update conservative" do
           shared_owner_b
 
         CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}

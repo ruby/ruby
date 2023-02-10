@@ -120,13 +120,10 @@ module Bundler
       return true unless checksum
       return true unless source = @package.instance_variable_get(:@gem)
       return true unless source.respond_to?(:with_read_io)
-      digest = source.with_read_io do |io|
-        digest = SharedHelpers.digest(:SHA256).new
-        digest << io.read(16_384) until io.eof?
-        io.rewind
-        send(checksum_type(checksum), digest)
-      end
-      unless digest == checksum
+      digest = Bundler::Checksum.digest_from_file_source(source)
+      calculated_checksum = send(checksum_type(checksum), digest)
+
+      unless calculated_checksum == checksum
         raise SecurityError, <<-MESSAGE
           Bundler cannot continue installing #{spec.name} (#{spec.version}).
           The checksum for the downloaded `#{spec.full_name}.gem` does not match \
@@ -143,7 +140,7 @@ module Bundler
           2. run `bundle install`
 
           (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \
-          checksum for the downloaded gem was #{digest.inspect}.)
+          checksum for the downloaded gem was #{calculated_checksum.inspect}.)
           MESSAGE
       end
       true

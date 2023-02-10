@@ -407,6 +407,7 @@ RSpec.describe "bundle install across platforms" do
 
       CHECKSUMS
         #{checksum_for_repo_gem(gem_repo1, "platform_specific", "1.0")}
+        #{checksum_for_repo_gem(gem_repo1, "platform_specific", "1.0", "java")}
 
       BUNDLED WITH
          #{Bundler::VERSION}
