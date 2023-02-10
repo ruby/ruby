@@ -1210,21 +1210,19 @@ module RubyVM::MJIT
       sp_offset = ctx.sp_offset + local_size + 3
       asm.add(SP, C.VALUE.size * sp_offset)
 
-      asm.comment('move CFP register to callee CFP')
-      asm.sub(CFP, C.rb_control_frame_t.size);
-
       asm.comment('set up new frame')
+      cfp_offset = -C.rb_control_frame_t.size # callee CFP
       # Not setting PC since JIT code will do that as needed
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], SP)
       asm.mov(:rax, iseq.to_i)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:iseq)], :rax)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:iseq)], :rax)
       self_index = -(1 + argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) + local_size + 3)
       asm.mov(:rax, [SP, C.VALUE.size * self_index])
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:self)], :rax)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:self)], :rax)
       asm.lea(:rax, [SP, C.VALUE.size * -1])
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:ep)], :rax)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], 0)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:ep)], :rax)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:block_code)], 0)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
 
       # cfp->jit_return is used only for ISEQs
       if iseq
@@ -1247,14 +1245,15 @@ module RubyVM::MJIT
             case branch_stub.shape
             in Default
               branch_asm.mov(:rax, branch_stub.target0.address)
-              branch_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+              branch_asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:jit_return)], :rax)
             end
           end
         end
         branch_stub.compile.call(asm)
       end
 
-      asm.comment('set callee CFP to ec->cfp')
+      asm.comment('switch to callee CFP')
+      asm.sub(CFP, C.rb_control_frame_t.size)
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
     end
 
