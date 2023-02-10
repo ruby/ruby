@@ -45,6 +45,7 @@ module RubyVM::MJIT
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new(@cb, @ocb, @exit_compiler)
+      Invariants.initialize(@cb, @ocb, @exit_compiler)
 
       @leave_exit = Assembler.new.then do |asm|
         @exit_compiler.compile_leave_exit(asm)

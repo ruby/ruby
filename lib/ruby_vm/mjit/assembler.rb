@@ -36,6 +36,7 @@ module RubyVM::MJIT
       @blocks = Hash.new { |h, k| h[k] = [] }
       @stub_starts = Hash.new { |h, k| h[k] = [] }
       @stub_ends = Hash.new { |h, k| h[k] = [] }
+      @pos_markers = Hash.new { |h, k| h[k] = [] }
     end
 
     def assemble(addr)
@@ -45,6 +46,9 @@ module RubyVM::MJIT
 
       write_bytes(addr)
 
+      @pos_markers.each do |write_pos, markers|
+        markers.each { |marker| marker.call(addr + write_pos) }
+      end
       @bytes.size
     ensure
       @bytes.clear
@@ -615,6 +619,10 @@ module RubyVM::MJIT
       yield
     ensure
       @stub_ends[@bytes.size] << stub
+    end
+
+    def pos_marker(&block)
+      @pos_markers[@bytes.size] << block
     end
 
     def new_label(name)

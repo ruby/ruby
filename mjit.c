@@ -353,6 +353,9 @@ void
 rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
     if (!mjit_call_p) return;
+    WITH_MJIT_DISABLED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
+    });
     mjit_call_p = false;
 }
 

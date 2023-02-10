@@ -138,6 +138,13 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_full_cfunc_return
+      Primitive.cstmt! %{
+        extern void rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
+        return SIZET2NUM((size_t)rb_full_cfunc_return);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff

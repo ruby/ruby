@@ -24,7 +24,8 @@ module RubyVM::MJIT
       asm.ret
     end
 
-    # @param ocb [CodeBlock]
+    # Set to cfp->jit_return by default for leave insn
+    # @param asm [RubyVM::MJIT::Assembler]
     def compile_leave_exit(asm)
       asm.comment('default cfp->jit_return')
 
@@ -34,6 +35,28 @@ module RubyVM::MJIT
       asm.pop(CFP)
 
       # :rax is written by #leave
+      asm.ret
+    end
+
+    # Fire cfunc events on invalidation by TracePoint
+    # @param asm [RubyVM::MJIT::Assembler]
+    def compile_full_cfunc_return(asm)
+      # This chunk of code expects REG_EC to be filled properly and
+      # RAX to contain the return value of the C method.
+
+      asm.comment('full cfunc return')
+      asm.mov(C_ARG_OPNDS[0], EC)
+      asm.mov(C_ARG_OPNDS[1], :rax)
+      asm.call(C.rb_full_cfunc_return)
+
+      # TODO: count the exit
+
+      # Restore callee-saved registers
+      asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
+
+      asm.mov(:rax, Qundef)
       asm.ret
     end
 

@@ -5,8 +5,13 @@ module RubyVM::MJIT
     def initialize(cb, ocb, exit_compiler)
       @ocb = ocb
       @exit_compiler = exit_compiler
-      @invariants = Invariants.new(cb, ocb, exit_compiler)
       @gc_refs = [] # TODO: GC offsets?
+
+      @full_cfunc_return = Assembler.new.then do |asm|
+        @exit_compiler.compile_full_cfunc_return(asm)
+        @ocb.write(asm)
+      end
+
       # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
@@ -421,7 +426,7 @@ module RubyVM::MJIT
         # Generate a side exit before popping operands
         side_exit = side_exit(jit, ctx)
 
-        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_PLUS)
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_PLUS)
           return CantCompile
         end
 
@@ -467,7 +472,7 @@ module RubyVM::MJIT
         # Generate a side exit before popping operands
         side_exit = side_exit(jit, ctx)
 
-        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_MINUS)
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_MINUS)
           return CantCompile
         end
 
@@ -531,7 +536,7 @@ module RubyVM::MJIT
         # Generate a side exit before popping operands
         side_exit = side_exit(jit, ctx)
 
-        unless @invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
           return CantCompile
         end
 
@@ -601,7 +606,7 @@ module RubyVM::MJIT
         asm.incr_counter(:optaref_array)
         CantCompile
       elsif comptime_recv.class == Hash
-        unless @invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
+        unless Invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
           return CantCompile
         end
 
@@ -1051,7 +1056,7 @@ module RubyVM::MJIT
       end
 
       # Invalidate on redefinition (part of vm_search_method_fastpath)
-      @invariants.assume_method_lookup_stable(jit, cme)
+      Invariants.assume_method_lookup_stable(jit, cme)
 
       jit_call_method_each_type(jit, ctx, asm, ci, argc, flags, cme, comptime_recv, recv_opnd)
     end
@@ -1155,7 +1160,7 @@ module RubyVM::MJIT
         return CantCompile
       end
 
-      # Disabled until we implement TracePoint invalidation
+      # Disabled until we figure out why $' gets broken on test-all
       disabled = true
       if disabled
         return CantCompile
@@ -1213,6 +1218,8 @@ module RubyVM::MJIT
       asm.mov(:rax, cfunc.func)
       asm.call(:rax) # TODO: use rel32 if close enough
       ctx.stack_pop(1 + argc)
+
+      Invariants.record_global_inval_patch(asm, @full_cfunc_return)
 
       asm.comment('push the return value')
       stack_ret = ctx.stack_push
