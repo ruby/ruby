@@ -356,7 +356,13 @@ rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
     WITH_MJIT_DISABLED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });
-    mjit_call_p = false;
+}
+
+// TODO: Use this in more places
+VALUE
+rb_mjit_iseq_new(rb_iseq_t *iseq)
+{
+    return rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
 }
 
 void

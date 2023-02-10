@@ -33,6 +33,12 @@ module RubyVM::MJIT
     attr_accessor :write_pos
 
     IseqBlocks = Hash.new { |h, k| h[k] = {} }
+    DeadBlocks = [] # invalidated IseqBlocks, but kept for safety
+
+    def self.reset_blocks
+      DeadBlocks << IseqBlocks.dup
+      IseqBlocks.clear
+    end
 
     def self.decode_insn(encoded)
       INSNS.fetch(C.rb_vm_insn_decode(encoded))

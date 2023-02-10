@@ -15,6 +15,8 @@
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/hash.h"
+#include "internal/sanitizers.h"
+#include "internal/gc.h"
 #include "yjit.h"
 #include "vm_insnhelper.h"
 
@@ -84,6 +86,33 @@ static VALUE
 mjit_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
     return RBOOL(mjit_enabled);
+}
+
+static int
+for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE block = (VALUE)data;
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+        void *ptr = asan_poisoned_object_p(v);
+        asan_unpoison_object(v, false);
+
+        if (rb_obj_is_iseq(v)) {
+            extern VALUE rb_mjit_iseq_new(rb_iseq_t *iseq);
+            rb_iseq_t *iseq = (rb_iseq_t *)v;
+            rb_funcall(block, rb_intern("call"), 1, rb_mjit_iseq_new(iseq));
+        }
+
+        asan_poison_object_if(ptr, v);
+    }
+    return 0;
+}
+
+static VALUE
+mjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
+{
+    rb_objspace_each_objects(for_each_iseq_i, (void *)block);
+    return Qnil;
 }
 
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);

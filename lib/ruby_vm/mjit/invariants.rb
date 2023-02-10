@@ -58,14 +58,25 @@ module RubyVM::MJIT
       end
 
       def on_tracing_invalidate_all
-        # TODO: assert patches don't overlap each other
+        # On-Stack Replacement
         @patches.each do |address, target|
+          # TODO: assert patches don't overlap each other
           @cb.with_write_addr(address) do
             asm = Assembler.new
             asm.comment('on_tracing_invalidate_all')
             asm.jmp(target)
             @cb.write(asm)
           end
+        end
+
+        # Avoid reusing past code
+        Compiler.reset_blocks
+
+        C.mjit_for_each_iseq do |iseq|
+          # Disable entering past code
+          iseq.body.jit_func = 0
+          # Compile this again if not converted to trace_* insns
+          iseq.body.total_calls = 0
         end
       end
 

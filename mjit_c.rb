@@ -145,6 +145,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def mjit_for_each_iseq(&block)
+      Primitive.mjit_for_each_iseq(block)
+    end
+
     #========================================================================================
     #
     # Old stuff
