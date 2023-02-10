@@ -13,9 +13,6 @@
 const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;
 #else
 
-#define STRINGIZE(expr) STRINGIZE0(expr)
-#define STRINGIZE0(expr) #expr
-
 static void
 insert_env_path(const char *envname, const char *paths, size_t size, int prepend)
 {
