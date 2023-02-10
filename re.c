@@ -762,8 +762,8 @@ rb_reg_casefold_p(VALUE re)
  *    /foo/mix.options # => 7
  *
  *  Note that additional bits may be set in the returned integer;
- *  these are maintained internally in +self+,
- *  are ignored if passed to Regexp.new, and may be ignored by the caller:
+ *  these are maintained internally in +self+, are ignored if passed
+ *  to Regexp.new, and may be ignored by the caller:
  *
  *  Returns the set of bits corresponding to the options used when
  *  creating this regexp (see Regexp::new for details). Note that
