@@ -1865,6 +1865,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                     rb_extend_object(v, m);
                 }
             }
+            v = r_leave(v, arg, partial);
         }
         break;
 

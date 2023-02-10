@@ -69,6 +69,18 @@ describe :marshal_load, shared: true do
         Object.should_not.frozen?
       end
 
+      ruby_bug "#19427", ""..."3.3" do
+        it "does freeze extended objects" do
+          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", freeze: true)
+          object.should.frozen?
+        end
+
+        it "does freeze extended objects with instance variables" do
+          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x06:\n@ivarT", freeze: true)
+          object.should.frozen?
+        end
+      end
+
       describe "when called with a proc" do
         it "call the proc with frozen objects" do
           arr = []
@@ -129,6 +141,14 @@ describe :marshal_load, shared: true do
       it "no longer mutate the object after it was passed to the proc" do
         string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
         string.should.frozen?
+      end
+    end
+
+    ruby_bug "#19427", ""..."3.3" do
+      it "call the proc with extended objects" do
+        objs = []
+        obj = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", Proc.new { |o| objs << o; o })
+        objs.should == [obj]
       end
     end
 
