@@ -1773,8 +1773,8 @@ help: PHONY
 	"  install:               install all ruby distributions" \
 	"  install-nodoc:         install without rdoc" \
 	"  install-cross:         install cross compiling stuff" \
-	"  clean:                 clean for tarball" \
-	"  distclean:             clean for repository" \
+	"  clean:                 clean up to the state before build" \
+	"  distclean:             clean up to the state before configure" \
 	"  golf:                  build goruby for golfers" \
 	$(HELP_EXTRA_TASKS) \
 	"see DeveloperHowto for more detail: " \
