@@ -67,7 +67,8 @@ module RubyVM::MJIT
       compile_block(asm, jit:)
       iseq.body.jit_func = @cb.write(asm)
     rescue Exception => e
-      $stderr.puts e.full_message # TODO: check verbose
+      $stderr.puts e.full_message
+      exit 1
     end
 
     # Compile a branch stub.
@@ -119,6 +120,9 @@ module RubyVM::MJIT
       end
 
       return target.address
+    rescue Exception => e
+      $stderr.puts e.full_message
+      exit 1
     end
 
     private
