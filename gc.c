@@ -15884,13 +15884,11 @@ rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
  * Therefore we rebuild the whole hash table.
  */
 static void
-rb_mmtk_update_weak_table(st_table **table_holder,
+rb_mmtk_update_weak_table(st_table *old_table,
                           bool update_values,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg)
 {
-    st_table *old_table = *table_holder;
-
     if (!old_table || old_table->num_entries == 0) return;
 
     st_table *new_table = st_init_table(old_table->type);
@@ -15907,14 +15905,25 @@ rb_mmtk_update_weak_table(st_table **table_holder,
         abort();
     }
 
-    st_free_table(old_table);
-    *table_holder = new_table;
+    // Swap the contents of the old and the new table.
+    // Note: The mutator may be rebuilding the same table when GC is updating it.
+    // (see `rebuild_table` in st.c)
+    // If the old table was not big enough, it will allocate a new table, but that may trigger GC.
+    // After GC finishes and the new table is allocated,
+    // the mutator will copy entries from the old table.
+    // If we replace the whole old table,
+    // the mutator shouldn't notice that the entire old table has been replaced during GC.
+    st_table old_table_copy = *old_table;
+    *old_table = *new_table;
+    *new_table = old_table_copy;
+
+    st_free_table(new_table);
 }
 
 static void
-rb_mmtk_update_weak_table_key_only(st_table **table_holder)
+rb_mmtk_update_weak_table_key_only(st_table *table)
 {
-    rb_mmtk_update_weak_table(table_holder, false, NULL, NULL);
+    rb_mmtk_update_weak_table(table, false, NULL, NULL);
 }
 
 static void
@@ -15971,20 +15980,20 @@ rb_mmtk_update_global_weak_tables(void)
     // If a key points to a dead object, we make a zombie for it so that their finalizers are
     // scheduled to be executed later.
     // Currently finalizers are disabled when running with MMTk.
-    rb_mmtk_update_weak_table(&finalizer_table,
+    rb_mmtk_update_weak_table(finalizer_table,
                               false, // Currently values are pinned.
                               rb_mmtk_on_finalizer_table_delete,
                               NULL);
 
     // Update the obj_to_id_tbl first, and remove dead objects from both
     // obj_to_id_tbl and id_to_obj_tbl.
-    rb_mmtk_update_weak_table(&rb_objspace.obj_to_id_tbl,
+    rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
 
     // Update the fstring_table, and remove dead objects.
-    rb_mmtk_update_weak_table(&GET_VM()->frozen_strings,
+    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
                               true,
                               rb_mmtk_on_fstring_table_delete,
                               NULL);

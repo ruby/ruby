@@ -22,7 +22,7 @@
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
 void rb_gc_update_global_tbl(void);
-void rb_gc_update_generic_iv_tbl(void(*updater)(st_table**));
+void rb_gc_update_generic_iv_tbl(void(*updater)(st_table*));
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
