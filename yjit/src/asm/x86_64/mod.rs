@@ -700,13 +700,13 @@ pub fn call_ptr(cb: &mut CodeBlock, scratch_opnd: X86Opnd, dst_ptr: *const u8) {
 
         // If the offset fits in 32-bit
         if rel64 >= i32::MIN.into() && rel64 <= i32::MAX.into() {
-            incr_counter!(x86_call_rel32);
+            incr_counter!(num_send_x86_rel32);
             call_rel32(cb, rel64.try_into().unwrap());
             return;
         }
 
         // Move the pointer into the scratch register and call
-        incr_counter!(x86_call_reg);
+        incr_counter!(num_send_x86_reg);
         mov(cb, scratch_opnd, const_ptr_opnd(dst_ptr));
         call(cb, scratch_opnd);
     } else {

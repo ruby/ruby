@@ -5205,7 +5205,6 @@ fn gen_send_iseq(
         }
     }
 
-
     if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
         // zsuper methods are super calls without any arguments.
         // They are also marked as splat, but don't actually have an array
@@ -5933,9 +5932,15 @@ fn gen_send_general(
     }
 
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
-
     let comptime_recv = jit_peek_at_stack(jit, ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
+
+    // Guard that the receiver has the same class as the one from compile time
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Points to the receiver operand on the stack
+    let recv = ctx.stack_opnd(recv_idx);
+    let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
@@ -5950,12 +5955,14 @@ fn gen_send_general(
         }
     }
 
-    // Guard that the receiver has the same class as the one from compile time
-    let side_exit = get_side_exit(jit, ocb, ctx);
-
-    // Points to the receiver operand on the stack
-    let recv = ctx.stack_opnd(recv_idx);
-    let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
+    // Gather some statistics about sends
+    gen_counter_incr!(asm, num_send);
+    if let Some(_known_klass) = ctx.get_opnd_type(recv_opnd).known_class()  {
+        gen_counter_incr!(asm, num_send_known_class);
+    }
+    if ctx.get_chain_depth() > 1 {
+        gen_counter_incr!(asm, num_send_polymorphic);
+    }
 
     let megamorphic_exit = counted_exit!(ocb, side_exit, send_klass_megamorphic);
     jit_guard_known_klass(

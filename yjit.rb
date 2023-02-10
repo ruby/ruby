@@ -253,9 +253,12 @@ module RubyVM::YJIT
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
-      if stats[:x86_call_rel32] != 0 || stats[:x86_call_reg] != 0
-        $stderr.puts "x86_call_rel32:        " + format_number(10,  stats[:x86_call_rel32])
-        $stderr.puts "x86_call_reg:          " + format_number(10, stats[:x86_call_reg])
+      $stderr.puts "num_send:                " + format_number(10, stats[:num_send])
+      $stderr.puts "num_send_known_class:    " + format_number_pct(10, stats[:num_send_known_class], stats[:num_send])
+      $stderr.puts "num_send_polymorphic:    " + format_number_pct(10, stats[:num_send_polymorphic], stats[:num_send])
+      if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
+        $stderr.puts "num_send_x86_rel32:      " + format_number(10,  stats[:num_send_x86_rel32])
+        $stderr.puts "num_send_x86_reg:        " + format_number(10, stats[:num_send_x86_reg])
       end
 
       $stderr.puts "bindings_allocations:  " + format_number(10, stats[:binding_allocations])
@@ -315,10 +318,8 @@ module RubyVM::YJIT
         exits.each do |name, count|
           padding = longest_insn_name_len + left_pad
           padded_name = "%#{padding}s" % name
-          padded_count = format_number(10, count)
-          percent = 100.0 * count / total_exits
-          formatted_percent = "%.1f" % percent
-          $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent}%)" )
+          padded_count = format_number_pct(10, count, total_exits)
+          $stderr.puts("#{padded_name}: #{padded_count}")
         end
       else
         $stderr.puts "total_exits:           " + format_number(10, total_exits)
@@ -350,11 +351,9 @@ module RubyVM::YJIT
       total = counters.sum { |(_, counter_value)| counter_value }
 
       counters.reverse_each do |(name, value)|
-        percentage = value.fdiv(total) * 100
         padded_name = name.rjust(longest_name_length, ' ')
-        padded_count = format_number(10, value)
-        formatted_pct = "%4.1f%%" % percentage
-        $stderr.puts("    #{padded_name}: #{padded_count} (#{formatted_pct})")
+        padded_count = format_number_pct(10, value, total)
+        $stderr.puts("    #{padded_name}: #{padded_count}")
       end
     end
 
@@ -365,6 +364,14 @@ module RubyVM::YJIT
       with_commas = d_groups.map(&:join).join(',').reverse
       formatted = [with_commas, decimal].compact.join(".")
       formatted.rjust(pad, ' ')
+    end
+
+    # Format a number along with a percentage over a total value
+    def format_number_pct(pad, number, total)
+      padded_count = format_number(pad, number)
+      percentage = number.fdiv(total) * 100
+      formatted_pct = "%4.1f%%" % percentage
+      "#{padded_count} (#{formatted_pct})"
     end
   end
 end
