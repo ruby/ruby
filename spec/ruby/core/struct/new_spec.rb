@@ -24,7 +24,7 @@ describe "Struct.new" do
   it "calls to_str on its first argument (constant name)" do
     obj = mock('Foo')
     def obj.to_str() "Foo" end
-    struct = Struct.new(obj)
+    struct = Struct.new(obj, :a)
     struct.should == Struct::Foo
     struct.name.should == "Struct::Foo"
   end

@@ -688,6 +688,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
         st = anonymous_struct(klass);
     }
     else {
+        if (argc == 0) {
+            rb_raise(rb_eArgError, "cannot created named struct without members");
+        }
         st = new_struct(name, klass);
     }
     setup_struct(st, rest);

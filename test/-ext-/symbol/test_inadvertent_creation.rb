@@ -293,7 +293,7 @@ module Test_Symbol
 
     def test_struct_new
       name = noninterned_name
-      assert_raise(NameError) {Struct.new(name)}
+      assert_raise(NameError) {Struct.new(name, :a)}
       assert_not_interned(name)
     end
 

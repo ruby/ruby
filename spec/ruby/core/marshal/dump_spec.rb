@@ -385,7 +385,7 @@ describe "Marshal.dump" do
 
   describe "with a Struct" do
     it "dumps a Struct" do
-      Marshal.dump(Struct::Pyramid.new).should == "\004\bS:\024Struct::Pyramid\000"
+      Marshal.dump(Struct::Pyramid.new).should == "\004\bS:\024Struct::Pyramid\006:\006a0"
     end
 
     it "dumps a Struct" do
@@ -393,9 +393,9 @@ describe "Marshal.dump" do
     end
 
     it "dumps a Struct with instance variables" do
-      st = Struct.new("Thick").new
+      st = Struct.new("Thick", :a).new
       st.instance_variable_set(:@ivar, 1)
-      Marshal.dump(st).should == "\004\bIS:\022Struct::Thick\000\006:\n@ivari\006"
+      Marshal.dump(st).should == "\004\bIS:\022Struct::Thick\006:\006a0\006:\n@ivari\006"
       Struct.send(:remove_const, :Thick)
     end
 

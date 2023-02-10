@@ -154,7 +154,7 @@ module MethsMore
   def meths_more_method() end
 end
 
-Struct.new "Pyramid"
+Struct.new "Pyramid", :a
 Struct.new "Useful", :a, :b
 
 module MarshalSpec
@@ -297,7 +297,7 @@ module MarshalSpec
     "Array subclass" => [UserArray.new,
                      "\004\bC:\016UserArray[\000"],
     "Struct Pyramid" => [Struct::Pyramid.new,
-                 "\004\bS:\024Struct::Pyramid\000"],
+                 "\004\bS:\024Struct::Pyramid\006:\006a0"],
   }
   DATA_19 = {
     "nil" => [nil, "\004\b0"],
@@ -395,7 +395,7 @@ module MarshalSpec
     "Array subclass" => [UserArray.new,
                      "\004\bC:\016UserArray[\000"],
     "Struct Pyramid" => [Struct::Pyramid.new,
-                 "\004\bS:\024Struct::Pyramid\000"],
+                 "\004\bS:\024Struct::Pyramid\006:\006a0"],
     "Random" => random_data,
   }
 end

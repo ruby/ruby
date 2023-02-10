@@ -334,8 +334,11 @@ describe :marshal_load, shared: true do
              :go, c, nil, Struct::Pyramid.new, f, :go, :no, s, b, r,
              :so, 'huh', o1, true, b, b, 99, r, b, s, :so, f, c, :no, o1, d]
 
-      Marshal.send(@method, "\004\b[*:\aso\"\nhelloii;\000;\000[\t\"\ahi:\ano\"\aoh:\ago;\000U:\020UserMarshal\"\nstuff;\000;\006@\n;\ac\vString0S:\024Struct::Pyramid\000f\0061;\a;\006@\t@\b/\000\000;\000\"\bhuhU:\030UserMarshalWithIvar[\006\"\fmy dataT@\b@\bih@\017@\b@\t;\000@\016@\f;\006@\021@\a").should ==
-        obj
+      loaded = Marshal.send(@method, "\004\b[*:\aso\"\nhelloii;\000;\000[\t\"\ahi:\ano\"\aoh:\ago;\000U:\020UserMarshal\"\nstuff;\000;\006@\n;\ac\vString0S:\024Struct::Pyramid\006:\006a0f\0061;\a;\006@\t@\b/\000\000;\000\"\bhuhU:\030UserMarshalWithIvar[\006\"\fmy dataT@\b@\bih@\017@\b@\t;\000@\016@\f;\006@\021@\a")
+      def (loaded[14]).==(other) 
+        other.is_a?(self.class) && other.a == a
+      end
+      loaded.should == obj
     end
 
     it "loads an array having ivar" do
@@ -533,9 +536,9 @@ describe :marshal_load, shared: true do
     end
 
     it "loads a struct having ivar" do
-      obj = Struct.new("Thick").new
+      obj = Struct.new("Thick", :a).new
       obj.instance_variable_set(:@foo, 5)
-      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\000\006:\t@fooi\n")
+      reloaded = Marshal.send(@method, "\004\bIS:\022Struct::Thick\006:\006a0\006:\t@fooi\n")
       reloaded.should == obj
       reloaded.instance_variable_get(:@foo).should == 5
       Struct.send(:remove_const, :Thick)

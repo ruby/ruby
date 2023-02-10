@@ -29,6 +29,12 @@ module TestStruct
     end
   end
 
+  def test_memberless_struct_error
+    assert_raise(ArgumentError) { @Struct.new }
+    assert_raise(ArgumentError) { @Struct.new("Test") }
+    assert_raise(NameError) { @Struct::Test }
+  end
+
   # [ruby-dev:26247] more than 10 struct members causes segmentation fault
   def test_morethan10members
     list = %w( a b c d  e f g h  i j k l  m n o p )
@@ -91,8 +97,8 @@ module TestStruct
   end
 
   def test_struct_new
-    assert_raise(NameError) { @Struct.new("foo") }
-    assert_nothing_raised { @Struct.new("Foo") }
+    assert_raise(NameError) { @Struct.new("foo", :a) }
+    assert_nothing_raised { @Struct.new("Foo", :a) }
     @Struct.instance_eval { remove_const(:Foo) }
     assert_nothing_raised { @Struct.new(:a) { } }
     assert_raise(RuntimeError) { @Struct.new(:a) { raise } }
@@ -345,15 +351,15 @@ module TestStruct
   end
 
   def test_error
-    assert_raise(TypeError){
+    assert_raise(ArgumentError){
       @Struct.new(0)
     }
   end
 
   def test_redefinition_warning
-    @Struct.new(name = "RedefinitionWarning")
+    @Struct.new(name = "RedefinitionWarning", :a)
     e = EnvUtil.verbose_warning do
-      @Struct.new("RedefinitionWarning")
+      @Struct.new("RedefinitionWarning", :a)
     end
     assert_match(/redefining constant #@Struct::RedefinitionWarning/, e)
 
