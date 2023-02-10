@@ -253,6 +253,84 @@ class TestVariable < Test::Unit::TestCase
     assert_include(gv, :$12)
   end
 
+  def prepare_klass_for_test_svar_with_ifunc
+    Class.new do
+      include Enumerable
+      def each(&b)
+        @b = b
+      end
+
+      def check1
+        check2.merge({check1: $1})
+      end
+
+      def check2
+        @b.call('foo')
+        {check2: $1}
+      end
+    end
+  end
+
+  def test_svar_with_ifunc
+    c = prepare_klass_for_test_svar_with_ifunc
+
+    expected_check1_result = {
+      check1: nil, check2: nil
+    }.freeze
+
+    obj = c.new
+    result = nil
+    obj.grep(/(f..)/){
+      result = $1
+    }
+    assert_equal nil, result
+    assert_equal nil, $1
+    assert_equal expected_check1_result, obj.check1
+    assert_equal 'foo', result
+    assert_equal 'foo', $1
+
+    # this frame was escaped so try it again
+    $~ = nil
+    obj = c.new
+    result = nil
+    obj.grep(/(f..)/){
+      result = $1
+    }
+    assert_equal nil, result
+    assert_equal nil, $1
+    assert_equal expected_check1_result, obj.check1
+    assert_equal 'foo', result
+    assert_equal 'foo', $1
+
+    # different context
+    result = nil
+    Fiber.new{
+      obj = c.new
+      obj.grep(/(f..)/){
+        result = $1
+      }
+    }.resume # obj is created in antoher Fiber
+    assert_equal nil, result
+    assert_equal expected_check1_result, obj.check1
+    assert_equal 'foo', result
+    assert_equal 'foo', $1
+
+    # different thread context
+    result = nil
+    Thread.new{
+      obj = c.new
+      obj.grep(/(f..)/){
+        result = $1
+      }
+    }.join # obj is created in another Thread
+
+    assert_equal nil, result
+    assert_equal expected_check1_result, obj.check1
+    assert_equal 'foo', result
+    assert_equal 'foo', $1
+  end
+
+
   def test_global_variable_0
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end

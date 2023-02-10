@@ -1768,6 +1768,7 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+VALUE *rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_vm_stack_to_heap(rb_execution_context_t *ec);
 void ruby_thread_init_stack(rb_thread_t *th);
