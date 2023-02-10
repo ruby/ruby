@@ -1213,22 +1213,17 @@ module RubyVM::MJIT
       asm.comment('move CFP register to callee CFP')
       asm.sub(CFP, C.rb_control_frame_t.size);
 
+      asm.comment('set up new frame')
       # Not setting PC since JIT code will do that as needed
-      asm.comment('set SP to callee CFP')
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
-      asm.comment('set ISEQ to callee CFP')
       asm.mov(:rax, iseq.to_i)
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:iseq)], :rax)
-      asm.comment('set self to callee CFP')
       self_index = -(1 + argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) + local_size + 3)
       asm.mov(:rax, [SP, C.VALUE.size * self_index])
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:self)], :rax)
-      asm.comment('set EP to callee CFP')
       asm.lea(:rax, [SP, C.VALUE.size * -1])
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:ep)], :rax)
-      asm.comment('set block_code to callee CFP')
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], 0)
-      asm.comment('set BP to callee CFP')
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
 
       # cfp->jit_return is used only for ISEQs
