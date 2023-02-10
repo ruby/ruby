@@ -1133,7 +1133,18 @@ module RubyVM::MJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
 
       frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
-      jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
+      jit_push_frame(
+        jit, ctx, asm, ci, cme, flags, argc, frame_type,
+        iseq:       iseq,
+        local_size: iseq.body.local_table_size - iseq.body.param.size,
+        stack_max:  iseq.body.stack_max,
+      )
+
+      # Jump to a stub for the callee ISEQ
+      callee_ctx = Context.new
+      stub_next_block(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
+
+      EndBlock
     end
 
     # vm_call_ivar
@@ -1147,7 +1158,7 @@ module RubyVM::MJIT
       end
 
       if argc != 0
-        asm.incr_counter(:send_ivar_arity)
+        asm.incr_counter(:send_arity)
         return CantCompile
       end
 
@@ -1174,11 +1185,10 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, iseq, frame_type, next_pc)
+    def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, frame_type, iseq: nil, local_size: 0, stack_max: 0)
       # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max) 
       asm.comment('stack overflow check')
-      local_size = iseq.body.local_table_size - iseq.body.param.size
-      asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + iseq.body.stack_max)))
+      asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
 
@@ -1224,39 +1234,36 @@ module RubyVM::MJIT
       asm.comment('set BP to callee CFP')
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
 
-      # Stub cfp->jit_return
-      return_ctx = ctx.dup
-      return_ctx.stack_size -= argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop args
-      return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
-      branch_stub = BranchStub.new(
-        iseq: jit.iseq,
-        shape: Default,
-        target0: BranchTarget.new(ctx: return_ctx, pc: next_pc),
-      )
-      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
-        @exit_compiler.compile_branch_stub(return_ctx, ocb_asm, branch_stub, true)
-        @ocb.write(ocb_asm)
-      end
-      branch_stub.compile = proc do |branch_asm|
-        branch_asm.comment('set jit_return to callee CFP')
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.mov(:rax, branch_stub.target0.address)
-            branch_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+      # cfp->jit_return is used only for ISEQs
+      if iseq
+        # Stub cfp->jit_return
+        return_ctx = ctx.dup
+        return_ctx.stack_size -= argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop args
+        return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
+        branch_stub = BranchStub.new(
+          iseq: jit.iseq,
+          shape: Default,
+          target0: BranchTarget.new(ctx: return_ctx, pc: jit.pc + jit.insn.len * C.VALUE.size),
+        )
+        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+          @exit_compiler.compile_branch_stub(return_ctx, ocb_asm, branch_stub, true)
+          @ocb.write(ocb_asm)
+        end
+        branch_stub.compile = proc do |branch_asm|
+          branch_asm.comment('set jit_return to callee CFP')
+          branch_asm.stub(branch_stub) do
+            case branch_stub.shape
+            in Default
+              branch_asm.mov(:rax, branch_stub.target0.address)
+              branch_asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
+            end
           end
         end
+        branch_stub.compile.call(asm)
       end
-      branch_stub.compile.call(asm)
 
       asm.comment('set callee CFP to ec->cfp')
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
-
-      # Jump to a stub for the callee ISEQ
-      callee_ctx = Context.new
-      stub_next_block(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
-
-      EndBlock
     end
 
     # vm_callee_setup_arg: Set up args and return opt_pc (or CantCompile)

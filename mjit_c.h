@@ -126,10 +126,10 @@ MJIT_RUNTIME_COUNTERS(
     send_zsuper,
     send_refined,
     send_stackoverflow,
+    send_arity,
 
     send_ivar,
     send_ivar_splat,
-    send_ivar_arity,
     send_ivar_opt_send,
     send_ivar_blockarg,
 
