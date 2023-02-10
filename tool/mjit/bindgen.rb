@@ -379,6 +379,9 @@ generator = BindingGenerator.new(
       VM_CALL_OPT_SEND
       VM_ENV_FLAG_LOCAL
       VM_FRAME_MAGIC_METHOD
+      VM_FRAME_MAGIC_CFUNC
+      VM_FRAME_FLAG_CFRAME
+      VM_FRAME_FLAG_CFRAME_KW
       VM_METHOD_TYPE_CFUNC
       VM_METHOD_TYPE_ISEQ
       VM_METHOD_TYPE_IVAR
@@ -445,6 +448,7 @@ generator = BindingGenerator.new(
     rb_shape
     rb_shape_t
     rb_method_attr_t
+    rb_method_cfunc_t
   ],
   dynamic_types: %w[
     VALUE

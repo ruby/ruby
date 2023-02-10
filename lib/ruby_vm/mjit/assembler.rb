@@ -3,6 +3,9 @@ module RubyVM::MJIT
   # 32-bit memory access
   class DwordPtr < Data.define(:reg, :disp); end
 
+  # C call argument registers
+  C_ARG_OPNDS = [:rdi, :rsi, :rdx, :rcx, :r8, :r9]
+
   # https://www.intel.com/content/dam/develop/public/us/en/documents/325383-sdm-vol-2abcd.pdf
   # Mostly an x86_64 assembler, but this also has some stuff that is useful for any architecture.
   class Assembler
@@ -118,11 +121,24 @@ module RubyVM::MJIT
       end
     end
 
-    # @param addr [Integer]
-    def call(addr)
+    def call(dst)
+      case dst
       # CALL rel32
-      # E8 cd
-      insn(opcode: 0xe8, imm: rel32(addr))
+      in Integer => dst_addr
+        # E8 cd
+        # D: Operand 1: Offset
+        insn(opcode: 0xe8, imm: rel32(dst_addr))
+      # CALL r/m64 (Mod 11: reg)
+      in Symbol => dst_reg
+        # FF /2
+        # M: Operand 1: ModRM:r/m (r)
+        insn(
+          opcode: 0xff,
+          mod_rm: ModRM[mod: Mod11, reg: 2, rm: dst_reg],
+        )
+      else
+        raise NotImplementedError, "call: not-implemented operands: #{dst.inspect}"
+      end
     end
 
     def cmovl(dst, src)
@@ -457,6 +473,16 @@ module RubyVM::MJIT
             opcode: 0x89,
             mod_rm: ModRM[mod: Mod01, reg: src_reg, rm: dst_reg],
             disp: dst_disp,
+          )
+        # MOV r/m64, r64 (Mod 10: [reg]+disp32)
+        in Symbol => src_reg if r64?(dst_reg) && imm32?(dst_disp) && r64?(src_reg)
+          # REX.W + 89 /r
+          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x89,
+            mod_rm: ModRM[mod: Mod10, reg: src_reg, rm: dst_reg],
+            disp: imm32(dst_disp),
           )
         else
           raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"

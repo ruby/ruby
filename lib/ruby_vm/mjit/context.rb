@@ -23,7 +23,7 @@ module RubyVM::MJIT
       [SP, C.VALUE.size * (self.sp_offset - 1 - depth_from_top)]
     end
 
-    def sp_opnd(offset_bytes)
+    def sp_opnd(offset_bytes = 0)
       [SP, (C.VALUE.size * self.sp_offset) + offset_bytes]
     end
   end

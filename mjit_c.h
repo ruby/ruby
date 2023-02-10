@@ -128,6 +128,12 @@ MJIT_RUNTIME_COUNTERS(
     send_stackoverflow,
     send_arity,
 
+    send_iseq_not_simple,
+    send_iseq_kw_splat,
+
+    send_cfunc_variadic,
+    send_cfunc_too_many_args,
+
     send_ivar,
     send_ivar_splat,
     send_ivar_opt_send,

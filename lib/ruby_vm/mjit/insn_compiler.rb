@@ -370,7 +370,7 @@ module RubyVM::MJIT
         iseq: jit.iseq,
         shape: Default,
         target0: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * (jit.insn.len + jump_offset)), # branch target
-        target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                    # fallthrough
+        target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                 # fallthrough
       )
       branch_stub.target0.address = Assembler.new.then do |ocb_asm|
         @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
@@ -785,7 +785,7 @@ module RubyVM::MJIT
           @ocb.write(ocb_asm)
         end
         branch_stub.compile = proc do |branch_asm|
-          branch_asm.comment('jit_chain_guard')
+          # Not using `asm.comment` here since it's usually put before cmp/test before this.
           branch_asm.stub(branch_stub) do
             case branch_stub.shape
             in Default
@@ -865,9 +865,9 @@ module RubyVM::MJIT
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_save_pc(jit, asm)
+    def jit_save_pc(jit, asm, comment: 'save PC to CFP')
       next_pc = jit.pc + jit.insn.len * C.VALUE.size # Use the next one for backtrace and side exits
-      asm.comment('save PC to CFP')
+      asm.comment(comment)
       asm.mov(:rax, next_pc)
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
     end
@@ -878,7 +878,7 @@ module RubyVM::MJIT
     def jit_save_sp(jit, ctx, asm)
       if ctx.sp_offset != 0
         asm.comment('save SP to CFP')
-        asm.lea(SP, ctx.sp_opnd(0))
+        asm.lea(SP, ctx.sp_opnd)
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
         ctx.sp_offset = 0
       end
@@ -1012,7 +1012,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
-      recv_index = argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1)
+      recv_index = argc # TODO: +1 for VM_CALL_ARGS_BLOCKARG
 
       # Get a compile-time receiver and its class
       comptime_recv = jit.peek_at_stack(recv_index)
@@ -1066,8 +1066,7 @@ module RubyVM::MJIT
         jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
       # when C.VM_METHOD_TYPE_NOTIMPLEMENTED
       when C.VM_METHOD_TYPE_CFUNC
-        asm.incr_counter(:send_cfunc)
-        return CantCompile
+        jit_call_cfunc(jit, ctx, asm, ci, cme, flags, argc)
       when C.VM_METHOD_TYPE_ATTRSET
         asm.incr_counter(:send_attrset)
         return CantCompile
@@ -1123,14 +1122,11 @@ module RubyVM::MJIT
     def jit_call_iseq_setup_normal(jit, ctx, asm, ci, cme, flags, argc, iseq)
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
-      sp_index = ctx.sp_offset - 1 - argc - ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop receiver and arguments for side exits
-      asm.lea(:rax, [SP, C.VALUE.size * sp_index])
+      # Not setting this to SP register. This cfp->sp will be copied to SP on leave insn.
+      sp_index = -(1 + argc) # Pop receiver and arguments for side exits # TODO: subtract one more for VM_CALL_ARGS_BLOCKARG
+      asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * sp_index))
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
-
-      asm.comment('save PC to caller CFP')
-      next_pc = jit.pc + jit.insn.len * C.VALUE.size # Use the next one for backtrace and side exits
-      asm.mov(:rax, next_pc)
-      asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
+      jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
       frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
       jit_push_frame(
@@ -1144,6 +1140,90 @@ module RubyVM::MJIT
       callee_ctx = Context.new
       stub_next_block(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
 
+      EndBlock
+    end
+
+    # vm_call_cfunc
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_cfunc(jit, ctx, asm, ci, cme, flags, argc)
+      if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+        return CantCompile
+      end
+      if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
+        return CantCompile
+      end
+
+      # Disabled until we implement TracePoint invalidation
+      disabled = true
+      if disabled
+        return CantCompile
+      end
+
+      jit_call_cfunc_with_frame(jit, ctx, asm, ci, cme, flags, argc)
+    end
+
+    # jit_call_cfunc_with_frame
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_cfunc_with_frame(jit, ctx, asm, ci, cme, flags, argc)
+      cfunc = cme.def.body.cfunc
+
+      # TODO: support them
+      if cfunc.argc < 0
+        asm.incr_counter(:send_cfunc_variadic)
+        return CantCompile
+      end
+      if argc + 1 > 6
+        asm.incr_counter(:send_cfunc_too_many_args)
+        return CantCompile
+      end
+
+      frame_type = C.VM_FRAME_MAGIC_CFUNC | C.VM_FRAME_FLAG_CFRAME | C.VM_ENV_FLAG_LOCAL
+      if flags & C.VM_CALL_KW_SPLAT != 0
+        frame_type |= C.VM_FRAME_FLAG_CFRAME_KW
+      end
+
+      # rb_check_arity
+      if argc != cfunc.argc
+        asm.incr_counter(:send_arity)
+        return CantCompile
+      end
+
+      # Save caller SP and PC before pushing a callee frame for backtrace and side exits
+      asm.comment('save SP to caller CFP')
+      sp_index = -(1 + argc) # Pop receiver and arguments for side exits # TODO: subtract one more for VM_CALL_ARGS_BLOCKARG
+      asm.lea(SP, ctx.sp_opnd(C.VALUE.size * sp_index))
+      asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
+      ctx.sp_offset = -sp_index
+      jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
+
+      jit_check_ints(jit, ctx, asm)
+
+      # Push a callee frame. SP register and ctx are not modified inside this.
+      jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, frame_type)
+
+      asm.comment('call C function')
+      # Push receiver and args
+      (1 + argc).times do |i|
+        asm.mov(C_ARG_OPNDS[i], ctx.stack_opnd(argc - i)) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
+      end
+      asm.mov(:rax, cfunc.func)
+      asm.call(:rax) # TODO: use rel32 if close enough
+      ctx.stack_pop(1 + argc)
+
+      asm.comment('push the return value')
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+
+      asm.comment('pop the stack frame')
+      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
+
+      # Let guard chains share the same successor (ctx.sp_offset == 1)
+      assert_equal(1, ctx.sp_offset)
+      jump_to_next_insn(jit, ctx, asm)
       EndBlock
     end
 
@@ -1205,30 +1285,28 @@ module RubyVM::MJIT
       asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C.VM_BLOCK_HANDLER_NONE)
       asm.mov([SP, C.VALUE.size * (ep_offset - 0)], frame_type)
 
-      # This moves SP register. Don't side-exit after this.
-      asm.comment('move SP register to callee stack')
-      sp_offset = ctx.sp_offset + local_size + 3
-      asm.add(SP, C.VALUE.size * sp_offset)
-
       asm.comment('set up new frame')
       cfp_offset = -C.rb_control_frame_t.size # callee CFP
       # Not setting PC since JIT code will do that as needed
-      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], SP)
       asm.mov(:rax, iseq.to_i)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:iseq)], :rax)
-      self_index = -(1 + argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) + local_size + 3)
+      self_index = ctx.sp_offset - (1 + argc) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
       asm.mov(:rax, [SP, C.VALUE.size * self_index])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:self)], :rax)
-      asm.lea(:rax, [SP, C.VALUE.size * -1])
+      asm.lea(:rax, [SP, C.VALUE.size * ep_offset])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:ep)], :rax)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:block_code)], 0)
-      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], SP) # TODO: get rid of this!!
+      # Update SP register only for ISEQ calls. SP-relative operations should be done above this.
+      sp_reg = iseq ? SP : :rax
+      asm.lea(sp_reg, [SP, C.VALUE.size * (ctx.sp_offset + local_size + 3)])
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:sp)], sp_reg)
+      asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:__bp__)], sp_reg) # TODO: get rid of this!!
 
       # cfp->jit_return is used only for ISEQs
       if iseq
         # Stub cfp->jit_return
         return_ctx = ctx.dup
-        return_ctx.stack_size -= argc + ((flags & C.VM_CALL_ARGS_BLOCKARG == 0) ? 0 : 1) # Pop args
+        return_ctx.stack_size -= argc # Pop args # TODO: subtract 1 more for VM_CALL_ARGS_BLOCKARG
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
         branch_stub = BranchStub.new(
           iseq: jit.iseq,
@@ -1253,8 +1331,10 @@ module RubyVM::MJIT
       end
 
       asm.comment('switch to callee CFP')
-      asm.sub(CFP, C.rb_control_frame_t.size)
-      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
+      # Update CFP register only for ISEQ calls
+      cfp_reg = iseq ? CFP : :rax
+      asm.lea(cfp_reg, [CFP, cfp_offset])
+      asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], cfp_reg)
     end
 
     # vm_callee_setup_arg: Set up args and return opt_pc (or CantCompile)
@@ -1279,11 +1359,13 @@ module RubyVM::MJIT
           return 0
         else
           # We don't support the remaining `else if`s yet.
+          asm.incr_counter(:send_iseq_not_simple)
           return CantCompile
         end
       end
 
       # We don't support setup_parameters_complex
+      asm.incr_counter(:send_iseq_kw_splat)
       return CantCompile
     end
 
