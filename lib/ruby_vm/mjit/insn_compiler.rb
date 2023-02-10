@@ -1198,20 +1198,17 @@ module RubyVM::MJIT
         asm.mov([SP, C.VALUE.size * local_index], Qnil)
       end
 
+      asm.comment('set up EP with managing data')
+      ep_offset = ctx.sp_offset + local_size + 2
+      asm.mov(:rax, cme.to_i)
+      asm.mov([SP, C.VALUE.size * (ep_offset - 2)], :rax)
+      asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C.VM_BLOCK_HANDLER_NONE)
+      asm.mov([SP, C.VALUE.size * (ep_offset - 0)], frame_type)
+
       # This moves SP register. Don't side-exit after this.
       asm.comment('move SP register to callee stack')
       sp_offset = ctx.sp_offset + local_size + 3
       asm.add(SP, C.VALUE.size * sp_offset)
-
-      asm.comment('set cme')
-      asm.mov(:rax, cme.to_i)
-      asm.mov([SP, C.VALUE.size * -3], :rax)
-
-      asm.comment('set specval')
-      asm.mov([SP, C.VALUE.size * -2], C.VM_BLOCK_HANDLER_NONE)
-
-      asm.comment('set frame type')
-      asm.mov([SP, C.VALUE.size * -1], frame_type)
 
       asm.comment('move CFP register to callee CFP')
       asm.sub(CFP, C.rb_control_frame_t.size);
