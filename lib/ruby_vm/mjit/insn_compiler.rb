@@ -765,7 +765,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 10)
       case opcode
-      when :je, :jne, :jnz
+      when :je, :jne, :jnz, :jz
         # ok
       else
         raise ArgumentError, "jit_chain_guard: unexpected opcode #{opcode.inspect}"
@@ -803,18 +803,25 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_guard_known_class(jit, ctx, asm, known_klass, obj_opnd, comptime_obj, side_exit, limit: 5)
+      # Only memory operand is supported for now
+      assert_equal(true, obj_opnd.is_a?(Array))
+
       if known_klass == NilClass
-        asm.incr_counter(:send_guard_nil)
-        return CantCompile
+        asm.comment('guard object is nil')
+        asm.cmp(obj_opnd, Qnil)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       elsif known_klass == TrueClass
-        asm.incr_counter(:send_guard_true)
-        return CantCompile
+        asm.comment('guard object is true')
+        asm.cmp(obj_opnd, Qtrue)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       elsif known_klass == FalseClass
-        asm.incr_counter(:send_guard_false)
-        return CantCompile
-      elsif known_klass == Integer
-        asm.incr_counter(:send_guard_integer)
-        return CantCompile
+        asm.comment('guard object is false')
+        asm.cmp(obj_opnd, Qfalse)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
+      elsif known_klass == Integer && fixnum?(comptime_obj)
+        asm.comment('guard object is fixnum')
+        asm.test(obj_opnd, C.RUBY_FIXNUM_FLAG)
+        jit_chain_guard(:jz, jit, ctx, asm, side_exit, limit:)
       elsif known_klass == Symbol
         asm.incr_counter(:send_guard_symbol)
         return CantCompile
@@ -827,11 +834,9 @@ module RubyVM::MJIT
         asm.cmp(obj_opnd, :rax)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       else
-        # If obj_opnd isn't already a register, load it.
-        if obj_opnd.is_a?(Array)
-          asm.mov(:rax, obj_opnd)
-          obj_opnd = :rax
-        end
+        # Load memory to a register
+        asm.mov(:rax, obj_opnd)
+        obj_opnd = :rax
 
         # Check that the receiver is a heap object
         # Note: if we get here, the class doesn't have immediate instances.

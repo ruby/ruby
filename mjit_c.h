@@ -133,10 +133,6 @@ MJIT_RUNTIME_COUNTERS(
     send_ivar_opt_send,
     send_ivar_blockarg,
 
-    send_guard_nil,
-    send_guard_true,
-    send_guard_false,
-    send_guard_integer,
     send_guard_symbol,
     send_guard_float,
 
