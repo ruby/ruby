@@ -360,12 +360,12 @@ have commit right, others don't.
 * https://rubygems.org/gems/date
 
 #### ext/etc
-* Ruby core team
+* *unmaintained*
 * https://github.com/ruby/etc
 * https://rubygems.org/gems/etc
 
 #### ext/fcntl
-* Ruby core team
+* *unmaintained*
 * https://github.com/ruby/fcntl
 * https://rubygems.org/gems/fcntl
 
@@ -453,75 +453,75 @@ have commit right, others don't.
 * https://rubygems.org/gems/zlib
 
 ## Bundled gems upstream repositories
-#### minitest
+### minitest
 * https://github.com/seattlerb/minitest
 
-#### power_assert
+### power_assert
 * https://github.com/ruby/power_assert
 
-#### rake
+### rake
 * https://github.com/ruby/rake
 
-#### test-unit
+### test-unit
 * https://github.com/test-unit/test-unit
 
-#### rexml
+### rexml
 * https://github.com/ruby/rexml
 
-#### rss
+### rss
 * https://github.com/ruby/rss
 
-#### net-ftp
+### net-ftp
 * https://github.com/ruby/net-ftp
 
-#### net-imap
+### net-imap
 * https://github.com/ruby/net-imap
 
-#### net-pop
+### net-pop
 * https://github.com/ruby/net-pop
 
-#### net-smtp
+### net-smtp
 * https://github.com/ruby/net-smtp
 
-#### matrix
+### matrix
 * https://github.com/ruby/matrix
 
-#### prime
+### prime
 * https://github.com/ruby/prime
 
-#### rbs
+### rbs
 * https://github.com/ruby/rbs
 
-#### typeprof
+### typeprof
 * https://github.com/ruby/typeprof
 
 ## Platform Maintainers
-#### mswin64 (Microsoft Windows)
+### mswin64 (Microsoft Windows)
 * NAKAMURA Usaku (usa)
 
-#### mingw32 (Minimalist GNU for Windows)
+### mingw32 (Minimalist GNU for Windows)
 * Nobuyoshi Nakada (nobu)
 
-#### AIX
+### AIX
 * Yutaka Kanemoto (kanemoto)
 
-#### FreeBSD
+### FreeBSD
 * Akinori MUSHA (knu)
 
-#### Solaris
+### Solaris
 * Naohisa Goto (ngoto)
 
-#### RHEL, CentOS
+### RHEL, CentOS
 * KOSAKI Motohiro (kosaki)
 
-#### macOS
+### macOS
 * Kenta Murata (mrkn)
 
-#### OpenBSD
+### OpenBSD
 * Jeremy Evans (jeremyevans0)
 
-#### cygwin, ...
+### cygwin, ...
 * none. (Maintainer WANTED)
 
-#### WebAssembly/WASI
+### WebAssembly/WASI
 * Yuta Saito (katei)
