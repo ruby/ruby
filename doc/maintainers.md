@@ -108,10 +108,6 @@ have commit right, others don't.
 * https://github.com/ruby/English
 * https://rubygems.org/gems/English
 
-#### lib/debug.rb
-* *unmaintained*
-* https://github.com/ruby/debug
-
 #### lib/delegate.rb
 * *unmaintained*
 * https://github.com/ruby/delegate
@@ -494,6 +490,9 @@ have commit right, others don't.
 
 #### typeprof
 * https://github.com/ruby/typeprof
+
+#### debug
+* https://github.com/ruby/debug
 
 ## Platform Maintainers
 #### mswin64 (Microsoft Windows)
