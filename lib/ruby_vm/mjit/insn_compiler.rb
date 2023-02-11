@@ -794,7 +794,7 @@ module RubyVM::MJIT
           branch_asm.stub(branch_stub) do
             case branch_stub.shape
             in Default
-              asm.public_send(opcode, branch_stub.target0.address)
+              branch_asm.public_send(opcode, branch_stub.target0.address)
             end
           end
         end
