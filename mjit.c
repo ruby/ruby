@@ -317,11 +317,16 @@ rb_mjit_collect_vm_usage_insn(int insn)
 #endif // YJIT_STATS
 
 #define WITH_MJIT_DISABLED(stmt) do { \
+    rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
+    rb_event_flag_t original_events = global_hooks->events; \
     bool original_call_p = mjit_call_p; \
+    global_hooks->events = 0; \
+    mjit_stats_p = false; \
     mjit_call_p = false; \
     stmt; \
-    mjit_call_p = original_call_p; \
-    if (mjit_cancel_p) mjit_call_p = false; \
+    mjit_call_p = (mjit_cancel_p ? false : original_call_p); \
+    mjit_stats_p = mjit_opts.stats; \
+    global_hooks->events = original_events; \
 } while (0);
 
 void
@@ -380,16 +385,13 @@ rb_mjit_compile(const rb_iseq_t *iseq)
 {
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
-    bool original_call_p = mjit_call_p;
-    mjit_call_p = false; // Avoid impacting JIT metrics by itself
-    mjit_stats_p = false; // Avoid impacting JIT stats by itself
 
-    VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
-    VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
-    rb_funcall(rb_MJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
+    WITH_MJIT_DISABLED({
+        VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
+        VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
+        rb_funcall(rb_MJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
+    });
 
-    mjit_stats_p = mjit_opts.stats;
-    mjit_call_p = original_call_p;
     RB_VM_LOCK_LEAVE();
 }
 
@@ -400,20 +402,17 @@ rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
-    bool original_call_p = mjit_call_p;
-    mjit_call_p = false; // Avoid impacting JIT metrics by itself
-    mjit_stats_p = false; // Avoid impacting JIT stats by itself
 
     rb_control_frame_t *cfp = GET_EC()->cfp;
     cfp->sp += sp_offset; // preserve stack values, also using the actual sp_offset to make jit.peek_at_stack work
 
-    VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
-    result = rb_funcall(rb_MJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(target0_p));
+    WITH_MJIT_DISABLED({
+        VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+        result = rb_funcall(rb_MJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(target0_p));
+    });
 
     cfp->sp -= sp_offset; // reset for consistency with the code without the stub
 
-    mjit_stats_p = mjit_opts.stats;
-    mjit_call_p = original_call_p;
     RB_VM_LOCK_LEAVE();
 
     return (void *)NUM2SIZET(result);
