@@ -7,7 +7,7 @@ A module maintainer is responsible for a certain part of Ruby.
 * The maintainer fixes bugs of the part. Particularly, they should fix
   security vulnerabilities as soon as possible.
 * They handle issues related the module on the Redmine or ML.
-* They may be discharged by the 3 months rule [ruby-core:25764].
+* They may be discharged by the 3 months rule [[ruby-core:25764]](https://blade.ruby-lang.org/ruby-core/25764).
 * They have commit right to Ruby's repository to modify their part in the
   repository.
 * They have "developer" role on the Redmine to modify issues.
