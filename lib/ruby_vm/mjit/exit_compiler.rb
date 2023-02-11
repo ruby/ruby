@@ -20,7 +20,7 @@ module RubyVM::MJIT
       asm.pop(EC)
       asm.pop(CFP)
 
-      asm.mov(:rax, Qundef)
+      asm.mov(C_RET, Qundef)
       asm.ret
     end
 
@@ -45,8 +45,8 @@ module RubyVM::MJIT
       # RAX to contain the return value of the C method.
 
       asm.comment('full cfunc return')
-      asm.mov(C_ARG_OPNDS[0], EC)
-      asm.mov(C_ARG_OPNDS[1], :rax)
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], :rax)
       asm.call(C.rb_full_cfunc_return)
 
       # TODO: count the exit
@@ -56,7 +56,7 @@ module RubyVM::MJIT
       asm.pop(EC)
       asm.pop(CFP)
 
-      asm.mov(:rax, Qundef)
+      asm.mov(C_RET, Qundef)
       asm.ret
     end
 
@@ -76,7 +76,7 @@ module RubyVM::MJIT
       asm.pop(EC)
       asm.pop(CFP)
 
-      asm.mov(:rax, Qundef)
+      asm.mov(C_RET, Qundef)
       asm.ret
     end
 

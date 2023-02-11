@@ -632,7 +632,7 @@ module RubyVM::MJIT
         ctx.stack_pop(2)
 
         stack_ret = ctx.stack_push
-        asm.mov(stack_ret, :rax)
+        asm.mov(stack_ret, C_RET)
 
         # Let guard chains share the same successor
         jump_to_next_insn(jit, ctx, asm)
@@ -1170,11 +1170,6 @@ module RubyVM::MJIT
     def jit_call_cfunc_with_frame(jit, ctx, asm, ci, cme, flags, argc)
       cfunc = cme.def.body.cfunc
 
-      # TODO: support them
-      if cfunc.argc < 0
-        asm.incr_counter(:send_cfunc_variadic)
-        return CantCompile
-      end
       if argc + 1 > 6
         asm.incr_counter(:send_cfunc_too_many_args)
         return CantCompile
@@ -1192,7 +1187,7 @@ module RubyVM::MJIT
       end
 
       # rb_check_arity
-      if argc != cfunc.argc
+      if cfunc.argc >= 0 && argc != cfunc.argc
         asm.incr_counter(:send_arity)
         return CantCompile
       end
@@ -1211,9 +1206,16 @@ module RubyVM::MJIT
       jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, frame_type)
 
       asm.comment('call C function')
-      # Push receiver and args
-      (1 + argc).times do |i|
-        asm.mov(C_ARG_OPNDS[i], ctx.stack_opnd(argc - i)) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
+      case cfunc.argc
+      in (0..) # Non-variadic method
+        # Push receiver and args
+        (1 + argc).times do |i|
+          asm.mov(C_ARGS[i], ctx.stack_opnd(argc - i)) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
+        end
+      in -1 # Variadic method: rb_f_puts(int argc, VALUE *argv, VALUE recv)
+        asm.mov(C_ARGS[0], argc)
+        asm.lea(C_ARGS[1], ctx.stack_opnd(argc - 1)) # argv
+        asm.mov(C_ARGS[2], ctx.stack_opnd(argc)) # recv
       end
       asm.mov(:rax, cfunc.func)
       asm.call(:rax) # TODO: use rel32 if close enough
@@ -1223,7 +1225,7 @@ module RubyVM::MJIT
 
       asm.comment('push the return value')
       stack_ret = ctx.stack_push
-      asm.mov(stack_ret, :rax)
+      asm.mov(stack_ret, C_RET)
 
       asm.comment('pop the stack frame')
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], CFP)
