@@ -596,7 +596,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     }
     ISEQ_COVERAGE_SET(iseq, Qnil);
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    body->variable.flip_count = 0;
 
     if (NIL_P(script_lines)) {
         RB_OBJ_WRITE(iseq, &body->variable.script_lines, Qnil);

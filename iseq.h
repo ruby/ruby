@@ -43,16 +43,6 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 #define ISEQ_PC2BRANCHINDEX(iseq)         ISEQ_BODY(iseq)->variable.pc2branchindex
 #define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.pc2branchindex, h)
 
-#define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
-
-static inline rb_snum_t
-ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
-{
-    rb_snum_t cnt = ISEQ_BODY(iseq)->variable.flip_count;
-    ISEQ_BODY(iseq)->variable.flip_count += 1;
-    return cnt;
-}
-
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 {
@@ -121,6 +111,7 @@ struct iseq_compile_data {
     int isolated_depth;
     unsigned int ci_index;
     unsigned int ic_index;
+    unsigned int flip_count;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;

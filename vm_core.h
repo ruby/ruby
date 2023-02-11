@@ -471,7 +471,6 @@ struct rb_iseq_constant_body {
     struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
 
     struct {
-        rb_snum_t flip_count;
         VALUE script_lines;
         VALUE coverage;
         VALUE pc2branchindex;

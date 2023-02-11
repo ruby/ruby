@@ -513,7 +513,6 @@ module RubyVM::MJIT # :nodoc: all
       call_data: [CType::Pointer.new { self.rb_call_data }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), call_data)")],
       variable: [CType::Struct.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->variable)"),
-        flip_count: [self.rb_snum_t, Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, flip_count)")],
         script_lines: [self.VALUE, Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, script_lines)")],
         coverage: [self.VALUE, Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, coverage)")],
         pc2branchindex: [self.VALUE, Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, pc2branchindex)")],
