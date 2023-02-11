@@ -57,44 +57,32 @@ alias $ERROR_POSITION          $@
 # The default separator pattern used by String#split.  May be set from
 # the command line using the <code>-F</code> flag.
 alias $FS                      $;
-
-# The default separator pattern used by String#split.  May be set from
-# the command line using the <code>-F</code> flag.
 alias $FIELD_SEPARATOR         $;
 
 # The separator string output between the parameters to methods such
 # as Kernel#print and Array#join. Defaults to +nil+, which adds no
 # text.
-alias $OFS                     $,
 
 # The separator string output between the parameters to methods such
 # as Kernel#print and Array#join. Defaults to +nil+, which adds no
 # text.
+alias $OFS                     $,
 alias $OUTPUT_FIELD_SEPARATOR  $,
 
 # The input record separator (newline by default). This is the value
 # that routines such as Kernel#gets use to determine record
 # boundaries. If set to +nil+, +gets+ will read the entire file.
 alias $RS                      $/
-
-# The input record separator (newline by default). This is the value
-# that routines such as Kernel#gets use to determine record
-# boundaries. If set to +nil+, +gets+ will read the entire file.
 alias $INPUT_RECORD_SEPARATOR  $/
 
 # The string appended to the output of every call to methods such as
 # Kernel#print and IO#write. The default value is +nil+.
 alias $ORS                     $\
-
-# The string appended to the output of every call to methods such as
-# Kernel#print and IO#write. The default value is +nil+.
 alias $OUTPUT_RECORD_SEPARATOR $\
 
 # The number of the last line read from the current input file.
-alias $INPUT_LINE_NUMBER       $.
-
-# The number of the last line read from the current input file.
 alias $NR                      $.
+alias $INPUT_LINE_NUMBER       $.
 
 # The last line read by Kernel#gets or
 # Kernel#readline. Many string-related functions in the
@@ -134,8 +122,6 @@ alias $DEFAULT_INPUT           $<
 
 # The process number of the program being executed. Read only.
 alias $PID                     $$
-
-# The process number of the program being executed. Read only.
 alias $PROCESS_ID              $$
 
 # The exit status of the last child process to terminate. Read
