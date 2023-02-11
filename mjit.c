@@ -331,15 +331,25 @@ rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
     mjit_call_p = false;
 }
 
-void
-rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
+static void
+mjit_cme_invalidate(void *data)
 {
     if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)data;
     WITH_MJIT_DISABLED({
         VALUE cme_klass = rb_funcall(rb_mMJITC, rb_intern("rb_callable_method_entry_struct"), 0);
         VALUE cme_ptr = rb_funcall(cme_klass, rb_intern("new"), 1, SIZET2NUM((size_t)cme));
         rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, cme_ptr);
     });
+}
+
+void
+rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    // Asynchronously hook the Ruby code since running Ruby in the middle of cme invalidation is dangerous.
+    extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data);
+    rb_workqueue_register(0, mjit_cme_invalidate, (void *)cme);
 }
 
 void
