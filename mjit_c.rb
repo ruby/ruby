@@ -268,9 +268,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
-    # Convert encoded VM pointers to insn BINs.
+    # Convert an encoded VM pointer to an insn BIN.
     def rb_vm_insn_decode(encoded)
-      Primitive.cexpr! 'INT2NUM(rb_vm_insn_decode(NUM2PTR(encoded)))'
+      # Using rb_vm_insn_addr2opcode to return trace_ insns
+      Primitive.cexpr! 'INT2NUM(rb_vm_insn_addr2opcode((void *)NUM2PTR(encoded)))'
     end
 
     # Convert insn BINs to encoded VM pointers. This one is not used by the compiler, but useful for debugging.
