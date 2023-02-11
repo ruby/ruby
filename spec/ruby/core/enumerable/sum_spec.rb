@@ -40,7 +40,7 @@ describe 'Enumerable#sum' do
   end
 
   # https://bugs.ruby-lang.org/issues/12217
-  # https://github.com/ruby/ruby/blob/master/doc/ChangeLog-2.4.0#L6208-L6214
+  # https://github.com/ruby/ruby/blob/master/doc/ChangeLog/ChangeLog-2.4.0#L6208-L6214
   it "uses Kahan's compensated summation algorithm for precise sum of float numbers" do
     floats = [2.7800000000000002, 5.0, 2.5, 4.44, 3.89, 3.89, 4.44, 7.78, 5.0, 2.7800000000000002, 5.0, 2.5].to_enum
     naive_sum = floats.reduce { |sum, e| sum + e }
