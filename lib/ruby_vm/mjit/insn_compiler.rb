@@ -1185,6 +1185,12 @@ module RubyVM::MJIT
         frame_type |= C.VM_FRAME_FLAG_CFRAME_KW
       end
 
+      # EXEC_EVENT_HOOK: RUBY_EVENT_C_CALL and RUBY_EVENT_C_RETURN
+      if C.rb_mjit_global_events & (C.RUBY_EVENT_C_CALL | C.RUBY_EVENT_C_RETURN) != 0
+        asm.incr_counter(:send_c_tracing)
+        return CantCompile
+      end
+
       # rb_check_arity
       if argc != cfunc.argc
         asm.incr_counter(:send_arity)

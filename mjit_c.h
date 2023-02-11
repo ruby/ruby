@@ -127,6 +127,7 @@ MJIT_RUNTIME_COUNTERS(
     send_refined,
     send_stackoverflow,
     send_arity,
+    send_c_tracing,
 
     send_iseq_not_simple,
     send_iseq_kw_splat,

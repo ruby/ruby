@@ -149,6 +149,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.mjit_for_each_iseq(block)
     end
 
+    def rb_mjit_global_events
+      Primitive.cstmt! %{
+        extern rb_event_flag_t rb_mjit_global_events;
+        return SIZET2NUM((size_t)rb_mjit_global_events);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -352,6 +359,14 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.RUBY_EVENT_CLASS
     Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_CLASS) }
+  end
+
+  def C.RUBY_EVENT_C_CALL
+    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_C_CALL) }
+  end
+
+  def C.RUBY_EVENT_C_RETURN
+    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_C_RETURN) }
   end
 
   def C.SHAPE_CAPACITY_CHANGE
@@ -981,6 +996,7 @@ module RubyVM::MJIT # :nodoc: all
       send_refined: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_refined)")],
       send_stackoverflow: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_stackoverflow)")],
       send_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_arity)")],
+      send_c_tracing: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_c_tracing)")],
       send_iseq_not_simple: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_not_simple)")],
       send_iseq_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_kw_splat)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
