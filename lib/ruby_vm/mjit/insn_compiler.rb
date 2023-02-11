@@ -1294,7 +1294,10 @@ module RubyVM::MJIT
 
       asm.comment('set up new frame')
       cfp_offset = -C.rb_control_frame_t.size # callee CFP
-      # Not setting PC since JIT code will do that as needed
+      # For ISEQ, JIT code will set it as needed. However, C func needs 0 there for svar frame detection.
+      if iseq.nil?
+        asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:pc)], 0)
+      end
       asm.mov(:rax, iseq.to_i)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:iseq)], :rax)
       self_index = ctx.sp_offset - (1 + argc) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
