@@ -491,7 +491,7 @@ have commit right, others don't.
 ### typeprof
 * https://github.com/ruby/typeprof
 
-#### debug
+### debug
 * https://github.com/ruby/debug
 
 ## Platform Maintainers
