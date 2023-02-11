@@ -1160,12 +1160,6 @@ module RubyVM::MJIT
         return CantCompile
       end
 
-      # Disabled until we figure out why $' gets broken on test-all
-      disabled = true
-      if disabled
-        return CantCompile
-      end
-
       jit_call_cfunc_with_frame(jit, ctx, asm, ci, cme, flags, argc)
     end
 
