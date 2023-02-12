@@ -172,4 +172,23 @@ class TestTimeout < Test::Unit::TestCase
     end;
   end
 
+  def test_handling_enclosed_threadgroup
+    # The problem "add: can't move from the enclosed thread group" #24,
+    # happens when the timeout_thread is created in an enclosed ThreadGroup.
+    assert_separately(%w[-rtimeout], <<-'end;')
+      t1 = Thread.new {
+        Thread.stop
+        assert_block do
+          Timeout.timeout(0.1) {}
+          true
+        end
+      }
+      sleep 0.1 while t1.status != 'sleep'
+      group = ThreadGroup.new
+      group.add(t1)
+      group.enclose
+      t1.run
+      t1.join
+    end;
+  end
 end

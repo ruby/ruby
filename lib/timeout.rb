@@ -120,7 +120,7 @@ module Timeout
         requests.reject!(&:done?)
       end
     end
-    ThreadGroup::Default.add(watcher)
+    ThreadGroup::Default.add(watcher) unless watcher.group.enclosed?
     watcher.name = "Timeout stdlib thread"
     watcher.thread_variable_set(:"\0__detached_thread__", true)
     watcher
