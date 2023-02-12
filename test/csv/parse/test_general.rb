@@ -7,7 +7,7 @@ require_relative "../helper"
 
 #
 # Following tests are my interpretation of the
-# {CSV RCF}[http://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
+# {CSV RCF}[https://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
 # document in one place (intentionally) and that is to make the default row
 # separator <tt>$/</tt>.
 #
@@ -75,7 +75,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     end
   end
 
-  # From:  http://ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-core/6496
+  # From:  https://ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-core/6496
   def test_aras_edge_cases
     [ [%Q{a,b},               ["a", "b"]],
       [%Q{a,"""b"""},         ["a", "\"b\""]],
