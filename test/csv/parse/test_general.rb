@@ -75,7 +75,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     end
   end
 
-  # From:  https://ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-core/6496
+  # From: [ruby-core:6496]
   def test_aras_edge_cases
     [ [%Q{a,b},               ["a", "b"]],
       [%Q{a,"""b"""},         ["a", "\"b\""]],
