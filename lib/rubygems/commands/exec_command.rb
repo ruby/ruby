@@ -118,7 +118,7 @@ to the same gem path as user-installed gems.
     max_length = opts.map {|k, _| k.size }.max
     opts.each do |k, v|
       next if v.nil?
-      verbose "\t#{k.to_s.rjust(max_length)}: #{v} "
+      verbose "\t#{k.to_s.rjust(max_length)}: #{v}"
     end
     verbose ""
   end
@@ -127,6 +127,7 @@ to the same gem path as user-installed gems.
     activate!
   rescue Gem::MissingSpecError
     verbose "#{Gem::Dependency.new(options[:gem_name], options[:version])} not available locally, installing from remote"
+    verbose "\t#{Gem::Specification.all_names}"
     install
     activate!
   end
@@ -135,12 +136,11 @@ to the same gem path as user-installed gems.
     gem_name = options[:gem_name]
     gem_version = options[:version]
 
-    home = Gem.paths.home
-    home = File.join(home, "gem_exec")
-    Gem.use_paths(home, Gem.path + [home])
+    home = File.join(Gem.dir, "gem_exec")
+    Gem.use_paths(home, [home] + Gem.path)
 
     suppress_always_install do
-      Gem.install(gem_name, gem_version)
+      Gem.install(gem_name, gem_version, minimal_deps: false)
     end
   rescue Gem::InstallError => e
     alert_error "Error installing #{gem_name}:\n\t#{e.message}"

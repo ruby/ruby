@@ -12,6 +12,12 @@ class TestGemCommandsExecCommand < Gem::TestCase
     @orig_args = Gem::Command.build_args
 
     common_installer_setup
+
+    @gem_home = Gem.dir
+    @gem_path = Gem.path
+
+    @installed_specs = []
+    Gem.post_install {|installer| @installed_specs << installer.spec }
   end
 
   def teardown
@@ -20,6 +26,23 @@ class TestGemCommandsExecCommand < Gem::TestCase
     common_installer_teardown
 
     Gem::Command.build_args = @orig_args
+  end
+
+  def invoke(*args)
+    @ui.outs.truncate(0)
+    @ui.outs.rewind
+    @ui.errs.truncate(0)
+    @ui.errs.rewind
+    @installed_specs.clear
+
+    @cmd.invoke *args
+  ensure
+    Gem::Specification.unresolved_deps.clear
+    Gem.loaded_specs.clear
+    Gem.instance_variable_set(:@activated_gem_paths, 0)
+    Gem.clear_default_specs
+    Gem.use_paths(@gem_home, @gem_path)
+    Gem.refresh
   end
 
   def test_error_with_no_arguments
@@ -414,7 +437,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
   def test_conservative
     spec_fetcher do |fetcher|
-      fetcher.gem "a", 1 do |s|
+      fetcher.download "a", 1 do |s|
         s.executables = %w[foo]
         s.files = %w[bin/foo lib/a.rb]
 
@@ -424,15 +447,12 @@ class TestGemCommandsExecCommand < Gem::TestCase
       end
     end
 
-    util_clear_gems
-
     use_ui @ui do
-      @cmd.invoke "--verbose", "--conservative", "a"
+      invoke "--verbose", "--conservative", "a"
       assert_include @ui.output, "a (>= 0) not available locally"
       assert_include @ui.output, "a-1 foo"
+      assert_equal %w[a-1], @installed_specs.map(&:original_name)
     end
-
-    @ui.outs.truncate(0)
 
     spec_fetcher do |fetcher|
       fetcher.gem "a", 1 do |s|
@@ -444,7 +464,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
         end
       end
 
-      fetcher.gem "a", 2 do |s|
+      fetcher.download "a", 2 do |s|
         s.executables = %w[foo]
         s.files = %w[bin/foo lib/a.rb]
 
@@ -455,9 +475,90 @@ class TestGemCommandsExecCommand < Gem::TestCase
     end
 
     use_ui @ui do
-      @cmd.invoke "--verbose", "--conservative", "a"
+      invoke "--verbose", "--conservative", "a"
       assert_not_include @ui.output, "a (>= 0) not available locally"
       assert_include @ui.output, "a-1 foo"
+      assert_empty @installed_specs.map(&:original_name)
+    end
+  end
+
+  def test_uses_newest_version
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 1 do |s|
+        s.executables = %w[foo]
+        s.files = %w[bin/foo lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin foo]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+    end
+
+    use_ui @ui do
+      invoke "a"
+      assert_include @ui.output, "a-1 foo"
+    end
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 1 do |s|
+        s.executables = %w[foo]
+        s.files = %w[bin/foo lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin foo]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[foo]
+        s.files = %w[bin/foo lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin foo]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+    end
+
+    use_ui @ui do
+      invoke "--verbose", "a:2"
+      refute_predicate @ui, :terminated?
+      assert_empty @ui.error
+      assert_include @ui.output, "a-2 foo"
+      assert_equal %w[a-2], @installed_specs.map(&:original_name)
+    end
+  end
+
+  def test_uses_newest_version_of_dependency
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 1 do |s|
+        s.executables = %w[]
+        s.files = %w[lib/a.rb]
+        s.add_runtime_dependency "b"
+      end
+
+      fetcher.gem "b", 1 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+
+      fetcher.download "b", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+    end
+
+    use_ui @ui do
+      invoke "a"
+      assert_include @ui.output, "b-2 a"
+      assert_equal %w[b-2], @installed_specs.map(&:original_name)
     end
   end
 end
