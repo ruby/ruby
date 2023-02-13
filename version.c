@@ -18,7 +18,7 @@
 #include <stdio.h>
 
 #if USE_MMTK
-#include "gc.h"
+#include "internal/gc.h"
 #include "mmtk.h"
 #endif
 

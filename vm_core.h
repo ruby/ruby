@@ -105,7 +105,7 @@ extern int ruby_assert_critical_section_entered;
 #include "ruby/thread_native.h"
 
 #if USE_MMTK
-#include "gc.h"
+#include "internal/gc.h"
 #endif
 
 /*

@@ -63,7 +63,7 @@
 #include "ruby/internal/error.h"
 
 #if USE_MMTK
-#include "gc.h"
+#include "internal/gc.h"
 #endif
 
 #define singlebit_only_p(x) !((x) & ((x)-1))

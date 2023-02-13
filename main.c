@@ -31,7 +31,7 @@
 #endif
 
 #if USE_MMTK
-#include "gc.h"
+#include "internal/gc.h"
 #endif
 
 static int

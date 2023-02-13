@@ -28,9 +28,9 @@
 #endif
 
 #include "internal.h"
-#include "gc.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/load.h"

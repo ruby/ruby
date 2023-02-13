@@ -43,7 +43,7 @@
 #include "shape.h"
 
 #if USE_MMTK
-#include "gc.h"
+#include "internal/gc.h"
 #endif
 
 /*!
