@@ -141,7 +141,6 @@ dataerror.o: $(hdrdir)/ruby/internal/memory.h
 dataerror.o: $(hdrdir)/ruby/internal/method.h
 dataerror.o: $(hdrdir)/ruby/internal/module.h
 dataerror.o: $(hdrdir)/ruby/internal/newobj.h
-dataerror.o: $(hdrdir)/ruby/internal/rgengc.h
 dataerror.o: $(hdrdir)/ruby/internal/scan_args.h
 dataerror.o: $(hdrdir)/ruby/internal/special_consts.h
 dataerror.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -311,7 +310,6 @@ enc_raise.o: $(hdrdir)/ruby/internal/memory.h
 enc_raise.o: $(hdrdir)/ruby/internal/method.h
 enc_raise.o: $(hdrdir)/ruby/internal/module.h
 enc_raise.o: $(hdrdir)/ruby/internal/newobj.h
-enc_raise.o: $(hdrdir)/ruby/internal/rgengc.h
 enc_raise.o: $(hdrdir)/ruby/internal/scan_args.h
 enc_raise.o: $(hdrdir)/ruby/internal/special_consts.h
 enc_raise.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -473,7 +471,6 @@ ensured.o: $(hdrdir)/ruby/internal/memory.h
 ensured.o: $(hdrdir)/ruby/internal/method.h
 ensured.o: $(hdrdir)/ruby/internal/module.h
 ensured.o: $(hdrdir)/ruby/internal/newobj.h
-ensured.o: $(hdrdir)/ruby/internal/rgengc.h
 ensured.o: $(hdrdir)/ruby/internal/scan_args.h
 ensured.o: $(hdrdir)/ruby/internal/special_consts.h
 ensured.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -633,7 +630,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h

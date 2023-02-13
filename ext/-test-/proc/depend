@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ receiver.o: $(hdrdir)/ruby/internal/memory.h
 receiver.o: $(hdrdir)/ruby/internal/method.h
 receiver.o: $(hdrdir)/ruby/internal/module.h
 receiver.o: $(hdrdir)/ruby/internal/newobj.h
-receiver.o: $(hdrdir)/ruby/internal/rgengc.h
 receiver.o: $(hdrdir)/ruby/internal/scan_args.h
 receiver.o: $(hdrdir)/ruby/internal/special_consts.h
 receiver.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -462,7 +460,6 @@ super.o: $(hdrdir)/ruby/internal/memory.h
 super.o: $(hdrdir)/ruby/internal/method.h
 super.o: $(hdrdir)/ruby/internal/module.h
 super.o: $(hdrdir)/ruby/internal/newobj.h
-super.o: $(hdrdir)/ruby/internal/rgengc.h
 super.o: $(hdrdir)/ruby/internal/scan_args.h
 super.o: $(hdrdir)/ruby/internal/special_consts.h
 super.o: $(hdrdir)/ruby/internal/static_assert.h

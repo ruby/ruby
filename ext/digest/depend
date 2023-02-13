@@ -142,7 +142,6 @@ digest.o: $(hdrdir)/ruby/internal/memory.h
 digest.o: $(hdrdir)/ruby/internal/method.h
 digest.o: $(hdrdir)/ruby/internal/module.h
 digest.o: $(hdrdir)/ruby/internal/newobj.h
-digest.o: $(hdrdir)/ruby/internal/rgengc.h
 digest.o: $(hdrdir)/ruby/internal/scan_args.h
 digest.o: $(hdrdir)/ruby/internal/special_consts.h
 digest.o: $(hdrdir)/ruby/internal/static_assert.h

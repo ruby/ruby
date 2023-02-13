@@ -152,7 +152,6 @@ pathname.o: $(hdrdir)/ruby/internal/memory.h
 pathname.o: $(hdrdir)/ruby/internal/method.h
 pathname.o: $(hdrdir)/ruby/internal/module.h
 pathname.o: $(hdrdir)/ruby/internal/newobj.h
-pathname.o: $(hdrdir)/ruby/internal/rgengc.h
 pathname.o: $(hdrdir)/ruby/internal/scan_args.h
 pathname.o: $(hdrdir)/ruby/internal/special_consts.h
 pathname.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -142,7 +142,6 @@ numhash.o: $(hdrdir)/ruby/internal/memory.h
 numhash.o: $(hdrdir)/ruby/internal/method.h
 numhash.o: $(hdrdir)/ruby/internal/module.h
 numhash.o: $(hdrdir)/ruby/internal/newobj.h
-numhash.o: $(hdrdir)/ruby/internal/rgengc.h
 numhash.o: $(hdrdir)/ruby/internal/scan_args.h
 numhash.o: $(hdrdir)/ruby/internal/special_consts.h
 numhash.o: $(hdrdir)/ruby/internal/static_assert.h

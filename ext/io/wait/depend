@@ -153,7 +153,6 @@ wait.o: $(hdrdir)/ruby/internal/memory.h
 wait.o: $(hdrdir)/ruby/internal/method.h
 wait.o: $(hdrdir)/ruby/internal/module.h
 wait.o: $(hdrdir)/ruby/internal/newobj.h
-wait.o: $(hdrdir)/ruby/internal/rgengc.h
 wait.o: $(hdrdir)/ruby/internal/scan_args.h
 wait.o: $(hdrdir)/ruby/internal/special_consts.h
 wait.o: $(hdrdir)/ruby/internal/static_assert.h

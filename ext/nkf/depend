@@ -155,7 +155,6 @@ nkf.o: $(hdrdir)/ruby/internal/memory.h
 nkf.o: $(hdrdir)/ruby/internal/method.h
 nkf.o: $(hdrdir)/ruby/internal/module.h
 nkf.o: $(hdrdir)/ruby/internal/newobj.h
-nkf.o: $(hdrdir)/ruby/internal/rgengc.h
 nkf.o: $(hdrdir)/ruby/internal/scan_args.h
 nkf.o: $(hdrdir)/ruby/internal/special_consts.h
 nkf.o: $(hdrdir)/ruby/internal/static_assert.h

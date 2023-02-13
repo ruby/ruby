@@ -142,7 +142,6 @@ delete.o: $(hdrdir)/ruby/internal/memory.h
 delete.o: $(hdrdir)/ruby/internal/method.h
 delete.o: $(hdrdir)/ruby/internal/module.h
 delete.o: $(hdrdir)/ruby/internal/newobj.h
-delete.o: $(hdrdir)/ruby/internal/rgengc.h
 delete.o: $(hdrdir)/ruby/internal/scan_args.h
 delete.o: $(hdrdir)/ruby/internal/special_consts.h
 delete.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h

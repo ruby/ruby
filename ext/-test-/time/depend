@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -303,7 +302,6 @@ leap_second.o: $(hdrdir)/ruby/internal/memory.h
 leap_second.o: $(hdrdir)/ruby/internal/method.h
 leap_second.o: $(hdrdir)/ruby/internal/module.h
 leap_second.o: $(hdrdir)/ruby/internal/newobj.h
-leap_second.o: $(hdrdir)/ruby/internal/rgengc.h
 leap_second.o: $(hdrdir)/ruby/internal/scan_args.h
 leap_second.o: $(hdrdir)/ruby/internal/special_consts.h
 leap_second.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -467,7 +465,6 @@ new.o: $(hdrdir)/ruby/internal/memory.h
 new.o: $(hdrdir)/ruby/internal/method.h
 new.o: $(hdrdir)/ruby/internal/module.h
 new.o: $(hdrdir)/ruby/internal/newobj.h
-new.o: $(hdrdir)/ruby/internal/rgengc.h
 new.o: $(hdrdir)/ruby/internal/scan_args.h
 new.o: $(hdrdir)/ruby/internal/special_consts.h
 new.o: $(hdrdir)/ruby/internal/static_assert.h

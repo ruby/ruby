@@ -142,7 +142,6 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/memory.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/method.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/module.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/newobj.h
-to_ary_concat.o: $(hdrdir)/ruby/internal/rgengc.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/scan_args.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/special_consts.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/static_assert.h
