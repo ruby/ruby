@@ -35,7 +35,7 @@ typedef struct RubyBindingOptions {
     size_t suffix_size;
 } RubyBindingOptions;
 
-typedef MMTk_ObjectReference (*ObjectClosureFunction)(void*, void*, MMTk_ObjectReference);
+typedef MMTk_ObjectReference (*ObjectClosureFunction)(void*, void*, MMTk_ObjectReference, bool);
 
 typedef struct MMTk_ObjectClosure {
     /**

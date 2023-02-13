@@ -15535,10 +15535,11 @@ rb_gc_init_collection(void)
 }
 
 static inline MMTk_ObjectReference
-rb_mmtk_call_object_closure(MMTk_ObjectReference object) {
+rb_mmtk_call_object_closure(MMTk_ObjectReference object, bool pin) {
     return rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
                                                             rb_mmtk_gc_thread_tls->gc_context,
-                                                            object);
+                                                            object,
+                                                            pin);
 }
 
 static void
@@ -15776,7 +15777,7 @@ rb_mmtk_mark(VALUE obj, bool pin)
         (void*)obj);
 
     if (!RB_SPECIAL_CONST_P(obj)) {
-        rb_mmtk_call_object_closure((MMTk_ObjectReference)obj);
+        rb_mmtk_call_object_closure((MMTk_ObjectReference)obj, pin);
     }
 }
 
@@ -15798,7 +15799,7 @@ rb_mmtk_mark_and_move(VALUE *field)
     VALUE obj = *field;
     if (!RB_SPECIAL_CONST_P(obj)) {
         MMTk_ObjectReference old_ref = (MMTk_ObjectReference)obj;
-        MMTk_ObjectReference new_ref = rb_mmtk_call_object_closure(old_ref);
+        MMTk_ObjectReference new_ref = rb_mmtk_call_object_closure(old_ref, false);
         if (new_ref != old_ref) {
             *field = (VALUE)new_ref;
         }
@@ -15837,7 +15838,7 @@ rb_mmtk_object_moved_p(VALUE value)
 {
     if (!SPECIAL_CONST_P(value)) {
         MMTk_ObjectReference object = (MMTk_ObjectReference)value;
-        return rb_mmtk_call_object_closure(object) == object;
+        return rb_mmtk_call_object_closure(object, false) == object;
     } else {
         return false;
     }
@@ -15847,7 +15848,7 @@ static inline VALUE
 rb_mmtk_maybe_forward(VALUE value)
 {
     if (!SPECIAL_CONST_P(value)) {
-        return (VALUE)rb_mmtk_call_object_closure((MMTk_ObjectReference)value);
+        return (VALUE)rb_mmtk_call_object_closure((MMTk_ObjectReference)value, false);
     } else {
         return value;
     }
@@ -15870,7 +15871,7 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
         (struct rb_mmtk_weak_table_rebuilding_context*)arg;
 
     if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
-        st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key);
+        st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key, false);
         st_data_t new_value = ctx->update_values ?
             (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
             value;
