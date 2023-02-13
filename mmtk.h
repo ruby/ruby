@@ -144,6 +144,8 @@ bool mmtk_is_reachable(MMTk_ObjectReference object);
 
 bool mmtk_is_live_object(MMTk_ObjectReference object);
 
+MMTk_ObjectReference mmtk_get_forwarded_object(MMTk_ObjectReference object);
+
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
 void mmtk_modify_check(MMTk_ObjectReference object);

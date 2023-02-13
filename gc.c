@@ -15842,7 +15842,7 @@ rb_mmtk_maybe_forward(VALUE value)
 
 typedef void (*rb_mmtk_hash_on_delete_func)(st_data_t, st_data_t, void *arg);
 
-struct rb_mmtk_update_weak_table_context {
+struct rb_mmtk_weak_table_rebuilding_context {
     st_table *old_table;
     st_table *new_table;
     bool update_values;
@@ -15851,9 +15851,10 @@ struct rb_mmtk_update_weak_table_context {
 };
 
 static int
-rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
+rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t arg)
 {
-    struct rb_mmtk_update_weak_table_context *ctx = (struct rb_mmtk_update_weak_table_context*)arg;
+    struct rb_mmtk_weak_table_rebuilding_context *ctx =
+        (struct rb_mmtk_weak_table_rebuilding_context*)arg;
 
     if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
         st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key);
@@ -15875,55 +15876,139 @@ rb_mmtk_update_weak_table_each(st_data_t key, st_data_t value, st_data_t arg)
     return ST_CONTINUE;
 }
 
+struct rb_mmtk_weak_table_updating_context {
+    bool update_values;
+    rb_mmtk_hash_on_delete_func on_delete;
+    void *on_delete_arg;
+};
+
+static int
+rb_mmtk_update_weak_table_should_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    struct rb_mmtk_weak_table_updating_context *ctx =
+        (struct rb_mmtk_weak_table_updating_context*)argp;
+
+    if (!mmtk_is_live_object((MMTk_ObjectReference)key)) {
+        return ST_DELETE;
+    }
+
+    if (ctx->update_values && !mmtk_is_live_object((MMTk_ObjectReference)key)) {
+        return ST_DELETE;
+    }
+
+    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)key);
+    if (new_key != NULL && new_key != (MMTk_ObjectReference)key) {
+        return ST_REPLACE;
+    }
+
+    if (ctx->update_values) {
+        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)value);
+        if (new_value != NULL && new_value != (MMTk_ObjectReference)value) {
+            return ST_REPLACE;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    struct rb_mmtk_weak_table_updating_context *ctx =
+        (struct rb_mmtk_weak_table_updating_context*)argp;
+
+    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)*key);
+    if (new_key != NULL && new_key != (MMTk_ObjectReference)*key) {
+        *key = (st_data_t)new_key;
+    }
+
+    if (ctx->update_values) {
+        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)*value);
+        if (new_value != NULL && new_value != (MMTk_ObjectReference)*value) {
+            *value = (st_data_t)new_value;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+
 /*
  * Update a weak hash table after a copying GC finished.
- * If a key points to a live object, keep the key-value pair, and update the key (and optionally
- * the value) to point to their new addresses.
+ * If a key points to a live object, keep the key-value pair,
+ * and update the key (and optionally the value) to point to their new addresses.
  * If a key points to a dead object, discard the key-value pair.
- * Because the keys changed, their hashes change as well.
- * Therefore we rebuild the whole hash table.
  */
 static void
-rb_mmtk_update_weak_table(st_table *old_table,
+rb_mmtk_update_weak_table(st_table *table,
+                          bool addr_hashed,
                           bool update_values,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg)
 {
-    if (!old_table || old_table->num_entries == 0) return;
+    if (!table || table->num_entries == 0) return;
 
-    st_table *new_table = st_init_table(old_table->type);
+    if (addr_hashed) {
+        // The has table uses the address of the key object as key.
+        // If a key object is moved, its hash is changed as well.
+        // Therefore we must rebuild the whole hash table.
+        // TODO: Implement address-based hashing to avoid this need.
 
-    struct rb_mmtk_update_weak_table_context ctx = {
-        .old_table = old_table,
-        .new_table = new_table,
-        .update_values = update_values,
-        .on_delete = on_delete,
-        .on_delete_arg = on_delete_arg,
-    };
-    if (st_foreach(old_table, rb_mmtk_update_weak_table_each, (st_data_t)&ctx)) {
-        fprintf(stderr, "Did anything go wrong?");
-        abort();
+        st_table *old_table = table;
+        st_table *new_table = st_init_table(old_table->type);
+
+        struct rb_mmtk_weak_table_rebuilding_context ctx = {
+            .old_table = old_table,
+            .new_table = new_table,
+            .update_values = update_values,
+            .on_delete = on_delete,
+            .on_delete_arg = on_delete_arg,
+        };
+        if (st_foreach(old_table, rb_mmtk_update_weak_table_migrate_each, (st_data_t)&ctx)) {
+            fprintf(stderr, "Did anything go wrong?");
+            abort();
+        }
+
+        // Swap the contents of the old and the new table.
+        // Note: The mutator may be rebuilding the same table when GC is updating it.
+        // (see `rebuild_table` in st.c)
+        // If the old table was not big enough, it will allocate a new table, but that may trigger GC.
+        // After GC finishes and the new table is allocated,
+        // the mutator will copy entries from the old table.
+        // If we replace the whole old table,
+        // the mutator shouldn't notice that the entire old table has been replaced during GC.
+        st_table old_table_copy = *old_table;
+        *old_table = *new_table;
+        *new_table = old_table_copy;
+
+        st_free_table(new_table);
+    } else {
+        // The table uses the content of the key object to compute the hash.
+        // The hash will not change if the object is moved.
+        // We can update the table in place.
+        struct rb_mmtk_weak_table_updating_context ctx = {
+            .update_values = update_values,
+            .on_delete = on_delete,
+            .on_delete_arg = on_delete_arg,
+        };
+        if (st_foreach_with_replace(table,
+                                    rb_mmtk_update_weak_table_should_replace,
+                                    rb_mmtk_update_weak_table_replace,
+                                    (st_data_t)&ctx)) {
+            fprintf(stderr, "Did anything go wrong?");
+            abort();
+        }
     }
-
-    // Swap the contents of the old and the new table.
-    // Note: The mutator may be rebuilding the same table when GC is updating it.
-    // (see `rebuild_table` in st.c)
-    // If the old table was not big enough, it will allocate a new table, but that may trigger GC.
-    // After GC finishes and the new table is allocated,
-    // the mutator will copy entries from the old table.
-    // If we replace the whole old table,
-    // the mutator shouldn't notice that the entire old table has been replaced during GC.
-    st_table old_table_copy = *old_table;
-    *old_table = *new_table;
-    *new_table = old_table_copy;
-
-    st_free_table(new_table);
 }
 
+struct rb_mmtk_update_value_hashed_weak_table_context {
+    bool update_values;
+};
+
 static void
-rb_mmtk_update_weak_table_key_only(st_table *table)
+rb_mmtk_update_weak_table_addr_hashed_key_only(st_table *table)
 {
-    rb_mmtk_update_weak_table(table, false, NULL, NULL);
+    rb_mmtk_update_weak_table(table, true, false, NULL, NULL);
 }
 
 static void
@@ -15970,7 +16055,7 @@ rb_mmtk_on_fstring_table_delete(st_data_t key, st_data_t value, void *arg)
 static void
 rb_mmtk_update_global_weak_tables(void)
 {
-    rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_key_only);
+    rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_addr_hashed_key_only);
 
     // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
     rb_objspace_t *objspace = &rb_objspace;
@@ -15981,6 +16066,7 @@ rb_mmtk_update_global_weak_tables(void)
     // scheduled to be executed later.
     // Currently finalizers are disabled when running with MMTk.
     rb_mmtk_update_weak_table(finalizer_table,
+                              true,
                               false, // Currently values are pinned.
                               rb_mmtk_on_finalizer_table_delete,
                               NULL);
@@ -15988,15 +16074,19 @@ rb_mmtk_update_global_weak_tables(void)
     // Update the obj_to_id_tbl first, and remove dead objects from both
     // obj_to_id_tbl and id_to_obj_tbl.
     rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
+                              true,
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
 
     // Update the fstring_table, and remove dead objects.
     rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
+                              false,
                               true,
                               rb_mmtk_on_fstring_table_delete,
                               NULL);
+
+    RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 
     // Now that dead objects are removed, we forward keys and values now.
     // This table hashes Fixnum and Bignum by value (object_id_hash_type),
