@@ -195,6 +195,7 @@ class VCS
       rescue ArgumentError
         modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
       end
+      modified = modified.getlocal(@zone)
     end
     return last, changed, modified, *rest
   end
