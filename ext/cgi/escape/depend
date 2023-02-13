@@ -152,7 +152,6 @@ escape.o: $(hdrdir)/ruby/internal/memory.h
 escape.o: $(hdrdir)/ruby/internal/method.h
 escape.o: $(hdrdir)/ruby/internal/module.h
 escape.o: $(hdrdir)/ruby/internal/newobj.h
-escape.o: $(hdrdir)/ruby/internal/rgengc.h
 escape.o: $(hdrdir)/ruby/internal/scan_args.h
 escape.o: $(hdrdir)/ruby/internal/special_consts.h
 escape.o: $(hdrdir)/ruby/internal/static_assert.h

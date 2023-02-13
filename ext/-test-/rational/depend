@@ -146,7 +146,6 @@ rat.o: $(hdrdir)/ruby/internal/memory.h
 rat.o: $(hdrdir)/ruby/internal/method.h
 rat.o: $(hdrdir)/ruby/internal/module.h
 rat.o: $(hdrdir)/ruby/internal/newobj.h
-rat.o: $(hdrdir)/ruby/internal/rgengc.h
 rat.o: $(hdrdir)/ruby/internal/scan_args.h
 rat.o: $(hdrdir)/ruby/internal/special_consts.h
 rat.o: $(hdrdir)/ruby/internal/static_assert.h

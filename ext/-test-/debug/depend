@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ inspector.o: $(hdrdir)/ruby/internal/memory.h
 inspector.o: $(hdrdir)/ruby/internal/method.h
 inspector.o: $(hdrdir)/ruby/internal/module.h
 inspector.o: $(hdrdir)/ruby/internal/newobj.h
-inspector.o: $(hdrdir)/ruby/internal/rgengc.h
 inspector.o: $(hdrdir)/ruby/internal/scan_args.h
 inspector.o: $(hdrdir)/ruby/internal/special_consts.h
 inspector.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -462,7 +460,6 @@ profile_frames.o: $(hdrdir)/ruby/internal/memory.h
 profile_frames.o: $(hdrdir)/ruby/internal/method.h
 profile_frames.o: $(hdrdir)/ruby/internal/module.h
 profile_frames.o: $(hdrdir)/ruby/internal/newobj.h
-profile_frames.o: $(hdrdir)/ruby/internal/rgengc.h
 profile_frames.o: $(hdrdir)/ruby/internal/scan_args.h
 profile_frames.o: $(hdrdir)/ruby/internal/special_consts.h
 profile_frames.o: $(hdrdir)/ruby/internal/static_assert.h

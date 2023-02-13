@@ -145,7 +145,6 @@ sha2.o: $(hdrdir)/ruby/internal/memory.h
 sha2.o: $(hdrdir)/ruby/internal/method.h
 sha2.o: $(hdrdir)/ruby/internal/module.h
 sha2.o: $(hdrdir)/ruby/internal/newobj.h
-sha2.o: $(hdrdir)/ruby/internal/rgengc.h
 sha2.o: $(hdrdir)/ruby/internal/scan_args.h
 sha2.o: $(hdrdir)/ruby/internal/special_consts.h
 sha2.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -307,7 +306,6 @@ sha2init.o: $(hdrdir)/ruby/internal/memory.h
 sha2init.o: $(hdrdir)/ruby/internal/method.h
 sha2init.o: $(hdrdir)/ruby/internal/module.h
 sha2init.o: $(hdrdir)/ruby/internal/newobj.h
-sha2init.o: $(hdrdir)/ruby/internal/rgengc.h
 sha2init.o: $(hdrdir)/ruby/internal/scan_args.h
 sha2init.o: $(hdrdir)/ruby/internal/special_consts.h
 sha2init.o: $(hdrdir)/ruby/internal/static_assert.h

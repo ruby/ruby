@@ -142,7 +142,6 @@ c.o: $(hdrdir)/ruby/internal/memory.h
 c.o: $(hdrdir)/ruby/internal/method.h
 c.o: $(hdrdir)/ruby/internal/module.h
 c.o: $(hdrdir)/ruby/internal/newobj.h
-c.o: $(hdrdir)/ruby/internal/rgengc.h
 c.o: $(hdrdir)/ruby/internal/scan_args.h
 c.o: $(hdrdir)/ruby/internal/special_consts.h
 c.o: $(hdrdir)/ruby/internal/static_assert.h

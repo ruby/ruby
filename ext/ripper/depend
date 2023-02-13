@@ -200,7 +200,6 @@ ripper.o: $(hdrdir)/ruby/internal/memory.h
 ripper.o: $(hdrdir)/ruby/internal/method.h
 ripper.o: $(hdrdir)/ruby/internal/module.h
 ripper.o: $(hdrdir)/ruby/internal/newobj.h
-ripper.o: $(hdrdir)/ruby/internal/rgengc.h
 ripper.o: $(hdrdir)/ruby/internal/scan_args.h
 ripper.o: $(hdrdir)/ruby/internal/special_consts.h
 ripper.o: $(hdrdir)/ruby/internal/static_assert.h

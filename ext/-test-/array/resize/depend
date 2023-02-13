@@ -141,7 +141,6 @@ resize.o: $(hdrdir)/ruby/internal/memory.h
 resize.o: $(hdrdir)/ruby/internal/method.h
 resize.o: $(hdrdir)/ruby/internal/module.h
 resize.o: $(hdrdir)/ruby/internal/newobj.h
-resize.o: $(hdrdir)/ruby/internal/rgengc.h
 resize.o: $(hdrdir)/ruby/internal/scan_args.h
 resize.o: $(hdrdir)/ruby/internal/special_consts.h
 resize.o: $(hdrdir)/ruby/internal/static_assert.h

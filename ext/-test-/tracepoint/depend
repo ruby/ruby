@@ -142,7 +142,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/memory.h
 gc_hook.o: $(hdrdir)/ruby/internal/method.h
 gc_hook.o: $(hdrdir)/ruby/internal/module.h
 gc_hook.o: $(hdrdir)/ruby/internal/newobj.h
-gc_hook.o: $(hdrdir)/ruby/internal/rgengc.h
 gc_hook.o: $(hdrdir)/ruby/internal/scan_args.h
 gc_hook.o: $(hdrdir)/ruby/internal/special_consts.h
 gc_hook.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/memory.h
 tracepoint.o: $(hdrdir)/ruby/internal/method.h
 tracepoint.o: $(hdrdir)/ruby/internal/module.h
 tracepoint.o: $(hdrdir)/ruby/internal/newobj.h
-tracepoint.o: $(hdrdir)/ruby/internal/rgengc.h
 tracepoint.o: $(hdrdir)/ruby/internal/scan_args.h
 tracepoint.o: $(hdrdir)/ruby/internal/special_consts.h
 tracepoint.o: $(hdrdir)/ruby/internal/static_assert.h

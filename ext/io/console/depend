@@ -153,7 +153,6 @@ console.o: $(hdrdir)/ruby/internal/memory.h
 console.o: $(hdrdir)/ruby/internal/method.h
 console.o: $(hdrdir)/ruby/internal/module.h
 console.o: $(hdrdir)/ruby/internal/newobj.h
-console.o: $(hdrdir)/ruby/internal/rgengc.h
 console.o: $(hdrdir)/ruby/internal/scan_args.h
 console.o: $(hdrdir)/ruby/internal/special_consts.h
 console.o: $(hdrdir)/ruby/internal/static_assert.h

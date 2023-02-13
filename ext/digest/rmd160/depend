@@ -145,7 +145,6 @@ rmd160.o: $(hdrdir)/ruby/internal/memory.h
 rmd160.o: $(hdrdir)/ruby/internal/method.h
 rmd160.o: $(hdrdir)/ruby/internal/module.h
 rmd160.o: $(hdrdir)/ruby/internal/newobj.h
-rmd160.o: $(hdrdir)/ruby/internal/rgengc.h
 rmd160.o: $(hdrdir)/ruby/internal/scan_args.h
 rmd160.o: $(hdrdir)/ruby/internal/special_consts.h
 rmd160.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -307,7 +306,6 @@ rmd160init.o: $(hdrdir)/ruby/internal/memory.h
 rmd160init.o: $(hdrdir)/ruby/internal/method.h
 rmd160init.o: $(hdrdir)/ruby/internal/module.h
 rmd160init.o: $(hdrdir)/ruby/internal/newobj.h
-rmd160init.o: $(hdrdir)/ruby/internal/rgengc.h
 rmd160init.o: $(hdrdir)/ruby/internal/scan_args.h
 rmd160init.o: $(hdrdir)/ruby/internal/special_consts.h
 rmd160init.o: $(hdrdir)/ruby/internal/static_assert.h
