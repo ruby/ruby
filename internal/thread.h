@@ -29,6 +29,7 @@ VALUE rb_get_coverages(void);
 int rb_get_coverage_mode(void);
 VALUE rb_default_coverage(int);
 VALUE rb_thread_shield_new(void);
+bool rb_thread_shield_owned(VALUE self);
 VALUE rb_thread_shield_wait(VALUE self);
 VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);

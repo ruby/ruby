@@ -56,6 +56,13 @@ ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 -include $(SHOWFLAGS)
 endif
 
+ifeq ($(HAVE_BASERUBY):$(HAVE_GIT),yes:yes)
+override modified := $(shell $(BASERUBY) -C $(srcdir) tool/file2lastrev.rb --modified='%Y %m %d')
+override RUBY_RELEASE_YEAR := $(word 1,$(modified))
+override RUBY_RELEASE_MONTH := $(word 2,$(modified))
+override RUBY_RELEASE_DAY := $(word 3,$(modified))
+endif
+
 ifneq ($(filter universal-%,$(arch)),)
 define archcmd
 %.$(1).S: %.c
@@ -269,6 +276,7 @@ HELP_EXTRA_TASKS = \
 	"  checkout-github:       checkout GitHub Pull Request [PR=1234]" \
 	"  pull-github:           rebase GitHub Pull Request to new worktree [PR=1234]" \
 	"  update-github:         merge master branch and push it to Pull Request [PR=1234]" \
+	"  tags:                  generate TAGS file" \
 	""
 
 # 1. squeeze spaces
@@ -505,3 +513,6 @@ matz: up
 	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
 	$(GIT) -C $(srcdir) commit -m "$(message)" $(files)
+
+tags:
+	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk

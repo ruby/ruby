@@ -52,6 +52,7 @@ funcall.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 funcall.o: $(hdrdir)/ruby/internal/attr/noinline.h
 funcall.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 funcall.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+funcall.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 funcall.o: $(hdrdir)/ruby/internal/attr/pure.h
 funcall.o: $(hdrdir)/ruby/internal/attr/restrict.h
 funcall.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -652,22 +652,24 @@ rb_mutex_allow_trap(VALUE self, int val)
 
 #define queue_waitq(q) UNALIGNED_MEMBER_PTR(q, waitq)
 #define queue_list(q) UNALIGNED_MEMBER_PTR(q, que)
-PACKED_STRUCT_UNALIGNED(struct rb_queue {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct rb_queue {
     struct ccan_list_head waitq;
     rb_serial_t fork_gen;
     const VALUE que;
     int num_waiting;
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 #define szqueue_waitq(sq) UNALIGNED_MEMBER_PTR(sq, q.waitq)
 #define szqueue_list(sq) UNALIGNED_MEMBER_PTR(sq, q.que)
 #define szqueue_pushq(sq) UNALIGNED_MEMBER_PTR(sq, pushq)
-PACKED_STRUCT_UNALIGNED(struct rb_szqueue {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
     struct ccan_list_head pushq;
     long max;
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 static void
 queue_mark(void *ptr)

@@ -50,6 +50,7 @@ y.tab.c
 *.gcno
 *.gcov
 *.vscode
+!misc/.vscode
 lcov*.info
 
 # /

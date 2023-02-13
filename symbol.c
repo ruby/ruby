@@ -9,7 +9,6 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
 #include "internal/error.h"
 #include "internal/gc.h"

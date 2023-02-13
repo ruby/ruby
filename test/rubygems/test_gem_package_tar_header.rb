@@ -159,6 +159,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
       assert_raise ArgumentError do
         Gem::Package::TarHeader.from io
       end
+    ensure
       io.close!
     end
   end

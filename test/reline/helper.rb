@@ -5,6 +5,19 @@ ENV['TERM'] = 'xterm' # for some CI environments
 require 'reline'
 require 'test/unit'
 
+begin
+  require 'rbconfig'
+rescue LoadError
+end
+
+begin
+  # This should exist and available in load path when this file is mirrored to ruby/ruby and running at there
+  if File.exist?(File.expand_path('../../tool/lib/envutil.rb', __dir__))
+    require 'envutil'
+  end
+rescue LoadError
+end
+
 module Reline
   class <<self
     def test_mode(ansi: false)
@@ -24,6 +37,34 @@ module Reline
       remove_const('IOGate') if const_defined?('IOGate')
       const_set('IOGate', Reline::GeneralIO)
       Reline.instance_variable_set(:@core, nil)
+    end
+
+    # Return a executable name to spawn Ruby process. In certain build configuration,
+    # "ruby" may not be available.
+    def test_rubybin
+      # When this test suite is running in ruby/ruby, prefer EnvUtil result over original implementation
+      if const_defined?(:EnvUtil)
+        return EnvUtil.rubybin
+      end
+
+      # The following is a simplified port of EnvUtil.rubybin in ruby/ruby
+      if ruby = ENV["RUBY"]
+        return ruby
+      end
+      ruby = "ruby"
+      exeext = RbConfig::CONFIG["EXEEXT"]
+      rubyexe = (ruby + exeext if exeext and !exeext.empty?)
+      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+        return File.expand_path(ruby)
+      end
+      if rubyexe and File.exist? rubyexe and File.executable? rubyexe
+        return File.expand_path(rubyexe)
+      end
+      if defined?(RbConfig.ruby)
+        RbConfig.ruby
+      else
+        "ruby"
+      end
     end
   end
 end

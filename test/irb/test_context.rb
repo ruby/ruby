@@ -50,22 +50,19 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
-      pend if RUBY_ENGINE == 'truffleruby'
       assert_raise_with_message(EncodingError, /invalid symbol/) {
-        @context.evaluate(%q[{"\xAE": 1}], 1)
+        @context.evaluate(%q[:"\xAE"], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
       }
     end
 
-    def test_evaluate_with_onigmo_warning
-      pend if RUBY_ENGINE == 'truffleruby'
-      assert_warning("(irb):1: warning: character class has duplicated range: /[aa]/\n") do
-        @context.evaluate('/[aa]/', 1)
+    def test_evaluate_still_emits_warning
+      assert_warning("(irb):1: warning: END in method; use at_exit\n") do
+        @context.evaluate(%q[def foo; END {}; end], 1)
       end
     end
 
     def test_eval_input
-      pend if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         "raise 'Foo'\n",
@@ -88,7 +85,6 @@ module TestIRB
     end
 
     def test_eval_input_raise2x
-      pend if RUBY_ENGINE == 'truffleruby'
       input = TestInputMethod.new([
         "raise 'Foo'\n",
         "raise 'Bar'\n",
@@ -513,7 +509,6 @@ module TestIRB
     end
 
     def test_eval_input_with_invalid_byte_sequence_exception
-      pend if RUBY_ENGINE == 'truffleruby'
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([
         %Q{def hoge() fuga; end; def fuga() raise "A\\xF3B"; end; hoge\n},

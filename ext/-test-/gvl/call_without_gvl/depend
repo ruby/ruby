@@ -51,6 +51,7 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noinline.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+call_without_gvl.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/pure.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/restrict.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

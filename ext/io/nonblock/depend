@@ -53,6 +53,7 @@ nonblock.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/noinline.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+nonblock.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/pure.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/restrict.h
 nonblock.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -52,6 +52,7 @@ protect.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 protect.o: $(hdrdir)/ruby/internal/attr/noinline.h
 protect.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 protect.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+protect.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 protect.o: $(hdrdir)/ruby/internal/attr/pure.h
 protect.o: $(hdrdir)/ruby/internal/attr/restrict.h
 protect.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

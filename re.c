@@ -282,7 +282,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
     return rb_memsearch_qs(x0, m, y0, n);
 }
 
-#define REG_LITERAL FL_USER5
 #define REG_ENCODING_NONE FL_USER6
 
 #define KCODE_FIXED FL_USER4
@@ -763,8 +762,8 @@ rb_reg_casefold_p(VALUE re)
  *    /foo/mix.options # => 7
  *
  *  Note that additional bits may be set in the returned integer;
- *  these are maintained internally internally in +self+,
- *  are ignored if passed to Regexp.new, and may be ignored by the caller:
+ *  these are maintained internally in +self+, are ignored if passed
+ *  to Regexp.new, and may be ignored by the caller:
  *
  *  Returns the set of bits corresponding to the options used when
  *  creating this regexp (see Regexp::new for details). Note that
@@ -962,11 +961,11 @@ VALUE rb_cMatch;
 static VALUE
 match_alloc(VALUE klass)
 {
-    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH);
+    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH | (RGENGC_WB_PROTECTED_MATCH ? FL_WB_PROTECTED : 0));
 
-    match->str = 0;
+    match->str = Qfalse;
     match->rmatch = 0;
-    match->regexp = 0;
+    match->regexp = Qfalse;
     match->rmatch = ZALLOC(struct rmatch);
 
     return (VALUE)match;
@@ -1084,8 +1083,8 @@ match_init_copy(VALUE obj, VALUE orig)
 
     if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
-    RMATCH(obj)->str = RMATCH(orig)->str;
-    RMATCH(obj)->regexp = RMATCH(orig)->regexp;
+    RB_OBJ_WRITE(obj, &RMATCH(obj)->str, RMATCH(orig)->str);
+    RB_OBJ_WRITE(obj, &RMATCH(obj)->regexp, RMATCH(orig)->regexp);
 
     rm = RMATCH(obj)->rmatch;
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
@@ -1125,7 +1124,7 @@ match_regexp(VALUE match)
     if (NIL_P(regexp)) {
         VALUE str = rb_reg_nth_match(0, match);
         regexp = rb_reg_regcomp(rb_reg_quote(str));
-        RMATCH(match)->regexp = regexp;
+        RB_OBJ_WRITE(match, &RMATCH(match)->regexp, regexp);
     }
     return regexp;
 }
@@ -1476,8 +1475,8 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     struct RMatch *match = (struct RMatch *)m;
     struct rmatch *rmatch = match->rmatch;
 
-    match->str = string;
-    match->regexp = Qnil;
+    RB_OBJ_WRITE(match, &RMATCH(match)->str, string);
+    RB_OBJ_WRITE(match, &RMATCH(match)->regexp, Qnil);
     int err = onig_region_resize(&rmatch->regs, 1);
     if (err) rb_memerror();
     rmatch->regs.beg[0] = pos;
@@ -1738,7 +1737,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     memcpy(RMATCH_REGS(match), regs, sizeof(struct re_registers));
 
     if (set_backref_str) {
-        RMATCH(match)->str = rb_str_new4(str);
+        RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
     }
     else {
         /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
@@ -1748,7 +1747,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         rb_obj_hide(match);
     }
 
-    RMATCH(match)->regexp = re;
+    RB_OBJ_WRITE(match, &RMATCH(match)->regexp, re);
     rb_backref_set(match);
     if (set_match) *set_match = match;
 
@@ -1832,9 +1831,8 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         if (err) rb_memerror();
     }
 
-    RMATCH(match)->str = rb_str_new4(str);
-
-    RMATCH(match)->regexp = re;
+    RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
+    RB_OBJ_WRITE(match, &RMATCH(match)->regexp, re);
     rb_backref_set(match);
 
     return true;
@@ -3191,8 +3189,6 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
     rb_encoding *a_enc = rb_ascii8bit_encoding();
 
     rb_check_frozen(obj);
-    if (FL_TEST(obj, REG_LITERAL))
-        rb_raise(rb_eSecurityError, "can't modify literal regexp");
     if (re->ptr)
         rb_raise(rb_eTypeError, "already initialized regexp");
     re->ptr = 0;
@@ -3358,7 +3354,6 @@ rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline)
         rb_set_errinfo(rb_reg_error_desc(str, options, err));
         return Qnil;
     }
-    FL_SET(re, REG_LITERAL);
     rb_obj_freeze(re);
     return re;
 }

@@ -51,6 +51,7 @@ bad_version.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bad_version.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/pure.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bad_version.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -212,6 +213,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -371,6 +373,7 @@ loop.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 loop.o: $(hdrdir)/ruby/internal/attr/noinline.h
 loop.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 loop.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+loop.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 loop.o: $(hdrdir)/ruby/internal/attr/pure.h
 loop.o: $(hdrdir)/ruby/internal/attr/restrict.h
 loop.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

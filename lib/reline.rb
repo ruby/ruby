@@ -11,6 +11,7 @@ require 'reline/terminfo'
 require 'rbconfig'
 
 module Reline
+  # NOTE: For making compatible with the rb-readline gem
   FILENAME_COMPLETION_PROC = nil
   USERNAME_COMPLETION_PROC = nil
 

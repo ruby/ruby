@@ -14,7 +14,7 @@
 #include "internal/compile.h"
 #include "internal/class.h"
 #include "internal/fixnum.h"
-#include "gc.h"
+#include "internal/gc.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"

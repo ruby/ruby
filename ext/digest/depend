@@ -52,6 +52,7 @@ digest.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 digest.o: $(hdrdir)/ruby/internal/attr/noinline.h
 digest.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 digest.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+digest.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 digest.o: $(hdrdir)/ruby/internal/attr/pure.h
 digest.o: $(hdrdir)/ruby/internal/attr/restrict.h
 digest.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

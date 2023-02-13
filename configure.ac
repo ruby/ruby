@@ -1485,10 +1485,9 @@ AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
 		[rb_cv_packed_struct=$mac; break])
     done])
 AS_IF([test "$rb_cv_packed_struct" != no], [
-    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], [$rb_cv_packed_struct])
+    AC_DEFINE_UNQUOTED([RBIMPL_ATTR_PACKED_STRUCT_BEGIN()], [`echo " $rb_cv_packed_struct " | sed 's/ x .*//;s/^ *//'`])
+    AC_DEFINE_UNQUOTED([RBIMPL_ATTR_PACKED_STRUCT_END()], [`echo " $rb_cv_packed_struct " | sed 's/.* x //;s/ *$//'`])
     RUBY_TRY_CFLAGS(-Wno-address-of-packed-member, [AC_DEFINE(USE_UNALIGNED_MEMBER_ACCESS)])
-], [
-    AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 ])
 
 AS_IF([test "x$ac_cv_type_long_long" = xyes], [

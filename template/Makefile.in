@@ -294,6 +294,10 @@ all:
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 
+# On GNU make and BSD make, clean up the target when the recipe
+# fails. Prevents half-built targets corrupting future runs.
+.DELETE_ON_ERROR:
+
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@

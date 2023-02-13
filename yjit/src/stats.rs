@@ -168,6 +168,7 @@ make_counters! {
     exec_instruction,
 
     send_keywords,
+    send_klass_megamorphic,
     send_kw_splat,
     send_args_splat_super,
     send_iseq_zsuper,
@@ -246,10 +247,14 @@ make_counters! {
     invokesuper_block,
 
     invokeblock_none,
-    invokeblock_iseq_arg0_splat,
+    invokeblock_iseq_arg0_has_kw,
+    invokeblock_iseq_arg0_args_splat,
+    invokeblock_iseq_arg0_not_array,
+    invokeblock_iseq_arg0_wrong_len,
     invokeblock_iseq_block_changed,
-    invokeblock_iseq_tag_changed,
-    invokeblock_ifunc,
+    invokeblock_tag_changed,
+    invokeblock_ifunc_args_splat,
+    invokeblock_ifunc_kw_splat,
     invokeblock_proc,
     invokeblock_symbol,
 
@@ -260,6 +265,7 @@ make_counters! {
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
     getivar_megamorphic,
+    getivar_too_complex,
 
     setivar_se_self_not_heap,
     setivar_idx_out_of_range,
@@ -268,6 +274,7 @@ make_counters! {
     setivar_not_object,
     setivar_frozen,
     setivar_megamorphic,
+    setivar_too_complex,
 
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
@@ -311,8 +318,11 @@ make_counters! {
 
     num_gc_obj_refs,
 
-    x86_call_rel32,
-    x86_call_reg,
+    num_send,
+    num_send_known_class,
+    num_send_polymorphic,
+    num_send_x86_rel32,
+    num_send_x86_reg,
 }
 
 //===========================================================================

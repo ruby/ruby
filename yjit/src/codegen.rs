@@ -708,15 +708,12 @@ pub fn gen_single_block(
     let starting_insn_idx = insn_idx;
 
     // Allocate the new block
-    let blockref = Block::new(blockid, &ctx);
+    let blockref = Block::new(blockid, &ctx, cb.get_write_ptr());
 
     // Initialize a JIT state object
     let mut jit = JITState::new(&blockref);
     jit.iseq = blockid.iseq;
     jit.ec = Some(ec);
-
-    // Mark the start position of the block
-    blockref.borrow_mut().set_start_addr(cb.get_write_ptr());
 
     // Create a backend assembler instance
     let mut asm = Assembler::new();
@@ -802,7 +799,7 @@ pub fn gen_single_block(
             // If this is the first instruction in the block, then we can use
             // the exit for block->entry_exit.
             if insn_idx == block.get_blockid().idx {
-                block.entry_exit = block.get_start_addr();
+                block.entry_exit = Some(block.get_start_addr());
             }
 
             break;
@@ -1318,7 +1315,11 @@ fn guard_object_is_array(
     asm.comment("guard object is array");
 
     // Pull out the type mask
-    let flags_opnd = Opnd::mem(VALUE_BITS, object_opnd, RUBY_OFFSET_RBASIC_FLAGS);
+    let object_reg = match object_opnd {
+        Opnd::Reg(_) => object_opnd,
+        _ => asm.load(object_opnd),
+    };
+    let flags_opnd = Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS);
     let flags_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
 
     // Compare the result with T_ARRAY
@@ -1434,22 +1435,7 @@ fn gen_expandarray(
         return KeepCompiling;
     }
 
-    // Pull out the embed flag to check if it's an embedded array.
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-
-    // Move the length of the embedded array into REG1.
-    let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
-    let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
-
-    // Conditionally move the length of the heap array into REG1.
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
-    let array_len_opnd = Opnd::mem(
-        (8 * size_of::<std::os::raw::c_long>()) as u8,
-        asm.load(array_opnd),
-        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
-    );
-    let array_len_opnd = asm.csel_nz(emb_len_opnd, array_len_opnd);
+    let array_len_opnd = get_array_len(asm, array_reg);
 
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
@@ -1991,6 +1977,7 @@ fn gen_get_ivar(
 ) -> CodegenStatus {
     // If the object has a too complex shape, we exit
     if comptime_receiver.shape_too_complex() {
+        gen_counter_incr!(asm, getivar_too_complex);
         return CantCompile;
     }
 
@@ -2223,8 +2210,13 @@ fn gen_setinstancevariable(
 
     // If the comptime receiver is frozen, writing an IV will raise an exception
     // and we don't want to JIT code to deal with that situation.
+    if comptime_receiver.is_frozen() {
+        gen_counter_incr!(asm, setivar_frozen);
+        return CantCompile;
+    }
     // If the object has a too complex shape, we will also exit
-    if comptime_receiver.is_frozen() || comptime_receiver.shape_too_complex() {
+    if comptime_receiver.shape_too_complex() {
+        gen_counter_incr!(asm, setivar_too_complex);
         return CantCompile;
     }
 
@@ -4281,6 +4273,31 @@ fn jit_rb_str_concat(
     true
 }
 
+// Codegen for rb_ary_empty_p()
+fn jit_rb_ary_empty_p(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let array_opnd = ctx.stack_pop(1);
+    let array_reg = asm.load(array_opnd);
+    let len_opnd = get_array_len(asm, array_reg);
+
+    asm.test(len_opnd, len_opnd);
+    let bool_val = asm.csel_z(Qtrue.into(), Qfalse.into());
+
+    let out_opnd = ctx.stack_push(Type::UnknownImm);
+    asm.store(out_opnd, bool_val);
+
+    return true;
+}
+
 fn jit_obj_respond_to(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -4910,6 +4927,57 @@ fn gen_send_cfunc(
     EndBlock
 }
 
+// Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
+// and use Opnd::Mem to save registers.
+fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
+    asm.comment("get array length for embedded or heap");
+
+    // Pull out the embed flag to check if it's an embedded array.
+    let array_reg = match array_opnd {
+        Opnd::Reg(_) => array_opnd,
+        _ => asm.load(array_opnd),
+    };
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+
+    // Get the length of the array
+    let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
+    let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
+
+    // Conditionally move the length of the heap array
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+
+    let array_reg = match array_opnd {
+        Opnd::Reg(_) => array_opnd,
+        _ => asm.load(array_opnd),
+    };
+    let array_len_opnd = Opnd::mem(
+        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
+    );
+
+    // Select the array length value
+    asm.csel_nz(emb_len_opnd, array_len_opnd)
+}
+
+// Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
+    asm.comment("get array pointer for embedded or heap");
+
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+    let heap_ptr_opnd = Opnd::mem(
+        (8 * size_of::<usize>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+    );
+    // Load the address of the embedded array
+    // (struct RArray *)(obj)->as.ary
+    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+    asm.csel_nz(ary_opnd, heap_ptr_opnd)
+}
+
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
@@ -4964,17 +5032,7 @@ fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, o
     // Need to repeat this here to deal with register allocation
     let array_reg = asm.load(ctx.stack_opnd(0));
 
-    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
-    let heap_ptr_opnd = Opnd::mem(
-        (8 * size_of::<usize>()) as u8,
-        array_reg,
-        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
-    );
-    // Load the address of the embedded array
-    // (struct RArray *)(obj)->as.ary
-    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
-    let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+    let ary_opnd = get_array_ptr(asm, array_reg);
 
     let last_array_value = asm.load(Opnd::mem(64, ary_opnd, (required_args as i32 - 1) * (SIZEOF_VALUE as i32)));
 
@@ -5147,7 +5205,6 @@ fn gen_send_iseq(
         }
     }
 
-
     if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
         // zsuper methods are super calls without any arguments.
         // They are also marked as splat, but don't actually have an array
@@ -5303,9 +5360,6 @@ fn gen_send_iseq(
     // Number of locals that are not parameters
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
 
-    // Check for interrupts
-    gen_check_ints(asm, side_exit);
-
     match block_arg_type {
         Some(Type::Nil) => {
             // We have a nil block arg, so let's pop it off the args
@@ -5378,8 +5432,20 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow));
 
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg
+    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
+    let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
+         get_iseq_flags_has_lead(iseq) && !get_iseq_flags_ambiguous_param0(iseq)
+    };
+
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
+        // If block_arg0_splat, we still need side exits after this, but
+        // doing push_splat_args here disallows it. So bail out.
+        if block_arg0_splat {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            return CantCompile;
+        }
 
         let array = jit_peek_at_stack(jit, ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
@@ -5426,6 +5492,13 @@ fn gen_send_iseq(
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
         // keyword arguments at this call site.
+
+        // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
+        // but doing_kw_call means it's not a simple ISEQ.
+        if block_arg0_splat {
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            return CantCompile;
+        }
 
         // Number of positional arguments the callee expects before the first
         // keyword argument
@@ -5558,6 +5631,41 @@ fn gen_send_iseq(
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
         asm.mov(ctx.stack_opnd(-1), unspec_opnd.into());
+    }
+
+    // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
+    // on vm_callee_setup_block_arg for arg_setup_block. This is done after CALLER_SETUP_ARG
+    // and CALLER_REMOVE_EMPTY_KW_SPLAT, so this implementation is put here. This may need
+    // side exits, so you still need to allow side exits here if block_arg0_splat is true.
+    // Note that you can't have side exits after this arg0 splat.
+    if block_arg0_splat {
+        let arg0_type = ctx.get_opnd_type(StackOpnd(0));
+        let arg0_opnd = ctx.stack_opnd(0);
+
+        // Only handle the case that you don't need to_ary conversion
+        let not_array_exit = counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_not_array);
+        if !arg0_type.is_heap() {
+            guard_object_is_heap(asm, arg0_opnd, not_array_exit);
+        }
+        if !arg0_type.is_array() {
+            guard_object_is_array(asm, arg0_opnd, not_array_exit);
+        }
+
+        // Only handle the same that the array length == ISEQ's lead_num (most common)
+        let arg0_len_opnd = get_array_len(asm, arg0_opnd);
+        let lead_num = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
+        asm.cmp(arg0_len_opnd, lead_num.into());
+        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_wrong_len));
+
+        let arg0_reg = asm.load(arg0_opnd);
+        let array_opnd = get_array_ptr(asm, arg0_reg);
+        asm.comment("push splat arg0 onto the stack");
+        ctx.stack_pop(argc.try_into().unwrap());
+        for i in 0..lead_num {
+            let stack_opnd = ctx.stack_push(Type::Unknown);
+            asm.mov(stack_opnd, Opnd::mem(64, array_opnd, SIZEOF_VALUE_I32 * i));
+        }
+        argc = lead_num;
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
@@ -5824,9 +5932,15 @@ fn gen_send_general(
     }
 
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
-
     let comptime_recv = jit_peek_at_stack(jit, ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
+
+    // Guard that the receiver has the same class as the one from compile time
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Points to the receiver operand on the stack
+    let recv = ctx.stack_opnd(recv_idx);
+    let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
@@ -5841,12 +5955,16 @@ fn gen_send_general(
         }
     }
 
-    // Guard that the receiver has the same class as the one from compile time
-    let side_exit = get_side_exit(jit, ocb, ctx);
+    // Gather some statistics about sends
+    gen_counter_incr!(asm, num_send);
+    if let Some(_known_klass) = ctx.get_opnd_type(recv_opnd).known_class()  {
+        gen_counter_incr!(asm, num_send_known_class);
+    }
+    if ctx.get_chain_depth() > 1 {
+        gen_counter_incr!(asm, num_send_polymorphic);
+    }
 
-    // Points to the receiver operand on the stack
-    let recv = ctx.stack_opnd(recv_idx);
-    let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
+    let megamorphic_exit = counted_exit!(ocb, side_exit, send_klass_megamorphic);
     jit_guard_known_klass(
         jit,
         ctx,
@@ -5857,7 +5975,7 @@ fn gen_send_general(
         recv_opnd,
         comptime_recv,
         SEND_MAX_DEPTH,
-        side_exit,
+        megamorphic_exit,
     );
 
     // Do method lookup
@@ -6339,15 +6457,19 @@ fn gen_invokeblock(
         let side_exit = get_side_exit(jit, ocb, ctx);
         let tag_opnd = asm.and(block_handler_opnd, 0x3.into()); // block_handler is a tagged pointer
         asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
-        asm.jne(counted_exit!(ocb, side_exit, invokeblock_iseq_tag_changed));
+        let tag_changed_exit = counted_exit!(ocb, side_exit, invokeblock_tag_changed);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            ctx,
+            asm,
+            ocb,
+            SEND_MAX_CHAIN_DEPTH,
+            tag_changed_exit,
+        );
 
-        // Not supporting vm_callee_setup_block_arg_arg0_splat for now
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
-        if argc == 1 && unsafe { get_iseq_flags_has_lead(comptime_iseq) && !get_iseq_flags_ambiguous_param0(comptime_iseq) } {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_splat);
-            return CantCompile;
-        }
 
         asm.comment("guard known ISEQ");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
@@ -6380,8 +6502,61 @@ fn gen_invokeblock(
             Some(captured_opnd),
         )
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
-        gen_counter_incr!(asm, invokeblock_ifunc);
-        CantCompile
+        // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
+        if flags & VM_CALL_ARGS_SPLAT != 0 {
+            gen_counter_incr!(asm, invokeblock_ifunc_args_splat);
+            return CantCompile;
+        }
+        if flags & VM_CALL_KW_SPLAT != 0 {
+            gen_counter_incr!(asm, invokeblock_ifunc_kw_splat);
+            return CantCompile;
+        }
+
+        asm.comment("get local EP");
+        let ep_opnd = gen_get_lep(jit, asm);
+        let block_handler_opnd = asm.load(
+            Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+        );
+
+        asm.comment("guard block_handler type");
+        let side_exit = get_side_exit(jit, ocb, ctx);
+        let tag_opnd = asm.and(block_handler_opnd, 0x3.into()); // block_handler is a tagged pointer
+        asm.cmp(tag_opnd, 0x3.into()); // VM_BH_IFUNC_P
+        let tag_changed_exit = counted_exit!(ocb, side_exit, invokeblock_tag_changed);
+        jit_chain_guard(
+            JCC_JNE,
+            jit,
+            ctx,
+            asm,
+            ocb,
+            SEND_MAX_CHAIN_DEPTH,
+            tag_changed_exit,
+        );
+
+        // The cfunc may not be leaf
+        jit_prepare_routine_call(jit, ctx, asm);
+
+        extern "C" {
+            fn rb_vm_yield_with_cfunc(ec: EcPtr, captured: *const rb_captured_block, argc: c_int, argv: *const VALUE) -> VALUE;
+        }
+        asm.comment("call ifunc");
+        let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
+        let argv = asm.lea(ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize));
+        let ret = asm.ccall(
+            rb_vm_yield_with_cfunc as *const u8,
+            vec![EC, captured_opnd, argc.into(), argv],
+        );
+
+        ctx.stack_pop(argc.try_into().unwrap());
+        let stack_ret = ctx.stack_push(Type::Unknown);
+        asm.mov(stack_ret, ret);
+
+        // cfunc calls may corrupt types
+        ctx.clear_local_types();
+
+        // Share the successor with other chains
+        jump_to_next_insn(jit, ctx, asm, ocb);
+        EndBlock
     } else if comptime_handler.symbol_p() {
         gen_counter_incr!(asm, invokeblock_symbol);
         CantCompile
@@ -6480,22 +6655,15 @@ fn gen_invokesuper(
     // Guard that the receiver has the same class as the one from compile time
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    let cfp = unsafe { get_ec_cfp(jit.ec.unwrap()) };
-    let ep = unsafe { get_cfp_ep(cfp) };
-    let cref_me = unsafe { *ep.offset(VM_ENV_DATA_INDEX_ME_CREF.try_into().unwrap()) };
-    let me_as_value = VALUE(me as usize);
-    if cref_me != me_as_value {
-        // This will be the case for super within a block
-        return CantCompile;
-    }
-
     asm.comment("guard known me");
-    let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
+    let lep_opnd = gen_get_lep(jit, asm);
     let ep_me_opnd = Opnd::mem(
         64,
-        ep_opnd,
+        lep_opnd,
         SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF,
     );
+
+    let me_as_value = VALUE(me as usize);
     asm.cmp(ep_me_opnd, me_as_value.into());
     asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed));
 
@@ -6507,11 +6675,9 @@ fn gen_invokesuper(
         // TODO: this could properly forward the current block handler, but
         // would require changes to gen_send_*
         asm.comment("guard no block given");
-        // EP is in REG0 from above
-        let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
         let ep_specval_opnd = Opnd::mem(
             64,
-            ep_opnd,
+            lep_opnd,
             SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
         );
         asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
@@ -7462,8 +7628,6 @@ impl CodegenGlobals {
             let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
             let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
 
-            assert_eq!(cb.page_size() % page_size.as_usize(), 0, "code page size is not page-aligned");
-
             (cb, ocb)
         };
 
@@ -7565,6 +7729,9 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+            // rb_ary_empty_p() method in array.c
+            self.yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
 
             self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
             self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
@@ -7669,13 +7836,14 @@ mod tests {
             iseq: ptr::null(),
             idx: 0,
         };
-        let block = Block::new(blockid, &Context::default());
+        let cb = CodeBlock::new_dummy(256 * 1024);
+        let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
 
         return (
             JITState::new(&block),
             Context::default(),
             Assembler::new(),
-            CodeBlock::new_dummy(256 * 1024),
+            cb,
             OutlinedCb::wrap(CodeBlock::new_dummy(256 * 1024)),
         );
     }

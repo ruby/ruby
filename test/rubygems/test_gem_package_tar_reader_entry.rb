@@ -199,6 +199,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     expected = StringIO.new("")
 
     assert_equal expected.read, zero_entry.read
+  ensure
+    close_util_entry(zero_entry) if zero_entry
   end
 
   def test_zero_byte_file_readpartial
@@ -206,5 +208,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     expected = StringIO.new("")
 
     assert_equal expected.readpartial(0), zero_entry.readpartial(0)
+  ensure
+    close_util_entry(zero_entry) if zero_entry
   end
 end

@@ -105,6 +105,7 @@ closure.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 closure.o: $(hdrdir)/ruby/internal/attr/noinline.h
 closure.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 closure.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+closure.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 closure.o: $(hdrdir)/ruby/internal/attr/pure.h
 closure.o: $(hdrdir)/ruby/internal/attr/restrict.h
 closure.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -270,6 +271,7 @@ conversions.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 conversions.o: $(hdrdir)/ruby/internal/attr/noinline.h
 conversions.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 conversions.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+conversions.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 conversions.o: $(hdrdir)/ruby/internal/attr/pure.h
 conversions.o: $(hdrdir)/ruby/internal/attr/restrict.h
 conversions.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -434,6 +436,7 @@ fiddle.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/noinline.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+fiddle.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/pure.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/restrict.h
 fiddle.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -598,6 +601,7 @@ function.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 function.o: $(hdrdir)/ruby/internal/attr/noinline.h
 function.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 function.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+function.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 function.o: $(hdrdir)/ruby/internal/attr/pure.h
 function.o: $(hdrdir)/ruby/internal/attr/restrict.h
 function.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -763,6 +767,7 @@ handle.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 handle.o: $(hdrdir)/ruby/internal/attr/noinline.h
 handle.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 handle.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+handle.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 handle.o: $(hdrdir)/ruby/internal/attr/pure.h
 handle.o: $(hdrdir)/ruby/internal/attr/restrict.h
 handle.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -928,6 +933,7 @@ memory_view.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/noinline.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+memory_view.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/pure.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/restrict.h
 memory_view.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1104,6 +1110,7 @@ pinned.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 pinned.o: $(hdrdir)/ruby/internal/attr/noinline.h
 pinned.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 pinned.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+pinned.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 pinned.o: $(hdrdir)/ruby/internal/attr/pure.h
 pinned.o: $(hdrdir)/ruby/internal/attr/restrict.h
 pinned.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1269,6 +1276,7 @@ pointer.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 pointer.o: $(hdrdir)/ruby/internal/attr/noinline.h
 pointer.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 pointer.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+pointer.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 pointer.o: $(hdrdir)/ruby/internal/attr/pure.h
 pointer.o: $(hdrdir)/ruby/internal/attr/restrict.h
 pointer.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

@@ -52,6 +52,7 @@ break.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 break.o: $(hdrdir)/ruby/internal/attr/noinline.h
 break.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 break.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+break.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 break.o: $(hdrdir)/ruby/internal/attr/pure.h
 break.o: $(hdrdir)/ruby/internal/attr/restrict.h
 break.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -212,6 +213,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -372,6 +374,7 @@ yield.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 yield.o: $(hdrdir)/ruby/internal/attr/noinline.h
 yield.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 yield.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+yield.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 yield.o: $(hdrdir)/ruby/internal/attr/pure.h
 yield.o: $(hdrdir)/ruby/internal/attr/restrict.h
 yield.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

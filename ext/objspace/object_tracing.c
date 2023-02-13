@@ -13,8 +13,8 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
+#include "internal/gc.h"
 #include "ruby/debug.h"
 #include "objspace.h"
 

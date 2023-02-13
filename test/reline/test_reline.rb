@@ -370,7 +370,7 @@ class Reline::Test < Reline::TestCase
 
   def test_dumb_terminal
     lib = File.expand_path("../../lib", __dir__)
-    out = IO.popen([{"TERM"=>"dumb"}, "ruby", "-I#{lib}", "-rreline", "-e", "p Reline::IOGate"], &:read)
+    out = IO.popen([{"TERM"=>"dumb"}, Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", "p Reline::IOGate"], &:read)
     assert_equal("Reline::GeneralIO", out.chomp)
   end
 

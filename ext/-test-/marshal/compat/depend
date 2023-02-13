@@ -52,6 +52,7 @@ usrcompat.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/noinline.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+usrcompat.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/pure.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/restrict.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

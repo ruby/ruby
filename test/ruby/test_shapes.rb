@@ -88,6 +88,26 @@ class TestShapes < Test::Unit::TestCase
     assert_predicate RubyVM::Shape.of(tc), :too_complex?
   end
 
+  def test_too_many_ivs_on_obj
+    obj = Object.new
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_too_many_ivs_on_class
+    obj = Class.new
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+
+    assert_false RubyVM::Shape.of(obj).too_complex?
+  end
+
   def test_too_complex_ractor
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

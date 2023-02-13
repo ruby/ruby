@@ -52,6 +52,7 @@ internal_ivar.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/noinline.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+internal_ivar.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/pure.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/restrict.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

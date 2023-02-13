@@ -52,6 +52,7 @@ typeddata.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/noinline.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+typeddata.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/pure.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/restrict.h
 typeddata.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

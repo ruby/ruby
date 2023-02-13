@@ -82,7 +82,7 @@ struct vm_ifunc_argc {
 /*! IFUNC (Internal FUNCtion) */
 struct vm_ifunc {
     VALUE flags;
-    struct rb_control_frame_struct *owner_cfp;
+    VALUE *svar_lep;
     rb_block_call_func_t func;
     const void *data;
     struct vm_ifunc_argc argc;

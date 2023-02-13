@@ -2,9 +2,21 @@
 
 This document outlines the expected way to distribute Ruby, with a specific focus on building Ruby packages.
 
-## Building a Ruby Tarball
+## Getting the Ruby Tarball
 
-The standard way to build a package for distribution is to build a tarball. This tarball includes all the related files need to build and install Ruby correctly. This includes the Ruby source code, the Ruby standard library, and the Ruby documentation.
+### Official Releases
+
+The tarball for official releases is created by the release manager. The release manager uploads the tarball to the [Ruby website](https://www.ruby-lang.org/en/downloads/).
+
+Downstream distributors should use the official release tarballs as part of their build process. This ensures that the tarball is created in a consistent way, and that the tarball is crytographically verified.
+
+### Using the nightly tarball for testing
+
+See the Snapshots section of the [Ruby website](https://www.ruby-lang.org/en/downloads/).
+
+### Building a manual snapshot tarball for testing
+
+This can be useful if the nightly tarball does not have all changes yet.
 
 At Ruby source tree cloned using git:
 ```sh-session
@@ -16,11 +28,9 @@ $ make dist
 
 This will create several tarball in the `tmp` directory. The tarball will be named e.g. `ruby-<version>.tar.gz` (several different compression formats will be generated).
 
-### Official Releases
+## Building the Tarball
 
-The tarball for official releases is created by the release manager. The release manager will run the above commands to create the tarball. The release manager will then upload the tarball to the [Ruby website](https://www.ruby-lang.org/en/downloads/).
-
-Downstream distributors should use the official release tarballs as part of their build process. This ensures that the tarball is created in a consistent way, and that the tarball is crytographically verified.
+See [Building Ruby](contributing/building_ruby.md).
 
 ## Updating the Ruby Standard Library
 

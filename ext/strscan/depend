@@ -52,6 +52,7 @@ strscan.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 strscan.o: $(hdrdir)/ruby/internal/attr/noinline.h
 strscan.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 strscan.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+strscan.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 strscan.o: $(hdrdir)/ruby/internal/attr/pure.h
 strscan.o: $(hdrdir)/ruby/internal/attr/restrict.h
 strscan.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

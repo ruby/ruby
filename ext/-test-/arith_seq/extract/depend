@@ -51,6 +51,7 @@ extract.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 extract.o: $(hdrdir)/ruby/internal/attr/noinline.h
 extract.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 extract.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+extract.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 extract.o: $(hdrdir)/ruby/internal/attr/pure.h
 extract.o: $(hdrdir)/ruby/internal/attr/restrict.h
 extract.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

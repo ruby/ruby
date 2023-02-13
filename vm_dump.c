@@ -29,8 +29,8 @@
 #endif
 
 #include "addr2line.h"
-#include "gc.h"
 #include "internal.h"
+#include "internal/gc.h"
 #include "internal/variable.h"
 #include "internal/vm.h"
 #include "iseq.h"

@@ -23,7 +23,6 @@
 
 #include "debug_counter.h"
 #include "encindex.h"
-#include "gc.h"
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -5287,7 +5286,7 @@ rb_str_drop_bytes(VALUE str, long len)
 }
 
 static void
-rb_str_splice_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
+rb_str_update_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
 {
     char *sptr;
     long slen;
@@ -5329,9 +5328,9 @@ rb_str_splice_1(VALUE str, long beg, long len, VALUE val, long vbeg, long vlen)
 }
 
 static inline void
-rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
+rb_str_update_0(VALUE str, long beg, long len, VALUE val)
 {
-    rb_str_splice_1(str, beg, len, val, 0, RSTRING_LEN(val));
+    rb_str_update_1(str, beg, len, val, 0, RSTRING_LEN(val));
 }
 
 void
@@ -5367,14 +5366,12 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     /* error check */
     beg = p - RSTRING_PTR(str);	/* physical position */
     len = e - p;		/* physical length */
-    rb_str_splice_0(str, beg, len, val);
+    rb_str_update_0(str, beg, len, val);
     rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
 }
-
-#define rb_str_splice(str, beg, len, val) rb_str_update(str, beg, len, val)
 
 static void
 rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
@@ -5406,7 +5403,7 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     len = end - start;
     StringValue(val);
     enc = rb_enc_check_str(str, val);
-    rb_str_splice_0(str, start, len, val);
+    rb_str_update_0(str, start, len, val);
     rb_enc_associate(str, enc);
 }
 
@@ -5426,7 +5423,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
             rb_raise(rb_eIndexError, "string not matched");
         }
         beg = rb_str_sublen(str, beg);
-        rb_str_splice(str, beg, str_strlen(indx, NULL), val);
+        rb_str_update(str, beg, str_strlen(indx, NULL), val);
         return val;
 
       default:
@@ -5434,7 +5431,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
         {
             long beg, len;
             if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 2)) {
-                rb_str_splice(str, beg, len, val);
+                rb_str_update(str, beg, len, val);
                 return val;
             }
         }
@@ -5442,7 +5439,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
       case T_FIXNUM:
         idx = NUM2LONG(indx);
-        rb_str_splice(str, idx, 1, val);
+        rb_str_update(str, idx, 1, val);
         return val;
     }
 }
@@ -5484,7 +5481,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
             rb_str_subpat_set(str, argv[0], argv[1], argv[2]);
         }
         else {
-            rb_str_splice(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+            rb_str_update(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
         }
         return argv[2];
     }
@@ -5521,7 +5518,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
     else if (pos < 0) {
         pos++;
     }
-    rb_str_splice(str, pos, 0, str2);
+    rb_str_update(str, pos, 0, str2);
     return str;
 }
 
@@ -6400,7 +6397,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     str_check_beg_len(val, &vbeg, &vlen);
     enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
-    rb_str_splice_1(str, beg, len, val, vbeg, vlen);
+    rb_str_update_1(str, beg, len, val, vbeg, vlen);
     rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
@@ -7344,7 +7341,8 @@ mapping_buffer_free(void *p)
 
 static const rb_data_type_t mapping_buffer_type = {
     "mapping_buffer",
-    {0, mapping_buffer_free,}
+    {0, mapping_buffer_free,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE

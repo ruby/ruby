@@ -47,6 +47,13 @@ module Bundler
         dependencies.all? {|d| installed_specs.include? d.name }
       end
 
+      # Check whether spec's dependencies are missing, which can indicate a
+      # corrupted lockfile
+      def dependencies_missing?(all_specs)
+        spec_names = all_specs.map(&:name)
+        dependencies.any? {|d| !spec_names.include? d.name }
+      end
+
       # Represents only the non-development dependencies, the ones that are
       # itself and are in the total list.
       def dependencies
@@ -110,12 +117,17 @@ module Bundler
 
       warning = []
       warning << "Your lockfile doesn't include a valid resolution."
-      warning << "You can fix this by regenerating your lockfile or trying to manually editing the bad locked gems to a version that satisfies all dependencies."
+      warning << "You can fix this by regenerating your lockfile or manually editing the bad locked gems to a version that satisfies all dependencies."
       warning << "The unmet dependencies are:"
 
       unmet_dependencies.each do |spec, unmet_spec_dependencies|
         unmet_spec_dependencies.each do |unmet_spec_dependency|
-          warning << "* #{unmet_spec_dependency}, depended upon #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
+          found = @specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }
+          if found
+            warning << "* #{unmet_spec_dependency}, dependency of #{spec.full_name}, unsatisfied by #{found.full_name}"
+          else
+            warning << "* #{unmet_spec_dependency}, dependency of #{spec.full_name} but missing from lockfile"
+          end
         end
       end
 
@@ -212,6 +224,8 @@ module Bundler
         if spec.dependencies_installed? @specs
           spec.state = :enqueued
           worker_pool.enq spec
+        elsif spec.dependencies_missing? @specs
+          spec.state = :failed
         end
       end
     end

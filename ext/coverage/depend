@@ -54,6 +54,7 @@ coverage.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 coverage.o: $(hdrdir)/ruby/internal/attr/noinline.h
 coverage.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 coverage.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+coverage.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 coverage.o: $(hdrdir)/ruby/internal/attr/pure.h
 coverage.o: $(hdrdir)/ruby/internal/attr/restrict.h
 coverage.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -166,7 +167,6 @@ coverage.o: $(top_srcdir)/ccan/container_of/container_of.h
 coverage.o: $(top_srcdir)/ccan/list/list.h
 coverage.o: $(top_srcdir)/ccan/str/str.h
 coverage.o: $(top_srcdir)/constant.h
-coverage.o: $(top_srcdir)/gc.h
 coverage.o: $(top_srcdir)/id_table.h
 coverage.o: $(top_srcdir)/internal.h
 coverage.o: $(top_srcdir)/internal/array.h

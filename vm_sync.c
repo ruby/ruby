@@ -1,8 +1,8 @@
+#include "internal/gc.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
 #include "vm_debug.h"
-#include "gc.h"
 
 static bool vm_barrier_finish_p(rb_vm_t *vm);
 

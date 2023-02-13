@@ -53,6 +53,7 @@ bigdecimal.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bigdecimal.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/pure.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bigdecimal.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -219,6 +220,7 @@ missing.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 missing.o: $(hdrdir)/ruby/internal/attr/noinline.h
 missing.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 missing.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+missing.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 missing.o: $(hdrdir)/ruby/internal/attr/pure.h
 missing.o: $(hdrdir)/ruby/internal/attr/restrict.h
 missing.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

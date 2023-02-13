@@ -105,7 +105,6 @@ MMTk_RubyUpcalls ruby_upcalls;
 #include "constant.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -1259,7 +1258,7 @@ VALUE rb_mGC;
 int ruby_disable_gc = 0;
 int ruby_enable_autocompact = 0;
 
-void rb_iseq_mark_and_update(rb_iseq_t *iseq, bool referece_updating);
+void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool referece_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
@@ -3355,7 +3354,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, FALSE, sizeof(struct RTypedData));
+    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -3371,7 +3370,8 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED, sizeof(struct RTypedData));
+    bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
+    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, wb_protected, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -7743,7 +7743,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
         mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
         return;
       case imemo_iseq:
-        rb_iseq_mark_and_update((rb_iseq_t *)obj, false);
+        rb_iseq_mark_and_move((rb_iseq_t *)obj, false);
         return;
       case imemo_tmpbuf:
         {
@@ -10962,7 +10962,7 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
         gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
         break;
       case imemo_iseq:
-        rb_iseq_mark_and_update((rb_iseq_t *)obj, true);
+        rb_iseq_mark_and_move((rb_iseq_t *)obj, true);
         break;
       case imemo_ast:
         rb_ast_update_references((rb_ast_t *)obj);
@@ -11250,9 +11250,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
       case T_STRING:
         {
-#if USE_RVARGC
-#endif
-
             if (STR_SHARED_P(obj)) {
 #if USE_RVARGC
                 VALUE old_root = any->as.string.as.heap.aux.shared;
@@ -12412,15 +12409,28 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
 }
 
 static void
-gc_set_initial_pages(rb_objspace_t *objspace)
+gc_set_initial_pages(rb_objspace_t *objspace, int global_heap_init_slots)
 {
     gc_rest(objspace);
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        char env_key[sizeof("RUBY_GC_HEAP_INIT_SIZE_" "_SLOTS") + DECIMAL_SIZE_OF_BITS(sizeof(size_pool->slot_size) * CHAR_BIT)];
+        snprintf(env_key, sizeof(env_key), "RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS", size_pool->slot_size);
 
-        if (gc_params.heap_init_slots > size_pool->eden_heap.total_slots) {
-            size_t slots = gc_params.heap_init_slots - size_pool->eden_heap.total_slots;
+        size_t pool_init_slots = 0;
+        if (!get_envparam_size(env_key, &pool_init_slots, 0)) {
+            if (global_heap_init_slots) {
+                // If we use the global init slot we ponderate it by slot size
+                pool_init_slots = gc_params.heap_init_slots / (size_pool->slot_size / BASE_SLOT_SIZE);
+            }
+            else {
+                continue;
+            }
+        }
+
+        if (pool_init_slots > size_pool->eden_heap.total_slots) {
+            size_t slots = pool_init_slots - size_pool->eden_heap.total_slots;
             int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
             size_pool->allocatable_pages = slots * multiple / HEAP_PAGE_OBJ_LIMIT;
         }
@@ -12486,7 +12496,10 @@ ruby_gc_set_params(void)
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
     if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
-        gc_set_initial_pages(objspace);
+        gc_set_initial_pages(objspace, TRUE);
+    }
+    else {
+        gc_set_initial_pages(objspace, FALSE);
     }
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);

@@ -253,39 +253,42 @@ module RubyVM::YJIT
       # Number of failed compiler invocations
       compilation_failure = stats[:compilation_failure]
 
-      if stats[:x86_call_rel32] != 0 || stats[:x86_call_reg] != 0
-        $stderr.puts "x86_call_rel32:        " + ("%10d" % stats[:x86_call_rel32])
-        $stderr.puts "x86_call_reg:          " + ("%10d" % stats[:x86_call_reg])
+      $stderr.puts "num_send:                " + format_number(10, stats[:num_send])
+      $stderr.puts "num_send_known_class:    " + format_number_pct(10, stats[:num_send_known_class], stats[:num_send])
+      $stderr.puts "num_send_polymorphic:    " + format_number_pct(10, stats[:num_send_polymorphic], stats[:num_send])
+      if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
+        $stderr.puts "num_send_x86_rel32:      " + format_number(10,  stats[:num_send_x86_rel32])
+        $stderr.puts "num_send_x86_reg:        " + format_number(10, stats[:num_send_x86_reg])
       end
 
-      $stderr.puts "bindings_allocations:  " + ("%10d" % stats[:binding_allocations])
-      $stderr.puts "bindings_set:          " + ("%10d" % stats[:binding_set])
-      $stderr.puts "compilation_failure:   " + ("%10d" % compilation_failure) if compilation_failure != 0
-      $stderr.puts "compiled_iseq_count:   " + ("%10d" % stats[:compiled_iseq_count])
-      $stderr.puts "compiled_block_count:  " + ("%10d" % stats[:compiled_block_count])
-      $stderr.puts "compiled_branch_count: " + ("%10d" % stats[:compiled_branch_count])
-      $stderr.puts "block_next_count:      " + ("%10d" % stats[:block_next_count])
-      $stderr.puts "defer_count:           " + ("%10d" % stats[:defer_count])
-      $stderr.puts "freed_iseq_count:      " + ("%10d" % stats[:freed_iseq_count])
-      $stderr.puts "invalidation_count:    " + ("%10d" % stats[:invalidation_count])
-      $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
-      $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
-      $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
-      $stderr.puts "freed_code_size:       " + ("%10d" % stats[:freed_code_size])
-      $stderr.puts "code_region_size:      " + ("%10d" % stats[:code_region_size])
-      $stderr.puts "yjit_alloc_size:       " + ("%10d" % stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
-      $stderr.puts "live_page_count:       " + ("%10d" % stats[:live_page_count])
-      $stderr.puts "freed_page_count:      " + ("%10d" % stats[:freed_page_count])
-      $stderr.puts "code_gc_count:         " + ("%10d" % stats[:code_gc_count])
-      $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
-      $stderr.puts "object_shape_count:    " + ("%10d" % stats[:object_shape_count])
-      $stderr.puts "side_exit_count:       " + ("%10d" % stats[:side_exit_count])
-      $stderr.puts "total_exit_count:      " + ("%10d" % stats[:total_exit_count])
-      $stderr.puts "total_insns_count:     " + ("%10d" % stats[:total_insns_count]) if stats.key?(:total_insns_count)
+      $stderr.puts "bindings_allocations:  " + format_number(10, stats[:binding_allocations])
+      $stderr.puts "bindings_set:          " + format_number(10, stats[:binding_set])
+      $stderr.puts "compilation_failure:   " + format_number(10, compilation_failure) if compilation_failure != 0
+      $stderr.puts "compiled_iseq_count:   " + format_number(10, stats[:compiled_iseq_count])
+      $stderr.puts "compiled_block_count:  " + format_number(10, stats[:compiled_block_count])
+      $stderr.puts "compiled_branch_count: " + format_number(10, stats[:compiled_branch_count])
+      $stderr.puts "block_next_count:      " + format_number(10, stats[:block_next_count])
+      $stderr.puts "defer_count:           " + format_number(10, stats[:defer_count])
+      $stderr.puts "freed_iseq_count:      " + format_number(10, stats[:freed_iseq_count])
+      $stderr.puts "invalidation_count:    " + format_number(10, stats[:invalidation_count])
+      $stderr.puts "constant_state_bumps:  " + format_number(10, stats[:constant_state_bumps])
+      $stderr.puts "inline_code_size:      " + format_number(10, stats[:inline_code_size])
+      $stderr.puts "outlined_code_size:    " + format_number(10, stats[:outlined_code_size])
+      $stderr.puts "freed_code_size:       " + format_number(10, stats[:freed_code_size])
+      $stderr.puts "code_region_size:      " + format_number(10, stats[:code_region_size])
+      $stderr.puts "yjit_alloc_size:       " + format_number(10, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
+      $stderr.puts "live_page_count:       " + format_number(10, stats[:live_page_count])
+      $stderr.puts "freed_page_count:      " + format_number(10, stats[:freed_page_count])
+      $stderr.puts "code_gc_count:         " + format_number(10, stats[:code_gc_count])
+      $stderr.puts "num_gc_obj_refs:       " + format_number(10, stats[:num_gc_obj_refs])
+      $stderr.puts "object_shape_count:    " + format_number(10, stats[:object_shape_count])
+      $stderr.puts "side_exit_count:       " + format_number(10, stats[:side_exit_count])
+      $stderr.puts "total_exit_count:      " + format_number(10, stats[:total_exit_count])
+      $stderr.puts "total_insns_count:     " + format_number(10, stats[:total_insns_count]) if stats.key?(:total_insns_count)
       if stats.key?(:vm_insns_count)
-        $stderr.puts "vm_insns_count:        " + ("%10d" % stats[:vm_insns_count])
+        $stderr.puts "vm_insns_count:        " + format_number(10, stats[:vm_insns_count])
       end
-      $stderr.puts "yjit_insns_count:      " + ("%10d" % stats[:exec_instruction])
+      $stderr.puts "yjit_insns_count:      " + format_number(10, stats[:exec_instruction])
       if stats.key?(:ratio_in_yjit)
         $stderr.puts "ratio_in_yjit:         " + ("%9.1f" % stats[:ratio_in_yjit]) + "%"
       end
@@ -315,13 +318,11 @@ module RubyVM::YJIT
         exits.each do |name, count|
           padding = longest_insn_name_len + left_pad
           padded_name = "%#{padding}s" % name
-          padded_count = "%10d" % count
-          percent = 100.0 * count / total_exits
-          formatted_percent = "%.1f" % percent
-          $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent}%)" )
+          padded_count = format_number_pct(10, count, total_exits)
+          $stderr.puts("#{padded_name}: #{padded_count}")
         end
       else
-        $stderr.puts "total_exits:           " + ("%10d" % total_exits)
+        $stderr.puts "total_exits:           " + format_number(10, total_exits)
       end
     end
 
@@ -350,9 +351,27 @@ module RubyVM::YJIT
       total = counters.sum { |(_, counter_value)| counter_value }
 
       counters.reverse_each do |(name, value)|
-        percentage = value.fdiv(total) * 100
-        $stderr.printf("    %*s %10d (%4.1f%%)\n", longest_name_length, name, value, percentage);
+        padded_name = name.rjust(longest_name_length, ' ')
+        padded_count = format_number_pct(10, value, total)
+        $stderr.puts("    #{padded_name}: #{padded_count}")
       end
+    end
+
+    # Format large numbers with comma separators for readability
+    def format_number(pad, number)
+      integer, decimal = number.to_s.split(".")
+      d_groups = integer.chars.to_a.reverse.each_slice(3)
+      with_commas = d_groups.map(&:join).join(',').reverse
+      formatted = [with_commas, decimal].compact.join(".")
+      formatted.rjust(pad, ' ')
+    end
+
+    # Format a number along with a percentage over a total value
+    def format_number_pct(pad, number, total)
+      padded_count = format_number(pad, number)
+      percentage = number.fdiv(total) * 100
+      formatted_pct = "%4.1f%%" % percentage
+      "#{padded_count} (#{formatted_pct})"
     end
   end
 end

@@ -10,11 +10,11 @@
 **********************************************************************/
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
@@ -80,63 +80,34 @@ CLONESETUP(VALUE clone, VALUE obj)
 }
 
 static void
-block_mark(const struct rb_block *block)
-{
-    switch (vm_block_type(block)) {
-      case block_type_iseq:
-      case block_type_ifunc:
-        {
-            const struct rb_captured_block *captured = &block->as.captured;
-            RUBY_MARK_MOVABLE_UNLESS_NULL(captured->self);
-            RUBY_MARK_MOVABLE_UNLESS_NULL((VALUE)captured->code.val);
-            if (captured->ep && !UNDEF_P(captured->ep[VM_ENV_DATA_INDEX_ENV]) /* cfunc_proc_t */) {
-                rb_gc_mark(VM_ENV_ENVVAL(captured->ep));
-            }
-        }
-        break;
-      case block_type_symbol:
-        RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.symbol);
-        break;
-      case block_type_proc:
-        RUBY_MARK_MOVABLE_UNLESS_NULL(block->as.proc);
-        break;
-    }
-}
-
-static void
-block_compact(struct rb_block *block)
+block_mark_and_move(struct rb_block *block)
 {
     switch (block->type) {
       case block_type_iseq:
       case block_type_ifunc:
         {
             struct rb_captured_block *captured = &block->as.captured;
-            captured->self = rb_gc_location(captured->self);
-            captured->code.val = rb_gc_location(captured->code.val);
+            rb_gc_mark_and_move(&captured->self);
+            rb_gc_mark_and_move(&captured->code.val);
+            if (captured->ep) {
+                rb_gc_mark_and_move((VALUE *)&captured->ep[VM_ENV_DATA_INDEX_ENV]);
+            }
         }
         break;
       case block_type_symbol:
-        block->as.symbol = rb_gc_location(block->as.symbol);
+        rb_gc_mark_and_move(&block->as.symbol);
         break;
       case block_type_proc:
-        block->as.proc = rb_gc_location(block->as.proc);
+        rb_gc_mark_and_move(&block->as.proc);
         break;
     }
 }
 
 static void
-proc_compact(void *ptr)
+proc_mark_and_move(void *ptr)
 {
     rb_proc_t *proc = ptr;
-    block_compact((struct rb_block *)&proc->block);
-}
-
-static void
-proc_mark(void *ptr)
-{
-    rb_proc_t *proc = ptr;
-    block_mark(&proc->block);
-    RUBY_MARK_LEAVE("proc");
+    block_mark_and_move((struct rb_block *)&proc->block);
 }
 
 typedef struct {
@@ -156,10 +127,10 @@ proc_memsize(const void *ptr)
 static const rb_data_type_t proc_data_type = {
     "proc",
     {
-        proc_mark,
+        proc_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         proc_memsize,
-        proc_compact,
+        proc_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
@@ -309,23 +280,12 @@ binding_free(void *ptr)
 }
 
 static void
-binding_mark(void *ptr)
+binding_mark_and_move(void *ptr)
 {
     rb_binding_t *bind = ptr;
 
-    RUBY_MARK_ENTER("binding");
-    block_mark(&bind->block);
-    rb_gc_mark_movable(bind->pathobj);
-    RUBY_MARK_LEAVE("binding");
-}
-
-static void
-binding_compact(void *ptr)
-{
-    rb_binding_t *bind = ptr;
-
-    block_compact((struct rb_block *)&bind->block);
-    UPDATE_REFERENCE(bind->pathobj);
+    block_mark_and_move((struct rb_block *)&bind->block);
+    rb_gc_mark_and_move((VALUE *)&bind->pathobj);
 }
 
 static size_t
@@ -337,10 +297,10 @@ binding_memsize(const void *ptr)
 const rb_data_type_t ruby_binding_data_type = {
     "binding",
     {
-        binding_mark,
+        binding_mark_and_move,
         binding_free,
         binding_memsize,
-        binding_compact,
+        binding_mark_and_move,
     },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -752,7 +712,8 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     }
     arity.argc.min = min_argc;
     arity.argc.max = max_argc;
-    VALUE ret = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)data, arity.packed, (VALUE)GET_EC()->cfp);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE ret = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)data, arity.packed, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
     return (struct vm_ifunc *)ret;
 }
 
@@ -1595,25 +1556,14 @@ proc_to_proc(VALUE self)
 }
 
 static void
-bm_mark(void *ptr)
+bm_mark_and_move(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_gc_mark_movable(data->recv);
-    rb_gc_mark_movable(data->klass);
-    rb_gc_mark_movable(data->iclass);
-    rb_gc_mark_movable(data->owner);
-    rb_gc_mark_movable((VALUE)data->me);
-}
-
-static void
-bm_compact(void *ptr)
-{
-    struct METHOD *data = ptr;
-    UPDATE_REFERENCE(data->recv);
-    UPDATE_REFERENCE(data->klass);
-    UPDATE_REFERENCE(data->iclass);
-    UPDATE_REFERENCE(data->owner);
-    UPDATE_TYPED_REFERENCE(rb_method_entry_t *, data->me);
+    rb_gc_mark_and_move((VALUE *)&data->recv);
+    rb_gc_mark_and_move((VALUE *)&data->klass);
+    rb_gc_mark_and_move((VALUE *)&data->iclass);
+    rb_gc_mark_and_move((VALUE *)&data->owner);
+    rb_gc_mark_and_move_ptr((rb_method_entry_t **)&data->me);
 }
 
 static size_t
@@ -1625,12 +1575,12 @@ bm_memsize(const void *ptr)
 static const rb_data_type_t method_data_type = {
     "method",
     {
-        bm_mark,
+        bm_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         bm_memsize,
-        bm_compact,
+        bm_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 VALUE

@@ -12,11 +12,11 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/class.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"

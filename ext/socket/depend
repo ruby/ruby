@@ -65,6 +65,7 @@ ancdata.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/noinline.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+ancdata.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/pure.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/restrict.h
 ancdata.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -257,6 +258,7 @@ basicsocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+basicsocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 basicsocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -449,6 +451,7 @@ constants.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 constants.o: $(hdrdir)/ruby/internal/attr/noinline.h
 constants.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 constants.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+constants.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 constants.o: $(hdrdir)/ruby/internal/attr/pure.h
 constants.o: $(hdrdir)/ruby/internal/attr/restrict.h
 constants.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -642,6 +645,7 @@ ifaddr.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/noinline.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+ifaddr.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/pure.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/restrict.h
 ifaddr.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -834,6 +838,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1026,6 +1031,7 @@ ipsocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+ipsocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 ipsocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1218,6 +1224,7 @@ option.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 option.o: $(hdrdir)/ruby/internal/attr/noinline.h
 option.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 option.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+option.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 option.o: $(hdrdir)/ruby/internal/attr/pure.h
 option.o: $(hdrdir)/ruby/internal/attr/restrict.h
 option.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1410,6 +1417,7 @@ raddrinfo.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/noinline.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+raddrinfo.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/pure.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/restrict.h
 raddrinfo.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1602,6 +1610,7 @@ socket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 socket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 socket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 socket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+socket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 socket.o: $(hdrdir)/ruby/internal/attr/pure.h
 socket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 socket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1794,6 +1803,7 @@ sockssocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+sockssocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 sockssocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -1986,6 +1996,7 @@ tcpserver.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/noinline.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+tcpserver.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/pure.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/restrict.h
 tcpserver.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -2178,6 +2189,7 @@ tcpsocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+tcpsocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 tcpsocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -2370,6 +2382,7 @@ udpsocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+udpsocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 udpsocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -2562,6 +2575,7 @@ unixserver.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/noinline.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+unixserver.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/pure.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/restrict.h
 unixserver.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -2754,6 +2768,7 @@ unixsocket.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/noinline.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+unixsocket.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/pure.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/restrict.h
 unixsocket.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h

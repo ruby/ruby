@@ -145,6 +145,15 @@ impl Type {
         }
     }
 
+    /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
+    pub fn is_array(&self) -> bool {
+        match self {
+            Type::TArray => true,
+            Type::CArray => true,
+            _ => false,
+        }
+    }
+
     /// Returns an Option with the T_ value type if it is known, otherwise None
     pub fn known_value_type(&self) -> Option<ruby_value_type> {
         match self {
@@ -348,7 +357,7 @@ impl BranchTarget {
     fn get_address(&self) -> Option<CodePtr> {
         match self {
             BranchTarget::Stub(stub) => stub.address,
-            BranchTarget::Block(blockref) => blockref.borrow().start_addr,
+            BranchTarget::Block(blockref) => Some(blockref.borrow().start_addr),
         }
     }
 
@@ -452,7 +461,7 @@ pub struct Block {
     ctx: Context,
 
     // Positions where the generated code starts and ends
-    start_addr: Option<CodePtr>,
+    start_addr: CodePtr,
     end_addr: Option<CodePtr>,
 
     // List of incoming branches (from predecessors)
@@ -969,7 +978,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
 
     // Mark code pages for code GC
     let iseq_payload = get_iseq_payload(block.blockid.iseq).unwrap();
-    for page in cb.addrs_to_pages(block.start_addr.unwrap(), block.end_addr.unwrap()) {
+    for page in cb.addrs_to_pages(block.start_addr, block.end_addr.unwrap()) {
         iseq_payload.pages.insert(page);
     }
 }
@@ -992,12 +1001,12 @@ fn remove_block_version(blockref: &BlockRef) {
 //===========================================================================
 
 impl Block {
-    pub fn new(blockid: BlockId, ctx: &Context) -> BlockRef {
+    pub fn new(blockid: BlockId, ctx: &Context, start_addr: CodePtr) -> BlockRef {
         let block = Block {
             blockid,
             end_idx: 0,
             ctx: ctx.clone(),
-            start_addr: None,
+            start_addr,
             end_addr: None,
             incoming: Vec::new(),
             outgoing: Vec::new(),
@@ -1024,7 +1033,7 @@ impl Block {
     }
 
     #[allow(unused)]
-    pub fn get_start_addr(&self) -> Option<CodePtr> {
+    pub fn get_start_addr(&self) -> CodePtr {
         self.start_addr
     }
 
@@ -1038,19 +1047,9 @@ impl Block {
         self.cme_dependencies.iter()
     }
 
-    /// Set the starting address in the generated code for the block
-    /// This can be done only once for a block
-    pub fn set_start_addr(&mut self, addr: CodePtr) {
-        assert!(self.start_addr.is_none());
-        self.start_addr = Some(addr);
-    }
-
     /// Set the end address in the generated for the block
     /// This can be done only once for a block
     pub fn set_end_addr(&mut self, addr: CodePtr) {
-        // The end address can only be set after the start address is set
-        assert!(self.start_addr.is_some());
-
         // TODO: assert constraint that blocks can shrink but not grow in length
         self.end_addr = Some(addr);
     }
@@ -1091,7 +1090,7 @@ impl Block {
 
     // Compute the size of the block code
     pub fn code_size(&self) -> usize {
-        (self.end_addr.unwrap().raw_ptr() as usize) - (self.start_addr.unwrap().raw_ptr() as usize)
+        (self.end_addr.unwrap().raw_ptr() as usize) - (self.start_addr.raw_ptr() as usize)
     }
 }
 
@@ -1879,7 +1878,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             let mut block: RefMut<_> = block_rc.borrow_mut();
 
             // Branch shape should reflect layout
-            assert!(!(branch.shape == target_branch_shape && block.start_addr != branch.end_addr));
+            assert!(!(branch.shape == target_branch_shape && Some(block.start_addr) != branch.end_addr));
 
             // Add this branch to the list of incoming branches for the target
             block.push_incoming(branch_rc.clone());
@@ -1894,7 +1893,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             // Restore interpreter sp, since the code hitting the stub expects the original.
             unsafe { rb_set_cfp_sp(cfp, original_interp_sp) };
 
-            block_rc.borrow().start_addr.unwrap()
+            block_rc.borrow().start_addr
         }
         None => {
             // Code GC needs to borrow blocks for invalidation, so their mutable
@@ -2114,7 +2113,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     // If the block already exists
     if let Some(blockref) = maybe_block {
         let mut block = blockref.borrow_mut();
-        let block_addr = block.start_addr.unwrap();
+        let block_addr = block.start_addr;
 
         block.push_incoming(branchref.clone());
 
@@ -2281,9 +2280,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         .entry_exit
         .expect("invalidation needs the entry_exit field");
     {
-        let block_start = block
-            .start_addr
-            .expect("invalidation needs constructed block");
         let block_end = block
             .end_addr
             .expect("invalidation needs constructed block");
@@ -2322,7 +2318,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     let block = blockref.borrow().clone();
     for branchref in &block.incoming {
         let mut branch = branchref.borrow_mut();
-        let target_idx = if branch.get_target_address(0) == block_start {
+        let target_idx = if branch.get_target_address(0) == Some(block_start) {
             0
         } else {
             1
@@ -2330,7 +2326,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
         // Assert that the incoming branch indeed points to the block being invalidated
         let incoming_target = branch.targets[target_idx].as_ref().unwrap();
-        assert_eq!(block_start, incoming_target.get_address());
+        assert_eq!(Some(block_start), incoming_target.get_address());
         if let Some(incoming_block) = &incoming_target.get_block() {
             assert_eq!(blockref, incoming_block);
         }
@@ -2358,7 +2354,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Check if the invalidated block immediately follows
-        let target_next = block.start_addr == branch.end_addr;
+        let target_next = Some(block.start_addr) == branch.end_addr;
 
         if target_next {
             // The new block will no longer be adjacent.

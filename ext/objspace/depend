@@ -6,6 +6,7 @@ object_tracing.o: $(hdrdir)/ruby/backward.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/assume.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/attributes.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/bool.h
+object_tracing.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/inttypes.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/limits.h
 object_tracing.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -52,6 +53,7 @@ object_tracing.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/noinline.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+object_tracing.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/pure.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/restrict.h
 object_tracing.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -158,8 +160,10 @@ object_tracing.o: $(hdrdir)/ruby/missing.h
 object_tracing.o: $(hdrdir)/ruby/ruby.h
 object_tracing.o: $(hdrdir)/ruby/st.h
 object_tracing.o: $(hdrdir)/ruby/subst.h
-object_tracing.o: $(top_srcdir)/gc.h
 object_tracing.o: $(top_srcdir)/internal.h
+object_tracing.o: $(top_srcdir)/internal/compilers.h
+object_tracing.o: $(top_srcdir)/internal/gc.h
+object_tracing.o: $(top_srcdir)/internal/warnings.h
 object_tracing.o: object_tracing.c
 object_tracing.o: objspace.h
 objspace.o: $(RUBY_EXTCONF_H)
@@ -216,6 +220,7 @@ objspace.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 objspace.o: $(hdrdir)/ruby/internal/attr/noinline.h
 objspace.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 objspace.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+objspace.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 objspace.o: $(hdrdir)/ruby/internal/attr/pure.h
 objspace.o: $(hdrdir)/ruby/internal/attr/restrict.h
 objspace.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -337,7 +342,6 @@ objspace.o: $(hdrdir)/ruby/regex.h
 objspace.o: $(hdrdir)/ruby/ruby.h
 objspace.o: $(hdrdir)/ruby/st.h
 objspace.o: $(hdrdir)/ruby/subst.h
-objspace.o: $(top_srcdir)/gc.h
 objspace.o: $(top_srcdir)/id_table.h
 objspace.o: $(top_srcdir)/internal.h
 objspace.o: $(top_srcdir)/internal/array.h
@@ -411,6 +415,7 @@ objspace_dump.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/noinline.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+objspace_dump.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/pure.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/restrict.h
 objspace_dump.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -536,7 +541,6 @@ objspace_dump.o: $(top_srcdir)/ccan/container_of/container_of.h
 objspace_dump.o: $(top_srcdir)/ccan/list/list.h
 objspace_dump.o: $(top_srcdir)/ccan/str/str.h
 objspace_dump.o: $(top_srcdir)/constant.h
-objspace_dump.o: $(top_srcdir)/gc.h
 objspace_dump.o: $(top_srcdir)/id_table.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h

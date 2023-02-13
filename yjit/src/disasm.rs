@@ -58,8 +58,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         use std::cmp::Ordering;
 
         // Get the start addresses for each block
-        let addr_a = a.borrow().get_start_addr().unwrap().raw_ptr();
-        let addr_b = b.borrow().get_start_addr().unwrap().raw_ptr();
+        let addr_a = a.borrow().get_start_addr().raw_ptr();
+        let addr_b = b.borrow().get_start_addr().raw_ptr();
 
         if addr_a < addr_b {
             Ordering::Less
@@ -85,7 +85,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         let blockid = block.get_blockid();
         if blockid.idx >= start_idx && blockid.idx < end_idx {
             let end_idx = block.get_end_idx();
-            let start_addr = block.get_start_addr().unwrap();
+            let start_addr = block.get_start_addr();
             let end_addr = block.get_end_addr().unwrap();
             let code_size = block.code_size();
 
@@ -111,7 +111,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             if block_idx < block_list.len() - 1 {
                 // Compute the size of the gap between this block and the next
                 let next_block = block_list[block_idx + 1].borrow();
-                let next_start_addr = next_block.get_start_addr().unwrap();
+                let next_start_addr = next_block.get_start_addr();
                 let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
 
                 // Log the size of the gap between the blocks if nonzero

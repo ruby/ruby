@@ -570,7 +570,7 @@ pub struct vm_ifunc_argc {
 #[repr(C)]
 pub struct vm_ifunc {
     pub flags: VALUE,
-    pub owner_cfp: *mut rb_control_frame_struct,
+    pub svar_lep: *mut VALUE,
     pub func: rb_block_call_func_t,
     pub data: *const ::std::os::raw::c_void,
     pub argc: vm_ifunc_argc,
@@ -1126,8 +1126,8 @@ extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
-    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;

@@ -532,7 +532,11 @@ range_step(int argc, VALUE *argv, VALUE range)
                 rb_raise(rb_eTypeError, "can't iterate from %s",
                          rb_obj_classname(b));
             }
-            range_each_func(range, step_i, (VALUE)iter);
+            if (!NIL_P(e))
+                range_each_func(range, step_i, (VALUE)iter);
+            else
+                for (;; b = rb_funcallv(b, id_succ, 0, 0))
+                    step_i(b, (VALUE)iter);
         }
     }
     return range;

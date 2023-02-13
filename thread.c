@@ -73,12 +73,12 @@
 #define TH_SCHED(th) (&(th)->ractor->threads.sched)
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/object.h"
@@ -4929,6 +4929,17 @@ rb_thread_shield_new(void)
     VALUE thread_shield = thread_shield_alloc(rb_cThreadShield);
     rb_mutex_lock((VALUE)DATA_PTR(thread_shield));
     return thread_shield;
+}
+
+bool
+rb_thread_shield_owned(VALUE self)
+{
+    VALUE mutex = GetThreadShieldPtr(self);
+    if (!mutex) return false;
+
+    rb_mutex_t *m = mutex_ptr(mutex);
+
+    return m->fiber == GET_EC()->fiber_ptr;
 }
 
 /*
