@@ -1192,6 +1192,9 @@ module RubyVM::MJIT
         return CantCompile
       end
 
+      # Check interrupts before SP motion to safely side-exit with the original SP.
+      jit_check_ints(jit, ctx, asm)
+
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
       sp_index = -(1 + argc) # Pop receiver and arguments for side exits # TODO: subtract one more for VM_CALL_ARGS_BLOCKARG
@@ -1199,8 +1202,6 @@ module RubyVM::MJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
       ctx.sp_offset = -sp_index
       jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
-
-      jit_check_ints(jit, ctx, asm)
 
       # Push a callee frame. SP register and ctx are not modified inside this.
       jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, frame_type)
