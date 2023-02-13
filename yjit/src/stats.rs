@@ -237,6 +237,8 @@ make_counters! {
     send_send_chain_not_string_or_sym,
     send_send_getter,
     send_send_builtin,
+    send_is_a_class_mismatch,
+    send_instance_of_class_mismatch,
 
     send_bmethod_ractor,
     send_bmethod_block_arg,
