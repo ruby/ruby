@@ -2686,6 +2686,7 @@ fn gen_equality_specialized(
     ctx: &mut Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
+    gen_eq: bool,
 ) -> Option<bool> {
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -2707,8 +2708,11 @@ fn gen_equality_specialized(
         guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         asm.cmp(a_opnd, b_opnd);
-
-        let val = asm.csel_ne(Qfalse.into(), Qtrue.into());
+        let val = if gen_eq {
+            asm.csel_e(Qtrue.into(), Qfalse.into())
+        } else {
+            asm.csel_ne(Qtrue.into(), Qfalse.into())
+        };
 
         // Push the output on the stack
         ctx.stack_pop(2);
@@ -2771,7 +2775,10 @@ fn gen_equality_specialized(
         }
 
         // Call rb_str_eql_internal(a, b)
-        let val = asm.ccall(rb_str_eql_internal as *const u8, vec![a_opnd, b_opnd]);
+        let val = asm.ccall(
+            if gen_eq { rb_str_eql_internal } else { rb_str_neq_internal } as *const u8,
+            vec![a_opnd, b_opnd],
+        );
 
         // Push the output on the stack
         ctx.stack_pop(2);
@@ -2780,7 +2787,7 @@ fn gen_equality_specialized(
         asm.jmp(ret);
 
         asm.write_label(equal);
-        asm.mov(dst, Qtrue.into());
+        asm.mov(dst, if gen_eq { Qtrue } else { Qfalse }.into());
 
         asm.write_label(ret);
 
@@ -2796,7 +2803,7 @@ fn gen_opt_eq(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let specialized = match gen_equality_specialized(jit, ctx, asm, ocb) {
+    let specialized = match gen_equality_specialized(jit, ctx, asm, ocb, true) {
         Some(specialized) => specialized,
         None => {
             // Defer compilation so we can specialize base on a runtime receiver
@@ -4035,6 +4042,22 @@ fn jit_rb_obj_equal(
     let stack_ret = ctx.stack_push(Type::UnknownImm);
     asm.mov(stack_ret, ret_opnd);
     true
+}
+
+// Codegen for rb_obj_not_equal()
+// object identity comparison
+fn jit_rb_obj_not_equal(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    gen_equality_specialized(jit, ctx, asm, ocb, false) == Some(true)
 }
 
 // Codegen for rb_int_equal()
@@ -7706,6 +7729,7 @@ impl CodegenGlobals {
 
             self.yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
+            self.yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
             self.yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);

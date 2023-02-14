@@ -1294,6 +1294,7 @@ extern "C" {
     pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
     pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
+    pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_yarv_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);

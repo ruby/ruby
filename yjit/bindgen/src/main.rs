@@ -402,6 +402,7 @@ fn main() {
         .allowlist_function("rb_get_cikw_keywords_idx")
         .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
+        .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_yarv_fix_mod_fix")
         .allowlist_function("rb_FL_TEST")
