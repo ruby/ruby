@@ -880,9 +880,8 @@ fn gen_dup(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-
-    let dup_val = ctx.stack_pop(0);
-    let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
+    let dup_val = ctx.stack_opnd(0);
+    let (mapping, tmp_type) = ctx.get_opnd_mapping(dup_val.into());
 
     let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
     asm.mov(loc0, dup_val);
@@ -907,8 +906,8 @@ fn gen_dupn(
     let opnd1: Opnd = ctx.stack_opnd(1);
     let opnd0: Opnd = ctx.stack_opnd(0);
 
-    let mapping1 = ctx.get_opnd_mapping(StackOpnd(1));
-    let mapping0 = ctx.get_opnd_mapping(StackOpnd(0));
+    let mapping1 = ctx.get_opnd_mapping(opnd1.into());
+    let mapping0 = ctx.get_opnd_mapping(opnd0.into());
 
     let dst1: Opnd = ctx.stack_push_mapping(mapping1);
     asm.mov(dst1, opnd1);
@@ -940,16 +939,16 @@ fn stack_swap(
     let stack0_mem = ctx.stack_opnd(offset0 as i32);
     let stack1_mem = ctx.stack_opnd(offset1 as i32);
 
-    let mapping0 = ctx.get_opnd_mapping(StackOpnd(offset0));
-    let mapping1 = ctx.get_opnd_mapping(StackOpnd(offset1));
+    let mapping0 = ctx.get_opnd_mapping(stack0_mem.into());
+    let mapping1 = ctx.get_opnd_mapping(stack1_mem.into());
 
     let stack0_reg = asm.load(stack0_mem);
     let stack1_reg = asm.load(stack1_mem);
     asm.mov(stack0_mem, stack1_reg);
     asm.mov(stack1_mem, stack0_reg);
 
-    ctx.set_opnd_mapping(StackOpnd(offset0), mapping1);
-    ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
+    ctx.set_opnd_mapping(stack0_mem.into(), mapping1);
+    ctx.set_opnd_mapping(stack1_mem.into(), mapping0);
 }
 
 fn gen_putnil(
@@ -1043,15 +1042,15 @@ fn gen_setn(
 ) -> CodegenStatus {
     let n = jit.get_arg(0).as_usize();
 
-    let top_val = ctx.stack_pop(0);
+    let top_val = ctx.stack_opnd(0);
     let dst_opnd = ctx.stack_opnd(n.try_into().unwrap());
     asm.mov(
         dst_opnd,
         top_val
     );
 
-    let mapping = ctx.get_opnd_mapping(StackOpnd(0));
-    ctx.set_opnd_mapping(StackOpnd(n.try_into().unwrap()), mapping);
+    let mapping = ctx.get_opnd_mapping(top_val.into());
+    ctx.set_opnd_mapping(dst_opnd.into(), mapping);
 
     KeepCompiling
 }
@@ -1066,7 +1065,7 @@ fn gen_topn(
     let n = jit.get_arg(0).as_usize();
 
     let top_n_val = ctx.stack_opnd(n.try_into().unwrap());
-    let mapping = ctx.get_opnd_mapping(StackOpnd(n.try_into().unwrap()));
+    let mapping = ctx.get_opnd_mapping(top_n_val.into());
     let loc0 = ctx.stack_push_mapping(mapping);
     asm.mov(loc0, top_n_val);
 
@@ -2481,9 +2480,13 @@ fn guard_two_fixnums(
     ocb: &mut OutlinedCb,
     side_exit: Target
 ) {
+    // Get stack operands without popping them
+    let arg1 = ctx.stack_opnd(0);
+    let arg0 = ctx.stack_opnd(1);
+
     // Get the stack operand types
-    let arg1_type = ctx.get_opnd_type(StackOpnd(0));
-    let arg0_type = ctx.get_opnd_type(StackOpnd(1));
+    let arg1_type = ctx.get_opnd_type(arg1.into());
+    let arg0_type = ctx.get_opnd_type(arg0.into());
 
     if arg0_type.is_heap() || arg1_type.is_heap() {
         asm.comment("arg is heap object");
@@ -2507,10 +2510,6 @@ fn guard_two_fixnums(
     assert!(!arg1_type.is_heap());
     assert!(arg0_type == Type::Fixnum || arg0_type.is_unknown());
     assert!(arg1_type == Type::Fixnum || arg1_type.is_unknown());
-
-    // Get stack operands without popping them
-    let arg1 = ctx.stack_opnd(0);
-    let arg0 = ctx.stack_opnd(1);
 
     // If not fixnums at run-time, fall back
     if arg0_type != Type::Fixnum {
@@ -2543,8 +2542,8 @@ fn guard_two_fixnums(
     }
 
     // Set stack types in context
-    ctx.upgrade_opnd_type(StackOpnd(0), Type::Fixnum);
-    ctx.upgrade_opnd_type(StackOpnd(1), Type::Fixnum);
+    ctx.upgrade_opnd_type(arg1.into(), Type::Fixnum);
+    ctx.upgrade_opnd_type(arg0.into(), Type::Fixnum);
 }
 
 // Conditional move operation used by comparison operators
@@ -2697,7 +2696,7 @@ fn gen_equality_specialized(
             ocb,
             unsafe { rb_cString },
             a_opnd,
-            StackOpnd(1),
+            a_opnd.into(),
             comptime_a,
             SEND_MAX_DEPTH,
             side_exit,
@@ -2711,7 +2710,7 @@ fn gen_equality_specialized(
         asm.je(equal);
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
-        let btype = ctx.get_opnd_type(StackOpnd(0));
+        let btype = ctx.get_opnd_type(b_opnd.into());
         if btype.known_value_type() != Some(RUBY_T_STRING) {
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
@@ -2722,7 +2721,7 @@ fn gen_equality_specialized(
                 ocb,
                 unsafe { rb_cString },
                 b_opnd,
-                StackOpnd(0),
+                b_opnd.into(),
                 comptime_b,
                 SEND_MAX_DEPTH,
                 side_exit,
@@ -2833,7 +2832,7 @@ fn gen_opt_aref(
             ocb,
             unsafe { rb_cArray },
             recv_opnd,
-            StackOpnd(1),
+            recv_opnd.into(),
             comptime_recv,
             OPT_AREF_MAX_CHAIN_DEPTH,
             side_exit,
@@ -2876,7 +2875,7 @@ fn gen_opt_aref(
             ocb,
             unsafe { rb_cHash },
             recv_opnd,
-            StackOpnd(1),
+            recv_opnd.into(),
             comptime_recv,
             OPT_AREF_MAX_CHAIN_DEPTH,
             side_exit,
@@ -2937,7 +2936,7 @@ fn gen_opt_aset(
             ocb,
             unsafe { rb_cArray },
             recv,
-            StackOpnd(2),
+            recv.into(),
             comptime_recv,
             SEND_MAX_DEPTH,
             side_exit,
@@ -2951,7 +2950,7 @@ fn gen_opt_aset(
             ocb,
             unsafe { rb_cInteger },
             key,
-            StackOpnd(1),
+            key.into(),
             comptime_key,
             SEND_MAX_DEPTH,
             side_exit,
@@ -2989,7 +2988,7 @@ fn gen_opt_aset(
             ocb,
             unsafe { rb_cHash },
             recv,
-            StackOpnd(2),
+            recv.into(),
             comptime_recv,
             SEND_MAX_DEPTH,
             side_exit,
@@ -5757,8 +5756,8 @@ fn gen_send_iseq(
     // side exits, so you still need to allow side exits here if block_arg0_splat is true.
     // Note that you can't have side exits after this arg0 splat.
     if block_arg0_splat {
-        let arg0_type = ctx.get_opnd_type(StackOpnd(0));
         let arg0_opnd = ctx.stack_opnd(0);
+        let arg0_type = ctx.get_opnd_type(arg0_opnd.into());
 
         // Only handle the case that you don't need to_ary conversion
         let not_array_exit = counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_not_array);
@@ -6089,7 +6088,7 @@ fn gen_send_general(
 
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(recv_idx);
-    let recv_opnd = StackOpnd(recv_idx.try_into().unwrap());
+    let recv_opnd: YARVOpnd = recv.into();
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
@@ -6353,14 +6352,15 @@ fn gen_send_general(
                             }
                         };
 
+                        let name_opnd = ctx.stack_opnd(argc);
                         jit_guard_known_klass(
                             jit,
                             ctx,
                             asm,
                             ocb,
                             known_class,
-                            ctx.stack_opnd(argc),
-                            StackOpnd(argc as u16),
+                            name_opnd,
+                            name_opnd.into(),
                             compile_time_name,
                             2, // We have string or symbol, so max depth is 2
                             type_mismatch_exit
@@ -6368,7 +6368,7 @@ fn gen_send_general(
 
                         // Need to do this here so we don't have too many live
                         // values for the register allocator.
-                        let name_opnd = asm.load(ctx.stack_opnd(argc));
+                        let name_opnd = asm.load(name_opnd);
 
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
@@ -6982,7 +6982,7 @@ fn gen_objtostring(
             ocb,
             comptime_recv.class_of(),
             recv,
-            StackOpnd(0),
+            recv.into(),
             comptime_recv,
             SEND_MAX_DEPTH,
             side_exit,

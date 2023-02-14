@@ -54,6 +54,7 @@ impl From<Opnd> for A64Opnd {
             },
             Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
+            Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
@@ -252,7 +253,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Reg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -295,7 +296,7 @@ impl Assembler
                         asm.load(opnd)
                     }
                 },
-                Opnd::None | Opnd::Value(_) => unreachable!()
+                Opnd::None | Opnd::Value(_) | Opnd::Stack { .. } => unreachable!()
             }
         }
 
@@ -863,6 +864,9 @@ impl Assembler
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
                             insn_gc_offsets.push(ptr_offset);
                         },
+                        Opnd::Stack { .. } => {
+                            unreachable!("Stack operand was not lowered before arm64_emit");
+                        }
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
@@ -1072,7 +1076,7 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.arm64_split().alloc_regs(regs);
+        let mut asm = self.lower_stack().arm64_split().alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
