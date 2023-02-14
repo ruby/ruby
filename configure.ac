@@ -506,6 +506,16 @@ AS_CASE(["$target_os"],
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
+
+AS_IF([test "$OBJCOPY" != :], [
+    AC_MSG_CHECKING([if $OBJCOPY works to localize symbols])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[void conftest_objcopy(void) {}]])],
+    [
+        $OBJCOPY -w -L '*conftest_*' conftest.$OBJEXT 2>/dev/null || OBJCOPY=:
+    ])
+    AS_IF([test "$OBJCOPY" = :], [AC_MSG_RESULT(no)], [AC_MSG_RESULT(yes)])
+])
+
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
