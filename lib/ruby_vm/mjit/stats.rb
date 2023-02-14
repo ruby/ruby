@@ -38,12 +38,12 @@ module RubyVM::MJIT
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
       print_counters(stats, prefix: 'optaref_', prompt: 'opt_aref exit reasons')
 
-      $stderr.puts "compiled_block_count:  #{format('%10d', stats[:compiled_block_count])}"
-      $stderr.puts "side_exit_count:       #{format('%10d', stats[:side_exit_count])}"
-      $stderr.puts "total_insns_count:     #{format('%10d', stats[:total_insns_count])}" if stats.key?(:total_insns_count)
-      $stderr.puts "vm_insns_count:        #{format('%10d', stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)
-      $stderr.puts "mjit_insns_count:      #{format('%10d', stats[:mjit_insns_count])}"
-      $stderr.puts "ratio_in_mjit:         #{format('%9.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
+      $stderr.puts "compiled_block_count:  #{format_number(13, stats[:compiled_block_count])}"
+      $stderr.puts "side_exit_count:       #{format_number(13, stats[:side_exit_count])}"
+      $stderr.puts "total_insns_count:     #{format_number(13, stats[:total_insns_count])}" if stats.key?(:total_insns_count)
+      $stderr.puts "vm_insns_count:        #{format_number(13, stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)
+      $stderr.puts "mjit_insns_count:      #{format_number(13, stats[:mjit_insns_count])}"
+      $stderr.puts "ratio_in_mjit:         #{format('%12.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
 
       print_exit_counts(stats)
     end
@@ -66,7 +66,7 @@ module RubyVM::MJIT
 
       counters.reverse_each do |(name, value)|
         percentage = value.fdiv(total) * 100
-        $stderr.printf("    %*s %10d (%4.1f%%)\n", longest_name_length, name, value, percentage)
+        $stderr.printf("    %*s %s (%4.1f%%)\n", longest_name_length, name, format_number(10, value), percentage)
       end
     end
 
@@ -79,11 +79,19 @@ module RubyVM::MJIT
       $stderr.puts "Top-#{top_exits.size} most frequent exit ops (#{format("%.1f", 100.0 * top_exits.values.sum / total_exits)}% of exits):"
 
       name_width  = top_exits.map { |name, _count| name.length }.max + padding
-      count_width = top_exits.map { |_name, count| count.to_s.length }.max + padding
+      count_width = top_exits.map { |_name, count| format_number(10, count).length }.max + padding
       top_exits.each do |name, count|
         ratio = 100.0 * count / total_exits
-        $stderr.puts "#{format("%#{name_width}s", name)}: #{format("%#{count_width}d", count)} (#{format('%.1f', ratio)}%)"
+        $stderr.puts "#{format("%#{name_width}s", name)}: #{format_number(count_width, count)} (#{format('%.1f', ratio)}%)"
       end
+    end
+
+    # Format large numbers with comma separators for readability
+    def format_number(pad, number)
+      integer, decimal = number.to_s.split('.')
+      d_groups = integer.chars.reverse.each_slice(3)
+      with_commas = d_groups.map(&:join).join(',').reverse
+      [with_commas, decimal].compact.join('.').rjust(pad, ' ')
     end
   end
 end
