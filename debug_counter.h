@@ -178,8 +178,7 @@ RB_DEBUG_COUNTER(gc_major_force)
 RB_DEBUG_COUNTER(gc_major_oldmalloc)
 
 RB_DEBUG_COUNTER(gc_enter_start)
-RB_DEBUG_COUNTER(gc_enter_mark_continue)
-RB_DEBUG_COUNTER(gc_enter_sweep_continue)
+RB_DEBUG_COUNTER(gc_enter_continue)
 RB_DEBUG_COUNTER(gc_enter_rest)
 RB_DEBUG_COUNTER(gc_enter_finalizer)
 

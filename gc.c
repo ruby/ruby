@@ -1234,8 +1234,7 @@ static void gc_rest(rb_objspace_t *objspace);
 
 enum gc_enter_event {
     gc_enter_event_start,
-    gc_enter_event_mark_continue,
-    gc_enter_event_sweep_continue,
+    gc_enter_event_continue,
     gc_enter_event_rest,
     gc_enter_event_finalizer,
     gc_enter_event_rb_memerror,
@@ -1244,11 +1243,9 @@ enum gc_enter_event {
 static inline void gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 static inline void gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 
-static void gc_marks(rb_objspace_t *objspace, int full_mark);
 static void gc_marks_start(rb_objspace_t *objspace, int full);
 static void gc_marks_finish(rb_objspace_t *objspace);
-static void gc_marks_rest(rb_objspace_t *objspace);
-static void gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
+static bool gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
@@ -2402,9 +2399,14 @@ heap_increment(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 static void
 gc_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
+    unsigned int lock_lev;
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+
     /* Continue marking if in incremental marking. */
     if (heap->free_pages == NULL && is_incremental_marking(objspace)) {
-        gc_marks_continue(objspace, size_pool, heap);
+        if (gc_marks_continue(objspace, size_pool, heap)) {
+            gc_sweep(objspace);
+        }
     }
 
     /* Continue sweeping if in lazy sweeping or the previous incremental
@@ -2412,6 +2414,8 @@ gc_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
     if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
         gc_sweep_continue(objspace, size_pool, heap);
     }
+
+    gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
 static void
@@ -2766,7 +2770,7 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
 
 #if GC_ENABLE_INCREMENTAL_MARK
             if (is_incremental_marking(objspace)) {
-                gc_marks_continue(objspace, size_pool, heap);
+                gc_continue(objspace, size_pool, heap);
                 cache->incremental_mark_step_allocated_slots = 0;
 
                 // Retry allocation after resetting incremental_mark_step_allocated_slots
@@ -4568,7 +4572,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         }
     }
 
-    gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
+    gc_exit(objspace, false, &lock_lev);
 
     finalize_deferred_heap_pages(objspace);
 
@@ -6054,9 +6058,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
     GC_ASSERT(dont_gc_val() == FALSE);
     if (!GC_ENABLE_LAZY_SWEEP) return;
 
-    unsigned int lock_lev;
-    gc_enter(objspace, gc_enter_event_sweep_continue, &lock_lev);
-
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         if (!gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool))) {
@@ -6075,8 +6076,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
 #endif
         }
     }
-
-    gc_exit(objspace, gc_enter_event_sweep_continue, &lock_lev);
 }
 
 static void
@@ -8445,20 +8444,6 @@ gc_marks_finish(rb_objspace_t *objspace)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
-static void
-gc_marks_step(rb_objspace_t *objspace, size_t slots)
-{
-    GC_ASSERT(is_marking(objspace));
-
-    if (gc_mark_stacked_objects_incremental(objspace, slots)) {
-        gc_marks_finish(objspace);
-        gc_sweep(objspace);
-    }
-    if (0) fprintf(stderr, "objspace->marked_slots: %"PRIdSIZE"\n", objspace->marked_slots);
-}
-#endif
-
 static bool
 gc_compact_heap_cursors_met_p(rb_heap_t *heap)
 {
@@ -8699,44 +8684,59 @@ gc_marks_rest(rb_objspace_t *objspace)
     }
 
     gc_marks_finish(objspace);
-
-    /* move to sweep */
-    gc_sweep(objspace);
 }
 
-static void
+#if GC_ENABLE_INCREMENTAL_MARK
+static bool
+gc_marks_step(rb_objspace_t *objspace, size_t slots)
+{
+    bool marking_finished = false;
+
+    GC_ASSERT(is_marking(objspace));
+    if (gc_mark_stacked_objects_incremental(objspace, slots)) {
+        gc_marks_finish(objspace);
+
+        marking_finished = true;
+    }
+
+    return marking_finished;
+}
+#endif
+
+static bool
 gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
     GC_ASSERT(dont_gc_val() == FALSE);
+    bool marking_finished = true;
+
 #if GC_ENABLE_INCREMENTAL_MARK
-
-    unsigned int lock_lev;
-    gc_enter(objspace, gc_enter_event_mark_continue, &lock_lev);
-
     if (heap->free_pages) {
         gc_report(2, objspace, "gc_marks_continue: has pooled pages");
-        gc_marks_step(objspace, objspace->rincgc.step_slots);
+
+        marking_finished = gc_marks_step(objspace, objspace->rincgc.step_slots);
     }
     else {
         gc_report(2, objspace, "gc_marks_continue: no more pooled pages (stack depth: %"PRIdSIZE").\n",
                   mark_stack_size(&objspace->mark_stack));
         gc_marks_rest(objspace);
     }
-
-    gc_exit(objspace, gc_enter_event_mark_continue, &lock_lev);
 #endif
+
+    return marking_finished;
 }
 
-static void
+static bool
 gc_marks(rb_objspace_t *objspace, int full_mark)
 {
     gc_prof_mark_timer_start(objspace);
+    bool marking_finished = false;
 
     /* setup marking */
 
     gc_marks_start(objspace, full_mark);
     if (!is_incremental_marking(objspace)) {
         gc_marks_rest(objspace);
+        marking_finished = true;
     }
 
 #if RGENGC_PROFILE > 0
@@ -8746,6 +8746,8 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
     }
 #endif
     gc_prof_mark_timer_stop(objspace);
+
+    return marking_finished;
 }
 
 /* RGENGC */
@@ -9524,7 +9526,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     gc_prof_timer_start(objspace);
     {
-        gc_marks(objspace, do_full_mark);
+        if (gc_marks(objspace, do_full_mark)) {
+            gc_sweep(objspace);
+        }
     }
     gc_prof_timer_stop(objspace);
 
@@ -9546,6 +9550,7 @@ gc_rest(rb_objspace_t *objspace)
 
         if (is_incremental_marking(objspace)) {
             gc_marks_rest(objspace);
+            gc_sweep(objspace);
         }
         if (is_lazy_sweeping(objspace)) {
             gc_sweep_rest(objspace);
@@ -9640,8 +9645,7 @@ gc_enter_event_cstr(enum gc_enter_event event)
 {
     switch (event) {
       case gc_enter_event_start: return "start";
-      case gc_enter_event_mark_continue: return "mark_continue";
-      case gc_enter_event_sweep_continue: return "sweep_continue";
+      case gc_enter_event_continue: return "continue";
       case gc_enter_event_rest: return "rest";
       case gc_enter_event_finalizer: return "finalizer";
       case gc_enter_event_rb_memerror: return "rb_memerror";
@@ -9654,8 +9658,7 @@ gc_enter_count(enum gc_enter_event event)
 {
     switch (event) {
       case gc_enter_event_start:          RB_DEBUG_COUNTER_INC(gc_enter_start); break;
-      case gc_enter_event_mark_continue:  RB_DEBUG_COUNTER_INC(gc_enter_mark_continue); break;
-      case gc_enter_event_sweep_continue: RB_DEBUG_COUNTER_INC(gc_enter_sweep_continue); break;
+      case gc_enter_event_continue:       RB_DEBUG_COUNTER_INC(gc_enter_continue); break;
       case gc_enter_event_rest:           RB_DEBUG_COUNTER_INC(gc_enter_rest); break;
       case gc_enter_event_finalizer:      RB_DEBUG_COUNTER_INC(gc_enter_finalizer); break;
       case gc_enter_event_rb_memerror:    /* nothing */ break;
@@ -9673,8 +9676,7 @@ gc_enter_event_measure_p(rb_objspace_t *objspace, enum gc_enter_event event)
 
     switch (event) {
       case gc_enter_event_start:
-      case gc_enter_event_mark_continue:
-      case gc_enter_event_sweep_continue:
+      case gc_enter_event_continue:
       case gc_enter_event_rest:
         return true;
 
@@ -9733,7 +9735,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
         if (!is_marking(objspace)) break;
         // fall through
       case gc_enter_event_start:
-      case gc_enter_event_mark_continue:
+      case gc_enter_event_continue:
         // stop other ractors
         rb_vm_barrier();
         break;
@@ -9767,7 +9769,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
 
 #if RGENGC_CHECK_MODE >= 2
-    if (event == gc_enter_event_sweep_continue && gc_mode(objspace) == gc_mode_none) {
+    if (event == gc_enter_event_continue && gc_mode(objspace) == gc_mode_none) {
         GC_ASSERT(!during_gc);
         // sweep finished
         gc_verify_internal_consistency(objspace);
