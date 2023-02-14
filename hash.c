@@ -49,6 +49,10 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 
+#if USE_MMTK
+#include "mmtk.h" // For mmtk_register_ppp
+#endif
+
 #ifndef HASH_DEBUG
 #define HASH_DEBUG 0
 #endif
@@ -4410,6 +4414,12 @@ rb_hash_compare_by_id(VALUE hash)
     RHASH_ST_TABLE_SET(hash, identtable);
     RHASH_ST_CLEAR(tmp);
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_register_ppp((MMTk_ObjectReference)hash);
+    }
+#endif
+
     return hash;
 }
 
@@ -4431,6 +4441,13 @@ rb_ident_hash_new(void)
 {
     VALUE hash = rb_hash_new();
     RHASH_ST_TABLE_SET(hash, st_init_table(&identhash));
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_register_ppp((MMTk_ObjectReference)hash);
+    }
+#endif
+
     return hash;
 }
 
@@ -4439,6 +4456,13 @@ rb_ident_hash_new_with_size(st_index_t size)
 {
     VALUE hash = rb_hash_new();
     RHASH_ST_TABLE_SET(hash, st_init_table_with_size(&identhash, size));
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_register_ppp((MMTk_ObjectReference)hash);
+    }
+#endif
+
     return hash;
 }
 

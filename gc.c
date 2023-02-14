@@ -2671,6 +2671,38 @@ maybe_register_finalizable(VALUE obj) {
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 }
+
+static inline bool
+rb_mmtk_is_ppp(VALUE obj) {
+    RUBY_ASSERT(!rb_special_const_p(obj));
+
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        return true;
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_tmpbuf:
+          case imemo_ast:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_parser_strterm:
+            return true;
+          default:
+            return false;
+        }
+      default:
+        return false;
+    }
+}
+
+static inline void
+maybe_register_ppp(VALUE obj) {
+    RUBY_ASSERT(!rb_special_const_p(obj));
+
+    if (rb_mmtk_is_ppp(obj)) {
+        mmtk_register_ppp((MMTk_ObjectReference)obj);
+    }
+}
 #endif
 
 static inline VALUE
@@ -2689,6 +2721,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         maybe_register_finalizable(obj);
+        maybe_register_ppp(obj);
     }
 #endif
 
@@ -15806,8 +15839,31 @@ rb_mmtk_mark_and_move(VALUE *field)
     }
 }
 
+// This function is used to visit and update all fields during tracing.
+// It shall call both gc_mark_children and gc_update_object_references during copying GC.
 static inline void
 rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
+{
+    rb_mmtk_assert_mmtk_worker();
+
+    VALUE obj = (VALUE)object;
+
+    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
+    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
+        return;
+    }
+
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_children(objspace, obj);
+
+    // TODO: Enable the following line later.
+    //gc_update_object_references(objspace, obj);
+}
+
+// This is used to determine the pinning fields of potential pinning parents (PPPs).
+// It should only call gc_mark_children.
+static inline void
+rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 {
     rb_mmtk_assert_mmtk_worker();
 
@@ -15838,7 +15894,7 @@ rb_mmtk_object_moved_p(VALUE value)
 {
     if (!SPECIAL_CONST_P(value)) {
         MMTk_ObjectReference object = (MMTk_ObjectReference)value;
-        return rb_mmtk_call_object_closure(object, false) == object;
+        return rb_mmtk_call_object_closure(object, false) != object;
     } else {
         return false;
     }
@@ -16127,6 +16183,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
+    rb_mmtk_call_gc_mark_children,
     rb_mmtk_call_obj_free,
     rb_mmtk_update_global_weak_tables,
 };

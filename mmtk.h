@@ -67,6 +67,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*scan_thread_roots)(void);
     void (*scan_thread_root)(MMTk_VMMutatorThread mutator_tls, MMTk_VMWorkerThread worker_tls);
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
+    void (*call_gc_mark_children)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
     void (*update_global_weak_tables)(void);
 } MMTk_RubyUpcalls;
@@ -165,5 +166,7 @@ void mmtk_add_obj_free_candidate(MMTk_ObjectReference object);
 struct MMTk_RawVecOfObjRef mmtk_get_all_obj_free_candidates(void);
 
 void mmtk_free_raw_vec_of_obj_ref(struct MMTk_RawVecOfObjRef raw_vec);
+
+void mmtk_register_ppp(MMTk_ObjectReference object);
 
 #endif /* MMTK_H */
