@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require_relative "../command"
 require_relative "../dependency_installer"
+require_relative "../gem_runner"
 require_relative "../package"
 require_relative "../version_option"
 
@@ -60,7 +61,10 @@ to the same gem path as user-installed gems.
     check_executable
 
     print_command
-    if options[:conservative]
+    if options[:gem_name] == "gem" && options[:executable] == "gem"
+      Gem::GemRunner.new.run options[:args]
+      return
+    elsif options[:conservative]
       install_if_needed
     else
       install
@@ -135,15 +139,19 @@ to the same gem path as user-installed gems.
     activate!
   end
 
-  def install
-    gem_name = options[:gem_name]
-    gem_version = options[:version]
-
+  def set_gem_exec_install_paths
     home = File.join(Gem.dir, "gem_exec")
 
     ENV["GEM_PATH"] = ([home] + Gem.path).join(Gem.path_separator)
     ENV["GEM_HOME"] = home
     Gem.clear_paths
+  end
+
+  def install
+    set_gem_exec_install_paths
+
+    gem_name = options[:gem_name]
+    gem_version = options[:version]
 
     install_options = options.merge(
       minimal_deps: false,

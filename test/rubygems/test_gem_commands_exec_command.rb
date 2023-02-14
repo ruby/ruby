@@ -701,4 +701,45 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal %w[b-2], @installed_specs.map(&:original_name)
     end
   end
+
+  def test_gem_exec_gem_uninstall
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+        s.add_runtime_dependency "b"
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump}"
+        end
+      end
+
+      fetcher.download "b", 2 do |s|
+        s.files = %w[lib/b.rb]
+      end
+    end
+
+    use_ui @ui do
+      invoke "a:2"
+      assert_equal "a-2\n", @ui.output
+
+      invoke "gem", "list", "--local"
+      assert_includes @ui.output, "a (2)\n"
+      assert_includes @ui.output, "b (2)\n"
+
+      invoke "gem", "uninstall", "--verbose", "-x", "a" rescue nil
+      refute_includes @ui.output, "running gem exec with"
+      assert_includes @ui.output, "Successfully uninstalled a-2\n"
+
+      invoke "--verbose", "gem", "uninstall", "b"
+      assert_includes @ui.output, "Successfully uninstalled b-2\n"
+
+      invoke "gem", "list", "--local"
+      assert_empty @ui.error
+      assert_match /\A\s*\** LOCAL GEMS \**\s*\z/m, @ui.output
+
+      invoke "gem", "env", "GEM_HOME"
+      assert_match /#{File::SEPARATOR}gem_exec$/, @ui.output
+    end
+  end
 end
