@@ -374,6 +374,45 @@ assert_equal 'false', %q{
   less_than 2
 }
 
+# BOP redefinition works on Integer#<=
+assert_equal 'false', %q{
+  def le(x, y) = x <= y
+
+  le(2, 2)
+
+  class Integer
+    def <=(_) = false
+  end
+
+  le(2, 2)
+}
+
+# BOP redefinition works on Integer#>
+assert_equal 'false', %q{
+  def gt(x, y) = x > y
+
+  gt(3, 2)
+
+  class Integer
+    def >(_) = false
+  end
+
+  gt(3, 2)
+}
+
+# BOP redefinition works on Integer#>=
+assert_equal 'false', %q{
+  def ge(x, y) = x >= y
+
+  ge(2, 2)
+
+  class Integer
+    def >=(_) = false
+  end
+
+  ge(2, 2)
+}
+
 # Putobject, less-than operator, fixnums
 assert_equal '2', %q{
     def check_index(index)
