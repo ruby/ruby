@@ -27,6 +27,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
     common_installer_teardown
 
     Gem::Command.build_args = @orig_args
+    Gem.configuration = nil
   end
 
   def invoke(*args)
