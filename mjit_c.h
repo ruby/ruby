@@ -3,6 +3,7 @@
 #define MJIT_C_H
 
 #include "ruby/internal/config.h"
+#include "internal/string.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"

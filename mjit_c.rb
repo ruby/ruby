@@ -164,6 +164,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_str_eql_internal
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_eql_internal)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -337,6 +341,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(BOP_AREF) }
   end
 
+  def C.BOP_EQ
+    Primitive.cexpr! %q{ UINT2NUM(BOP_EQ) }
+  end
+
   def C.BOP_GE
     Primitive.cexpr! %q{ UINT2NUM(BOP_GE) }
   end
@@ -431,6 +439,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.SHAPE_ROOT
     Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
+  end
+
+  def C.STRING_REDEFINED_OP_FLAG
+    Primitive.cexpr! %q{ UINT2NUM(STRING_REDEFINED_OP_FLAG) }
   end
 
   def C.T_OBJECT
