@@ -350,6 +350,7 @@ generator = BindingGenerator.new(
     UINT: %w[
       BOP_AND
       BOP_AREF
+      BOP_EQ
       BOP_GE
       BOP_GT
       BOP_LE
@@ -361,6 +362,7 @@ generator = BindingGenerator.new(
       ARRAY_REDEFINED_OP_FLAG
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
+      STRING_REDEFINED_OP_FLAG
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC

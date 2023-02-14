@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 38/101
+      # 40/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -98,8 +98,8 @@ module RubyVM::MJIT
       when :opt_mult then opt_mult(jit, ctx, asm)
       when :opt_div then opt_div(jit, ctx, asm)
       when :opt_mod then opt_mod(jit, ctx, asm)
-      # opt_eq
-      # opt_neq
+      when :opt_eq then opt_eq(jit, ctx, asm)
+      when :opt_neq then opt_neq(jit, ctx, asm)
       when :opt_lt then opt_lt(jit, ctx, asm)
       when :opt_le then opt_le(jit, ctx, asm)
       when :opt_gt then opt_gt(jit, ctx, asm)
@@ -610,8 +610,32 @@ module RubyVM::MJIT
       end
     end
 
-    # opt_eq
-    # opt_neq
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_eq(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      if jit_equality_specialized(jit, ctx, asm)
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
+      else
+        opt_send_without_block(jit, ctx, asm)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_neq(jit, ctx, asm)
+      # opt_neq is passed two rb_call_data as arguments:
+      # first for ==, second for !=
+      neq_cd = C.rb_call_data.new(jit.operand(1))
+      jit_call_method(jit, ctx, asm, neq_cd)
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -1162,6 +1186,89 @@ module RubyVM::MJIT
         KeepCompiling
       else
         opt_send_without_block(jit, ctx, asm)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_equality_specialized(jit, ctx, asm)
+      # Create a side-exit to fall back to the interpreter
+      side_exit = side_exit(jit, ctx)
+
+      a_opnd = ctx.stack_opnd(1)
+      b_opnd = ctx.stack_opnd(0)
+
+      comptime_a = jit.peek_at_stack(1)
+      comptime_b = jit.peek_at_stack(0)
+
+      if two_fixnums_on_stack?(jit)
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_EQ)
+          return false
+        end
+
+        guard_two_fixnums(jit, ctx, asm, side_exit)
+
+        asm.comment('check fixnum equality')
+        asm.mov(:rax, a_opnd)
+        asm.mov(:rcx, b_opnd)
+        asm.cmp(:rax, :rcx)
+        asm.mov(:rax, Qfalse)
+        asm.mov(:rcx, Qtrue)
+        asm.cmove(:rax, :rcx)
+
+        # Push the output on the stack
+        ctx.stack_pop(2)
+        dst = ctx.stack_push
+        asm.mov(dst, :rax)
+
+        true
+      elsif comptime_a.class == String && comptime_b.class == String
+        unless Invariants.assume_bop_not_redefined(jit, C.STRING_REDEFINED_OP_FLAG, C.BOP_EQ)
+          # if overridden, emit the generic version
+          return false
+        end
+
+        # Guard that a is a String
+        if jit_guard_known_class(jit, ctx, asm, comptime_a.class, a_opnd, comptime_a, side_exit) == CantCompile
+          return false
+        end
+
+        equal_label = asm.new_label(:equal)
+        ret_label = asm.new_label(:ret)
+
+        # If they are equal by identity, return true
+        asm.mov(:rax, a_opnd)
+        asm.mov(:rcx, b_opnd)
+        asm.cmp(:rax, :rcx)
+        asm.je(equal_label)
+
+        # Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
+        # Note: any T_STRING is valid here, but we check for a ::String for simplicity
+        # To pass a mutable static variable (rb_cString) requires an unsafe block
+        if jit_guard_known_class(jit, ctx, asm, comptime_b.class, b_opnd, comptime_b, side_exit) == CantCompile
+          return false
+        end
+
+        asm.comment('call rb_str_eql_internal')
+        asm.mov(C_ARGS[0], a_opnd)
+        asm.mov(C_ARGS[1], b_opnd)
+        asm.call(C.rb_str_eql_internal)
+
+        # Push the output on the stack
+        ctx.stack_pop(2)
+        dst = ctx.stack_push
+        asm.mov(dst, C_RET)
+        asm.jmp(ret_label)
+
+        asm.write_label(equal_label)
+        asm.mov(dst, Qtrue)
+
+        asm.write_label(ret_label)
+
+        true
+      else
+        false
       end
     end
 

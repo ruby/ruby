@@ -156,6 +156,22 @@ module RubyVM::MJIT
       end
     end
 
+    def cmove(dst, src)
+      case [dst, src]
+      # CMOVE r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg]
+        # REX.W + 0F 44 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x44],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmove: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
     def cmovg(dst, src)
       case [dst, src]
       # CMOVG r64, r/m64 (Mod 11: reg)
@@ -290,6 +306,10 @@ module RubyVM::MJIT
 
     def je(dst)
       case dst
+      # JE rel8
+      in Label => dst_label
+        # 74 cb
+        insn(opcode: 0x74, imm: dst_label)
       # JE rel32
       in Integer => dst_addr
         # 0F 84 cd
@@ -301,6 +321,10 @@ module RubyVM::MJIT
 
     def jmp(dst)
       case dst
+      # JZ rel8
+      in Label => dst_label
+        # EB cb
+        insn(opcode: 0xeb, imm: dst_label)
       # JMP rel32
       in Integer => dst_addr
         # E9 cd
