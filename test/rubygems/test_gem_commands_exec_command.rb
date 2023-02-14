@@ -742,4 +742,108 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal "#{@gem_home}/gem_exec\n", @ui.output
     end
   end
+
+  def test_only_prerelease_available
+    spec_fetcher do |fetcher|
+      fetcher.download "a", "1.a" do |s|
+        s.executables = %w[a]
+        s.files = %w[lib/a.rb bin/a]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+    end
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::TermError do
+        invoke "a"
+      end
+      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" +
+                   "ERROR:  Possible alternatives: a\n", @ui.error
+      assert_empty @ui.output
+      assert_empty @installed_specs
+    end
+
+    use_ui @ui do
+      invoke "a:1.a"
+      assert_empty @ui.error
+      assert_equal "a-1.a a\n", @ui.output
+      assert_equal %w[a-1.a], @installed_specs.map(&:full_name)
+    end
+
+    FileUtils.rm_rf Gem.dir
+
+    use_ui @ui do
+      invoke "--version", ">= 1.a", "a"
+      assert_empty @ui.error
+      assert_equal "a-1.a a\n", @ui.output
+      assert_equal %w[a-1.a], @installed_specs.map(&:full_name)
+    end
+
+    FileUtils.rm_rf Gem.dir
+
+    use_ui @ui do
+      invoke "--pre", "a"
+      assert_empty @ui.error
+      assert_equal "a-1.a a\n", @ui.output
+      assert_equal %w[a-1.a], @installed_specs.map(&:full_name)
+    end
+  end
+
+  def test_newer_prerelease_available
+    spec_fetcher do |fetcher|
+      fetcher.download "a", "1" do |s|
+        s.executables = %w[a]
+        s.files = %w[lib/a.rb bin/a]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+
+      fetcher.download "a", "1.1.a" do |s|
+        s.executables = %w[a]
+        s.files = %w[lib/a.rb bin/a]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
+        end
+      end
+    end
+
+    use_ui @ui do
+      invoke "a"
+      assert_empty @ui.error
+      assert_equal "a-1 a\n", @ui.output
+      assert_equal %w[a-1], @installed_specs.map(&:full_name)
+    end
+
+    FileUtils.rm_rf Gem.dir
+
+    use_ui @ui do
+      invoke "a:1.1.a"
+      assert_empty @ui.error
+      assert_equal "a-1.1.a a\n", @ui.output
+      assert_equal %w[a-1.1.a], @installed_specs.map(&:full_name)
+    end
+
+    FileUtils.rm_rf Gem.dir
+
+    use_ui @ui do
+      invoke "--version", ">= 1.a", "a"
+      assert_empty @ui.error
+      assert_equal "a-1.1.a a\n", @ui.output
+      assert_equal %w[a-1.1.a], @installed_specs.map(&:full_name)
+    end
+
+    FileUtils.rm_rf Gem.dir
+
+    use_ui @ui do
+      invoke "--pre", "a"
+      assert_empty @ui.error
+      assert_equal "a-1.1.a a\n", @ui.output
+      assert_equal %w[a-1.1.a], @installed_specs.map(&:full_name)
+    end
+  end
 end
