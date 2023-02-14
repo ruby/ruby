@@ -149,6 +149,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_entry_internal)'
     end
 
+    def rb_fix_mod_fix
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_mod_fix)'
+    end
+
     def mjit_for_each_iseq(&block)
       Primitive.mjit_for_each_iseq(block)
     end
@@ -347,6 +351,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.BOP_MINUS
     Primitive.cexpr! %q{ UINT2NUM(BOP_MINUS) }
+  end
+
+  def C.BOP_MOD
+    Primitive.cexpr! %q{ UINT2NUM(BOP_MOD) }
   end
 
   def C.BOP_PLUS

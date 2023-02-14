@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 34/101
+      # 35/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -97,7 +97,7 @@ module RubyVM::MJIT
       when :opt_minus then opt_minus(jit, ctx, asm)
       when :opt_mult then opt_mult(jit, ctx, asm)
       when :opt_div then opt_div(jit, ctx, asm)
-      # opt_mod
+      when :opt_mod then opt_mod(jit, ctx, asm)
       # opt_eq
       # opt_neq
       when :opt_lt then opt_lt(jit, ctx, asm)
@@ -566,7 +566,50 @@ module RubyVM::MJIT
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # opt_mod
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_mod(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      if two_fixnums_on_stack?(jit)
+        # Create a side-exit to fall back to the interpreter
+        # Note: we generate the side-exit before popping operands from the stack
+        side_exit = side_exit(jit, ctx)
+
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_MOD)
+          return CantCompile
+        end
+
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm, side_exit)
+
+        # Get the operands and destination from the stack
+        arg1 = ctx.stack_pop(1)
+        arg0 = ctx.stack_pop(1)
+
+        # Check for arg0 % 0
+        asm.cmp(arg1, 0)
+        asm.je(side_exit)
+
+        # Call rb_fix_mod_fix(VALUE recv, VALUE obj)
+        asm.mov(C_ARGS[0], arg0)
+        asm.mov(C_ARGS[1], arg1)
+        asm.call(C.rb_fix_mod_fix)
+
+        # Push the return value onto the stack
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        KeepCompiling
+      else
+        opt_send_without_block(jit, ctx, asm)
+      end
+    end
+
     # opt_eq
     # opt_neq
 
@@ -913,6 +956,32 @@ module RubyVM::MJIT
         asm.cmp(klass_opnd, :rcx)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    def two_fixnums_on_stack?(jit)
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_arg = jit.peek_at_stack(0)
+      return fixnum?(comptime_recv) && fixnum?(comptime_arg)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def guard_two_fixnums(jit, ctx, asm, side_exit)
+      # Get stack operands without popping them
+      arg1 = ctx.stack_opnd(0)
+      arg0 = ctx.stack_opnd(1)
+
+      asm.comment('guard arg0 fixnum')
+      asm.test(arg0, C.RUBY_FIXNUM_FLAG)
+      jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+      # TODO: upgrade type, and skip the check when possible
+
+      asm.comment('guard arg1 fixnum')
+      asm.test(arg1, C.RUBY_FIXNUM_FLAG)
+      jit_chain_guard(:jz, jit, ctx, asm, side_exit)
+      # TODO: upgrade type, and skip the check when possible
     end
 
     # @param jit [RubyVM::MJIT::JITState]
