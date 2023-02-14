@@ -56,14 +56,6 @@
 #endif
 
 /**
- * @deprecated  This macro seems  broken.  Setting this to  anything other than
- *              zero just doesn't compile.  We need to KonMari.
- */
-#ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
-# define USE_RGENGC_LOGGING_WB_UNPROTECT 0
-#endif
-
-/**
  * @private
  *
  * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
@@ -302,22 +294,6 @@ void rb_gc_writebarrier(VALUE old, VALUE young);
  */
 void rb_gc_writebarrier_unprotect(VALUE obj);
 
-#if USE_RGENGC_LOGGING_WB_UNPROTECT
-/**
- * @private
- *
- * This  is  the   implementation  of  #RGENGC_LOGGING_WB_UNPROTECT().   People
- * don't use it directly.
- *
- * @param[in]  objptr    Don't  know why  this  is  a pointer  to  void but  in
- *                       reality this is  a pointer to an object  that is about
- *                       to be un-protected.
- * @param[in]  filename  Pass C's `__FILE__` here.
- * @param[in]  line      Pass C's `__LINE__` here.
- */
-void rb_gc_unprotect_logging(void *objptr, const char *filename, int line);
-#endif
-
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -378,12 +354,11 @@ rb_obj_wb_unprotect(
     RBIMPL_ATTR_MAYBE_UNUSED()
     int line)
 {
-#if USE_RGENGC_LOGGING_WB_UNPROTECT
-    RGENGC_LOGGING_WB_UNPROTECT(RBIMPL_CAST((void *)x), filename, line);
-#endif
     rb_gc_writebarrier_unprotect(x);
     return x;
 }
+
+#define RGENGC_LOGGING_OBJ_WRITTEN rb_gc_obj_written_logging
 
 /**
  * @private
@@ -409,10 +384,6 @@ rb_obj_written(
     RBIMPL_ATTR_MAYBE_UNUSED()
     int line)
 {
-#if USE_RGENGC_LOGGING_WB_UNPROTECT
-    RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
-#endif
-
     if (!RB_SPECIAL_CONST_P(b)) {
         rb_gc_writebarrier(a, b);
     }

@@ -9124,49 +9124,6 @@ rb_gc_writebarrier_remember(VALUE obj)
     }
 }
 
-static st_table *rgengc_unprotect_logging_table;
-
-static int
-rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    fprintf(stderr, "%s\t%"PRIuVALUE"\n", (char *)key, (VALUE)val);
-    return ST_CONTINUE;
-}
-
-static void
-rgengc_unprotect_logging_exit_func(void)
-{
-    st_foreach(rgengc_unprotect_logging_table, rgengc_unprotect_logging_exit_func_i, 0);
-}
-
-void
-rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
-{
-    VALUE obj = (VALUE)objptr;
-
-    if (rgengc_unprotect_logging_table == 0) {
-        rgengc_unprotect_logging_table = st_init_strtable();
-        atexit(rgengc_unprotect_logging_exit_func);
-    }
-
-    if (RVALUE_WB_UNPROTECTED(obj) == 0) {
-        char buff[0x100];
-        st_data_t cnt = 1;
-        char *ptr = buff;
-
-        snprintf(ptr, 0x100 - 1, "%s|%s:%d", obj_info(obj), filename, line);
-
-        if (st_lookup(rgengc_unprotect_logging_table, (st_data_t)ptr, &cnt)) {
-            cnt++;
-        }
-        else {
-            ptr = (strdup)(buff);
-            if (!ptr) rb_memerror();
-        }
-        st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
-    }
-}
-
 void
 rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 {
