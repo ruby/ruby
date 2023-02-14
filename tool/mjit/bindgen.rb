@@ -349,6 +349,9 @@ generator = BindingGenerator.new(
     ],
     UINT: %w[
       BOP_AREF
+      BOP_GE
+      BOP_GT
+      BOP_LE
       BOP_LT
       BOP_MINUS
       BOP_PLUS

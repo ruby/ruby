@@ -146,6 +146,38 @@ module RubyVM::MJIT
       end
     end
 
+    def cmovg(dst, src)
+      case [dst, src]
+      # CMOVG r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg]
+        # REX.W + 0F 4F /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x4f],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmovg: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def cmovge(dst, src)
+      case [dst, src]
+      # CMOVGE r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg]
+        # REX.W + 0F 4D /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x4d],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmovge: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
     def cmovl(dst, src)
       case [dst, src]
       # CMOVL r64, r/m64 (Mod 11: reg)
@@ -159,6 +191,22 @@ module RubyVM::MJIT
         )
       else
         raise NotImplementedError, "cmovl: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def cmovle(dst, src)
+      case [dst, src]
+      # CMOVLE r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg]
+        # REX.W + 0F 4E /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x4e],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmovle: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 

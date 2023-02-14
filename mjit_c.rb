@@ -321,6 +321,18 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(BOP_AREF) }
   end
 
+  def C.BOP_GE
+    Primitive.cexpr! %q{ UINT2NUM(BOP_GE) }
+  end
+
+  def C.BOP_GT
+    Primitive.cexpr! %q{ UINT2NUM(BOP_GT) }
+  end
+
+  def C.BOP_LE
+    Primitive.cexpr! %q{ UINT2NUM(BOP_LE) }
+  end
+
   def C.BOP_LT
     Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
   end
