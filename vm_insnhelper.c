@@ -1231,10 +1231,17 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 
         val = ivar_list[index];
+#if USE_DEBUG_COUNTER
+        RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
+
+        if (RB_TYPE_P(obj, T_OBJECT)) {
+            RB_DEBUG_COUNTER_INC(ivar_get_obj_hit);
+        }
+#endif
         RUBY_ASSERT(!UNDEF_P(val));
     }
     else { // cache miss case
-#if RUBY_DEBUG
+#if USE_DEBUG_COUNTER
         if (is_attr) {
             if (cached_id != INVALID_SHAPE_ID) {
                 RB_DEBUG_COUNTER_INC(ivar_get_cc_miss_set);
@@ -1250,6 +1257,11 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             else {
                 RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_unset);
             }
+        }
+        RB_DEBUG_COUNTER_INC(ivar_get_ic_miss);
+
+        if (RB_TYPE_P(obj, T_OBJECT)) {
+            RB_DEBUG_COUNTER_INC(ivar_get_obj_miss);
         }
 #endif
 
@@ -1322,6 +1334,8 @@ static VALUE
 vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
 {
 #if OPT_IC_FOR_IVAR
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
+
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         {
@@ -1335,7 +1349,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                 populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
             }
 
-            RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);
+            RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
             return val;
         }
       case T_CLASS:
@@ -1363,7 +1377,6 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
         }
     }
 #endif
-    RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
     return rb_ivar_set(obj, id, val);
 }
 
@@ -1469,6 +1482,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
+            RB_DEBUG_COUNTER_INC(ivar_set_obj_hit);
             return val;
         }
         break;
