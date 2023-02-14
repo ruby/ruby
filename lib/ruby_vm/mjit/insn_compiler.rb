@@ -631,8 +631,40 @@ module RubyVM::MJIT
       side_exit = side_exit(jit, ctx)
 
       if comptime_recv.class == Array && fixnum?(comptime_obj)
-        asm.incr_counter(:optaref_array)
-        CantCompile
+        unless Invariants.assume_bop_not_redefined(jit, C.ARRAY_REDEFINED_OP_FLAG, C.BOP_AREF)
+          return CantCompile
+        end
+
+        idx_opnd = ctx.stack_opnd(0)
+        recv_opnd = ctx.stack_opnd(1)
+
+        not_array_exit = counted_exit(side_exit, :optaref_recv_not_array)
+        if jit_guard_known_class(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_array_exit) == CantCompile
+          return CantCompile
+        end
+
+        # Bail if idx is not a FIXNUM
+        asm.mov(:rax, idx_opnd)
+        asm.test(:rax, C.RUBY_FIXNUM_FLAG)
+        asm.jz(counted_exit(side_exit, :optaref_arg_not_fixnum))
+
+        # Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
+        # It never raises or allocates, so we don't need to write to cfp->pc.
+        asm.sar(:rax, 1) # Convert fixnum to int
+        asm.mov(C_ARGS[0], recv_opnd)
+        asm.mov(C_ARGS[1], :rax)
+        asm.call(C.rb_ary_entry_internal)
+
+        # Pop the argument and the receiver
+        ctx.stack_pop(2)
+
+        # Push the return value onto the stack
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        # Let guard chains share the same successor
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
       elsif comptime_recv.class == Hash
         unless Invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
           return CantCompile
@@ -641,7 +673,7 @@ module RubyVM::MJIT
         recv_opnd = ctx.stack_opnd(1)
 
         # Guard that the receiver is a Hash
-        not_hash_exit = counted_exit(side_exit, :optaref_not_hash)
+        not_hash_exit = counted_exit(side_exit, :optaref_recv_not_hash)
         if jit_guard_known_class(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_hash_exit) == CantCompile
           return CantCompile
         end

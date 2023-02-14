@@ -575,6 +575,22 @@ module RubyVM::MJIT
       insn(opcode: 0xc3)
     end
 
+    def sar(dst, src)
+      case [dst, src]
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+        # REX.W + C1 /7 ib
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8
+        insn(
+          prefix: REX_W,
+          opcode: 0xc1,
+          mod_rm: ModRM[mod: Mod11, reg: 7, rm: dst_reg],
+          imm: imm8(src_imm),
+        )
+      else
+        raise NotImplementedError, "sar: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
     def sub(dst, src)
       case [dst, src]
       # SUB r/m64, imm8

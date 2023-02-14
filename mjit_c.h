@@ -149,10 +149,10 @@ MJIT_RUNTIME_COUNTERS(
     getivar_special_const,
     getivar_too_complex,
 
+    optaref_arg_not_fixnum,
     optaref_argc_not_one,
-    optaref_array,
-    optaref_hash,
-    optaref_not_hash,
+    optaref_recv_not_array,
+    optaref_recv_not_hash,
     optaref_send,
 
     compiled_block_count
