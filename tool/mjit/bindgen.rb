@@ -355,6 +355,7 @@ generator = BindingGenerator.new(
       BOP_LT
       BOP_MINUS
       BOP_PLUS
+      ARRAY_REDEFINED_OP_FLAG
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
       METHOD_VISI_PRIVATE
