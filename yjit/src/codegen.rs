@@ -5443,7 +5443,7 @@ fn gen_send_iseq(
         // If block_arg0_splat, we still need side exits after this, but
         // doing push_splat_args here disallows it. So bail out.
         if block_arg0_splat {
-            gen_counter_incr!(asm, invokeblock_iseq_arg0_has_kw);
+            gen_counter_incr!(asm, invokeblock_iseq_arg0_args_splat);
             return CantCompile;
         }
 
