@@ -128,6 +128,8 @@ class TestGc < Test::Unit::TestCase
     omit 'stress' if GC.stress
 
     stat = GC.stat
+    # marking_time + sweeping_time could differ from time by 1 because they're stored in nanoseconds
+    assert_in_delta stat[:time], stat[:marking_time] + stat[:sweeping_time], 1
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_operator stat[:heap_sorted_length], :>=, stat[:heap_eden_pages] + stat[:heap_allocatable_pages], "stat is: " + stat.inspect
     assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]

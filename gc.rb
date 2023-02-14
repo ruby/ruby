@@ -282,7 +282,7 @@ module GC
   # Return measured \GC total time in nano seconds.
   def self.total_time
     Primitive.cexpr! %{
-      ULL2NUM(rb_objspace.profile.total_time_ns)
+      ULL2NUM(rb_objspace.profile.marking_time_ns + rb_objspace.profile.sweeping_time_ns)
     }
   end
 end

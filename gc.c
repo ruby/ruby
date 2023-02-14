@@ -826,8 +826,10 @@ typedef struct rb_objspace {
         /* basic statistics */
         size_t count;
         size_t total_freed_objects;
-        uint64_t total_time_ns;
-        struct timespec start_time;
+        uint64_t marking_time_ns;
+        struct timespec marking_start_time;
+        uint64_t sweeping_time_ns;
+        struct timespec sweeping_start_time;
     } profile;
     struct gc_list *global_list;
 
@@ -1242,6 +1244,10 @@ enum gc_enter_event {
 
 static inline void gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
 static inline void gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev);
+static void gc_marking_enter(rb_objspace_t *objspace);
+static void gc_marking_exit(rb_objspace_t *objspace);
+static void gc_sweeping_enter(rb_objspace_t *objspace);
+static void gc_sweeping_exit(rb_objspace_t *objspace);
 
 static void gc_marks_start(rb_objspace_t *objspace, int full);
 static void gc_marks_finish(rb_objspace_t *objspace);
@@ -4572,7 +4578,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         }
     }
 
-    gc_exit(objspace, false, &lock_lev);
+    gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
     finalize_deferred_heap_pages(objspace);
 
@@ -6058,6 +6064,8 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
     GC_ASSERT(dont_gc_val() == FALSE);
     if (!GC_ENABLE_LAZY_SWEEP) return;
 
+    gc_sweeping_enter(objspace);
+
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         if (!gc_sweep_step(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool))) {
@@ -6076,6 +6084,8 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
 #endif
         }
     }
+
+    gc_sweeping_exit(objspace);
 }
 
 static void
@@ -6186,6 +6196,8 @@ static void gc_sweep_compact(rb_objspace_t *objspace);
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
+    gc_sweeping_enter(objspace);
+
     const unsigned int immediate_sweep = objspace->flags.immediate_sweep;
 
     gc_report(1, objspace, "gc_sweep: immediate: %d\n", immediate_sweep);
@@ -6217,6 +6229,8 @@ gc_sweep(rb_objspace_t *objspace)
     rb_size_pool_t *size_pool = &size_pools[0];
     gc_heap_prepare_minimum_pages(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
 #endif
+
+    gc_sweeping_exit(objspace);
 }
 
 /* Marking - Marking stack */
@@ -8705,6 +8719,8 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
     GC_ASSERT(dont_gc_val() == FALSE);
     bool marking_finished = true;
 
+    gc_marking_enter(objspace);
+
 #if GC_ENABLE_INCREMENTAL_MARK
     if (heap->free_pages) {
         gc_report(2, objspace, "gc_marks_continue: has pooled pages");
@@ -8718,6 +8734,8 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
     }
 #endif
 
+    gc_marking_exit(objspace);
+
     return marking_finished;
 }
 
@@ -8725,6 +8743,8 @@ static bool
 gc_marks(rb_objspace_t *objspace, int full_mark)
 {
     gc_prof_mark_timer_start(objspace);
+    gc_marking_enter(objspace);
+
     bool marking_finished = false;
 
     /* setup marking */
@@ -8741,6 +8761,8 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
         record->old_objects = objspace->rgengc.old_objects;
     }
 #endif
+
+    gc_marking_exit(objspace);
     gc_prof_mark_timer_stop(objspace);
 
     return marking_finished;
@@ -9588,12 +9610,19 @@ gc_rest(rb_objspace_t *objspace)
         if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
         if (is_incremental_marking(objspace)) {
+            gc_marking_enter(objspace);
             gc_marks_rest(objspace);
+            gc_marking_exit(objspace);
+
             gc_sweep(objspace);
         }
+
         if (is_lazy_sweeping(objspace)) {
+            gc_sweeping_enter(objspace);
             gc_sweep_rest(objspace);
+            gc_sweeping_exit(objspace);
         }
+
         gc_exit(objspace, gc_enter_event_rest, &lock_lev);
     }
 }
@@ -9708,66 +9737,36 @@ gc_enter_count(enum gc_enter_event event)
 #define MEASURE_GC (objspace->flags.measure_gc)
 #endif
 
-static bool
-gc_enter_event_measure_p(rb_objspace_t *objspace, enum gc_enter_event event)
-{
-    if (!MEASURE_GC) return false;
-
-    switch (event) {
-      case gc_enter_event_start:
-      case gc_enter_event_continue:
-      case gc_enter_event_rest:
-        return true;
-
-      default:
-        // case gc_enter_event_finalizer:
-        // case gc_enter_event_rb_memerror:
-        return false;
-    }
-}
-
 static bool current_process_time(struct timespec *ts);
 
 static void
-gc_enter_clock(rb_objspace_t *objspace, enum gc_enter_event event)
+gc_clock_start(struct timespec *ts)
 {
-    if (gc_enter_event_measure_p(objspace, event)) {
-        if (!current_process_time(&objspace->profile.start_time)) {
-            objspace->profile.start_time.tv_sec = 0;
-            objspace->profile.start_time.tv_nsec = 0;
-        }
+    if (!current_process_time(ts)) {
+        ts->tv_sec = 0;
+        ts->tv_nsec = 0;
     }
 }
 
-static void
-gc_exit_clock(rb_objspace_t *objspace, enum gc_enter_event event)
+static uint64_t
+gc_clock_end(struct timespec *ts)
 {
-    if (gc_enter_event_measure_p(objspace, event)) {
-        struct timespec end_time;
+    struct timespec end_time;
 
-        if ((objspace->profile.start_time.tv_sec > 0 ||
-             objspace->profile.start_time.tv_nsec > 0) &&
-            current_process_time(&end_time)) {
-
-            if (end_time.tv_sec < objspace->profile.start_time.tv_sec) {
-                return; // ignore
-            }
-            else {
-                uint64_t ns =
-                  (uint64_t)(end_time.tv_sec - objspace->profile.start_time.tv_sec) * (1000 * 1000 * 1000) +
-                            (end_time.tv_nsec - objspace->profile.start_time.tv_nsec);
-                objspace->profile.total_time_ns += ns;
-            }
-        }
+    if ((ts->tv_sec > 0 || ts->tv_nsec > 0) &&
+            current_process_time(&end_time) &&
+            end_time.tv_sec >= ts->tv_sec) {
+        return (uint64_t)(end_time.tv_sec - ts->tv_sec) * (1000 * 1000 * 1000) +
+                    (end_time.tv_nsec - ts->tv_nsec);
     }
+
+    return 0;
 }
 
 static inline void
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     RB_VM_LOCK_ENTER_LEV(lock_lev);
-
-    gc_enter_clock(objspace, event);
 
     switch (event) {
       case gc_enter_event_rest:
@@ -9804,7 +9803,6 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     gc_report(1, objspace, "gc_exit: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
     during_gc = FALSE;
 
-    gc_exit_clock(objspace, event);
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
 
 #if RGENGC_CHECK_MODE >= 2
@@ -9814,6 +9812,38 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
         gc_verify_internal_consistency(objspace);
     }
 #endif
+}
+
+static void
+gc_marking_enter(rb_objspace_t *objspace)
+{
+    GC_ASSERT(during_gc != 0);
+
+    gc_clock_start(&objspace->profile.marking_start_time);
+}
+
+static void
+gc_marking_exit(rb_objspace_t *objspace)
+{
+    GC_ASSERT(during_gc != 0);
+
+    objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
+}
+
+static void
+gc_sweeping_enter(rb_objspace_t *objspace)
+{
+    GC_ASSERT(during_gc != 0);
+
+    gc_clock_start(&objspace->profile.sweeping_start_time);
+}
+
+static void
+gc_sweeping_exit(rb_objspace_t *objspace)
+{
+    GC_ASSERT(during_gc != 0);
+
+    objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
 }
 
 static void *
@@ -11187,6 +11217,8 @@ gc_latest_gc_info(rb_execution_context_t *ec, VALUE self, VALUE arg)
 enum gc_stat_sym {
     gc_stat_sym_count,
     gc_stat_sym_time,
+    gc_stat_sym_marking_time,
+    gc_stat_sym_sweeping_time,
     gc_stat_sym_heap_allocated_pages,
     gc_stat_sym_heap_sorted_length,
     gc_stat_sym_heap_allocatable_pages,
@@ -11236,6 +11268,8 @@ setup_gc_stat_symbols(void)
 #define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
         S(count);
         S(time);
+        S(marking_time),
+        S(sweeping_time),
         S(heap_allocated_pages);
         S(heap_sorted_length);
         S(heap_allocatable_pages);
@@ -11277,6 +11311,12 @@ setup_gc_stat_symbols(void)
     }
 }
 
+static uint64_t
+ns_to_ms(uint64_t ns)
+{
+    return ns / (1000 * 1000);
+}
+
 static size_t
 gc_stat_internal(VALUE hash_or_sym)
 {
@@ -11302,7 +11342,9 @@ gc_stat_internal(VALUE hash_or_sym)
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
     SET(count, objspace->profile.count);
-    SET(time, (size_t) (objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */)); // TODO: UINT64T2NUM
+    SET(time, (size_t)ns_to_ms(objspace->profile.marking_time_ns + objspace->profile.sweeping_time_ns)); // TODO: UINT64T2NUM
+    SET(marking_time, (size_t)ns_to_ms(objspace->profile.marking_time_ns));
+    SET(sweeping_time, (size_t)ns_to_ms(objspace->profile.sweeping_time_ns));
 
     /* implementation dependent counters */
     SET(heap_allocated_pages, heap_allocated_pages);
