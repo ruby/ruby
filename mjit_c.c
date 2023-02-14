@@ -14,6 +14,7 @@
 #include "mjit_c.h"
 #include "internal.h"
 #include "internal/compile.h"
+#include "internal/fixnum.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
 #include "internal/gc.h"
