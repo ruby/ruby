@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 31/101
+      # 34/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -101,9 +101,9 @@ module RubyVM::MJIT
       # opt_eq
       # opt_neq
       when :opt_lt then opt_lt(jit, ctx, asm)
-      # opt_le
-      # opt_gt
-      # opt_ge
+      when :opt_le then opt_le(jit, ctx, asm)
+      when :opt_gt then opt_gt(jit, ctx, asm)
+      when :opt_ge then opt_ge(jit, ctx, asm)
       when :opt_ltlt then opt_ltlt(jit, ctx, asm)
       # opt_and
       # opt_or
@@ -574,51 +574,29 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def opt_lt(jit, ctx, asm)
-      unless jit.at_current_insn?
-        defer_compilation(jit, ctx, asm)
-        return EndBlock
-      end
-
-      comptime_recv = jit.peek_at_stack(1)
-      comptime_obj  = jit.peek_at_stack(0)
-
-      if fixnum?(comptime_recv) && fixnum?(comptime_obj)
-        # Generate a side exit before popping operands
-        side_exit = side_exit(jit, ctx)
-
-        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_LT)
-          return CantCompile
-        end
-
-        obj_opnd  = ctx.stack_pop
-        recv_opnd = ctx.stack_pop
-
-        asm.comment('guard recv is fixnum') # TODO: skip this with type information
-        asm.test(recv_opnd, C.RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
-
-        asm.comment('guard obj is fixnum') # TODO: skip this with type information
-        asm.test(obj_opnd, C.RUBY_FIXNUM_FLAG)
-        asm.jz(side_exit)
-
-        asm.mov(:rax, obj_opnd)
-        asm.cmp(recv_opnd, :rax)
-        asm.mov(:rax, Qfalse)
-        asm.mov(:rcx, Qtrue)
-        asm.cmovl(:rax, :rcx)
-
-        dst_opnd = ctx.stack_push
-        asm.mov(dst_opnd, :rax)
-
-        KeepCompiling
-      else
-        opt_send_without_block(jit, ctx, asm)
-      end
+      jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovl, bop: C.BOP_LT)
     end
 
-    # opt_le
-    # opt_gt
-    # opt_ge
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_le(jit, ctx, asm)
+      jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovle, bop: C.BOP_LE)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_gt(jit, ctx, asm)
+      jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovg, bop: C.BOP_GT)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_ge(jit, ctx, asm)
+      jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovge, bop: C.BOP_GE)
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -819,12 +797,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 10)
-      case opcode
-      when :je, :jne, :jnz, :jz
-        # ok
-      else
-        raise ArgumentError, "jit_chain_guard: unexpected opcode #{opcode.inspect}"
-      end
+      opcode => :je | :jne | :jnz | :jz
 
       if ctx.chain_depth < limit
         deeper = ctx.dup
@@ -907,6 +880,54 @@ module RubyVM::MJIT
         asm.mov(:rcx, to_value(known_klass))
         asm.cmp(klass_opnd, :rcx)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_fixnum_cmp(jit, ctx, asm, opcode:, bop:)
+      opcode => :cmovl | :cmovle | :cmovg | :cmovge
+
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      comptime_recv = jit.peek_at_stack(1)
+      comptime_obj  = jit.peek_at_stack(0)
+
+      if fixnum?(comptime_recv) && fixnum?(comptime_obj)
+        # Generate a side exit before popping operands
+        side_exit = side_exit(jit, ctx)
+
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, bop)
+          return CantCompile
+        end
+
+        obj_opnd  = ctx.stack_pop
+        recv_opnd = ctx.stack_pop
+
+        asm.comment('guard recv is fixnum') # TODO: skip this with type information
+        asm.test(recv_opnd, C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit)
+
+        asm.comment('guard obj is fixnum') # TODO: skip this with type information
+        asm.test(obj_opnd, C.RUBY_FIXNUM_FLAG)
+        asm.jz(side_exit)
+
+        asm.mov(:rax, obj_opnd)
+        asm.cmp(recv_opnd, :rax)
+        asm.mov(:rax, Qfalse)
+        asm.mov(:rcx, Qtrue)
+        asm.public_send(opcode, :rax, :rcx)
+
+        dst_opnd = ctx.stack_push
+        asm.mov(dst_opnd, :rax)
+
+        KeepCompiling
+      else
+        opt_send_without_block(jit, ctx, asm)
       end
     end
 
