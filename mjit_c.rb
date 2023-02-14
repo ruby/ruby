@@ -469,8 +469,20 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL_bit) }
   end
 
+  def C.VM_ENV_DATA_INDEX_FLAGS
+    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_DATA_INDEX_FLAGS) }
+  end
+
+  def C.VM_ENV_DATA_SIZE
+    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_DATA_SIZE) }
+  end
+
   def C.VM_ENV_FLAG_LOCAL
     Primitive.cexpr! %q{ UINT2NUM(VM_ENV_FLAG_LOCAL) }
+  end
+
+  def C.VM_ENV_FLAG_WB_REQUIRED
+    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_FLAG_WB_REQUIRED) }
   end
 
   def C.VM_FRAME_FLAG_CFRAME
