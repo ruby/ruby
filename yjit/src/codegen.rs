@@ -1975,12 +1975,6 @@ fn gen_get_ivar(
     recv_opnd: YARVOpnd,
     side_exit: Target,
 ) -> CodegenStatus {
-    // If the object has a too complex shape, we exit
-    if comptime_receiver.shape_too_complex() {
-        gen_counter_incr!(asm, getivar_too_complex);
-        return CantCompile;
-    }
-
     let comptime_val_klass = comptime_receiver.class_of();
     let starting_context = ctx.clone(); // make a copy for use with jit_chain_guard
 
@@ -2007,7 +2001,8 @@ fn gen_get_ivar(
     // NOTE: This assumes nobody changes the allocator of the class after allocation.
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
-    if !receiver_t_object || uses_custom_allocator {
+    // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm.comment("call rb_ivar_get()");
@@ -2214,11 +2209,6 @@ fn gen_setinstancevariable(
         gen_counter_incr!(asm, setivar_frozen);
         return CantCompile;
     }
-    // If the object has a too complex shape, we will also exit
-    if comptime_receiver.shape_too_complex() {
-        gen_counter_incr!(asm, setivar_too_complex);
-        return CantCompile;
-    }
 
     let (_, stack_type) = ctx.get_opnd_mapping(StackOpnd(0));
 
@@ -2236,8 +2226,9 @@ fn gen_setinstancevariable(
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
 
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
-    // then just write out the IV write as a function call
-    if !receiver_t_object || uses_custom_allocator {
+    // then just write out the IV write as a function call.
+    // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() {
         asm.comment("call rb_vm_setinstancevariable()");
 
         let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
