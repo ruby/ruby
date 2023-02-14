@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require_relative "../command"
+require_relative "../dependency_installer"
 require_relative "../package"
 require_relative "../version_option"
 
@@ -11,7 +12,6 @@ class Gem::Commands::ExecCommand < Gem::Command
       version: Gem::Requirement.default,
     }
 
-    add_platform_option
     add_version_option
     add_prerelease_option "to be installed"
 
@@ -55,6 +55,8 @@ to the same gem path as user-installed gems.
   end
 
   def execute
+    gem_paths = { "GEM_HOME": Gem.paths.home, "GEM_PATH": Gem.paths.path, "GEM_SPEC_CACHE": Gem.paths.spec_cache_dir }
+
     check_executable
 
     print_command
@@ -66,6 +68,8 @@ to the same gem path as user-installed gems.
     end
 
     load!
+  ensure
+    Gem.paths = gem_paths
   end
 
   private
@@ -127,7 +131,6 @@ to the same gem path as user-installed gems.
     activate!
   rescue Gem::MissingSpecError
     verbose "#{Gem::Dependency.new(options[:gem_name], options[:version])} not available locally, installing from remote"
-    verbose "\t#{Gem::Specification.all_names}"
     install
     activate!
   end
@@ -137,11 +140,30 @@ to the same gem path as user-installed gems.
     gem_version = options[:version]
 
     home = File.join(Gem.dir, "gem_exec")
-    Gem.use_paths(home, [home] + Gem.path)
+
+    ENV["GEM_PATH"] = ([home] + Gem.path).join(Gem.path_separator)
+    ENV["GEM_HOME"] = home
+    Gem.clear_paths
+
+    install_options = options.merge(
+      minimal_deps: false,
+      wrappers: true
+    )
 
     suppress_always_install do
-      Gem.install(gem_name, gem_version, minimal_deps: false)
+      dep_installer = Gem::DependencyInstaller.new install_options
+
+      request_set = dep_installer.resolve_dependencies gem_name, gem_version
+
+      verbose "Gems to install:"
+      request_set.sorted_requests.each do |activation_request|
+        verbose "\t#{activation_request.full_name}"
+      end
+
+      request_set.install install_options
     end
+
+    Gem::Specification.reset
   rescue Gem::InstallError => e
     alert_error "Error installing #{gem_name}:\n\t#{e.message}"
     terminate_interaction 1

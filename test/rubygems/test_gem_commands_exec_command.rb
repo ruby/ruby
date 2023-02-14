@@ -15,6 +15,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
     @gem_home = Gem.dir
     @gem_path = Gem.path
+    @test_arch = RbConfig::CONFIG["arch"]
 
     @installed_specs = []
     Gem.post_install {|installer| @installed_specs << installer.spec }
@@ -135,6 +136,147 @@ class TestGemCommandsExecCommand < Gem::TestCase
     use_ui @ui do
       @cmd.invoke "a:2"
       assert_equal "a-2\n", @ui.output
+    end
+  end
+
+  def test_gem_with_platforms
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump}"
+        end
+      end
+
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+        s.platform = "x86_64-darwin"
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << "Gem.ui.say #{s.original_name.dump}"
+        end
+      end
+    end
+
+    use_ui @ui do
+      invoke "a:2"
+      assert_equal "a-2\n", @ui.output
+    end
+
+    use_ui @ui do
+      util_set_arch "x86_64-darwin-18"
+      invoke "a:2"
+      assert_equal "a-2-x86_64-darwin\n", @ui.output
+    end
+  end
+
+  def test_gem_with_platform_dependencies
+    platforms = Gem.platforms.dup
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+        s.add_runtime_dependency "with_platform"
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << 'require "with_platform"' << "\n"
+          f << 'Gem.ui.say Gem.loaded_specs.each_value.map(&:original_name).sort.join("\n")'
+        end
+      end
+
+      fetcher.download "with_platform", 2 do |s|
+        s.files = %w[lib/with_platform.rb]
+        s.platform = Gem::Platform.local
+      end
+
+      fetcher.download "with_platform", 2 do |s|
+        s.files = %w[lib/with_platform.rb]
+      end
+    end
+
+    use_ui @ui do
+      util_set_arch "unknown-unknown"
+      invoke "a"
+      assert_equal "a-2\nwith_platform-2\n", @ui.output
+    end
+
+    use_ui @ui do
+      util_set_arch @test_arch
+      invoke "a"
+      assert_empty @ui.error
+      assert_equal "a-2\nwith_platform-2-#{Gem::Platform.local}\n", @ui.output
+    end
+  end
+
+  def test_gem_with_platform_and_platform_dependencies
+    platforms = Gem.platforms.dup
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb]
+        s.add_runtime_dependency "with_platform"
+        s.platform = Gem::Platform.local.to_s
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << 'require "with_platform"' << "\n"
+          f << 'Gem.ui.say Gem.loaded_specs.each_value.map(&:original_name).sort.join("\n")'
+        end
+      end
+
+      fetcher.download "a", 2 do |s|
+        s.executables = %w[a]
+        s.files = %w[bin/a lib/a.rb extconf.rb]
+        s.add_runtime_dependency "with_platform"
+
+        write_file File.join(*%W[gems #{s.original_name}      bin a]) do |f|
+          f << 'require "with_platform"' << "\n"
+          f << 'Gem.ui.say Gem.loaded_specs.each_value.map(&:original_name).sort.join("\n")'
+        end
+
+        s.extensions = %w[extconf.rb]
+        write_file File.join(*%W[gems #{s.original_name}      extconf.rb]) do |f|
+          f.write <<-RUBY
+            gem('with_platform', '~> 2.0')
+            require 'with_platform'
+            gem 'sometimes_used'
+            require 'sometimes_used'
+            require "mkmf"
+            create_makefile("#{s.name}")
+          RUBY
+        end
+      end
+
+      fetcher.download "with_platform", 2 do |s|
+        s.files = %w[lib/with_platform.rb]
+        s.platform = Gem::Platform.local.to_s
+      end
+
+      fetcher.download "with_platform", 2 do |s|
+        s.files = %w[lib/with_platform.rb]
+        s.add_runtime_dependency "sometimes_used"
+      end
+
+      fetcher.download "sometimes_used", 2 do |s|
+        s.files = %w[lib/sometimes_used.rb]
+      end
+    end
+
+    use_ui @ui do
+      util_set_arch "unknown-unknown"
+      invoke "a"
+      assert_equal "Building native extensions. This could take a while...\na-2\nsometimes_used-2\nwith_platform-2\n", @ui.output
+    end
+
+    use_ui @ui do
+      util_set_arch @test_arch
+      invoke "a"
+      assert_empty @ui.error
+      assert_equal "a-2-#{Gem::Platform.local}\nwith_platform-2-#{Gem::Platform.local}\n", @ui.output
     end
   end
 
@@ -382,7 +524,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
   def test_pre_version_option
     spec_fetcher do |fetcher|
-      fetcher.gem "a", 1 do |s|
+      fetcher.download "a", 1 do |s|
         s.executables = %w[foo]
         s.files = %w[bin/foo lib/a.rb]
 
@@ -390,7 +532,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
           f << "Gem.ui.say #{s.original_name.dump} + ' ' + File.basename(__FILE__)"
         end
       end
-      fetcher.gem "a", "1.1.a" do |s|
+      fetcher.download "a", "1.1.a" do |s|
         s.executables = %w[foo ]
         s.files = %w[bin/foo lib/a.rb]
 
@@ -399,8 +541,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
         end
       end
     end
-
-    util_clear_gems
 
     use_ui @ui do
       @cmd.invoke "-v", ">= 0.a", "a"
