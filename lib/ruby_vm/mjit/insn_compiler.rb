@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 35/101
+      # 36/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -122,7 +122,7 @@ module RubyVM::MJIT
       # opt_invokebuiltin_delegate_leave
       when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
       when :getlocal_WC_1 then getlocal_WC_1(jit, ctx, asm)
-      # setlocal_WC_0
+      when :setlocal_WC_0 then setlocal_WC_0(jit, ctx, asm)
       # setlocal_WC_1
       when :putobject_INT2FIX_0_ then putobject_INT2FIX_0_(jit, ctx, asm)
       when :putobject_INT2FIX_1_ then putobject_INT2FIX_1_(jit, ctx, asm)
@@ -824,7 +824,8 @@ module RubyVM::MJIT
       level = 1
 
       # Get EP
-      ep_reg = jit_get_ep(asm, level)
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
 
       # Get a local variable
       asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
@@ -836,6 +837,41 @@ module RubyVM::MJIT
     end
 
     # setlocal_WC_0
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def setlocal_WC_0(jit, ctx, asm)
+      slot_idx = jit.operand(0)
+      local_idx = slot_to_local_idx(jit.iseq, slot_idx)
+
+      # Load environment pointer EP (level 0) from CFP
+      ep_reg = :rax
+      jit_get_ep(asm, 0, reg: ep_reg)
+
+      # Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+      # only affect heap objects being written. If we know an immediate value is being written we
+      # can skip this check.
+
+      # flags & VM_ENV_FLAG_WB_REQUIRED
+      flags_opnd = [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS]
+      asm.test(flags_opnd, C.VM_ENV_FLAG_WB_REQUIRED)
+
+      # Create a side-exit to fall back to the interpreter
+      side_exit = side_exit(jit, ctx)
+
+      # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+      asm.jnz(side_exit)
+
+      # Pop the value to write from the stack
+      stack_top = ctx.stack_pop(1)
+
+      # Write the value at the environment pointer
+      asm.mov(:rcx, stack_top)
+      asm.mov([ep_reg, -8 * slot_idx], :rcx)
+
+      KeepCompiling
+    end
+
     # setlocal_WC_1
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -855,6 +891,27 @@ module RubyVM::MJIT
     #
     # Helpers
     #
+
+    # Compute the index of a local variable from its slot index
+    def slot_to_local_idx(iseq, slot_idx)
+      # Layout illustration
+      # This is an array of VALUE
+      #                                           | VM_ENV_DATA_SIZE |
+      #                                           v                  v
+      # low addr <+-------+-------+-------+-------+------------------+
+      #           |local 0|local 1|  ...  |local n|       ....       |
+      #           +-------+-------+-------+-------+------------------+
+      #           ^       ^                       ^                  ^
+      #           +-------+---local_table_size----+         cfp->ep--+
+      #                   |                                          |
+      #                   +------------------slot_idx----------------+
+      #
+      # See usages of local_var_name() from iseq.c for similar calculation.
+
+      local_table_size = iseq.body.local_table_size
+      op = slot_idx - C.VM_ENV_DATA_SIZE
+      local_table_size - op - 1
+    end
 
     # @param asm [RubyVM::MJIT::Assembler]
     def guard_object_is_heap(asm, object_opnd, side_exit)
@@ -1087,14 +1144,13 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_get_ep(asm, level)
-      asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:ep)])
+    def jit_get_ep(asm, level, reg:)
+      asm.mov(reg, [CFP, C.rb_control_frame_t.offsetof(:ep)])
       level.times do
         # GET_PREV_EP: ep[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03
-        asm.mov(:rax, [:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
-        asm.and(:rax, ~0x03)
+        asm.mov(reg, [reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+        asm.and(reg, ~0x03)
       end
-      return :rax
     end
 
     # vm_getivar
