@@ -329,6 +329,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(ARRAY_REDEFINED_OP_FLAG) }
   end
 
+  def C.BOP_AND
+    Primitive.cexpr! %q{ UINT2NUM(BOP_AND) }
+  end
+
   def C.BOP_AREF
     Primitive.cexpr! %q{ UINT2NUM(BOP_AREF) }
   end
@@ -355,6 +359,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.BOP_MOD
     Primitive.cexpr! %q{ UINT2NUM(BOP_MOD) }
+  end
+
+  def C.BOP_OR
+    Primitive.cexpr! %q{ UINT2NUM(BOP_OR) }
   end
 
   def C.BOP_PLUS

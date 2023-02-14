@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 36/101
+      # 38/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       # getlocal
@@ -105,8 +105,8 @@ module RubyVM::MJIT
       when :opt_gt then opt_gt(jit, ctx, asm)
       when :opt_ge then opt_ge(jit, ctx, asm)
       when :opt_ltlt then opt_ltlt(jit, ctx, asm)
-      # opt_and
-      # opt_or
+      when :opt_and then opt_and(jit, ctx, asm)
+      when :opt_or then opt_or(jit, ctx, asm)
       when :opt_aref then opt_aref(jit, ctx, asm)
       # opt_aset
       # opt_aset_with
@@ -648,8 +648,84 @@ module RubyVM::MJIT
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # opt_and
-    # opt_or
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_and(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      if two_fixnums_on_stack?(jit)
+        # Create a side-exit to fall back to the interpreter
+        # Note: we generate the side-exit before popping operands from the stack
+        side_exit = side_exit(jit, ctx)
+
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_AND)
+          return CantCompile
+        end
+
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm, side_exit)
+
+        # Get the operands and destination from the stack
+        arg1 = ctx.stack_pop(1)
+        arg0 = ctx.stack_pop(1)
+
+        asm.comment('bitwise and')
+        asm.mov(:rax, arg0)
+        asm.and(:rax, arg1)
+
+        # Push the return value onto the stack
+        dst = ctx.stack_push
+        asm.mov(dst, :rax)
+
+        KeepCompiling
+      else
+        opt_send_without_block(jit, ctx, asm)
+      end
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_or(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      if two_fixnums_on_stack?(jit)
+        # Create a side-exit to fall back to the interpreter
+        # Note: we generate the side-exit before popping operands from the stack
+        side_exit = side_exit(jit, ctx)
+
+        unless Invariants.assume_bop_not_redefined(jit, C.INTEGER_REDEFINED_OP_FLAG, C.BOP_OR)
+          return CantCompile
+        end
+
+        # Check that both operands are fixnums
+        guard_two_fixnums(jit, ctx, asm, side_exit)
+
+        # Get the operands and destination from the stack
+        asm.comment('bitwise or')
+        arg1 = ctx.stack_pop(1)
+        arg0 = ctx.stack_pop(1)
+
+        # Do the bitwise or arg0 | arg1
+        asm.mov(:rax, arg0)
+        asm.or(:rax, arg1)
+
+        # Push the return value onto the stack
+        dst = ctx.stack_push
+        asm.mov(dst, :rax)
+
+        KeepCompiling
+      else
+        opt_send_without_block(jit, ctx, asm)
+      end
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]

@@ -121,6 +121,16 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg],
           imm: imm8(src_imm),
         )
+      # AND r64, r/m64 (Mod 01: [reg]+disp8)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+        # REX.W + 23 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x23,
+          mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
+          disp: imm8(src_disp),
+        )
       else
         raise NotImplementedError, "and: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
@@ -542,6 +552,23 @@ module RubyVM::MJIT
         end
       else
         raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def or(dst, src)
+      case [dst, src]
+      # OR r64, r/m64 (Mod 01: [reg]+disp8)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+        # REX.W + 0B /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x0b,
+          mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
+          disp: imm8(src_disp),
+        )
+      else
+        raise NotImplementedError, "or: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 

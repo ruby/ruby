@@ -348,6 +348,7 @@ generator = BindingGenerator.new(
       VM_ENV_DATA_INDEX_SPECVAL
     ],
     UINT: %w[
+      BOP_AND
       BOP_AREF
       BOP_GE
       BOP_GT
@@ -355,6 +356,7 @@ generator = BindingGenerator.new(
       BOP_LT
       BOP_MINUS
       BOP_MOD
+      BOP_OR
       BOP_PLUS
       ARRAY_REDEFINED_OP_FLAG
       HASH_REDEFINED_OP_FLAG
