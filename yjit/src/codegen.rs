@@ -2602,6 +2602,7 @@ fn gen_fixnum_cmp(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cmov_op: CmovFn,
+    bop: ruby_basic_operators,
 ) -> CodegenStatus {
     let two_fixnums = match ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
@@ -2617,7 +2618,7 @@ fn gen_fixnum_cmp(
         // Note: we generate the side-exit before popping operands from the stack
         let side_exit = get_side_exit(jit, ocb, ctx);
 
-        if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_LT) {
+        if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, bop) {
             return CantCompile;
         }
 
@@ -2648,7 +2649,7 @@ fn gen_opt_lt(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_l)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_l, BOP_LT)
 }
 
 fn gen_opt_le(
@@ -2657,7 +2658,7 @@ fn gen_opt_le(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_le)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_le, BOP_LE)
 }
 
 fn gen_opt_ge(
@@ -2666,7 +2667,7 @@ fn gen_opt_ge(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_ge)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_ge, BOP_GE)
 }
 
 fn gen_opt_gt(
@@ -2675,7 +2676,7 @@ fn gen_opt_gt(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_g)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_g, BOP_GT)
 }
 
 // Implements specialized equality for either two fixnum or two strings
