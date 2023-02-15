@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 43/101
+      # 45/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -62,11 +62,11 @@ module RubyVM::MJIT
       # newrange
       when :pop then pop(jit, ctx, asm)
       when :dup then dup(jit, ctx, asm)
-      # dupn
+      when :dupn then dupn(jit, ctx, asm)
       # swap
       # opt_reverse
       # topn
-      # setn
+      when :setn then setn(jit, ctx, asm)
       # adjuststack
       # defined
       # checkmatch
@@ -284,11 +284,49 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # dupn
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def dupn(jit, ctx, asm)
+      n = jit.operand(0)
+
+      # In practice, seems to be only used for n==2
+      if n != 2
+        return CantCompile
+      end
+
+      opnd1 = ctx.stack_opnd(1)
+      opnd0 = ctx.stack_opnd(0)
+
+      dst1 = ctx.stack_push
+      asm.mov(:rax, opnd1)
+      asm.mov(dst1, :rax)
+
+      dst0 = ctx.stack_push
+      asm.mov(:rax, opnd0)
+      asm.mov(dst0, :rax)
+
+      KeepCompiling
+    end
+
     # swap
     # opt_reverse
     # topn
-    # setn
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def setn(jit, ctx, asm)
+      n = jit.operand(0)
+
+      top_val = ctx.stack_pop(0)
+      dst_opnd = ctx.stack_opnd(n)
+      asm.mov(:rax, top_val)
+      asm.mov(dst_opnd, :rax)
+
+      KeepCompiling
+    end
+
     # adjuststack
     # defined
     # checkmatch
