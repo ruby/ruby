@@ -69,7 +69,7 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if SIZE_POOL_COUNT == 1
+#if !RCLASS_EXT_EMBEDDED
     struct rb_classext_struct *ptr;
 #endif
 };
