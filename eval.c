@@ -441,7 +441,7 @@ rb_class_modify_check(VALUE klass)
 
         if (FL_TEST(klass, FL_SINGLETON)) {
             desc = "object";
-            klass = rb_ivar_get(klass, id__attached__);
+            klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!SPECIAL_CONST_P(klass)) {
                 switch (BUILTIN_TYPE(klass)) {
                   case T_MODULE:
