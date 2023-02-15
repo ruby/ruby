@@ -239,7 +239,7 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             if (new_parent) {
                 bool dont_care;
                 enum ruby_value_type type = BUILTIN_TYPE(obj);
-                bool new_shape_necessary = type == T_CLASS || type == T_MODULE;
+                bool new_shape_necessary = type != T_OBJECT;
                 rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true, new_shape_necessary);
                 new_child->capacity = shape->capacity;
                 if (new_child->type == SHAPE_IVAR) {
