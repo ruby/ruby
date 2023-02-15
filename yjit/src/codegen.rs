@@ -3863,7 +3863,7 @@ fn jit_guard_known_klass(
         }
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
-            && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
+            && sample_instance == rb_class_attached_object(known_klass)
     } {
         // Singleton classes are attached to one specific object, so we can
         // avoid one memory access (and potentially the is_heap check) by

@@ -1151,7 +1151,10 @@ void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    RCLASS_ALLOCATOR(klass) = func;
+    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+        rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
+    }
+    RCLASS_SET_ALLOCATOR(klass, func);
 }
 
 void
