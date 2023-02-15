@@ -525,12 +525,6 @@ EOF
       load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
     end
 
-    def load_marshal(data, marshal_proc: nil)
-      Marshal.load(data, marshal_proc)
-    rescue TypeError => e
-      raise MarshalError, "#{e.class}: #{e.message}"
-    end
-
     def load_gemspec(file, validate = false)
       @gemspec_cache ||= {}
       key = File.expand_path(file)
@@ -618,6 +612,12 @@ EOF
     end
 
     private
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
+    rescue TypeError => e
+      raise MarshalError, "#{e.class}: #{e.message}"
+    end
 
     def eval_yaml_gemspec(path, contents)
       Kernel.require "psych"

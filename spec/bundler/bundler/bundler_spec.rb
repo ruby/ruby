@@ -5,9 +5,9 @@ require "tmpdir"
 
 RSpec.describe Bundler do
   describe "#load_marshal" do
-    it "loads any data" do
+    it "is a private method and raises an error" do
       data = Marshal.dump(Bundler)
-      expect(Bundler.load_marshal(data)).to eq(Bundler)
+      expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method `load_marshal' called/)
     end
   end
 
