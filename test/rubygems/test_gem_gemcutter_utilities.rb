@@ -235,20 +235,61 @@ class TestGemGemcutterUtilities < Gem::TestCase
     webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
     response_fail = "You have enabled multifactor authentication"
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    port = 5678
+    server = TCPServer.new(port)
 
-    util_sign_in(proc do
-      @call_count ||= 0
-      if (@call_count += 1).odd?
-        HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
-      else
-        HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    TCPServer.stub(:new, server) do
+      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+        util_sign_in(proc do
+          @call_count ||= 0
+          if (@call_count += 1).odd?
+            HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+          else
+            HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+          end
+        end, nil, [], "", webauthn_verification_url)
       end
-    end, nil, [], "", webauthn_verification_url)
+    ensure
+      server.close
+    end
 
-    url_with_port = "#{webauthn_verification_url}?port=5678"
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @sign_in_ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+  end
+
+  def test_sign_in_with_webauthn_enabled_with_error
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication"
+    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    port = 5678
+    server = TCPServer.new(port)
+    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+
+    error = assert_raise Gem::WebauthnVerificationError do
+      TCPServer.stub(:new, server) do
+        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+          util_sign_in(proc do
+            @call_count ||= 0
+            if (@call_count += 1).odd?
+              HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+            else
+              HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+            end
+          end, nil, [], "", webauthn_verification_url)
+        end
+      ensure
+        server.close
+      end
+    end
+
+    assert_equal "Security device verification failed: Something went wrong", error.message
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @sign_in_ui.output
+    refute_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    refute_match "Signed in with API key:", @sign_in_ui.output
   end
 
   def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
