@@ -11,6 +11,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/error.h"
 #include "internal/vm.h"
 #include "iseq.h"
@@ -1746,7 +1747,7 @@ rb_profile_frame_classpath(VALUE frame)
             klass = RBASIC(klass)->klass;
         }
         else if (FL_TEST(klass, FL_SINGLETON)) {
-            klass = rb_ivar_get(klass, id__attached__);
+            klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE))
                 return rb_sprintf("#<%s:%p>", rb_class2name(rb_obj_class(klass)), (void*)klass);
         }

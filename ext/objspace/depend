@@ -342,6 +342,7 @@ objspace.o: $(hdrdir)/ruby/regex.h
 objspace.o: $(hdrdir)/ruby/ruby.h
 objspace.o: $(hdrdir)/ruby/st.h
 objspace.o: $(hdrdir)/ruby/subst.h
+objspace.o: $(top_srcdir)/constant.h
 objspace.o: $(top_srcdir)/id_table.h
 objspace.o: $(top_srcdir)/internal.h
 objspace.o: $(top_srcdir)/internal/array.h
@@ -353,6 +354,7 @@ objspace.o: $(top_srcdir)/internal/imemo.h
 objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
+objspace.o: $(top_srcdir)/internal/variable.h
 objspace.o: $(top_srcdir)/internal/warnings.h
 objspace.o: $(top_srcdir)/node.h
 objspace.o: $(top_srcdir)/shape.h

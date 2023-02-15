@@ -8,9 +8,11 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Class.
  */
+#include "id.h"
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
+#include "internal/variable.h"  /* for rb_class_ivar_set */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
@@ -99,6 +101,7 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
+#define RCLASS_ATTACHED_OBJECT(c) (rb_attr_get(c, id__attached__))
 
 #define RICLASS_IS_ORIGIN FL_USER0
 #define RCLASS_CLONED     FL_USER1
@@ -195,6 +198,16 @@ RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
 
     RB_OBJ_WRITE(klass, &(RCLASS_EXT(klass)->classpath), classpath);
     RCLASS_EXT(klass)->permanent_classpath = permanent;
+}
+
+static inline VALUE
+RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
+{
+    assert(BUILTIN_TYPE(klass) == T_CLASS);
+    assert(FL_TEST(klass, FL_SINGLETON));
+
+    rb_class_ivar_set(klass, id__attached__, attached_object);
+    return attached_object;
 }
 
 #endif /* INTERNAL_CLASS_H */
