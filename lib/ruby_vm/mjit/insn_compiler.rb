@@ -1731,6 +1731,10 @@ module RubyVM::MJIT
         asm.incr_counter(:send_arity)
         return CantCompile
       end
+      if cfunc.argc == -2
+        asm.incr_counter(:send_cfunc_ruby_array_varg)
+        return CantCompile
+      end
 
       # Check interrupts before SP motion to safely side-exit with the original SP.
       jit_check_ints(jit, ctx, asm)
