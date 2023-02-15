@@ -1592,45 +1592,38 @@ module Net   #:nodoc:
 
     public
 
-    # Retrieves data from +path+ on the connected-to host which may be an
-    # absolute path String or a URI to extract the path from.
+    # :call-seq:
+    #    get(path, initheader = nil) {|res| ... }
     #
-    # +initheader+ must be a Hash like { 'Accept' => '*/*', ... },
-    # and it defaults to an empty hash.
-    # If +initheader+ doesn't have the key 'accept-encoding', then
-    # a value of "gzip;q=1.0,deflate;q=0.6,identity;q=0.3" is used,
-    # so that gzip compression is used in preference to deflate
-    # compression, which is used in preference to no compression.
-    # Ruby doesn't have libraries to support the compress (Lempel-Ziv)
-    # compression, so that is not supported.  The intent of this is
-    # to reduce bandwidth by default.   If this routine sets up
-    # compression, then it does the decompression also, removing
-    # the header as well to prevent confusion.  Otherwise
-    # it leaves the body as it found it.
+    # Sends a GET request to the server;
+    # returns a Net::HTTPResponse object,
+    # which actually will be an instance of a subclass of that class:
     #
-    # This method returns a Net::HTTPResponse object.
+    # The request is based on the Net::HTTP::Get object
+    # created from string +path+ and initial headers hash +initheader+.
     #
-    # If called with a block, yields each fragment of the
-    # entity body in turn as a string as it is read from
-    # the socket.  Note that in this case, the returned response
-    # object will *not* contain a (meaningful) body.
+    # With a block given, calls the block with the response body:
     #
-    # +dest+ argument is obsolete.
-    # It still works but you must not use it.
+    #   http.get('/todos/1') do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
     #
-    # This method never raises an exception.
+    # Output:
     #
-    #     response = http.get('/index.html')
+    #   "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
     #
-    #     # using block
-    #     File.open('result.txt', 'w') {|f|
-    #       http.get('/~foo/') do |str|
-    #         f.write str
-    #       end
-    #     }
+    # With no block given, simply returns the response object:
+    #
+    #   http.get('/') # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Get: request class for \HTTP method GET.
+    # - Net::HTTP.get: sends GET request, returns response body.
     #
     def get(path, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       res = nil
+
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
         res = r
