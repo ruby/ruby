@@ -39,7 +39,7 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
-  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
+  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash, Gem::Version].freeze
   SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed."
   SAFE_MARSHAL_PROC = proc do |object|
     object.tap do
