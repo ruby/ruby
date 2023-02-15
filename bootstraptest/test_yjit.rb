@@ -3552,3 +3552,30 @@ assert_equal 'threw', %q{
 
   bar([Hash.ruby2_keywords_hash({})])
 }
+
+# Test instance_of? and is_a?
+assert_equal 'true', %q{
+  1.instance_of?(Integer) && 1.is_a?(Integer)
+}
+
+# Test instance_of? and is_a? for singleton classes
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(Array) && a.is_a?(Array)
+}
+
+# Test instance_of? for singleton_class
+# Yes this does really return false
+assert_equal 'false', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(a.singleton_class)
+}
+
+# Test is_a? for singleton_class
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.is_a?(a.singleton_class)
+}

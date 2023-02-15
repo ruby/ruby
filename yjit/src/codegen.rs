@@ -4020,6 +4020,122 @@ fn jit_rb_false(
     true
 }
 
+/// Codegen for Kernel#is_a?
+fn jit_rb_kernel_is_a(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    argc: i32,
+    known_recv_class: *const VALUE,
+) -> bool {
+    if argc != 1 {
+        return false;
+    }
+
+    // If this is a super call we might not know the class
+    if known_recv_class.is_null() {
+        return false;
+    }
+
+    // Important note: The output code will simply `return true/false`.
+    // Correctness follows from:
+    //  - `known_recv_class` implies there is a guard scheduled before here
+    //    for a particular `CLASS_OF(lhs)`.
+    //  - We guard that rhs is identical to the compile-time sample
+    //  - In general, for any two Class instances A, B, `A < B` does not change at runtime.
+    //    Class#superclass is stable.
+
+    let sample_rhs = jit_peek_at_stack(jit, ctx, 0);
+    let sample_lhs = jit_peek_at_stack(jit, ctx, 1);
+
+    // We are not allowing module here because the module hierachy can change at runtime.
+    if !unsafe { RB_TYPE_P(sample_rhs, RUBY_T_CLASS) } {
+        return false;
+    }
+    let sample_is_a = unsafe { rb_obj_is_kind_of(sample_lhs, sample_rhs) == Qtrue };
+
+    let side_exit = get_side_exit(jit, ocb, ctx);
+    asm.comment("Kernel#is_a?");
+    asm.cmp(ctx.stack_opnd(0), sample_rhs.into());
+    asm.jne(counted_exit!(ocb, side_exit, send_is_a_class_mismatch));
+
+    ctx.stack_pop(2);
+
+    if sample_is_a {
+        let stack_ret = ctx.stack_push(Type::True);
+        asm.mov(stack_ret, Qtrue.into());
+    } else {
+        let stack_ret = ctx.stack_push(Type::False);
+        asm.mov(stack_ret, Qfalse.into());
+    }
+    return true;
+}
+
+/// Codegen for Kernel#instance_of?
+fn jit_rb_kernel_instance_of(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    argc: i32,
+    known_recv_class: *const VALUE,
+) -> bool {
+    if argc != 1 {
+        return false;
+    }
+
+    // If this is a super call we might not know the class
+    if known_recv_class.is_null() {
+        return false;
+    }
+
+    // Important note: The output code will simply `return true/false`.
+    // Correctness follows from:
+    //  - `known_recv_class` implies there is a guard scheduled before here
+    //    for a particular `CLASS_OF(lhs)`.
+    //  - We guard that rhs is identical to the compile-time sample
+    //  - For a particular `CLASS_OF(lhs)`, `rb_obj_class(lhs)` does not change.
+    //    (because for any singleton class `s`, `s.superclass.equal?(s.attached_object.class)`)
+
+    let sample_rhs = jit_peek_at_stack(jit, ctx, 0);
+    let sample_lhs = jit_peek_at_stack(jit, ctx, 1);
+
+    // Filters out cases where the C implementation raises
+    if unsafe { !(RB_TYPE_P(sample_rhs, RUBY_T_CLASS) || RB_TYPE_P(sample_rhs, RUBY_T_MODULE)) } {
+        return false;
+    }
+
+    // We need to grab the class here to deal with singleton classes.
+    // Instance of grabs the "real class" of the object rather than the
+    // singleton class.
+    let sample_lhs_real_class = unsafe { rb_obj_class(sample_lhs) };
+
+    let sample_instance_of = sample_lhs_real_class == sample_rhs;
+
+    let side_exit = get_side_exit(jit, ocb, ctx);
+    asm.comment("Kernel#instance_of?");
+    asm.cmp(ctx.stack_opnd(0), sample_rhs.into());
+    asm.jne(counted_exit!(ocb, side_exit, send_instance_of_class_mismatch));
+
+    ctx.stack_pop(2);
+
+    if sample_instance_of {
+        let stack_ret = ctx.stack_push(Type::True);
+        asm.mov(stack_ret, Qtrue.into());
+    } else {
+        let stack_ret = ctx.stack_push(Type::False);
+        asm.mov(stack_ret, Qfalse.into());
+    }
+    return true;
+}
+
 // Codegen for rb_obj_equal()
 // object identity comparison
 fn jit_rb_obj_equal(
@@ -7727,6 +7843,9 @@ impl CodegenGlobals {
 
             self.yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
             self.yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
+            self.yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
+            self.yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
+            self.yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
 
             self.yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
