@@ -16,7 +16,7 @@ jobs:
         with:
           repo-token: ${{ secrets.MATZBOT_GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          check-regexp: "^Ubuntu / make (check,*"
+          check-regexp: "^Ubuntu"
           wait-interval: 30
       - name: Auto-merge for Dependabot PRs
         if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
