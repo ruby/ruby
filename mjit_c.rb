@@ -1078,6 +1078,8 @@ module RubyVM::MJIT # :nodoc: all
       optaref_recv_not_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_recv_not_array)")],
       optaref_recv_not_hash: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_recv_not_hash)")],
       optaref_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_send)")],
+      optgetconst_not_cached: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_not_cached)")],
+      optgetconst_cref: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_cref)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end
