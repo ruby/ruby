@@ -3489,7 +3489,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             xfree(RCLASS_SUPERCLASSES(obj));
         }
 
-#if SIZE_POOL_COUNT == 1
+#if !RCLASS_EXT_EMBEDDED
         if (RCLASS_EXT(obj))
             xfree(RCLASS_EXT(obj));
 #endif
@@ -4908,7 +4908,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
             if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
                 size += (RCLASS_SUPERCLASS_DEPTH(obj) + 1) * sizeof(VALUE);
             }
-#if SIZE_POOL_COUNT == 1
+#if !RCLASS_EXT_EMBEDDED
             size += sizeof(rb_classext_t);
 #endif
         }
