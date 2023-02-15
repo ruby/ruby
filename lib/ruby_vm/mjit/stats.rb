@@ -82,7 +82,7 @@ module RubyVM::MJIT
       count_width = top_exits.map { |_name, count| format_number(10, count).length }.max + padding
       top_exits.each do |name, count|
         ratio = 100.0 * count / total_exits
-        $stderr.puts "#{format("%#{name_width}s", name)}: #{format_number(count_width, count)} (#{format('%.1f', ratio)}%)"
+        $stderr.puts "#{format("%#{name_width}s", name)}: #{format_number(count_width, count)} (#{format('%4.1f', ratio)}%)"
       end
     end
 
