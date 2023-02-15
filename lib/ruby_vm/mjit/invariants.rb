@@ -24,14 +24,14 @@ module RubyVM::MJIT
       def assume_bop_not_redefined(jit, klass, op)
         return false unless C.BASIC_OP_UNREDEFINED_P(klass, op)
 
-        ensure_block_entry_exit(jit.block, cause: 'assume_bop_not_redefined')
+        ensure_block_entry_exit(jit, cause: 'assume_bop_not_redefined')
         @bop_blocks << jit.block
         true
       end
 
       # @param jit [RubyVM::MJIT::JITState]
       def assume_method_lookup_stable(jit, cme)
-        ensure_block_entry_exit(jit.block, cause: 'assume_method_lookup_stable')
+        ensure_block_entry_exit(jit, cause: 'assume_method_lookup_stable')
         @cme_blocks[cme.to_i] << jit.block
       end
 
@@ -80,10 +80,10 @@ module RubyVM::MJIT
         end
       end
 
-      private
-
+      # @param jit [RubyVM::MJIT::JITState]
       # @param block [RubyVM::MJIT::Block]
-      def ensure_block_entry_exit(block, cause:)
+      def ensure_block_entry_exit(jit, cause:)
+        block = jit.block
         if block.entry_exit.nil?
           block.entry_exit = Assembler.new.then do |asm|
             @exit_compiler.compile_entry_exit(block.pc, block.ctx, asm, cause:)
