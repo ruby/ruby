@@ -23,11 +23,11 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 40/101
+      # 43/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
-      # getlocal
-      # setlocal
+      when :getlocal then getlocal(jit, ctx, asm)
+      when :setlocal then setlocal(jit, ctx, asm)
       # getblockparam
       # setblockparam
       # getblockparamproxy
@@ -123,7 +123,7 @@ module RubyVM::MJIT
       when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
       when :getlocal_WC_1 then getlocal_WC_1(jit, ctx, asm)
       when :setlocal_WC_0 then setlocal_WC_0(jit, ctx, asm)
-      # setlocal_WC_1
+      when :setlocal_WC_1 then setlocal_WC_1(jit, ctx, asm)
       when :putobject_INT2FIX_0_ then putobject_INT2FIX_0_(jit, ctx, asm)
       when :putobject_INT2FIX_1_ then putobject_INT2FIX_1_(jit, ctx, asm)
       else CantCompile
@@ -144,8 +144,24 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # getlocal
-    # setlocal
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getlocal(jit, ctx, asm)
+      idx = jit.operand(0)
+      level = jit.operand(1)
+      jit_getlocal_generic(jit, ctx, asm, idx:, level:)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def setlocal(jit, ctx, asm)
+      idx = jit.operand(0)
+      level = jit.operand(1)
+      jit_setlocal_generic(jit, ctx, asm, idx:, level:)
+    end
+
     # getblockparam
     # setblockparam
     # getblockparamproxy
@@ -919,24 +935,10 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def getlocal_WC_1(jit, ctx, asm)
-      # Get operands
       idx = jit.operand(0)
-      level = 1
-
-      # Get EP
-      ep_reg = :rax
-      jit_get_ep(asm, level, reg: ep_reg)
-
-      # Get a local variable
-      asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
-
-      # Push it to the stack
-      stack_top = ctx.stack_push
-      asm.mov(stack_top, :rax)
-      KeepCompiling
+      jit_getlocal_generic(jit, ctx, asm, idx:, level: 1)
     end
 
-    # setlocal_WC_0
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -972,7 +974,13 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # setlocal_WC_1
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def setlocal_WC_1(jit, ctx, asm)
+      idx = jit.operand(0)
+      jit_setlocal_generic(jit, ctx, asm, idx:, level: 1)
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -991,6 +999,49 @@ module RubyVM::MJIT
     #
     # Helpers
     #
+
+    def jit_getlocal_generic(jit, ctx, asm, idx:, level:)
+      # Load environment pointer EP at level
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
+
+      # Get a local variable
+      asm.mov(:rax, [ep_reg, -idx * C.VALUE.size])
+
+      # Push it to the stack
+      stack_top = ctx.stack_push
+      asm.mov(stack_top, :rax)
+      KeepCompiling
+    end
+
+    def jit_setlocal_generic(jit, ctx, asm, idx:, level:)
+      # Load environment pointer EP at level
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
+
+      # Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+      # only affect heap objects being written. If we know an immediate value is being written we
+      # can skip this check.
+
+      # flags & VM_ENV_FLAG_WB_REQUIRED
+      flags_opnd = [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS]
+      asm.test(flags_opnd, C.VM_ENV_FLAG_WB_REQUIRED)
+
+      # Create a side-exit to fall back to the interpreter
+      side_exit = side_exit(jit, ctx)
+
+      # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+      asm.jnz(side_exit)
+
+      # Pop the value to write from the stack
+      stack_top = ctx.stack_pop(1)
+
+      # Write the value at the environment pointer
+      asm.mov(:rcx, stack_top)
+      asm.mov([ep_reg, -(C.VALUE.size * idx)], :rcx)
+
+      KeepCompiling
+    end
 
     # Compute the index of a local variable from its slot index
     def slot_to_local_idx(iseq, slot_idx)
