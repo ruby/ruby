@@ -11,12 +11,15 @@ module ObjectSpace
 
   module_function
 
-  # call-seq:
-  #   ObjectSpace.dump(obj[, output: :string]) -> "{ ... }"
-  #   ObjectSpace.dump(obj, output: :file) -> #<File:/tmp/rubyobj20131125-88733-1xkfmpv.json>
-  #   ObjectSpace.dump(obj, output: :stdout) -> nil
-  #
   # Dump the contents of a ruby object as JSON.
+  #
+  # _output_ can be one of: +:stdout+, +:file+, +:string+, or IO object.
+  #
+  # * +:file+ means dumping to a tempfile and returning corresponding File object;
+  # * +:stdout+ means printing the dump and returning +nil+;
+  # * +:string+ means returning a string with the dump;
+  # * if an instance of IO object is provided, the output goes there, and the object
+  #   is returned.
   #
   # This method is only expected to work with C Ruby.
   # This is an experimental method and is subject to change.
@@ -43,16 +46,11 @@ module ObjectSpace
   end
 
 
-  # call-seq:
-  #   ObjectSpace.dump_all([output: :file]) -> #<File:/tmp/rubyheap20131125-88469-laoj3v.json>
-  #   ObjectSpace.dump_all(output: :stdout) -> nil
-  #   ObjectSpace.dump_all(output: :string) -> "{...}\n{...}\n..."
-  #   ObjectSpace.dump_all(output: File.open('heap.json','w')) -> #<File:heap.json>
-  #   ObjectSpace.dump_all(output: :string, since: 42) -> "{...}\n{...}\n..."
-  #
   # Dump the contents of the ruby heap as JSON.
   #
-  # _full_ must be a boolean. If true all heap slots are dumped including the empty ones (T_NONE).
+  # _output_ argument is the same as for #dump.
+  #
+  # _full_ must be a boolean. If true, all heap slots are dumped including the empty ones (+T_NONE+).
   #
   # _since_ must be a non-negative integer or +nil+.
   #
@@ -104,16 +102,11 @@ module ObjectSpace
     ret
   end
 
-  #  call-seq:
-  #    ObjectSpace.dump_shapes([output: :file]) -> #<File:/tmp/rubyshapes20131125-88469-laoj3v.json>
-  #    ObjectSpace.dump_shapes(output: :stdout) -> nil
-  #    ObjectSpace.dump_shapes(output: :string) -> "{...}\n{...}\n..."
-  #    ObjectSpace.dump_shapes(output: File.open('shapes.json','w')) -> #<File:shapes.json>
-  #    ObjectSpace.dump_all(output: :string, since: 42) -> "{...}\n{...}\n..."
-  #
   #  Dump the contents of the ruby shape tree as JSON.
   #
-  #  If _shapes_ is a positive integer, only shapes newer than the provided
+  #  _output_ argument is the same as for #dump.
+  #
+  #  If _since_ is a positive integer, only shapes newer than the provided
   #  shape id are dumped. The current shape_id can be accessed using <tt>RubyVM.stat(:next_shape_id)</tt>.
   #
   #  This method is only expected to work with C Ruby.
