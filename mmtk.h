@@ -57,6 +57,7 @@ typedef struct MMTk_GCThreadTLS {
 typedef struct MMTk_RubyUpcalls {
     void (*init_gc_worker_thread)(struct MMTk_GCThreadTLS *gc_worker_tls);
     struct MMTk_GCThreadTLS *(*get_gc_thread_tls)(void);
+    bool (*is_mutator)(void);
     void (*stop_the_world)(MMTk_VMWorkerThread tls);
     void (*resume_mutators)(MMTk_VMWorkerThread tls);
     void (*block_for_gc)(MMTk_VMMutatorThread tls);

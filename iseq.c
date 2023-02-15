@@ -312,7 +312,24 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
                 const struct rb_callcache *cc = cds[i].cc;
                 if (cc) {
+#if USE_MMTK
+                    // vm_empty_cc is an off-heap object, but has the layout of a heap object.
+                    // In vanilla Ruby, rb_gc_location looks at the header to see if it is T_MOVED.
+                    // Since vm_empty_cc is not T_MOVED, it treats it like an un-moved object.
+                    // But MMTk will think it is not a heap object and will crash.
+                    // We simply skip it if cc is vm_empty_cc.
+                    if (!rb_mmtk_enabled_p() || cc != rb_vm_empty_cc()) {
+#endif
+#if USE_MMTK
+                    if (rb_mmtk_enabled_p() || reference_updating) {
+                        // Note: With an evacuating collector (such as Immix),
+                        // the object (for example, the `cc` below) is moved whenever we trace it,
+                        // and there is not any distinct "mark phase" where objects do not move.
+                        // So because we look at the contents of `cc` below,
+                        // we must always prepare for the possibility that `cc` may be moved.
+#else
                     if (reference_updating) {
+#endif
                         cc = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
                     }
 
@@ -331,6 +348,9 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                             cds[i].cc = rb_vm_empty_cc();
                         }
                     }
+#if USE_MMTK
+                    }
+#endif
                 }
             }
         }

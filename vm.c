@@ -3132,6 +3132,11 @@ rb_execution_context_update(rb_execution_context_t *ec)
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
+
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p() || VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
+#endif
+
             cfp->self = rb_gc_location(cfp->self);
             cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
             cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
@@ -3147,6 +3152,10 @@ rb_execution_context_update(rb_execution_context_t *ec)
                     VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
             }
+
+#if USE_MMTK
+            }
+#endif
 
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }

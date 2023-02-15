@@ -1346,11 +1346,24 @@ static inline void gc_prof_sweep_timer_stop(rb_objspace_t *);
 static inline void gc_prof_set_malloc_info(rb_objspace_t *);
 static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
+
+#if USE_MMTK
+static inline VALUE rb_mmtk_maybe_forward(VALUE object);
+
+#define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
+    if (rb_mmtk_enabled_p()) { \
+        *(_type *)&(_thing) = (_type)rb_mmtk_maybe_forward((VALUE)(_thing)); \
+    } else if (gc_object_moved_p((_objspace), (VALUE)(_thing))) {    \
+        *(_type *)&(_thing) = (_type)RMOVED(_thing)->destination; \
+    } \
+} while (0)
+#else
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
     if (gc_object_moved_p((_objspace), (VALUE)(_thing))) {    \
         *(_type *)&(_thing) = (_type)RMOVED(_thing)->destination; \
     } \
 } while (0)
+#endif
 
 #define UPDATE_IF_MOVED(_objspace, _thing) TYPED_UPDATE_IF_MOVED(_objspace, VALUE, _thing)
 
@@ -3607,15 +3620,40 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
     VM_ASSERT(id == ccs->cme->called_id);
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+#if USE_MMTK
+        if (!rb_mmtk_enabled_p()) {
+        // NOTE:
+        // Vanilla Ruby assumes no objects are moved during marking phase,
+        // and attempts to clean-up invalidated method entries during marking.
+        // This doesn't work with MMTk.
+        // With an evacuating GC algorithm (such as Immix),
+        // children of `ccs` may have been moved during tracing.
+        // But the code in `rb_vm_ccs_free` reads many VALUE fields without calling `gc_location`
+        // which obviously isn't needed for the non-moving marking phase.
+        // We temporarily disable this call for now.
+        // FIXME: Clean up method entries properly using the weak reference processing mechanism.
+#endif
         rb_vm_ccs_free(ccs);
+#if USE_MMTK
+        }
+#endif
         return ID_TABLE_DELETE;
     }
     else {
         gc_mark(data->objspace, (VALUE)ccs->cme);
 
         for (int i=0; i<ccs->len; i++) {
+#if USE_MMTK
+            if (!rb_mmtk_enabled_p()) {
+            // Type info are stored on the heap, too.
+            // With evacuating GC, they may have been moved, too.
+            // It is not safe to inspect reference fields during tracing.
+#endif
             VM_ASSERT(data->klass == ccs->entries[i].cc->klass);
             VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
+#if USE_MMTK
+            }
+#endif
 
             gc_mark(data->objspace, (VALUE)ccs->entries[i].ci);
             gc_mark(data->objspace, (VALUE)ccs->entries[i].cc);
@@ -11046,10 +11084,6 @@ check_id_table_move(VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
-#if USE_MMTK
-static inline VALUE rb_mmtk_maybe_forward(VALUE object);
-#endif
-
 /* Returns the new location of an object, if it moved.  Otherwise returns
  * the existing location. */
 VALUE
@@ -15855,9 +15889,7 @@ rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
 
     rb_objspace_t *objspace = &rb_objspace;
     gc_mark_children(objspace, obj);
-
-    // TODO: Enable the following line later.
-    //gc_update_object_references(objspace, obj);
+    gc_update_object_references(objspace, obj);
 }
 
 // This is used to determine the pinning fields of potential pinning parents (PPPs).
@@ -16173,6 +16205,7 @@ rb_mmtk_update_global_weak_tables(void)
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
+    rb_mmtk_is_mutator,
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
