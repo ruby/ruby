@@ -350,16 +350,44 @@ rb_binding_new(void)
  *  call-seq:
  *     binding -> a_binding
  *
- *  Returns a +Binding+ object, describing the variable and
+ *  Returns a Binding object, describing the variable and
  *  method bindings at the point of call. This object can be used when
- *  calling +eval+ to execute the evaluated command in this
- *  environment. See also the description of class +Binding+.
+ *  calling Binding#eval to execute the evaluated command in this
+ *  environment, or extracting its local variables.
  *
- *     def get_binding(param)
- *       binding
+ *     class User
+ *       def initialize(name, position)
+ *         @name = name
+ *         @position = position
+ *       end
+ *
+ *       def get_binding
+ *         binding
+ *       end
  *     end
- *     b = get_binding("hello")
- *     eval("param", b)   #=> "hello"
+ *
+ *     user = User.new('Joan', 'manager')
+ *     template = '{name: @name, position: @position}'
+ *
+ *     # evaluate template in context of the object
+ *     eval(template, user.get_binding)
+ *     #=> {:name=>"Joan", :position=>"manager"}
+ *
+ *  Binding#local_variable_get can be used to access the variables
+ *  whose names are reserved Ruby keywords:
+ *
+ *     # This is valid parameter declaration, but `if` parameter can't
+ *     # be accessed by name, because it is a reserved word.
+ *     def validate(field, validation, if: nil)
+ *       condition = binding.local_variable_get('if')
+ *       return unless condition
+ *
+ *       # ...Some implementation ...
+ *     end
+ *
+ *     validate(:name, :empty?, if: false) # skips validation
+ *     validate(:name, :empty?, if: true) # performs validation
+ *
  */
 
 static VALUE
