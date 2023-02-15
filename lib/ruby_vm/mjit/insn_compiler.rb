@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 45/101
+      # 46/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -37,7 +37,7 @@ module RubyVM::MJIT
       when :setinstancevariable then setinstancevariable(jit, ctx, asm)
       # getclassvariable
       # setclassvariable
-      # opt_getconstant_path
+      when :opt_getconstant_path then opt_getconstant_path(jit, ctx, asm)
       # getconstant
       # setconstant
       # getglobal
@@ -209,7 +209,47 @@ module RubyVM::MJIT
 
     # getclassvariable
     # setclassvariable
-    # opt_getconstant_path
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_getconstant_path(jit, ctx, asm)
+      ic = C.iseq_inline_constant_cache.new(jit.operand(0))
+      idlist = ic.segments
+
+      # See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
+      ice = ic.entry
+      if ice.nil?
+        # In this case, leave a block that unconditionally side exits
+        # for the interpreter to invalidate.
+        return CantCompile
+      end
+
+      # Make sure there is an exit for this block as the interpreter might want
+      # to invalidate this block from yjit_constant_ic_update().
+      Invariants.ensure_block_entry_exit(jit, cause: 'opt_getconstant_path')
+
+      if ice.ic_cref # with cref
+        # Not supported yet
+        return CantCompile
+      else # without cref
+        # TODO: implement this
+        # Optimize for single ractor mode.
+        # if !assume_single_ractor_mode(jit, ocb)
+        #   return CantCompile
+        # end
+
+        # Invalidate output code on any constant writes associated with
+        # constants referenced within the current block.
+        #assume_stable_constant_names(jit, ocb, idlist);
+
+        putobject(jit, ctx, asm, val: ice.value)
+      end
+
+      jump_to_next_insn(jit, ctx, asm)
+      EndBlock
+    end
+
     # getconstant
     # setconstant
     # getglobal
