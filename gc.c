@@ -7264,6 +7264,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
+        if (FL_TEST(obj, FL_SINGLETON)) {
+            gc_mark(objspace, RCLASS_ATTACHED_OBJECT(obj));
+        }
+        // Continue to the shared T_CLASS/T_MODULE
       case T_MODULE:
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
@@ -10566,6 +10570,10 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
+        if (FL_TEST(obj, FL_SINGLETON)) {
+            UPDATE_IF_MOVED(objspace, RCLASS_ATTACHED_OBJECT(obj));
+        }
+        // Continue to the shared T_CLASS/T_MODULE
       case T_MODULE:
         if (RCLASS_SUPER((VALUE)obj)) {
             UPDATE_IF_MOVED(objspace, RCLASS(obj)->super);

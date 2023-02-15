@@ -141,6 +141,7 @@ fn main() {
         .allowlist_function("rb_ary_tmp_new_from_values")
 
         // From include/ruby/internal/intern/class.h
+        .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
 
         // From include/ruby/internal/core/rclass.h
