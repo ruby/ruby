@@ -231,10 +231,10 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
-  def test_sign_in_with_webauthn_otp
+  def test_sign_in_with_webauthn_enabled
     webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
     response_fail = "You have enabled multifactor authentication"
-    api_key       = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
     util_sign_in(proc do
       @call_count ||= 0
@@ -243,9 +243,12 @@ class TestGemGemcutterUtilities < Gem::TestCase
       else
         HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
       end
-    end, nil, [], "111111\n", webauthn_verification_url)
+    end, nil, [], "", webauthn_verification_url)
 
-    assert_match "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_verification_url}", @sign_in_ui.output
+    url_with_port = "#{webauthn_verification_url}?port=5678"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @sign_in_ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
   end
 
   def util_sign_in(response, host = nil, args = [], extra_input = "", webauthn_url = nil)
