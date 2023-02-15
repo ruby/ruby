@@ -135,6 +135,7 @@ MJIT_RUNTIME_COUNTERS(
 
     send_cfunc_variadic,
     send_cfunc_too_many_args,
+    send_cfunc_ruby_array_varg,
 
     send_ivar,
     send_ivar_splat,
