@@ -4041,10 +4041,13 @@ fn jit_rb_kernel_is_a(
         return false;
     }
 
-    // Important note: This works because we depend on known_recv_class.
-    // The left hand side here will always have the same type because there
-    // is a guard before this method call that ensures that is the case.
-    // We just guard that the right hand side does not change.
+    // Important note: The output code will simply `return true/false`.
+    // Correctness follows from:
+    //  - `known_recv_class` implies there is a guard scheduled before here
+    //    for a particular `CLASS_OF(lhs)`.
+    //  - We guard that rhs is identical to the compile-time sample
+    //  - In general, for any two Class instances A, B, `A < B` does not change at runtime.
+    //    Class#superclass is stable.
 
     let sample_rhs = jit_peek_at_stack(jit, ctx, 0);
     let sample_lhs = jit_peek_at_stack(jit, ctx, 1);
@@ -4093,15 +4096,18 @@ fn jit_rb_kernel_instance_of(
         return false;
     }
 
-    // Important note: This works because we depend on known_recv_class.
-    // The left hand side here will always have the same type because there
-    // is a guard before this method call that ensures that is the case.
-    // We just guard that the right hand side does not change.
+    // Important note: The output code will simply `return true/false`.
+    // Correctness follows from:
+    //  - `known_recv_class` implies there is a guard scheduled before here
+    //    for a particular `CLASS_OF(lhs)`.
+    //  - We guard that rhs is identical to the compile-time sample
+    //  - For a particular `CLASS_OF(lhs)`, `rb_obj_class(lhs)` does not change.
+    //    (because for any singleton class `s`, `s.superclass.equal?(s.attached_object.class)`)
 
     let sample_rhs = jit_peek_at_stack(jit, ctx, 0);
     let sample_lhs = jit_peek_at_stack(jit, ctx, 1);
 
-    // Filters out cases where the c implementation raises
+    // Filters out cases where the C implementation raises
     if unsafe { !(RB_TYPE_P(sample_rhs, RUBY_T_CLASS) || RB_TYPE_P(sample_rhs, RUBY_T_MODULE)) } {
         return false;
     }
