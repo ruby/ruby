@@ -222,6 +222,7 @@ module RubyVM::MJIT
       if ice.nil?
         # In this case, leave a block that unconditionally side exits
         # for the interpreter to invalidate.
+        asm.incr_counter(:optgetconst_not_cached)
         return CantCompile
       end
 
@@ -231,6 +232,7 @@ module RubyVM::MJIT
 
       if ice.ic_cref # with cref
         # Not supported yet
+        asm.incr_counter(:optgetconst_cref)
         return CantCompile
       else # without cref
         # TODO: implement this

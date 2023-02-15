@@ -157,6 +157,9 @@ MJIT_RUNTIME_COUNTERS(
     optaref_recv_not_hash,
     optaref_send,
 
+    optgetconst_not_cached,
+    optgetconst_cref,
+
     compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS
