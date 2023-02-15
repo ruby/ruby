@@ -6,13 +6,15 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   let(:ref) { "HEAD" }
   let(:revision) { nil }
   let(:git_source) { nil }
+  let(:clone_result) { double(Process::Status, :success? => true) }
+  let(:base_clone_args) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch"] }
   subject { described_class.new(path, uri, ref, revision, git_source) }
 
   context "with configured credentials" do
     it "adds username and password to URI" do
       Bundler.settings.temporary(uri => "u:p") do
         allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
-        expect(subject).to receive(:git_retry).with("clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch", "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s)
+        expect(subject).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
@@ -20,7 +22,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     it "adds username and password to URI for host" do
       Bundler.settings.temporary("github.com" => "u:p") do
         allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
-        expect(subject).to receive(:git_retry).with("clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch", "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s)
+        expect(subject).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/rubygems/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
@@ -28,7 +30,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     it "does not add username and password to mismatched URI" do
       Bundler.settings.temporary("https://u:p@github.com/rubygems/rubygems-mismatch.git" => "u:p") do
         allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
-        expect(subject).to receive(:git_retry).with("clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch", "--", uri, path.to_s)
+        expect(subject).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
@@ -38,7 +40,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
         original = "https://orig:info@github.com/rubygems/rubygems.git"
         subject = described_class.new(Pathname("path"), original, "HEAD")
         allow(subject).to receive(:git).with("--version").and_return("git version 2.14.0")
-        expect(subject).to receive(:git_retry).with("clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch", "--", original, path.to_s)
+        expect(subject).to receive(:capture).with([*base_clone_args, "--", original, path.to_s], nil).and_return(["", "", clone_result])
         subject.checkout
       end
     end
