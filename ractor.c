@@ -380,9 +380,10 @@ ractor_queue_empty_p(rb_ractor_t *r, struct rb_ractor_queue *rq)
 }
 
 static bool
-ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_basket *basket)
+ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_basket *basket)
 {
     bool found = false;
+    struct rb_ractor_queue *rq = &r->sync.incoming_queue;
 
     RACTOR_LOCK(r);
     {
@@ -407,9 +408,11 @@ ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
 }
 
 static void
-ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_basket *basket)
+ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_basket *basket)
 {
     ASSERT_ractor_locking(r);
+
+    struct rb_ractor_queue *rq = &r->sync.incoming_queue;
 
     if (rq->size <= rq->cnt) {
         rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size * 2);
@@ -480,12 +483,11 @@ ractor_recursive_receive_if(rb_ractor_t *r)
 static VALUE
 ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
 {
-    struct rb_ractor_queue *rq = &r->sync.incoming_queue;
     struct rb_ractor_basket basket;
 
     ractor_recursive_receive_if(r);
 
-    if (ractor_queue_deq(r, rq, &basket) == false) {
+    if (ractor_queue_deq(r, &basket) == false) {
         if (r->sync.incoming_port_closed) {
             rb_raise(rb_eRactorClosedError, "The incoming port is already closed");
         }
@@ -900,7 +902,6 @@ static void
 ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_basket *b)
 {
     bool closed = false;
-    struct rb_ractor_queue *rq = &r->sync.incoming_queue;
 
     RACTOR_LOCK(r);
     {
@@ -908,7 +909,7 @@ ractor_send_basket(rb_execution_context_t *ec, rb_ractor_t *r, struct rb_ractor_
             closed = true;
         }
         else {
-            ractor_queue_enq(r, rq, b);
+            ractor_queue_enq(r, b);
             if (ractor_wakeup(r, wait_receiving, wakeup_by_send)) {
                 RUBY_DEBUG_LOG("wakeup");
             }
