@@ -111,7 +111,6 @@ extract.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 extract.o: $(hdrdir)/ruby/internal/intern/error.h
 extract.o: $(hdrdir)/ruby/internal/intern/eval.h
 extract.o: $(hdrdir)/ruby/internal/intern/file.h
-extract.o: $(hdrdir)/ruby/internal/intern/gc.h
 extract.o: $(hdrdir)/ruby/internal/intern/hash.h
 extract.o: $(hdrdir)/ruby/internal/intern/io.h
 extract.o: $(hdrdir)/ruby/internal/intern/load.h

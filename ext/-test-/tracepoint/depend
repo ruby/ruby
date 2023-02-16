@@ -112,7 +112,6 @@ gc_hook.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/error.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/eval.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/file.h
-gc_hook.o: $(hdrdir)/ruby/internal/intern/gc.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/hash.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/io.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -273,7 +272,6 @@ tracepoint.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/error.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/eval.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/file.h
-tracepoint.o: $(hdrdir)/ruby/internal/intern/gc.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/hash.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/io.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/load.h

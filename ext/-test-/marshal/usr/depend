@@ -112,7 +112,6 @@ usrmarshal.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/error.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/eval.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/file.h
-usrmarshal.o: $(hdrdir)/ruby/internal/intern/gc.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/hash.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/io.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/load.h

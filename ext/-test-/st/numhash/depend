@@ -112,7 +112,6 @@ numhash.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 numhash.o: $(hdrdir)/ruby/internal/intern/error.h
 numhash.o: $(hdrdir)/ruby/internal/intern/eval.h
 numhash.o: $(hdrdir)/ruby/internal/intern/file.h
-numhash.o: $(hdrdir)/ruby/internal/intern/gc.h
 numhash.o: $(hdrdir)/ruby/internal/intern/hash.h
 numhash.o: $(hdrdir)/ruby/internal/intern/io.h
 numhash.o: $(hdrdir)/ruby/internal/intern/load.h

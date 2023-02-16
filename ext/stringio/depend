@@ -122,7 +122,6 @@ stringio.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 stringio.o: $(hdrdir)/ruby/internal/intern/error.h
 stringio.o: $(hdrdir)/ruby/internal/intern/eval.h
 stringio.o: $(hdrdir)/ruby/internal/intern/file.h
-stringio.o: $(hdrdir)/ruby/internal/intern/gc.h
 stringio.o: $(hdrdir)/ruby/internal/intern/hash.h
 stringio.o: $(hdrdir)/ruby/internal/intern/io.h
 stringio.o: $(hdrdir)/ruby/internal/intern/load.h

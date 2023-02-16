@@ -112,7 +112,6 @@ path_to_class.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/error.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/eval.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/file.h
-path_to_class.o: $(hdrdir)/ruby/internal/intern/gc.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/hash.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/io.h
 path_to_class.o: $(hdrdir)/ruby/internal/intern/load.h

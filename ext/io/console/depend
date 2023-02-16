@@ -123,7 +123,6 @@ console.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 console.o: $(hdrdir)/ruby/internal/intern/error.h
 console.o: $(hdrdir)/ruby/internal/intern/eval.h
 console.o: $(hdrdir)/ruby/internal/intern/file.h
-console.o: $(hdrdir)/ruby/internal/intern/gc.h
 console.o: $(hdrdir)/ruby/internal/intern/hash.h
 console.o: $(hdrdir)/ruby/internal/intern/io.h
 console.o: $(hdrdir)/ruby/internal/intern/load.h

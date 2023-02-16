@@ -112,7 +112,6 @@ instrumentation.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/error.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/eval.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/file.h
-instrumentation.o: $(hdrdir)/ruby/internal/intern/gc.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/hash.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/io.h
 instrumentation.o: $(hdrdir)/ruby/internal/intern/load.h

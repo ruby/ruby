@@ -113,7 +113,6 @@ object_tracing.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/error.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/eval.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/file.h
-object_tracing.o: $(hdrdir)/ruby/internal/intern/gc.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/hash.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/io.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -290,7 +289,6 @@ objspace.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 objspace.o: $(hdrdir)/ruby/internal/intern/error.h
 objspace.o: $(hdrdir)/ruby/internal/intern/eval.h
 objspace.o: $(hdrdir)/ruby/internal/intern/file.h
-objspace.o: $(hdrdir)/ruby/internal/intern/gc.h
 objspace.o: $(hdrdir)/ruby/internal/intern/hash.h
 objspace.o: $(hdrdir)/ruby/internal/intern/io.h
 objspace.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -486,7 +484,6 @@ objspace_dump.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/error.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/eval.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/file.h
-objspace_dump.o: $(hdrdir)/ruby/internal/intern/gc.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/hash.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/io.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/load.h

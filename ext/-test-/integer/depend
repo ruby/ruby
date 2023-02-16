@@ -112,7 +112,6 @@ core_ext.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/error.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/eval.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/file.h
-core_ext.o: $(hdrdir)/ruby/internal/intern/gc.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/hash.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/io.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -281,7 +280,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -442,7 +440,6 @@ my_integer.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/error.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/eval.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/file.h
-my_integer.o: $(hdrdir)/ruby/internal/intern/gc.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/hash.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/io.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -112,7 +112,6 @@ rb_fatal.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/error.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/eval.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/file.h
-rb_fatal.o: $(hdrdir)/ruby/internal/intern/gc.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/hash.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/io.h
 rb_fatal.o: $(hdrdir)/ruby/internal/intern/load.h

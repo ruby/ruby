@@ -123,7 +123,6 @@ capacity.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 capacity.o: $(hdrdir)/ruby/internal/intern/error.h
 capacity.o: $(hdrdir)/ruby/internal/intern/eval.h
 capacity.o: $(hdrdir)/ruby/internal/intern/file.h
-capacity.o: $(hdrdir)/ruby/internal/intern/gc.h
 capacity.o: $(hdrdir)/ruby/internal/intern/hash.h
 capacity.o: $(hdrdir)/ruby/internal/intern/io.h
 capacity.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -297,7 +296,6 @@ coderange.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 coderange.o: $(hdrdir)/ruby/internal/intern/error.h
 coderange.o: $(hdrdir)/ruby/internal/intern/eval.h
 coderange.o: $(hdrdir)/ruby/internal/intern/file.h
-coderange.o: $(hdrdir)/ruby/internal/intern/gc.h
 coderange.o: $(hdrdir)/ruby/internal/intern/hash.h
 coderange.o: $(hdrdir)/ruby/internal/intern/io.h
 coderange.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -470,7 +468,6 @@ cstr.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 cstr.o: $(hdrdir)/ruby/internal/intern/error.h
 cstr.o: $(hdrdir)/ruby/internal/intern/eval.h
 cstr.o: $(hdrdir)/ruby/internal/intern/file.h
-cstr.o: $(hdrdir)/ruby/internal/intern/gc.h
 cstr.o: $(hdrdir)/ruby/internal/intern/hash.h
 cstr.o: $(hdrdir)/ruby/internal/intern/io.h
 cstr.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -636,7 +633,6 @@ ellipsize.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/error.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/eval.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/file.h
-ellipsize.o: $(hdrdir)/ruby/internal/intern/gc.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/hash.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/io.h
 ellipsize.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -807,7 +803,6 @@ enc_associate.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/error.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/eval.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/file.h
-enc_associate.o: $(hdrdir)/ruby/internal/intern/gc.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/hash.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/io.h
 enc_associate.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -980,7 +975,6 @@ enc_dummy.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/error.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/eval.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/file.h
-enc_dummy.o: $(hdrdir)/ruby/internal/intern/gc.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/hash.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/io.h
 enc_dummy.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1152,7 +1146,6 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/error.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/eval.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/file.h
-enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/gc.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/hash.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/io.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1325,7 +1318,6 @@ fstring.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 fstring.o: $(hdrdir)/ruby/internal/intern/error.h
 fstring.o: $(hdrdir)/ruby/internal/intern/eval.h
 fstring.o: $(hdrdir)/ruby/internal/intern/file.h
-fstring.o: $(hdrdir)/ruby/internal/intern/gc.h
 fstring.o: $(hdrdir)/ruby/internal/intern/hash.h
 fstring.o: $(hdrdir)/ruby/internal/intern/io.h
 fstring.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1488,7 +1480,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1649,7 +1640,6 @@ modify.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 modify.o: $(hdrdir)/ruby/internal/intern/error.h
 modify.o: $(hdrdir)/ruby/internal/intern/eval.h
 modify.o: $(hdrdir)/ruby/internal/intern/file.h
-modify.o: $(hdrdir)/ruby/internal/intern/gc.h
 modify.o: $(hdrdir)/ruby/internal/intern/hash.h
 modify.o: $(hdrdir)/ruby/internal/intern/io.h
 modify.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1820,7 +1810,6 @@ new.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 new.o: $(hdrdir)/ruby/internal/intern/error.h
 new.o: $(hdrdir)/ruby/internal/intern/eval.h
 new.o: $(hdrdir)/ruby/internal/intern/file.h
-new.o: $(hdrdir)/ruby/internal/intern/gc.h
 new.o: $(hdrdir)/ruby/internal/intern/hash.h
 new.o: $(hdrdir)/ruby/internal/intern/io.h
 new.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1983,7 +1972,6 @@ nofree.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nofree.o: $(hdrdir)/ruby/internal/intern/error.h
 nofree.o: $(hdrdir)/ruby/internal/intern/eval.h
 nofree.o: $(hdrdir)/ruby/internal/intern/file.h
-nofree.o: $(hdrdir)/ruby/internal/intern/gc.h
 nofree.o: $(hdrdir)/ruby/internal/intern/hash.h
 nofree.o: $(hdrdir)/ruby/internal/intern/io.h
 nofree.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2153,7 +2141,6 @@ normalize.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 normalize.o: $(hdrdir)/ruby/internal/intern/error.h
 normalize.o: $(hdrdir)/ruby/internal/intern/eval.h
 normalize.o: $(hdrdir)/ruby/internal/intern/file.h
-normalize.o: $(hdrdir)/ruby/internal/intern/gc.h
 normalize.o: $(hdrdir)/ruby/internal/intern/hash.h
 normalize.o: $(hdrdir)/ruby/internal/intern/io.h
 normalize.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2327,7 +2314,6 @@ qsort.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 qsort.o: $(hdrdir)/ruby/internal/intern/error.h
 qsort.o: $(hdrdir)/ruby/internal/intern/eval.h
 qsort.o: $(hdrdir)/ruby/internal/intern/file.h
-qsort.o: $(hdrdir)/ruby/internal/intern/gc.h
 qsort.o: $(hdrdir)/ruby/internal/intern/hash.h
 qsort.o: $(hdrdir)/ruby/internal/intern/io.h
 qsort.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2491,7 +2477,6 @@ rb_interned_str.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/error.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/eval.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/file.h
-rb_interned_str.o: $(hdrdir)/ruby/internal/intern/gc.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/hash.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/io.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2652,7 +2637,6 @@ rb_str_dup.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/error.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/eval.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/file.h
-rb_str_dup.o: $(hdrdir)/ruby/internal/intern/gc.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/hash.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/io.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2813,7 +2797,6 @@ set_len.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 set_len.o: $(hdrdir)/ruby/internal/intern/error.h
 set_len.o: $(hdrdir)/ruby/internal/intern/eval.h
 set_len.o: $(hdrdir)/ruby/internal/intern/file.h
-set_len.o: $(hdrdir)/ruby/internal/intern/gc.h
 set_len.o: $(hdrdir)/ruby/internal/intern/hash.h
 set_len.o: $(hdrdir)/ruby/internal/intern/io.h
 set_len.o: $(hdrdir)/ruby/internal/intern/load.h

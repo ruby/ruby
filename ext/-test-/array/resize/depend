@@ -111,7 +111,6 @@ resize.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 resize.o: $(hdrdir)/ruby/internal/intern/error.h
 resize.o: $(hdrdir)/ruby/internal/intern/eval.h
 resize.o: $(hdrdir)/ruby/internal/intern/file.h
-resize.o: $(hdrdir)/ruby/internal/intern/gc.h
 resize.o: $(hdrdir)/ruby/internal/intern/hash.h
 resize.o: $(hdrdir)/ruby/internal/intern/io.h
 resize.o: $(hdrdir)/ruby/internal/intern/load.h

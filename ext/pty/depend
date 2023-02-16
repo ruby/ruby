@@ -122,7 +122,6 @@ pty.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 pty.o: $(hdrdir)/ruby/internal/intern/error.h
 pty.o: $(hdrdir)/ruby/internal/intern/eval.h
 pty.o: $(hdrdir)/ruby/internal/intern/file.h
-pty.o: $(hdrdir)/ruby/internal/intern/gc.h
 pty.o: $(hdrdir)/ruby/internal/intern/hash.h
 pty.o: $(hdrdir)/ruby/internal/intern/io.h
 pty.o: $(hdrdir)/ruby/internal/intern/load.h

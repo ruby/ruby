@@ -112,7 +112,6 @@ typeddata.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/error.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/eval.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/file.h
-typeddata.o: $(hdrdir)/ruby/internal/intern/gc.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/hash.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/io.h
 typeddata.o: $(hdrdir)/ruby/internal/intern/load.h

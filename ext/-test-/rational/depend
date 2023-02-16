@@ -116,7 +116,6 @@ rat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rat.o: $(hdrdir)/ruby/internal/intern/error.h
 rat.o: $(hdrdir)/ruby/internal/intern/eval.h
 rat.o: $(hdrdir)/ruby/internal/intern/file.h
-rat.o: $(hdrdir)/ruby/internal/intern/gc.h
 rat.o: $(hdrdir)/ruby/internal/intern/hash.h
 rat.o: $(hdrdir)/ruby/internal/intern/io.h
 rat.o: $(hdrdir)/ruby/internal/intern/load.h
