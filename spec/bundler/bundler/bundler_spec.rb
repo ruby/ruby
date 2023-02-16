@@ -9,6 +9,11 @@ RSpec.describe Bundler do
       data = Marshal.dump(Bundler)
       expect { Bundler.load_marshal(data) }.to raise_error(NoMethodError, /private method `load_marshal' called/)
     end
+
+    it "loads any data" do
+      data = Marshal.dump(Bundler)
+      expect(Bundler.send(:load_marshal, data)).to eq(Bundler)
+    end
   end
 
   describe "#safe_load_marshal" do
