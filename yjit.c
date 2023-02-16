@@ -1100,7 +1100,7 @@ object_shape_count(rb_execution_context_t *ec, VALUE self)
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE context);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
