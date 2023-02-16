@@ -115,7 +115,6 @@ sha1.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sha1.o: $(hdrdir)/ruby/internal/intern/error.h
 sha1.o: $(hdrdir)/ruby/internal/intern/eval.h
 sha1.o: $(hdrdir)/ruby/internal/intern/file.h
-sha1.o: $(hdrdir)/ruby/internal/intern/gc.h
 sha1.o: $(hdrdir)/ruby/internal/intern/hash.h
 sha1.o: $(hdrdir)/ruby/internal/intern/io.h
 sha1.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -278,7 +277,6 @@ sha1init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/error.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/eval.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/file.h
-sha1init.o: $(hdrdir)/ruby/internal/intern/gc.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/hash.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/io.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/load.h

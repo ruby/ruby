@@ -121,7 +121,6 @@ readline.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 readline.o: $(hdrdir)/ruby/internal/intern/error.h
 readline.o: $(hdrdir)/ruby/internal/intern/eval.h
 readline.o: $(hdrdir)/ruby/internal/intern/file.h
-readline.o: $(hdrdir)/ruby/internal/intern/gc.h
 readline.o: $(hdrdir)/ruby/internal/intern/hash.h
 readline.o: $(hdrdir)/ruby/internal/intern/io.h
 readline.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -112,7 +112,6 @@ memory_view.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/error.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/eval.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/file.h
-memory_view.o: $(hdrdir)/ruby/internal/intern/gc.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/hash.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/io.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/load.h

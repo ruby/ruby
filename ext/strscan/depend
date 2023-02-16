@@ -122,7 +122,6 @@ strscan.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 strscan.o: $(hdrdir)/ruby/internal/intern/error.h
 strscan.o: $(hdrdir)/ruby/internal/intern/eval.h
 strscan.o: $(hdrdir)/ruby/internal/intern/file.h
-strscan.o: $(hdrdir)/ruby/internal/intern/gc.h
 strscan.o: $(hdrdir)/ruby/internal/intern/hash.h
 strscan.o: $(hdrdir)/ruby/internal/intern/io.h
 strscan.o: $(hdrdir)/ruby/internal/intern/load.h

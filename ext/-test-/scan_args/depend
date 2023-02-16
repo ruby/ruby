@@ -112,7 +112,6 @@ scan_args.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/error.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/eval.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/file.h
-scan_args.o: $(hdrdir)/ruby/internal/intern/gc.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/hash.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/io.h
 scan_args.o: $(hdrdir)/ruby/internal/intern/load.h

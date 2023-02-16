@@ -112,7 +112,6 @@ arity.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 arity.o: $(hdrdir)/ruby/internal/intern/error.h
 arity.o: $(hdrdir)/ruby/internal/intern/eval.h
 arity.o: $(hdrdir)/ruby/internal/intern/file.h
-arity.o: $(hdrdir)/ruby/internal/intern/gc.h
 arity.o: $(hdrdir)/ruby/internal/intern/hash.h
 arity.o: $(hdrdir)/ruby/internal/intern/io.h
 arity.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -273,7 +272,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h

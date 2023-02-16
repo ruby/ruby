@@ -111,7 +111,6 @@ monitor.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 monitor.o: $(hdrdir)/ruby/internal/intern/error.h
 monitor.o: $(hdrdir)/ruby/internal/intern/eval.h
 monitor.o: $(hdrdir)/ruby/internal/intern/file.h
-monitor.o: $(hdrdir)/ruby/internal/intern/gc.h
 monitor.o: $(hdrdir)/ruby/internal/intern/hash.h
 monitor.o: $(hdrdir)/ruby/internal/intern/io.h
 monitor.o: $(hdrdir)/ruby/internal/intern/load.h

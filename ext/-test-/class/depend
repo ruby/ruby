@@ -111,7 +111,6 @@ class2name.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 class2name.o: $(hdrdir)/ruby/internal/intern/error.h
 class2name.o: $(hdrdir)/ruby/internal/intern/eval.h
 class2name.o: $(hdrdir)/ruby/internal/intern/file.h
-class2name.o: $(hdrdir)/ruby/internal/intern/gc.h
 class2name.o: $(hdrdir)/ruby/internal/intern/hash.h
 class2name.o: $(hdrdir)/ruby/internal/intern/io.h
 class2name.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -272,7 +271,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h

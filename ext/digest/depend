@@ -112,7 +112,6 @@ digest.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 digest.o: $(hdrdir)/ruby/internal/intern/error.h
 digest.o: $(hdrdir)/ruby/internal/intern/eval.h
 digest.o: $(hdrdir)/ruby/internal/intern/file.h
-digest.o: $(hdrdir)/ruby/internal/intern/gc.h
 digest.o: $(hdrdir)/ruby/internal/intern/hash.h
 digest.o: $(hdrdir)/ruby/internal/intern/io.h
 digest.o: $(hdrdir)/ruby/internal/intern/load.h

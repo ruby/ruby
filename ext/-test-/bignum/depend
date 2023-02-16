@@ -111,7 +111,6 @@ big2str.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 big2str.o: $(hdrdir)/ruby/internal/intern/error.h
 big2str.o: $(hdrdir)/ruby/internal/intern/eval.h
 big2str.o: $(hdrdir)/ruby/internal/intern/file.h
-big2str.o: $(hdrdir)/ruby/internal/intern/gc.h
 big2str.o: $(hdrdir)/ruby/internal/intern/hash.h
 big2str.o: $(hdrdir)/ruby/internal/intern/io.h
 big2str.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -272,7 +271,6 @@ bigzero.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/error.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/eval.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/file.h
-bigzero.o: $(hdrdir)/ruby/internal/intern/gc.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/hash.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/io.h
 bigzero.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -433,7 +431,6 @@ div.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 div.o: $(hdrdir)/ruby/internal/intern/error.h
 div.o: $(hdrdir)/ruby/internal/intern/eval.h
 div.o: $(hdrdir)/ruby/internal/intern/file.h
-div.o: $(hdrdir)/ruby/internal/intern/gc.h
 div.o: $(hdrdir)/ruby/internal/intern/hash.h
 div.o: $(hdrdir)/ruby/internal/intern/io.h
 div.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -595,7 +592,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -755,7 +751,6 @@ intpack.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 intpack.o: $(hdrdir)/ruby/internal/intern/error.h
 intpack.o: $(hdrdir)/ruby/internal/intern/eval.h
 intpack.o: $(hdrdir)/ruby/internal/intern/file.h
-intpack.o: $(hdrdir)/ruby/internal/intern/gc.h
 intpack.o: $(hdrdir)/ruby/internal/intern/hash.h
 intpack.o: $(hdrdir)/ruby/internal/intern/io.h
 intpack.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -916,7 +911,6 @@ mul.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 mul.o: $(hdrdir)/ruby/internal/intern/error.h
 mul.o: $(hdrdir)/ruby/internal/intern/eval.h
 mul.o: $(hdrdir)/ruby/internal/intern/file.h
-mul.o: $(hdrdir)/ruby/internal/intern/gc.h
 mul.o: $(hdrdir)/ruby/internal/intern/hash.h
 mul.o: $(hdrdir)/ruby/internal/intern/io.h
 mul.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1077,7 +1071,6 @@ str2big.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 str2big.o: $(hdrdir)/ruby/internal/intern/error.h
 str2big.o: $(hdrdir)/ruby/internal/intern/eval.h
 str2big.o: $(hdrdir)/ruby/internal/intern/file.h
-str2big.o: $(hdrdir)/ruby/internal/intern/gc.h
 str2big.o: $(hdrdir)/ruby/internal/intern/hash.h
 str2big.o: $(hdrdir)/ruby/internal/intern/io.h
 str2big.o: $(hdrdir)/ruby/internal/intern/load.h

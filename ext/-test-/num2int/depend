@@ -112,7 +112,6 @@ num2int.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 num2int.o: $(hdrdir)/ruby/internal/intern/error.h
 num2int.o: $(hdrdir)/ruby/internal/intern/eval.h
 num2int.o: $(hdrdir)/ruby/internal/intern/file.h
-num2int.o: $(hdrdir)/ruby/internal/intern/gc.h
 num2int.o: $(hdrdir)/ruby/internal/intern/hash.h
 num2int.o: $(hdrdir)/ruby/internal/intern/io.h
 num2int.o: $(hdrdir)/ruby/internal/intern/load.h

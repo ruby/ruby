@@ -134,7 +134,6 @@ ancdata.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/error.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/eval.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/file.h
-ancdata.o: $(hdrdir)/ruby/internal/intern/gc.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/hash.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/io.h
 ancdata.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -327,7 +326,6 @@ basicsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/error.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/file.h
-basicsocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/io.h
 basicsocket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -520,7 +518,6 @@ constants.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 constants.o: $(hdrdir)/ruby/internal/intern/error.h
 constants.o: $(hdrdir)/ruby/internal/intern/eval.h
 constants.o: $(hdrdir)/ruby/internal/intern/file.h
-constants.o: $(hdrdir)/ruby/internal/intern/gc.h
 constants.o: $(hdrdir)/ruby/internal/intern/hash.h
 constants.o: $(hdrdir)/ruby/internal/intern/io.h
 constants.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -714,7 +711,6 @@ ifaddr.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/error.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/eval.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/file.h
-ifaddr.o: $(hdrdir)/ruby/internal/intern/gc.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/hash.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/io.h
 ifaddr.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -907,7 +903,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1100,7 +1095,6 @@ ipsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/error.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/file.h
-ipsocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/io.h
 ipsocket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1293,7 +1287,6 @@ option.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 option.o: $(hdrdir)/ruby/internal/intern/error.h
 option.o: $(hdrdir)/ruby/internal/intern/eval.h
 option.o: $(hdrdir)/ruby/internal/intern/file.h
-option.o: $(hdrdir)/ruby/internal/intern/gc.h
 option.o: $(hdrdir)/ruby/internal/intern/hash.h
 option.o: $(hdrdir)/ruby/internal/intern/io.h
 option.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1486,7 +1479,6 @@ raddrinfo.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/error.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/eval.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/file.h
-raddrinfo.o: $(hdrdir)/ruby/internal/intern/gc.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/hash.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/io.h
 raddrinfo.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1679,7 +1671,6 @@ socket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 socket.o: $(hdrdir)/ruby/internal/intern/error.h
 socket.o: $(hdrdir)/ruby/internal/intern/eval.h
 socket.o: $(hdrdir)/ruby/internal/intern/file.h
-socket.o: $(hdrdir)/ruby/internal/intern/gc.h
 socket.o: $(hdrdir)/ruby/internal/intern/hash.h
 socket.o: $(hdrdir)/ruby/internal/intern/io.h
 socket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1872,7 +1863,6 @@ sockssocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/error.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/file.h
-sockssocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/io.h
 sockssocket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2065,7 +2055,6 @@ tcpserver.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/error.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/eval.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/file.h
-tcpserver.o: $(hdrdir)/ruby/internal/intern/gc.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/hash.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/io.h
 tcpserver.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2258,7 +2247,6 @@ tcpsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/error.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/file.h
-tcpsocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/io.h
 tcpsocket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2451,7 +2439,6 @@ udpsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/error.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/file.h
-udpsocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/io.h
 udpsocket.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2644,7 +2631,6 @@ unixserver.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/error.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/eval.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/file.h
-unixserver.o: $(hdrdir)/ruby/internal/intern/gc.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/hash.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/io.h
 unixserver.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2837,7 +2823,6 @@ unixsocket.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/error.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/eval.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/file.h
-unixsocket.o: $(hdrdir)/ruby/internal/intern/gc.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/hash.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/io.h
 unixsocket.o: $(hdrdir)/ruby/internal/intern/load.h

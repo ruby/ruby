@@ -112,7 +112,6 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/error.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/eval.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/file.h
-to_ary_concat.o: $(hdrdir)/ruby/internal/intern/gc.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/hash.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/io.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/load.h

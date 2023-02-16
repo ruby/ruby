@@ -112,7 +112,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/error.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/eval.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/file.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/gc.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/hash.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/io.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -112,7 +112,6 @@ empty.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 empty.o: $(hdrdir)/ruby/internal/intern/error.h
 empty.o: $(hdrdir)/ruby/internal/intern/eval.h
 empty.o: $(hdrdir)/ruby/internal/intern/file.h
-empty.o: $(hdrdir)/ruby/internal/intern/gc.h
 empty.o: $(hdrdir)/ruby/internal/intern/hash.h
 empty.o: $(hdrdir)/ruby/internal/intern/io.h
 empty.o: $(hdrdir)/ruby/internal/intern/load.h

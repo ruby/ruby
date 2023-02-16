@@ -112,7 +112,6 @@ fcntl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/error.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/eval.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/file.h
-fcntl.o: $(hdrdir)/ruby/internal/intern/gc.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/hash.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/io.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/load.h

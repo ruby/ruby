@@ -111,7 +111,6 @@ beg_len_step.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/error.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/eval.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/file.h
-beg_len_step.o: $(hdrdir)/ruby/internal/intern/gc.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/hash.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/io.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -126,7 +126,6 @@ ossl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -321,7 +320,6 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_asn1.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -516,7 +514,6 @@ ossl_bio.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_bio.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_bio.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -711,7 +708,6 @@ ossl_bn.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_bn.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_bn.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -907,7 +903,6 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_cipher.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1102,7 +1097,6 @@ ossl_config.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_config.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_config.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1297,7 +1291,6 @@ ossl_digest.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_digest.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_digest.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1492,7 +1485,6 @@ ossl_engine.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_engine.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_engine.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1687,7 +1679,6 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_hmac.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1882,7 +1873,6 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_kdf.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2077,7 +2067,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2272,7 +2261,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2467,7 +2455,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2662,7 +2649,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -2857,7 +2843,6 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkey.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -3052,7 +3037,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -3247,7 +3231,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -3442,7 +3425,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -3637,7 +3619,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -3832,7 +3813,6 @@ ossl_rand.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_rand.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_rand.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -4027,7 +4007,6 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_ssl.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -4222,7 +4201,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -4417,7 +4395,6 @@ ossl_ts.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_ts.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_ts.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -4612,7 +4589,6 @@ ossl_x509.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -4807,7 +4783,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5002,7 +4977,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5197,7 +5171,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5392,7 +5365,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5587,7 +5559,6 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509name.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5782,7 +5753,6 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509req.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -5977,7 +5947,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -6172,7 +6141,6 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/error.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/eval.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/file.h
-ossl_x509store.o: $(hdrdir)/ruby/internal/intern/gc.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/hash.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/io.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/intern/load.h

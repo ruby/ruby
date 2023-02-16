@@ -111,7 +111,6 @@ dataerror.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/error.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/eval.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/file.h
-dataerror.o: $(hdrdir)/ruby/internal/intern/gc.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/hash.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/io.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -282,7 +281,6 @@ enc_raise.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/error.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/eval.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/file.h
-enc_raise.o: $(hdrdir)/ruby/internal/intern/gc.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/hash.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/io.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -445,7 +443,6 @@ ensured.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ensured.o: $(hdrdir)/ruby/internal/intern/error.h
 ensured.o: $(hdrdir)/ruby/internal/intern/eval.h
 ensured.o: $(hdrdir)/ruby/internal/intern/file.h
-ensured.o: $(hdrdir)/ruby/internal/intern/gc.h
 ensured.o: $(hdrdir)/ruby/internal/intern/hash.h
 ensured.o: $(hdrdir)/ruby/internal/intern/io.h
 ensured.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -606,7 +603,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h

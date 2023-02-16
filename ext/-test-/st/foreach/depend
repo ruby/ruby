@@ -112,7 +112,6 @@ foreach.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 foreach.o: $(hdrdir)/ruby/internal/intern/error.h
 foreach.o: $(hdrdir)/ruby/internal/intern/eval.h
 foreach.o: $(hdrdir)/ruby/internal/intern/file.h
-foreach.o: $(hdrdir)/ruby/internal/intern/gc.h
 foreach.o: $(hdrdir)/ruby/internal/intern/hash.h
 foreach.o: $(hdrdir)/ruby/internal/intern/io.h
 foreach.o: $(hdrdir)/ruby/internal/intern/load.h

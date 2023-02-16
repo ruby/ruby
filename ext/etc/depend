@@ -127,7 +127,6 @@ etc.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 etc.o: $(hdrdir)/ruby/internal/intern/error.h
 etc.o: $(hdrdir)/ruby/internal/intern/eval.h
 etc.o: $(hdrdir)/ruby/internal/intern/file.h
-etc.o: $(hdrdir)/ruby/internal/intern/gc.h
 etc.o: $(hdrdir)/ruby/internal/intern/hash.h
 etc.o: $(hdrdir)/ruby/internal/intern/io.h
 etc.o: $(hdrdir)/ruby/internal/intern/load.h

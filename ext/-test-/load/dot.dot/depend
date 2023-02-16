@@ -112,7 +112,6 @@ dot.dot.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/error.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/eval.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/file.h
-dot.dot.o: $(hdrdir)/ruby/internal/intern/gc.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/hash.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/io.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -122,7 +122,6 @@ nonblock.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/error.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/eval.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/file.h
-nonblock.o: $(hdrdir)/ruby/internal/intern/gc.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/hash.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/io.h
 nonblock.o: $(hdrdir)/ruby/internal/intern/load.h

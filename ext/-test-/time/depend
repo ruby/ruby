@@ -112,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -274,7 +273,6 @@ leap_second.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/error.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/eval.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/file.h
-leap_second.o: $(hdrdir)/ruby/internal/intern/gc.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/hash.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/io.h
 leap_second.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -439,7 +437,6 @@ new.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 new.o: $(hdrdir)/ruby/internal/intern/error.h
 new.o: $(hdrdir)/ruby/internal/intern/eval.h
 new.o: $(hdrdir)/ruby/internal/intern/file.h
-new.o: $(hdrdir)/ruby/internal/intern/gc.h
 new.o: $(hdrdir)/ruby/internal/intern/hash.h
 new.o: $(hdrdir)/ruby/internal/intern/io.h
 new.o: $(hdrdir)/ruby/internal/intern/load.h

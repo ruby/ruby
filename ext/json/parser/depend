@@ -125,7 +125,6 @@ parser.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 parser.o: $(hdrdir)/ruby/internal/intern/error.h
 parser.o: $(hdrdir)/ruby/internal/intern/eval.h
 parser.o: $(hdrdir)/ruby/internal/intern/file.h
-parser.o: $(hdrdir)/ruby/internal/intern/gc.h
 parser.o: $(hdrdir)/ruby/internal/intern/hash.h
 parser.o: $(hdrdir)/ruby/internal/intern/io.h
 parser.o: $(hdrdir)/ruby/internal/intern/load.h

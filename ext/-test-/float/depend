@@ -115,7 +115,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -276,7 +275,6 @@ nextafter.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/error.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/eval.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/file.h
-nextafter.o: $(hdrdir)/ruby/internal/intern/gc.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/hash.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/io.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/load.h

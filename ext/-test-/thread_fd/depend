@@ -111,7 +111,6 @@ thread_fd.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/error.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/eval.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/file.h
-thread_fd.o: $(hdrdir)/ruby/internal/intern/gc.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/hash.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/io.h
 thread_fd.o: $(hdrdir)/ruby/internal/intern/load.h

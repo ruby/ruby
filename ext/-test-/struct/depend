@@ -112,7 +112,6 @@ duplicate.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/error.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/eval.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/file.h
-duplicate.o: $(hdrdir)/ruby/internal/intern/gc.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/hash.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/io.h
 duplicate.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -273,7 +272,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -434,7 +432,6 @@ len.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 len.o: $(hdrdir)/ruby/internal/intern/error.h
 len.o: $(hdrdir)/ruby/internal/intern/eval.h
 len.o: $(hdrdir)/ruby/internal/intern/file.h
-len.o: $(hdrdir)/ruby/internal/intern/gc.h
 len.o: $(hdrdir)/ruby/internal/intern/hash.h
 len.o: $(hdrdir)/ruby/internal/intern/io.h
 len.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -595,7 +592,6 @@ member.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 member.o: $(hdrdir)/ruby/internal/intern/error.h
 member.o: $(hdrdir)/ruby/internal/intern/eval.h
 member.o: $(hdrdir)/ruby/internal/intern/file.h
-member.o: $(hdrdir)/ruby/internal/intern/gc.h
 member.o: $(hdrdir)/ruby/internal/intern/hash.h
 member.o: $(hdrdir)/ruby/internal/intern/io.h
 member.o: $(hdrdir)/ruby/internal/intern/load.h
