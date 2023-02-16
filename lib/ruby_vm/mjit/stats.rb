@@ -38,6 +38,7 @@ module RubyVM::MJIT
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
       print_counters(stats, prefix: 'optaref_', prompt: 'opt_aref exit reasons')
       print_counters(stats, prefix: 'optgetconst_', prompt: 'opt_getconstant_path exit reasons')
+      print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons')
 
       $stderr.puts "compiled_block_count:  #{format_number(13, stats[:compiled_block_count])}"
       $stderr.puts "side_exit_count:       #{format_number(13, stats[:side_exit_count])}"

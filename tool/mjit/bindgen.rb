@@ -367,6 +367,7 @@ generator = BindingGenerator.new(
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
       ROBJECT_EMBED
+      RARRAY_EMBED_FLAG
       RUBY_EVENT_CLASS
       RUBY_EVENT_C_CALL
       RUBY_EVENT_C_RETURN
@@ -411,7 +412,11 @@ generator = BindingGenerator.new(
       OBJ_TOO_COMPLEX_SHAPE_ID
       RUBY_FIXNUM_FLAG
       RUBY_IMMEDIATE_MASK
+      RARRAY_EMBED_LEN_MASK
+      RARRAY_EMBED_LEN_SHIFT
       SHAPE_MASK
+      RUBY_T_ARRAY
+      RUBY_T_MASK
     ],
     PTR: %w[
       rb_cFalseClass
@@ -428,6 +433,7 @@ generator = BindingGenerator.new(
     ID
     IVC
     RB_BUILTIN
+    RArray
     RBasic
     RObject
     attr_index_t

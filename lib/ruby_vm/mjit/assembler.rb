@@ -121,6 +121,16 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg],
           imm: imm8(src_imm),
         )
+      # AND r/m64, imm32 (Mod 11: reg)
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+        # REX.W + 81 /4 id
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x81,
+          mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg],
+          imm: imm32(src_imm),
+        )
       # AND r64, r/m64 (Mod 01: [reg]+disp8)
       in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
         # REX.W + 23 /r
@@ -236,6 +246,48 @@ module RubyVM::MJIT
       end
     end
 
+    def cmovnz(dst, src)
+      case [dst, src]
+      # CMOVNZ r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+        # REX.W + 0F 45 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x45],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      else
+        raise NotImplementedError, "cmovnz: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
+    def cmovz(dst, src)
+      case [dst, src]
+      # CMOVZ r64, r/m64 (Mod 11: reg)
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+        # REX.W + 0F 44 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x44],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      # CMOVZ r64, r/m64 (Mod 01: [reg]+disp8)
+      in [Symbol => dst_reg, [Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+        # REX.W + 0F 44 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x44],
+          mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
+          disp: imm8(src_disp),
+        )
+      else
+        raise NotImplementedError, "cmovz: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+      end
+    end
+
     def cmp(left, right)
       case [left, right]
       # CMP r/m32, imm32 (Mod 01: [reg]+disp8)
@@ -316,6 +368,17 @@ module RubyVM::MJIT
         insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
       else
         raise NotImplementedError, "je: not-implemented operands: #{dst.inspect}"
+      end
+    end
+
+    def jl(dst)
+      case dst
+      # JL rel32
+      in Integer => dst_addr
+        # 0F 8C cd
+        insn(opcode: [0x0f, 0x8c], imm: rel32(dst_addr))
+      else
+        raise NotImplementedError, "jl: not-implemented operands: #{dst.inspect}"
       end
     end
 

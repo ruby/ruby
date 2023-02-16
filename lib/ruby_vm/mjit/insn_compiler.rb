@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 46/101
+      # 48/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -53,9 +53,9 @@ module RubyVM::MJIT
       # intern
       # newarray
       # newarraykwsplat
-      # duparray
+      when :duparray then duparray(jit, ctx, asm)
       # duphash
-      # expandarray
+      when :expandarray then expandarray(jit, ctx, asm)
       # concatarray
       # splatarray
       # newhash
@@ -299,9 +299,97 @@ module RubyVM::MJIT
     # intern
     # newarray
     # newarraykwsplat
-    # duparray
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def duparray(jit, ctx, asm)
+      ary = jit.operand(0)
+
+      # Save the PC and SP because we are allocating
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # call rb_ary_resurrect(VALUE ary);
+      asm.comment('call rb_ary_resurrect')
+      asm.mov(C_ARGS[0], ary)
+      asm.call(C.rb_ary_resurrect)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
     # duphash
-    # expandarray
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def expandarray(jit, ctx, asm)
+      # Both arguments are rb_num_t which is unsigned
+      num = jit.operand(0)
+      flag = jit.operand(1)
+
+      # If this instruction has the splat flag, then bail out.
+      if flag & 0x01 != 0
+        asm.incr_counter(:expandarray_splat)
+        return CantCompile
+      end
+
+      # If this instruction has the postarg flag, then bail out.
+      if flag & 0x02 != 0
+        asm.incr_counter(:expandarray_postarg)
+        return CantCompile
+      end
+
+      side_exit = side_exit(jit, ctx)
+
+      array_opnd = ctx.stack_pop(1)
+
+      # num is the number of requested values. If there aren't enough in the
+      # array then we're going to push on nils.
+      # TODO: implement this
+
+      # Move the array from the stack and check that it's an array.
+      asm.mov(:rax, array_opnd)
+      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :expandarray_not_array))
+      guard_object_is_array(asm, :rax, :rcx, counted_exit(side_exit, :expandarray_not_array))
+
+      # If we don't actually want any values, then just return.
+      if num == 0
+        return KeepCompiling
+      end
+
+      jit_array_len(asm, :rax, :rcx)
+
+      # Only handle the case where the number of values in the array is greater
+      # than or equal to the number of values requested.
+      asm.cmp(:rcx, num)
+      asm.jl(counted_exit(side_exit, :expandarray_rhs_too_small))
+
+      # Conditionally load the address of the heap array into REG1.
+      # (struct RArray *)(obj)->as.heap.ptr
+      #asm.mov(:rax, array_opnd)
+      asm.mov(:rcx, [:rax, C.RBasic.offsetof(:flags)])
+      asm.test(:rcx, C.RARRAY_EMBED_FLAG);
+      asm.mov(:rcx, [:rax, C.RArray.offsetof(:as, :heap, :ptr)])
+
+      # Load the address of the embedded array into REG1.
+      # (struct RArray *)(obj)->as.ary
+      asm.lea(:rax, [:rax, C.RArray.offsetof(:as, :ary)])
+
+      asm.cmovnz(:rcx, :rax)
+
+      # Loop backward through the array and push each element onto the stack.
+      (num - 1).downto(0).each do |i|
+        top = ctx.stack_push
+        asm.mov(:rax, [:rcx, i * C.VALUE.size])
+        asm.mov(top, :rax)
+      end
+
+      KeepCompiling
+    end
+
     # concatarray
     # splatarray
     # newhash
@@ -1156,6 +1244,18 @@ module RubyVM::MJIT
       asm.je(side_exit)
     end
 
+    # @param asm [RubyVM::MJIT::Assembler]
+    def guard_object_is_array(asm, object_reg, flags_reg, side_exit)
+      asm.comment('guard object is array')
+      # Pull out the type mask
+      asm.mov(flags_reg, [object_reg, C.RBasic.offsetof(:flags)])
+      asm.and(flags_reg, C.RUBY_T_MASK)
+
+      # Compare the result with T_ARRAY
+      asm.cmp(flags_reg, C.RUBY_T_ARRAY)
+      asm.jne(side_exit)
+    end
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -1955,6 +2055,25 @@ module RubyVM::MJIT
         asm.incr_counter(:send_kw_splat)
         return CantCompile
       end
+    end
+
+    # Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
+    # and use Opnd::Mem to save registers.
+    def jit_array_len(asm, array_reg, len_reg)
+      asm.comment('get array length for embedded or heap')
+
+      # Pull out the embed flag to check if it's an embedded array.
+      asm.mov(len_reg, [array_reg, C.RBasic.offsetof(:flags)])
+
+      # Get the length of the array
+      asm.and(len_reg, C.RARRAY_EMBED_LEN_MASK)
+      asm.sar(len_reg, C.RARRAY_EMBED_LEN_SHIFT)
+
+      # Conditionally move the length of the heap array
+      asm.test([array_reg, C.RBasic.offsetof(:flags)], C.RARRAY_EMBED_FLAG)
+
+      # Select the array length value
+      asm.cmovz(len_reg, [array_reg, C.RArray.offsetof(:as, :heap, :len)])
     end
 
     def assert_equal(left, right)
