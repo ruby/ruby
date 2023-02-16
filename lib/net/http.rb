@@ -1596,8 +1596,7 @@ module Net   #:nodoc:
     #    get(path, initheader = nil) {|res| ... }
     #
     # Sends a GET request to the server;
-    # returns a Net::HTTPResponse object,
-    # which actually will be an instance of a subclass of that class:
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
     # The request is based on the Net::HTTP::Get object
     # created from string +path+ and initial headers hash +initheader+.
@@ -1631,57 +1630,81 @@ module Net   #:nodoc:
       res
     end
 
-    # Gets only the header from +path+ on the connected-to host.
-    # +header+ is a Hash like { 'Accept' => '*/*', ... }.
+    # Sends a HEAD request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # This method returns a Net::HTTPResponse object.
+    # The request is based on the Net::HTTP::Head object
+    # created from string +path+ and initial headers hash +initheader+.
     #
-    # This method never raises an exception.
-    #
-    #     response = nil
-    #     Net::HTTP.start('some.www.server', 80) {|http|
-    #       response = http.head('/index.html')
-    #     }
-    #     p response['content-type']
+    #   res = http.head('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
+    #   res.body                    # => nil
+    #   res.to_hash.take(3)
+    #   # =>
+    #   [["date", ["Wed, 15 Feb 2023 15:25:42 GMT"]],
+    #    ["content-type", ["application/json; charset=utf-8"]],
+    #    ["connection", ["close"]]]
     #
     def head(path, initheader = nil)
       request(Head.new(path, initheader))
     end
 
-    # Posts +data+ (must be a String) to +path+. +header+ must be a Hash
-    # like { 'Accept' => '*/*', ... }.
+    # :call-seq:
+    #    post(path, data, initheader = nil) {|res| ... }
     #
-    # This method returns a Net::HTTPResponse object.
+    # Sends a POST request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # If called with a block, yields each fragment of the
-    # entity body in turn as a string as it is read from
-    # the socket.  Note that in this case, the returned response
-    # object will *not* contain a (meaningful) body.
+    # The request is based on the Net::HTTP::Post object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
     #
-    # +dest+ argument is obsolete.
-    # It still works but you must not use it.
+    # With a block given, calls the block with the response body:
     #
-    # This method never raises exception.
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.post('/todos', data) do |res|
+    #     p res
+    #   end # => #<Net::HTTPCreated 201 Created readbody=true>
     #
-    #     response = http.post('/cgi-bin/search.rb', 'query=foo')
+    # Output:
     #
-    #     # using block
-    #     File.open('result.txt', 'w') {|f|
-    #       http.post('/cgi-bin/search.rb', 'query=foo') do |str|
-    #         f.write str
-    #       end
-    #     }
+    #   "{\n  \"{\\\"userId\\\": 1, \\\"id\\\": 1, \\\"title\\\": \\\"delectus aut autem\\\", \\\"completed\\\": false}\": \"\",\n  \"id\": 201\n}"
     #
-    # You should set Content-Type: header field for POST.
-    # If no Content-Type: field given, this method uses
-    # "application/x-www-form-urlencoded" by default.
+    # With no block given, simply returns the response object:
+    #
+    #   http.post('/todos', data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Post: request class for \HTTP method POST.
+    # - Net::HTTP.post: sends POST request, returns response body.
     #
     def post(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       send_entity(path, data, initheader, dest, Post, &block)
     end
 
-    # Sends a PATCH request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # :call-seq:
+    #    patch(path, data, initheader = nil) {|res| ... }
+    #
+    # Sends a PATCH request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Patch object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    # With a block given, calls the block with the response body:
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.patch('/todos/1', data) do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false,\n  \"{\\\"userId\\\": 1, \\\"id\\\": 1, \\\"title\\\": \\\"delectus aut autem\\\", \\\"completed\\\": false}\": \"\"\n}"
+    #
+    # With no block given, simply returns the response object:
+    #
+    #   http.patch('/todos/1', data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #
     def patch(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       send_entity(path, data, initheader, dest, Patch, &block)
     end
