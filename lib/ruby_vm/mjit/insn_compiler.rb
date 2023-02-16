@@ -1799,7 +1799,9 @@ module RubyVM::MJIT
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
         jit_call_iseq_setup(jit, ctx, asm, ci, cme, flags, argc)
-      # when C.VM_METHOD_TYPE_NOTIMPLEMENTED
+      when C.VM_METHOD_TYPE_NOTIMPLEMENTED
+        asm.incr_counter(:send_notimplemented)
+        return CantCompile
       when C.VM_METHOD_TYPE_CFUNC
         jit_call_cfunc(jit, ctx, asm, ci, cme, flags, argc)
       when C.VM_METHOD_TYPE_ATTRSET
@@ -1807,7 +1809,9 @@ module RubyVM::MJIT
         return CantCompile
       when C.VM_METHOD_TYPE_IVAR
         jit_call_ivar(jit, ctx, asm, ci, cme, flags, argc, comptime_recv, recv_opnd)
-      # when C.VM_METHOD_TYPE_MISSING
+      when C.VM_METHOD_TYPE_MISSING
+        asm.incr_counter(:send_missing)
+        return CantCompile
       when C.VM_METHOD_TYPE_BMETHOD
         asm.incr_counter(:send_bmethod)
         return CantCompile
@@ -1815,9 +1819,10 @@ module RubyVM::MJIT
         asm.incr_counter(:send_alias)
         return CantCompile
       when C.VM_METHOD_TYPE_OPTIMIZED
-        asm.incr_counter(:send_optimized)
+        jit_call_optimized(jit, ctx, asm, ci, cme, flags, argc)
+      when C.VM_METHOD_TYPE_UNDEF
+        asm.incr_counter(:send_undef)
         return CantCompile
-      # when C.VM_METHOD_TYPE_UNDEF
       when C.VM_METHOD_TYPE_ZSUPER
         asm.incr_counter(:send_zsuper)
         return CantCompile
@@ -1825,7 +1830,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_refined)
         return CantCompile
       else
-        asm.incr_counter(:send_not_implemented_type)
+        asm.incr_counter(:send_unknown_type)
         return CantCompile
       end
     end
@@ -1999,6 +2004,33 @@ module RubyVM::MJIT
       end
 
       jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd)
+    end
+
+    # vm_call_optimized
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_optimized(jit, ctx, asm, ci, cme, flags, argc)
+      case cme.def.body.optimized.type
+      when C.OPTIMIZED_METHOD_TYPE_SEND
+        asm.incr_counter(:send_optimized_send)
+        return CantCompile
+      when C.OPTIMIZED_METHOD_TYPE_CALL
+        asm.incr_counter(:send_optimized_call)
+        return CantCompile
+      when C.OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+        asm.incr_counter(:send_optimized_block_call)
+        return CantCompile
+      when C.OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+        asm.incr_counter(:send_optimized_struct_aref)
+        return CantCompile
+      when C.OPTIMIZED_METHOD_TYPE_STRUCT_ASET
+        asm.incr_counter(:send_optimized_struct_aset)
+        return CantCompile
+      else
+        asm.incr_counter(:send_optimized_unknown_type)
+        return CantCompile
+      end
     end
 
     # vm_push_frame
