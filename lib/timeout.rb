@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.3.1"
+  VERSION = "0.3.2"
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
