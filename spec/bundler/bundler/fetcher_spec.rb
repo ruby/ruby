@@ -164,7 +164,7 @@ RSpec.describe Bundler::Fetcher do
     let(:name) { "name" }
     let(:version) { "1.3.17" }
     let(:platform) { "platform" }
-    let(:downloader) { double("downloader" )}
+    let(:downloader) { double("downloader") }
     let(:body) { double(Net::HTTP::Get, :body => downloaded_data) }
 
     context "when attempting to load a Gem::Specification" do
