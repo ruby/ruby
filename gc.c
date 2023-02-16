@@ -16154,6 +16154,21 @@ rb_mmtk_on_fstring_table_delete(st_data_t key, st_data_t value, void *arg)
 #endif
 }
 
+// This function is called after transitive closure, but before calling obj_free.
+static void
+rb_mmtk_update_global_weak_tables_early(void)
+{
+    // Update the fstring_table, and remove dead objects.
+    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
+                              false,
+                              true,
+                              rb_mmtk_on_fstring_table_delete,
+                              NULL);
+
+    RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
+}
+
+// This function is called after obj_free is called for dead objects during GC.
 static void
 rb_mmtk_update_global_weak_tables(void)
 {
@@ -16180,15 +16195,6 @@ rb_mmtk_update_global_weak_tables(void)
                               false,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
-
-    // Update the fstring_table, and remove dead objects.
-    rb_mmtk_update_weak_table(GET_VM()->frozen_strings,
-                              false,
-                              true,
-                              rb_mmtk_on_fstring_table_delete,
-                              NULL);
-
-    RUBY_DEBUG_LOG("Live fstrings: %zu", GET_VM()->frozen_strings->num_entries);
 
     // Now that dead objects are removed, we forward keys and values now.
     // This table hashes Fixnum and Bignum by value (object_id_hash_type),
@@ -16218,6 +16224,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_object_ruby_style,
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_call_obj_free,
+    rb_mmtk_update_global_weak_tables_early,
     rb_mmtk_update_global_weak_tables,
 };
 

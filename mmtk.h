@@ -70,6 +70,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
+    void (*update_global_weak_tables_early)(void);
     void (*update_global_weak_tables)(void);
 } MMTk_RubyUpcalls;
 
