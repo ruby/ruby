@@ -8196,10 +8196,10 @@ gc_verify_transient_heap_internal_consistency(VALUE dmy)
     return Qnil;
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static void
 heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 {
+#if GC_ENABLE_INCREMENTAL_MARK
     if (heap->pooled_pages) {
         if (heap->free_pages) {
             struct heap_page *free_pages_tail = heap->free_pages;
@@ -8214,8 +8214,8 @@ heap_move_pooled_pages_to_free_pages(rb_heap_t *heap)
 
         heap->pooled_pages = NULL;
     }
-}
 #endif
+}
 
 /* marks */
 
