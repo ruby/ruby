@@ -610,6 +610,14 @@ GC frequency but increasing malloc growth until RUBY_GC_OLDMALLOC_LIMIT_MAX
 is reached.
 Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
 .Pp
+.It Ev RUBY_GC_AGING_FACTOR
+The proportion of incremental marks that increment objects age.
+With a factor of 1, objects must live through 3 incremental marks to
+be promoted to the old generation, with a factor of 4, they would need
+to live through 13 to 16 incremental marks.
+This can prevent excessive promotion of ephemeral objects.
+Introduced in Ruby 3.3, default: 1
+.Pp
 .El
 .Sh STACK SIZE ENVIRONMENT
 Stack size environment variables are implementation-dependent and

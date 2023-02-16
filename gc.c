@@ -324,6 +324,10 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define GC_OLDMALLOC_LIMIT_MAX (128 * 1024 * 1024 /* 128MB */)
 #endif
 
+#ifndef GC_AGING_FACTOR
+#define GC_AGING_FACTOR 1
+#endif
+
 #ifndef PRINT_MEASURE_LINE
 #define PRINT_MEASURE_LINE 0
 #endif
@@ -356,6 +360,8 @@ typedef struct {
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
 
+    size_t aging_factor;
+
     VALUE gc_stress;
 } ruby_gc_params_t;
 
@@ -377,6 +383,8 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
+
+    GC_AGING_FACTOR,
 
     FALSE,
 };
@@ -753,6 +761,7 @@ typedef struct rb_objspace {
         unsigned int during_incremental_marking : 1;
 #endif
         unsigned int measure_gc : 1;
+        unsigned int age_objects : 1;
     } flags;
 
     rb_event_flag_t hook_events;
@@ -1773,18 +1782,6 @@ RVALUE_AGE_SET_OLD(rb_objspace_t *objspace, VALUE obj)
 
     RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, RVALUE_OLD_AGE);
     RVALUE_OLD_UNCOLLECTIBLE_SET(objspace, obj);
-
-    check_rvalue_consistency(obj);
-}
-
-/* set age to RVALUE_OLD_AGE - 1 */
-static inline void
-RVALUE_AGE_SET_CANDIDATE(rb_objspace_t *objspace, VALUE obj)
-{
-    check_rvalue_consistency(obj);
-    GC_ASSERT(!RVALUE_OLD_P(obj));
-
-    RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, RVALUE_OLD_AGE - 1);
 
     check_rvalue_consistency(obj);
 }
@@ -5889,7 +5886,7 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
                                        size_pool->freed_slots > size_pool->empty_slots) &&
                                    size_pool->allocatable_pages == 0;
 
-            if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
+            if (objspace->profile.count - objspace->rgengc.last_major_gc < (RVALUE_OLD_AGE * gc_params.aging_factor)) {
                 grow_heap = TRUE;
             }
             else if (is_growth_heap) { /* Only growth heaps are allowed to start a major GC. */
@@ -6982,10 +6979,11 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
         }
         else {
             if (!RVALUE_OLD_P(obj)) {
+                RVALUE_AGE_SET_OLD(objspace, obj);
+
                 if (RVALUE_MARKED(obj)) {
                     /* An object pointed from an OLD object should be OLD. */
                     gc_report(2, objspace, "relation: (O->unmarked Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
-                    RVALUE_AGE_SET_OLD(objspace, obj);
                     if (is_incremental_marking(objspace)) {
                         if (!RVALUE_MARKING(obj)) {
                             gc_grey(objspace, obj);
@@ -6994,10 +6992,6 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
                     else {
                         rgengc_remember(objspace, obj);
                     }
-                }
-                else {
-                    gc_report(2, objspace, "relation: (O->Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
-                    RVALUE_AGE_SET_CANDIDATE(objspace, obj);
                 }
             }
         }
@@ -7033,12 +7027,15 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 
     if (!RVALUE_PAGE_WB_UNPROTECTED(page, obj)) {
         if (!RVALUE_OLD_P(obj)) {
-            gc_report(3, objspace, "gc_aging: YOUNG: %s\n", obj_info(obj));
-            RVALUE_AGE_INC(objspace, obj);
+            if (objspace->flags.age_objects) {
+                gc_report(3, objspace, "gc_aging: YOUNG: %s\n", obj_info(obj));
+                RVALUE_AGE_INC(objspace, obj);
+            }
         }
         else if (is_full_marking(objspace)) {
-            GC_ASSERT(RVALUE_PAGE_UNCOLLECTIBLE(page, obj) == FALSE);
-            RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(objspace, page, obj);
+            if (!RVALUE_PAGE_UNCOLLECTIBLE(page, obj)) {
+                RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(objspace, page, obj);
+            }
         }
     }
     check_rvalue_consistency(obj);
@@ -8254,6 +8251,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
             objspace->flags.during_compacting |= TRUE;
         }
         objspace->profile.major_gc_count++;
+        objspace->flags.age_objects = TRUE;
         objspace->rgengc.uncollectible_wb_unprotected_objects = 0;
         objspace->rgengc.old_objects = 0;
         objspace->rgengc.last_major_gc = objspace->profile.count;
@@ -8271,6 +8269,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
         objspace->marked_slots =
           objspace->rgengc.old_objects + objspace->rgengc.uncollectible_wb_unprotected_objects; /* uncollectible objects are marked already */
         objspace->profile.minor_gc_count++;
+        objspace->flags.age_objects = !gc_params.aging_factor || (objspace->profile.minor_gc_count % gc_params.aging_factor == 0);
 
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
             rgengc_rememberset_mark(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
@@ -8405,7 +8404,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 
         if (sweep_slots < min_free_slots) {
             if (!full_marking) {
-                if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
+                if (objspace->profile.count - objspace->rgengc.last_major_gc < (RVALUE_OLD_AGE * gc_params.aging_factor)) {
                     full_marking = TRUE;
                     /* do not update last_major_gc, because full marking is not done. */
                     /* goto increment; */
@@ -11693,7 +11692,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
             }
             val *= unit;
         }
-        if (val > 0 && (size_t)val > lower_bound) {
+        if (val >= 0 && (size_t)val >= lower_bound) {
             if (RTEST(ruby_verbose)) {
                 fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE")\n", name, val, *default_value);
             }
@@ -11702,7 +11701,7 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
         }
         else {
             if (RTEST(ruby_verbose)) {
-                fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE") is ignored because it must be greater than %"PRIuSIZE".\n",
+                fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE") is ignored because it must be greater or equal to %"PRIuSIZE".\n",
                         name, val, *default_value, lower_bound);
             }
             return 0;
@@ -11764,7 +11763,7 @@ gc_set_initial_pages(rb_objspace_t *objspace, int global_heap_init_slots)
         snprintf(env_key, sizeof(env_key), "RUBY_GC_HEAP_INIT_SIZE_%d_SLOTS", size_pool->slot_size);
 
         size_t pool_init_slots = 0;
-        if (!get_envparam_size(env_key, &pool_init_slots, 0)) {
+        if (!get_envparam_size(env_key, &pool_init_slots, 1)) {
             if (global_heap_init_slots) {
                 // If we use the global init slot we ponderate it by slot size
                 pool_init_slots = gc_params.heap_init_slots / (size_pool->slot_size / BASE_SLOT_SIZE);
@@ -11835,12 +11834,12 @@ ruby_gc_set_params(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     /* RUBY_GC_HEAP_FREE_SLOTS */
-    if (get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0)) {
+    if (get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 1)) {
         /* ok */
     }
 
     /* RUBY_GC_HEAP_INIT_SLOTS */
-    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 0)) {
+    if (get_envparam_size("RUBY_GC_HEAP_INIT_SLOTS", &gc_params.heap_init_slots, 1)) {
         gc_set_initial_pages(objspace, TRUE);
     }
     else {
@@ -11848,7 +11847,7 @@ ruby_gc_set_params(void)
     }
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);
-    get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
+    get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 1);
     get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO", &gc_params.heap_free_slots_min_ratio,
                         0.0, 1.0, FALSE);
     get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO", &gc_params.heap_free_slots_max_ratio,
@@ -11857,20 +11856,23 @@ ruby_gc_set_params(void)
                         gc_params.heap_free_slots_min_ratio, gc_params.heap_free_slots_max_ratio, TRUE);
     get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0, 0.0, TRUE);
 
-    if (get_envparam_size("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0)) {
+    if (get_envparam_size("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 1)) {
         malloc_limit = gc_params.malloc_limit_min;
     }
-    get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
+    get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 1);
     if (!gc_params.malloc_limit_max) { /* ignore max-check if 0 */
         gc_params.malloc_limit_max = SIZE_MAX;
     }
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0, 0.0, FALSE);
 
+    gc_params.aging_factor = 1;
+    get_envparam_size  ("RUBY_GC_AGING_FACTOR", &gc_params.aging_factor, 1);
+
 #if RGENGC_ESTIMATE_OLDMALLOC
-    if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 0)) {
+    if (get_envparam_size("RUBY_GC_OLDMALLOC_LIMIT", &gc_params.oldmalloc_limit_min, 1)) {
         objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
     }
-    get_envparam_size  ("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
+    get_envparam_size  ("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 1);
     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0, 0.0, FALSE);
 #endif
 }
