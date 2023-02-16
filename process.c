@@ -359,6 +359,8 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
 
+static VALUE cached_pid = Qnil;
+
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
 #define execv(path, argv) (rb_async_bug_errno("unreachable: async-signal-unsafe execv() is called", 0))
@@ -497,7 +499,23 @@ parent_redirect_close(int fd)
 static VALUE
 get_pid(void)
 {
-    return PIDT2NUM(getpid());
+    if (UNLIKELY(NIL_P(cached_pid))) {
+        cached_pid = PIDT2NUM(getpid());
+    }
+    return cached_pid;
+}
+
+static void
+clear_pid_cache(void)
+{
+    cached_pid = Qnil;
+}
+
+static inline void
+rb_process_atfork(void)
+{
+  clear_pid_cache();
+  rb_thread_atfork(); /* calls mjit_resume() */
 }
 
 /*
@@ -4059,7 +4077,7 @@ rb_fork_ruby2(struct rb_process_status *status)
         disable_child_handler_fork_parent(&old); /* yes, bad name */
 
         if (pid >= 0) { /* fork succeed */
-            if (pid == 0) rb_thread_atfork();
+            if (pid == 0) rb_process_atfork();
             return pid;
         }
 
@@ -6832,7 +6850,7 @@ rb_daemon(int nochdir, int noclose)
     before_fork_ruby();
     err = daemon(nochdir, noclose);
     after_fork_ruby();
-    rb_thread_atfork();
+    rb_process_atfork();
 #else
     int n;
 
