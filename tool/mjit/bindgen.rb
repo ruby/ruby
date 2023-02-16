@@ -270,6 +270,11 @@ class BindingGenerator
     end
     type = type.delete_suffix('const')
     if type.end_with?('*')
+      if type == 'const void *'
+        # `CType::Pointer.new { CType::Immediate.parse("void") }` is never useful,
+        # so specially handle that case here.
+        return 'CType::Immediate.parse("void *")'
+      end
       return "CType::Pointer.new { #{generate_type(type.delete_suffix('*').rstrip)} }"
     end
 

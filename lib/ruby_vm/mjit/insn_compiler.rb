@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 49/101
+      # 51/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -118,8 +118,8 @@ module RubyVM::MJIT
       when :opt_not then opt_not(jit, ctx, asm)
       when :opt_regexpmatch2 then opt_regexpmatch2(jit, ctx, asm)
       # invokebuiltin
-      # opt_invokebuiltin_delegate
-      # opt_invokebuiltin_delegate_leave
+      when :opt_invokebuiltin_delegate then opt_invokebuiltin_delegate(jit, ctx, asm)
+      when :opt_invokebuiltin_delegate_leave then opt_invokebuiltin_delegate_leave(jit, ctx, asm)
       when :getlocal_WC_0 then getlocal_WC_0(jit, ctx, asm)
       when :getlocal_WC_1 then getlocal_WC_1(jit, ctx, asm)
       when :setlocal_WC_0 then setlocal_WC_0(jit, ctx, asm)
@@ -1164,8 +1164,52 @@ module RubyVM::MJIT
     end
 
     # invokebuiltin
-    # opt_invokebuiltin_delegate
-    # opt_invokebuiltin_delegate_leave
+
+    def opt_invokebuiltin_delegate(jit, ctx, asm)
+      bf = C.rb_builtin_function.new(jit.operand(0))
+      bf_argc = bf.argc
+      start_index = jit.operand(1)
+
+      # ec, self, and arguments
+      if bf_argc + 2 > C_ARGS.size
+        return CantCompile
+      end
+
+      # If the calls don't allocate, do they need up to date PC, SP?
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # Call the builtin func (ec, recv, arg1, arg2, ...)
+      asm.comment('call builtin func')
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], [CFP, C.rb_control_frame_t.offsetof(:self)])
+
+      # Copy arguments from locals
+      if bf_argc > 0
+        # Load environment pointer EP from CFP
+        asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:ep)])
+
+        bf_argc.times do |i|
+          table_size = jit.iseq.body.local_table_size
+          offs = -table_size - C.VM_ENV_DATA_SIZE + 1 + start_index + i
+          asm.mov(C_ARGS[2 + i], [:rax, offs * C.VALUE.size])
+        end
+      end
+      asm.call(bf.func_ptr)
+
+      # Push the return value
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_invokebuiltin_delegate_leave(jit, ctx, asm)
+      opt_invokebuiltin_delegate(jit, ctx, asm)
+      # opt_invokebuiltin_delegate is always followed by leave insn
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
