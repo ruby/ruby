@@ -4,6 +4,8 @@
 #![allow(dead_code)] // Counters are only used with the stats features
 
 use crate::codegen::CodegenGlobals;
+use crate::core::Context;
+use crate::core::for_each_iseq_payload;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
@@ -342,8 +344,8 @@ pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALU
 /// Primitive called in yjit.rb.
 /// Export all YJIT statistics as a Ruby hash.
 #[no_mangle]
-pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict())
+pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, context: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict(context == Qtrue))
 }
 
 /// Primitive called in yjit.rb
@@ -398,7 +400,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
 }
 
 /// Export all YJIT statistics as a Ruby hash.
-fn rb_yjit_gen_stats_dict() -> VALUE {
+fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
     // If YJIT is not enabled, return Qnil
     if !yjit_enabled_p() {
         return Qnil;
@@ -445,6 +447,13 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         // Rust global allocations in bytes
         #[cfg(feature="stats")]
         hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
+
+        if context {
+            let live_context_count = get_live_context_count();
+            let context_size = std::mem::size_of::<Context>();
+            hash_aset_usize!(hash, "live_context_count", live_context_count);
+            hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
+        }
     }
 
     // If we're not generating stats, the hash is done
@@ -489,6 +498,21 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
     }
 
     hash
+}
+
+fn get_live_context_count() -> usize {
+    let mut count = 0;
+    for_each_iseq_payload(|iseq_payload| {
+        for blocks in iseq_payload.version_map.iter() {
+            for block in blocks.iter() {
+                count += block.borrow().get_ctx_count();
+            }
+        }
+        for block in iseq_payload.dead_blocks.iter() {
+            count += block.borrow().get_ctx_count();
+        }
+    });
+    count
 }
 
 /// Record the backtrace when a YJIT exit occurs. This functionality requires

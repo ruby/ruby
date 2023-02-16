@@ -145,8 +145,8 @@ module RubyVM::YJIT
 
   # Return a hash for statistics generated for the --yjit-stats command line option.
   # Return nil when option is not passed or unavailable.
-  def self.runtime_stats
-    stats = Primitive.rb_yjit_get_stats
+  def self.runtime_stats(context: false)
+    stats = Primitive.rb_yjit_get_stats(context)
     return stats if stats.nil?
 
     stats[:object_shape_count] = Primitive.object_shape_count
@@ -233,7 +233,7 @@ module RubyVM::YJIT
 
     # Format and print out counters
     def _print_stats # :nodoc:
-      stats = runtime_stats
+      stats = runtime_stats(context: true)
       return unless stats
 
       $stderr.puts("***YJIT: Printing YJIT statistics on exit***")
@@ -277,6 +277,8 @@ module RubyVM::YJIT
       $stderr.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
       $stderr.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
       $stderr.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
+      $stderr.puts "live_context_size:     " + format_number(13, stats[:live_context_size])
+      $stderr.puts "live_context_count:    " + format_number(13, stats[:live_context_count])
       $stderr.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
       $stderr.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
       $stderr.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
