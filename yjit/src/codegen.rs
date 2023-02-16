@@ -4157,7 +4157,7 @@ fn jit_rb_int_equal(
 
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
@@ -4168,6 +4168,9 @@ fn jit_rb_str_uplus(
     _known_recv_class: *const VALUE,
 ) -> bool
 {
+    // We allocate when we dup the string
+    jit_prepare_routine_call(jit, ctx, asm);
+
     asm.comment("Unary plus on string");
     let recv_opnd = asm.load(ctx.stack_pop(1));
     let flags_opnd = asm.load(Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS));
