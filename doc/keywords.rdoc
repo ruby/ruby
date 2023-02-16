@@ -9,7 +9,7 @@ __LINE__::
   The line number of this keyword in the current file.
 
 __FILE__::
-  The path to the current file.
+  The relative path to the current file. (e.g. <tt>"lib/main.rb"</tt>)
 
 BEGIN::
   Runs before any other code in the current file.  See {miscellaneous
