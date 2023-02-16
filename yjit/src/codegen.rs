@@ -5280,10 +5280,6 @@ fn gen_send_iseq(
 
     // No support for callees with these parameters yet as they require allocation
     // or complex handling.
-    if unsafe { get_iseq_flags_has_rest(iseq) } {
-        gen_counter_incr!(asm, send_iseq_has_rest);
-        return CantCompile;
-    }
     if unsafe { get_iseq_flags_has_post(iseq) } {
         gen_counter_incr!(asm, send_iseq_has_post);
         return CantCompile;
@@ -5302,6 +5298,32 @@ fn gen_send_iseq(
         get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
     } {
         gen_counter_incr!(asm, send_iseq_ruby2_keywords);
+        return CantCompile;
+    }
+
+    let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
+    if iseq_has_rest && captured_opnd.is_some() {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_splat);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && unsafe { get_iseq_flags_has_block(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_block);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_kw);
         return CantCompile;
     }
 
@@ -5367,14 +5389,19 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0  {
+    if iseq_has_rest && opt_num != 0 {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_optional);
+        return CantCompile;
+    }
+
+    if opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0 {
         // Too few arguments and no splat to make up for it
         gen_counter_incr!(asm, send_iseq_arity_error);
         return CantCompile;
     }
 
-    if opts_filled > opt_num {
-        // Too many arguments
+    if opts_filled > opt_num && !iseq_has_rest {
+        // Too many arguments and no place to put them (i.e. rest arg)
         gen_counter_incr!(asm, send_iseq_arity_error);
         return CantCompile;
     }
@@ -5797,6 +5824,39 @@ fn gen_send_iseq(
             asm.mov(stack_opnd, Opnd::mem(64, array_opnd, SIZEOF_VALUE_I32 * i));
         }
         argc = lead_num;
+    }
+
+    if iseq_has_rest {
+        assert!(argc >= required_num);
+
+        // We are going to allocate so setting pc and sp.
+        jit_save_pc(jit, asm);
+        gen_save_sp(jit, asm, ctx);
+
+        let n = (argc - required_num) as u32;
+        argc = required_num + 1;
+        // If n is 0, then elts is never going to be read, so we can just pass null
+        let values_ptr = if n == 0 {
+            Opnd::UImm(0)
+        } else {
+            asm.comment("load pointer to array elts");
+            let offset_magnitude = SIZEOF_VALUE as u32 * n;
+            let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+            asm.lea(values_opnd)
+        };
+
+        let new_ary = asm.ccall(
+            rb_ec_ary_new_from_values as *const u8,
+            vec![
+                EC,
+                Opnd::UImm(n.into()),
+                values_ptr
+            ]
+        );
+
+        ctx.stack_pop(n.as_usize());
+        let stack_ret = ctx.stack_push(Type::CArray);
+        asm.mov(stack_ret, new_ary);
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
