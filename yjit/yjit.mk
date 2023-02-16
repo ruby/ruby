@@ -11,7 +11,8 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/yjit/src/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*.rs \
 	$(top_srcdir)/yjit/src/*/*/*/*.rs \
-	)
+	) \
+	$(top_srcdir)/yjit/src/cruby_ids.inc.rs
 
 # Because of Cargo cache, if the actual binary is not changed from the
 # previous build, the mtime is preserved as the cached file.

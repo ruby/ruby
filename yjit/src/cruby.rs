@@ -101,6 +101,7 @@ mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
     include!("cruby_bindings.inc.rs");
+    include!("cruby_ids.inc.rs");
 }
 pub use autogened::*;
 

@@ -1130,6 +1130,23 @@ id.c: $(tooldir)/generic_erb.rb $(srcdir)/template/id.c.tmpl $(srcdir)/defs/id.d
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb --output=$@ \
 		$(srcdir)/template/id.c.tmpl
 
+cruby_ids_gen$(EXEEXT): cruby_ids_gen.$(OBJEXT)
+	$(ECHO) making $@
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $(LDFLAGS) $(OUTFLAG)$@ cruby_ids_gen.$(OBJEXT)
+
+cruby_ids_gen.c:
+	{ \
+	echo '#define GENERATE_YJIT_IDS'; \
+	echo '#include "id.c"'; \
+	} > $@
+
+# YJIT is not supporting cross-compilation
+$(srcdir)/yjit/src/cruby_ids.inc.rs: cruby_ids_gen$(EXEEXT)
+	$(ECHO) generating $@
+	./cruby_ids_gen$(EXEEXT) | $(IFCHANGE) $@ -
+
+yjit-srcs: $(srcdir)/yjit/src/cruby_ids.inc.rs
+
 node_name.inc: $(tooldir)/node_name.rb $(srcdir)/node.h
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -n $(tooldir)/node_name.rb < $(srcdir)/node.h > $@
@@ -3608,6 +3625,9 @@ cont.$(OBJEXT): {$(VPATH)}vm_debug.h
 cont.$(OBJEXT): {$(VPATH)}vm_opts.h
 cont.$(OBJEXT): {$(VPATH)}vm_sync.h
 cont.$(OBJEXT): {$(VPATH)}yjit.h
+cruby_ids_gen.$(OBJEXT): {$(VPATH)}id.c
+cruby_ids_gen.$(OBJEXT): {$(VPATH)}id.h
+cruby_ids_gen.$(OBJEXT): {$(VPATH)}cruby_ids_gen.c
 debug.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 debug.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 debug.$(OBJEXT): $(CCAN_DIR)/list/list.h

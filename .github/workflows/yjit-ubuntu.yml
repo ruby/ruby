@@ -36,6 +36,10 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+      - run: >-
+          sed -f ./tool/prereq.status template/Makefile.in common.mk |
+          make -f - CC=cc yjit-srcs
+        working-directory:
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
       #- run: cargo test --offline
@@ -53,6 +57,10 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
+      - run: >-
+          sed -f ./tool/prereq.status template/Makefile.in common.mk |
+          make -f - CC=cc yjit-srcs
+        working-directory:
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
         working-directory: yjit

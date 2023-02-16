@@ -9,6 +9,7 @@ s,@CC@,false,g
 s,@CFLAGS@,,g
 s,@CHDIR@,cd,g
 s,@CONFIGURE@,configure,g
+s,@COUTFLAG@,-o ,g
 s,@CP@,cp,g
 s,@CPPFLAGS@,,g
 s,@CXXFLAGS@,,g
@@ -24,6 +25,7 @@ s,@LIBRUBY_A@,libruby.a,g
 s,@MINIRUBY@,$(BASERUBY),g
 s,@MKDIR_P@,mkdir -p,g
 s,@OBJEXT@,o,g
+s,@OUTFLAG@,-o ,g
 s,@PATH_SEPARATOR@,:,g
 s,@PWD@,.,g
 s,@RM@,rm -f,g

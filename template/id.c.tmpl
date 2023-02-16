@@ -15,6 +15,8 @@ defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
 ids = eval(File.read(defs), nil, defs)
 ops = ids[:token_op].uniq {|id, op, token| token && op}
 %>
+#ifndef GENERATE_YJIT_IDS
+
 % ops.each do |_id, _op, token|
 %   next unless token
 #define t<%=token%> RUBY_TOKEN(<%=token%>)
@@ -39,3 +41,30 @@ Init_id(void)
     REGISTER_SYMID(id<%=token%>, "<%=name%>");
 % end
 }
+
+#else
+
+#include <stdio.h>
+#include "id.h"
+#define dump(x) printf("pub const "#x": ruby_method_ids = %d;\n", x)
+
+int
+main(void)
+{
+% ids[:token_op].uniq {|_, op| op}.each do |id, op, token|
+    dump(id<%=id%>);
+% end
+% ids[:preserved].each do |token|
+    dump(id<%=token%>);
+% end
+% ids.each_pair do |type, tokens|
+%   /^[A-Z]/ =~ type or next
+%   tokens.each do |token|
+    dump(id<%=token%>);
+%   end
+% end
+    dump(idLAST_OP_ID);
+    puts("pub type ruby_method_ids = u32;\n");
+    return 0;
+}
+#endif
