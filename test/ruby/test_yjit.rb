@@ -1119,6 +1119,23 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_str_uplus_subclass
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :subclass)
+      class S < String
+        def encoding
+          :subclass
+        end
+      end
+
+      def test(str)
+        (+str).encoding
+      end
+
+      test ""
+      test S.new
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

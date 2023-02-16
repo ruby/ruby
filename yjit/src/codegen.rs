@@ -4164,10 +4164,14 @@ fn jit_rb_str_uplus(
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
     _block: Option<IseqPtr>,
-    _argc: i32,
+    argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool
 {
+    if argc != 0 {
+        return false;
+    }
+
     // We allocate when we dup the string
     jit_prepare_routine_call(jit, ctx, asm);
 
@@ -4178,8 +4182,8 @@ fn jit_rb_str_uplus(
 
     let ret_label = asm.new_label("stack_ret");
 
-    // We guard for the receiver being a ::String, so the return value is too
-    let stack_ret = ctx.stack_push(Type::CString);
+    // String#+@ can only exist on T_STRING
+    let stack_ret = ctx.stack_push(Type::TString);
 
     // If the string isn't frozen, we just return it.
     asm.mov(stack_ret, recv_opnd);
