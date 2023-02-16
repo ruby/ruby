@@ -2586,6 +2586,26 @@ EOS
     end
   end if Process.respond_to?(:_fork)
 
+  def test__fork_pid_cache
+    parent_pid = Process.pid
+    r, w = IO.pipe
+    pid = Process._fork
+    if pid == 0
+      begin
+        r.close
+        w << "ok: #{Process.pid}"
+        w.close
+      ensure
+        exit!
+      end
+    else
+      w.close
+      assert_equal("ok: #{pid}", r.read)
+      r.close
+      Process.waitpid(pid)
+    end
+  end if Process.respond_to?(:_fork)
+
   def test__fork_hook
     %w(fork Process.fork).each do |method|
       feature17795 = '[ruby-core:103400] [Feature #17795]'
