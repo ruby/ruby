@@ -27,6 +27,18 @@ RSpec.describe Bundler do
       data = Marshal.dump(simple_structure)
       expect(Bundler.safe_load_marshal(data)).to eq(simple_structure)
     end
+
+    it "loads Gem::Version" do
+      gem_version = Gem::Version.new("3.7.2")
+      data = Marshal.dump(gem_version)
+      expect(Bundler.safe_load_marshal(data)).to eq(gem_version)
+    end
+
+    it "loads Gem::Specification" do
+      gem_spec = Gem::Specification.new("name", "3.7.2")
+      data = Marshal.dump(gem_spec)
+      expect(Bundler.safe_load_marshal(data)).to eq(gem_spec)
+    end
   end
 
   describe "#load_gemspec_uncached" do
