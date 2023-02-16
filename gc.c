@@ -3394,6 +3394,70 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
     make_zombie(objspace, obj, rb_io_fptr_finalize_internal, fptr);
 }
 
+static inline int
+is_swept_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    struct heap_page *page = GET_HEAP_PAGE(ptr);
+    return page->flags.before_sweep ? FALSE : TRUE;
+}
+
+/* garbage objects will be collected soon. */
+static inline int
+is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    if (!is_lazy_sweeping(objspace) ||
+        is_swept_object(objspace, ptr) ||
+        MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
+
+        return FALSE;
+    }
+    else {
+        return TRUE;
+    }
+}
+
+static inline int
+is_live_object(rb_objspace_t *objspace, VALUE ptr)
+{
+    switch (BUILTIN_TYPE(ptr)) {
+      case T_NONE:
+      case T_MOVED:
+      case T_ZOMBIE:
+        return FALSE;
+      default:
+        break;
+    }
+
+    if (!is_garbage_object(objspace, ptr)) {
+        return TRUE;
+    }
+    else {
+        return FALSE;
+    }
+}
+
+static inline int
+is_markable_object(rb_objspace_t *objspace, VALUE obj)
+{
+    if (rb_special_const_p(obj)) return FALSE; /* special const is not markable */
+    check_rvalue_consistency(obj);
+    return TRUE;
+}
+
+int
+rb_objspace_markable_object_p(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return is_markable_object(objspace, obj) && is_live_object(objspace, obj);
+}
+
+int
+rb_objspace_garbage_object_p(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return is_garbage_object(objspace, obj);
+}
+
 static void
 obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3438,6 +3502,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     if (FL_TEST(obj, FL_SEEN_OBJ_ID) && !FL_TEST(obj, FL_FINALIZE)) {
         obj_free_object_id(objspace, obj);
+    }
+
+    if (BUILTIN_TYPE(obj) != T_IMEMO) { // IMEMO use the klass slot for other purposes
+        VALUE klass = RBASIC_CLASS(obj);
+        if (!RB_SPECIAL_CONST_P(klass) && is_live_object(objspace, klass) && FL_TEST_RAW(klass, FL_SINGLETON)) {
+            RCLASS_ATTACHED_OBJECT(klass) = Qnil;
+        }
     }
 
     if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
@@ -4575,70 +4646,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     st_free_table(finalizer_table);
     finalizer_table = 0;
     ATOMIC_SET(finalizing, 0);
-}
-
-static inline int
-is_swept_object(rb_objspace_t *objspace, VALUE ptr)
-{
-    struct heap_page *page = GET_HEAP_PAGE(ptr);
-    return page->flags.before_sweep ? FALSE : TRUE;
-}
-
-/* garbage objects will be collected soon. */
-static inline int
-is_garbage_object(rb_objspace_t *objspace, VALUE ptr)
-{
-    if (!is_lazy_sweeping(objspace) ||
-        is_swept_object(objspace, ptr) ||
-        MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(ptr), ptr)) {
-
-        return FALSE;
-    }
-    else {
-        return TRUE;
-    }
-}
-
-static inline int
-is_live_object(rb_objspace_t *objspace, VALUE ptr)
-{
-    switch (BUILTIN_TYPE(ptr)) {
-      case T_NONE:
-      case T_MOVED:
-      case T_ZOMBIE:
-        return FALSE;
-      default:
-        break;
-    }
-
-    if (!is_garbage_object(objspace, ptr)) {
-        return TRUE;
-    }
-    else {
-        return FALSE;
-    }
-}
-
-static inline int
-is_markable_object(rb_objspace_t *objspace, VALUE obj)
-{
-    if (rb_special_const_p(obj)) return FALSE; /* special const is not markable */
-    check_rvalue_consistency(obj);
-    return TRUE;
-}
-
-int
-rb_objspace_markable_object_p(VALUE obj)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return is_markable_object(objspace, obj) && is_live_object(objspace, obj);
-}
-
-int
-rb_objspace_garbage_object_p(VALUE obj)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    return is_garbage_object(objspace, obj);
 }
 
 static VALUE
@@ -7264,10 +7271,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
-        if (FL_TEST(obj, FL_SINGLETON)) {
-            gc_mark(objspace, RCLASS_ATTACHED_OBJECT(obj));
-        }
-        // Continue to the shared T_CLASS/T_MODULE
       case T_MODULE:
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));

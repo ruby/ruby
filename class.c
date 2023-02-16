@@ -1674,7 +1674,12 @@ rb_class_attached_object(VALUE klass)
         rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
     }
 
-    return RCLASS_ATTACHED_OBJECT(klass);
+    VALUE attached_object = RCLASS_ATTACHED_OBJECT(klass);
+    if (rb_objspace_garbage_object_p(attached_object)) {
+        return Qnil;
+    }
+
+    return attached_object;
 }
 
 static void
