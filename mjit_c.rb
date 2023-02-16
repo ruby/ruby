@@ -168,6 +168,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_eql_internal)'
     end
 
+    def rb_ary_resurrect
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_resurrect)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -397,6 +401,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PUBLIC) }
   end
 
+  def C.RARRAY_EMBED_FLAG
+    Primitive.cexpr! %q{ UINT2NUM(RARRAY_EMBED_FLAG) }
+  end
+
   def C.ROBJECT_EMBED
     Primitive.cexpr! %q{ UINT2NUM(ROBJECT_EMBED) }
   end
@@ -565,12 +573,28 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(OBJ_TOO_COMPLEX_SHAPE_ID) }
   end
 
+  def C.RARRAY_EMBED_LEN_MASK
+    Primitive.cexpr! %q{ ULONG2NUM(RARRAY_EMBED_LEN_MASK) }
+  end
+
+  def C.RARRAY_EMBED_LEN_SHIFT
+    Primitive.cexpr! %q{ ULONG2NUM(RARRAY_EMBED_LEN_SHIFT) }
+  end
+
   def C.RUBY_FIXNUM_FLAG
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
   end
 
   def C.RUBY_IMMEDIATE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_IMMEDIATE_MASK) }
+  end
+
+  def C.RUBY_T_ARRAY
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_ARRAY) }
+  end
+
+  def C.RUBY_T_MASK
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MASK) }
   end
 
   def C.SHAPE_MASK
@@ -615,6 +639,27 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.IVC
     @IVC ||= self.iseq_inline_iv_cache_entry
+  end
+
+  def C.RArray
+    @RArray ||= CType::Struct.new(
+      "RArray", Primitive.cexpr!("SIZEOF(struct RArray)"),
+      basic: [self.RBasic, Primitive.cexpr!("OFFSETOF((*((struct RArray *)NULL)), basic)")],
+      as: [CType::Union.new(
+        "", Primitive.cexpr!("SIZEOF(((struct RArray *)NULL)->as)"),
+        heap: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RArray *)NULL)->as.heap)"),
+          len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, len)")],
+          aux: [CType::Union.new(
+            "", Primitive.cexpr!("SIZEOF(((struct RArray *)NULL)->as.heap.aux)"),
+            capa: CType::Immediate.parse("long"),
+            shared_root: self.VALUE,
+          ), Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, aux)")],
+          ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, ptr)")],
+        ),
+        ary: CType::Pointer.new { self.VALUE },
+      ), Primitive.cexpr!("OFFSETOF((*((struct RArray *)NULL)), as)")],
+    )
   end
 
   def C.RB_BUILTIN
@@ -1080,6 +1125,10 @@ module RubyVM::MJIT # :nodoc: all
       optaref_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_send)")],
       optgetconst_not_cached: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_not_cached)")],
       optgetconst_cref: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_cref)")],
+      expandarray_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_splat)")],
+      expandarray_postarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_postarg)")],
+      expandarray_not_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_not_array)")],
+      expandarray_rhs_too_small: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_rhs_too_small)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end

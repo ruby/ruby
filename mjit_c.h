@@ -160,6 +160,11 @@ MJIT_RUNTIME_COUNTERS(
     optgetconst_not_cached,
     optgetconst_cref,
 
+    expandarray_splat,
+    expandarray_postarg,
+    expandarray_not_array,
+    expandarray_rhs_too_small,
+
     compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS
