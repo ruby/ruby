@@ -2548,6 +2548,12 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         /* ignore. A root fiber object will free th->ec */
     }
     else {
+#if USE_MMTK
+        // When using MMTk, this function will be called during GC,
+        // and there will not be an execution context.
+        // So when using MMTk, only execute this part when called by a mutator.
+        if (!rb_mmtk_enabled_p()) {
+#endif
         rb_execution_context_t *ec = GET_EC();
 
         VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
@@ -2556,6 +2562,9 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         if (th->ec == ec) {
             rb_ractor_set_current_ec(th->ractor, NULL);
         }
+#if USE_MMTK
+        }
+#endif
         fiber_free(th->ec->fiber_ptr);
         th->ec = NULL;
     }
