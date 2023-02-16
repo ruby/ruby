@@ -171,7 +171,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     @cmd.options[:added_platform] = true
     @cmd.options[:version]        = req("= 1.0")
 
-    error = assert_raise Gem::WebauthnVerificationError do
+    error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
         Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
           use_ui @ui do
@@ -182,11 +182,12 @@ class TestGemCommandsYankCommand < Gem::TestCase
         server.close
       end
     end
-    assert_equal "Security device verification failed: Something went wrong", error.message
+    assert_equal 1, error.exit_code
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match %r{Yanking gem from http://example}, @ui.output
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @ui.output
+    assert_match "ERROR:  Security device verification failed: Something went wrong", @ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @ui.output
     refute_match "Successfully yanked", @ui.output
   end

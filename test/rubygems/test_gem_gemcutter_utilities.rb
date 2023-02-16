@@ -267,7 +267,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     server = TCPServer.new(port)
     raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
 
-    error = assert_raise Gem::WebauthnVerificationError do
+    error = assert_raise Gem::MockGemUi::TermError do
       TCPServer.stub(:new, server) do
         Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
           util_sign_in(proc do
@@ -283,11 +283,11 @@ class TestGemGemcutterUtilities < Gem::TestCase
         server.close
       end
     end
-
-    assert_equal "Security device verification failed: Something went wrong", error.message
+    assert_equal 1, error.exit_code
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @sign_in_ui.output
+    assert_match "ERROR:  Security device verification failed: Something went wrong", @sign_in_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @sign_in_ui.output
     refute_match "Signed in with API key:", @sign_in_ui.output
   end

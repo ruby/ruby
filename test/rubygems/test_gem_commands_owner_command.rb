@@ -406,21 +406,19 @@ EOF
       HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
-    error = assert_raise Gem::WebauthnVerificationError do
-      TCPServer.stub(:new, server) do
-        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
-          use_ui @stub_ui do
-            @cmd.add_owners("freewill", ["user-new1@example.com"])
-          end
+    TCPServer.stub(:new, server) do
+      Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+        use_ui @stub_ui do
+          @cmd.add_owners("freewill", ["user-new1@example.com"])
         end
-      ensure
-        server.close
       end
+    ensure
+      server.close
     end
-    assert_equal "Security device verification failed: Something went wrong", error.message
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @stub_ui.output
+    assert_match "ERROR:  Security device verification failed: Something went wrong", @stub_ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @stub_ui.output
     refute_match response_success, @stub_ui.output
   end

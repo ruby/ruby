@@ -101,7 +101,7 @@ permission to.
     rescue Gem::WebauthnVerificationError => e
       raise e
     rescue StandardError
-      # ignore
+      # ignore early exits to allow for completing the iteration of all owners
     end
   end
 
