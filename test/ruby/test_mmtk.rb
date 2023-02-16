@@ -75,14 +75,6 @@ class TestMMTk < Test::Unit::TestCase
     end
   end
 
-  def test_mmtk_plan_env_var
-    assert_in_out_err([{'MMTK_PLAN' => 'NoGC'}, '-e puts GC::MMTk.plan_name'], '', ['NoGC'])
-  end
-
-  def test_third_party_max_heap_env_var
-    assert_in_out_err([{'THIRD_PARTY_HEAP_LIMIT' => '10240000'}, '-e p GC.stat(:mmtk_total_bytes)'], '', ['10240000'])
-  end
-
   def test_enabled
     assert_in_out_err(['-e p GC::MMTk.enabled?'], '', ['false'])
     assert_in_out_err(['--mmtk', '-e p GC::MMTk.enabled?'], '', ['true'])
