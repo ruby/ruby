@@ -161,11 +161,11 @@ RSpec.describe Bundler::Fetcher do
   end
 
   describe "#fetch_spec" do
-    let(:name) { 'name' }
-    let(:version) { '1.3.17' }
-    let(:platform) { 'platform' }
-    let(:downloader) { double("downloader")}
-    let(:body) { double(Net::HTTP::Get, body: downloaded_data)}
+    let(:name) { "name" }
+    let(:version) { "1.3.17" }
+    let(:platform) { "platform" }
+    let(:downloader) { double("downloader" )}
+    let(:body) { double(Net::HTTP::Get, :body => downloaded_data) }
 
     context "when attempting to load a Gem::Specification" do
       let(:spec) { Gem::Specification.new(name, version) }
@@ -178,10 +178,10 @@ RSpec.describe Bundler::Fetcher do
         expect(result).to eq(spec)
       end
     end
-    
+
     context "when attempting to load an unexpected class" do
       let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(3)) }
-      
+
       it "raises a HTTPError error" do
         expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
         expect(downloader).to receive(:fetch).once.and_return(body)
