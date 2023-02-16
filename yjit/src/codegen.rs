@@ -5846,7 +5846,6 @@ fn gen_send_iseq(
         };
 
         let new_ary = asm.ccall(
-
             rb_ec_ary_new_from_values as *const u8,
             vec![
                 EC,
