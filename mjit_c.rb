@@ -172,6 +172,14 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_resurrect)'
     end
 
+    def rb_ary_store
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_store)'
+    end
+
+    def rb_hash_aset
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aset)'
+    end
+
     #========================================================================================
     #
     # Old stuff
