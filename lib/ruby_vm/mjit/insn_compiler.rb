@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 48/101
+      # 49/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -108,7 +108,7 @@ module RubyVM::MJIT
       when :opt_and then opt_and(jit, ctx, asm)
       when :opt_or then opt_or(jit, ctx, asm)
       when :opt_aref then opt_aref(jit, ctx, asm)
-      # opt_aset
+      when :opt_aset then opt_aset(jit, ctx, asm)
       # opt_aset_with
       # opt_aref_with
       when :opt_length then opt_length(jit, ctx, asm)
@@ -1029,7 +1029,95 @@ module RubyVM::MJIT
       end
     end
 
-    # opt_aset
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_aset(jit, ctx, asm)
+      # Defer compilation so we can specialize on a runtime `self`
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      comptime_recv = jit.peek_at_stack(2)
+      comptime_key = jit.peek_at_stack(1)
+
+      # Get the operands from the stack
+      recv = ctx.stack_opnd(2)
+      key = ctx.stack_opnd(1)
+      _val = ctx.stack_opnd(0)
+
+      if comptime_recv.class == Array && fixnum?(comptime_key)
+        side_exit = side_exit(jit, ctx)
+
+        # Guard receiver is an Array
+        if jit_guard_known_class(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit) == CantCompile
+          return CantCompile
+        end
+
+        # Guard key is a fixnum
+        if jit_guard_known_class(jit, ctx, asm, comptime_key.class, key, comptime_key, side_exit) == CantCompile
+          return CantCompile
+        end
+
+        # We might allocate or raise
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        asm.comment('call rb_ary_store')
+        recv = ctx.stack_opnd(2)
+        key = ctx.stack_opnd(1)
+        val = ctx.stack_opnd(0)
+        asm.mov(:rax, key)
+        asm.sar(:rax, 1) # FIX2LONG(key)
+        asm.mov(C_ARGS[0], recv)
+        asm.mov(C_ARGS[1], :rax)
+        asm.mov(C_ARGS[2], val)
+        asm.call(C.rb_ary_store)
+
+        # rb_ary_store returns void
+        # stored value should still be on stack
+        val = ctx.stack_opnd(0)
+
+        # Push the return value onto the stack
+        ctx.stack_pop(3)
+        stack_ret = ctx.stack_push
+        asm.mov(:rax, val)
+        asm.mov(stack_ret, :rax)
+
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
+      elsif comptime_recv.class == Hash
+        side_exit = side_exit(jit, ctx)
+
+        # Guard receiver is a Hash
+        if jit_guard_known_class(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit) == CantCompile
+          return CantCompile
+        end
+
+        # We might allocate or raise
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        # Call rb_hash_aset
+        recv = ctx.stack_opnd(2)
+        key = ctx.stack_opnd(1)
+        val = ctx.stack_opnd(0)
+        asm.mov(C_ARGS[0], recv)
+        asm.mov(C_ARGS[1], key)
+        asm.mov(C_ARGS[2], val)
+        asm.call(C.rb_hash_aset)
+
+        # Push the return value onto the stack
+        ctx.stack_pop(3)
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
+      else
+        opt_send_without_block(jit, ctx, asm)
+      end
+    end
+
     # opt_aset_with
     # opt_aref_with
 
