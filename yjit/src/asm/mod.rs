@@ -653,6 +653,9 @@ impl CodeBlock {
         self.other_cb().unwrap().freed_pages = new_freed_pages;
         assert_eq!(1, Rc::strong_count(&old_freed_pages)); // will deallocate
 
+        // Sweep obsoleted Contexts as well
+        CodegenGlobals::context_gc();
+
         CodegenGlobals::incr_code_gc_count();
     }
 

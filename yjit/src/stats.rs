@@ -4,7 +4,6 @@
 #![allow(dead_code)] // Counters are only used with the stats features
 
 use crate::codegen::CodegenGlobals;
-use crate::core::Context;
 use crate::core::for_each_iseq_payload;
 use crate::cruby::*;
 use crate::options::*;
@@ -456,11 +455,15 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         #[cfg(feature="stats")]
         hash_aset_usize!(hash, "yjit_alloc_size", global_allocation_size());
 
+        // An esimated number of bytes consumed for storing unique Contexts
+        hash_aset_usize!(hash, "context_set_size", CodegenGlobals::get_context_set_size());
+
+        // The number of unique Contexts
+        hash_aset_usize!(hash, "context_set_count", CodegenGlobals::get_context_set_count());
+
         if context {
-            let live_context_count = get_live_context_count();
-            let context_size = std::mem::size_of::<Context>();
-            hash_aset_usize!(hash, "live_context_count", live_context_count);
-            hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
+            // The number of Contexts that are referenced by Block or BranchStub
+            hash_aset_usize!(hash, "live_context_count", get_live_context_count());
         }
     }
 

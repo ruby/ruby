@@ -14,10 +14,12 @@ use YARVOpnd::*;
 
 use std::cmp;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int, c_uint};
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -7751,6 +7753,9 @@ pub struct CodegenGlobals {
 
     /// How many times code GC has been executed.
     code_gc_count: usize,
+
+    /// Shared contexts for deduplication.
+    context_set: HashSet<Rc<Context>>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -7774,7 +7779,6 @@ impl CodegenGlobals {
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
             use std::cell::RefCell;
-            use std::rc::Rc;
 
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
@@ -7845,6 +7849,7 @@ impl CodegenGlobals {
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
+            context_set: HashSet::new(),
         };
 
         // Register the method codegen functions
@@ -8007,6 +8012,43 @@ impl CodegenGlobals {
 
     pub fn get_code_gc_count() -> usize {
         CodegenGlobals::get_instance().code_gc_count
+    }
+
+    /// Return an existing Rc<Context> for any Context that has been used here
+    pub fn deduplicate_context(ctx: &Context) -> Rc<Context> {
+        // CodegenGlobals::get_instance() doesn't work on `cargo test`
+        if cfg!(test) {
+            return Rc::new(ctx.clone())
+        }
+
+        match CodegenGlobals::get_instance().context_set.get(ctx) {
+            Some(ctxref) => ctxref.clone(),
+            None => {
+                let ctxref = Rc::new(ctx.clone());
+                CodegenGlobals::get_instance().context_set.insert(ctxref.clone());
+                ctxref
+            }
+        }
+    }
+
+    /// Garbage-collect unused Contexts
+    pub fn context_gc() {
+        // Leave only ones referenced outside context_set
+        CodegenGlobals::get_instance().context_set.retain(|ctx| Rc::strong_count(ctx) > 1);
+    }
+
+    /// The number of unique Contexts
+    pub fn get_context_set_count() -> usize {
+        CodegenGlobals::get_instance().context_set.len()
+    }
+
+    /// An esimated number of bytes consumed for storing unique Contexts
+    pub fn get_context_set_size() -> usize {
+        // Just an estimate. See also:
+        // https://github.com/rust-lang/hashbrown/issues/238
+        // https://github.com/servo/servo/blob/293c8623fa9a15d279fb4fad27b3f35db6d8c0cd/components/malloc_size_of/lib.rs#L468
+        let capacity = CodegenGlobals::get_instance().context_set.capacity();
+        capacity * (size_of::<Context>() + size_of::<Rc<Context>>())
     }
 }
 
