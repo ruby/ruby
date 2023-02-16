@@ -1468,32 +1468,8 @@ fn gen_expandarray(
     KeepCompiling
 }
 
-fn gen_getlocal_wc0(
-    jit: &mut JITState,
-    ctx: &mut Context,
-    asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
-) -> CodegenStatus {
-    // Compute the offset from BP to the local
-    let slot_idx = jit_get_arg(jit, 0).as_i32();
-    let offs: i32 = -SIZEOF_VALUE_I32 * slot_idx;
-    let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx);
-
-    // Load environment pointer EP (level 0) from CFP
-    let ep_opnd = gen_get_ep(asm, 0);
-
-    // Load the local from the EP
-    let local_opnd = Opnd::mem(64, ep_opnd, offs);
-
-    // Write the local at SP
-    let stack_top = ctx.stack_push_local(local_idx.as_usize());
-    asm.mov(stack_top, local_opnd);
-
-    KeepCompiling
-}
-
 // Compute the index of a local variable from its slot index
-fn slot_to_local_idx(iseq: IseqPtr, slot_idx: i32) -> u32 {
+fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> u32 {
     // Layout illustration
     // This is an array of VALUE
     //                                           | VM_ENV_DATA_SIZE |
@@ -1504,7 +1480,7 @@ fn slot_to_local_idx(iseq: IseqPtr, slot_idx: i32) -> u32 {
     //           ^       ^                       ^                  ^
     //           +-------+---local_table_size----+         cfp->ep--+
     //                   |                                          |
-    //                   +------------------slot_idx----------------+
+    //                   +------------------ep_offset---------------+
     //
     // See usages of local_var_name() from iseq.c for similar calculation.
 
@@ -1512,7 +1488,7 @@ fn slot_to_local_idx(iseq: IseqPtr, slot_idx: i32) -> u32 {
     let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
         .try_into()
         .unwrap();
-    let op = slot_idx - (VM_ENV_DATA_SIZE as i32);
+    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
     let local_idx = local_table_size - op - 1;
     assert!(local_idx >= 0 && local_idx < local_table_size);
     local_idx.try_into().unwrap()
@@ -1553,9 +1529,10 @@ fn gen_get_lep(jit: &mut JITState, asm: &mut Assembler) -> Opnd {
 }
 
 fn gen_getlocal_generic(
+    jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
-    local_idx: u32,
+    ep_offset: u32,
     level: u32,
 ) -> CodegenStatus {
     // Load environment pointer EP (level 0) from CFP
@@ -1563,11 +1540,16 @@ fn gen_getlocal_generic(
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
-    let offs = -(SIZEOF_VALUE_I32 * local_idx as i32);
+    let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
     let local_opnd = Opnd::mem(64, ep_opnd, offs);
 
     // Write the local at SP
-    let stack_top = ctx.stack_push(Type::Unknown);
+    let stack_top = if level == 0 {
+        let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset);
+        ctx.stack_push_local(local_idx.as_usize())
+    } else {
+        ctx.stack_push(Type::Unknown)
+    };
 
     asm.mov(stack_top, local_opnd);
 
@@ -1580,9 +1562,19 @@ fn gen_getlocal(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let idx = jit_get_arg(jit, 0);
-    let level = jit_get_arg(jit, 1);
-    gen_getlocal_generic(ctx, asm, idx.as_u32(), level.as_u32())
+    let idx = jit_get_arg(jit, 0).as_u32();
+    let level = jit_get_arg(jit, 1).as_u32();
+    gen_getlocal_generic(jit, ctx, asm, idx, level)
+}
+
+fn gen_getlocal_wc0(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let idx = jit_get_arg(jit, 0).as_u32();
+    gen_getlocal_generic(jit, ctx, asm, idx, 0)
 }
 
 fn gen_getlocal_wc1(
@@ -1591,66 +1583,8 @@ fn gen_getlocal_wc1(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let idx = jit_get_arg(jit, 0);
-    gen_getlocal_generic(ctx, asm, idx.as_u32(), 1)
-}
-
-fn gen_setlocal_wc0(
-    jit: &mut JITState,
-    ctx: &mut Context,
-    asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
-) -> CodegenStatus {
-    /*
-    vm_env_write(const VALUE *ep, int index, VALUE v)
-    {
-        VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
-        if (LIKELY((flags & VM_ENV_FLAG_WB_REQUIRED) == 0)) {
-            VM_STACK_ENV_WRITE(ep, index, v);
-        }
-        else {
-            vm_env_write_slowpath(ep, index, v);
-        }
-    }
-    */
-
-    let slot_idx = jit_get_arg(jit, 0).as_i32();
-    let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx).as_usize();
-    let value_type = ctx.get_opnd_type(StackOpnd(0));
-
-    // Load environment pointer EP (level 0) from CFP
-    let ep_opnd = gen_get_ep(asm, 0);
-
-    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
-    // only affect heap objects being written. If we know an immediate value is being written we
-    // can skip this check.
-    if !value_type.is_imm() {
-        // flags & VM_ENV_FLAG_WB_REQUIRED
-        let flags_opnd = Opnd::mem(
-            64,
-            ep_opnd,
-            SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_FLAGS as i32,
-        );
-        asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
-
-        // Create a side-exit to fall back to the interpreter
-        let side_exit = get_side_exit(jit, ocb, ctx);
-
-        // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-        asm.jnz(side_exit);
-    }
-
-    // Set the type of the local variable in the context
-    ctx.set_local_type(local_idx, value_type);
-
-    // Pop the value to write from the stack
-    let stack_top = ctx.stack_pop(1);
-
-    // Write the value at the environment pointer
-    let offs: i32 = -8 * slot_idx;
-    asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
-
-    KeepCompiling
+    let idx = jit_get_arg(jit, 0).as_u32();
+    gen_getlocal_generic(jit, ctx, asm, idx, 1)
 }
 
 fn gen_setlocal_generic(
@@ -1658,7 +1592,7 @@ fn gen_setlocal_generic(
     ctx: &mut Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    local_idx: i32,
+    ep_offset: u32,
     level: u32,
 ) -> CodegenStatus {
     let value_type = ctx.get_opnd_type(StackOpnd(0));
@@ -1685,11 +1619,16 @@ fn gen_setlocal_generic(
         asm.jnz(side_exit);
     }
 
+    if level == 0 {
+        let local_idx = ep_offset_to_local_idx(jit.get_iseq(), ep_offset).as_usize();
+        ctx.set_local_type(local_idx, value_type);
+    }
+
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);
 
     // Write the value at the environment pointer
-    let offs = -(SIZEOF_VALUE_I32 * local_idx);
+    let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
     asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
 
     KeepCompiling
@@ -1701,9 +1640,19 @@ fn gen_setlocal(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let idx = jit_get_arg(jit, 0).as_i32();
+    let idx = jit_get_arg(jit, 0).as_u32();
     let level = jit_get_arg(jit, 1).as_u32();
     gen_setlocal_generic(jit, ctx, asm, ocb, idx, level)
+}
+
+fn gen_setlocal_wc0(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let idx = jit_get_arg(jit, 0).as_u32();
+    gen_setlocal_generic(jit, ctx, asm, ocb, idx, 0)
 }
 
 fn gen_setlocal_wc1(
@@ -1712,7 +1661,7 @@ fn gen_setlocal_wc1(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let idx = jit_get_arg(jit, 0).as_i32();
+    let idx = jit_get_arg(jit, 0).as_u32();
     gen_setlocal_generic(jit, ctx, asm, ocb, idx, 1)
 }
 
