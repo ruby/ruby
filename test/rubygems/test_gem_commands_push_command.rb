@@ -425,10 +425,12 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
-  def test_webauthn_otp_verified_success
-    webauthn_verification_url = "#{Gem.host}/api/v1/webauthn_verification/odow34b93t6aPCdY"
+  def test_with_webauthn_enabled_success
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_success = "Successfully registered gem: freewill (1.0.0)"
+    port = 5678
+    server = TCPServer.new(port)
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
       HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
@@ -436,15 +438,54 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ]
     @fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
 
-    @otp_ui = Gem::MockGemUi.new "111111\n"
-    use_ui @otp_ui do
-      @cmd.send_gem(@path)
+    TCPServer.stub(:new, server) do
+      Gem::WebauthnListener.stub(:wait_for_otp_code, "Uvh6T57tkWuUnWYo") do
+        use_ui @ui do
+          @cmd.send_gem(@path)
+        end
+      end
+    ensure
+      server.close
     end
 
-    assert_match "You have enabled multi-factor authentication. Please enter OTP code from your security device by visiting #{webauthn_verification_url}", @otp_ui.output
-    assert_match "Code: ", @otp_ui.output
-    assert_match response_success, @otp_ui.output
-    assert_equal "111111", @fetcher.last_request["OTP"]
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @ui.output
+    assert_match "You are verified with a security device. You may close the browser window.", @ui.output
+    assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
+    assert_match response_success, @ui.output
+  end
+
+  def test_with_webauthn_enabled_failure
+    webauthn_verification_url = "rubygems.org/api/v1/webauthn_verification/odow34b93t6aPCdY"
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success = "Successfully registered gem: freewill (1.0.0)"
+    port = 5678
+    server = TCPServer.new(port)
+    raise_error = ->(*_args) { raise Gem::WebauthnVerificationError, "Something went wrong" }
+
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
+    ]
+    @fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = HTTPResponseFactory.create(body: webauthn_verification_url, code: 200, msg: "OK")
+
+    error = assert_raise Gem::WebauthnVerificationError do
+      TCPServer.stub(:new, server) do
+        Gem::WebauthnListener.stub(:wait_for_otp_code, raise_error) do
+          use_ui @ui do
+            @cmd.send_gem(@path)
+          end
+        end
+      ensure
+        server.close
+      end
+    end
+    assert_equal "Security device verification failed: Something went wrong", error.message
+
+    url_with_port = "#{webauthn_verification_url}?port=#{port}"
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @ui.output
+    refute_match "You are verified with a security device. You may close the browser window.", @ui.output
+    refute_match response_success, @ui.output
   end
 
   def test_sending_gem_unathorized_api_key_with_mfa_enabled
