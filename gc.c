@@ -7271,6 +7271,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
+        if (FL_TEST(obj, FL_SINGLETON)) {
+            VALUE attached_object = RCLASS_ATTACHED_OBJECT(obj);
+            if (RB_TYPE_P(attached_object, T_CLASS) || RB_TYPE_P(attached_object, T_MODULE)) {
+                gc_mark(objspace, attached_object);
+            }
+        }
+        // Continue to the shared T_CLASS/T_MODULE
       case T_MODULE:
         if (RCLASS_SUPER(obj)) {
             gc_mark(objspace, RCLASS_SUPER(obj));
