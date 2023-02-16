@@ -366,6 +366,11 @@ generator = BindingGenerator.new(
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
+      OPTIMIZED_METHOD_TYPE_SEND
+      OPTIMIZED_METHOD_TYPE_CALL
+      OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+      OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+      OPTIMIZED_METHOD_TYPE_STRUCT_ASET
       ROBJECT_EMBED
       RARRAY_EMBED_FLAG
       RUBY_EVENT_CLASS
@@ -397,13 +402,16 @@ generator = BindingGenerator.new(
       VM_FRAME_MAGIC_CFUNC
       VM_FRAME_FLAG_CFRAME
       VM_FRAME_FLAG_CFRAME_KW
-      VM_METHOD_TYPE_CFUNC
       VM_METHOD_TYPE_ISEQ
-      VM_METHOD_TYPE_IVAR
+      VM_METHOD_TYPE_NOTIMPLEMENTED
+      VM_METHOD_TYPE_CFUNC
       VM_METHOD_TYPE_ATTRSET
+      VM_METHOD_TYPE_IVAR
+      VM_METHOD_TYPE_MISSING
       VM_METHOD_TYPE_BMETHOD
       VM_METHOD_TYPE_ALIAS
       VM_METHOD_TYPE_OPTIMIZED
+      VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
       VM_METHOD_TYPE_REFINED
     ],
@@ -469,6 +477,8 @@ generator = BindingGenerator.new(
     rb_shape_t
     rb_method_attr_t
     rb_method_cfunc_t
+    rb_method_optimized_t
+    method_optimized_type
   ],
   dynamic_types: %w[
     VALUE
