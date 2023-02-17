@@ -2183,7 +2183,7 @@ fn gen_setinstancevariable(
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() {
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || (ctx.get_chain_depth() as i32) >= SET_IVAR_MAX_DEPTH {
         asm.comment("call rb_vm_setinstancevariable()");
 
         let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
