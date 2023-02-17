@@ -1498,7 +1498,7 @@ static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
 {
     const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, sizeof(struct RHash), 0);
 
     RHASH_SET_IFNONE((VALUE)hash, ifnone);
 

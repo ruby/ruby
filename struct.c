@@ -839,7 +839,7 @@ static VALUE
 struct_alloc(VALUE klass)
 {
     long n;
-    NEWOBJ_OF(st, struct RStruct, klass, T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0));
+    NEWOBJ_OF(st, struct RStruct, klass, T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0), sizeof(struct RStruct), 0);
 
     n = num_members(klass);
 

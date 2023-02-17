@@ -2909,14 +2909,7 @@ rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags, size_t size)
 }
 
 VALUE
-rb_wb_protected_newobj_of(VALUE klass, VALUE flags, size_t size)
-{
-    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, TRUE, size);
-}
-
-VALUE
-rb_ec_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
+rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
