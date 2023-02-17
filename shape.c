@@ -239,7 +239,7 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
             if (new_parent) {
                 bool dont_care;
                 enum ruby_value_type type = BUILTIN_TYPE(obj);
-                bool new_shape_necessary = type != T_OBJECT;
+                bool new_shape_necessary = type != T_OBJECT && type != T_CLASS && type != T_MODULE;
                 rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true, new_shape_necessary);
                 new_child->capacity = shape->capacity;
                 if (new_child->type == SHAPE_IVAR) {
@@ -316,12 +316,10 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
     }
 
     bool variation_created = false;
-    // For non T_OBJECTS, force a new shape
-    bool new_shape_necessary = BUILTIN_TYPE(obj) != T_OBJECT;
+    bool new_shape_necessary = BUILTIN_TYPE(obj) != T_OBJECT && BUILTIN_TYPE(obj) != T_CLASS && BUILTIN_TYPE(obj) != T_MODULE;
     rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape, new_shape_necessary);
 
     if (!new_shape) {
-        RUBY_ASSERT(BUILTIN_TYPE(obj) == T_OBJECT);
         new_shape = rb_shape_get_shape_by_id(OBJ_TOO_COMPLEX_SHAPE_ID);
     }
 
@@ -334,6 +332,15 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
         if (variation_created) {
             RCLASS_EXT(klass)->variation_count++;
+        }
+    }
+    else if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
+        if (new_shape->next_iv_index > RCLASS_EXT(obj)->max_iv_count) {
+            RCLASS_EXT(obj)->max_iv_count = new_shape->next_iv_index;
+        }
+
+        if (variation_created) {
+            RCLASS_EXT(obj)->variation_count++;
         }
     }
 
@@ -523,7 +530,6 @@ rb_shape_obj_too_complex(VALUE obj)
 void
 rb_shape_set_too_complex(VALUE obj)
 {
-    RUBY_ASSERT(BUILTIN_TYPE(obj) == T_OBJECT);
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
 }
