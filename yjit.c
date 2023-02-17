@@ -1105,7 +1105,7 @@ static VALUE
 object_shape_count(rb_execution_context_t *ec, VALUE self)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
+    return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);
 }
 
 // Assert that we have the VM lock. Relevant mostly for multi ractor situations.

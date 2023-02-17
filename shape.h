@@ -62,6 +62,21 @@ enum shape_type {
     SHAPE_OBJ_TOO_COMPLEX,
 };
 
+typedef struct {
+    /* object shapes */
+    rb_shape_t *shape_list;
+    rb_shape_t *root_shape;
+    shape_id_t next_shape_id;
+} rb_shape_tree_t;
+RUBY_EXTERN rb_shape_tree_t *rb_shape_tree_ptr;
+
+static inline rb_shape_tree_t *
+rb_current_shape_tree(void)
+{
+    return rb_shape_tree_ptr;
+}
+#define GET_SHAPE_TREE() rb_current_shape_tree()
+
 #if SHAPE_IN_BASIC_FLAGS
 static inline shape_id_t
 RBASIC_SHAPE_ID(VALUE obj)
