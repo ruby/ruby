@@ -324,6 +324,9 @@ class TestNumeric < Test::Unit::TestCase
     e = 1.step(10, {by: "1"})
     assert_raise(TypeError) {e.next}
     assert_raise(TypeError) {e.size}
+    e = 1.step(to: "10")
+    assert_raise(ArgumentError) {e.next}
+    assert_raise(ArgumentError) {e.size}
 
     assert_equal(bignum*2+1, (-bignum).step(bignum, 1).size)
     assert_equal(bignum*2, (-bignum).step(bignum-1, 1).size)
