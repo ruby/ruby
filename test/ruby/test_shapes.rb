@@ -105,7 +105,27 @@ class TestShapes < Test::Unit::TestCase
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    assert_false RubyVM::Shape.of(obj).too_complex?
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_too_many_ivs_on_module
+    obj = Module.new
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_too_many_ivs_on_builtin
+    obj = "string"
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 1).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+
+    refute RubyVM::Shape.of(obj).too_complex?
   end
 
   def test_removing_when_too_many_ivs_on_class

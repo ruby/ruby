@@ -3512,7 +3512,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
         cc_table_free(objspace, obj, FALSE);
-        if (RCLASS_IVPTR(obj)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
+            rb_id_table_free(RCLASS_TABLE_IVPTR(obj));
+        }
+        else if (RCLASS_IVPTR(obj)) {
             xfree(RCLASS_IVPTR(obj));
         }
         if (RCLASS_CONST_TBL(obj)) {

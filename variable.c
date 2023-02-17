@@ -1133,6 +1133,16 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 shape_id = RCLASS_SHAPE_ID(obj);
 #endif
 
+                if (rb_shape_obj_too_complex(obj)) {
+                    struct rb_id_table * iv_table = RCLASS_TABLE_IVPTR(obj);
+                    if (rb_id_table_lookup(iv_table, id, &val)) {
+                        return val;
+                    }
+                    else {
+                        return undef;
+                    }
+                }
+
                 attr_index_t index = 0;
                 shape = rb_shape_get_shape_by_id(shape_id);
                 found = rb_shape_get_iv_index(shape, id, &index);
@@ -1265,6 +1275,8 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     attr_index_t index;
     // The returned shape will have `id` in its iv_table
     rb_shape_t *shape = rb_shape_get_shape(obj);
+
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
     bool found = rb_shape_get_iv_index(shape, id, &index);
     if (!found) {
         index = shape->next_iv_index;
@@ -1642,6 +1654,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             break;
           case T_CLASS:
           case T_MODULE:
+            RUBY_ASSERT(!rb_shape_obj_too_complex(itr_data->obj));
             iv_list = RCLASS_IVPTR(itr_data->obj);
             break;
           default:
@@ -1711,7 +1724,13 @@ class_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     struct iv_itr_data itr_data;
     itr_data.obj = obj;
     itr_data.arg = arg;
-    iterate_over_shapes_with_callback(shape, func, &itr_data);
+    itr_data.func = func;
+    if (rb_shape_obj_too_complex(obj)) {
+        rb_id_table_foreach(RCLASS_TABLE_IVPTR(obj), each_hash_iv, &itr_data);
+    }
+    else {
+        iterate_over_shapes_with_callback(shape, func, &itr_data);
+    }
 }
 
 void
@@ -1971,7 +1990,14 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
       case T_CLASS:
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
-        rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        if (rb_shape_obj_too_complex(obj)) {
+            if (rb_id_table_lookup(RCLASS_TABLE_IVPTR(obj), id, &val)) {
+                rb_id_table_delete(RCLASS_TABLE_IVPTR(obj), id);
+            }
+        } else {
+            rb_shape_transition_shape_remove_ivar(obj, id, shape, &val);
+        }
+
         break;
       case T_OBJECT: {
         if (rb_shape_obj_too_complex(obj)) {
@@ -3948,35 +3974,65 @@ rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 
     RB_VM_LOCK_ENTER();
     {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        attr_index_t idx;
-        found = rb_shape_get_iv_index(shape, key, &idx);
-
-        if (found) {
-            // Changing an existing instance variable
-            RUBY_ASSERT(RCLASS_IVPTR(obj));
-
-            RCLASS_IVPTR(obj)[idx] = value;
+        if (rb_shape_obj_too_complex(obj)) {
+            struct rb_id_table * iv_table = RCLASS_TABLE_IVPTR(obj);
+            rb_id_table_insert(iv_table, key, value);
             RB_OBJ_WRITTEN(obj, Qundef, value);
+            found = 0;
         }
         else {
-            // Creating and setting a new instance variable
+            rb_shape_t * shape = rb_shape_get_shape(obj);
+            attr_index_t idx;
+            found = rb_shape_get_iv_index(shape, key, &idx);
 
-            // Move to a shape which fits the new ivar
-            idx = shape->next_iv_index;
-            shape = rb_shape_get_next(shape, obj, key);
+            if (found) {
+                // Changing an existing instance variable
+                RUBY_ASSERT(RCLASS_IVPTR(obj));
 
-            // We always allocate a power of two sized IV array. This way we
-            // only need to realloc when we expand into a new power of two size
-            if ((idx & (idx - 1)) == 0) {
-                size_t newsize = idx ? idx * 2 : 1;
-                REALLOC_N(RCLASS_IVPTR(obj), VALUE, newsize);
+                RCLASS_IVPTR(obj)[idx] = value;
+                RB_OBJ_WRITTEN(obj, Qundef, value);
             }
+            else {
+                // Creating and setting a new instance variable
 
-            RUBY_ASSERT(RCLASS_IVPTR(obj));
+                // Move to a shape which fits the new ivar
+                idx = shape->next_iv_index;
+                shape = rb_shape_get_next(shape, obj, key);
 
-            RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
-            rb_shape_set_shape(obj, shape);
+                // stop using shapes if we are now too complex
+                if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+                    struct rb_id_table * table = rb_id_table_create(shape->next_iv_index);
+
+                    // Evacuate all previous values from shape into id_table
+                    rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
+
+                    // insert the new value
+                    rb_id_table_insert(table, key, value);
+                    RB_OBJ_WRITTEN(obj, Qundef, value);
+
+                    rb_shape_set_too_complex(obj);
+                    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+                    if (RCLASS_IVPTR(obj)) {
+                        xfree(RCLASS_IVPTR(obj));
+                    }
+
+                    RCLASS_EXT(obj)->iv_ptr = (VALUE *)table;
+                }
+                else {
+                    // We always allocate a power of two sized IV array. This way we
+                    // only need to realloc when we expand into a new power of two size
+                    if ((idx & (idx - 1)) == 0) {
+                        size_t newsize = idx ? idx * 2 : 1;
+                        REALLOC_N(RCLASS_IVPTR(obj), VALUE, newsize);
+                    }
+
+                    RUBY_ASSERT(RCLASS_IVPTR(obj));
+
+                    RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
+                    rb_shape_set_shape(obj, shape);
+                }
+            }
         }
     }
     RB_VM_LOCK_LEAVE();
