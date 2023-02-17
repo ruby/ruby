@@ -53,6 +53,8 @@
 
 #include "ruby_assert.h"
 
+#define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
+
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
@@ -100,7 +102,6 @@ extern int ruby_assert_critical_section_entered;
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
-#include "shape.h"
 
 #include "ruby/thread_native.h"
 
@@ -1122,7 +1123,6 @@ rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_call
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
-attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 
 VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 

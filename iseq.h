@@ -11,6 +11,7 @@
 
 **********************************************************************/
 #include "internal/gc.h"
+#include "shape.h"
 #include "vm_core.h"
 
 RUBY_EXTERN const int ruby_api_version[];
@@ -324,6 +325,8 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
+
+attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 
 RUBY_SYMBOL_EXPORT_END
 
