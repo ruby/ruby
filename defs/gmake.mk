@@ -357,7 +357,7 @@ $(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
 	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
-	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems")'
+	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems", validation: false)'
 
 endef
 define build-gem-0
