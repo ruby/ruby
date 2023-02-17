@@ -1504,9 +1504,9 @@ impl Context {
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
-        if jit_at_current_insn(jit) {
-            let comptime_recv = jit_peek_at_stack(jit, self, 1);
-            let comptime_arg = jit_peek_at_stack(jit, self, 0);
+        if jit.at_current_insn() {
+            let comptime_recv = jit.peek_at_stack( self, 1);
+            let comptime_arg = jit.peek_at_stack(self, 0);
             return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());
         }
 
