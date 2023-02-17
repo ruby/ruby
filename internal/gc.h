@@ -132,8 +132,6 @@ struct rb_objspace; /* in vm_core.h */
 # undef RB_NEWOBJ_OF
 #endif
 
-#define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
-
 #define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
   T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
                    rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \

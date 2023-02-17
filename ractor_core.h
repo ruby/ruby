@@ -1,3 +1,4 @@
+#include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
