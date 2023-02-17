@@ -283,6 +283,8 @@ make_counters! {
     setivar_frozen,
     setivar_megamorphic,
 
+    ivar_last_chain_count,
+
     oaref_argc_not_one,
     oaref_arg_not_fixnum,
 
