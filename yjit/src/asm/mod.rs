@@ -423,7 +423,7 @@ impl CodeBlock {
     /// Convert an address range to memory page indexes against a num_pages()-sized array.
     pub fn addrs_to_pages(&self, start_addr: CodePtr, end_addr: CodePtr) -> Vec<usize> {
         let mem_start = self.mem_block.borrow().start_ptr().into_usize();
-        let mem_end = self.mem_block.borrow().end_ptr().into_usize();
+        let mem_end = self.mem_block.borrow().mapped_end_ptr().into_usize();
         assert!(mem_start <= start_addr.into_usize());
         assert!(start_addr.into_usize() <= end_addr.into_usize());
         assert!(end_addr.into_usize() <= mem_end);
