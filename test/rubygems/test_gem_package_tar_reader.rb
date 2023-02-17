@@ -56,12 +56,14 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io = TempIO.new tar
 
     Gem::Package::TarReader.new io do |tar_reader|
-      tar_reader.seek "baz/bar" do |entry|
+      retval = tar_reader.seek "baz/bar" do |entry|
         assert_kind_of Gem::Package::TarReader::Entry, entry
 
         assert_equal "baz/bar", entry.full_name
+        entry.read
       end
 
+      assert_equal "", retval
       assert_equal 0, io.pos
     end
   ensure
@@ -83,5 +85,50 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     end
   ensure
     io.close!
+  end
+
+  def test_read_in_gem_data
+    gem_tar = util_gem_data_tar do |tar|
+      tar.add_file "lib/code.rb", 0444 do |io|
+        io.write "# lib/code.rb"
+      end
+    end
+
+    count = 0
+    Gem::Package::TarReader.new(gem_tar).each do |entry|
+      next unless entry.full_name == "data.tar.gz"
+
+      Zlib::GzipReader.wrap entry do |gzio|
+        Gem::Package::TarReader.new(gzio).each do |contents_entry|
+          assert_equal "# lib/code.rb", contents_entry.read
+          count += 1
+        end
+      end
+    end
+
+    assert_equal 1, count, "should have found one file"
+  end
+
+  def test_seek_in_gem_data
+    gem_tar = util_gem_data_tar do |tar|
+      tar.add_file "lib/code.rb", 0444 do |io|
+        io.write "# lib/code.rb"
+      end
+      tar.add_file "lib/foo.rb", 0444 do |io|
+        io.write "# lib/foo.rb"
+      end
+    end
+
+    count = 0
+    Gem::Package::TarReader.new(gem_tar).seek("data.tar.gz") do |entry|
+      Zlib::GzipReader.wrap entry do |gzio|
+        Gem::Package::TarReader.new(gzio).seek("lib/foo.rb") do |contents_entry|
+          assert_equal "# lib/foo.rb", contents_entry.read
+          count += 1
+        end
+      end
+    end
+
+    assert_equal 1, count, "should have found one file"
   end
 end
