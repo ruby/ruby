@@ -2895,14 +2895,7 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
 }
 
 static inline VALUE
-newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t alloc_size)
-{
-    VALUE obj = newobj_of0(klass, flags, wb_protected, GET_RACTOR(), alloc_size);
-    return newobj_fill(obj, v1, v2, v3);
-}
-
-static inline VALUE
-newobj_of_cr(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t alloc_size)
+newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t alloc_size)
 {
     VALUE obj = newobj_of0(klass, flags, wb_protected, cr, alloc_size);
     return newobj_fill(obj, v1, v2, v3);
@@ -2912,21 +2905,21 @@ VALUE
 rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(klass, flags, 0, 0, 0, FALSE, size);
+    return newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, FALSE, size);
 }
 
 VALUE
 rb_wb_protected_newobj_of(VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of(klass, flags, 0, 0, 0, TRUE, size);
+    return newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, TRUE, size);
 }
 
 VALUE
 rb_ec_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    return newobj_of_cr(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
+    return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
 }
 
 /* for compatibility */
@@ -2934,7 +2927,7 @@ rb_ec_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flag
 VALUE
 rb_newobj(void)
 {
-    return newobj_of(0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
+    return newobj_of(GET_RACTOR(), 0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
 }
 
 static size_t
@@ -2957,7 +2950,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
         size = sizeof(struct RObject);
     }
 
-    VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
+    VALUE obj = newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, wb_protected, size);
     RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT ||
             rb_shape_get_shape(obj)->type == SHAPE_INITIAL_CAPACITY);
 
@@ -2983,7 +2976,7 @@ rb_newobj_of(VALUE klass, VALUE flags)
         return rb_class_instance_allocate_internal(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED, flags & FL_WB_PROTECTED);
     }
     else {
-        return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
+        return newobj_of(GET_RACTOR(), klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
     }
 }
 
@@ -3023,7 +3016,7 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
     size_t size = RVALUE_SIZE;
     VALUE flags = T_IMEMO | (type << FL_USHIFT);
-    return newobj_of(v0, flags, v1, v2, v3, TRUE, size);
+    return newobj_of(GET_RACTOR(), v0, flags, v1, v2, v3, TRUE, size);
 }
 
 static VALUE
@@ -3031,7 +3024,7 @@ rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
     size_t size = sizeof(struct rb_imemo_tmpbuf_struct);
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
-    return newobj_of(v0, flags, v1, v2, v3, FALSE, size);
+    return newobj_of(GET_RACTOR(), v0, flags, v1, v2, v3, FALSE, size);
 }
 
 static VALUE
@@ -3110,7 +3103,7 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, !dmark, sizeof(struct RTypedData));
 }
 
 VALUE
@@ -3127,7 +3120,7 @@ rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, wb_protected, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, wb_protected, sizeof(struct RTypedData));
 }
 
 VALUE
