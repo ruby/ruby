@@ -12,7 +12,7 @@ jobs:
         uses: dependabot/fetch-metadata@v1
         id: metadata
       - name: Wait for status checks
-        uses: lewagon/wait-on-check-action@v1.2.0
+        uses: lewagon/wait-on-check-action@v1.3.1
         with:
           repo-token: ${{ secrets.MATZBOT_GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
