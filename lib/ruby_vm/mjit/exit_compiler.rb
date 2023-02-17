@@ -63,15 +63,15 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def compile_side_exit(jit, ctx, asm)
+    def compile_side_exit(pc, ctx, asm)
       # Increment per-insn exit counter
-      incr_insn_exit(jit.pc, asm)
+      incr_insn_exit(pc, asm)
 
       # Fix pc/sp offsets for the interpreter
-      save_pc_and_sp(jit.pc, ctx.dup, asm) # dup to avoid sp_offset update
+      save_pc_and_sp(pc, ctx.dup, asm) # dup to avoid sp_offset update
 
       # Restore callee-saved registers
-      asm.comment("exit to interpreter on #{pc_to_insn(jit.pc).name}")
+      asm.comment("exit to interpreter on #{pc_to_insn(pc).name}")
       asm.pop(SP)
       asm.pop(EC)
       asm.pop(CFP)

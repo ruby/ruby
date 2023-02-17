@@ -170,6 +170,17 @@ module RubyVM::MJIT
         insn = self.class.decode_insn(iseq.body.iseq_encoded[index])
         jit.pc = (iseq.body.iseq_encoded + index).to_i
 
+        # If previous instruction requested to record the boundary
+        if jit.record_boundary_patch_point
+          # Generate an exit to this instruction and record it
+          exit_pos = Assembler.new.then do |ocb_asm|
+            @exit_compiler.compile_side_exit(jit.pc, ctx, ocb_asm)
+            @ocb.write(ocb_asm)
+          end
+          Invariants.record_global_inval_patch(asm, exit_pos)
+          jit.record_boundary_patch_point = false
+        end
+
         case status = @insn_compiler.compile(jit, ctx, asm, insn)
         when KeepCompiling
           index += insn.len
@@ -177,7 +188,7 @@ module RubyVM::MJIT
           # TODO: pad nops if entry exit exists
           break
         when CantCompile
-          @exit_compiler.compile_side_exit(jit, ctx, asm)
+          @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
           break
         else
           raise "compiling #{insn.name} returned unexpected status: #{status.inspect}"
