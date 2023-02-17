@@ -1949,7 +1949,7 @@ fn gen_get_ivar(
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
     let last_chain = ctx.get_chain_depth() as i32 == max_chain_depth - 1;
     if last_chain {
-        gen_counter_incr!(asm, ivar_last_chain_count);
+        gen_counter_incr!(asm, get_ivar_max_depth);
     }
 
     // If the class uses the default allocator, instances should all be T_OBJECT
