@@ -4244,8 +4244,8 @@ fn jit_rb_str_to_s(
     false
 }
 
-// Codegen for rb_str_empty()
-fn jit_rb_str_empty(
+// Codegen for rb_str_empty_p()
+fn jit_rb_str_empty_p(
     _jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
@@ -4264,6 +4264,7 @@ fn jit_rb_str_empty(
     let recv_opnd = ctx.stack_pop(1);
     let out_opnd = ctx.stack_push(Type::UnknownImm);
 
+    asm.comment("get string length");
     let str_len_opnd = Opnd::mem(
         (8 * size_of::<std::os::raw::c_long>()) as u8,
         asm.load(recv_opnd),
@@ -7874,7 +7875,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
             // rb_str_to_s() methods in string.c
-            self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty);
+            self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
