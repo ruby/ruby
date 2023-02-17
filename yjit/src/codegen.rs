@@ -721,7 +721,8 @@ pub fn gen_single_block(
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
-        asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx));
+        let chain_depth = if ctx.get_chain_depth() > 0 { format!(", chain_depth: {}", ctx.get_chain_depth()) } else { "".to_string() };
+        asm.comment(&format!("Block: {} (ISEQ offset: {}{})", iseq_get_location(blockid.iseq, blockid_idx), blockid_idx, chain_depth));
     }
 
     // For each instruction to compile
@@ -1945,13 +1946,18 @@ fn gen_get_ivar(
 
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
+    // Use a general C call at the last chain to avoid exits on megamorphic shapes
+    let last_chain = ctx.get_chain_depth() as i32 == max_chain_depth - 1;
+    if last_chain {
+        gen_counter_incr!(asm, get_ivar_max_depth);
+    }
 
     // If the class uses the default allocator, instances should all be T_OBJECT
     // NOTE: This assumes nobody changes the allocator of the class after allocation.
     //       Eventually, we can encode whether an object is T_OBJECT or not
     //       inside object shapes.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() {
+    if !receiver_t_object || uses_custom_allocator || comptime_receiver.shape_too_complex() || last_chain {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm.comment("call rb_ivar_get()");
