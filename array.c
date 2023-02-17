@@ -778,9 +778,9 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+    NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     size);
+                     size, 0);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
@@ -791,9 +791,9 @@ ary_alloc_embed(VALUE klass, long capa)
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    RVARGC_NEWOBJ_OF(ary, struct RArray, klass,
+    NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray));
+                     sizeof(struct RArray), 0);
     return (VALUE)ary;
 }
 
@@ -890,9 +890,9 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
-    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
-                           T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                           size);
+    NEWOBJ_OF(ary, struct RArray, klass,
+            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            size, ec);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
      *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
@@ -903,9 +903,9 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    RB_RVARGC_EC_NEWOBJ_OF(ec, ary, struct RArray, klass,
-                           T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                           sizeof(struct RArray));
+    NEWOBJ_OF(ary, struct RArray, klass,
+            T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            sizeof(struct RArray), ec);
     return (VALUE)ary;
 }
 

@@ -777,7 +777,9 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
 }
 #endif
 
+#ifdef HAVE_MMAP
 #include <sys/mman.h>
+#endif
 
 void
 Init_default_shapes(void)

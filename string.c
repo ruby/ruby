@@ -872,8 +872,8 @@ str_alloc_embed(VALUE klass, size_t capa)
     assert(size > 0);
     assert(rb_gc_size_allocatable_p(size));
 
-    RVARGC_NEWOBJ_OF(str, struct RString, klass,
-                     T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
+    NEWOBJ_OF(str, struct RString, klass,
+            T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
 
     return (VALUE)str;
 }
@@ -881,8 +881,8 @@ str_alloc_embed(VALUE klass, size_t capa)
 static inline VALUE
 str_alloc_heap(VALUE klass)
 {
-    RVARGC_NEWOBJ_OF(str, struct RString, klass,
-                     T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString));
+    NEWOBJ_OF(str, struct RString, klass,
+            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), 0);
 
     return (VALUE)str;
 }
@@ -1695,8 +1695,8 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
     assert(size > 0);
     assert(rb_gc_size_allocatable_p(size));
 
-    RB_RVARGC_EC_NEWOBJ_OF(ec, str, struct RString, klass,
-                           T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size);
+    NEWOBJ_OF(str, struct RString, klass,
+            T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
 
     return (VALUE)str;
 }
@@ -1704,8 +1704,8 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 static inline VALUE
 ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
-    RB_RVARGC_EC_NEWOBJ_OF(ec, str, struct RString, klass,
-                           T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString));
+    NEWOBJ_OF(str, struct RString, klass,
+            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
 
     return (VALUE)str;
 }
