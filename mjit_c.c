@@ -117,6 +117,7 @@ mjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
 }
 
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+extern ID rb_get_symbol_id(VALUE name);
 
 #include "mjit_c.rbinc"
 

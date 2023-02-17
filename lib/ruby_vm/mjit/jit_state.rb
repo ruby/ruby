@@ -1,12 +1,13 @@
 module RubyVM::MJIT
   class JITState < Struct.new(
-    :iseq,       # @param `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
-    :pc,         # @param [Integer] The JIT target PC
-    :cfp,        # @param `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t` The JIT source CFP (before MJIT is called)
-    :block,      # @param [RubyVM::MJIT::Block]
-    :side_exits, # @param [Hash{ Integer => Integer }] { PC => address }
+    :iseq,                        # @param `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
+    :pc,                          # @param [Integer] The JIT target PC
+    :cfp,                         # @param `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t` The JIT source CFP (before MJIT is called)
+    :block,                       # @param [RubyVM::MJIT::Block]
+    :side_exits,                  # @param [Hash{ Integer => Integer }] { PC => address }
+    :record_boundary_patch_point, # @param [TrueClass,FalseClass]
   )
-    def initialize(side_exits: {}, **) = super
+    def initialize(side_exits: {}, record_boundary_patch_point: false, **) = super
 
     def insn
       Compiler.decode_insn(C.VALUE.new(pc).*)

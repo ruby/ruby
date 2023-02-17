@@ -180,6 +180,14 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aset)'
     end
 
+    def get_symbol_id(name)
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_get_symbol_id(name))'
+    end
+
+    def rb_get_symbol_id
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_get_symbol_id)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -627,6 +635,14 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.RUBY_IMMEDIATE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_IMMEDIATE_MASK) }
+  end
+
+  def C.RUBY_SPECIAL_SHIFT
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_SPECIAL_SHIFT) }
+  end
+
+  def C.RUBY_SYMBOL_FLAG
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_SYMBOL_FLAG) }
   end
 
   def C.RUBY_T_ARRAY
@@ -1165,12 +1181,16 @@ module RubyVM::MJIT # :nodoc: all
       send_ivar_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_splat)")],
       send_ivar_opt_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_opt_send)")],
       send_ivar_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_ivar_blockarg)")],
-      send_optimized_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send)")],
       send_optimized_call: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call)")],
       send_optimized_block_call: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_block_call)")],
       send_optimized_struct_aref: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_struct_aref)")],
       send_optimized_struct_aset: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_struct_aset)")],
       send_optimized_unknown_type: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_unknown_type)")],
+      send_optimized_send_no_args: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_no_args)")],
+      send_optimized_send_not_sym_or_str: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_not_sym_or_str)")],
+      send_optimized_send_mid_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_mid_changed)")],
+      send_optimized_send_null_mid: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_null_mid)")],
+      send_optimized_send_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_send)")],
       send_guard_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_symbol)")],
       send_guard_float: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_float)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],
