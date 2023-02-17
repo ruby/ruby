@@ -40,6 +40,7 @@
 #include "vm_insnhelper.h"
 #include "ractor_core.h"
 #include "vm_sync.h"
+#include "shape.h"
 
 #include "builtin.h"
 
@@ -592,7 +593,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
-    SET(next_shape_id, (rb_serial_t)GET_VM()->next_shape_id);
+    SET(next_shape_id, (rb_serial_t)GET_SHAPE_TREE()->next_shape_id);
 #undef SET
 
 #if USE_DEBUG_COUNTER
@@ -4023,20 +4024,6 @@ Init_vm_objects(void)
 #if EXTSTATIC
     vm->static_ext_inits = st_init_strtable();
 #endif
-
-#ifdef HAVE_MMAP
-    vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),
-                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (vm->shape_list == MAP_FAILED) {
-        vm->shape_list = 0;
-    }
-#else
-    vm->shape_list = xcalloc(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t));
-#endif
-
-    if (!vm->shape_list) {
-        rb_memerror();
-    }
 }
 
 /* Stub for builtin function when not building YJIT units*/

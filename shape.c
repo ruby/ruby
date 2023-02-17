@@ -24,26 +24,28 @@ static ID id_frozen;
 static ID id_t_object;
 static ID size_pool_edge_names[SIZE_POOL_COUNT];
 
+rb_shape_tree_t *rb_shape_tree_ptr = NULL;
+
 /*
  * Shape getters
  */
 rb_shape_t *
 rb_shape_get_root_shape(void)
 {
-    return GET_VM()->root_shape;
+    return GET_SHAPE_TREE()->root_shape;
 }
 
 shape_id_t
 rb_shape_id(rb_shape_t * shape)
 {
-    return (shape_id_t)(shape - GET_VM()->shape_list);
+    return (shape_id_t)(shape - GET_SHAPE_TREE()->shape_list);
 }
 
 void
 rb_shape_each_shape(each_shape_callback callback, void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = rb_shape_get_shape_by_id(GET_VM()->next_shape_id);
+    rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
     while (cursor < end) {
         callback(cursor, data);
         cursor += 1;
@@ -55,8 +57,7 @@ rb_shape_get_shape_by_id(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
 
-    rb_vm_t *vm = GET_VM();
-    rb_shape_t *shape = &vm->shape_list[shape_id];
+    rb_shape_t *shape = &GET_SHAPE_TREE()->shape_list[shape_id];
     return shape;
 }
 
@@ -122,16 +123,15 @@ rb_shape_get_shape(VALUE obj)
 static rb_shape_t *
 shape_alloc(void)
 {
-    rb_vm_t *vm = GET_VM();
-    shape_id_t shape_id = vm->next_shape_id;
-    vm->next_shape_id++;
+    shape_id_t shape_id = GET_SHAPE_TREE()->next_shape_id;
+    GET_SHAPE_TREE()->next_shape_id++;
 
     if (shape_id == MAX_SHAPE_ID) {
         // TODO: Make an OutOfShapesError ??
         rb_bug("Out of shapes\n");
     }
 
-    return &GET_VM()->shape_list[shape_id];
+    return &GET_SHAPE_TREE()->shape_list[shape_id];
 }
 
 static rb_shape_t *
@@ -770,16 +770,36 @@ static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
     shape_id_t shape_id = NUM2UINT(id);
-    if (shape_id >= GET_VM()->next_shape_id) {
+    if (shape_id >= GET_SHAPE_TREE()->next_shape_id) {
         rb_raise(rb_eArgError, "Shape ID %d is out of bounds\n", shape_id);
     }
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape_id));
 }
 #endif
 
+#include <sys/mman.h>
+
 void
 Init_default_shapes(void)
 {
+    rb_shape_tree_t *st = ruby_mimmalloc(sizeof(rb_shape_tree_t));
+    memset(st, 0, sizeof(rb_shape_tree_t));
+    rb_shape_tree_ptr = st;
+
+#ifdef HAVE_MMAP
+    rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),
+                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (GET_SHAPE_TREE()->shape_list == MAP_FAILED) {
+        GET_SHAPE_TREE()->shape_list = 0;
+    }
+#else
+    GET_SHAPE_TREE()->shape_list = xcalloc(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t));
+#endif
+
+    if (!GET_SHAPE_TREE()->shape_list) {
+        rb_memerror();
+    }
+
     id_frozen = rb_make_internal_id();
     id_t_object = rb_make_internal_id();
 
@@ -793,8 +813,8 @@ Init_default_shapes(void)
     root->capacity = (uint32_t)((rb_size_pool_slot_size(0) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
     root->type = SHAPE_ROOT;
     root->size_pool_index = 0;
-    GET_VM()->root_shape = root;
-    RUBY_ASSERT(rb_shape_id(GET_VM()->root_shape) == ROOT_SHAPE_ID);
+    GET_SHAPE_TREE()->root_shape = root;
+    RUBY_ASSERT(rb_shape_id(GET_SHAPE_TREE()->root_shape) == ROOT_SHAPE_ID);
 
     // Shapes by size pool
     for (int i = 1; i < SIZE_POOL_COUNT; i++) {
@@ -822,13 +842,13 @@ Init_default_shapes(void)
 #endif
         get_next_shape_internal(root, (ID)id_frozen, SHAPE_FROZEN, &dont_care, true, false);
     RUBY_ASSERT(rb_shape_id(special_const_shape) == SPECIAL_CONST_SHAPE_ID);
-    RUBY_ASSERT(SPECIAL_CONST_SHAPE_ID == (GET_VM()->next_shape_id - 1));
+    RUBY_ASSERT(SPECIAL_CONST_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_frozen_shape_p(special_const_shape));
 
     rb_shape_t * hash_fallback_shape = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
     hash_fallback_shape->type = SHAPE_OBJ_TOO_COMPLEX;
     hash_fallback_shape->size_pool_index = 0;
-    RUBY_ASSERT(OBJ_TOO_COMPLEX_SHAPE_ID == (GET_VM()->next_shape_id - 1));
+    RUBY_ASSERT(OBJ_TOO_COMPLEX_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_id(hash_fallback_shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
 }
 
