@@ -71,10 +71,10 @@ module Bundler
     def windows?
       Gem.win_platform?
     end
-    alias mswin? windows?
-    alias mswin64? windows?
-    alias mingw? windows?
-    alias x64_mingw? windows?
+    alias_method :mswin?, :windows?
+    alias_method :mswin64?, :windows?
+    alias_method :mingw?, :windows?
+    alias_method :x64_mingw?, :windows?
 
     (KNOWN_MINOR_VERSIONS + KNOWN_MAJOR_VERSIONS).each do |version|
       trimmed_version = version.tr(".", "")
