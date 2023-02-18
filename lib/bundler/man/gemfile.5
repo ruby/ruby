@@ -318,6 +318,14 @@ gem "nokogiri",   platforms: [:windows_31, :jruby]
 .P
 All operations involving groups (\fBbundle install\fR \fIbundle\-install\.1\.html\fR, \fBBundler\.setup\fR, \fBBundler\.require\fR) behave exactly the same as if any groups not matching the current platform were explicitly excluded\.
 .
+.P
+The following platform values are deprecated and should be replaced with \fBwindows\fR:
+.
+.IP "\(bu" 4
+\fBmswin\fR, \fBmswin64\fR, \fBmingw32\fR, \fBx64_mingw\fR
+.
+.IP "" 0
+.
 .SS "FORCE_RUBY_PLATFORM"
 If you always want the pure ruby variant of a gem to be chosen over platform specific variants, you can use the \fBforce_ruby_platform\fR option:
 .
