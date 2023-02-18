@@ -700,7 +700,7 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *    to_a -> array
+ *    to_a(*args) -> array
  *
  *  Returns an array containing the items in +self+:
  *
@@ -746,8 +746,8 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    to_h -> hash
- *    to_h {|element| ... }  -> hash
+ *    to_h(*args) -> hash
+ *    to_h(*args) {|element| ... }  -> hash
  *
  *  When +self+ consists of 2-element arrays,
  *  returns a hash each of whose entries is the key-value pair
