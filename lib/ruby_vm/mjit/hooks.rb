@@ -5,6 +5,7 @@ module RubyVM::MJIT
     end
 
     def self.on_cme_invalidate(cme)
+      cme = C.rb_callable_method_entry_struct.new(cme)
       Invariants.on_cme_invalidate(cme)
     end
 
@@ -16,8 +17,10 @@ module RubyVM::MJIT
       # to be used later
     end
 
-    def self.on_constant_ic_update(_iseq, _ic, _insn_idx)
-      # to be used later
+    def self.on_constant_ic_update(iseq, ic, insn_idx)
+      iseq = C.rb_iseq_t.new(iseq)
+      ic = C.IC.new(ic)
+      Invariants.on_constant_ic_update(iseq, ic, insn_idx)
     end
 
     def self.on_tracing_invalidate_all(_new_iseq_events)
