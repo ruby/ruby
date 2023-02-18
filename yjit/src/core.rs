@@ -306,8 +306,23 @@ impl From<Opnd> for YARVOpnd {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
+///
+/// Fields are ordered in the same way as "consing" order. The later
+/// a field is declared, the higher cardinality we assume it has.
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
+    // Type we track for self
+    self_type: Type,
+
+    // Local variable types we keep track of
+    local_types: [Type; MAX_LOCAL_TYPES],
+
+    // Temporary variable types we keep track of
+    temp_types: [Type; MAX_TEMP_TYPES],
+
+    // Mapping of temp stack entries to types we track
+    temp_mapping: [TempMapping; MAX_TEMP_TYPES],
+
     // Number of values currently on the temporary stack
     stack_size: u16,
 
@@ -317,18 +332,198 @@ pub struct Context {
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
+}
 
-    // Local variable types we keep track of
-    local_types: [Type; MAX_LOCAL_TYPES],
+#[derive(PartialEq, Debug)]
+pub struct ContextNode {
+    delta: ContextDelta,
+    parent: Option<Rc<ContextNode>>,
+    children: RefCell<Vec<Rc<ContextNode>>>,
+}
 
-    // Temporary variable types we keep track of
-    temp_types: [Type; MAX_TEMP_TYPES],
+impl ContextNode {
+    pub fn default() -> Self {
+        ContextNode {
+            delta: ContextDelta::None,
+            parent: None,
+            children: RefCell::new(vec![]),
+        }
+    }
 
-    // Type we track for self
-    self_type: Type,
+    pub fn get_node_count(ctx: &Rc<ContextNode>) -> usize {
+        let mut count = 1;
+        for child in ctx.children.borrow().iter() {
+            count += ContextNode::get_node_count(child);
+        }
+        count
+    }
 
-    // Mapping of temp stack entries to types we track
-    temp_mapping: [TempMapping; MAX_TEMP_TYPES],
+    pub fn dump_nodes(ctx: &Rc<ContextNode>, indent: usize) {
+        for _ in 0..indent {
+            print!("  ");
+        }
+        println!("{:?}", ctx.delta);
+        for child in ctx.children.borrow().iter() {
+            ContextNode::dump_nodes(child, indent + 1);
+        }
+    }
+
+    fn get_deltas(ctx: &Context) -> Vec<ContextDelta> {
+        let mut packed = vec![];
+
+        if ctx.self_type != Type::Unknown {
+            packed.push(ContextDelta::SelfType(ctx.self_type));
+        }
+
+        for (i, &local_type) in ctx.local_types.iter().enumerate() {
+            if local_type != Type::Unknown {
+                packed.push(ContextDelta::LocalType(i.try_into().unwrap(), local_type));
+            }
+        }
+
+        for (i, &temp_type) in ctx.temp_types.iter().enumerate() {
+            if temp_type != Type::Unknown {
+                packed.push(ContextDelta::TempType(i.try_into().unwrap(), temp_type));
+            }
+        }
+
+        for (i, &temp_mapping) in ctx.temp_mapping.iter().enumerate() {
+            if temp_mapping != TempMapping::MapToStack {
+                match i {
+                    0 => packed.push(ContextDelta::TempMapping0(temp_mapping)),
+                    1 => packed.push(ContextDelta::TempMapping1(temp_mapping)),
+                    2 => packed.push(ContextDelta::TempMapping2(temp_mapping)),
+                    3 => packed.push(ContextDelta::TempMapping3(temp_mapping)),
+                    4 => packed.push(ContextDelta::TempMapping4(temp_mapping)),
+                    5 => packed.push(ContextDelta::TempMapping5(temp_mapping)),
+                    6 => packed.push(ContextDelta::TempMapping6(temp_mapping)),
+                    7 => packed.push(ContextDelta::TempMapping7(temp_mapping)),
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        if ctx.stack_size != 0 || ctx.sp_offset != 0 {
+            match (u8::try_from(ctx.stack_size), i8::try_from(ctx.sp_offset)) {
+                (Ok(stack_size), Ok(sp_offset)) => packed.push(
+                    ContextDelta::SmallStack(stack_size, sp_offset)
+                ),
+                _ => {
+                    unreachable!("not implemented yet")
+                    //if ctx.stack_size != 0 {
+                    //    packed.push(ContextDelta::StackSize(ctx.stack_size));
+                    //}
+                    //if ctx.sp_offset != 0 {
+                    //    packed.push(ContextDelta::SpOffset(ctx.sp_offset));
+                    //}
+                },
+            }
+        }
+
+        if ctx.chain_depth > 0 {
+            packed.push(ContextDelta::ChainDepth(ctx.chain_depth));
+        }
+
+        packed
+    }
+
+    pub fn compress(ctx: &Context) -> Rc<ContextNode> {
+        let mut parent = CodegenGlobals::get_context_root();
+        let mut node = parent.clone();
+
+        let deltas = ContextNode::get_deltas(ctx);
+        for delta in deltas.iter() {
+            let mut found = node.clone();
+            for child in parent.children.borrow().iter() {
+                if child.delta == *delta {
+                    found = child.clone();
+                    break;
+                }
+            }
+            if parent.delta == found.delta {
+            //if parent == found {
+                let new_node = Rc::new(ContextNode {
+                    delta: *delta,
+                    parent: Some(parent.clone()),
+                    children: RefCell::new(vec![]),
+                });
+                parent.children.borrow_mut().push(new_node.clone());
+                found = new_node;
+            }
+            node = found.clone();
+            parent = found.clone();
+        }
+
+        node
+    }
+
+    pub fn decompress(node: Rc<ContextNode>) -> Context {
+        let mut ctx = Context::default();
+
+        let mut node = node.clone();
+        loop {
+            match node.delta {
+                ContextDelta::None => {},
+                ContextDelta::SelfType(self_type) => {
+                    ctx.self_type = self_type;
+                },
+                ContextDelta::SmallStack(stack_size, sp_offset) => {
+                    ctx.stack_size = u16::from(stack_size);
+                    ctx.sp_offset = i16::from(sp_offset);
+                },
+                ContextDelta::ChainDepth(chain_depth) => {
+                    ctx.chain_depth = chain_depth;
+                },
+                ContextDelta::LocalType(i, local_type) => {
+                    ctx.local_types[i.as_usize()] = local_type;
+                },
+                ContextDelta::TempType(i, temp_type) => {
+                    ctx.temp_types[i.as_usize()] = temp_type;
+                },
+                ContextDelta::TempMapping0(temp_mapping) => ctx.temp_mapping[0] = temp_mapping,
+                ContextDelta::TempMapping1(temp_mapping) => ctx.temp_mapping[1] = temp_mapping,
+                ContextDelta::TempMapping2(temp_mapping) => ctx.temp_mapping[2] = temp_mapping,
+                ContextDelta::TempMapping3(temp_mapping) => ctx.temp_mapping[3] = temp_mapping,
+                ContextDelta::TempMapping4(temp_mapping) => ctx.temp_mapping[4] = temp_mapping,
+                ContextDelta::TempMapping5(temp_mapping) => ctx.temp_mapping[5] = temp_mapping,
+                ContextDelta::TempMapping6(temp_mapping) => ctx.temp_mapping[6] = temp_mapping,
+                ContextDelta::TempMapping7(temp_mapping) => ctx.temp_mapping[7] = temp_mapping,
+            }
+            match node.parent.clone() {
+                Some(parent) => node = parent,
+                None => break,
+            }
+        }
+        ctx
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ContextDelta {
+    None,
+    // self_type
+    SelfType(Type),
+    // stack_size, sp_offset: Small case
+    SmallStack(u8, i8),
+    // stack_size: Large case
+    //StackSize(u8, u8), // TODO: implement this (using u16 here takes more than 2 bytes)
+    // sp_offset: Large case
+    //SpOffset(i8, i8),  // TODO: implement this (using i16 here takes more than 2 bytes)
+    // chain_depth
+    ChainDepth(u8),
+    // local_types
+    LocalType(u8, Type),
+    // temp_types
+    TempType(u8, Type),
+    // temp_mapping: Not using (u8, TempMapping) to save 1 byte.
+    TempMapping0(TempMapping),
+    TempMapping1(TempMapping),
+    TempMapping2(TempMapping),
+    TempMapping3(TempMapping),
+    TempMapping4(TempMapping),
+    TempMapping5(TempMapping),
+    TempMapping6(TempMapping),
+    TempMapping7(TempMapping),
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -379,8 +574,8 @@ impl BranchTarget {
 
     fn get_ctx(&self) -> Context {
         match self {
-            BranchTarget::Stub(stub) => stub.ctx.clone(),
-            BranchTarget::Block(blockref) => blockref.borrow().ctx.clone(),
+            BranchTarget::Stub(stub) => ContextNode::decompress(stub.ctx.clone()),
+            BranchTarget::Block(blockref) => ContextNode::decompress(blockref.borrow().ctx.clone()),
         }
     }
 
@@ -403,7 +598,7 @@ impl BranchTarget {
 struct BranchStub {
     address: Option<CodePtr>,
     id: BlockId,
-    ctx: Context,
+    ctx: Rc<ContextNode>,
 }
 
 /// Store info about an outgoing branch in a code segment
@@ -477,7 +672,7 @@ pub struct Block {
 
     // Context at the start of the block
     // This should never be mutated
-    ctx: Context,
+    ctx: Rc<ContextNode>,
 
     // Positions where the generated code starts and ends
     start_addr: CodePtr,
@@ -923,7 +1118,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     // For each version matching the blockid
     for blockref in versions.iter_mut() {
         let block = blockref.borrow();
-        let diff = ctx.diff(&block.ctx);
+        let diff = ctx.diff(&ContextNode::decompress(block.ctx.clone()));
 
         // Note that we always prefer the first matching
         // version found because of inline-cache chains
@@ -978,7 +1173,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let block = blockref.borrow();
 
     // Function entry blocks must have stack size 0
-    assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0));
+    assert!(!(block.blockid.idx == 0 && ContextNode::decompress(block.ctx.clone()).stack_size > 0));
 
     let version_list = get_or_create_version_list(block.blockid);
 
@@ -1033,7 +1228,7 @@ impl Block {
         let block = Block {
             blockid,
             end_idx: 0,
-            ctx: ctx.clone(),
+            ctx: ContextNode::compress(ctx),
             start_addr,
             end_addr: None,
             incoming: Vec::new(),
@@ -1057,7 +1252,7 @@ impl Block {
     }
 
     pub fn get_ctx(&self) -> Context {
-        self.ctx.clone()
+        ContextNode::decompress(self.ctx.clone())
     }
 
     pub fn get_ctx_count(&self) -> usize {
@@ -1256,7 +1451,7 @@ impl Context {
         match opnd {
             SelfOpnd => self.self_type,
             StackOpnd(idx) => {
-                assert!(idx < self.stack_size);
+                assert!(idx < self.stack_size, "{idx}, {}", self.stack_size);
                 let stack_idx: usize = (self.stack_size - 1 - idx).into();
 
                 // If outside of tracked range, do nothing
@@ -2019,7 +2214,7 @@ fn set_branch_target(
         branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget::Stub(Box::new(BranchStub {
             address: Some(stub_addr),
             id: target,
-            ctx: ctx.clone(),
+            ctx: ContextNode::compress(ctx),
         }))));
     }
 }
@@ -2133,7 +2328,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
 
     let mut new_target = BranchTarget::Stub(Box::new(BranchStub {
         address: None,
-        ctx: ctx.clone(),
+        ctx: ContextNode::compress(ctx),
         id: target0,
     }));
 
@@ -2367,7 +2562,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         // }
 
         // Create a stub for this branch target or rewire it to a valid block
-        set_branch_target(target_idx as u32, block.blockid, &block.ctx, branchref, &mut branch, ocb);
+        set_branch_target(target_idx as u32, block.blockid, &ContextNode::decompress(block.ctx.clone()), branchref, &mut branch, ocb);
 
         if branch.targets[target_idx].is_none() {
             // We were unable to generate a stub (e.g. OOM). Use the block's

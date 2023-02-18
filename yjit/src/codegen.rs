@@ -18,6 +18,7 @@ use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int, c_uint};
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -7751,6 +7752,9 @@ pub struct CodegenGlobals {
 
     /// How many times code GC has been executed.
     code_gc_count: usize,
+
+    /// The root node of the Context tree
+    context_root: Rc<ContextNode>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -7774,7 +7778,6 @@ impl CodegenGlobals {
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
             use std::cell::RefCell;
-            use std::rc::Rc;
 
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
@@ -7845,6 +7848,7 @@ impl CodegenGlobals {
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
+            context_root: Rc::new(ContextNode::default()),
         };
 
         // Register the method codegen functions
@@ -8007,6 +8011,10 @@ impl CodegenGlobals {
 
     pub fn get_code_gc_count() -> usize {
         CodegenGlobals::get_instance().code_gc_count
+    }
+
+    pub fn get_context_root() -> Rc<ContextNode> {
+        CodegenGlobals::get_instance().context_root.clone()
     }
 }
 

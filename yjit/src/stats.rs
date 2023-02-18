@@ -4,7 +4,8 @@
 #![allow(dead_code)] // Counters are only used with the stats features
 
 use crate::codegen::CodegenGlobals;
-use crate::core::Context;
+//use crate::core::Context;
+use crate::core::ContextNode;
 use crate::core::for_each_iseq_payload;
 use crate::cruby::*;
 use crate::options::*;
@@ -458,9 +459,13 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
         if context {
             let live_context_count = get_live_context_count();
-            let context_size = std::mem::size_of::<Context>();
+            let context_node_count = ContextNode::get_node_count(&CodegenGlobals::get_context_root());
+            //let context_size = std::mem::size_of::<Context>();
             hash_aset_usize!(hash, "live_context_count", live_context_count);
-            hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
+            hash_aset_usize!(hash, "context_node_count", context_node_count);
+            //hash_aset_usize!(hash, "live_context_size", live_context_count * context_size);
+
+            ContextNode::dump_nodes(&CodegenGlobals::get_context_root(), 0);
         }
     }
 
