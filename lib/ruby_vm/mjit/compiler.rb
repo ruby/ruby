@@ -32,7 +32,11 @@ module RubyVM::MJIT
   class Compiler
     attr_accessor :write_pos
 
-    IseqBlocks = Hash.new { |h, k| h[k] = {} }
+    IseqBlocks = Hash.new do |iseq_pc_ctx, iseq|
+      iseq_pc_ctx[iseq] = Hash.new do |pc_ctx, pc|
+        pc_ctx[pc] = {}
+      end
+    end
     DeadBlocks = [] # invalidated IseqBlocks, but kept for safety
 
     def self.reset_blocks
@@ -51,7 +55,7 @@ module RubyVM::MJIT
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new(@cb, @ocb, @exit_compiler)
-      Invariants.initialize(@cb, @ocb, @exit_compiler)
+      Invariants.initialize(@cb, @ocb, self, @exit_compiler)
 
       @leave_exit = Assembler.new.then do |asm|
         @exit_compiler.compile_leave_exit(asm)
@@ -113,8 +117,9 @@ module RubyVM::MJIT
           compile_block(asm, jit:, pc: target.pc, ctx: target.ctx.dup)
           @cb.write(asm)
         end
-        set_block(branch_stub.iseq, target.pc, target.ctx, jit.block)
+        block = jit.block
       end
+      block.incoming << branch_stub # prepare for invalidate_block
 
       # Re-generate the branch code for non-fallthrough cases
       unless fallthrough
@@ -129,6 +134,14 @@ module RubyVM::MJIT
     rescue Exception => e
       $stderr.puts e.full_message
       exit 1
+    end
+
+    # @param iseq `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
+    # @param pc [Integer]
+    def invalidate_blocks(iseq, pc)
+      list_blocks(iseq, pc).each do |block|
+        invalidate_block(iseq, block)
+      end
     end
 
     private
@@ -160,8 +173,9 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
-      jit.block = Block.new(pc:, ctx: ctx.dup)
-      asm.block(jit.block)
+      block = Block.new(pc:, ctx: ctx.dup)
+      jit.block = block
+      asm.block(block)
 
       # Compile each insn
       iseq = jit.iseq
@@ -185,7 +199,7 @@ module RubyVM::MJIT
         when KeepCompiling
           index += insn.len
         when EndBlock
-          # TODO: pad nops if entry exit exists
+          # TODO: pad nops if entry exit exists (not needed for x86_64?)
           break
         when CantCompile
           @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
@@ -196,6 +210,7 @@ module RubyVM::MJIT
       end
 
       incr_counter(:compiled_block_count)
+      set_block(iseq, block)
     end
 
     def incr_counter(name)
@@ -204,18 +219,59 @@ module RubyVM::MJIT
       end
     end
 
-    # @param [Integer] pc
-    # @param [RubyVM::MJIT::Context] ctx
-    # @return [RubyVM::MJIT::Block,NilClass]
-    def find_block(iseq, pc, ctx)
-      IseqBlocks[iseq.to_i][[pc, ctx]]
+    def invalidate_block(iseq, block)
+      # Remove this block from the version array
+      remove_block(iseq, block)
+
+      # Invalidate the block with entry exit
+      @cb.with_write_addr(block.start_addr) do
+        asm = Assembler.new
+        asm.comment('invalidate_block')
+        asm.jmp(block.entry_exit)
+        @cb.write(asm)
+      end
+
+      # Re-stub incoming branches
+      block.incoming.each do |branch_stub|
+        target = [branch_stub.target0, branch_stub.target1].compact.find do |target|
+          target.pc == block.pc && target.ctx == block.ctx
+        end
+        next if target.nil?
+        # TODO: Could target.address be a stub address? Is invalidation not needed in that case?
+
+        target.address = Assembler.new.then do |ocb_asm|
+          @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, target == branch_stub.target0)
+          @ocb.write(ocb_asm)
+        end
+        @cb.with_write_addr(branch_stub.start_addr) do
+          branch_asm = Assembler.new
+          branch_stub.shape = Default # cancel fallthrough. TODO: It seems fine for defer_compilation, but is this always safe?
+          branch_stub.compile.call(branch_asm)
+          @cb.write(branch_asm)
+        end
+      end
+      # TODO: Reset jit_func and total_calls if it's the first block after prelude
+    end
+
+    def list_blocks(iseq, pc)
+      IseqBlocks[iseq.to_i][pc].values
     end
 
     # @param [Integer] pc
     # @param [RubyVM::MJIT::Context] ctx
+    # @return [RubyVM::MJIT::Block,NilClass]
+    def find_block(iseq, pc, ctx)
+      IseqBlocks[iseq.to_i][pc][ctx]
+    end
+
     # @param [RubyVM::MJIT::Block] block
-    def set_block(iseq, pc, ctx, block)
-      IseqBlocks[iseq.to_i][[pc, ctx]] = block
+    def set_block(iseq, block)
+      IseqBlocks[iseq.to_i][block.pc][block.ctx] = block
+    end
+
+    # @param [RubyVM::MJIT::Block] block
+    def remove_block(iseq, block)
+      IseqBlocks[iseq.to_i][block.pc].delete(block.ctx)
     end
   end
 end

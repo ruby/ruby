@@ -343,11 +343,8 @@ static void
 mjit_cme_invalidate(void *data)
 {
     if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
-    rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)data;
     WITH_MJIT_ISOLATED({
-        VALUE cme_klass = rb_funcall(rb_mMJITC, rb_intern("rb_callable_method_entry_struct"), 0);
-        VALUE cme_ptr = rb_funcall(cme_klass, rb_intern("new"), 1, SIZET2NUM((size_t)cme));
-        rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, cme_ptr);
+        rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, SIZET2NUM((size_t)data));
     });
 }
 
@@ -368,9 +365,25 @@ rb_mjit_before_ractor_spawn(void)
 }
 
 void
+rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    WITH_MJIT_ISOLATED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_ic_update"), 3,
+                   SIZET2NUM((size_t)iseq), SIZET2NUM((size_t)ic), UINT2NUM(insn_idx));
+    });
+
+    RB_VM_LOCK_LEAVE();
+}
+
+void
 rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
-    if (!mjit_call_p) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     WITH_MJIT_ISOLATED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });

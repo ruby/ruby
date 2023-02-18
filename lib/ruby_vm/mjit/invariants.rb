@@ -6,10 +6,12 @@ module RubyVM::MJIT
       # Called by RubyVM::MJIT::Compiler to lazily initialize this
       # @param cb [CodeBlock]
       # @param ocb [CodeBlock]
+      # @param compiler [RubyVM::MJIT::Compiler]
       # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
-      def initialize(cb, ocb, exit_compiler)
+      def initialize(cb, ocb, compiler, exit_compiler)
         @cb = cb
         @ocb = ocb
+        @compiler = compiler
         @exit_compiler = exit_compiler
         @bop_blocks = Set.new # TODO: actually invalidate this
         @cme_blocks = Hash.new { |h, k| h[k] = Set.new }
@@ -55,6 +57,24 @@ module RubyVM::MJIT
           end
           # TODO: re-generate branches that refer to this block
         end
+      end
+
+      def on_constant_ic_update(iseq, ic, insn_idx)
+        # TODO: check multi ractor as well
+        if ic.entry.ic_cref
+          # No need to recompile the slowpath
+          return
+        end
+
+        pc = iseq.body.iseq_encoded + insn_idx
+        insn_name = Compiler.decode_insn(pc.*).name
+        if insn_name != :opt_getconstant_path && insn_name != :trace_opt_getconstant_path
+          raise 'insn_idx was not at opt_getconstant_path'
+        end
+        if ic.to_i != pc[1]
+          raise 'insn_idx + 1 was not at the updated IC'
+        end
+        @compiler.invalidate_blocks(iseq, pc.to_i)
       end
 
       def on_tracing_invalidate_all

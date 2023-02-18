@@ -214,8 +214,19 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def opt_getconstant_path(jit, ctx, asm)
+      # Cut the block for invalidation
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
       ic = C.iseq_inline_constant_cache.new(jit.operand(0))
       idlist = ic.segments
+
+      # Make sure there is an exit for this block as the interpreter might want
+      # to invalidate this block from rb_mjit_constant_ic_update().
+      # For now, we always take an entry exit even if it was a side exit.
+      Invariants.ensure_block_entry_exit(jit, cause: 'opt_getconstant_path')
 
       # See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
       ice = ic.entry
@@ -225,10 +236,6 @@ module RubyVM::MJIT
         asm.incr_counter(:optgetconst_not_cached)
         return CantCompile
       end
-
-      # Make sure there is an exit for this block as the interpreter might want
-      # to invalidate this block from yjit_constant_ic_update().
-      Invariants.ensure_block_entry_exit(jit, cause: 'opt_getconstant_path')
 
       if ice.ic_cref # with cref
         # Not supported yet
