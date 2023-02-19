@@ -31,6 +31,8 @@
 #include "bits.h"
 #include "static_assert.h"
 
+#define BIGDECIMAL_VERSION "3.1.3"
+
 /* #define ENABLE_NUMERIC_STRING */
 
 #define SIGNED_VALUE_MAX INTPTR_MAX
@@ -4402,13 +4404,10 @@ Init_bigdecimal(void)
 
     /* Constants definition */
 
-#ifndef RUBY_BIGDECIMAL_VERSION
-# error RUBY_BIGDECIMAL_VERSION is not defined
-#endif
     /*
      * The version of bigdecimal library
      */
-    rb_define_const(rb_cBigDecimal, "VERSION", rb_str_new2(RUBY_BIGDECIMAL_VERSION));
+    rb_define_const(rb_cBigDecimal, "VERSION", rb_str_new2(BIGDECIMAL_VERSION));
 
     /*
      * Base value used in internal calculations.  On a 32 bit system, BASE
