@@ -852,8 +852,11 @@ rb_io_timeout(VALUE self)
  *    timeout = duration -> duration
  *    timeout = nil -> nil
  *
- *  Set the internal timeout to the specified duration or nil. The timeout
+ *  \Set the internal timeout to the specified duration or nil. The timeout
  *  applies to all blocking operations where possible.
+ *
+ *  When the operation performs longer than the timeout set, IO::TimeoutError
+ *  is raised.
  *
  *  This affects the following methods (but is not limited to): #gets, #puts,
  *  #read, #write, #wait_readable and #wait_writable. This also affects
@@ -15303,6 +15306,7 @@ Init_IO(void)
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
+    /* Can be raised by IO operations when IO#timeout= is set. */
     rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
     rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));

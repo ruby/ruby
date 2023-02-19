@@ -2950,6 +2950,7 @@ str_substr(VALUE str, long beg, long len, int empty)
     return str2;
 }
 
+/* :nodoc: */
 VALUE
 rb_str_freeze(VALUE str)
 {
@@ -2981,11 +2982,23 @@ str_uplus(VALUE str)
 /*
  * call-seq:
  *   -string -> frozen_string
+ *   dedup -> frozen_string
  *
  * Returns a frozen, possibly pre-existing copy of the string.
  *
  * The returned \String will be deduplicated as long as it does not have
  * any instance variables set on it and is not a String subclass.
+ *
+ * Note that <tt>-string</tt> variant is more convenient for defining
+ * constants:
+ *
+ *    FILENAME = -'config/database.yml'
+ *
+ * while +dedup+ is better suitable for using the method in chains
+ * of calculations:
+ *
+ *    @url_list.concat(urls.map(&:dedup))
+ *
  */
 static VALUE
 str_uminus(VALUE str)

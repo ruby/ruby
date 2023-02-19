@@ -377,9 +377,8 @@ class TracePoint
 
   # Return the generated binding object from event.
   #
-  # Note that for +c_call+ and +c_return+ events, the binding returned is the
-  # binding of the nearest Ruby method calling the C method, since C methods
-  # themselves do not have bindings.
+  # Note that for +c_call+ and +c_return+ events, the method will return
+  # +nil+, since C methods themselves do not have bindings.
   def binding
     Primitive.tracepoint_attr_binding
   end
