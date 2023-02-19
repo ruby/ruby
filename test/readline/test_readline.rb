@@ -496,6 +496,9 @@ module BasetestReadline
     # Maybe the same issue: https://github.com/facebookresearch/nle/issues/120
     omit if /i[3-6]86-linux/ =~ RUBY_PLATFORM
 
+    # likewise with 32-bit userspace on 64-bit kernel
+    omit if /\Ax86_64-linux-(?:x32|i[3-6]686)\z/ =~ RUBY_PLATFORM
+
     if defined?(TestReadline) && self.class == TestReadline
       use = "use_ext_readline"
     elsif defined?(TestRelineAsReadline) && self.class == TestRelineAsReadline
