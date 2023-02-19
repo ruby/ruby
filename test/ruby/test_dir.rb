@@ -256,7 +256,7 @@ class TestDir < Test::Unit::TestCase
       Dir.glob(@root, sort: nil)
     end
 
-    assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") },
+    assert_equal(("a".."z").each_slice(2).map {|f,_| File.join(File.join(@root, f), "") },
                  Dir.glob(File.join(@root, "*/")))
     assert_equal([File.join(@root, '//a')], Dir.glob(@root + '//a'))
 
