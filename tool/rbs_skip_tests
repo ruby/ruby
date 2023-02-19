@@ -16,6 +16,7 @@
 #
 
 test_replicate(EncodingTest) the method was removed in 3.3
+test_step(RangeTest) the method protocol was changed in 3.4
 
 test_collection_install(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
