@@ -685,8 +685,6 @@ strio_to_read(VALUE self)
  * see {Position}[rdoc-ref:File@Position].
  *
  * Raises IOError if the stream is not opened for reading.
- *
- * StreamIO#eof is an alias for StreamIO#eof?.
  */
 static VALUE
 strio_eof(VALUE self)
@@ -808,8 +806,6 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  *
  * Returns the current position (in bytes);
  * see {Position}[rdoc-ref:IO@Position].
- *
- * StringIO#tell is an alias for StringIO#pos.
  */
 static VALUE
 strio_get_pos(VALUE self)
@@ -1420,8 +1416,6 @@ strio_readline(int argc, VALUE *argv, VALUE self)
  * does nothing if already at end-of-file;
  * returns +self+.
  * See {Line IO}[rdoc-ref:IO@Line+IO].
- *
- * StringIO#each is an alias for StringIO#each_line.
  */
 static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
