@@ -3921,9 +3921,6 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *
  *  For details on +format_string+, see
  *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
- *
- *  Kernel#format is an alias for Kernel#sprintf.
- *
  */
 
 static VALUE

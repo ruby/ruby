@@ -2997,7 +2997,6 @@ str_uplus(VALUE str)
  * while +dedup+ is better suitable for using the method in chains
  * of calculations:
  *
- *
  *    @url_list.concat(urls.map(&:dedup))
  *
  */
@@ -4802,7 +4801,6 @@ static VALUE str_succ(VALUE str);
  *
  *    ''.succ # => ""
  *
- *  String#next is an alias for String#succ.
  */
 
 VALUE
@@ -4907,8 +4905,6 @@ str_succ(VALUE str)
  *    succ! -> self
  *
  *  Equivalent to String#succ, but modifies +self+ in place; returns +self+.
- *
- *  String#next! is an alias for String#succ!.
  */
 
 static VALUE
@@ -5450,8 +5446,6 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    s                  # => "finally"
  *    s['lly'] = 'ncial' # => "ncial"
  *    s                  # => "financial"
- *
- *  String#slice is an alias for String#[].
  *
  */
 
@@ -6588,9 +6582,6 @@ rb_str_to_f(VALUE str)
  *
  *  Returns +self+ if +self+ is a \String,
  *  or +self+ converted to a \String if +self+ is a subclass of \String.
- *
- *  String#to_str is an alias for String#to_s.
- *
  */
 
 static VALUE
@@ -11464,9 +11455,6 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
  *    symbol == object -> true or false
  *
  *  Returns +true+ if +object+ is the same object as +self+, +false+ otherwise.
- *
- *  Symbol#=== is an alias for Symbol#==.
- *
  */
 
 #define sym_equal rb_obj_equal
@@ -11583,8 +11571,6 @@ sym_inspect(VALUE sym)
  *
  *    :foo.to_s # => "foo"
  *
- *  Symbol#id2name is an alias for Symbol#to_s.
- *
  *  Related: Symbol#inspect, Symbol#name.
  */
 
@@ -11613,8 +11599,6 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed
  *  Equivalent to <tt>self.to_s.succ.to_sym</tt>:
  *
  *    :foo.succ # => :fop
- *
- *  Symbol#next is an alias for Symbol#succ.
  *
  *  Related: String#succ.
  */
@@ -11757,9 +11741,6 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
  *    length -> integer
  *
  *  Equivalent to <tt>self.to_s.length</tt>; see String#length.
- *
- *  Symbol#size is an alias for Symbol#length.
- *
  */
 
 static VALUE
