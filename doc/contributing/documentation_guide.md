@@ -327,7 +327,11 @@ Return types:
 
 Aliases:
 
-- Omit aliases from the `call-seq`.
+- Omit aliases from the `call-seq`, unless the alias is an
+  operator method. If listing both a regular method and an
+  operator method in the `call-seq`, explain in the details and
+  examples section when it is recommended to use the regular method
+  and when it is recommended to use the operator method.
 
 ### Synopsis
 
