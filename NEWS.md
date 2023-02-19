@@ -67,6 +67,13 @@ Note: We're only listing outstanding class updates.
 * Range
 
     * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
+    * `Range#step` now consistently has a semantics of iterating by using `+` operator
+      for all types, not only numerics. [[Feature #18368]]
+
+      ```ruby
+      (Time.utc(2022, 2, 24)..).step(24*60*60).take(3)
+      #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
+      ```
 
 * Refinement
 
@@ -312,3 +319,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
+[Feature #18368]: https://bugs.ruby-lang.org/issues/18368
