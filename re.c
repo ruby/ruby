@@ -1,3 +1,4 @@
+
 /**********************************************************************
 
   re.c -
@@ -1168,8 +1169,6 @@ match_names(VALUE match)
  *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
  *    m.size # => 5
- *
- *  MatchData#length is an alias for MatchData.size.
  *
  */
 
@@ -3413,8 +3412,6 @@ reg_hash(VALUE re)
  *    /foo/ == Regexp.new('food')                         # => false
  *    /foo/ == Regexp.new("abc".force_encoding("euc-jp")) # => false
  *
- *  Regexp#eql? is an alias for Regexp#==.
- *
  */
 
 VALUE
@@ -3465,9 +3462,6 @@ match_hash(VALUE match)
  *  Returns +true+ if +object+ is another \MatchData object
  *  whose target string, regexp, match, and captures
  *  are the same as +self+, +false+ otherwise.
- *
- *  MatchData#eql? is an alias for MatchData#==.
- *
  */
 
 static VALUE
@@ -3895,8 +3889,6 @@ void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const ch
  *      r3 = Regexp.new(r, timeout: 3.14)            # => /foo/m
  *      r3.timeout                                   # => 3.14
  *
- *  Regexp.compile is an alias for Regexp.new.
- *
  */
 
 static VALUE
@@ -4089,8 +4081,6 @@ rb_reg_quote(VALUE str)
  *
  *    r = Regexp.new(Regexp.escape(s)) # => /\\\\\\\*\\\?\\\{\\\}\\\./
  *    r.match(s)                       # => #<MatchData "\\\\\\*\\?\\{\\}\\.">
- *
- *  Regexp.quote is an alias for Regexp.escape.
  *
  */
 
