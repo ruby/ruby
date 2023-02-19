@@ -487,8 +487,6 @@ class PStore
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  #
-  # PStore#roots is an alias for PStore#keys.
   def keys
     in_transaction
     @table.keys
@@ -504,8 +502,6 @@ class PStore
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  #
-  # PStore#root? is an alias for PStore#key?.
   def key?(key)
     in_transaction
     @table.key? key
