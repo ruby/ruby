@@ -248,13 +248,18 @@ module RubyVM::MJIT
         next if target.nil?
         # TODO: Could target.address be a stub address? Is invalidation not needed in that case?
 
+        # If the target being re-generated is currently a fallthrough block,
+        # the fallthrough code must be rewritten with a jump to the stub.
+        if target.address == branch_stub.end_addr
+          branch_stub.shape = Default
+        end
+
         target.address = Assembler.new.then do |ocb_asm|
           @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, target == branch_stub.target0)
           @ocb.write(ocb_asm)
         end
         @cb.with_write_addr(branch_stub.start_addr) do
           branch_asm = Assembler.new
-          branch_stub.shape = Default # cancel fallthrough. TODO: It seems fine for defer_compilation, but is this always safe?
           branch_stub.compile.call(branch_asm)
           @cb.write(branch_asm)
         end
