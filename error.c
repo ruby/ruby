@@ -2099,21 +2099,21 @@ name_err_mesg_to_str(VALUE obj)
 
             if (!RB_SPECIAL_CONST_P(obj)) {
                 switch (RB_BUILTIN_TYPE(obj)) {
-                    case T_MODULE:
-                        s = FAKE_CSTR(&s_str, "module ");
-                        c = obj;
-                        break;
-                    case T_CLASS:
-                        s = FAKE_CSTR(&s_str, "class ");
-                        c = obj;
-                        break;
-                    default:
-                        goto object;
+                  case T_MODULE:
+                    s = FAKE_CSTR(&s_str, "module ");
+                    c = obj;
+                    break;
+                  case T_CLASS:
+                    s = FAKE_CSTR(&s_str, "class ");
+                    c = obj;
+                    break;
+                  default:
+                    goto object;
                 }
             }
             else {
                 VALUE klass;
-object:
+              object:
                 klass = CLASS_OF(obj);
                 if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
                     s = FAKE_CSTR(&s_str, "");
