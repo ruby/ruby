@@ -3319,7 +3319,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 previ == BIN(getlocal) ||
                 previ == BIN(getblockparam) ||
                 previ == BIN(getblockparamproxy) ||
-                /* getinstancevariable may issue a warning */
+                previ == BIN(getinstancevariable) ||
                 previ == BIN(duparray)) {
                 /* just push operand or static value and pop soon, no
                  * side effects */
