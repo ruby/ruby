@@ -974,6 +974,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_code_gc_partial_last_page
+    # call_threshold: 2 to avoid JIT-ing code_gc itself. If code_gc were JITed right before
+    # code_gc is called, the last page would be on stack.
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok, call_threshold: 2)
+      # Leave a bunch of off-stack pages
+      i = 0
+      while i < 1000
+        eval("x = proc { 1.to_s }; x.call; x.call")
+        i += 1
+      end
+
+      # On Linux, memory page size != code page size. So the last code page could be partially
+      # mapped. This call tests that assertions and other things work fine under the situation.
+      RubyVM::YJIT.code_gc
+
+      :ok
+    RUBY
+  end
+
   def test_trace_script_compiled # not ISEQ_TRACE_EVENTS
     assert_compiles(<<~'RUBY', exits: :any, result: :ok)
       @eval_counter = 0
