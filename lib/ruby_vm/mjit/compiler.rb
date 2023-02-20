@@ -203,6 +203,12 @@ module RubyVM::MJIT
           break
         when CantCompile
           @exit_compiler.compile_side_exit(jit.pc, ctx, asm)
+
+          # If this is the first instruction, this block never needs to be invalidated.
+          if block.pc == iseq.body.iseq_encoded.to_i + index * C.VALUE.size
+            block.invalidated = true
+          end
+
           break
         else
           raise "compiling #{insn.name} returned unexpected status: #{status.inspect}"
@@ -224,11 +230,14 @@ module RubyVM::MJIT
       remove_block(iseq, block)
 
       # Invalidate the block with entry exit
-      @cb.with_write_addr(block.start_addr) do
-        asm = Assembler.new
-        asm.comment('invalidate_block')
-        asm.jmp(block.entry_exit)
-        @cb.write(asm)
+      unless block.invalidated
+        @cb.with_write_addr(block.start_addr) do
+          asm = Assembler.new
+          asm.comment('invalidate_block')
+          asm.jmp(block.entry_exit)
+          @cb.write(asm)
+        end
+        block.invalidated = true
       end
 
       # Re-stub incoming branches
