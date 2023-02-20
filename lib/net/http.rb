@@ -1634,7 +1634,7 @@ module Net   #:nodoc:
     # returns an instance of a subclass of Net::HTTPResponse.
     #
     # The request is based on the Net::HTTP::Head object
-    # created from string +path+ and initial headers hash +initheader+.
+    # created from string +path+ and initial headers hash +initheader+:
     #
     #   res = http.head('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
     #   res.body                    # => nil
@@ -1709,66 +1709,140 @@ module Net   #:nodoc:
       send_entity(path, data, initheader, dest, Patch, &block)
     end
 
-    def put(path, data, initheader = nil)   #:nodoc:
+    # Sends a PUT request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Put object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.put('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    def put(path, data, initheader = nil)
       request(Put.new(path, initheader), data)
     end
 
-    # Sends a PROPPATCH request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a PROPPATCH request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Proppatch object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.proppatch('/todos/1', data)
+    #
     def proppatch(path, body, initheader = nil)
       request(Proppatch.new(path, initheader), body)
     end
 
-    # Sends a LOCK request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a LOCK request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Lock object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.lock('/todos/1', data)
+    #
     def lock(path, body, initheader = nil)
       request(Lock.new(path, initheader), body)
     end
 
-    # Sends a UNLOCK request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends an UNLOCK request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Unlock object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.unlock('/todos/1', data)
+    #
     def unlock(path, body, initheader = nil)
       request(Unlock.new(path, initheader), body)
     end
 
-    # Sends a OPTIONS request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends an Options request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Options object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.options('/')
+    #
     def options(path, initheader = nil)
       request(Options.new(path, initheader))
     end
 
-    # Sends a PROPFIND request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a PROPFIND request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Propfind object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.propfind('/todos/1', data)
+    #
     def propfind(path, body = nil, initheader = {'Depth' => '0'})
       request(Propfind.new(path, initheader), body)
     end
 
-    # Sends a DELETE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a DELETE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Delete object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.delete('/todos/1')
+    #
     def delete(path, initheader = {'Depth' => 'Infinity'})
       request(Delete.new(path, initheader))
     end
 
-    # Sends a MOVE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a MOVE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Move object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.move('/todos/1')
+    #
     def move(path, initheader = nil)
       request(Move.new(path, initheader))
     end
 
-    # Sends a COPY request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a COPY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Copy object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.copy('/todos/1')
+    #
     def copy(path, initheader = nil)
       request(Copy.new(path, initheader))
     end
 
-    # Sends a MKCOL request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a MKCOL request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Mkcol object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.mkcol('/todos/1', data)
+    #
     def mkcol(path, body = nil, initheader = nil)
       request(Mkcol.new(path, initheader), body)
     end
 
-    # Sends a TRACE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a TRACE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Trace object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.trace('/todos/1')
+    #
     def trace(path, initheader = nil)
       request(Trace.new(path, initheader))
     end
