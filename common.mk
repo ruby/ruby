@@ -1411,6 +1411,20 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
+extract-gems$(gnumake:yes=-sequential): clone-bundled-gems-src
+
+clone-bundled-gems-src: PHONY
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool/lib -rbundled_gem -answ \
+	    -e 'BEGIN {git = $$git}' \
+	    -e 'gem, _, repo, rev = *$$F' \
+	    -e 'next if !rev or /^#/=~gem' \
+	    -e 'gemdir = "gems/src/#{gem}"' \
+	    -e 'BundledGem.checkout(gemdir, repo, rev, git: git)' \
+	    -e 'BundledGem.dummy_gemspec("#{gemdir}/#{gem}.gemspec")' \
+	    -- -git="$(GIT)" \
+	    gems/bundled_gems
+
 outdate-bundled-gems: PHONY
 	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" "$(srcdir)"
 
