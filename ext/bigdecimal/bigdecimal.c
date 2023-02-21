@@ -4142,11 +4142,14 @@ get_vp_value:
     }
     x = VpCheckGetValue(vx);
 
-    RB_GC_GUARD(one) = VpCheckGetValue(NewOneWrapLimited(1, 1));
-    RB_GC_GUARD(two) = VpCheckGetValue(VpCreateRbObject(1, "2", true));
+    one = VpCheckGetValue(NewOneWrapLimited(1, 1));
+    two = VpCheckGetValue(VpCreateRbObject(1, "2", true));
+    RB_GC_GUARD(one);
+    RB_GC_GUARD(two);
 
     n = prec + BIGDECIMAL_DOUBLE_FIGURES;
-    RB_GC_GUARD(vn) = SSIZET2NUM(n);
+    vn = SSIZET2NUM(n);
+    RB_GC_GUARD(vn);
     expo = VpExponent10(vx);
     if (expo < 0 || expo >= 3) {
 	char buf[DECIMAL_SIZE_OF_BITS(SIZEOF_VALUE * CHAR_BIT) + 4];
@@ -4158,9 +4161,12 @@ get_vp_value:
     }
     w = BigDecimal_sub(x, one);
     x = BigDecimal_div2(w, BigDecimal_add(x, one), vn);
-    RB_GC_GUARD(x2) = BigDecimal_mult2(x, x, vn);
-    RB_GC_GUARD(y)  = x;
-    RB_GC_GUARD(d)  = y;
+    x2 = BigDecimal_mult2(x, x, vn);
+    y = x;
+    d = y;
+    RB_GC_GUARD(x2);
+    RB_GC_GUARD(y);
+    RB_GC_GUARD(d);
     i = 1;
     while (!VpIsZero((Real*)DATA_PTR(d))) {
 	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
