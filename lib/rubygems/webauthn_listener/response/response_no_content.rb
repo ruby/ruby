@@ -7,8 +7,4 @@ class Gem::WebauthnListener::ResponseNoContent < Gem::WebauthnListener::Response
   def status
     "204 No Content"
   end
-
-  def add_access_control_headers?
-    true
-  end
 end

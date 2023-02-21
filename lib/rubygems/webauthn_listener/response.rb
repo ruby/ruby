@@ -44,7 +44,6 @@ class Gem::WebauthnListener
     end
 
     def access_control_headers
-      return "" unless add_access_control_headers?
       <<~RESPONSE
         Access-Control-Allow-Origin: #{host}
         Access-Control-Allow-Methods: POST
@@ -64,10 +63,6 @@ class Gem::WebauthnListener
 
     def status
       raise NotImplementedError
-    end
-
-    def add_access_control_headers?
-      false
     end
 
     def body; end

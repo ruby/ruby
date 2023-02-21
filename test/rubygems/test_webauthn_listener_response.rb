@@ -57,6 +57,9 @@ class WebauthnListenerResponseTest < Gem::TestCase
     expected_payload = <<~RESPONSE
       HTTP/1.1 405 Method Not Allowed
       Connection: close
+      Access-Control-Allow-Origin: rubygems.example
+      Access-Control-Allow-Methods: POST
+      Access-Control-Allow-Headers: Content-Type, Authorization, x-csrf-token
       Allow: GET, OPTIONS
     RESPONSE
 
@@ -69,6 +72,9 @@ class WebauthnListenerResponseTest < Gem::TestCase
     expected_payload = <<~RESPONSE
       HTTP/1.1 404 Not Found
       Connection: close
+      Access-Control-Allow-Origin: rubygems.example
+      Access-Control-Allow-Methods: POST
+      Access-Control-Allow-Headers: Content-Type, Authorization, x-csrf-token
     RESPONSE
 
     assert_equal expected_payload, payload
@@ -80,6 +86,9 @@ class WebauthnListenerResponseTest < Gem::TestCase
     expected_payload = <<~RESPONSE
       HTTP/1.1 400 Bad Request
       Connection: close
+      Access-Control-Allow-Origin: rubygems.example
+      Access-Control-Allow-Methods: POST
+      Access-Control-Allow-Headers: Content-Type, Authorization, x-csrf-token
       Content-Type: text/plain
       Content-Length: 22
 

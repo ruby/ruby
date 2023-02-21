@@ -8,10 +8,6 @@ class Gem::WebauthnListener::ResponseOk < Gem::WebauthnListener::Response
     "200 OK"
   end
 
-  def add_access_control_headers?
-    true
-  end
-
   def body
     "success"
   end
