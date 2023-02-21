@@ -203,6 +203,18 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_str_resurrect)'
     end
 
+    def rb_hash_new_with_size
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_new_with_size)'
+    end
+
+    def rb_hash_new
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_new)'
+    end
+
+    def rb_hash_bulk_insert
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_bulk_insert)'
+    end
+
     #========================================================================================
     #
     # Old stuff
