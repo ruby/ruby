@@ -18,31 +18,6 @@ module BundledGem
     outdir = File.expand_path(outdir)
     gemdir, gemfile = File.split(gemspec)
     Dir.chdir(gemdir) do
-      if gemspec == "gems/src/minitest/minitest.gemspec" && !File.exist?("minitest.gemspec")
-        # The repository of minitest does not include minitest.gemspec because it uses hoe.
-        # This creates a dummy gemspec.
-        File.write("minitest.gemspec", <<END)
-Gem::Specification.new do |s|
-  s.name = "minitest"
-  s.version = #{ File.read("lib/minitest.rb")[/VERSION = "(.+?)"/, 1].dump }
-
-  s.require_paths = ["lib"]
-  s.authors = ["Ryan Davis"]
-  s.date = "#{ Time.now.strftime("%Y-%m-%d") }"
-  s.description = "(dummy gemspec)"
-  s.email = ["ryand-ruby@zenspider.com"]
-  s.extra_rdoc_files = ["History.rdoc", "Manifest.txt", "README.rdoc"]
-  s.files = [#{ Dir.glob("**/*").reject {|s| File.directory?(s) }.map {|s| s.dump }.join(",") }]
-  s.homepage = "https://github.com/seattlerb/minitest"
-  s.licenses = ["MIT"]
-  s.rdoc_options = ["--main", "README.rdoc"]
-  s.summary = "(dummy gemspec)"
-
-  s.add_development_dependency(%q<rdoc>, [">= 4.0", "< 7"])
-  s.add_development_dependency(%q<hoe>, ["~> 4.0"])
-end
-END
-      end
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
       abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(version)
@@ -89,5 +64,23 @@ END
       end
     end
     FileUtils.rm_rf(Dir.glob("#{gem_dir}/.git*"))
+  end
+
+  def dummy_gemspec(gemspec)
+    return if File.exist?(gemspec)
+    gemdir, gemfile = File.split(gemspec)
+    Dir.chdir(gemdir) do
+      spec = Gem::Specification.new do |s|
+        s.name = gemfile.chomp(".gemspec")
+        s.version = File.read("lib/#{s.name}.rb")[/VERSION = "(.+?)"/, 1]
+        s.authors = ["DUMMY"]
+        s.email = ["dummy@ruby-lang.org"]
+        s.files = Dir.glob("{lib,ext}/**/*").select {|f| File.file?(f)}
+        s.licenses = ["Ruby"]
+        s.description = "DO NOT USE; dummy gemspec only for test"
+        s.summary = "(dummy gemspec)"
+      end
+      File.write(gemfile, spec.to_ruby)
+    end
   end
 end

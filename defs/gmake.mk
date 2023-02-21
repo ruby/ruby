@@ -352,6 +352,12 @@ $(srcdir)/.bundle/.timestamp/$(1).revision: \
 	:
 	echo $(3) | $(IFCHANGE) $$(@) -
 
+# The repository of minitest does not include minitest.gemspec because it uses hoe.
+# This creates a dummy gemspec.
+$(srcdir)/gems/src/$(1)/$(1).gemspec: \
+	| $(srcdir)/gems/src/$(1)/.git
+	$(Q) $(BASERUBY) -I$(tooldir)/lib -rbundled_gem -e 'BundledGem.dummy_gemspec(*ARGV)' $$(@)
+
 $(srcdir)/gems/$(1)-$(2).gem: $(srcdir)/gems/src/$(1)/$(1).gemspec \
 		$(srcdir)/.bundle/.timestamp/$(1).revision
 	$(ECHO) Building $(1)@$(3) to $$(@)
