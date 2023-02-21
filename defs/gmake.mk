@@ -338,13 +338,13 @@ $(srcdir)/.bundle/.timestamp:
 	$(MAKEDIRS) $@
 
 define build-gem
-$(srcdir)/gems/src/$(1)/$(1).gemspec: | $(srcdir)/gems/src
+$(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
 	$(Q) $(GIT) clone $(4) $$(@D)
 
-$(srcdir)/.bundle/.timestamp/$(1).revision: $(srcdir)/gems/src/$(1)/$(1).gemspec \
+$(srcdir)/.bundle/.timestamp/$(1).revision: \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
-	| $$(@D)
+	| $(srcdir)/.bundle/.timestamp $(srcdir)/gems/src/$(1)/.git
 	$(ECHO) Update $(1) to $(3)
 	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && \
 	    $(GIT) fetch origin $(3) && \
