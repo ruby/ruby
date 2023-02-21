@@ -2709,4 +2709,16 @@ EOS
       assert_equal compact_count + 1, GC.stat(:compact_count)
     end;
   end
+
+  def test_warmup_precompute_string_coderange
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    require 'objspace'
+    begin;
+      obj = "a" * 12
+      obj.force_encoding(Encoding::BINARY)
+      assert_include(ObjectSpace.dump(obj), '"coderange":"unknown"')
+      Process.warmup
+      assert_include(ObjectSpace.dump(obj), '"coderange":"7bit"')
+    end;
+  end
 end
