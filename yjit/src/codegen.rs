@@ -6379,9 +6379,6 @@ fn gen_send_general(
 
                         asm.comment("chain_guard_send");
                         let chain_exit = counted_exit!(ocb, side_exit, send_send_chain);
-                        asm.cmp(symbol_id_opnd, 0.into());
-                        asm.jbe(chain_exit);
-
                         asm.cmp(symbol_id_opnd, mid.into());
                         jit_chain_guard(
                             JCC_JNE,
