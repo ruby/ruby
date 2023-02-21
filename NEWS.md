@@ -31,7 +31,7 @@ The following default gems are updated.
 * optparse 0.4.0.pre.1
 * psych 5.1.0
 * stringio 3.0.6
-* strscan 3.0.6
+* strscan 3.0.7
 * timeout 0.3.2
 
 The following bundled gems are updated.
