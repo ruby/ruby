@@ -238,7 +238,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 /// This realigns the interpreter SP with the JIT SP
 /// Note: this will change the current value of REG_SP,
 ///       which could invalidate memory operands
-fn gen_save_sp(_jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
+fn gen_save_sp( asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
         asm.comment("save SP to CFP");
         let stack_pointer = ctx.sp_opnd(0);
@@ -262,7 +262,7 @@ fn jit_prepare_routine_call(
 ) {
     jit.record_boundary_patch_point = true;
     jit_save_pc(jit, asm);
-    gen_save_sp(jit, asm, ctx);
+    gen_save_sp(asm, ctx);
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding and other means.
@@ -1874,7 +1874,6 @@ fn gen_set_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
-    _recv: VALUE,
     ivar_name: ID,
     flags: u32,
     argc: i32,
@@ -3877,7 +3876,6 @@ fn jit_guard_known_klass(
 // Generate ancestry guard for protected callee.
 // Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 fn jit_protected_callee_ancestry_guard(
-    _jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cme: *const rb_callable_method_entry_t,
@@ -4614,7 +4612,6 @@ struct ControlFrame {
 //   * Interrupts are not checked (should be done by the caller)
 fn gen_push_frame(
     jit: &mut JITState,
-    _ctx: &mut Context,
     asm: &mut Assembler,
     set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
@@ -4932,7 +4929,7 @@ fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
-    gen_push_frame(jit, ctx, asm, false, ControlFrame {
+    gen_push_frame(jit, asm, false, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -4965,7 +4962,7 @@ fn gen_send_cfunc(
 
     // Write interpreter SP into CFP.
     // Needed in case the callee yields to the block.
-    gen_save_sp(jit, asm, ctx);
+    gen_save_sp(asm, ctx);
 
     // Non-variadic method
     let args = if cfunc_argc >= 0 {
@@ -5598,7 +5595,7 @@ fn gen_send_iseq(
         argc = argc - 1 + array_length as i32 + remaining_opt as i32;
         push_splat_args(array_length, ctx, asm, ocb, side_exit);
 
-        for _ in 0..remaining_opt as u32 {
+        for _ in 0..remaining_opt {
             // We need to push nil for the optional arguments
             let stack_ret = ctx.stack_push(Type::Unknown);
             asm.mov(stack_ret, Qnil.into());
@@ -5794,7 +5791,7 @@ fn gen_send_iseq(
 
         // We are going to allocate so setting pc and sp.
         jit_save_pc(jit, asm);
-        gen_save_sp(jit, asm, ctx);
+        gen_save_sp(asm, ctx);
 
         let n = (argc - required_num) as u32;
         argc = required_num + 1;
@@ -5859,7 +5856,7 @@ fn gen_send_iseq(
     };
 
     // Setup the new frame
-    gen_push_frame(jit, ctx, asm, true, ControlFrame {
+    gen_push_frame(jit, asm, true, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -5952,7 +5949,6 @@ fn gen_struct_aref(
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
     comptime_recv: VALUE,
-    _comptime_recv_klass: VALUE,
     flags: u32,
     argc: i32,
 ) -> CodegenStatus {
@@ -6015,7 +6011,6 @@ fn gen_struct_aset(
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
     comptime_recv: VALUE,
-    _comptime_recv_klass: VALUE,
     flags: u32,
     argc: i32,
 ) -> CodegenStatus {
@@ -6156,7 +6151,7 @@ fn gen_send_general(
             if flags & VM_CALL_FCALL == 0 {
                 // otherwise we need an ancestry check to ensure the receiver is valid to be called
                 // as protected
-                jit_protected_callee_ancestry_guard(jit, asm, ocb, cme, side_exit);
+                jit_protected_callee_ancestry_guard(asm, ocb, cme, side_exit);
             }
         }
         _ => {
@@ -6265,7 +6260,7 @@ fn gen_send_general(
                     return CantCompile;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-                    return gen_set_ivar(jit, ctx, asm, comptime_recv, ivar_name, flags, argc);
+                    return gen_set_ivar(jit, ctx, asm, ivar_name, flags, argc);
                 }
             }
             // Block method, e.g. define_method(:foo) { :my_block }
@@ -6471,7 +6466,6 @@ fn gen_send_general(
                             ci,
                             cme,
                             comptime_recv,
-                            comptime_recv_klass,
                             flags,
                             argc,
                         );
@@ -6489,7 +6483,6 @@ fn gen_send_general(
                             ci,
                             cme,
                             comptime_recv,
-                            comptime_recv_klass,
                             flags,
                             argc,
                         );

@@ -443,11 +443,9 @@ impl Branch {
 
     fn get_stub_count(&self) -> usize {
         let mut count = 0;
-        for target in self.targets.iter() {
-            if let Some(target) = target {
-                if let BranchTarget::Stub(_) = target.as_ref() {
-                    count += 1;
-                }
+        for target in self.targets.iter().flatten() {
+            if let BranchTarget::Stub(_) = target.as_ref() {
+                count += 1;
             }
         }
         count
