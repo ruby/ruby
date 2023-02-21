@@ -56,7 +56,7 @@ to the same gem path as user-installed gems.
   end
 
   def execute
-    gem_paths = { "GEM_HOME" => Gem.paths.home, "GEM_PATH" => Gem.paths.path.join(Gem.path_separator), "GEM_SPEC_CACHE" => Gem.paths.spec_cache_dir }
+    gem_paths = { "GEM_HOME" => Gem.paths.home, "GEM_PATH" => Gem.paths.path.join(Gem.path_separator), "GEM_SPEC_CACHE" => Gem.paths.spec_cache_dir }.compact
 
     check_executable
 
@@ -74,7 +74,7 @@ to the same gem path as user-installed gems.
 
     load!
   ensure
-    ENV.update(gem_paths)
+    ENV.update(gem_paths) if gem_paths
     Gem.clear_paths
   end
 
