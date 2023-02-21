@@ -83,4 +83,15 @@ module BundledGem
       File.write(gemfile, spec.to_ruby)
     end
   end
+
+  def checkout(gemdir, repo, rev, git: $git)
+    return unless rev
+    unless File.exist?("#{gemdir}/.git")
+      puts "Cloning #{repo}"
+      system("#{git} clone #{repo} #{gemdir}") or raise
+    end
+    puts "Update #{File.basename(gemdir)} to #{rev}"
+    system("#{git} fetch origin #{rev}", chdir: gemdir)
+    system("#{git} checkout --detach #{rev}", chdir: gemdir)
+  end
 end
