@@ -4089,6 +4089,40 @@ fn jit_rb_kernel_instance_of(
     return true;
 }
 
+fn jit_rb_mod_eqq(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if argc != 1 {
+        return false;
+    }
+
+    asm.comment("Module#===");
+    // By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
+    // only live on these objects. With that, we can call rb_obj_is_kind_of() without
+    // jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
+    // Ruby methods with these inputs.
+    // Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
+    // right hand side.
+    let lhs = ctx.stack_opnd(1); // the module
+    let rhs = ctx.stack_opnd(0);
+    let ret = asm.ccall(rb_obj_is_kind_of as *const u8, vec![rhs, lhs]);
+
+    // Return the result
+    ctx.stack_pop(2);
+    let stack_ret = ctx.stack_push(Type::UnknownImm);
+    asm.mov(stack_ret, ret);
+
+    return true;
+}
+
 // Codegen for rb_obj_equal()
 // object identity comparison
 fn jit_rb_obj_equal(
@@ -7865,6 +7899,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
             self.yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
+            self.yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
             self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
             self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
