@@ -227,10 +227,14 @@ module Bundler
 
     def reverse_rubygems_kernel_mixin
       # Disable rubygems' gem activation system
-      kernel = (class << ::Kernel; self; end)
-      [kernel, ::Kernel].each do |k|
-        if k.private_method_defined?(:gem_original_require)
-          redefine_method(k, :require, k.instance_method(:gem_original_require))
+      if Gem.respond_to?(:discover_gems_on_require=)
+        Gem.discover_gems_on_require = false
+      else
+        kernel = (class << ::Kernel; self; end)
+        [kernel, ::Kernel].each do |k|
+          if k.private_method_defined?(:gem_original_require)
+            redefine_method(k, :require, k.instance_method(:gem_original_require))
+          end
         end
       end
     end

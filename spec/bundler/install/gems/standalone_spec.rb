@@ -170,7 +170,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with Gemfiles using path sources and resulting bundle moved to a folder hierarchy with different nesting" do
+  describe "with Gemfiles using absolute path sources and resulting bundle moved to a folder hierarchy with different nesting" do
     before do
       build_lib "minitest", "1.0.0", :path => lib_path("minitest")
 
@@ -189,6 +189,35 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "also works" do
       ruby <<-RUBY, :dir => tmp("one_more_level/bundled_app/app")
+        require "./bundle/bundler/setup"
+
+        require "minitest"
+        puts MINITEST
+      RUBY
+
+      expect(out).to eq("1.0.0")
+      expect(err).to be_empty
+    end
+  end
+
+  describe "with Gemfiles using relative path sources and app moved to a different root" do
+    before do
+      FileUtils.mkdir_p bundled_app("app/vendor")
+
+      build_lib "minitest", "1.0.0", :path => bundled_app("app/vendor/minitest")
+
+      gemfile bundled_app("app/Gemfile"), <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "minitest", :path => "vendor/minitest"
+      G
+
+      bundle "install", :standalone => true, :dir => bundled_app("app")
+
+      FileUtils.mv(bundled_app("app"), bundled_app2("app"))
+    end
+
+    it "also works" do
+      ruby <<-RUBY, :dir => bundled_app2("app")
         require "./bundle/bundler/setup"
 
         require "minitest"

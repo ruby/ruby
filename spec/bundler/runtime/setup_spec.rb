@@ -1519,4 +1519,29 @@ end
       expect(err).to be_empty
     end
   end
+
+  it "does not undo the Kernel.require decorations", :rubygems => ">= 3.4.6" do
+    install_gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    script = bundled_app("bin/script")
+    create_file(script, <<~RUBY)
+      module Kernel
+        module_function
+
+        alias_method :require_before_extra_monkeypatches, :require
+
+        def require(path)
+          puts "requiring \#{path} used the monkeypatch"
+
+          require_before_extra_monkeypatches(path)
+        end
+      end
+
+      require "bundler/setup"
+
+      require "foo"
+    RUBY
+
+    sys_exec "#{Gem.ruby} #{script}", :raise_on_error => false
+    expect(out).to include("requiring foo used the monkeypatch")
+  end
 end

@@ -52,7 +52,7 @@ module Bundler
 
     def gem_path(path, spec)
       full_path = Pathname.new(path).absolute? ? path : File.join(spec.full_gem_path, path)
-      if spec.source.instance_of?(Source::Path)
+      if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
         Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
@@ -84,13 +84,17 @@ module Bundler
 
     def reverse_rubygems_kernel_mixin
       <<~END
-      kernel = (class << ::Kernel; self; end)
-      [kernel, ::Kernel].each do |k|
-        if k.private_method_defined?(:gem_original_require)
-          private_require = k.private_method_defined?(:require)
-          k.send(:remove_method, :require)
-          k.send(:define_method, :require, k.instance_method(:gem_original_require))
-          k.send(:private, :require) if private_require
+      if Gem.respond_to?(:discover_gems_on_require=)
+        Gem.discover_gems_on_require = false
+      else
+        kernel = (class << ::Kernel; self; end)
+        [kernel, ::Kernel].each do |k|
+          if k.private_method_defined?(:gem_original_require)
+            private_require = k.private_method_defined?(:require)
+            k.send(:remove_method, :require)
+            k.send(:define_method, :require, k.instance_method(:gem_original_require))
+            k.send(:private, :require) if private_require
+          end
         end
       end
       END
