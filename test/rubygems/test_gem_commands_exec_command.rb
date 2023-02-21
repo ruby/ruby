@@ -270,6 +270,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
     use_ui @ui do
       util_set_arch "unknown-unknown"
       invoke "a"
+      assert_empty @ui.error
       assert_equal "Building native extensions. This could take a while...\na-2\nsometimes_used-2\nwith_platform-2\n", @ui.output
     end
 
