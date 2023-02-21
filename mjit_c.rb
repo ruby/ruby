@@ -199,6 +199,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_ec_str_resurrect
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_str_resurrect)'
+    end
+
     #========================================================================================
     #
     # Old stuff

@@ -82,6 +82,9 @@ module RubyVM::MJIT
       end
 
       def on_update_references
+        # Give up. In order to support GC.compact, you'd have to update ISEQ
+        # addresses in BranchStub, etc. Ideally, we'd need to update moved
+        # pointers in JITed code here, but we just invalidate all for now.
         invalidate_all
       end
 

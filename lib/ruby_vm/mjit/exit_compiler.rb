@@ -1,9 +1,5 @@
 module RubyVM::MJIT
   class ExitCompiler
-    def initialize
-      @gc_refs = [] # TODO: GC offsets?
-    end
-
     # Used for invalidating a block on entry.
     # @param pc [Integer]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -133,7 +129,7 @@ module RubyVM::MJIT
     end
 
     def to_value(obj)
-      @gc_refs << obj
+      GC_REFS << obj
       C.to_value(obj)
     end
 
