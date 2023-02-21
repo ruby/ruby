@@ -22,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 56/101
+      # 57/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -62,7 +62,7 @@ module RubyVM::MJIT
       when :pop then pop(jit, ctx, asm)
       when :dup then dup(jit, ctx, asm)
       when :dupn then dupn(jit, ctx, asm)
-      # swap
+      when :swap then swap(jit, ctx, asm)
       # opt_reverse
       when :topn then topn(jit, ctx, asm)
       when :setn then setn(jit, ctx, asm)
@@ -521,7 +521,21 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # swap
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def swap(jit, ctx, asm)
+      stack0_mem = ctx.stack_opnd(0)
+      stack1_mem = ctx.stack_opnd(1)
+
+      asm.mov(:rax, stack0_mem)
+      asm.mov(:rcx, stack1_mem)
+      asm.mov(stack0_mem, :rcx)
+      asm.mov(stack1_mem, :rax)
+
+      KeepCompiling
+    end
+
     # opt_reverse
 
     # @param jit [RubyVM::MJIT::JITState]
