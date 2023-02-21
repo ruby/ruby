@@ -23,7 +23,9 @@ module BundledGem
       abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(version)
       output = File.join(outdir, spec.file_name)
       FileUtils.rm_rf(output)
-      Gem::Package.build(spec, validation == false, validation, output)
+      package = Gem::Package.new(output)
+      package.spec = spec
+      package.build(validation == false)
     end
   end
 
