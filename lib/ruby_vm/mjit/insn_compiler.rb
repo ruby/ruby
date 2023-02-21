@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 52/101
+      # 53/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -51,7 +51,7 @@ module RubyVM::MJIT
       # anytostring
       # toregexp
       # intern
-      # newarray
+      when :newarray then newarray(jit, ctx, asm)
       # newarraykwsplat
       when :duparray then duparray(jit, ctx, asm)
       # duphash
@@ -304,7 +304,40 @@ module RubyVM::MJIT
     # anytostring
     # toregexp
     # intern
-    # newarray
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def newarray(jit, ctx, asm)
+      n = jit.operand(0)
+
+      # Save the PC and SP because we are allocating
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # If n is 0, then elts is never going to be read, so we can just pass null
+      if n == 0
+        values_ptr = 0
+      else
+        asm.comment('load pointer to array elts')
+        offset_magnitude = C.VALUE.size * n
+        values_opnd = ctx.sp_opnd(-(offset_magnitude))
+        asm.lea(:rax, values_opnd)
+        values_ptr = :rax
+      end
+
+      # call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], n)
+      asm.mov(C_ARGS[2], values_ptr)
+      asm.call(C.rb_ec_ary_new_from_values)
+
+      ctx.stack_pop(n)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
     # newarraykwsplat
 
     # @param jit [RubyVM::MJIT::JITState]

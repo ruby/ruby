@@ -188,6 +188,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_get_symbol_id)'
     end
 
+    def rb_ec_ary_new_from_values
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_ary_new_from_values)'
+    end
+
     #========================================================================================
     #
     # Old stuff
