@@ -8555,6 +8555,7 @@ static VALUE rb_mProcID_Syscall;
  *  * Perform a major GC.
  *  * Compacts the heap.
  *  * Promotes all surviving objects to the old generation.
+ *  * Precompute the coderange of all strings.
  */
 
 static VALUE
@@ -8565,7 +8566,6 @@ proc_warmup(VALUE _)
     RB_VM_LOCK_LEAVE();
     return Qtrue;
 }
-
 
 /*
  * Document-module: Process

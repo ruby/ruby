@@ -9596,6 +9596,11 @@ gc_set_candidate_object_i(void *vstart, void *vend, size_t stride, void *data)
           case T_NONE:
           case T_ZOMBIE:
             break;
+          case T_STRING:
+            // precompute the string coderange. This both save time for when it will be
+            // eventually needed, and avoid mutating heap pages after a potential fork.
+            rb_enc_str_coderange(v);
+            // fall through
           default:
             if (!RVALUE_OLD_P(v) && !RVALUE_WB_UNPROTECTED(v)) {
                 RVALUE_AGE_SET_CANDIDATE(objspace, v);
