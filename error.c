@@ -2072,43 +2072,83 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, d_str;
-        VALUE c, s, d = 0, args[4];
-        int state = 0, singleton = 0;
+        struct RString s_str, c_str, d_str;
+        VALUE c, s, d = 0, args[4], c2;
+        int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
 
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
+        c = s = FAKE_CSTR(&s_str, "");
         obj = ptr[NAME_ERR_MESG__RECV];
         switch (obj) {
           case Qnil:
-            d = FAKE_CSTR(&d_str, "nil");
+            c = d = FAKE_CSTR(&d_str, "nil");
             break;
           case Qtrue:
-            d = FAKE_CSTR(&d_str, "true");
+            c = d = FAKE_CSTR(&d_str, "true");
             break;
           case Qfalse:
-            d = FAKE_CSTR(&d_str, "false");
+            c = d = FAKE_CSTR(&d_str, "false");
             break;
           default:
-            d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-            if (state || NIL_OR_UNDEF_P(d))
-                d = rb_protect(rb_inspect, obj, &state);
+            if (strstr(RSTRING_PTR(mesg), "%2$s")) {
+                d = rb_protect(name_err_mesg_receiver_name, obj, &state);
+                if (state || NIL_OR_UNDEF_P(d))
+                    d = rb_protect(rb_inspect, obj, &state);
+                if (state) {
+                    rb_set_errinfo(Qnil);
+                }
+                d = rb_check_string_type(d);
+                if (NIL_P(d)) {
+                    d = rb_any_to_s(obj);
+                }
+            }
+
+            if (!RB_SPECIAL_CONST_P(obj)) {
+                switch (RB_BUILTIN_TYPE(obj)) {
+                  case T_MODULE:
+                    s = FAKE_CSTR(&s_str, "module ");
+                    c = obj;
+                    break;
+                  case T_CLASS:
+                    s = FAKE_CSTR(&s_str, "class ");
+                    c = obj;
+                    break;
+                  default:
+                    goto object;
+                }
+            }
+            else {
+                VALUE klass;
+              object:
+                klass = CLASS_OF(obj);
+                if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON)) {
+                    s = FAKE_CSTR(&s_str, "");
+                    if (obj == rb_vm_top_self()) {
+                        c = FAKE_CSTR(&c_str, "main");
+                    }
+                    else {
+                        c = rb_any_to_s(obj);
+                    }
+                    break;
+                }
+                else {
+                    s = FAKE_CSTR(&s_str, "an instance of ");
+                    c = rb_class_real(klass);
+                }
+            }
+            c2 = rb_protect(name_err_mesg_receiver_name, c, &state);
+            if (state || NIL_OR_UNDEF_P(c2))
+                c2 = rb_protect(rb_inspect, c, &state);
             if (state) {
                 rb_set_errinfo(Qnil);
             }
-            d = rb_check_string_type(d);
-            if (NIL_P(d)) {
-                d = rb_any_to_s(obj);
+            c2 = rb_check_string_type(c2);
+            if (NIL_P(c2)) {
+                c2 = rb_any_to_s(c);
             }
-            singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
+            c = c2;
             break;
-        }
-        if (!singleton) {
-            s = FAKE_CSTR(&s_str, ":");
-            c = rb_class_name(CLASS_OF(obj));
-        }
-        else {
-            c = s = FAKE_CSTR(&s_str, "");
         }
         args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
         args[1] = d;

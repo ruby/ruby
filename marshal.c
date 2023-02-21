@@ -523,7 +523,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 
 #define SINGLETON_DUMP_UNABLE_P(klass) \
     (rb_id_table_size(RCLASS_M_TBL(klass)) > 0 || \
-     rb_ivar_count(klass) > 1)
+     rb_ivar_count(klass) > 0)
 
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
@@ -1865,6 +1865,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                     rb_extend_object(v, m);
                 }
             }
+            v = r_leave(v, arg, partial);
         }
         break;
 

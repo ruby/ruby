@@ -12,6 +12,7 @@
 
 #include "eval_intern.h"
 #include "internal.h"
+#include "internal/class.h"
 #include "internal/compile.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -542,7 +543,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
         klass = RBASIC(klass)->klass;
     }
     else if (FL_TEST(klass, FL_SINGLETON)) {
-        klass = rb_attr_get(klass, id__attached__);
+        klass = RCLASS_ATTACHED_OBJECT(klass);
         if (NIL_P(klass)) return FALSE;
     }
     type = BUILTIN_TYPE(klass);

@@ -127,29 +127,22 @@ RB_DEBUG_COUNTER(frame_R2C)
 RB_DEBUG_COUNTER(frame_C2C)
 RB_DEBUG_COUNTER(frame_C2R)
 
-/* instance variable counts
- *
- * * ivar_get_ic_hit/miss: ivar_get inline cache (ic) hit/miss counts (VM insn)
- * * ivar_get_ic_miss_unset:                      ... by unset (VM insn)
- * * ivar_get_ic_miss_noobject:                   ... by "not T_OBJECT" (VM insn)
- * * ivar_set_...: same counts with ivar_set (VM insn)
- * * ivar_get/set_base: call counts of "rb_ivar_get/set()".
- *                      because of (1) ic miss.
- *                                 (2) direct call by C extensions.
- */
-RB_DEBUG_COUNTER(ivar_get_ic_hit)
-RB_DEBUG_COUNTER(ivar_get_ic_miss)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_noobject)
-RB_DEBUG_COUNTER(ivar_set_ic_hit)
-RB_DEBUG_COUNTER(ivar_set_ic_miss)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_iv_hit)
-RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
-RB_DEBUG_COUNTER(ivar_get_base)
-RB_DEBUG_COUNTER(ivar_set_base)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_set)
-RB_DEBUG_COUNTER(ivar_get_cc_miss_set)
-RB_DEBUG_COUNTER(ivar_get_ic_miss_unset)
-RB_DEBUG_COUNTER(ivar_get_cc_miss_unset)
+/* instance variable counts */
+RB_DEBUG_COUNTER(ivar_get_obj_hit)  // Only T_OBJECT hits
+RB_DEBUG_COUNTER(ivar_get_obj_miss) // Only T_OBJECT misses
+RB_DEBUG_COUNTER(ivar_get_ic_hit)   // All hits
+RB_DEBUG_COUNTER(ivar_get_ic_miss)  // All misses
+RB_DEBUG_COUNTER(ivar_set_ic_hit)   // All hits
+RB_DEBUG_COUNTER(ivar_set_obj_hit)  // Only T_OBJECT hits
+RB_DEBUG_COUNTER(ivar_set_obj_miss) // Only T_OBJECT misses
+RB_DEBUG_COUNTER(ivar_set_ic_miss)  // All misses
+RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)  // Miss because non T_OBJECT
+RB_DEBUG_COUNTER(ivar_get_base) // Calls to `rb_ivar_get` (very slow path)
+RB_DEBUG_COUNTER(ivar_set_base) // Calls to `ivar_set` (very slow path)
+RB_DEBUG_COUNTER(ivar_get_ic_miss_set)   // Misses on IV reads where the cache was wrong
+RB_DEBUG_COUNTER(ivar_get_cc_miss_set)   // Misses on attr_reader where the cache was wrong
+RB_DEBUG_COUNTER(ivar_get_ic_miss_unset) // Misses on IV read where the cache wasn't set
+RB_DEBUG_COUNTER(ivar_get_cc_miss_unset) // Misses on attr_reader where the cache wasn't set
 
 /* local variable counts
  *

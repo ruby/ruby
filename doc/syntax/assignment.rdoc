@@ -403,6 +403,10 @@ assigning.  This is similar to multiple assignment:
 
   p a # prints [1, 2, 3]
 
+  b = *1
+
+  p b # prints [1]
+
 You can splat anywhere in the right-hand side of the assignment:
 
   a = 1, *[2, 3]

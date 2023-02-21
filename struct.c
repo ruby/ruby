@@ -596,8 +596,6 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(foo: 0, bar: 1, baz: 2)
  *      # Raises ArgumentError: unknown keywords: baz
  *
- *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
- *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
  *
  *      Foo.inspect
@@ -1029,8 +1027,6 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.inspect # => "#<struct Customer name=\"Joe Smith\", address=\"123 Maple, Anytown NC\", zip=12345>"
  *
- *  Struct#to_s is an alias for Struct#inspect.
- *
  */
 
 static VALUE
@@ -1048,8 +1044,6 @@ rb_struct_inspect(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.to_a # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
- *
- *  Struct#values and Struct#deconstruct are aliases for Struct#to_a.
  *
  *  Related: #members.
  */
@@ -1372,8 +1366,6 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *    a # => [12345]
  *
  *  With no block given, returns an Enumerator.
- *
- *  Struct#filter is an alias for Struct#select.
  */
 
 static VALUE
@@ -1532,7 +1524,6 @@ rb_struct_eql(VALUE s, VALUE s2)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.size #=> 3
  *
- *  Struct#length is an alias for Struct#size.
  */
 
 VALUE
@@ -1820,10 +1811,12 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     arg.self = self;
     arg.unknown_keywords = Qnil;
     rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    // Freeze early before potentially raising, so that we don't leave an
+    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
+    OBJ_FREEZE_RAW(self);
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
-    OBJ_FREEZE_RAW(self);
     return Qnil;
 }
 
@@ -1875,22 +1868,9 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
         return self;
     }
 
-    VALUE copy = rb_obj_alloc(rb_obj_class(self));
-    rb_struct_init_copy(copy, self);
-
-    struct struct_hash_set_arg arg;
-    arg.self = copy;
-    arg.unknown_keywords = Qnil;
-    rb_hash_foreach(kwargs, struct_hash_set_i, (VALUE)&arg);
-    // Freeze early before potentially raising, so that we don't leave an
-    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
-    RB_OBJ_FREEZE_RAW(copy);
-
-    if (arg.unknown_keywords != Qnil) {
-        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
-    }
-
-    return copy;
+    VALUE h = rb_struct_to_h(self);
+    rb_hash_update_by(h, kwargs, NULL);
+    return rb_class_new_instance_kw(1, &h, rb_obj_class(self), TRUE);
 }
 
 /*

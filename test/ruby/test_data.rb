@@ -217,6 +217,22 @@ class TestData < Test::Unit::TestCase
     end
   end
 
+  def test_with_initialize
+    oddclass = Data.define(:odd) do
+      def initialize(odd:)
+        raise ArgumentError, "Not odd" unless odd.odd?
+        super(odd: odd)
+      end
+    end
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      oddclass.new(odd: 0)
+    }
+    odd = oddclass.new(odd: 1)
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      odd.with(odd: 2)
+    }
+  end
+
   def test_memberless
     klass = Data.define
 

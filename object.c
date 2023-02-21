@@ -1597,7 +1597,7 @@ rb_mod_to_s(VALUE klass)
 
     if (FL_TEST(klass, FL_SINGLETON)) {
         VALUE s = rb_usascii_str_new2("#<Class:");
-        VALUE v = rb_ivar_get(klass, id__attached__);
+        VALUE v = RCLASS_ATTACHED_OBJECT(klass);
 
         if (CLASS_OR_MODULE_P(v)) {
             rb_str_append(s, rb_inspect(v));
@@ -3931,9 +3931,6 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *
  *  For details on +format_string+, see
  *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
- *
- *  Kernel#format is an alias for Kernel#sprintf.
- *
  */
 
 static VALUE

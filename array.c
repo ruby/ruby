@@ -1511,8 +1511,6 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    a1 = a.push([:baz, :bat], [:bam, :bad])
  *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *  Array#append is an alias for Array#push.
- *
  *  Related: #pop, #shift, #unshift.
  */
 
@@ -1784,8 +1782,6 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
  *    a = [:foo, 'bar', 2]
  *    a.unshift(:bam, :bat) # => [:bam, :bat, :foo, "bar", 2]
  *
- *  Array#prepend is an alias for Array#unshift.
- *
  *  Related: #push, #pop, #shift.
  */
 
@@ -1962,7 +1958,6 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    # Raises TypeError (no implicit conversion of Symbol into Integer):
  *    a[:foo]
  *
- *  Array#slice is an alias for Array#[].
  */
 
 VALUE
@@ -2214,8 +2209,6 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *    e = a.index
  *    e # => #<Enumerator: [:foo, "bar", 2]:index>
  *    e.each {|element| element == 'bar' } # => 1
- *
- *  Array#find_index is an alias for Array#index.
  *
  *  Related: #rindex.
  */
@@ -3106,7 +3099,6 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
  *
- *  Array#to_s is an alias for Array#inspect.
  */
 
 static VALUE
@@ -3811,7 +3803,6 @@ rb_ary_sort_by_bang(VALUE ary)
  *    a1 = a.map
  *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
  *
- *  Array#collect is an alias for Array#map.
  */
 
 static VALUE
@@ -3846,7 +3837,6 @@ rb_ary_collect(VALUE ary)
  *    a1 = a.map!
  *    a1 # => #<Enumerator: [:foo, "bar", 2]:map!>
  *
- *  Array#collect! is an alias for Array#map!.
  */
 
 static VALUE
@@ -3990,7 +3980,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
  *
- *  Array#filter is an alias for Array#select.
  */
 
 static VALUE
@@ -4074,7 +4063,6 @@ select_bang_ensure(VALUE a)
  *    a = [:foo, 'bar', 2, :bam]
  *    a.select! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
  *
- *  Array#filter! is an alias for Array#select!.
  */
 
 static VALUE

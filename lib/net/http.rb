@@ -428,13 +428,31 @@ module Net   #:nodoc:
   #     http = Net::HTTP.new('example.com', nil, 'my.proxy', 8000, 'pname', 'ppass', 'my.proxy,proxy.example:8000')
   #     http.proxy_address # => nil
   #
-  # == Compression
+  # == Compression and Decompression
   #
-  # \Net::HTTP automatically adds Accept-Encoding for compression of response
-  # bodies and automatically decompresses gzip and deflate responses unless a
-  # Range header was sent.
+  # \Net::HTTP does not compress the body of a request before sending.
   #
-  # Compression can be disabled through the Accept-Encoding: identity header.
+  # By default, \Net::HTTP adds header <tt>'Accept-Encoding'</tt>
+  # to a new {request object}[rdoc-ref:Net::HTTPRequest]:
+  #
+  #   Net::HTTP::Get.new(uri)['Accept-Encoding']
+  #   # => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3"
+  #
+  # This requests the server to zip-encode the response body if there is one;
+  # the server is not required to do so.
+  #
+  # \Net::HTTP does not automatically decompress a response body
+  # if the response has header <tt>'Content-Range'</tt>.
+  #
+  # Otherwise decompression (or not) depends on the value of header
+  # {Content-Encoding}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#content-encoding-response-header]:
+  #
+  # - <tt>'deflate'</tt>, <tt>'gzip'</tt>, or <tt>'x-gzip'</tt>:
+  #   decompresses the body and deletes the header.
+  # - <tt>'none'</tt> or <tt>'identity'</tt>:
+  #   does not decompress the body, but deletes the header.
+  # - Any other value:
+  #   leaves the body and header unchanged.
   #
   class HTTP < Protocol
 
@@ -1574,45 +1592,37 @@ module Net   #:nodoc:
 
     public
 
-    # Retrieves data from +path+ on the connected-to host which may be an
-    # absolute path String or a URI to extract the path from.
+    # :call-seq:
+    #    get(path, initheader = nil) {|res| ... }
     #
-    # +initheader+ must be a Hash like { 'Accept' => '*/*', ... },
-    # and it defaults to an empty hash.
-    # If +initheader+ doesn't have the key 'accept-encoding', then
-    # a value of "gzip;q=1.0,deflate;q=0.6,identity;q=0.3" is used,
-    # so that gzip compression is used in preference to deflate
-    # compression, which is used in preference to no compression.
-    # Ruby doesn't have libraries to support the compress (Lempel-Ziv)
-    # compression, so that is not supported.  The intent of this is
-    # to reduce bandwidth by default.   If this routine sets up
-    # compression, then it does the decompression also, removing
-    # the header as well to prevent confusion.  Otherwise
-    # it leaves the body as it found it.
+    # Sends a GET request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # This method returns a Net::HTTPResponse object.
+    # The request is based on the Net::HTTP::Get object
+    # created from string +path+ and initial headers hash +initheader+.
     #
-    # If called with a block, yields each fragment of the
-    # entity body in turn as a string as it is read from
-    # the socket.  Note that in this case, the returned response
-    # object will *not* contain a (meaningful) body.
+    # With a block given, calls the block with the response body:
     #
-    # +dest+ argument is obsolete.
-    # It still works but you must not use it.
+    #   http.get('/todos/1') do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
     #
-    # This method never raises an exception.
+    # Output:
     #
-    #     response = http.get('/index.html')
+    #   "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
     #
-    #     # using block
-    #     File.open('result.txt', 'w') {|f|
-    #       http.get('/~foo/') do |str|
-    #         f.write str
-    #       end
-    #     }
+    # With no block given, simply returns the response object:
+    #
+    #   http.get('/') # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Get: request class for \HTTP method GET.
+    # - Net::HTTP.get: sends GET request, returns response body.
     #
     def get(path, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       res = nil
+
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
         res = r
@@ -1620,121 +1630,219 @@ module Net   #:nodoc:
       res
     end
 
-    # Gets only the header from +path+ on the connected-to host.
-    # +header+ is a Hash like { 'Accept' => '*/*', ... }.
+    # Sends a HEAD request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # This method returns a Net::HTTPResponse object.
+    # The request is based on the Net::HTTP::Head object
+    # created from string +path+ and initial headers hash +initheader+:
     #
-    # This method never raises an exception.
-    #
-    #     response = nil
-    #     Net::HTTP.start('some.www.server', 80) {|http|
-    #       response = http.head('/index.html')
-    #     }
-    #     p response['content-type']
+    #   res = http.head('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
+    #   res.body                    # => nil
+    #   res.to_hash.take(3)
+    #   # =>
+    #   [["date", ["Wed, 15 Feb 2023 15:25:42 GMT"]],
+    #    ["content-type", ["application/json; charset=utf-8"]],
+    #    ["connection", ["close"]]]
     #
     def head(path, initheader = nil)
       request(Head.new(path, initheader))
     end
 
-    # Posts +data+ (must be a String) to +path+. +header+ must be a Hash
-    # like { 'Accept' => '*/*', ... }.
+    # :call-seq:
+    #    post(path, data, initheader = nil) {|res| ... }
     #
-    # This method returns a Net::HTTPResponse object.
+    # Sends a POST request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # If called with a block, yields each fragment of the
-    # entity body in turn as a string as it is read from
-    # the socket.  Note that in this case, the returned response
-    # object will *not* contain a (meaningful) body.
+    # The request is based on the Net::HTTP::Post object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
     #
-    # +dest+ argument is obsolete.
-    # It still works but you must not use it.
+    # With a block given, calls the block with the response body:
     #
-    # This method never raises exception.
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.post('/todos', data) do |res|
+    #     p res
+    #   end # => #<Net::HTTPCreated 201 Created readbody=true>
     #
-    #     response = http.post('/cgi-bin/search.rb', 'query=foo')
+    # Output:
     #
-    #     # using block
-    #     File.open('result.txt', 'w') {|f|
-    #       http.post('/cgi-bin/search.rb', 'query=foo') do |str|
-    #         f.write str
-    #       end
-    #     }
+    #   "{\n  \"{\\\"userId\\\": 1, \\\"id\\\": 1, \\\"title\\\": \\\"delectus aut autem\\\", \\\"completed\\\": false}\": \"\",\n  \"id\": 201\n}"
     #
-    # You should set Content-Type: header field for POST.
-    # If no Content-Type: field given, this method uses
-    # "application/x-www-form-urlencoded" by default.
+    # With no block given, simply returns the response object:
+    #
+    #   http.post('/todos', data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #
+    # Related:
+    #
+    # - Net::HTTP::Post: request class for \HTTP method POST.
+    # - Net::HTTP.post: sends POST request, returns response body.
     #
     def post(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       send_entity(path, data, initheader, dest, Post, &block)
     end
 
-    # Sends a PATCH request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # :call-seq:
+    #    patch(path, data, initheader = nil) {|res| ... }
+    #
+    # Sends a PATCH request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Patch object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    # With a block given, calls the block with the response body:
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.patch('/todos/1', data) do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false,\n  \"{\\\"userId\\\": 1, \\\"id\\\": 1, \\\"title\\\": \\\"delectus aut autem\\\", \\\"completed\\\": false}\": \"\"\n}"
+    #
+    # With no block given, simply returns the response object:
+    #
+    #   http.patch('/todos/1', data) # => #<Net::HTTPCreated 201 Created readbody=true>
+    #
     def patch(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       send_entity(path, data, initheader, dest, Patch, &block)
     end
 
-    def put(path, data, initheader = nil)   #:nodoc:
+    # Sends a PUT request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Put object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.put('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    def put(path, data, initheader = nil)
       request(Put.new(path, initheader), data)
     end
 
-    # Sends a PROPPATCH request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a PROPPATCH request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Proppatch object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.proppatch('/todos/1', data)
+    #
     def proppatch(path, body, initheader = nil)
       request(Proppatch.new(path, initheader), body)
     end
 
-    # Sends a LOCK request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a LOCK request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Lock object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.lock('/todos/1', data)
+    #
     def lock(path, body, initheader = nil)
       request(Lock.new(path, initheader), body)
     end
 
-    # Sends a UNLOCK request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends an UNLOCK request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Unlock object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.unlock('/todos/1', data)
+    #
     def unlock(path, body, initheader = nil)
       request(Unlock.new(path, initheader), body)
     end
 
-    # Sends a OPTIONS request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends an Options request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Options object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.options('/')
+    #
     def options(path, initheader = nil)
       request(Options.new(path, initheader))
     end
 
-    # Sends a PROPFIND request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a PROPFIND request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Propfind object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.propfind('/todos/1', data)
+    #
     def propfind(path, body = nil, initheader = {'Depth' => '0'})
       request(Propfind.new(path, initheader), body)
     end
 
-    # Sends a DELETE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a DELETE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Delete object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.delete('/todos/1')
+    #
     def delete(path, initheader = {'Depth' => 'Infinity'})
       request(Delete.new(path, initheader))
     end
 
-    # Sends a MOVE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a MOVE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Move object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.move('/todos/1')
+    #
     def move(path, initheader = nil)
       request(Move.new(path, initheader))
     end
 
-    # Sends a COPY request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a COPY request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Copy object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.copy('/todos/1')
+    #
     def copy(path, initheader = nil)
       request(Copy.new(path, initheader))
     end
 
-    # Sends a MKCOL request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a MKCOL request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Mkcol object
+    # created from string +path+, string +body+, and initial headers hash +initheader+.
+    #
+    #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http.mkcol('/todos/1', data)
+    #
     def mkcol(path, body = nil, initheader = nil)
       request(Mkcol.new(path, initheader), body)
     end
 
-    # Sends a TRACE request to the +path+ and gets a response,
-    # as an HTTPResponse object.
+    # Sends a TRACE request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Trace object
+    # created from string +path+ and initial headers hash +initheader+.
+    #
+    #   http.trace('/todos/1')
+    #
     def trace(path, initheader = nil)
       request(Trace.new(path, initheader))
     end

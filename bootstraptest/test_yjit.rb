@@ -376,6 +376,45 @@ assert_equal 'false', %q{
   less_than 2
 }
 
+# BOP redefinition works on Integer#<=
+assert_equal 'false', %q{
+  def le(x, y) = x <= y
+
+  le(2, 2)
+
+  class Integer
+    def <=(_) = false
+  end
+
+  le(2, 2)
+}
+
+# BOP redefinition works on Integer#>
+assert_equal 'false', %q{
+  def gt(x, y) = x > y
+
+  gt(3, 2)
+
+  class Integer
+    def >(_) = false
+  end
+
+  gt(3, 2)
+}
+
+# BOP redefinition works on Integer#>=
+assert_equal 'false', %q{
+  def ge(x, y) = x >= y
+
+  ge(2, 2)
+
+  class Integer
+    def >=(_) = false
+  end
+
+  ge(2, 2)
+}
+
 # Putobject, less-than operator, fixnums
 assert_equal '2', %q{
     def check_index(index)
@@ -3514,4 +3553,31 @@ assert_equal 'threw', %q{
   end
 
   bar([Hash.ruby2_keywords_hash({})])
+}
+
+# Test instance_of? and is_a?
+assert_equal 'true', %q{
+  1.instance_of?(Integer) && 1.is_a?(Integer)
+}
+
+# Test instance_of? and is_a? for singleton classes
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(Array) && a.is_a?(Array)
+}
+
+# Test instance_of? for singleton_class
+# Yes this does really return false
+assert_equal 'false', %q{
+  a = []
+  def a.test = :test
+  a.instance_of?(a.singleton_class)
+}
+
+# Test is_a? for singleton_class
+assert_equal 'true', %q{
+  a = []
+  def a.test = :test
+  a.is_a?(a.singleton_class)
 }

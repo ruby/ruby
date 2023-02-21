@@ -1861,6 +1861,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| expr
 		| error
 		    {
+			(void)yynerrs;
 		    /*%%%*/
 			$$ = NEW_ERROR(&@$);
 		    /*% %*/

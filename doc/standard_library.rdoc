@@ -27,7 +27,7 @@ Socket:: Access underlying OS socket implementations
 * default gems are not uninstallable from Ruby installation.
 * default gems can be updated used by rubygems.
     * e.g. `gem update json`
-* default gems can be used with bundler environment like `clean_env`.
+* default gems can be used with bundler environment like `unbundled_env`.
 * default gems can be used any version on Gemfile.
     * e.g. `gem "json", ">= 2.6"`
 

@@ -440,6 +440,18 @@ impl Branch {
     fn get_target_address(&self, target_idx: usize) -> Option<CodePtr> {
         self.targets[target_idx].as_ref().and_then(|target| target.get_address())
     }
+
+    fn get_stub_count(&self) -> usize {
+        let mut count = 0;
+        for target in self.targets.iter() {
+            if let Some(target) = target {
+                if let BranchTarget::Stub(_) = target.as_ref() {
+                    count += 1;
+                }
+            }
+        }
+        count
+    }
 }
 
 // In case a block is invalidated, this helps to remove all pointers to the block.
@@ -551,7 +563,7 @@ impl Eq for BlockRef {}
 #[derive(Default)]
 pub struct IseqPayload {
     // Basic block versions
-    version_map: VersionMap,
+    pub version_map: VersionMap,
 
     // Indexes of code pages used by this this ISEQ
     pub pages: HashSet<usize>,
@@ -619,6 +631,15 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+
+/// Iterate over all ISEQ payloads
+pub fn for_each_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
+    for_each_iseq(|iseq| {
+        if let Some(iseq_payload) = get_iseq_payload(iseq) {
+            callback(iseq_payload);
+        }
+    });
 }
 
 /// Iterate over all on-stack ISEQs
@@ -1030,6 +1051,14 @@ impl Block {
 
     pub fn get_ctx(&self) -> Context {
         self.ctx.clone()
+    }
+
+    pub fn get_ctx_count(&self) -> usize {
+        let mut count = 1; // block.ctx
+        for branch in self.outgoing.iter() {
+            count += branch.borrow().get_stub_count();
+        }
+        count
     }
 
     #[allow(unused)]
@@ -1475,9 +1504,9 @@ impl Context {
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
-        if jit_at_current_insn(jit) {
-            let comptime_recv = jit_peek_at_stack(jit, self, 1);
-            let comptime_arg = jit_peek_at_stack(jit, self, 0);
+        if jit.at_current_insn() {
+            let comptime_recv = jit.peek_at_stack( self, 1);
+            let comptime_arg = jit.peek_at_stack(self, 0);
             return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());
         }
 

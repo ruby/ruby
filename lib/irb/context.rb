@@ -494,7 +494,7 @@ module IRB
         line = "#{command} #{command_class.transform_args(args)}"
       end
 
-      set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
+      set_last_value(@workspace.evaluate(line, irb_path, line_no))
     end
 
     def inspect_last_value # :nodoc:

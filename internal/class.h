@@ -8,9 +8,11 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Class.
  */
+#include "id.h"
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
+#include "internal/variable.h"  /* for rb_class_ivar_set */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/intern.h"        /* for rb_alloc_func_t */
 #include "ruby/ruby.h"          /* for struct RBasic */
@@ -51,7 +53,14 @@ struct rb_classext_struct {
     struct rb_subclass_entry *module_subclass_entry;
     const VALUE origin_;
     const VALUE refined_class;
-    rb_alloc_func_t allocator;
+    union {
+        struct {
+            rb_alloc_func_t allocator;
+        } class;
+        struct {
+            VALUE attached_object;
+        } singleton_class;
+    } as;
     const VALUE includer;
 #if !SHAPE_IN_BASIC_FLAGS
     shape_id_t shape_id;
@@ -69,7 +78,7 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     struct rb_id_table *m_tbl;
-#if SIZE_POOL_COUNT == 1
+#if !RCLASS_EXT_EMBEDDED
     struct rb_classext_struct *ptr;
 #endif
 };
@@ -95,10 +104,10 @@ STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 #define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)
 #define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->module_subclass_entry)
-#define RCLASS_ALLOCATOR(c) (RCLASS_EXT(c)->allocator)
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT(c)->subclasses)
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
+#define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
 
 #define RICLASS_IS_ORIGIN FL_USER0
 #define RCLASS_CLONED     FL_USER1
@@ -143,6 +152,22 @@ MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_class_inherited(VALUE, VALUE);
 VALUE rb_keyword_error_new(const char *, VALUE);
 MJIT_SYMBOL_EXPORT_END
+
+static inline rb_alloc_func_t
+RCLASS_ALLOCATOR(VALUE klass)
+{
+    if (FL_TEST_RAW(klass, FL_SINGLETON)) {
+        return NULL;
+    }
+    return RCLASS_EXT(klass)->as.class.allocator;
+}
+
+static inline void
+RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
+{
+    assert(!FL_TEST(klass, FL_SINGLETON));
+    RCLASS_EXT(klass)->as.class.allocator = allocator;
+}
 
 static inline void
 RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
@@ -195,6 +220,16 @@ RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent)
 
     RB_OBJ_WRITE(klass, &(RCLASS_EXT(klass)->classpath), classpath);
     RCLASS_EXT(klass)->permanent_classpath = permanent;
+}
+
+static inline VALUE
+RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
+{
+    assert(BUILTIN_TYPE(klass) == T_CLASS);
+    assert(FL_TEST_RAW(klass, FL_SINGLETON));
+
+    RB_OBJ_WRITE(klass, &RCLASS_EXT(klass)->as.singleton_class.attached_object, attached_object);
+    return attached_object;
 }
 
 #endif /* INTERNAL_CLASS_H */

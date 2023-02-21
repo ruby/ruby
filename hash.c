@@ -2749,8 +2749,6 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *    hash.select {|key, value| ... } -> new_hash
  *    hash.select -> new_enumerator
  *
- *  Hash#filter is an alias for Hash#select.
- *
  *  Returns a new \Hash object whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.select {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
@@ -2778,8 +2776,6 @@ rb_hash_select(VALUE hash)
  *  call-seq:
  *    hash.select! {|key, value| ... } -> self or nil
  *    hash.select! -> new_enumerator
- *
- *  Hash#filter! is an alias for Hash#select!.
  *
  *  Returns +self+, whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2901,8 +2897,6 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    hash[key] = value -> value
  *    hash.store(key, value)
  *
- *  Hash#store is an alias for Hash#[]=.
-
  *  Associates the given +value+ with the given +key+; returns +value+.
  *
  *  If the given +key+ exists, replaces its value with the given +value+;
@@ -2989,9 +2983,9 @@ rb_hash_replace(VALUE hash, VALUE hash2)
  *     hash.size -> integer
  *
  *  Returns the count of entries in +self+:
+ *
  *    {foo: 0, bar: 1, baz: 2}.length # => 3
  *
- *  Hash#length is an alias for Hash#size.
  */
 
 VALUE
@@ -3122,8 +3116,6 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *    hash.each -> new_enumerator
  *    hash.each_pair -> new_enumerator
  *
- *  Hash#each is an alias for Hash#each_pair.
-
  *  Calls the given block with each key-value pair; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {:foo=>0, :bar=>1, :baz=>2}
@@ -3455,10 +3447,10 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
  *    hash.inspect -> new_string
  *
  *  Returns a new \String containing the hash entries:
+
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.inspect # => "{:foo=>0, :bar=>1, :baz=>2}"
  *
- *  Hash#to_s is an alias for Hash#inspect.
  */
 
 static VALUE
@@ -3645,8 +3637,6 @@ rb_hash_values(VALUE hash)
  *    hash.has_key?(key) -> true or false
  *    hash.key?(key) -> true or false
  *    hash.member?(key) -> true or false
-
- *  Methods #has_key?, #key?, and #member? are aliases for \#include?.
  *
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
@@ -3673,8 +3663,6 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *    hash.has_value?(value) -> true or false
  *    hash.value?(value) -> true or false
- *
- *  Method #value? is an alias for \#has_value?.
  *
  *  Returns +true+ if +value+ is a value in +self+, otherwise +false+.
  */
@@ -3937,8 +3925,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  Merges each of +other_hashes+ into +self+; returns +self+.
  *
  *  Each argument in +other_hashes+ must be a \Hash.
- *
- *  \Method #update is an alias for \#merge!.
  *
  *  With arguments and no block:
  *  * Returns +self+, after the given hashes are merged into it.
@@ -5359,8 +5345,6 @@ ruby_unsetenv(const char *name)
  *   ENV[name] = value      -> value
  *   ENV.store(name, value) -> value
  *
- * ENV.store is an alias for ENV.[]=.
- *
  * Creates, updates, or deletes the named environment variable, returning the value.
  * Both +name+ and +value+ may be instances of String.
  * See {Valid Names and Values}[rdoc-ref:ENV@Valid+Names+and+Values].
@@ -5762,8 +5746,6 @@ env_values_at(int argc, VALUE *argv, VALUE _)
  *   ENV.filter { |name, value| block } -> hash of name/value pairs
  *   ENV.filter                         -> an_enumerator
  *
- * ENV.filter is an alias for ENV.select.
- *
  * Yields each environment variable name and its value as a 2-element Array,
  * returning a Hash of the names and values for which the block returns a truthy value:
  *   ENV.replace('foo' => '0', 'bar' => '1', 'baz' => '2')
@@ -5806,8 +5788,6 @@ env_select(VALUE ehash)
  *   ENV.select!                         -> an_enumerator
  *   ENV.filter! { |name, value| block } -> ENV or nil
  *   ENV.filter!                         -> an_enumerator
- *
- * ENV.filter! is an alias for ENV.select!.
  *
  * Yields each environment variable name and its value as a 2-element Array,
  * deleting each entry for which the block returns +false+ or +nil+,
@@ -6118,8 +6098,6 @@ env_empty_p(VALUE _)
  *   ENV.has_key?(name) -> true or false
  *   ENV.member?(name)  -> true or false
  *   ENV.key?(name)     -> true or false
- *
- * ENV.has_key?, ENV.member?, and ENV.key? are aliases for ENV.include?.
  *
  * Returns +true+ if there is an environment variable with the given +name+:
  *   ENV.replace('foo' => '0', 'bar' => '1')
@@ -6600,8 +6578,6 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
  *   ENV.merge!                                              -> ENV
  *   ENV.merge!(*hashes)                                     -> ENV
  *   ENV.merge!(*hashes) { |name, env_val, hash_val| block } -> ENV
- *
- * ENV.update is an alias for ENV.merge!.
  *
  * Adds to ENV each key/value pair in the given +hash+; returns ENV:
  *   ENV.replace('foo' => '0', 'bar' => '1')

@@ -3587,7 +3587,7 @@ static VALUE
 cvar_front_klass(VALUE klass)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-        VALUE obj = rb_ivar_get(klass, id__attached__);
+        VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
         if (rb_namespace_p(obj)) {
             return obj;
         }
@@ -3806,7 +3806,7 @@ mod_cvar_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
     if (FL_TEST(mod, FL_SINGLETON)) {
-        if (rb_namespace_p(rb_ivar_get(mod, id__attached__))) {
+        if (rb_namespace_p(RCLASS_ATTACHED_OBJECT(mod))) {
             data = mod_cvar_at(tmp, data);
             tmp = cvar_front_klass(tmp);
         }

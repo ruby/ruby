@@ -700,13 +700,12 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *    to_a -> array
+ *    to_a(*args) -> array
  *
  *  Returns an array containing the items in +self+:
  *
  *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -746,8 +745,8 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    to_h -> hash
- *    to_h {|element| ... }  -> hash
+ *    to_h(*args) -> hash
+ *    to_h(*args) {|element| ... }  -> hash
  *
  *  When +self+ consists of 2-element arrays,
  *  returns a hash each of whose entries is the key-value pair
@@ -1000,7 +999,6 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *    "Memo: 3; element: 3"
  *    "Memo: 6; element: 4"
  *
- *  Enumerable#reduce is an alias for Enumerable#inject.
  *
  */
 static VALUE
@@ -2721,8 +2719,6 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
  *    {foo: 0, bar: 1, baz: 2}.include?(:foo)  # => true
  *    {foo: 0, bar: 1, baz: 2}.include?('foo') # => false
  *    {foo: 0, bar: 1, baz: 2}.include?(0)     # => false
- *
- *  Enumerable#member? is an alias for Enumerable#include?.
  *
  */
 

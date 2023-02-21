@@ -13,7 +13,7 @@
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -45,7 +45,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -79,7 +79,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -114,7 +114,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -142,7 +142,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -173,7 +173,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -204,7 +204,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -238,7 +238,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -273,7 +273,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -296,7 +296,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -319,7 +319,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -342,7 +342,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -365,7 +365,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -388,7 +388,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -411,7 +411,7 @@ end
 #     http.request(req)
 #   end
 #
-# :include: doc/net-http/included_setters.rdoc
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #

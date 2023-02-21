@@ -236,7 +236,7 @@ AS_CASE(["${build_os}"],
     AC_PATH_TOOL([NM], [nm], [/usr/ccs/bin/nm], [/usr/ccs/bin:$PATH])
 ])
 AS_CASE(["${target_os}"],
-[cygwin*|msys*|mingw*], [
+[cygwin*|msys*|mingw*|darwin*], [
     ac_cv_prog_ac_ct_OBJCOPY=":"
 ])
 
@@ -506,6 +506,7 @@ AS_CASE(["$target_os"],
     : ${enable_shared=yes}
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET

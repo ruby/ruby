@@ -116,7 +116,6 @@ class Integer
   #    -12345.abs     #=> 12345
   #    12345.abs      #=> 12345
   #
-  # Integer#magnitude is an alias for Integer#abs.
   def abs
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_abs(self)'
@@ -235,8 +234,6 @@ class Integer
   #     int.to_i    ->  integer
   #
   #  Since +int+ is already an Integer, returns +self+.
-  #
-  #  #to_int is an alias for #to_i.
   def to_i
     self
   end
@@ -317,8 +314,6 @@ class Float
   #     (-34.56).abs   #=> 34.56
   #     -34.56.abs     #=> 34.56
   #     34.56.abs      #=> 34.56
-  #
-  #  Float#magnitude is an alias for Float#abs.
   #
   def abs
     Primitive.attr! 'inline'

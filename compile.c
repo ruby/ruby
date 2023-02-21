@@ -3319,7 +3319,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 previ == BIN(getlocal) ||
                 previ == BIN(getblockparam) ||
                 previ == BIN(getblockparamproxy) ||
-                /* getinstancevariable may issue a warning */
+                previ == BIN(getinstancevariable) ||
                 previ == BIN(duparray)) {
                 /* just push operand or static value and pop soon, no
                  * side effects */
@@ -8275,7 +8275,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     }
     else {
 # define BUILTIN_INLINE_PREFIX "_bi"
-        char inline_func[DECIMAL_SIZE_OF_BITS(sizeof(int) * CHAR_BIT) + sizeof(BUILTIN_INLINE_PREFIX)];
+        char inline_func[sizeof(BUILTIN_INLINE_PREFIX) + DECIMAL_SIZE_OF(int)];
         bool cconst = false;
       retry:;
         const struct rb_builtin_function *bf = iseq_builtin_function_lookup(iseq, builtin_func);
@@ -13056,7 +13056,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void

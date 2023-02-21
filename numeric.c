@@ -694,8 +694,6 @@ num_div(VALUE x, VALUE y)
  *    (-r) % r2             # => (119/100)
  *    (-r) %-r2             # => (-21/100)
  *
- *  Numeric#modulo is an alias for Numeric#%.
- *
  */
 
 static VALUE
@@ -803,8 +801,6 @@ num_divmod(VALUE x, VALUE y)
  *    12.abs        #=> 12
  *    (-34.56).abs  #=> 34.56
  *    -34.56.abs    #=> 34.56
- *
- *  Numeric#magnitude is an alias for Numeric#abs.
  *
  */
 
@@ -1328,8 +1324,6 @@ rb_float_div(VALUE x, VALUE y)
  *    f.quo(Rational(2, 1)) # => 1.57
  *    f.quo(Complex(2, 0))  # => (1.57+0.0i)
  *
- *  Float#fdiv is an alias for Float#quo.
- *
  */
 
 static VALUE
@@ -1415,8 +1409,6 @@ ruby_float_mod(double x, double y)
  *
  *    10.0 % 4.0            # => 2.0
  *    10.0 % Rational(4, 1) # => 2.0
- *
- *  Float#modulo is an alias for Float#%.
  *
  */
 
@@ -2600,7 +2592,6 @@ float_round_underflow(int ndigits, int binexp)
  *
  *    (0.3 / 0.1).to_i  # => 2 (!)
  *
- *  Float#to_int is an alias for Float#to_i.
  */
 
 static VALUE
@@ -3065,7 +3056,7 @@ num_step(int argc, VALUE *argv, VALUE from)
                                     num_step_size, from, to, step, FALSE);
         }
 
-        return SIZED_ENUMERATOR(from, 2, ((VALUE [2]){to, step}), num_step_size);
+        return SIZED_ENUMERATOR_KW(from, 2, ((VALUE [2]){to, step}), num_step_size, FALSE);
     }
 
     desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
@@ -3704,8 +3695,6 @@ int_nobits_p(VALUE num, VALUE mask)
  *    1.succ  #=> 2
  *    -1.succ #=> 0
  *
- *  Integer#next is an alias for Integer#succ.
- *
  *  Related: Integer#pred (predecessor value).
  */
 
@@ -3928,9 +3917,6 @@ rb_fix_to_s(VALUE x)
  *    78546939656932.to_s(36)  # => "rubyrules"
  *
  *  Raises an exception if +base+ is out of range.
- *
- *  Integer#inspect is an alias for Integer#to_s.
- *
  */
 
 MJIT_FUNC_EXPORTED VALUE
@@ -4324,8 +4310,6 @@ fix_mod(VALUE x, VALUE y)
  *    10 % 3.0            # => 1.0
  *    10 % Rational(3, 1) # => (1/1)
  *
- *  Integer#modulo is an alias for Integer#%.
- *
  */
 VALUE
 rb_int_modulo(VALUE x, VALUE y)
@@ -4644,9 +4628,6 @@ fix_equal(VALUE x, VALUE y)
  *    1 == 1.0   #=> true
  *
  *  Related: Integer#eql? (requires +other+ to be an \Integer).
- *
- *  Integer#=== is an alias for Integer#==.
- *
  */
 
 VALUE

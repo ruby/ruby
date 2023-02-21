@@ -1,3 +1,0 @@
-This class also includes (indirectly) module Net::HTTPHeader,
-which gives access to its
-{methods for setting headers}[rdoc-ref:Net::HTTPHeader@Setters].

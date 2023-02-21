@@ -3464,7 +3464,6 @@ cont.$(OBJEXT): {$(VPATH)}id.h
 cont.$(OBJEXT): {$(VPATH)}id_table.h
 cont.$(OBJEXT): {$(VPATH)}intern.h
 cont.$(OBJEXT): {$(VPATH)}internal.h
-cont.$(OBJEXT): {$(VPATH)}internal/gc.h
 cont.$(OBJEXT): {$(VPATH)}internal/abi.h
 cont.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 cont.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -3676,7 +3675,6 @@ debug.$(OBJEXT): {$(VPATH)}id.h
 debug.$(OBJEXT): {$(VPATH)}id_table.h
 debug.$(OBJEXT): {$(VPATH)}intern.h
 debug.$(OBJEXT): {$(VPATH)}internal.h
-debug.$(OBJEXT): {$(VPATH)}internal/gc.h
 debug.$(OBJEXT): {$(VPATH)}internal/abi.h
 debug.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 debug.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -5935,6 +5933,7 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/serial.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/string.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/struct.h
+enumerator.$(OBJEXT): $(top_srcdir)/internal/variable.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/vm.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 enumerator.$(OBJEXT): {$(VPATH)}assert.h
@@ -5948,6 +5947,7 @@ enumerator.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 enumerator.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 enumerator.$(OBJEXT): {$(VPATH)}config.h
+enumerator.$(OBJEXT): {$(VPATH)}constant.h
 enumerator.$(OBJEXT): {$(VPATH)}defines.h
 enumerator.$(OBJEXT): {$(VPATH)}encoding.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c
@@ -6376,7 +6376,6 @@ eval.$(OBJEXT): {$(VPATH)}id.h
 eval.$(OBJEXT): {$(VPATH)}id_table.h
 eval.$(OBJEXT): {$(VPATH)}intern.h
 eval.$(OBJEXT): {$(VPATH)}internal.h
-eval.$(OBJEXT): {$(VPATH)}internal/gc.h
 eval.$(OBJEXT): {$(VPATH)}internal/abi.h
 eval.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 eval.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -8967,6 +8966,7 @@ marshal.$(OBJEXT): {$(VPATH)}constant.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encindex.h
 marshal.$(OBJEXT): {$(VPATH)}encoding.h
+marshal.$(OBJEXT): {$(VPATH)}id.h
 marshal.$(OBJEXT): {$(VPATH)}id_table.h
 marshal.$(OBJEXT): {$(VPATH)}intern.h
 marshal.$(OBJEXT): {$(VPATH)}internal.h
@@ -17369,6 +17369,7 @@ vm_backtrace.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/class.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -17959,6 +17960,7 @@ vm_trace.$(OBJEXT): $(hdrdir)/ruby.h
 vm_trace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/class.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/hash.h

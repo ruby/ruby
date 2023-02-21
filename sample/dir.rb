@@ -1,12 +1,7 @@
 # directory access
 # list all files but .*/*~/*.o
-dirp = Dir.open(".")
-for f in dirp
-  case f
-  when /\A\./, /~\z/, /\.o\z/
-    # do not print
-  else
-    print f, "\n"
+Dir.foreach(".") do |file|
+  unless file.start_with?('.') or file.end_with?('~', '.o')
+    puts file
   end
 end
-dirp.close

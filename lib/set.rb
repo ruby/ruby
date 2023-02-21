@@ -12,15 +12,11 @@
 
 
 ##
-# This library provides the Set class, which deals with a collection
-# of unordered values with no duplicates.  It is a hybrid of Array's
+# This library provides the Set class, which implements a collection
+# of unordered values with no duplicates. It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
 # The method `to_set` is added to Enumerable for convenience.
-#
-# Set implements a collection of unordered values with no duplicates.
-# This is a hybrid of Array's intuitive inter-operation facilities and
-# Hash's fast lookup.
 #
 # Set is easy to use with Enumerable objects (implementing `each`).
 # Most of the initializer methods and binary operators accept generic

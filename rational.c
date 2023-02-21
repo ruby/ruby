@@ -1232,7 +1232,6 @@ nurat_negative_p(VALUE self)
  *     (1/2r).abs    #=> (1/2)
  *     (-1/2r).abs   #=> (1/2)
  *
- *  Rational#magnitude is an alias for Rational#abs.
  */
 
 VALUE

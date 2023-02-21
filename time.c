@@ -3660,8 +3660,6 @@ tmcmp(struct tm *a, struct tm *b)
  * Raises an exception if the number of arguments is eight, nine,
  * or greater than ten.
  *
- * Time.gm is an alias for Time.utc.
- *
  * Related: Time.local.
  *
  */
@@ -3712,8 +3710,6 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_i # => 0
  *    Time.utc(1950, 1, 1, 0, 0, 0).to_i         # => -631152000
  *    Time.utc(1990, 1, 1, 0, 0, 0).to_i         # => 631152000
- *
- *  Time#tv_sec is an alias for Time#to_i.
  *
  *  Related: Time#to_f Time#to_r.
  */
@@ -3794,8 +3790,6 @@ time_to_r(VALUE time)
  *    t.usec       # => 548469
  *
  *  Related: Time#subsec (returns exact subseconds).
- *
- *  Time#tv_usec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3823,8 +3817,6 @@ time_usec(VALUE time)
  *    t.nsec       # => 321963700
  *
  *  Related: Time#subsec (returns exact subseconds).
- *
- *  Time#tv_nsec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3942,8 +3934,6 @@ time_eql(VALUE time1, VALUE time2)
  *    utc = Time.utc(2000, 1, 1, 20, 15, 1)
  *    # => 2000-01-01 20:15:01 UTC
  *    utc.utc? # => true
- *
- *  Time#gmt? is an alias for Time#utc?.
  *
  *  Related: Time.utc.
  */
@@ -4096,8 +4086,6 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
  *    t.utc              # => 2000-01-01 06:00:00 UTC
  *    t.utc?             # => true
  *
- *  Time#gmtime is an alias for Time#utc.
- *
  *  Related: Time#getutc (returns a new converted \Time object).
  */
 
@@ -4221,7 +4209,6 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
  *    utc.utc?                 # => true
  *    utc == local             # => true
  *
- *  Time#getgm is an alias for Time#getutc.
  */
 
 static VALUE
@@ -4254,8 +4241,6 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
  *    t.ctime                      # => "Sun Dec 31 23:59:59 2000"
  *    t.strftime('%a %b %e %T %Y') # => "Sun Dec 31 23:59:59 2000"
  *    t.strftime('%c')             # => "Sun Dec 31 23:59:59 2000"
- *
- *  Time#asctime is an alias for Time#ctime.
  *
  *  Related: Time#to_s, Time#inspect:
  *
@@ -4682,8 +4667,6 @@ time_hour(VALUE time)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.mday # => 2
  *
- *  Time#day is an alias for Time#mday.
- *
  *  Related: Time#year, Time#hour, Time#min.
  */
 
@@ -4707,8 +4690,6 @@ time_mday(VALUE time)
  *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.mon # => 1
- *
- *  Time#month is an alias for Time#mday.
  *
  *  Related: Time#year, Time#hour, Time#min.
  */
@@ -4934,7 +4915,6 @@ time_yday(VALUE time)
  *    t.zone                     # => "Central Daylight Time"
  *    t.dst?                     # => true
  *
- *  Time#isdst is an alias for Time#dst?.
  */
 
 static VALUE
@@ -4990,7 +4970,6 @@ time_zone(VALUE time)
  *    Time.utc(2000, 1, 1).utc_offset   # => 0
  *    Time.local(2000, 1, 1).utc_offset # => -21600 # -6*3600, or minus six hours.
  *
- *  Time#gmt_offset and Time#gmtoff are aliases for Time#utc_offset.
  */
 
 VALUE

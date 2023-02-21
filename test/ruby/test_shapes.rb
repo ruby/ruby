@@ -108,6 +108,32 @@ class TestShapes < Test::Unit::TestCase
     assert_false RubyVM::Shape.of(obj).too_complex?
   end
 
+  def test_removing_when_too_many_ivs_on_class
+    obj = Class.new
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+      obj.remove_instance_variable(:"@a#{_1}")
+    end
+
+    assert_empty obj.instance_variables
+  end
+
+  def test_removing_when_too_many_ivs_on_module
+    obj = Module.new
+
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+      obj.instance_variable_set(:"@a#{_1}", 1)
+    end
+    (RubyVM::Shape::SHAPE_MAX_NUM_IVS + 2).times do
+      obj.remove_instance_variable(:"@a#{_1}")
+    end
+
+    assert_empty obj.instance_variables
+  end
+
   def test_too_complex_ractor
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

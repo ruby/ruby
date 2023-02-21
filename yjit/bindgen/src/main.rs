@@ -141,6 +141,7 @@ fn main() {
         .allowlist_function("rb_ary_tmp_new_from_values")
 
         // From include/ruby/internal/intern/class.h
+        .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
 
         // From include/ruby/internal/core/rclass.h
@@ -402,6 +403,7 @@ fn main() {
         .allowlist_function("rb_get_cikw_keywords_idx")
         .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
+        .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_yarv_fix_mod_fix")
         .allowlist_function("rb_FL_TEST")
@@ -418,6 +420,7 @@ fn main() {
         .allowlist_function("rb_RCLASS_ORIGIN")
         .allowlist_function("rb_method_basic_definition_p")
         .allowlist_function("rb_yjit_array_len")
+        .allowlist_function("rb_obj_class")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

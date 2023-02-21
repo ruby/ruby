@@ -172,4 +172,17 @@ class TestTimeout < Test::Unit::TestCase
     end;
   end
 
+  # https://github.com/ruby/timeout/issues/24
+  def test_handling_enclosed_threadgroup
+    assert_separately(%w[-rtimeout], <<-'end;')
+      Thread.new {
+        t = Thread.current
+        group = ThreadGroup.new
+        group.add(t)
+        group.enclose
+
+        assert_equal 42, Timeout.timeout(1) { 42 }
+      }.join
+    end;
+  end
 end

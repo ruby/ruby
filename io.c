@@ -852,8 +852,11 @@ rb_io_timeout(VALUE self)
  *    timeout = duration -> duration
  *    timeout = nil -> nil
  *
- *  Set the internal timeout to the specified duration or nil. The timeout
+ *  \Set the internal timeout to the specified duration or nil. The timeout
  *  applies to all blocking operations where possible.
+ *
+ *  When the operation performs longer than the timeout set, IO::TimeoutError
+ *  is raised.
  *
  *  This affects the following methods (but is not limited to): #gets, #puts,
  *  #read, #write, #wait_readable and #wait_writable. This also affects
@@ -2384,9 +2387,6 @@ rb_io_flush(VALUE io)
  *    f.close
  *
  *  Related: IO#pos=, IO#seek.
- *
- *  IO#pos is an alias for IO#tell.
- *
  */
 
 static VALUE
@@ -2654,9 +2654,6 @@ io_fillbuf(rb_io_t *fptr)
  *  Note that this method reads data to the input byte buffer.  So
  *  IO#sysread may not behave as you intend with IO#eof?, unless you
  *  call IO#rewind first (which is not available for some streams).
- *
- *  IO#eof? is an alias for IO#eof.
- *
  */
 
 VALUE
@@ -2846,8 +2843,6 @@ rb_io_fdatasync(VALUE io)
  *    $stderr.fileno            # => 2
  *    File.open('t.txt').fileno # => 10
  *    f.close
- *
- *  IO#to_i is an alias for IO#fileno.
  *
  */
 
@@ -4571,9 +4566,6 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "Fifth line"
  *
  *  Returns an Enumerator if no block is given.
- *
- *  IO#each is an alias for IO#each_line.
- *
  */
 
 static VALUE
@@ -5196,8 +5188,6 @@ rb_io_ungetc(VALUE io, VALUE c)
  *    f.close
  *    f = File.new('/dev/tty').isatty #=> true
  *    f.close
- *
- *  IO#tty? is an alias for IO#isatty.
  *
  */
 
@@ -15316,6 +15306,7 @@ Init_IO(void)
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
+    /* Can be raised by IO operations when IO#timeout= is set. */
     rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
     rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));

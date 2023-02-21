@@ -839,7 +839,6 @@ range_size(VALUE range)
  *    (1...4).to_a    # => [1, 2, 3]
  *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *
- *  Range#entries is an alias for Range#to_a.
  */
 
 static VALUE
@@ -1760,8 +1759,6 @@ range_eqq(VALUE range, VALUE val)
  *    ('a'..'d').cover?('cc')   # => true
  *
  *  Related: Range#cover?.
- *
- *  Range#member? is an alias for Range#include?.
  */
 
 static VALUE

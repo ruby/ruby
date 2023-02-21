@@ -101,8 +101,12 @@ impl<A: Allocator> VirtualMemory<A> {
         CodePtr(self.region_start)
     }
 
-    pub fn end_ptr(&self) -> CodePtr {
-        CodePtr(NonNull::new(self.region_start.as_ptr().wrapping_add(self.mapped_region_bytes)).unwrap())
+    pub fn mapped_end_ptr(&self) -> CodePtr {
+        self.start_ptr().add_bytes(self.mapped_region_bytes)
+    }
+
+    pub fn virtual_end_ptr(&self) -> CodePtr {
+        self.start_ptr().add_bytes(self.region_size_bytes)
     }
 
     /// Size of the region in bytes that we have allocated physical memory for.
@@ -208,10 +212,14 @@ impl<A: Allocator> VirtualMemory<A> {
         assert_eq!(start_ptr.into_usize() % self.page_size_bytes, 0);
 
         // Bounds check the request. We should only free memory we manage.
-        let region_range = self.region_start.as_ptr() as *const u8..self.end_ptr().raw_ptr();
+        let mapped_region = self.start_ptr().raw_ptr()..self.mapped_end_ptr().raw_ptr();
+        let virtual_region = self.start_ptr().raw_ptr()..self.virtual_end_ptr().raw_ptr();
         let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1).as_usize()).raw_ptr();
-        assert!(region_range.contains(&start_ptr.raw_ptr()));
-        assert!(region_range.contains(&last_byte_to_free));
+        assert!(mapped_region.contains(&start_ptr.raw_ptr()));
+        // On platforms where code page size != memory page size (e.g. Linux), we often need
+        // to free code pages that contain unmapped memory pages. When it happens on the last
+        // code page, it's more appropriate to check the last byte against the virtual region.
+        assert!(virtual_region.contains(&last_byte_to_free));
 
         self.allocator.mark_unused(start_ptr.0.as_ptr(), size);
     }

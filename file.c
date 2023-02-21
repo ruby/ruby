@@ -6374,7 +6374,11 @@ rb_file_load_ok(const char *path)
 #endif
                 0);
     int fd = rb_cloexec_open(path, mode, 0);
-    if (fd == -1) return 0;
+    if (fd < 0) {
+        if (!rb_gc_for_fd(errno)) return 0;
+        fd = rb_cloexec_open(path, mode, 0);
+        if (fd < 0) return 0;
+    }
     rb_update_max_fd(fd);
     ret = ruby_is_fd_loadable(fd);
     (void)close(fd);
