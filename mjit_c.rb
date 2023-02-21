@@ -192,6 +192,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_ary_new_from_values)'
     end
 
+    def rb_vm_splat_array
+      Primitive.cstmt! %{
+        extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
+        return SIZET2NUM((size_t)rb_vm_splat_array);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
