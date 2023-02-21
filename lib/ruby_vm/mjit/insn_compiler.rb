@@ -23,7 +23,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 51/101
+      # 52/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -67,7 +67,7 @@ module RubyVM::MJIT
       # opt_reverse
       # topn
       when :setn then setn(jit, ctx, asm)
-      # adjuststack
+      when :adjuststack then adjuststack(jit, ctx, asm)
       # defined
       # checkmatch
       # checkkeyword
@@ -464,7 +464,15 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # adjuststack
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def adjuststack(jit, ctx, asm)
+      n = jit.operand(0)
+      ctx.stack_pop(n)
+      KeepCompiling
+    end
+
     # defined
     # checkmatch
     # checkkeyword
