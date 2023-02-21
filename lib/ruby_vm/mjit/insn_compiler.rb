@@ -22,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 57/101
+      # 58/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -57,7 +57,7 @@ module RubyVM::MJIT
       when :expandarray then expandarray(jit, ctx, asm)
       # concatarray
       when :splatarray then splatarray(jit, ctx, asm)
-      # newhash
+      when :newhash then newhash(jit, ctx, asm)
       # newrange
       when :pop then pop(jit, ctx, asm)
       when :dup then dup(jit, ctx, asm)
@@ -474,7 +474,49 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # newhash
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def newhash(jit, ctx, asm)
+      num = jit.operand(0)
+
+      # Save the PC and SP because we are allocating
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      if num != 0
+        # val = rb_hash_new_with_size(num / 2);
+        asm.mov(C_ARGS[0], num / 2)
+        asm.call(C.rb_hash_new_with_size)
+
+        # Save the allocated hash as we want to push it after insertion
+        asm.push(C_RET)
+        asm.push(C_RET) # x86 alignment
+
+        # Get a pointer to the values to insert into the hash
+        asm.lea(:rcx, ctx.stack_opnd(num - 1))
+
+        # rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+        asm.mov(C_ARGS[0], num)
+        asm.mov(C_ARGS[1], :rcx)
+        asm.mov(C_ARGS[2], C_RET)
+        asm.call(C.rb_hash_bulk_insert)
+
+        asm.pop(:rax)
+        asm.pop(:rax)
+
+        ctx.stack_pop(num)
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, :rax)
+      else
+        # val = rb_hash_new();
+        asm.call(C.rb_hash_new)
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+      end
+
+      KeepCompiling
+    end
+
     # newrange
 
     # @param jit [RubyVM::MJIT::JITState]
