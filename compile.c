@@ -8270,7 +8270,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     NODE *args_node = node->nd_args;
 
     if (parent_block != NULL) {
-        COMPILE_ERROR(iseq, nd_line(line_node), "should not call builtins here.");
+        COMPILE_ERROR(ERROR_ARGS_AT(line_node) "should not call builtins here.");
         return COMPILE_NG;
     }
     else {
