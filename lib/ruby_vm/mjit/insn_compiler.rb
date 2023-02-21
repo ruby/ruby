@@ -5,7 +5,6 @@ module RubyVM::MJIT
     def initialize(cb, ocb, exit_compiler)
       @ocb = ocb
       @exit_compiler = exit_compiler
-      @gc_refs = [] # TODO: GC offsets?
 
       @full_cfunc_return = Assembler.new.then do |asm|
         @exit_compiler.compile_full_cfunc_return(asm)
@@ -23,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 55/101
+      # 56/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -46,7 +45,7 @@ module RubyVM::MJIT
       when :putself then putself(jit, ctx, asm)
       when :putobject then putobject(jit, ctx, asm)
       # putspecialobject
-      # putstring
+      when :putstring then putstring(jit, ctx, asm)
       # concatstrings
       # anytostring
       # toregexp
@@ -299,7 +298,26 @@ module RubyVM::MJIT
     end
 
     # putspecialobject
-    # putstring
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def putstring(jit, ctx, asm)
+      put_val = jit.operand(0, ruby: true)
+
+      # Save the PC and SP because the callee will allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], to_value(put_val))
+      asm.call(C.rb_ec_str_resurrect)
+
+      stack_top = ctx.stack_push
+      asm.mov(stack_top, C_RET)
+
+      KeepCompiling
+    end
+
     # concatstrings
     # anytostring
     # toregexp
@@ -2508,7 +2526,7 @@ module RubyVM::MJIT
     end
 
     def to_value(obj)
-      @gc_refs << obj
+      GC_REFS << obj
       C.to_value(obj)
     end
   end

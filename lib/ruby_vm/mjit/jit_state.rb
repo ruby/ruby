@@ -13,9 +13,13 @@ module RubyVM::MJIT
       Compiler.decode_insn(C.VALUE.new(pc).*)
     end
 
-    def operand(index, signed: false)
+    def operand(index, signed: false, ruby: false)
       addr = pc + (index + 1) * Fiddle::SIZEOF_VOIDP
-      Fiddle::Pointer.new(addr)[0, Fiddle::SIZEOF_VOIDP].unpack(signed ? 'q' : 'Q')[0]
+      value = Fiddle::Pointer.new(addr)[0, Fiddle::SIZEOF_VOIDP].unpack(signed ? 'q' : 'Q')[0]
+      if ruby
+        value = C.to_ruby(value)
+      end
+      value
     end
 
     def at_current_insn?
