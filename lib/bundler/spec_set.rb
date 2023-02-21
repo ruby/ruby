@@ -24,6 +24,7 @@ module Bundler
 
         name = dep[0].name
         platform = dep[1]
+        incomplete = false
 
         key = [name, platform]
         next if handled.key?(key)
@@ -36,11 +37,14 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
+            incomplete = true if d.name != "bundler" && lookup[d.name].empty?
             deps << [d, dep[1]]
           end
-        elsif check
-          @incomplete_specs += lookup[name]
+        else
+          incomplete = true
         end
+
+        @incomplete_specs += lookup[name] if incomplete && check
       end
 
       specs
