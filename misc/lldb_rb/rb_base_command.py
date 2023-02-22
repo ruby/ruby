@@ -34,6 +34,7 @@ class RbBaseCommand:
                 if name.startswith("RUBY_T_"):
                     value_types.append(name)
         g["value_types"] = value_types
+        return g
 
     def __init__(self, debugger, _internal_dict):
         self.internal_dict = _internal_dict
