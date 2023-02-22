@@ -57,7 +57,7 @@ require 'tmpdir'
 # Note that Tempfile.create returns a File instance instead of a Tempfile, which
 # also avoids the overhead and complications of delegation.
 #
-#   Tempfile.open('foo') do |file|
+#   Tempfile.create('foo') do |file|
 #      # ...do something with file...
 #   end
 #
