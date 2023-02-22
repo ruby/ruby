@@ -5954,7 +5954,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
-#endif 
+#endif
 }
 
 static int
