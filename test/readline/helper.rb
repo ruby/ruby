@@ -1,8 +1,6 @@
 begin
   # for standalone test suite on ruby/logger
-  require 'test/unit'
-  require_relative '../lib/core_assertions'
-  Test::Unit::TestCase.include Test::Unit::CoreAssertions
+  require_relative '../lib/envutil'
 rescue LoadError
 end
 
