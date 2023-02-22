@@ -37,12 +37,10 @@ class RbBaseCommand:
         return g
 
     def __init__(self, debugger, _internal_dict):
+        self.ruby_globals = RbBaseCommand.lldb_init(debugger)
         self.internal_dict = _internal_dict
 
     def __call__(self, debugger, command, exe_ctx, result):
-        if not ("RUBY_Qfalse" in globals()):
-            RbBaseCommand.lldb_init(debugger)
-
         self.build_environment(debugger)
         self.call(debugger, command, exe_ctx, result)
 
