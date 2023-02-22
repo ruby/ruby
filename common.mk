@@ -1411,7 +1411,7 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
-extract-gems$(gnumake:yes=-sequential): clone-bundled-gems-src
+extract-gems$(gnumake:yes=-sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
 clone-bundled-gems-src: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
