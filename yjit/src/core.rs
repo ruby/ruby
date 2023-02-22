@@ -294,6 +294,15 @@ pub enum YARVOpnd {
     StackOpnd(u16),
 }
 
+impl From<Opnd> for YARVOpnd {
+    fn from(value: Opnd) -> Self {
+        match value {
+            Opnd::Stack { idx, .. } => StackOpnd(idx as u16),
+            _ => unreachable!("{:?} cannot be converted to YARVOpnd", value)
+        }
+    }
+}
+
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
@@ -1176,9 +1185,7 @@ impl Context {
         self.stack_size += 1;
         self.sp_offset += 1;
 
-        // SP points just above the topmost value
-        let offset = ((self.sp_offset as i32) - 1) * (SIZEOF_VALUE as i32);
-        return Opnd::mem(64, SP, offset);
+        return self.stack_opnd(0);
     }
 
     /// Push one new value on the temp stack
@@ -1206,9 +1213,7 @@ impl Context {
     pub fn stack_pop(&mut self, n: usize) -> Opnd {
         assert!(n <= self.stack_size.into());
 
-        // SP points just above the topmost value
-        let offset = ((self.sp_offset as i32) - 1) * (SIZEOF_VALUE as i32);
-        let top = Opnd::mem(64, SP, offset);
+        let top = self.stack_opnd(0);
 
         // Clear the types of the popped values
         for i in 0..n {
@@ -1243,10 +1248,7 @@ impl Context {
 
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        // SP points just above the topmost value
-        let offset = ((self.sp_offset as i32) - 1 - idx) * (SIZEOF_VALUE as i32);
-        let opnd = Opnd::mem(64, SP, offset);
-        return opnd;
+        Opnd::Stack { idx, sp_offset: self.sp_offset, num_bits: 64 }
     }
 
     /// Get the type of an instruction operand
