@@ -5951,6 +5951,10 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
     gc_mode_transition(objspace, gc_mode_none);
+
+#if RGENGC_CHECK_MODE >= 2
+    gc_verify_internal_consistency(objspace);
+#endif 
 }
 
 static int
@@ -9765,14 +9769,6 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     during_gc = FALSE;
 
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
-
-#if RGENGC_CHECK_MODE >= 2
-    if (event == gc_enter_event_continue && gc_mode(objspace) == gc_mode_none) {
-        GC_ASSERT(!during_gc);
-        // sweep finished
-        gc_verify_internal_consistency(objspace);
-    }
-#endif
 }
 
 static void
