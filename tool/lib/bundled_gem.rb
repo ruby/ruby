@@ -87,13 +87,16 @@ module BundledGem
   end
 
   def checkout(gemdir, repo, rev, git: $git)
-    return unless rev
+    return unless rev or !git or git.empty?
     unless File.exist?("#{gemdir}/.git")
       puts "Cloning #{repo}"
-      system("#{git} clone #{repo} #{gemdir}") or raise
+      command = "#{git} clone #{repo} #{gemdir}"
+      system(command) or raise "failed: #{command}"
     end
     puts "Update #{File.basename(gemdir)} to #{rev}"
-    system("#{git} fetch origin #{rev}", chdir: gemdir)
-    system("#{git} checkout --detach #{rev}", chdir: gemdir)
+    command = "#{git} fetch origin #{rev}"
+    system(command, chdir: gemdir) or raise "failed: #{command}"
+    command = "#{git} checkout --detach #{rev}"
+    system(command, chdir: gemdir) or raise "failed: #{command}"
   end
 end
