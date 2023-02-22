@@ -10,8 +10,8 @@ class TestGemCommandsExecCommand < Gem::TestCase
     @cmd = Gem::Commands::ExecCommand.new
 
     @orig_args = Gem::Command.build_args
-
-    common_installer_setup
+    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
+    @orig_extra_args = Gem::Command.extra_args.dup
 
     @gem_home = Gem.dir
     @gem_path = Gem.path
@@ -27,6 +27,8 @@ class TestGemCommandsExecCommand < Gem::TestCase
     common_installer_teardown
 
     Gem::Command.build_args = @orig_args
+    Gem::Command.specific_extra_args_hash = @orig_specific_extra_args
+    Gem::Command.extra_args = @orig_extra_args
     Gem.configuration = nil
   end
 
