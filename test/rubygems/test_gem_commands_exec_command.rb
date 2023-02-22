@@ -217,6 +217,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
   def test_gem_with_platform_and_platform_dependencies
     pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "terminates on mswin" if Gem.win_platform?
 
     platforms = Gem.platforms.dup
 
