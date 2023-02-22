@@ -14,6 +14,7 @@ use YARVOpnd::*;
 
 use std::cmp;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int, c_uint};
@@ -7751,6 +7752,9 @@ pub struct CodegenGlobals {
 
     /// How many times code GC has been executed.
     code_gc_count: usize,
+
+    /// Shared contexts for deduplication.
+    context_set: HashSet<PackedContext>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -7845,6 +7849,7 @@ impl CodegenGlobals {
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
+            context_set: HashSet::new(),
         };
 
         // Register the method codegen functions
@@ -8007,6 +8012,33 @@ impl CodegenGlobals {
 
     pub fn get_code_gc_count() -> usize {
         CodegenGlobals::get_instance().code_gc_count
+    }
+
+    /// Return an existing Rc<Context> for any Context that has been used here
+    pub fn deduplicate_context(ctx: &Context) -> PackedContext {
+        let packed_ctx = pack_context(ctx);
+        match CodegenGlobals::get_instance().context_set.get(&packed_ctx) {
+            Some(ctxref) => ctxref.clone(),
+            None => {
+                CodegenGlobals::get_instance().context_set.insert(packed_ctx.clone());
+                packed_ctx
+            }
+        }
+    }
+
+    /// The number of unique Contexts
+    pub fn get_context_set_count() -> usize {
+        CodegenGlobals::get_instance().context_set.len()
+    }
+
+    /// An esimated number of bytes consumed for storing unique Contexts
+    pub fn get_context_set_size() -> usize {
+        let mut size = 0;
+        for packed_ctx in CodegenGlobals::get_instance().context_set.iter() {
+            size += size_of::<PackedContext>();
+            size += packed_ctx.len() * size_of::<ContextDelta>();
+        }
+        size
     }
 }
 

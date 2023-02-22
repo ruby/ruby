@@ -25,7 +25,7 @@ pub const MAX_TEMP_TYPES: usize = 8;
 const MAX_LOCAL_TYPES: usize = 8;
 
 // Represent the type of a value (local/stack/self) in YJIT
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Type {
     Unknown,
     UnknownImm,
@@ -270,7 +270,7 @@ impl Type {
 
 // Potential mapping of a value on the temporary stack to
 // self, a local variable or constant so that we can track its type
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum TempMapping {
     MapToStack, // Normal stack value
     MapToSelf,  // Temp maps to the self operand
@@ -331,6 +331,133 @@ pub struct Context {
     temp_mapping: [TempMapping; MAX_TEMP_TYPES],
 }
 
+// Compressed version of Context
+pub type PackedContext = Rc<[ContextDelta]>;
+
+// The fields of each variant should only use 2 bytes, which makes this enum 3 bytes.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ContextDelta {
+    // stack_size, sp_offset: Small case
+    SmallStack(u8, i8),
+    // stack_size: Large case
+    //StackSize(u8, u8), // TODO: implement this (using u16 here takes more than 2 bytes)
+    // sp_offset: Large case
+    //SpOffset(i8, i8),  // TODO: implement this (using i16 here takes more than 2 bytes)
+    // chain_depth
+    ChainDepth(u8),
+    // local_types
+    LocalType(u8, Type),
+    // temp_types
+    TempType(u8, Type),
+    // self_type
+    SelfType(Type),
+    // temp_mapping: Not using (u8, TempMapping) to save 1 byte.
+    TempMapping0(TempMapping),
+    TempMapping1(TempMapping),
+    TempMapping2(TempMapping),
+    TempMapping3(TempMapping),
+    TempMapping4(TempMapping),
+    TempMapping5(TempMapping),
+    TempMapping6(TempMapping),
+    TempMapping7(TempMapping),
+}
+
+// Deflate Context
+pub fn pack_context(ctx: &Context) -> PackedContext {
+    let mut packed = vec![];
+
+    if ctx.stack_size != 0 || ctx.sp_offset != 0 {
+        match (u8::try_from(ctx.stack_size), i8::try_from(ctx.sp_offset)) {
+            (Ok(stack_size), Ok(sp_offset)) => packed.push(
+                ContextDelta::SmallStack(stack_size, sp_offset)
+            ),
+            _ => {
+                unreachable!("not implemented yet")
+                //if ctx.stack_size != 0 {
+                //    packed.push(ContextDelta::StackSize(ctx.stack_size));
+                //}
+                //if ctx.sp_offset != 0 {
+                //    packed.push(ContextDelta::SpOffset(ctx.sp_offset));
+                //}
+            },
+        }
+    }
+
+    if ctx.chain_depth > 0 {
+        packed.push(ContextDelta::ChainDepth(ctx.chain_depth));
+    }
+
+    for (i, &local_type) in ctx.local_types.iter().enumerate() {
+        if local_type != Type::Unknown {
+            packed.push(ContextDelta::LocalType(i.try_into().unwrap(), local_type));
+        }
+    }
+
+    for (i, &temp_type) in ctx.temp_types.iter().enumerate() {
+        if temp_type != Type::Unknown {
+            packed.push(ContextDelta::TempType(i.try_into().unwrap(), temp_type));
+        }
+    }
+
+    if ctx.self_type != Type::Unknown {
+        packed.push(ContextDelta::SelfType(ctx.self_type));
+    }
+
+    for (i, &temp_mapping) in ctx.temp_mapping.iter().enumerate() {
+        if temp_mapping != TempMapping::MapToStack {
+            match i {
+                0 => packed.push(ContextDelta::TempMapping0(temp_mapping)),
+                1 => packed.push(ContextDelta::TempMapping1(temp_mapping)),
+                2 => packed.push(ContextDelta::TempMapping2(temp_mapping)),
+                3 => packed.push(ContextDelta::TempMapping3(temp_mapping)),
+                4 => packed.push(ContextDelta::TempMapping4(temp_mapping)),
+                5 => packed.push(ContextDelta::TempMapping5(temp_mapping)),
+                6 => packed.push(ContextDelta::TempMapping6(temp_mapping)),
+                7 => packed.push(ContextDelta::TempMapping7(temp_mapping)),
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    Rc::from(packed.into_boxed_slice())
+}
+
+// Inflate Context
+pub fn unpack_context(packed: &PackedContext) -> Context {
+    let mut ctx = Context::default();
+
+    for delta in packed.iter() {
+        match delta {
+            ContextDelta::SmallStack(stack_size, sp_offset) => {
+                ctx.stack_size = u16::from(*stack_size);
+                ctx.sp_offset = i16::from(*sp_offset);
+            },
+            ContextDelta::ChainDepth(chain_depth) => {
+                ctx.chain_depth = *chain_depth;
+            },
+            ContextDelta::LocalType(i, local_type) => {
+                ctx.local_types[(*i).as_usize()] = *local_type;
+            },
+            ContextDelta::TempType(i, temp_type) => {
+                ctx.temp_types[(*i).as_usize()] = *temp_type;
+            },
+            ContextDelta::SelfType(self_type) => {
+                ctx.self_type = *self_type;
+            },
+            ContextDelta::TempMapping0(temp_mapping) => ctx.temp_mapping[0] = *temp_mapping,
+            ContextDelta::TempMapping1(temp_mapping) => ctx.temp_mapping[1] = *temp_mapping,
+            ContextDelta::TempMapping2(temp_mapping) => ctx.temp_mapping[2] = *temp_mapping,
+            ContextDelta::TempMapping3(temp_mapping) => ctx.temp_mapping[3] = *temp_mapping,
+            ContextDelta::TempMapping4(temp_mapping) => ctx.temp_mapping[4] = *temp_mapping,
+            ContextDelta::TempMapping5(temp_mapping) => ctx.temp_mapping[5] = *temp_mapping,
+            ContextDelta::TempMapping6(temp_mapping) => ctx.temp_mapping[6] = *temp_mapping,
+            ContextDelta::TempMapping7(temp_mapping) => ctx.temp_mapping[7] = *temp_mapping,
+        }
+    }
+
+    ctx
+}
+
 /// Tuple of (iseq, idx) used to identify basic blocks
 /// There are a lot of blockid objects so we try to keep the size small.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -379,8 +506,8 @@ impl BranchTarget {
 
     fn get_ctx(&self) -> Context {
         match self {
-            BranchTarget::Stub(stub) => stub.ctx.clone(),
-            BranchTarget::Block(blockref) => blockref.borrow().ctx.clone(),
+            BranchTarget::Stub(stub) => unpack_context(&stub.ctx),
+            BranchTarget::Block(blockref) => unpack_context(&blockref.borrow().ctx),
         }
     }
 
@@ -403,7 +530,7 @@ impl BranchTarget {
 struct BranchStub {
     address: Option<CodePtr>,
     id: BlockId,
-    ctx: Context,
+    ctx: PackedContext,
 }
 
 /// Store info about an outgoing branch in a code segment
@@ -477,7 +604,7 @@ pub struct Block {
 
     // Context at the start of the block
     // This should never be mutated
-    ctx: Context,
+    ctx: PackedContext,
 
     // Positions where the generated code starts and ends
     start_addr: CodePtr,
@@ -923,7 +1050,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     // For each version matching the blockid
     for blockref in versions.iter_mut() {
         let block = blockref.borrow();
-        let diff = ctx.diff(&block.ctx);
+        let diff = ctx.diff(&unpack_context(&block.ctx));
 
         // Note that we always prefer the first matching
         // version found because of inline-cache chains
@@ -978,7 +1105,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     let block = blockref.borrow();
 
     // Function entry blocks must have stack size 0
-    assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0));
+    assert!(!(block.blockid.idx == 0 && unpack_context(&block.ctx).stack_size > 0));
 
     let version_list = get_or_create_version_list(block.blockid);
 
@@ -1033,7 +1160,7 @@ impl Block {
         let block = Block {
             blockid,
             end_idx: 0,
-            ctx: ctx.clone(),
+            ctx: CodegenGlobals::deduplicate_context(ctx),
             start_addr,
             end_addr: None,
             incoming: Vec::new(),
@@ -1057,7 +1184,7 @@ impl Block {
     }
 
     pub fn get_ctx(&self) -> Context {
-        self.ctx.clone()
+        unpack_context(&self.ctx)
     }
 
     pub fn get_ctx_count(&self) -> usize {
@@ -2019,7 +2146,7 @@ fn set_branch_target(
         branch.targets[target_idx.as_usize()] = Some(Box::new(BranchTarget::Stub(Box::new(BranchStub {
             address: Some(stub_addr),
             id: target,
-            ctx: ctx.clone(),
+            ctx: CodegenGlobals::deduplicate_context(&ctx),
         }))));
     }
 }
@@ -2133,7 +2260,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
 
     let mut new_target = BranchTarget::Stub(Box::new(BranchStub {
         address: None,
-        ctx: ctx.clone(),
+        ctx: CodegenGlobals::deduplicate_context(&ctx),
         id: target0,
     }));
 
@@ -2367,7 +2494,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         // }
 
         // Create a stub for this branch target or rewire it to a valid block
-        set_branch_target(target_idx as u32, block.blockid, &block.ctx, branchref, &mut branch, ocb);
+        set_branch_target(target_idx as u32, block.blockid, &unpack_context(&block.ctx), branchref, &mut branch, ocb);
 
         if branch.targets[target_idx].is_none() {
             // We were unable to generate a stub (e.g. OOM). Use the block's
