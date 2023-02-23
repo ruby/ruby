@@ -407,6 +407,35 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
     }
 }
 
+/*
+ * call-seq:
+ *   IO::Buffer.string(length) {|io_buffer| ... read/write io_buffer ...} -> string
+ *
+ * Creates a new string of the given length and yields a IO::Buffer instance
+ * to the block which uses the string as a source. The block is expected to
+ * write to the buffer and the string will be returned.
+ *
+ *    IO::Buffer.string(4) do |buffer|
+ *      buffer.set_string("Ruby")
+ *    end
+ *    # => "Ruby"
+ */
+VALUE
+rb_io_buffer_type_string(VALUE klass, VALUE length)
+{
+    VALUE string = rb_str_new(NULL, NUM2SIZET(length));
+
+    struct io_buffer_for_yield_instance_arguments arguments = {
+        .klass = klass,
+        .string = string,
+        .instance = Qnil,
+    };
+
+    rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
+
+    return string;
+}
+
 VALUE
 rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 {
@@ -3246,6 +3275,7 @@ Init_IO_Buffer(void)
 
     rb_define_alloc_func(rb_cIOBuffer, rb_io_buffer_type_allocate);
     rb_define_singleton_method(rb_cIOBuffer, "for", rb_io_buffer_type_for, 1);
+    rb_define_singleton_method(rb_cIOBuffer, "string", rb_io_buffer_type_string, 1);
 
 #ifdef _WIN32
     SYSTEM_INFO info;
