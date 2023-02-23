@@ -2011,7 +2011,7 @@ fn gen_get_ivar(
         }
     };
 
-    // Guard heap object (recv_opnd must be used before stack_oop)
+    // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(ctx, asm, recv, recv_opnd, side_exit);
 
     // Pop receiver if it's on the temp stack
