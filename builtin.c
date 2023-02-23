@@ -3,7 +3,7 @@
 #include "iseq.h"
 #include "builtin.h"
 
-#ifdef CROSS_COMPILING
+#if defined(CROSS_COMPILING) || defined(UNIVERSAL_BINARY)
 
 #define INCLUDED_BY_BUILTIN_C 1
 #include "mini_builtin.c"
