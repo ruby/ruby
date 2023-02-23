@@ -2,7 +2,7 @@
 // DO NOT MODIFY THIS FILE DIRECTLY.
 // auto-generated file by tool/generic_erb.rb
 // with template/builtin_binary.inc.tmpl
-% unless ARGV.include?('--cross=yes')
+% unless ARGV.include?('--cross=yes') || ARGV.include?('--universal=yes')
 %   ary = RubyVM.enum_for(:each_builtin).to_a
 %   ary.each{|feature, iseq|
 
