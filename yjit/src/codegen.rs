@@ -1292,39 +1292,63 @@ fn gen_newrange(
 }
 
 fn guard_object_is_heap(
+    ctx: &mut Context,
     asm: &mut Assembler,
-    object_opnd: Opnd,
+    object: Opnd,
+    object_opnd: YARVOpnd,
     side_exit: Target,
 ) {
+    let object_type = ctx.get_opnd_type(object_opnd);
+    if object_type.is_heap() {
+        return;
+    }
+
     asm.comment("guard object is heap");
 
     // Test that the object is not an immediate
-    asm.test(object_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
+    asm.test(object, (RUBY_IMMEDIATE_MASK as u64).into());
     asm.jnz(side_exit);
 
     // Test that the object is not false
-    asm.cmp(object_opnd, Qfalse.into());
+    asm.cmp(object, Qfalse.into());
     asm.je(side_exit);
+
+    if object_type.diff(Type::UnknownHeap) != usize::MAX {
+        ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap);
+    }
 }
 
 fn guard_object_is_array(
+    ctx: &mut Context,
     asm: &mut Assembler,
-    object_opnd: Opnd,
+    object: Opnd,
+    object_opnd: YARVOpnd,
     side_exit: Target,
 ) {
+    let object_type = ctx.get_opnd_type(object_opnd);
+    if object_type.is_array() {
+        return;
+    }
+
+    let object_reg = match object {
+        Opnd::Reg(_) => object,
+        _ => asm.load(object),
+    };
+    guard_object_is_heap(ctx, asm, object_reg, object_opnd, side_exit);
+
     asm.comment("guard object is array");
 
     // Pull out the type mask
-    let object_reg = match object_opnd {
-        Opnd::Reg(_) => object_opnd,
-        _ => asm.load(object_opnd),
-    };
     let flags_opnd = Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS);
     let flags_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
 
     // Compare the result with T_ARRAY
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
     asm.jne(side_exit);
+
+    if object_type.diff(Type::TArray) != usize::MAX {
+        ctx.upgrade_opnd_type(object_opnd, Type::TArray);
+    }
 }
 
 /// This guards that a special flag is not set on a hash.
@@ -1402,12 +1426,12 @@ fn gen_expandarray(
 
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    let array_type = ctx.get_opnd_type(StackOpnd(0));
-    let array_opnd = ctx.stack_pop(1);
+    let array_opnd = ctx.stack_opnd(0);
 
     // num is the number of requested values. If there aren't enough in the
     // array then we're going to push on nils.
-    if matches!(array_type, Type::Nil) {
+    if ctx.get_opnd_type(array_opnd.into()) == Type::Nil {
+        ctx.stack_pop(1); // pop after using the type info
         // special case for a, b = nil pattern
         // push N nils onto the stack
         for _ in 0..num {
@@ -1418,23 +1442,21 @@ fn gen_expandarray(
     }
 
     // Move the array from the stack and check that it's an array.
-    let array_reg = asm.load(array_opnd);
-    guard_object_is_heap(
-        asm,
-        array_reg,
-        counted_exit!(ocb, side_exit, expandarray_not_array),
-    );
     guard_object_is_array(
+        ctx,
         asm,
-        array_reg,
+        array_opnd,
+        array_opnd.into(),
         counted_exit!(ocb, side_exit, expandarray_not_array),
     );
+    let array_opnd = ctx.stack_pop(1); // pop after using the type info
 
     // If we don't actually want any values, then just return.
     if num == 0 {
         return KeepCompiling;
     }
 
+    let array_reg = asm.load(array_opnd);
     let array_len_opnd = get_array_len(asm, array_reg);
 
     // Only handle the case where the number of values in the array is greater
@@ -1989,22 +2011,12 @@ fn gen_get_ivar(
         }
     };
 
-    // must be before stack_pop
-    let recv_type = ctx.get_opnd_type(recv_opnd);
-
-    // Upgrade type
-    if !recv_type.is_heap() {
-        ctx.upgrade_opnd_type(recv_opnd, Type::UnknownHeap);
-    }
+    // Guard heap object (recv_opnd must be used before stack_oop)
+    guard_object_is_heap(ctx, asm, recv, recv_opnd, side_exit);
 
     // Pop receiver if it's on the temp stack
     if recv_opnd != SelfOpnd {
         ctx.stack_pop(1);
-    }
-
-    // Guard heap object
-    if !recv_type.is_heap() {
-        guard_object_is_heap(asm, recv, side_exit);
     }
 
     // Compile time self is embedded and the ivar index lands within the object
@@ -2221,16 +2233,12 @@ fn gen_setinstancevariable(
         let mut recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
 
         let recv_opnd = SelfOpnd;
-        let recv_type = ctx.get_opnd_type(recv_opnd);
 
         // Generate a side exit
         let side_exit = get_side_exit(jit, ocb, ctx);
 
         // Upgrade type
-        if !recv_type.is_heap() { // Must be a heap type
-            ctx.upgrade_opnd_type(recv_opnd, Type::UnknownHeap);
-            guard_object_is_heap(asm, recv, side_exit);
-        }
+        guard_object_is_heap(ctx, asm, recv, recv_opnd, side_exit);
 
         let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
         let shape_id_offset = unsafe { rb_shape_id_offset() };
@@ -5106,20 +5114,16 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
 fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: Target) {
-
     asm.comment("push_splat_args");
 
     let array_opnd = ctx.stack_opnd(0);
     let array_reg = asm.load(array_opnd);
 
-    guard_object_is_heap(
-        asm,
-        array_reg,
-        counted_exit!(ocb, side_exit, send_splat_not_array),
-    );
     guard_object_is_array(
+        ctx,
         asm,
         array_reg,
+        array_opnd.into(),
         counted_exit!(ocb, side_exit, send_splat_not_array),
     );
 
@@ -5791,16 +5795,10 @@ fn gen_send_iseq(
     // Note that you can't have side exits after this arg0 splat.
     if block_arg0_splat {
         let arg0_opnd = ctx.stack_opnd(0);
-        let arg0_type = ctx.get_opnd_type(arg0_opnd.into());
 
         // Only handle the case that you don't need to_ary conversion
         let not_array_exit = counted_exit!(ocb, side_exit, invokeblock_iseq_arg0_not_array);
-        if !arg0_type.is_heap() {
-            guard_object_is_heap(asm, arg0_opnd, not_array_exit);
-        }
-        if !arg0_type.is_array() {
-            guard_object_is_array(asm, arg0_opnd, not_array_exit);
-        }
+        guard_object_is_array(ctx, asm, arg0_opnd, arg0_opnd.into(), not_array_exit);
 
         // Only handle the same that the array length == ISEQ's lead_num (most common)
         let arg0_len_opnd = get_array_len(asm, arg0_opnd);
