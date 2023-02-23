@@ -1603,6 +1603,7 @@ module Net   #:nodoc:
     #
     # With a block given, calls the block with the response body:
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.get('/todos/1') do |res|
     #     p res
     #   end # => #<Net::HTTPOK 200 OK readbody=true>
@@ -1660,6 +1661,7 @@ module Net   #:nodoc:
     # With a block given, calls the block with the response body:
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.post('/todos', data) do |res|
     #     p res
     #   end # => #<Net::HTTPCreated 201 Created readbody=true>
@@ -1693,6 +1695,7 @@ module Net   #:nodoc:
     # With a block given, calls the block with the response body:
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.patch('/todos/1', data) do |res|
     #     p res
     #   end # => #<Net::HTTPOK 200 OK readbody=true>
@@ -1716,6 +1719,7 @@ module Net   #:nodoc:
     # created from string +path+, string +data+, and initial headers hash +initheader+.
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.put('/todos/1', data) # => #<Net::HTTPOK 200 OK readbody=true>
     #
     def put(path, data, initheader = nil)
@@ -1729,6 +1733,7 @@ module Net   #:nodoc:
     # created from string +path+, string +body+, and initial headers hash +initheader+.
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.proppatch('/todos/1', data)
     #
     def proppatch(path, body, initheader = nil)
@@ -1742,6 +1747,7 @@ module Net   #:nodoc:
     # created from string +path+, string +body+, and initial headers hash +initheader+.
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.lock('/todos/1', data)
     #
     def lock(path, body, initheader = nil)
@@ -1755,6 +1761,7 @@ module Net   #:nodoc:
     # created from string +path+, string +body+, and initial headers hash +initheader+.
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.unlock('/todos/1', data)
     #
     def unlock(path, body, initheader = nil)
@@ -1767,6 +1774,7 @@ module Net   #:nodoc:
     # The request is based on the Net::HTTP::Options object
     # created from string +path+ and initial headers hash +initheader+.
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.options('/')
     #
     def options(path, initheader = nil)
@@ -1780,6 +1788,7 @@ module Net   #:nodoc:
     # created from string +path+, string +body+, and initial headers hash +initheader+.
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
+    #   http = Net::HTTP.new(hostname)
     #   http.propfind('/todos/1', data)
     #
     def propfind(path, body = nil, initheader = {'Depth' => '0'})
@@ -1792,6 +1801,7 @@ module Net   #:nodoc:
     # The request is based on the Net::HTTP::Delete object
     # created from string +path+ and initial headers hash +initheader+.
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.delete('/todos/1')
     #
     def delete(path, initheader = {'Depth' => 'Infinity'})
@@ -1804,6 +1814,7 @@ module Net   #:nodoc:
     # The request is based on the Net::HTTP::Move object
     # created from string +path+ and initial headers hash +initheader+.
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.move('/todos/1')
     #
     def move(path, initheader = nil)
@@ -1816,6 +1827,7 @@ module Net   #:nodoc:
     # The request is based on the Net::HTTP::Copy object
     # created from string +path+ and initial headers hash +initheader+.
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.copy('/todos/1')
     #
     def copy(path, initheader = nil)
@@ -1830,6 +1842,7 @@ module Net   #:nodoc:
     #
     #   data = '{"userId": 1, "id": 1, "title": "delectus aut autem", "completed": false}'
     #   http.mkcol('/todos/1', data)
+    #   http = Net::HTTP.new(hostname)
     #
     def mkcol(path, body = nil, initheader = nil)
       request(Mkcol.new(path, initheader), body)
@@ -1841,6 +1854,7 @@ module Net   #:nodoc:
     # The request is based on the Net::HTTP::Trace object
     # created from string +path+ and initial headers hash +initheader+.
     #
+    #   http = Net::HTTP.new(hostname)
     #   http.trace('/todos/1')
     #
     def trace(path, initheader = nil)
@@ -1873,50 +1887,56 @@ module Net   #:nodoc:
       request(Get.new(path, initheader), &block)
     end
 
-    # Sends a HEAD request to the +path+ and returns the response
-    # as a Net::HTTPResponse object.
+    # Sends a HEAD request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # Returns the response.
+    # The request is based on the Net::HTTP::Head object
+    # created from string +path+ and initial headers hash +initheader+.
     #
-    # This method never raises Net::* exceptions.
-    #
-    #     response = http.request_head('/index.html')
-    #     p response['content-type']
+    #   http = Net::HTTP.new(hostname)
+    #   http.head('/todos/1') # => #<Net::HTTPOK 200 OK readbody=true>
     #
     def request_head(path, initheader = nil, &block)
       request(Head.new(path, initheader), &block)
     end
 
-    # Sends a POST request to the +path+.
+    # Sends a POST request to the server;
+    # forms the response into a Net::HTTPResponse object.
     #
-    # Returns the response as a Net::HTTPResponse object.
+    # The request is based on the Net::HTTP::Post object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
     #
-    # When called with a block, the block is passed an HTTPResponse
-    # object.  The body of that response will not have been read yet;
-    # the block can process it using HTTPResponse#read_body, if desired.
+    # With no block given, returns the response object:
     #
-    # Returns the response.
+    #   http = Net::HTTP.new(hostname)
+    #   http.post('/todos', 'xyzzy')
+    #   # => #<Net::HTTPCreated 201 Created readbody=true>
     #
-    # This method never raises Net::* exceptions.
+    # With a block given, calls the block with the response body
+    # and returns the response object:
     #
-    #     # example
-    #     response = http.request_post('/cgi-bin/nice.rb', 'datadatadata...')
-    #     p response.status
-    #     puts response.body          # body is already read in this case
+    #   http.post('/todos', 'xyzzy') do |res|
+    #     p res
+    #   end # => #<Net::HTTPCreated 201 Created readbody=true>
     #
-    #     # using block
-    #     http.request_post('/cgi-bin/nice.rb', 'datadatadata...') {|response|
-    #       p response.status
-    #       p response['content-type']
-    #       response.read_body do |str|   # read body now
-    #         print str
-    #       end
-    #     }
+    # Output:
+    #
+    #   "{\n  \"xyzzy\": \"\",\n  \"id\": 201\n}"
     #
     def request_post(path, data, initheader = nil, &block) # :yield: +response+
       request Post.new(path, initheader), data, &block
     end
 
+    # Sends a PUT request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
+    #
+    # The request is based on the Net::HTTP::Put object
+    # created from string +path+, string +data+, and initial headers hash +initheader+.
+    #
+    #   http = Net::HTTP.new(hostname)
+    #   http.put('/todos/1', 'xyzzy')
+    #   # => #<Net::HTTPOK 200 OK readbody=true>
+    #
     def request_put(path, data, initheader = nil, &block)   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
@@ -1926,16 +1946,25 @@ module Net   #:nodoc:
     alias post2  request_post   #:nodoc: obsolete
     alias put2   request_put    #:nodoc: obsolete
 
-
-    # Sends an \HTTP request to the \HTTP server.
-    # Also sends a DATA string if +data+ is given.
+    # Sends an \HTTP request to the server;
+    # returns an instance of a subclass of Net::HTTPResponse.
     #
-    # Returns a Net::HTTPResponse object.
+    # The request is based on the Net::HTTPRequest object
+    # created from string +path+, string +data+, and initial headers hash +header+.
+    # That object is an instance of the
+    # {subclass of Net::HTTPRequest}[rdoc-ref:Net::HTTPRequest@Request+Subclasses],
+    # that corresponds to the given uppercase string +name+,
+    # which must be
+    # an {HTTP request method}[https://en.wikipedia.org/wiki/HTTP#Request_methods]
+    # or a {WebDAV request method}[https://en.wikipedia.org/wiki/WebDAV#Implementation].
     #
-    # This method never raises Net::* exceptions.
+    # Examples:
     #
-    #    response = http.send_request('GET', '/index.html')
-    #    puts response.body
+    #   http = Net::HTTP.new(hostname)
+    #   http.send_request('GET', '/todos/1')
+    #   # => #<Net::HTTPOK 200 OK readbody=true>
+    #   http.send_request('POST', '/todos', 'xyzzy')
+    #   # => #<Net::HTTPCreated 201 Created readbody=true>
     #
     def send_request(name, path, data = nil, header = nil)
       has_response_body = name != 'HEAD'
@@ -1943,20 +1972,35 @@ module Net   #:nodoc:
       request r, data
     end
 
-    # Sends an HTTPRequest object +req+ to the \HTTP server.
+    # Sends the given request +req+ to the server;
+    # forms the response into a Net::HTTPResponse object.
     #
-    # If +req+ is a Net::HTTP::Post or Net::HTTP::Put request containing
-    # data, the data is also sent. Providing data for a Net::HTTP::Head or
-    # \Net::HTTP::Get request results in an ArgumentError.
+    # The given +req+ must be an instance of a
+    # {subclass of Net::HTTPRequest}[rdoc-ref:Net::HTTPRequest@Request+Subclasses].
+    # Argument +body+ should be given only if needed for the request.
     #
-    # Returns an HTTPResponse object.
+    # With no block given, returns the response object:
     #
-    # When called with a block, passes an HTTPResponse object to the block.
-    # The body of the response will not have been read yet;
-    # the block can process it using HTTPResponse#read_body,
-    # if desired.
+    #   http = Net::HTTP.new(hostname)
     #
-    # This method never raises Net::* exceptions.
+    #   req = Net::HTTP::Get.new('/todos/1')
+    #   http.request(req)
+    #   # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    #   req = Net::HTTP::Post.new('/todos')
+    #   http.request(req, 'xyzzy')
+    #   # => #<Net::HTTPCreated 201 Created readbody=true>
+    #
+    # With a block given, calls the block with the response and returns the response:
+    #
+    #   req = Net::HTTP::Get.new('/todos/1')
+    #   http.request(req) do |res|
+    #     p res
+    #   end # => #<Net::HTTPOK 200 OK readbody=true>
+    #
+    # Output:
+    #
+    #   #<Net::HTTPOK 200 OK readbody=false>
     #
     def request(req, body = nil, &block)  # :yield: +response+
       unless started?
