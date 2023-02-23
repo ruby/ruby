@@ -13311,10 +13311,10 @@ wmap_size(VALUE self)
   ------------------------------ WeakKeyMap ------------------------------
 */
 
-struct weakkeymap_entry {
+typedef struct weakkeymap_entry {
     VALUE obj;
     st_index_t hash;
-} typedef weakkeymap_entry_t;
+} weakkeymap_entry_t;
 
 struct weakkeymap {
     st_table *map;
