@@ -86,6 +86,15 @@ update-yjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/yjit-bench yjit-bench $(GIT_OPTS)
 
+# Gives quick feedback about YJIT. Not a replacement for a full test run.
+.PHONY: yjit-smoke-test
+yjit-smoke-test:
+ifneq ($(strip $(CARGO)),)
+	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
+endif
+	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
+	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'
+
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
