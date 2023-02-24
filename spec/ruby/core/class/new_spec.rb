@@ -152,4 +152,19 @@ describe "Class#new" do
 
     klass.new { break 42 }.should == 42
   end
+
+  ruby_version_is "3.3" do
+    it "can provide an explicit name" do
+      klass = Class.new(Object, "fake")
+      klass.name.should == "fake"
+    end
+
+    it "can override explicit name" do
+      klass = Class.new(Object, "fake")
+      ::Fake = klass
+      klass.name.should == "Fake"
+    ensure
+      ::Object.__send__(:remove_const, "Fake")
+    end
+  end
 end

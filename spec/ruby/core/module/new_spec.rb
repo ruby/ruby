@@ -28,4 +28,19 @@ describe "Module.new" do
     o.hello.should == "hello"
     o.bye.should == "bye"
   end
+
+  ruby_version_is "3.3" do
+    it "can provide an explicit name" do
+      mod = Module.new("fake")
+      mod.name.should == "fake"
+    end
+
+    it "can override explicit name" do
+      mod = Module.new("fake")
+      ::Fake = mod
+      mod.name.should == "Fake"
+    ensure
+      ::Object.__send__(:remove_const, "Fake")
+    end
+  end
 end

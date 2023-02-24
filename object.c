@@ -1820,8 +1820,16 @@ static VALUE rb_mod_initialize_exec(VALUE module);
  */
 
 static VALUE
-rb_mod_initialize(VALUE module)
+rb_mod_initialize(int argc, VALUE *argv, VALUE module)
 {
+    rb_check_arity(argc, 0, 1);
+
+    if (argc >= 1) {
+        VALUE name = argv[0];
+        StringValue(name);
+        RCLASS_SET_CLASSPATH(module, name, FALSE);
+    }
+
     return rb_mod_initialize_exec(module);
 }
 
@@ -1879,12 +1887,14 @@ rb_mod_initialize_clone(int argc, VALUE* argv, VALUE clone)
 static VALUE
 rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 {
+    rb_check_arity(argc, 0, 2);
+
     VALUE super;
 
     if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "already initialized class");
     }
-    if (rb_check_arity(argc, 0, 1) == 0) {
+    if (argc == 0) {
         super = rb_cObject;
     }
     else {
@@ -1894,6 +1904,16 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
             rb_raise(rb_eTypeError, "can't inherit uninitialized class");
         }
     }
+
+    // If a class name was provided as a 2nd argument:
+    if (argc >= 2) {
+        VALUE name = argv[1];
+        StringValue(name);
+
+        // We set this as the non-permanent class name. Assigning to a constant will still update it.
+        RCLASS_SET_CLASSPATH(klass, name, FALSE);
+    }
+
     RCLASS_SET_SUPER(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
@@ -4423,7 +4443,7 @@ InitVM_Object(void)
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_undef_method(rb_singleton_class(rb_cModule), "allocate");
-    rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
+    rb_define_method(rb_cModule, "initialize", rb_mod_initialize, -1);
     rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, -1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "public_instance_methods",
