@@ -368,7 +368,7 @@ module Net   #:nodoc:
   #   http.proxy_user      # => "pname"
   #   http.proxy_pass      # => "ppass"
   #
-  # === Proxy Using <tt>ENV['http_proxy']</tt>
+  # === Proxy Using '<tt>ENV['http_proxy']</tt>'
   #
   # When environment variable <tt>'http_proxy'</tt>
   # is set to a \URI string,
@@ -826,7 +826,7 @@ module Net   #:nodoc:
     # Creates a new \Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
-    def initialize(address, port = nil)
+    def initialize(address, port = nil) # :nodoc:
       @address = address
       @port    = (port || HTTP.default_port)
       @ipaddr = nil
@@ -926,21 +926,22 @@ module Net   #:nodoc:
       @debug_output = output
     end
 
-    # The DNS host name or IP address to connect to.
+    # Returns the string host name or host IP given as argument +address+ in ::new.
     attr_reader :address
 
-    # The port number to connect to.
+    # Returns the integer port number given as argument +port+ in ::new.
     attr_reader :port
 
-    # The local host used to establish the connection.
+    # Sets or returns the string local host used to establish the connection;
+    # initially +nil+.
     attr_accessor :local_host
 
-    # The local port used to establish the connection.
+    # Sets or returns the integer local port used to establish the connection;
+    # initially +nil+.
     attr_accessor :local_port
 
-    # The encoding to use for the response body.  If Encoding, uses the
-    # specified encoding.  If other true value, tries to detect the response
-    # body encoding.
+    # Returns the encoding to use for the response body;
+    # see #response_body_encoding=.
     attr_reader :response_body_encoding
 
     # Sets the encoding to be used for the response body;
@@ -966,10 +967,25 @@ module Net   #:nodoc:
       @response_body_encoding = value
     end
 
+    # Sets whether to determine the proxy from environment variable
+    # '<tt>ENV['http_proxy']</tt>';
+    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
     attr_writer :proxy_from_env
+
+    # Sets the proxy address;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_address
+
+    # Sets the proxy port;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_port
+
+    # Sets the proxy user;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_user
+
+    # Sets the proxy password;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
 
     # Returns the IP address for the connection.
@@ -1008,23 +1024,21 @@ module Net   #:nodoc:
       @ipaddr = addr
     end
 
-    # Number of seconds to wait for the connection to open. Any number
-    # may be used, including Floats for fractional seconds. If the \HTTP
-    # object cannot open a connection in this many seconds, it raises a
-    # \Net::OpenTimeout exception. The default value is 60 seconds.
+    # Sets or returns the numeric (\Integer or \Float) number of seconds
+    # to wait for a connection to open;
+    # initially 60.
+    # If the connection is not made in the given interval,
+    # an exception is raised.
     attr_accessor :open_timeout
 
-    # Number of seconds to wait for one block to be read (via one read(2)
-    # call). Any number may be used, including Floats for fractional
-    # seconds. If the \HTTP object cannot read data in this many seconds,
-    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
+    # Returns the numeric (\Integer or \Float) number of seconds
+    # to wait for one block to be read (via one read(2) call);
+    # see #read_timeout=.
     attr_reader :read_timeout
 
-    # Number of seconds to wait for one block to be written (via one write(2)
-    # call). Any number may be used, including Floats for fractional
-    # seconds. If the \HTTP object cannot write data in this many seconds,
-    # it raises a \Net::WriteTimeout exception. The default value is 60 seconds.
-    # \Net::WriteTimeout is not raised on Windows.
+    # Returns the numeric (\Integer or \Float) number of seconds
+    # to wait for one block to be written (via one write(2) call);
+    # see #write_timeout=.
     attr_reader :write_timeout
 
     # Sets the maximum number of times to retry an idempotent request in case of
@@ -1047,6 +1061,8 @@ module Net   #:nodoc:
       @max_retries = retries
     end
 
+    # Returns the maximum number of times to retry an idempotent request;
+    # see #max_retries=.
     attr_reader :max_retries
 
     # Sets the read timeout, in seconds, for +self+ to integer +sec+;
@@ -1089,9 +1105,8 @@ module Net   #:nodoc:
       @write_timeout = sec
     end
 
-    # Returns the continue timeout value.
-    # See Net::HTTP.continue_timeout=.
-    #
+    # Returns the continue timeout value;
+    # see continue_timeout=.
     attr_reader :continue_timeout
 
     # Sets the continue timeout value,
@@ -1103,14 +1118,18 @@ module Net   #:nodoc:
       @continue_timeout = sec
     end
 
-    # Seconds to reuse the connection of the previous request.
-    # If the idle time is less than this Keep-Alive Timeout,
-    # \Net::HTTP reuses the TCP/IP socket used by the previous communication.
-    # The default value is 2 seconds.
+    # Sets or returns the numeric (\Integer or \Float) number of seconds
+    # to keep the connection open after a request is sent;
+    # initially 2.
+    # If a new request is made during the given interval,
+    # the still-open connection is used;
+    # otherwise the connection will have been closed
+    # and a new connection is opened.
     attr_accessor :keep_alive_timeout
 
-    # Whether to ignore EOF when reading response bodies with defined
-    # Content-Length headers. For backwards compatibility, the default is true.
+    # Sets or returns whether to ignore end-of-file when reading a response body
+    # with <tt>Content-Length</tt> headers;
+    # initially +true+.
     attr_accessor :ignore_eof
 
     # Returns +true+ if the \HTTP session has been started:
@@ -1133,6 +1152,8 @@ module Net   #:nodoc:
 
     alias active? started?   #:nodoc: obsolete
 
+    # Sets or returns whether to close the connection when the response is empty;
+    # initially +false+.
     attr_accessor :close_on_empty_response
 
     # Returns +true+ if +self+ uses SSL, +false+ otherwise.
@@ -1171,7 +1192,7 @@ module Net   #:nodoc:
       :@verify_depth,
       :@verify_mode,
       :@verify_hostname,
-    ]
+    ] # :nodoc:
     SSL_ATTRIBUTES = [
       :ca_file,
       :ca_path,
@@ -1188,7 +1209,7 @@ module Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ]
+    ] # :nodoc:
 
     # Sets path of a CA certification file in PEM format.
     #
