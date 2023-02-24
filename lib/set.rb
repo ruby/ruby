@@ -598,7 +598,7 @@ class Set
 
   # Merges the elements of the given enumerable objects to the set and
   # returns self.
-  def merge(*enums)
+  def merge(*enums, **nil)
     enums.each do |enum|
       if enum.instance_of?(self.class)
         @hash.update(enum.instance_variable_get(:@hash))
