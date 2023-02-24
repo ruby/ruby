@@ -1196,6 +1196,26 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_nested_send
+    #[Bug #19464]
+    assert_compiles(<<~RUBY, result: [:ok, :ok])
+      klass = Class.new do
+        class << self
+          alias_method :my_send, :send
+
+          def bar = :ok
+
+          def foo = bar
+        end
+      end
+
+      with_break = -> { break klass.send(:my_send, :foo) }
+      wo_break = -> { klass.send(:my_send, :foo) }
+
+      [with_break[], wo_break[]]
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

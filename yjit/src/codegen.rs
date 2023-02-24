@@ -6324,13 +6324,22 @@ fn gen_send_general(
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-
                         // This is for method calls like `foo.send(:bar)`
                         // The `send` method does not get its own stack frame.
                         // instead we look up the method and call it,
                         // doing some stack shifting based on the VM_CALL_OPT_SEND flag
 
                         let starting_context = ctx.clone();
+
+                        // Reject nested cases such as `send(:send, :alias_for_send, :foo))`.
+                        // We would need to do some stack manipulation here or keep track of how
+                        // many levels deep we need to stack manipulate. Because of how exits
+                        // currently work, we can't do stack manipulation until we will no longer
+                        // side exit.
+                        if flags & VM_CALL_OPT_SEND != 0 {
+                            gen_counter_incr!(asm, send_send_nested);
+                            return CantCompile;
+                        }
 
                         if argc == 0 {
                             gen_counter_incr!(asm, send_send_wrong_args);
@@ -6356,20 +6365,6 @@ fn gen_send_general(
                         if cme.is_null() {
                             gen_counter_incr!(asm, send_send_null_cme);
                             return CantCompile;
-                        }
-
-                        // We aren't going to handle `send(send(:foo))`. We would need to
-                        // do some stack manipulation here or keep track of how many levels
-                        // deep we need to stack manipulate
-                        // Because of how exits currently work, we can't do stack manipulation
-                        // until we will no longer side exit.
-                        let def_type = unsafe { get_cme_def_type(cme) };
-                        if let VM_METHOD_TYPE_OPTIMIZED = def_type {
-                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
-                            if let OPTIMIZED_METHOD_TYPE_SEND = opt_type {
-                                gen_counter_incr!(asm, send_send_nested);
-                                return CantCompile;
-                            }
                         }
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
