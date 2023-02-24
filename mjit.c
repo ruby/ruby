@@ -272,12 +272,6 @@ mjit_child_after_fork(void)
     // TODO: remove this
 }
 
-void
-mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
-{
-    // TODO: implement
-}
-
 // Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
@@ -394,16 +388,30 @@ mjit_iseq_update_references(void *data)
 }
 
 void
-rb_mjit_iseq_update_references(const rb_iseq_t *iseq)
+rb_mjit_iseq_update_references(struct rb_iseq_constant_body *const body)
 {
     if (!mjit_enabled) return;
 
-    // TODO: update mjit_blocks
+    if (body->mjit_blocks) {
+        body->mjit_blocks = rb_gc_location(body->mjit_blocks);
+    }
 
     // Asynchronously hook the Ruby code to avoid allocation during GC.compact.
     // Using _one because it's too slow to invalidate all for each ISEQ. Thus
     // not giving an ISEQ pointer.
     rb_postponed_job_register_one(0, mjit_iseq_update_references, NULL);
+}
+
+void
+rb_mjit_iseq_mark(VALUE mjit_blocks)
+{
+    if (!mjit_enabled) return;
+
+    // Note: This wasn't enough for some reason.
+    // We actually rely on RubyVM::MJIT::GC_REFS to mark this.
+    if (mjit_blocks) {
+        rb_gc_mark_movable(mjit_blocks);
+    }
 }
 
 // TODO: Use this in more places

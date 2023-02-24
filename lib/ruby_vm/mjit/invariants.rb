@@ -112,12 +112,11 @@ module RubyVM::MJIT
         end
         @patches.clear
 
-        # Avoid reusing past code
-        Compiler.reset_blocks
-
         C.mjit_for_each_iseq do |iseq|
-          # Disable entering past code
+          # Avoid entering past code
           iseq.body.jit_func = 0
+          # Avoid reusing past code
+          iseq.body.mjit_blocks.clear if iseq.body.mjit_blocks
           # Compile this again if not converted to trace_* insns
           iseq.body.total_calls = 0
         end

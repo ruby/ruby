@@ -29,20 +29,11 @@ module RubyVM::MJIT
 
   # Scratch registers: rax, rcx
 
+  # Mark objects in this Array during GC
+  GC_REFS = []
+
   class Compiler
     attr_accessor :write_pos
-
-    IseqBlocks = Hash.new do |iseq_pc_ctx, iseq|
-      iseq_pc_ctx[iseq] = Hash.new do |pc_ctx, pc|
-        pc_ctx[pc] = {}
-      end
-    end
-    DeadBlocks = [] # invalidated IseqBlocks, but kept for safety
-
-    def self.reset_blocks
-      DeadBlocks << IseqBlocks.dup
-      IseqBlocks.clear
-    end
 
     def self.decode_insn(encoded)
       INSNS.fetch(C.rb_vm_insn_decode(encoded))
@@ -268,24 +259,34 @@ module RubyVM::MJIT
     end
 
     def list_blocks(iseq, pc)
-      IseqBlocks[iseq.to_i][pc].values
+      mjit_blocks(iseq)[pc].values
     end
 
     # @param [Integer] pc
     # @param [RubyVM::MJIT::Context] ctx
     # @return [RubyVM::MJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
-      IseqBlocks[iseq.to_i][pc][ctx]
+      mjit_blocks(iseq)[pc][ctx]
     end
 
     # @param [RubyVM::MJIT::Block] block
     def set_block(iseq, block)
-      IseqBlocks[iseq.to_i][block.pc][block.ctx] = block
+      mjit_blocks(iseq)[block.pc][block.ctx] = block
     end
 
     # @param [RubyVM::MJIT::Block] block
     def remove_block(iseq, block)
-      IseqBlocks[iseq.to_i][block.pc].delete(block.ctx)
+      mjit_blocks(iseq)[block.pc].delete(block.ctx)
+    end
+
+    def mjit_blocks(iseq)
+      unless iseq.body.mjit_blocks
+        iseq.body.mjit_blocks = Hash.new { |h, k| h[k] = {} }
+        # For some reason, rb_mjit_iseq_mark didn't protect this Hash
+        # from being freed. So we rely on GC_REFS to keep the Hash.
+        GC_REFS << iseq.body.mjit_blocks
+      end
+      iseq.body.mjit_blocks
     end
   end
 end

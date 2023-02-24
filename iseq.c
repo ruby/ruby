@@ -357,7 +357,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
         if (reference_updating) {
 #if USE_MJIT
-            rb_mjit_iseq_update_references(iseq);
+            rb_mjit_iseq_update_references(body);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_update_references(body->yjit_payload);
@@ -365,7 +365,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
         else {
 #if USE_MJIT
-            mjit_mark_cc_entries(body);
+            rb_mjit_iseq_mark(body->mjit_blocks);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
