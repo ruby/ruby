@@ -4929,6 +4929,12 @@ fn gen_send_cfunc(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
+        if flags & VM_CALL_OPT_SEND != 0 {
+            // FIXME: This combination is buggy.
+            // For example `1.send(:==, 1, *[])` fails to adjust the stack properly
+            gen_counter_incr!(asm, send_cfunc_splat_send);
+            return CantCompile;
+        }
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
