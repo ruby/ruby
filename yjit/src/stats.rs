@@ -192,6 +192,7 @@ make_counters! {
     send_cfunc_tracing,
     send_cfunc_kwargs,
     send_cfunc_splat_with_kw,
+    send_cfunc_splat_send,
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
