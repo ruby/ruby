@@ -6359,7 +6359,7 @@ ruby_is_fd_loadable(int fd)
 
 #ifndef _WIN32
 int
-rb_file_load_ok(const char *path)
+rb_file_load_ok(const char *path, struct ruby_file_load_state *fls)
 {
     int ret = 1;
     /*
@@ -6381,10 +6381,21 @@ rb_file_load_ok(const char *path)
     }
     rb_update_max_fd(fd);
     ret = ruby_is_fd_loadable(fd);
-    (void)close(fd);
+
+#if defined(DOSISH) || defined(__CYGWIN__)
+    fls = NULL; /* need to set xflag via open_load_file */
+#endif
+    if (ret && fls) {
+        /* TODO: avoid path object alloc in rb_io_fdopen */
+        fls->filev = rb_io_fdopen(fd, mode, path);
+        fls->is_fifo = ret < 0 ? 1 : 0;
+        fls->is_nonblock = mode == O_RDONLY ? 0 : 1;
+    } else {
+        (void)close(fd);
+    }
     return ret;
 }
-#endif
+#endif /* !_WIN32 */
 
 static int
 is_explicit_relative(const char *path)
@@ -6410,6 +6421,13 @@ copy_path_class(VALUE path, VALUE orig)
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
+    return ruby_find_file_ext(filep, ext, NULL);
+}
+
+int
+ruby_find_file_ext(VALUE *filep, const char *const *ext,
+                struct ruby_file_load_state *fls)
+{
     const char *f = StringValueCStr(*filep);
     VALUE fname = *filep, load_path, tmp;
     long i, j, fnlen;
@@ -6429,7 +6447,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
         fnlen = RSTRING_LEN(fname);
         for (i=0; ext[i]; i++) {
             rb_str_cat2(fname, ext[i]);
-            if (rb_file_load_ok(RSTRING_PTR(fname))) {
+            if (rb_file_load_ok(RSTRING_PTR(fname), fls)) {
                 *filep = copy_path_class(fname, *filep);
                 return (int)(i+1);
             }
@@ -6454,7 +6472,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
             RB_GC_GUARD(str) = rb_get_path(str);
             if (RSTRING_LEN(str) == 0) continue;
             rb_file_expand_path_internal(fname, str, 0, 0, tmp);
-            if (rb_file_load_ok(RSTRING_PTR(tmp))) {
+            if (rb_file_load_ok(RSTRING_PTR(tmp), fls)) {
                 *filep = copy_path_class(tmp, *filep);
                 return (int)(j+1);
             }
@@ -6469,6 +6487,12 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 VALUE
 rb_find_file(VALUE path)
 {
+    return ruby_find_file(path, NULL);
+}
+
+VALUE
+ruby_find_file(VALUE path, struct ruby_file_load_state *fls)
+{
     VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
     int expanded = 0;
@@ -6481,7 +6505,7 @@ rb_find_file(VALUE path)
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-        if (!rb_file_load_ok(f)) return 0;
+        if (!rb_file_load_ok(f, fls)) return 0;
         if (!expanded)
             path = copy_path_class(file_expand_path_1(path), path);
         return path;
@@ -6499,7 +6523,7 @@ rb_find_file(VALUE path)
             if (RSTRING_LEN(str) > 0) {
                 rb_file_expand_path_internal(path, str, 0, 0, tmp);
                 f = RSTRING_PTR(tmp);
-                if (rb_file_load_ok(f)) goto found;
+                if (rb_file_load_ok(f, fls)) goto found;
             }
         }
         rb_str_resize(tmp, 0);

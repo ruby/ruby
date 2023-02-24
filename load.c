@@ -676,7 +676,8 @@ rb_provide(const char *feature)
 NORETURN(static void load_failed(VALUE));
 
 static inline void
-load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
+load_iseq_eval(rb_execution_context_t *ec, VALUE fname,
+                struct ruby_file_load_state *fls)
 {
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
@@ -686,7 +687,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         rb_ast_t *ast;
         VALUE parser = rb_parser_new();
         rb_parser_set_context(parser, NULL, FALSE);
-        ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+        ast = (rb_ast_t *)rb_parser_load_state(parser, fname, fls);
         iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
                                fname, rb_realpath_internal(Qnil, fname, 1), NULL);
         rb_ast_dispose(ast);
@@ -698,7 +699,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 }
 
 static inline enum ruby_tag_type
-load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
+load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper,
+              struct ruby_file_load_state *fls)
 {
     enum ruby_tag_type state;
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -718,7 +720,7 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state == TAG_NONE) {
-        load_iseq_eval(ec, fname);
+        load_iseq_eval(ec, fname, fls);
     }
     EC_POP_TAG();
 
@@ -744,7 +746,7 @@ raise_load_if_failed(rb_execution_context_t *ec, enum ruby_tag_type state)
 }
 
 static void
-rb_load_internal(VALUE fname, VALUE wrap)
+rb_load_internal(VALUE fname, VALUE wrap, struct ruby_file_load_state *fls)
 {
     rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state = TAG_NONE;
@@ -752,10 +754,10 @@ rb_load_internal(VALUE fname, VALUE wrap)
         if (!RB_TYPE_P(wrap, T_MODULE)) {
             wrap = rb_module_new();
         }
-        state = load_wrapping(ec, fname, wrap);
+        state = load_wrapping(ec, fname, wrap, fls);
     }
     else {
-        load_iseq_eval(ec, fname);
+        load_iseq_eval(ec, fname, fls);
     }
     raise_load_if_failed(ec, state);
 }
@@ -763,9 +765,10 @@ rb_load_internal(VALUE fname, VALUE wrap)
 void
 rb_load(VALUE fname, int wrap)
 {
-    VALUE tmp = rb_find_file(FilePathValue(fname));
+    struct ruby_file_load_state fls = { .filev = Qfalse };
+    VALUE tmp = ruby_find_file(FilePathValue(fname), &fls);
     if (!tmp) load_failed(fname);
-    rb_load_internal(tmp, RBOOL(wrap));
+    rb_load_internal(tmp, RBOOL(wrap), &fls);
 }
 
 void
@@ -817,6 +820,7 @@ static VALUE
 rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap, path, orig_fname;
+    struct ruby_file_load_state fls = { .filev = Qfalse };
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
@@ -824,13 +828,13 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
     fname = rb_str_encode_ospath(orig_fname);
     RUBY_DTRACE_HOOK(LOAD_ENTRY, RSTRING_PTR(orig_fname));
 
-    path = rb_find_file(fname);
+    path = ruby_find_file(fname, &fls);
     if (!path) {
-        if (!rb_file_load_ok(RSTRING_PTR(fname)))
+        if (!rb_file_load_ok(RSTRING_PTR(fname), &fls))
             load_failed(orig_fname);
         path = fname;
     }
-    rb_load_internal(path, wrap);
+    rb_load_internal(path, wrap, &fls);
 
     RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
@@ -961,7 +965,8 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 typedef int (*feature_func)(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn);
 
 static int
-search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_feature_p)
+search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path,
+                feature_func rb_feature_p, struct ruby_file_load_state *fls)
 {
     VALUE tmp;
     char *ext, *ftptr;
@@ -976,7 +981,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
                 if (loading) *path = rb_filesystem_str_new_cstr(loading);
                 return 'r';
             }
-            if ((tmp = rb_find_file(fname)) != 0) {
+            if ((tmp = ruby_find_file(fname, fls)) != 0) {
                 ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
                 if (!rb_feature_p(vm, ftptr, ext, TRUE, TRUE, &loading) || loading)
                     *path = tmp;
@@ -1017,7 +1022,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
+    type = ruby_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext, fls);
 #if EXTSTATIC
     if (!ft && type != 1) { // not already a feature and not found as a dynamic library
         VALUE lookup_name = tmp;
@@ -1103,7 +1108,7 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
-    found = search_required(GET_VM(), path, &path, no_feature_p);
+    found = search_required(GET_VM(), path, &path, no_feature_p, NULL);
 
     switch (found) {
       case 'r':
@@ -1163,6 +1168,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     VALUE realpaths = get_loaded_features_realpaths(th->vm);
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
+    struct ruby_file_load_state fls = { .filev = Qfalse };
 
     fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
@@ -1177,7 +1183,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         int found;
 
         RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-        found = search_required(th->vm, path, &saved_path, rb_feature_p);
+        found = search_required(th->vm, path, &saved_path, rb_feature_p, &fls);
         RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
         path = saved_path;
 
@@ -1200,10 +1206,14 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
-                    load_iseq_eval(ec, path);
+                    load_iseq_eval(ec, path, &fls);
                     break;
 
                   case 's':
+                    if (fls.filev != Qfalse) {
+                        rb_io_close(fls.filev);
+                        fls.filev = Qfalse;
+                    }
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
                     handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
