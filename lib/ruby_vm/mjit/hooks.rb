@@ -26,5 +26,9 @@ module RubyVM::MJIT
     def self.on_tracing_invalidate_all(_new_iseq_events)
       Invariants.on_tracing_invalidate_all
     end
+
+    def self.on_update_references
+      Invariants.on_update_references
+    end
   end
 end
