@@ -358,14 +358,117 @@ class Ractor
   def self.select(*ractors, yield_value: yield_unspecified = true, move: false)
     raise ArgumentError, 'specify at least one ractor or `yield_value`' if yield_unspecified && ractors.empty?
 
-    __builtin_cstmt! %q{
-      const VALUE *rs = RARRAY_CONST_PTR_TRANSIENT(ractors);
-      VALUE rv;
-      VALUE v = ractor_select(ec, rs, RARRAY_LENINT(ractors),
-                              yield_unspecified == Qtrue ? Qundef : yield_value,
-                              (bool)RTEST(move) ? true : false, &rv);
-      return rb_ary_new_from_args(2, rv, v);
-    }
+    begin
+      if ractors.delete Ractor.current
+        do_receive = true
+      else
+        do_receive = false
+      end
+      selector = Ractor::Selector.new(*ractors)
+
+      if yield_unspecified
+        selector.wait receive: do_receive
+      else
+        selector.wait receive: do_receive, yield_value: yield_value, move: move
+      end
+    ensure
+      selector.clear
+    end
+  end
+
+  #
+  # Ractor::Selector provides a functionality to wait multiple Ractor events.
+  # Ractor::Selector#wait is more lightweight than Ractor.select()
+  # because we don't have to specify all target ractors for each wait time.
+  #
+  # Ractor.select() uses Ractor::Selector internally to implement it.
+  #
+  class Selector
+    # call-seq:
+    #   Ractor::Selector.new(*ractors)
+    #
+    # Creates a selector object.
+    #
+    # If a ractors parameter is given, it is same as the following code.
+    #
+    #    selector = Ractor::Selector.new
+    #    ractors.each{|r| selector.add r}
+    #
+    def self.new(*rs)
+      selector = __builtin_cexpr! %q{
+        ractor_selector_create(self);
+      }
+      rs.each{|r| selector.add(r) }
+      selector
+    end
+
+    # call-seq:
+    #   selector.add(ractor)
+    #
+    # Registers a ractor as a taking target by the selector.
+    #
+    def add r
+      __builtin_ractor_selector_add r
+    end
+
+    # call-seq:
+    #   selector.remove(ractor)
+    #
+    # Deregisters a ractor as a taking target by the selector.
+    #
+    def remove r
+      __builtin_ractor_selector_remove r
+    end
+
+    # call-seq:
+    #   selector.clear
+    #
+    # Deregisters all ractors.
+    def clear
+      __builtin_ractor_selector_clear
+    end
+
+    # call-seq:
+    #   selector.wait(receive: false, yield_value: yield_value, move: false) -> [ractor or symbol, value]
+    #
+    # Waits Ractor events. It is lighter than Ractor.select() for many ractors.
+    #
+    # The simplest form is waiting for taking a value from one of
+    # registerred ractors like that.
+    #
+    #   selector = Ractor::Selector.new(r1, r2, r3)
+    #   r, v = selector.wait
+    #
+    # On this case, when r1, r2 or r3 is ready to take (yielding a value),
+    # this method takes the value from the ready (yielded) ractor
+    # and returns [the yielded ractor, the taking value].
+    #
+    # Note that if a take target ractor is closed, the ractor will be removed
+    # automatically.
+    #
+    # If you also want to wait with receiving an object from other ractors,
+    # you can specify receive: true keyword like:
+    #
+    #   r, v = selector.wait receive: true
+    #
+    # On this case, wait for taking from r1, r2 or r3 and waiting for receving
+    # a value from other ractors.
+    # If it successes the receiving, it returns an array object [:receive, the received value].
+    #
+    # If you also want to wait with yielding a value, you can specify
+    # :yield_value like:
+    #
+    #   r, v = selector.wait yield_value: obj
+    #
+    # On this case wait for taking from r1, r2, or r3 and waiting for taking
+    # yielding value (obj) by another ractor.
+    # If antoher ractor takes the value (obj), it returns an array object [:yield, nil].
+    #
+    # You can specify a keyword parameter <tt>move: true</tt> like Ractor.yield(obj, move: true)
+    #
+    def wait receive: false, yield_value: yield_unspecified = true, move: false
+      __builtin_ractor_selector_wait receive, !yield_unspecified, yield_value, move
+    end
   end
 
   #
