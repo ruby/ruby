@@ -2495,11 +2495,24 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
          * the currently executing instruction. We should increment the PC
          * because the source line is calculated with PC-1 in calc_pos.
          *
-         * If the previous instruction is not a leaf instruction, then the PC
-         * was incremented before the instruction was ran (meaning the
-         * currently executing instruction is actually the previous
-         * instruction), so we should not increment the PC otherwise we will
-         * calculate the source line for the next instruction.
+         * If the previous instruction is not a leaf instruction and the
+         * current instruction is not a leaf instruction, then the PC was
+         * incremented before the instruction was ran (meaning the currently
+         * executing instruction is actually the previous instruction), so we
+         * should not increment the PC otherwise we will calculate the source
+         * line for the next instruction.
+         *
+         * However, this implementation still has a bug. Consider the
+         * following situation:
+         *
+         *   non-leaf
+         *   leaf <-
+         *
+         * Where the PC currently points to a leaf instruction. We don't know
+         * which instruction we really are at since we could be at the non-leaf
+         * instruction (since it incremented the PC before executing the
+         * instruction). We could also be at the leaf instruction since the PC
+         * doesn't get incremented until the instruction finishes.
          */
         if (rb_insns_leaf_p(prev_opcode)) {
             ec->cfp->pc++;
