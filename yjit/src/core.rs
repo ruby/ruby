@@ -221,51 +221,56 @@ impl Type {
     }
 
     /// Compute a difference between two value types
-    /// Returns 0 if the two are the same
-    /// Returns > 0 if different but compatible
-    /// Returns usize::MAX if incompatible
-    pub fn diff(self, dst: Self) -> usize {
+    pub fn diff(self, dst: Self) -> TypeDiff {
         // Perfect match, difference is zero
         if self == dst {
-            return 0;
+            return TypeDiff::Compatible(0);
         }
 
         // Any type can flow into an unknown type
         if dst == Type::Unknown {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // A CString is also a TString.
         if self == Type::CString && dst == Type::TString {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // A CArray is also a TArray.
         if self == Type::CArray && dst == Type::TArray {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Specific heap type into unknown heap type is imperfect but valid
         if self.is_heap() && dst == Type::UnknownHeap {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Specific immediate type into unknown immediate type is imperfect but valid
         if self.is_imm() && dst == Type::UnknownImm {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Incompatible types
-        return usize::MAX;
+        return TypeDiff::Incompatible;
     }
 
     /// Upgrade this type into a more specific compatible type
     /// The new type must be compatible and at least as specific as the previously known type.
     fn upgrade(&mut self, src: Self) {
         // Here we're checking that src is more specific than self
-        assert!(src.diff(*self) != usize::MAX);
+        assert!(src.diff(*self) != TypeDiff::Incompatible);
         *self = src;
     }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum TypeDiff {
+    // usize == 0: Same type
+    // usize >= 1: Different but compatible. The smaller, the more compatible.
+    Compatible(usize),
+    Incompatible,
 }
 
 // Potential mapping of a value on the temporary stack to
@@ -923,13 +928,14 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     // For each version matching the blockid
     for blockref in versions.iter_mut() {
         let block = blockref.borrow();
-        let diff = ctx.diff(&block.ctx);
-
         // Note that we always prefer the first matching
         // version found because of inline-cache chains
-        if diff < best_diff {
-            best_version = Some(blockref.clone());
-            best_diff = diff;
+        match ctx.diff(&block.ctx) {
+            TypeDiff::Compatible(diff) if diff < best_diff => {
+                best_version = Some(blockref.clone());
+                best_diff = diff;
+            }
+            _ => {}
         }
     }
 
@@ -961,7 +967,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         generic_ctx.sp_offset = ctx.sp_offset;
 
         debug_assert_ne!(
-            usize::MAX,
+            TypeDiff::Incompatible,
             ctx.diff(&generic_ctx),
             "should substitute a compatible context",
         );
@@ -1424,55 +1430,46 @@ impl Context {
     }
 
     /// Compute a difference score for two context objects
-    /// Returns 0 if the two contexts are the same
-    /// Returns > 0 if different but compatible
-    /// Returns usize::MAX if incompatible
-    pub fn diff(&self, dst: &Context) -> usize {
+    pub fn diff(&self, dst: &Context) -> TypeDiff {
         // Self is the source context (at the end of the predecessor)
         let src = self;
 
         // Can only lookup the first version in the chain
         if dst.chain_depth != 0 {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         // Blocks with depth > 0 always produce new versions
         // Sidechains cannot overlap
         if src.chain_depth != 0 {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         if dst.stack_size != src.stack_size {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         if dst.sp_offset != src.sp_offset {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         // Difference sum
         let mut diff = 0;
 
         // Check the type of self
-        let self_diff = src.self_type.diff(dst.self_type);
-
-        if self_diff == usize::MAX {
-            return usize::MAX;
-        }
-
-        diff += self_diff;
+        diff += match src.self_type.diff(dst.self_type) {
+            TypeDiff::Compatible(diff) => diff,
+            TypeDiff::Incompatible => return TypeDiff::Incompatible,
+        };
 
         // For each local type we track
         for i in 0..src.local_types.len() {
             let t_src = src.local_types[i];
             let t_dst = dst.local_types[i];
-            let temp_diff = t_src.diff(t_dst);
-
-            if temp_diff == usize::MAX {
-                return usize::MAX;
-            }
-
-            diff += temp_diff;
+            diff += match t_src.diff(t_dst) {
+                TypeDiff::Compatible(diff) => diff,
+                TypeDiff::Incompatible => return TypeDiff::Incompatible,
+            };
         }
 
         // For each value on the temp stack
@@ -1487,20 +1484,17 @@ impl Context {
                     // stack operand.
                     diff += 1;
                 } else {
-                    return usize::MAX;
+                    return TypeDiff::Incompatible;
                 }
             }
 
-            let temp_diff = src_type.diff(dst_type);
-
-            if temp_diff == usize::MAX {
-                return usize::MAX;
-            }
-
-            diff += temp_diff;
+            diff += match src_type.diff(dst_type) {
+                TypeDiff::Compatible(diff) => diff,
+                TypeDiff::Incompatible => return TypeDiff::Incompatible,
+            };
         }
 
-        return diff;
+        return TypeDiff::Compatible(diff);
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
@@ -2465,22 +2459,22 @@ mod tests {
     #[test]
     fn types() {
         // Valid src => dst
-        assert_eq!(Type::Unknown.diff(Type::Unknown), 0);
-        assert_eq!(Type::UnknownImm.diff(Type::UnknownImm), 0);
-        assert_ne!(Type::UnknownImm.diff(Type::Unknown), usize::MAX);
-        assert_ne!(Type::Fixnum.diff(Type::Unknown), usize::MAX);
-        assert_ne!(Type::Fixnum.diff(Type::UnknownImm), usize::MAX);
+        assert_eq!(Type::Unknown.diff(Type::Unknown), TypeDiff::Compatible(0));
+        assert_eq!(Type::UnknownImm.diff(Type::UnknownImm), TypeDiff::Compatible(0));
+        assert_ne!(Type::UnknownImm.diff(Type::Unknown), TypeDiff::Incompatible);
+        assert_ne!(Type::Fixnum.diff(Type::Unknown), TypeDiff::Incompatible);
+        assert_ne!(Type::Fixnum.diff(Type::UnknownImm), TypeDiff::Incompatible);
 
         // Invalid src => dst
-        assert_eq!(Type::Unknown.diff(Type::UnknownImm), usize::MAX);
-        assert_eq!(Type::Unknown.diff(Type::Fixnum), usize::MAX);
-        assert_eq!(Type::Fixnum.diff(Type::UnknownHeap), usize::MAX);
+        assert_eq!(Type::Unknown.diff(Type::UnknownImm), TypeDiff::Incompatible);
+        assert_eq!(Type::Unknown.diff(Type::Fixnum), TypeDiff::Incompatible);
+        assert_eq!(Type::Fixnum.diff(Type::UnknownHeap), TypeDiff::Incompatible);
     }
 
     #[test]
     fn context() {
         // Valid src => dst
-        assert_eq!(Context::default().diff(&Context::default()), 0);
+        assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
         let mut ctx = Context::default();
