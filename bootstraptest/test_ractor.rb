@@ -518,9 +518,9 @@ assert_equal '[true, true, true]', %q{
     end
   }
   received = []
-  take = []
+  taken = []
   yielded = []
-  until rs.empty?
+  until received.size == RN && taken.size == RN && yielded.size == RN
     r, v = Ractor.select(CR, *rs, yield_value: 'yield')
     case r
     when :receive
@@ -528,11 +528,17 @@ assert_equal '[true, true, true]', %q{
     when :yield
       yielded << v
     else
-      take << v
+      taken << v
       rs.delete r
     end
   end
-  [received.all?('sendyield'), yielded.all?(nil), take.all?('take')]
+  r = [received == ['sendyield'] * RN,
+       yielded  == [nil] * RN,
+       taken    == ['take'] * RN,
+  ]
+
+  STDERR.puts [received, yielded, taken].inspect
+  r
 }
 
 # multiple Ractors can send to one Ractor
