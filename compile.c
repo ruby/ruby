@@ -10264,6 +10264,18 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
     fflush(stdout);
 }
 
+bool
+rb_insns_leaf_p(int i)
+{
+    return insn_leaf_p(i);
+}
+
+int
+rb_insn_len(VALUE insn)
+{
+    return insn_len(insn);
+}
+
 const char *
 rb_insns_name(int i)
 {

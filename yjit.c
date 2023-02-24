@@ -480,13 +480,6 @@ rb_insn_name(VALUE insn)
     return insn_name(insn);
 }
 
-// Query the instruction length in bytes for YARV opcode insn
-int
-rb_insn_len(VALUE insn)
-{
-    return insn_len(insn);
-}
-
 unsigned int
 rb_vm_ci_argc(const struct rb_callinfo *ci)
 {

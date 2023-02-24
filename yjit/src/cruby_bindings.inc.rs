@@ -1181,6 +1181,7 @@ extern "C" {
         key: st_data_t,
         pval: *mut st_data_t,
     ) -> ::std::os::raw::c_int;
+    pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
@@ -1221,7 +1222,6 @@ extern "C" {
     pub fn rb_RSTRING_PTR(str_: VALUE) -> *mut ::std::os::raw::c_char;
     pub fn rb_yjit_get_proc_ptr(procv: VALUE) -> *mut rb_proc_t;
     pub fn rb_insn_name(insn: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_ci_argc(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
     pub fn rb_vm_ci_mid(ci: *const rb_callinfo) -> ID;
     pub fn rb_vm_ci_flag(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;

@@ -100,6 +100,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/compile.h"
 #include "internal/complex.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -2485,8 +2486,24 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 {
     const VALUE *pc = ec->cfp->pc;
     if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
-        /* increment PC because source line is calculated with PC-1 */
-        ec->cfp->pc++;
+        int prev_opcode = rb_vm_insn_addr2opcode((void *)*ec->cfp->iseq->body->iseq_encoded);
+        for (const VALUE *insn = ec->cfp->iseq->body->iseq_encoded; insn < pc; insn += rb_insn_len(prev_opcode)) {
+            prev_opcode = rb_vm_insn_addr2opcode((void *)*insn);
+        }
+
+        /* If the previous instruction is a leaf instruction, then the PC is
+         * the currently executing instruction. We should increment the PC
+         * because the source line is calculated with PC-1 in calc_pos.
+         *
+         * If the previous instruction is not a leaf instruction, then the PC
+         * was incremented before the instruction was ran (meaning the
+         * currently executing instruction is actually the previous
+         * instruction), so we should not increment the PC otherwise we will
+         * calculate the source line for the next instruction.
+         */
+        if (rb_insns_leaf_p(prev_opcode)) {
+            ec->cfp->pc++;
+        }
     }
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
     ec->cfp->pc = pc;

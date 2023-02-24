@@ -6791,6 +6791,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 gc.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 gc.$(OBJEXT): $(top_srcdir)/internal/bits.h
 gc.$(OBJEXT): $(top_srcdir)/internal/class.h
+gc.$(OBJEXT): $(top_srcdir)/internal/compile.h
 gc.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/complex.h
 gc.$(OBJEXT): $(top_srcdir)/internal/cont.h
