@@ -133,6 +133,12 @@ module RubyVM::MJIT
       list_blocks(iseq, pc).each do |block|
         invalidate_block(iseq, block)
       end
+
+      # If they were the ISEQ's first blocks, re-compile MJIT entry as well
+      if iseq.body.iseq_encoded.to_i == pc
+        iseq.body.jit_func = 0
+        iseq.body.total_calls = 0
+      end
     end
 
     private
@@ -255,7 +261,6 @@ module RubyVM::MJIT
           @cb.write(branch_asm)
         end
       end
-      # TODO: Reset jit_func and total_calls if it's the first block after prelude
     end
 
     def list_blocks(iseq, pc)
