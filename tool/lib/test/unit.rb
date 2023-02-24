@@ -236,8 +236,8 @@ module Test
           self.verbose = options[:verbose]
         end
 
-        opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/, !/REGEXP/ or STRING" do |a|
-          (options[:filter] ||= []) << a
+        opts.on '-n', '--name PATTERN', "Filter test method names (TestClass#test_method) on pattern: /REGEXP/, !/REGEXP/ or STRING" do |a|
+          (options[:test_name_filter] ||= []) << a
         end
 
         orders = Test::Unit::Order::Types.keys
@@ -246,27 +246,124 @@ module Test
         end
       end
 
+      class TestNameFilter # :nodoc: all
+        attr_reader :pat # String|Regexp
+
+        def initialize(pat)
+          @pat = pat
+          @is_string_pat = true
+          if String === pat
+          elsif Regexp === pat
+            @is_string_pat = false
+          else
+            raise ArgumentError, "Expect String or Regexp"
+          end
+        end
+
+        def regexp!
+          raise "pat should be Regexp" if @is_string_pat
+          @pat
+        end
+
+        def regexp_string_to_regexp
+          raise unless regexp_string?
+          options = 0
+          options = Regexp::IGNORECASE if @opt_i
+          Regexp.new(regexp_string_match, options)
+        end
+
+        # Is this string like "/something/" or "!/something/"
+        def regexp_string?
+          return false unless @is_string_pat
+          @regexp_string ||= (pos_regexp_string? || neg_regexp_string?)
+        end
+
+        # Check that this is not a regexp string like "/something/", just a regular string
+        def check_plain_string!
+          raise unless plain_string?
+        end
+
+        # is this string like "/something/"
+        def pos_regexp_string?
+          return false unless @is_string_pat
+          @pos_pat ||= begin
+                         res = ((/\A\/(.*)\/([i])?\z/ =~ @pat) ? true : false)
+                         if res
+                           @pat_match = $1
+                           @opt_i = $2
+                         end
+                         res
+                       end
+        end
+
+        # is this string like "!/something/"
+        def neg_regexp_string?
+          return false unless @is_string_pat
+          @neg_pat ||= begin
+                         res = ((/\A!\/(.*)\/([i])?\z/ =~ @pat) ? true : false)
+                         if res
+                           @pat_match = $1
+                           @opt_i = $2
+                         end
+                         res
+                       end
+        end
+
+        # extract "something" from "/something/" or "!/something/
+        def regexp_string_match
+          raise unless regexp_string?
+          @pat_match
+        end
+
+        # does string match "MyClass#test_method"
+        def fully_qualified_test_method_string?
+          return false unless plain_string?
+          @pat =~ /\A[A-Z]\w*(?:::[A-Z]\w*)*#/
+        end
+
+        private
+
+        def plain_string?
+          @is_string_pat && !regexp_string?
+        end
+      end
+
       def non_options(files, options)
-        filter = options[:filter]
+        filter = options[:test_name_filter]
         if filter
-          pos_pat = /\A\/(.*)\/\z/
-          neg_pat = /\A!\/(.*)\/\z/
-          negative, positive = filter.partition {|s| neg_pat =~ s}
+          filter.map! { |pat| TestNameFilter.new(pat) }
+          negative, positive = filter.partition {|filt| filt.neg_regexp_string? }
           if positive.empty?
             filter = nil
-          elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
-            filter = positive[0]
-            unless /\A[A-Z]\w*(?:::[A-Z]\w*)*#/ =~ filter
-              filter = /##{Regexp.quote(filter)}\z/
-            end
           else
-            filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
+            pos_rs = positive.map {|filt|
+              if filt.pos_regexp_string?
+                r = filt.regexp_string_to_regexp
+              else
+                # a plain string is given, it must match exactly with test name
+                filt.check_plain_string!
+                if filt.fully_qualified_test_method_string?
+                  pat_s = Regexp.quote(filt.pat)
+                  r = /\A#{pat_s}\z/ # needs to match exactly
+                else
+                  r = /##{Regexp.quote(filt.pat)}\z/ # needs to match suffix (test name without class)
+                end
+              end
+              r
+            }
+            filter = TestNameFilter.new(Regexp.union(*pos_rs))
           end
-          unless negative.empty?
-            negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
-            filter = /\A(?=.*#{filter})(?!.*#{negative})/
+          if negative.any?
+            neg_rs = negative.map { |filt| filt.regexp_string_to_regexp }
+            neg_r = Regexp.union(*neg_rs)
+            if filter
+              filter_r = /\A(?=.*#{filter.regexp!})(?!.*#{neg_r})/
+            else
+              filter_r = /\A(?!.*#{neg_r})/
+            end
+            filter = TestNameFilter.new(filter_r)
           end
-          options[:filter] = filter
+          options[:test_name_filter] = filter.regexp!
         end
         true
       end
@@ -994,13 +1091,12 @@ module Test
           @verbose = !options[:parallel]
         end
         @output = Output.new(self) unless @options[:testing]
-        filter = options[:filter]
+        filter = options[:test_name_filter] || // # or match anything
         type = "#{type}_methods"
-        total = if filter
-                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
-                else
-                  suites.inject(0) {|n, suite| n + suite.send(type).size}
-                end
+        total = suites.inject(0) do |n, suite|
+          test_names = suite.send(type)
+          n + test_names.map { |tname| "#{suite}##{tname}" }.grep(filter).size
+        end
         @test_count = 0
         @total_tests = total.to_s(10)
       end
@@ -1552,7 +1648,7 @@ module Test
         header = "#{type}_suite_header"
         puts send(header, suite) if respond_to? header
 
-        filter = options[:filter]
+        filter = options[:test_name_filter]
 
         all_test_methods = suite.send "#{type}_methods"
         if filter
