@@ -292,7 +292,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     let self_val_type = Type::from(self_val);
 
     // Verify self operand type
-    if self_val_type.diff(ctx.get_opnd_type(SelfOpnd)) == usize::MAX {
+    if self_val_type.diff(ctx.get_opnd_type(SelfOpnd)) == TypeDiff::Incompatible {
         panic!(
             "verify_ctx: ctx self type ({:?}) incompatible with actual value of self {}",
             ctx.get_opnd_type(SelfOpnd),
@@ -333,7 +333,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         }
 
         // If the actual type differs from the learned type
-        if val_type.diff(learned_type) == usize::MAX {
+        if val_type.diff(learned_type) == TypeDiff::Incompatible {
             panic!(
                 "verify_ctx: ctx type ({:?}) incompatible with actual value on stack: {}",
                 learned_type,
@@ -350,7 +350,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         let local_val = jit.peek_at_local(i as i32);
         let local_type = Type::from(local_val);
 
-        if local_type.diff(learned_type) == usize::MAX {
+        if local_type.diff(learned_type) == TypeDiff::Incompatible {
             panic!(
                 "verify_ctx: ctx type ({:?}) incompatible with actual value of local: {} (type {:?})",
                 learned_type,
@@ -1314,7 +1314,7 @@ fn guard_object_is_heap(
     asm.cmp(object, Qfalse.into());
     asm.je(side_exit);
 
-    if object_type.diff(Type::UnknownHeap) != usize::MAX {
+    if object_type.diff(Type::UnknownHeap) != TypeDiff::Incompatible {
         ctx.upgrade_opnd_type(object_opnd, Type::UnknownHeap);
     }
 }
@@ -1347,7 +1347,7 @@ fn guard_object_is_array(
     asm.cmp(flags_opnd, (RUBY_T_ARRAY as u64).into());
     asm.jne(side_exit);
 
-    if object_type.diff(Type::TArray) != usize::MAX {
+    if object_type.diff(Type::TArray) != TypeDiff::Incompatible {
         ctx.upgrade_opnd_type(object_opnd, Type::TArray);
     }
 }
@@ -8066,7 +8066,7 @@ mod tests {
         asm.compile(&mut cb);
 
         assert_eq!(status, KeepCompiling);
-        assert_eq!(context.diff(&Context::default()), 0);
+        assert_eq!(context.diff(&Context::default()), TypeDiff::Compatible(0));
         assert_eq!(cb.get_write_pos(), 0);
     }
 
@@ -8078,7 +8078,7 @@ mod tests {
         let status = gen_pop(&mut jit, &mut context, &mut asm, &mut ocb);
 
         assert_eq!(status, KeepCompiling);
-        assert_eq!(context.diff(&Context::default()), 0);
+        assert_eq!(context.diff(&Context::default()), TypeDiff::Compatible(0));
     }
 
     #[test]
