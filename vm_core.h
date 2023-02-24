@@ -511,7 +511,7 @@ struct rb_iseq_constant_body {
 #endif
 
 #if USE_MJIT
-    // MJIT stores { Context => Block } for each iseq.
+    // MJIT stores some data on each iseq.
     VALUE mjit_blocks;
 #endif
 
