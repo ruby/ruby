@@ -318,6 +318,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                 }
             }
             TempMapping::MapToLocal(local_idx) => {
+                let local_idx: u8 = local_idx.into();
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(

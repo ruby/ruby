@@ -274,8 +274,52 @@ impl Type {
 pub enum TempMapping {
     MapToStack, // Normal stack value
     MapToSelf,  // Temp maps to the self operand
-    MapToLocal(u8), // Temp maps to a local variable with index
+    MapToLocal(LocalIndex), // Temp maps to a local variable with index
                 //ConstMapping,         // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
+}
+
+// Index used by MapToLocal. Using this instead of u8 makes TempMapping 1 byte.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum LocalIndex {
+    Local0,
+    Local1,
+    Local2,
+    Local3,
+    Local4,
+    Local5,
+    Local6,
+    Local7,
+}
+
+impl From<LocalIndex> for u8 {
+    fn from(idx: LocalIndex) -> Self {
+        match idx {
+            LocalIndex::Local0 => 0,
+            LocalIndex::Local1 => 1,
+            LocalIndex::Local2 => 2,
+            LocalIndex::Local3 => 3,
+            LocalIndex::Local4 => 4,
+            LocalIndex::Local5 => 5,
+            LocalIndex::Local6 => 6,
+            LocalIndex::Local7 => 7,
+        }
+    }
+}
+
+impl From<u8> for LocalIndex {
+    fn from(idx: u8) -> Self {
+        match idx {
+            0 => LocalIndex::Local0,
+            1 => LocalIndex::Local1,
+            2 => LocalIndex::Local2,
+            3 => LocalIndex::Local3,
+            4 => LocalIndex::Local4,
+            5 => LocalIndex::Local5,
+            6 => LocalIndex::Local6,
+            7 => LocalIndex::Local7,
+            _ => unreachable!("{idx} was larger than {MAX_LOCAL_TYPES}"),
+        }
+    }
 }
 
 impl Default for TempMapping {
@@ -1205,7 +1249,7 @@ impl Context {
             return self.stack_push(Type::Unknown);
         }
 
-        return self.stack_push_mapping((MapToLocal(local_idx as u8), Type::Unknown));
+        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
     }
 
     // Pop N values off the stack
