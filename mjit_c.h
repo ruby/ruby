@@ -132,6 +132,10 @@ MJIT_RUNTIME_COUNTERS(
     send_arity,
     send_c_tracing,
 
+    send_blockarg,
+    send_blockiseq,
+    send_block_handler,
+
     send_iseq_not_simple,
     send_iseq_kw_splat,
 
@@ -158,6 +162,8 @@ MJIT_RUNTIME_COUNTERS(
 
     send_guard_symbol,
     send_guard_float,
+
+    invokesuper_me_changed,
 
     getivar_megamorphic,
     getivar_not_heap,

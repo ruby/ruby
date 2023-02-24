@@ -81,7 +81,7 @@ module RubyVM::MJIT # :nodoc: all
     def rb_callable_method_entry(klass, mid)
       cme_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_callable_method_entry(klass, NUM2UINT(mid)))'
       return nil if cme_addr == 0
-      rb_callable_method_entry_struct.new(cme_addr)
+      rb_callable_method_entry_t.new(cme_addr)
     end
 
     def METHOD_ENTRY_VISI(cme)
@@ -213,6 +213,17 @@ module RubyVM::MJIT # :nodoc: all
 
     def rb_hash_bulk_insert
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_bulk_insert)'
+    end
+
+    def rb_vm_frame_method_entry(cfp)
+      _cfp = cfp.to_i
+      cme_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_vm_frame_method_entry((const rb_control_frame_t *)NUM2SIZET(_cfp)))'
+      return nil if cme_addr == 0
+      rb_callable_method_entry_t.new(cme_addr)
+    end
+
+    def rb_class_get_superclass(klass)
+      Primitive.cexpr! 'rb_class_get_superclass(klass)'
     end
 
     #========================================================================================
@@ -370,6 +381,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.NOT_COMPILED_STACK_SIZE
     Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
+  end
+
+  def C.VM_ENV_DATA_INDEX_ME_CREF
+    Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_ME_CREF) }
   end
 
   def C.VM_ENV_DATA_INDEX_SPECVAL
@@ -656,6 +671,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(RARRAY_EMBED_LEN_SHIFT) }
   end
 
+  def C.RMODULE_IS_REFINEMENT
+    Primitive.cexpr! %q{ ULONG2NUM(RMODULE_IS_REFINEMENT) }
+  end
+
   def C.RUBY_FIXNUM_FLAG
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
   end
@@ -676,8 +695,16 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_ARRAY) }
   end
 
+  def C.RUBY_T_ICLASS
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_ICLASS) }
+  end
+
   def C.RUBY_T_MASK
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MASK) }
+  end
+
+  def C.RUBY_T_MODULE
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MODULE) }
   end
 
   def C.SHAPE_MASK
@@ -896,7 +923,18 @@ module RubyVM::MJIT # :nodoc: all
     @rb_callable_method_entry_struct ||= CType::Struct.new(
       "rb_callable_method_entry_struct", Primitive.cexpr!("SIZEOF(struct rb_callable_method_entry_struct)"),
       flags: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), flags)")],
-      defined_class: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), defined_class)")],
+      defined_class: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), defined_class)"), true],
+      def: [CType::Pointer.new { self.rb_method_definition_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), def)")],
+      called_id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), called_id)")],
+      owner: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), owner)")],
+    )
+  end
+
+  def C.rb_callable_method_entry_t
+    @rb_callable_method_entry_t ||= CType::Struct.new(
+      "rb_callable_method_entry_struct", Primitive.cexpr!("SIZEOF(struct rb_callable_method_entry_struct)"),
+      flags: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), flags)")],
+      defined_class: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), defined_class)"), true],
       def: [CType::Pointer.new { self.rb_method_definition_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), def)")],
       called_id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), called_id)")],
       owner: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), owner)")],
@@ -1199,6 +1237,9 @@ module RubyVM::MJIT # :nodoc: all
       send_stackoverflow: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_stackoverflow)")],
       send_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_arity)")],
       send_c_tracing: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_c_tracing)")],
+      send_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_blockarg)")],
+      send_blockiseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_blockiseq)")],
+      send_block_handler: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_handler)")],
       send_iseq_not_simple: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_not_simple)")],
       send_iseq_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_kw_splat)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
@@ -1220,6 +1261,7 @@ module RubyVM::MJIT # :nodoc: all
       send_optimized_send_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_send)")],
       send_guard_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_symbol)")],
       send_guard_float: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_float)")],
+      invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],
       getivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_heap)")],
       getivar_not_t_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_t_object)")],
