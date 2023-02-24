@@ -78,26 +78,11 @@ module RubyVM::MJIT
       end
 
       def on_tracing_invalidate_all
-        # On-Stack Replacement
-        @patches.each do |address, target|
-          # TODO: assert patches don't overlap each other
-          @cb.with_write_addr(address) do
-            asm = Assembler.new
-            asm.comment('on_tracing_invalidate_all')
-            asm.jmp(target)
-            @cb.write(asm)
-          end
-        end
+        invalidate_all
+      end
 
-        # Avoid reusing past code
-        Compiler.reset_blocks
-
-        C.mjit_for_each_iseq do |iseq|
-          # Disable entering past code
-          iseq.body.jit_func = 0
-          # Compile this again if not converted to trace_* insns
-          iseq.body.total_calls = 0
-        end
+      def on_update_references
+        invalidate_all
       end
 
       # @param jit [RubyVM::MJIT::JITState]
@@ -109,6 +94,32 @@ module RubyVM::MJIT
             @exit_compiler.compile_entry_exit(block.pc, block.ctx, asm, cause:)
             @ocb.write(asm)
           end
+        end
+      end
+
+      private
+
+      def invalidate_all
+        # On-Stack Replacement
+        @patches.each do |address, target|
+          # TODO: assert patches don't overlap each other
+          @cb.with_write_addr(address) do
+            asm = Assembler.new
+            asm.comment('on_tracing_invalidate_all')
+            asm.jmp(target)
+            @cb.write(asm)
+          end
+        end
+        @patches.clear
+
+        # Avoid reusing past code
+        Compiler.reset_blocks
+
+        C.mjit_for_each_iseq do |iseq|
+          # Disable entering past code
+          iseq.body.jit_func = 0
+          # Compile this again if not converted to trace_* insns
+          iseq.body.total_calls = 0
         end
       end
     end

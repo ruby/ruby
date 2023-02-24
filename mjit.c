@@ -114,12 +114,6 @@ mjit_cancel_all(const char *reason)
 }
 
 void
-mjit_update_references(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
 mjit_free_iseq(const rb_iseq_t *iseq)
 {
     // TODO: remove this
@@ -348,12 +342,13 @@ mjit_cme_invalidate(void *data)
     });
 }
 
+extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data);
+
 void
 rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
 {
     if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
     // Asynchronously hook the Ruby code since running Ruby in the middle of cme invalidation is dangerous.
-    extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data);
     rb_workqueue_register(0, mjit_cme_invalidate, (void *)cme);
 }
 
@@ -387,6 +382,28 @@ rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
     WITH_MJIT_ISOLATED({
         rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });
+}
+
+static void
+mjit_iseq_update_references(void *data)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    WITH_MJIT_ISOLATED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_update_references"), 0);
+    });
+}
+
+void
+rb_mjit_iseq_update_references(const rb_iseq_t *iseq)
+{
+    if (!mjit_enabled) return;
+
+    // TODO: update mjit_blocks
+
+    // Asynchronously hook the Ruby code to avoid allocation during GC.compact.
+    // Using _one because it's too slow to invalidate all for each ISEQ. Thus
+    // not giving an ISEQ pointer.
+    rb_postponed_job_register_one(0, mjit_iseq_update_references, NULL);
 }
 
 // TODO: Use this in more places
@@ -442,10 +459,11 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    // Mark objects used by the MJIT compiler
+    // Pin object pointers used in this file
     rb_gc_mark(rb_MJITCompiler);
     rb_gc_mark(rb_cMJITIseqPtr);
     rb_gc_mark(rb_cMJITCfpPtr);
+    rb_gc_mark(rb_mMJITHooks);
 
     RUBY_MARK_LEAVE("mjit");
 }

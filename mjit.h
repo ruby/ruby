@@ -106,7 +106,7 @@ extern void mjit_cancel_all(const char *reason);
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
-extern void mjit_update_references(const rb_iseq_t *iseq);
+extern void rb_mjit_iseq_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
 extern void mjit_notify_waitpid(int exit_code);
