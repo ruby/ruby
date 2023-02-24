@@ -1156,6 +1156,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_return_to_invalidated_block
+    # [Bug #19463]
     assert_compiles(<<~RUBY, result: [1, 1, :ugokanai])
       klass = Class.new do
         def self.lookup(hash, key) = hash[key]
