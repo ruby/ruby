@@ -351,6 +351,7 @@ generator = BindingGenerator.new(
     INT: %w[
       NOT_COMPILED_STACK_SIZE
       VM_ENV_DATA_INDEX_SPECVAL
+      VM_ENV_DATA_INDEX_ME_CREF
     ],
     UINT: %w[
       BOP_AND
@@ -432,6 +433,9 @@ generator = BindingGenerator.new(
       SHAPE_MASK
       RUBY_T_ARRAY
       RUBY_T_MASK
+      RUBY_T_ICLASS
+      RUBY_T_MODULE
+      RMODULE_IS_REFINEMENT
     ],
     PTR: %w[
       rb_cFalseClass
@@ -463,6 +467,7 @@ generator = BindingGenerator.new(
     rb_builtin_function
     rb_call_data
     rb_callable_method_entry_struct
+    rb_callable_method_entry_t
     rb_callcache
     rb_callinfo
     rb_control_frame_t
@@ -504,6 +509,12 @@ generator = BindingGenerator.new(
       base_label
       label
       pathobj
+    ],
+    rb_callable_method_entry_t: %w[
+      defined_class
+    ],
+    rb_callable_method_entry_struct: %w[
+      defined_class
     ],
   },
 )
