@@ -423,7 +423,7 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
 VALUE
 rb_io_buffer_type_string(VALUE klass, VALUE length)
 {
-    VALUE string = rb_str_new(NULL, NUM2SIZET(length));
+    VALUE string = rb_str_new(NULL, RB_NUM2LONG(length));
 
     struct io_buffer_for_yield_instance_arguments arguments = {
         .klass = klass,
