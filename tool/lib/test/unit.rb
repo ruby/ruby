@@ -357,12 +357,16 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
+          old_report = Thread.report_on_exception
+          Thread.report_on_exception = false # to silence errors during Interrupt
           scale = EnvUtil.timeout_scale
           io = IO.popen([*ruby, "-W1",
                         "#{__dir__}/unit/parallel.rb",
                         *("--timeout-scale=#{scale}" if scale),
-                        *args], "rb+")
+                        *args, { :err => [:child, :out] }], "rb+")
           new(io, io.pid, :waiting)
+        ensure
+          Thread.report_on_exception = old_report
         end
 
         attr_reader :quit_called
@@ -553,6 +557,7 @@ module Test
       def quit_workers(&cond)
         return if @workers.empty?
         closed = [] if cond
+        killed = []
         @workers.reject! do |worker|
           next unless cond&.call(worker)
           begin
@@ -569,6 +574,7 @@ module Test
             end
           rescue Timeout::Error
             worker.kill
+            killed << worker
             retry
           end
           @ios.delete worker.io
@@ -576,14 +582,14 @@ module Test
 
         return if (closed ||= @workers).empty?
         pids = closed.map(&:pid)
-        begin
-          Timeout.timeout(0.2 * closed.size) do
-            Process.waitall
-          end
-        rescue Timeout::Error
-          if pids
-            Process.kill(:KILL, *pids) rescue nil
-            pids = nil
+        pids -= killed.map(&:pid)
+        pids.each do |pid|
+          begin
+            Timeout.timeout(0.2) do
+              Process.waitpid(pid)
+            end
+          rescue Timeout::Error
+            Process.kill(:KILL, pid) rescue nil
             retry
           end
         end
@@ -628,11 +634,13 @@ module Test
           begin
             r = Marshal.load($1.unpack1("m"))
           rescue
-            print "unknown object: #{$1.unpack1("m").dump}"
+            print "unknown object: #{$1.unpack1("m").dump}" unless @interrupt
             return true
           end
           result << r[0..1] unless r[0..1] == [nil,nil]
-          rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
+          unless @interrupt
+            rep << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
+          end
           $:.push(*r[4]).uniq!
           jobs_status(worker) if @options[:job_status] == :replace
 
@@ -661,14 +669,19 @@ module Test
           @warnings << Marshal.load($1.unpack1("m"))
         when /^bye (.+?)$/
           after_worker_down worker, Marshal.load($1.unpack1("m"))
+          return true
         when /^bye$/, nil
           if shutting_down || worker.quit_called
             after_worker_quit worker
           else
             after_worker_down worker
           end
-        else
-          print "unknown command: #{cmd.dump}\n"
+          return true
+        else # stderr or stdout in child process
+          unless @interrupt
+            $stdout.puts cmd
+            $stdout.flush
+          end
         end
         return false
       end
@@ -738,8 +751,13 @@ module Test
 
           if @interrupt
             @ios.select!{|x| @workers_hash[x].status == :running }
-            while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
-              __io[0].reject! {|io| deal(io, type, result, rep, true)}
+            while @ios.any? && (__io = IO.select(@ios,[],[],10))
+              ready_io = __io[0][0]
+              @ios.reject! { |io|
+                next unless io.fileno == ready_io.fileno
+                res = deal(io, type, result, rep, true)
+                res.nil? || res
+              }
             end
           end
 
