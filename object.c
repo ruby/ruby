@@ -1795,12 +1795,13 @@ static VALUE rb_mod_initialize_exec(VALUE module);
 
 /*
  *  call-seq:
- *    Module.new                  -> mod
- *    Module.new {|mod| block }   -> mod
+ *    Module.new([name]) -> mod
+ *    Module.new([name]) {|mod| block } -> mod
  *
  *  Creates a new anonymous module. If a block is given, it is passed
  *  the module object, and the block is evaluated in the context of this
- *  module like #module_eval.
+ *  module like #module_eval. You can give a module a name by assigning
+ *  the module object to a constant or passing the optional name parameter.
  *
  *     fred = Module.new do
  *       def meth1
@@ -1856,12 +1857,13 @@ rb_mod_initialize_clone(int argc, VALUE* argv, VALUE clone)
 
 /*
  *  call-seq:
- *     Class.new(super_class=Object)               -> a_class
- *     Class.new(super_class=Object) { |mod| ... } -> a_class
+ *     Class.new(super_class=Object, [name]) -> a_class
+ *     Class.new(super_class=Object, [name]) { |mod| ... } -> a_class
  *
- *  Creates a new anonymous (unnamed) class with the given superclass
+ *  Creates a new anonymous class with the given superclass
  *  (or Object if no parameter is given). You can give a
- *  class a name by assigning the class object to a constant.
+ *  class a name by assigning the class object to a constant or
+ *  passing the optional name parameter.
  *
  *  If a block is given, it is passed the class object, and the block
  *  is evaluated in the context of this class like
