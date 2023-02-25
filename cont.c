@@ -2059,10 +2059,10 @@ fiber_storage_set(struct rb_fiber_struct *fiber, VALUE storage)
 }
 
 static inline VALUE
-fiber_storage_get(rb_fiber_t *fiber)
+fiber_storage_get(rb_fiber_t *fiber, int allocate)
 {
     VALUE storage = fiber->cont.saved_ec.storage;
-    if (storage == Qnil) {
+    if (storage == Qnil && allocate) {
         storage = rb_hash_new();
         fiber_storage_set(fiber, storage);
     }
@@ -2089,7 +2089,14 @@ static VALUE
 rb_fiber_storage_get(VALUE self)
 {
     storage_access_must_be_from_same_fiber(self);
-    return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
+
+    VALUE storage = fiber_storage_get(fiber_ptr(self), FALSE);
+
+    if (storage == Qnil) {
+        return Qnil;
+    } else {
+        return rb_obj_dup(storage);
+    }
 }
 
 static int
@@ -2170,8 +2177,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
     ID id = rb_check_id(&key);
     if (!id) return Qnil;
 
-    VALUE storage = fiber_storage_get(fiber_current());
-
+    VALUE storage = fiber_storage_get(fiber_current(), FALSE);
     if (storage == Qnil) return Qnil;
 
     return rb_hash_aref(storage, key);
@@ -2193,9 +2199,14 @@ rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
     ID id = rb_check_id(&key);
     if (!id) return Qnil;
 
-    VALUE storage = fiber_storage_get(fiber_current());
+    VALUE storage = fiber_storage_get(fiber_current(), value != Qnil);
+    if (storage == Qnil) return Qnil;
 
-    return rb_hash_aset(storage, key, value);
+    if (value == Qnil) {
+        return rb_hash_delete(storage, key);
+    } else {
+        return rb_hash_aset(storage, key, value);
+    }
 }
 
 static VALUE
