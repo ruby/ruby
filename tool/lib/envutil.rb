@@ -263,9 +263,7 @@ module EnvUtil
   module_function :with_default_internal
 
   def labeled_module(name, &block)
-    Module.new(name) do
-      class_eval(&block) if block
-    end
+    Module.new(name, &block)
   end
   module_function :labeled_module
 
