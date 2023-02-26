@@ -18,6 +18,8 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 2.4'
 
   spec.metadata = {
+    "bug_tracker_uri" => "https://github.com/ruby/uri/issues",
+    "changelog_uri" => "https://github.com/ruby/uri/releases",
     "documentation_uri" => "https://rubydoc.info/gems/uri",
     "homepage_uri" => spec.homepage,
     "source_code_uri" => spec.homepage
