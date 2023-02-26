@@ -2990,7 +2990,8 @@ escape_asis:
                         rb_str_buf_cat(buf, (char *)&c, 1);
                     }
                     break;
-                } else {
+                }
+                else {
                     /* potential change of extended option */
                     int invert = 0;
                     int local_extend = 0;
@@ -3022,7 +3023,8 @@ escape_asis:
                                     int local_options = options;
                                     if (local_extend == 1) {
                                          local_options |= ONIG_OPTION_EXTEND;
-                                    } else {
+                                    }
+                                    else {
                                          local_options &= ~ONIG_OPTION_EXTEND;
                                     }
 
@@ -3032,7 +3034,8 @@ escape_asis:
                                                                 local_options, 1);
                                     if (ret < 0) return ret;
                                     goto begin_scan;
-                                } else {
+                                }
+                                else {
                                     /* change extended flag for rest of expression */
                                     extended_mode = local_extend == 1;
                                     goto fallthrough;
@@ -3050,7 +3053,8 @@ escape_asis:
                         }
                     }
                 }
-            } else if (!in_char_class && recurse) {
+            }
+            else if (!in_char_class && recurse) {
                 parens++;
             }
             /* FALLTHROUGH */
