@@ -1211,62 +1211,64 @@ module Net   #:nodoc:
       :verify_hostname,
     ] # :nodoc:
 
-    # Sets path of a CA certification file in PEM format.
-    #
-    # The file can contain several CA certificates.
+    # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
 
-    # Sets path of a CA certification directory containing certifications in
-    # PEM format.
+    # Sets or returns the path of to CA directory
+    # containing certification files in PEM format.
     attr_accessor :ca_path
 
-    # Sets an OpenSSL::X509::Certificate object as client certificate.
-    # (This method is appeared in Michal Rokos's OpenSSL extension).
+    # Sets or returns the OpenSSL::X509::Certificate object
+    # to be used for client certification.
     attr_accessor :cert
 
-    # Sets the X509::Store to verify peer certificate.
+    # Sets or returns the X509::Store to be used for verifying peer certificate.
     attr_accessor :cert_store
 
-    # Sets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers=
+    # Sets or returns the available SSL ciphers.
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
     attr_accessor :ciphers
 
-    # Sets the extra X509 certificates to be added to the certificate chain.
-    # See OpenSSL::SSL::SSLContext#extra_chain_cert=
+    # Sets or returns the extra X509 certificates to be added to the certificate chain.
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
-    # Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
-    # (This method is appeared in Michal Rokos's OpenSSL extension.)
+    # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
     attr_accessor :key
 
-    # Sets the SSL timeout seconds.
+    # Sets or returns the SSL timeout seconds.
     attr_accessor :ssl_timeout
 
-    # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
+    # Sets or returns the SSL version.
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
     attr_accessor :ssl_version
 
-    # Sets the minimum SSL version.  See OpenSSL::SSL::SSLContext#min_version=
+    # Sets or returns the minimum SSL version.
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
     attr_accessor :min_version
 
-    # Sets the maximum SSL version.  See OpenSSL::SSL::SSLContext#max_version=
+    # Sets or returns the maximum SSL version.
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
     attr_accessor :max_version
 
-    # Sets the verify callback for the server certification verification.
+    # Sets or returns the callback for the server certification verification.
     attr_accessor :verify_callback
 
-    # Sets the maximum depth for the certificate chain verification.
+    # Sets or returns the maximum depth for the certificate chain verification.
     attr_accessor :verify_depth
 
-    # Sets the flags for server the certification verification at beginning of
-    # SSL/TLS session.
-    #
+    # Sets or returns the flags for server the certification verification
+    # at the beginning of the SSL/TLS session.
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
     attr_accessor :verify_mode
 
-    # Sets to check the server certificate is valid for the hostname.
-    # See OpenSSL::SSL::SSLContext#verify_hostname=
+    # Sets or returns whether to verify that the server certificate is valid
+    # for the hostname.
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_mode].
     attr_accessor :verify_hostname
 
-    # The X509 certificate chain (an array of strings) for the session's socket peer,
+    # Returns the X509 certificate chain (an array of strings)
+    # for the session's socket peer,
     # or +nil+ if none.
     def peer_cert
       if not use_ssl? or not @socket
@@ -1497,17 +1499,20 @@ module Net   #:nodoc:
         defined?(@is_proxy_class) ? @is_proxy_class : false
       end
 
-      # Address of proxy host. If \Net::HTTP does not use a proxy, nil.
+      # Returns the address of the proxy host, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_address
 
-      # Port number of proxy host. If \Net::HTTP does not use a proxy, nil.
+      # Returns the port number of the proxy host, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_port
 
-      # User name for accessing proxy. If \Net::HTTP does not use a proxy, nil.
+      # Returns the user name for accessing the proxy, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_user
 
-      # User password for accessing proxy. \If Net::HTTP does not use a proxy,
-      # nil.
+      # Returns the password for accessing the proxy, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_pass
     end
 
