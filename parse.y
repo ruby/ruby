@@ -14391,6 +14391,14 @@ ripper_ensure(VALUE parser_v)
     return Qnil;
 }
 
+static void
+ripper_initialized_check(struct parser_params *p)
+{
+    if (!ripper_initialized_p(p)) {
+        rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+}
+
 /*
  *  call-seq:
  *    ripper.parse
@@ -14403,9 +14411,7 @@ ripper_parse(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     if (!NIL_P(p->parsing_thread)) {
         if (p->parsing_thread == rb_thread_current())
             rb_raise(rb_eArgError, "Ripper#parse is not reentrant");
@@ -14432,9 +14438,7 @@ ripper_column(VALUE self)
     long col;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     if (NIL_P(p->parsing_thread)) return Qnil;
     col = p->lex.ptok - p->lex.pbeg;
     return LONG2NUM(col);
@@ -14452,9 +14456,7 @@ ripper_filename(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     return p->ruby_sourcefile_string;
 }
 
@@ -14471,9 +14473,7 @@ ripper_lineno(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     if (NIL_P(p->parsing_thread)) return Qnil;
     return INT2NUM(p->ruby_sourceline);
 }
@@ -14490,9 +14490,7 @@ ripper_state(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-	rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     if (NIL_P(p->parsing_thread)) return Qnil;
     return INT2NUM(p->lex.state);
 }
@@ -14510,9 +14508,7 @@ ripper_token(VALUE self)
     long pos, len;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    if (!ripper_initialized_p(p)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
+    ripper_initialized_check(p);
     if (NIL_P(p->parsing_thread)) return Qnil;
     pos = p->lex.ptok - p->lex.pbeg;
     len = p->lex.pcur - p->lex.ptok;
