@@ -12,17 +12,20 @@ Gem::Specification.new do |spec|
 
   spec.summary       = %q{URI is a module providing classes to handle Uniform Resource Identifiers}
   spec.description   = spec.summary
-  spec.homepage      = "https://github.com/ruby/uri"
+
+  github_link        = "https://github.com/ruby/uri"
+
+  spec.homepage      = github_link
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.required_ruby_version = '>= 2.4'
 
   spec.metadata = {
-    "bug_tracker_uri" => "https://github.com/ruby/uri/issues",
-    "changelog_uri" => "https://github.com/ruby/uri/releases",
+    "bug_tracker_uri" => "#{github_link}/issues",
+    "changelog_uri" => "#{github_link}/releases",
     "documentation_uri" => "https://rubydoc.info/gems/uri",
     "homepage_uri" => spec.homepage,
-    "source_code_uri" => spec.homepage
+    "source_code_uri" => github_link
   }
 
   # Specify which files should be added to the gem when it is released.
