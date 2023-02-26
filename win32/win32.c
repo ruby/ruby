@@ -5894,11 +5894,13 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
                 if (e && attr_info.ReparseTag == IO_REPARSE_TAG_AF_UNIX) {
                     st->st_size = 0;
                     mode |= S_IFSOCK;
-                } else if (rb_w32_reparse_symlink_p(path)) {
+                }
+                else if (rb_w32_reparse_symlink_p(path)) {
                     /* TODO: size in which encoding? */
                     st->st_size = 0;
                     mode |= S_IFLNK | S_IEXEC;
-                } else {
+                }
+                else {
                     mode |= S_IFDIR | S_IEXEC;
                 }
             }

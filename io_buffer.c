@@ -59,7 +59,8 @@ io_buffer_map_memory(size_t size, int flags)
     int mmap_flags = MAP_ANONYMOUS;
     if (flags & RB_IO_BUFFER_SHARED) {
         mmap_flags |= MAP_SHARED;
-    } else {
+    }
+    else {
         mmap_flags |= MAP_PRIVATE;
     }
 
@@ -1233,7 +1234,8 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
         }
 
         length = NUM2SIZET(argv[1]);
-    } else {
+    }
+    else {
         length = data->size - offset;
     }
 
@@ -1643,7 +1645,8 @@ io_buffer_size_of(VALUE klass, VALUE data_type)
             total += io_buffer_data_type_size(RB_SYM2ID(RARRAY_AREF(data_type, i)));
         }
         return SIZET2NUM(total);
-    } else {
+    }
+    else {
         return SIZET2NUM(io_buffer_data_type_size(RB_SYM2ID(data_type)));
     }
 }
@@ -1794,21 +1797,24 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
     ID data_type;
     if (argc >= 1) {
         data_type = RB_SYM2ID(argv[0]);
-    } else {
+    }
+    else {
         data_type = RB_IO_BUFFER_DATA_TYPE_U8;
     }
 
     size_t offset;
     if (argc >= 2) {
         offset = NUM2SIZET(argv[1]);
-    } else {
+    }
+    else {
         offset = 0;
     }
 
     size_t count;
     if (argc >= 3) {
         count = NUM2SIZET(argv[2]);
-    } else {
+    }
+    else {
         count = (size - offset) / io_buffer_data_type_size(data_type);
     }
 
@@ -1844,21 +1850,24 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
     ID data_type;
     if (argc >= 1) {
         data_type = RB_SYM2ID(argv[0]);
-    } else {
+    }
+    else {
         data_type = RB_IO_BUFFER_DATA_TYPE_U8;
     }
 
     size_t offset;
     if (argc >= 2) {
         offset = NUM2SIZET(argv[1]);
-    } else {
+    }
+    else {
         offset = 0;
     }
 
     size_t count;
     if (argc >= 3) {
         count = NUM2SIZET(argv[2]);
-    } else {
+    }
+    else {
         count = (size - offset) / io_buffer_data_type_size(data_type);
     }
 
@@ -1902,14 +1911,16 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
     size_t offset;
     if (argc >= 2) {
         offset = NUM2SIZET(argv[1]);
-    } else {
+    }
+    else {
         offset = 0;
     }
 
     size_t count;
     if (argc >= 3) {
         count = NUM2SIZET(argv[2]);
-    } else {
+    }
+    else {
         count = (size - offset);
     }
 

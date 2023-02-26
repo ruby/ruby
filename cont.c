@@ -2094,7 +2094,8 @@ rb_fiber_storage_get(VALUE self)
 
     if (storage == Qnil) {
         return Qnil;
-    } else {
+    }
+    else {
         return rb_obj_dup(storage);
     }
 }
@@ -2204,7 +2205,8 @@ rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 
     if (value == Qnil) {
         return rb_hash_delete(storage, key);
-    } else {
+    }
+    else {
         return rb_hash_aset(storage, key, value);
     }
 }
@@ -2810,7 +2812,8 @@ rb_fiber_blocking(VALUE class)
     // If we are already blocking, this is essentially a no-op:
     if (fiber->blocking) {
         return rb_yield(fiber_value);
-    } else {
+    }
+    else {
         return rb_ensure(fiber_blocking_yield, fiber_value, fiber_blocking_ensure, fiber_value);
     }
 }
