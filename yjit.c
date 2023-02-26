@@ -522,7 +522,8 @@ rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
     if (UNDEFINED_METHOD_ENTRY_P(cme)) {
         return VM_METHOD_TYPE_UNDEF;
-    } else {
+    }
+    else {
         return cme->def->type;
     }
 }
