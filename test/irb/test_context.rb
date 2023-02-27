@@ -125,11 +125,11 @@ module TestIRB
         [:marshal, "123", Marshal.dump(123)],
       ],
       failed: [
-        [false, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
-        [:p, "class Foo; undef inspect ;end; Foo.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
-        [true, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
-        [:yaml, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
-        [:marshal, "[Object.new, Class.new]", /\(Object doesn't support #inspect\)\n(=> )?\n/]
+        [false, "BasicObject.new", /#<NoMethodError: undefined method `to_s' for/],
+        [:p, "class Foo; undef inspect ;end; Foo.new", /#<NoMethodError: undefined method `inspect' for/],
+        [true, "BasicObject.new", /#<NoMethodError: undefined method `is_a\?' for/],
+        [:yaml, "BasicObject.new", /#<NoMethodError: undefined method `inspect' for/],
+        [:marshal, "[Object.new, Class.new]", /#<TypeError: can't dump anonymous class #<Class:/]
       ]
     }.each do |scenario, cases|
       cases.each do |inspect_mode, input, expected|
@@ -147,6 +147,58 @@ module TestIRB
           $VERBOSE = verbose
         end
       end
+    end
+
+    def test_object_inspection_falls_back_to_kernel_inspect_when_errored
+      omit if RUBY_ENGINE == "truffleruby"
+      verbose, $VERBOSE = $VERBOSE, nil
+      main = Object.new
+      main.singleton_class.module_eval <<~RUBY
+        class Foo
+          def inspect
+            raise "foo"
+          end
+        end
+      RUBY
+
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new(["Foo.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/An error occurred when inspecting the object: #<RuntimeError: foo>/, out)
+      assert_match(/Result of Kernel#inspect: #<#<Class:.*>::Foo:/, out)
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def test_object_inspection_prints_useful_info_when_kernel_inspect_also_errored
+      omit if RUBY_VERSION < '2.7' || RUBY_ENGINE == "truffleruby"
+      verbose, $VERBOSE = $VERBOSE, nil
+      main = Object.new
+      main.singleton_class.module_eval <<~RUBY
+        class Foo
+          def initialize
+            # Kernel#inspect goes through instance variables with #inspect
+            # So this will cause Kernel#inspect to fail
+            @foo = BasicObject.new
+          end
+
+          def inspect
+            raise "foo"
+          end
+        end
+      RUBY
+
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new(["Foo.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/An error occurred when inspecting the object: #<RuntimeError: foo>/, out)
+      assert_match(/An error occurred when running Kernel#inspect: #<NoMethodError: undefined method `inspect' for/, out)
+    ensure
+      $VERBOSE = verbose
     end
 
     def test_default_config
