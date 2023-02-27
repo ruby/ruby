@@ -41,6 +41,11 @@ jobs:
     env:
       enable_install_doc: no
 
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'cpp', 'ruby' ]
+
     steps:
     - name: Install libraries
       run: |
@@ -62,7 +67,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@32dc499307d133bb5085bae78498c0ac2cf762d5 # v2.2.5
       with:
-        languages: cpp, ruby
+        languages: ${{ matrix.language }}
 
     - name: Set ENV
       run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
@@ -72,3 +77,5 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@32dc499307d133bb5085bae78498c0ac2cf762d5 # v2.2.5
+      with:
+        category: "/language:${{matrix.language}}"
