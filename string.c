@@ -333,7 +333,7 @@ rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
         return;
     }
 
-    // if the root string isn't embedded, we don't need to touch the ponter.
+    // if the root string isn't embedded, we don't need to touch the pointer.
     // it already points to the shame shared buffer
     if (!STR_EMBED_P(new_root)) {
         return;
