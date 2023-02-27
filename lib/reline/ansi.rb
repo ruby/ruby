@@ -143,6 +143,10 @@ class Reline::ANSI
     @@output = val
   end
 
+  def self.with_raw_input
+    @@input.raw { yield }
+  end
+
   @@buf = []
   def self.inner_getc
     unless @@buf.empty?

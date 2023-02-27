@@ -457,7 +457,7 @@ class Reline::LineEditor
         new_lines = whole_lines
       end
       modify_lines(new_lines).each_with_index do |line, index|
-        @output.write "#{prompt_list ? prompt_list[index] : prompt}#{line}\n"
+        @output.write "#{prompt_list ? prompt_list[index] : prompt}#{line}\r\n"
         Reline::IOGate.erase_after_cursor
       end
       @output.flush
