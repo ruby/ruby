@@ -44,8 +44,8 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.17.0
-* rbs 2.8.4
-* typeprof 0.21.4
+* rbs 3.0.0
+* typeprof 0.21.5
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
