@@ -122,6 +122,8 @@ EOF
     end
 
     # error message manipulator
+    # WARN: Rails patches this method to filter its own backtrace. Be cautious when changing it.
+    # See: https://github.com/rails/rails/blob/main/railties/lib/rails/commands/console/console_command.rb#L8:~:text=def,filter_backtrace
     def filter_backtrace(bt)
       return nil if bt =~ /\/irb\/.*\.rb/
       return nil if bt =~ /\/irb\.rb/
