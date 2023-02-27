@@ -19,7 +19,7 @@
 #     # fails immediately with
 #     # ArgumentError (can not isolate a Proc because it accesses outer variables (a).)
 #
-# The object must be explicity shared:
+# The object must be explicitly shared:
 #     a = 1
 #     r = Ractor.new(a) { |a1| puts "I am in Ractor! a=#{a1}"}
 #

@@ -4847,7 +4847,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             if (!COMPILE(cond_seq, "when cond", val)) return -1;
         }
 
-        // Emit patern === target
+        // Emit pattern === target
         ADD_INSN1(cond_seq, vals, topn, INT2FIX(1));
         ADD_CALL(cond_seq, vals, idEqq, INT2FIX(1));
         ADD_INSNL(cond_seq, val, branchif, l1);
