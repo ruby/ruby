@@ -75,7 +75,7 @@ class TestEmojiBreaks < Test::Unit::TestCase
       EMOJI_DATA_FILES.each do |file|
         version_mismatch = true
         file_tests = []
-        IO.foreach(file.fullname, encoding: Encoding::UTF_8) do |line|
+        File.foreach(file.fullname, encoding: Encoding::UTF_8) do |line|
           line.chomp!
           if $.==1
             if line=="# #{file.basename}-#{file.version}.txt"

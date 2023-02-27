@@ -59,7 +59,7 @@ def parse_unicode_data(file)
   data = {'Any' => (0x0000..0x10ffff).to_a, 'Assigned' => [],
     'ASCII' => (0..0x007F).to_a, 'NEWLINE' => [0x0a], 'Cn' => []}
   beg_cp = nil
-  IO.foreach(file) do |line|
+  File.foreach(file) do |line|
     fields = line.split(';')
     cp = fields[0].to_i(16)
 

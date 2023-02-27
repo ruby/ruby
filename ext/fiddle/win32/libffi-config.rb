@@ -23,7 +23,7 @@ until ARGV.empty?
   end
 end
 
-IO.foreach("#{srcdir}/configure.ac") do |line|
+File.foreach("#{srcdir}/configure.ac") do |line|
   if /^AC_INIT\((.*)\)/ =~ line
     version = $1.split(/,\s*/)[1]
     version.gsub!(/\A\[|\]\z/, '')
