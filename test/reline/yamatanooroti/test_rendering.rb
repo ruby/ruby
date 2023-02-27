@@ -1335,6 +1335,18 @@ begin
       EOC
     end
 
+    def test_lines_passed_to_dynamic_prompt
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt-show-line}, startup_message: 'Multiline REPL.')
+      write("if true")
+      write("\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        [if t]> if true
+        [    ]>
+      EOC
+    end
+
     def test_clear_dialog_when_just_move_cursor_at_last_line
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("class A\n  3\nend\n")

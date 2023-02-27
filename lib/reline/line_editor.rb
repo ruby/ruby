@@ -450,12 +450,8 @@ class Reline::LineEditor
       Reline::IOGate.move_cursor_up(@first_line_started_from + @started_from - @scroll_partial_screen)
       Reline::IOGate.move_cursor_column(0)
       @scroll_partial_screen = nil
-      prompt, prompt_width, prompt_list = check_multiline_prompt(whole_lines)
-      if @previous_line_index
-        new_lines = whole_lines(index: @previous_line_index, line: @line)
-      else
-        new_lines = whole_lines
-      end
+      new_lines = whole_lines
+      prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines)
       modify_lines(new_lines).each_with_index do |line, index|
         @output.write "#{prompt_list ? prompt_list[index] : prompt}#{line}\r\n"
         Reline::IOGate.erase_after_cursor
@@ -491,11 +487,7 @@ class Reline::LineEditor
     if @is_multiline
       if finished?
         # Always rerender on finish because output_modifier_proc may return a different output.
-        if @previous_line_index
-          new_lines = whole_lines(index: @previous_line_index, line: @line)
-        else
-          new_lines = whole_lines
-        end
+        new_lines = whole_lines
         line = modify_lines(new_lines)[@line_index]
         clear_dialog
         prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines)
@@ -1025,11 +1017,7 @@ class Reline::LineEditor
   end
 
   private def rerender_changed_current_line
-    if @previous_line_index
-      new_lines = whole_lines(index: @previous_line_index, line: @line)
-    else
-      new_lines = whole_lines
-    end
+    new_lines = whole_lines
     prompt, prompt_width, prompt_list = check_multiline_prompt(new_lines)
     all_height = calculate_height_by_lines(new_lines, prompt_list || prompt)
     diff = all_height - @highest_in_all
@@ -1710,7 +1698,7 @@ class Reline::LineEditor
     return if not @check_new_auto_indent and @previous_line_index # move cursor up or down
     if @check_new_auto_indent and @previous_line_index and @previous_line_index > 0 and @line_index > @previous_line_index
       # Fix indent of a line when a newline is inserted to the next
-      new_lines = whole_lines(index: @previous_line_index, line: @line)
+      new_lines = whole_lines
       new_indent = @auto_indent_proc.(new_lines[0..-3].push(''), @line_index - 1, 0, true)
       md = @line.match(/\A */)
       prev_indent = md[0].count(' ')
@@ -1725,11 +1713,7 @@ class Reline::LineEditor
         @line = ' ' * new_indent + @line.lstrip
       end
     end
-    if @previous_line_index
-      new_lines = whole_lines(index: @previous_line_index, line: @line)
-    else
-      new_lines = whole_lines
-    end
+    new_lines = whole_lines
     new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
     if new_indent&.>= 0
       md = new_lines[@line_index].match(/\A */)
@@ -1816,11 +1800,7 @@ class Reline::LineEditor
       target = before
     end
     if @is_multiline
-      if @previous_line_index
-        lines = whole_lines(index: @previous_line_index, line: @line)
-      else
-        lines = whole_lines
-      end
+      lines = whole_lines
       if @line_index > 0
         preposing = lines[0..(@line_index - 1)].join("\n") + "\n" + preposing
       end
@@ -1920,9 +1900,10 @@ class Reline::LineEditor
     @cursor_max = calculate_width(@line)
   end
 
-  def whole_lines(index: @line_index, line: @line)
+  def whole_lines
+    index = @previous_line_index || @line_index
     temp_lines = @buffer_of_lines.dup
-    temp_lines[index] = line
+    temp_lines[index] = @line
     temp_lines
   end
 
@@ -1930,11 +1911,7 @@ class Reline::LineEditor
     if @buffer_of_lines.size == 1 and @line.nil?
       nil
     else
-      if @previous_line_index
-        whole_lines(index: @previous_line_index, line: @line).join("\n")
-      else
-        whole_lines.join("\n")
-      end
+      whole_lines.join("\n")
     end
   end
 
