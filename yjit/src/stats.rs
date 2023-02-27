@@ -310,6 +310,7 @@ make_counters! {
     compilation_failure,
     block_next_count,
     defer_count,
+    defer_empty_count,
     freed_iseq_count,
 
     exit_from_branch_stub,

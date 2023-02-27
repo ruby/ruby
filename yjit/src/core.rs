@@ -2244,6 +2244,11 @@ pub fn defer_compilation(
     }
     asm.mark_branch_end(&branch_rc);
 
+    // If the block we're deferring from is empty
+    if jit.get_block().borrow().get_blockid().idx == jit.get_insn_idx() {
+        incr_counter!(defer_empty_count);
+    }
+
     incr_counter!(defer_count);
 }
 
