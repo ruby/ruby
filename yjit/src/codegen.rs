@@ -831,7 +831,7 @@ pub fn gen_single_block(
         let gc_offsets = asm.compile(cb);
 
         // Add the GC offsets to the block
-        block.add_gc_obj_offsets(gc_offsets);
+        block.set_gc_obj_offsets(gc_offsets);
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());
