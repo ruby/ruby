@@ -10,7 +10,6 @@
 #include <wchar.h>
 #include <shlwapi.h>
 #include "win32/file.h"
-#include "internal/file.h"
 
 #ifndef INVALID_FILE_ATTRIBUTES
 # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
@@ -593,9 +592,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     return result;
 }
 
-/* TODO: using @fls is an exercise for a win32 hacker */
 int
-rb_file_load_ok(const char *path, struct ruby_file_load_state *fls)
+rb_file_load_ok(const char *path)
 {
     DWORD attr;
     int ret = 1;
