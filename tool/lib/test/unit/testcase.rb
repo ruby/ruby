@@ -230,6 +230,12 @@ module Test
       end
 
       def self.reset # :nodoc:
+        if defined?(@@test_suites)
+          @@test_suites.each do |suite, _|
+            suite.test_method_num = 0
+            suite.reset_test_methods_ran
+          end
+        end
         @@test_suites = {}
         @@test_suites[self] = true
       end
@@ -238,13 +244,23 @@ module Test
 
       def self.inherited klass # :nodoc:
         @@test_suites[klass] = true
+        klass.test_method_num = 0
         super
       end
 
       @test_order = :sorted
+      @test_method_num = 0
 
       class << self
         attr_writer :test_order
+        attr_accessor :test_method_num
+
+        def test_methods_ran
+          @test_methods_ran ||= {}
+        end
+        def reset_test_methods_ran
+          @test_methods_ran = nil
+        end
       end
 
       def self.test_order
@@ -289,6 +305,7 @@ module Test
         if @test_methods[name]
           raise AssertionFailedError, "test/unit: method #{ self }##{ name } is redefined"
         end
+        @test_method_num += 1
         @test_methods[name] = true
       end
     end
