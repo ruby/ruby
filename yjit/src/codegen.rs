@@ -1802,42 +1802,6 @@ fn gen_checkkeyword(
     KeepCompiling
 }
 
-fn gen_jnz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jnz(target0.into()),
-    }
-}
-
-fn gen_jz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jz(Target::CodePtr(target0)),
-    }
-}
-
-fn gen_jbe_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jbe(Target::CodePtr(target0)),
-    }
-}
-
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
 // When depth_limit is exceeded, generate a jump to a side exit.
 fn jit_chain_guard(
@@ -1850,9 +1814,9 @@ fn jit_chain_guard(
     side_exit: Target,
 ) {
     let target0_gen_fn = match jcc {
-        JCC_JNE | JCC_JNZ => gen_jnz_to_target0,
-        JCC_JZ | JCC_JE => gen_jz_to_target0,
-        JCC_JBE | JCC_JNA => gen_jbe_to_target0,
+        JCC_JNE | JCC_JNZ => BranchGenFn::JNZToTarget0,
+        JCC_JZ | JCC_JE => BranchGenFn::JZToTarget0,
+        JCC_JBE | JCC_JNA => BranchGenFn::JBEToTarget0,
     };
 
     if (ctx.get_chain_depth() as i32) < depth_limit {
@@ -1865,7 +1829,7 @@ fn jit_chain_guard(
 
         gen_branch(jit, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
-        target0_gen_fn(asm, side_exit.unwrap_code_ptr(), None, BranchShape::Default);
+        target0_gen_fn.call(asm, side_exit.unwrap_code_ptr(), None);
     }
 }
 
@@ -3498,27 +3462,6 @@ fn gen_opt_case_dispatch(
     }
 }
 
-fn gen_branchif_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    assert!(target1 != None);
-    match shape {
-        BranchShape::Next0 => {
-            asm.jz(target1.unwrap().into());
-        }
-        BranchShape::Next1 => {
-            asm.jnz(target0.into());
-        }
-        BranchShape::Default => {
-            asm.jnz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
-}
-
 fn gen_branchif(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -3565,27 +3508,11 @@ fn gen_branchif(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchif_branch,
+            BranchGenFn::Branchif(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchunless_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
-        BranchShape::Next1 => asm.jz(target0.into()),
-        BranchShape::Default => {
-            asm.jz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchunless(
@@ -3635,27 +3562,11 @@ fn gen_branchunless(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchunless_branch,
+            BranchGenFn::Branchunless(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchnil_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jne(target1.unwrap().into()),
-        BranchShape::Next1 => asm.je(target0.into()),
-        BranchShape::Default => {
-            asm.je(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchnil(
@@ -3702,7 +3613,7 @@ fn gen_branchnil(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchnil_branch,
+            BranchGenFn::Branchnil(BranchShape::Default),
         );
     }
 
@@ -5954,15 +5865,7 @@ fn gen_send_iseq(
         &return_ctx,
         None,
         None,
-        |asm, target0, _target1, shape| {
-            match shape {
-                BranchShape::Default => {
-                    asm.comment("update cfp->jit_return");
-                    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
-                }
-                _ => unreachable!()
-            }
-        },
+        BranchGenFn::JITReturn,
     );
 
     // Directly jump to the entry point of the callee
