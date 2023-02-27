@@ -78,3 +78,26 @@ jobs:
       uses: github/codeql-action/analyze@32dc499307d133bb5085bae78498c0ac2cf762d5 # v2.2.5
       with:
         category: "/language:${{matrix.language}}"
+        upload: False
+        output: sarif-results
+
+    - name: filter-sarif
+      uses: advanced-security/filter-sarif@v1
+      with:
+        patterns: |
+          +**/*.rb
+          -test/ruby/test_io.rb:rb/non-constant-kernel-open
+          -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
+          -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/binread_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/readlines_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/foreach_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/write_spec.rb:rb/non-constant-kernel-open
+        input: sarif-results/${{ matrix.language }}.sarif
+        output: sarif-results/${{ matrix.language }}.sarif
+      if: ${{ matrix.language == 'ruby' }}
+
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: sarif-results/${{ matrix.language }}.sarif
