@@ -41,8 +41,8 @@ FileUtils.cp("#{basedir}/fficonfig.h", ".", preserve: true)
 hdr = File.binread("#{srcdir}/include/ffi.h.in")
 hdr.gsub!(/@(\w+)@/) {conf[$1] || $&}
 hdr.gsub!(/^(#if\s+)@\w+@/, '\10')
-IO.binwrite("#{builddir}/include/ffi.h", hdr)
+File.binwrite("#{builddir}/include/ffi.h", hdr)
 
 mk = File.binread("#{basedir}/libffi.mk.tmpl")
 mk.gsub!(/@(\w+)@/) {conf[$1] || $&}
-IO.binwrite("Makefile", mk)
+File.binwrite("Makefile", mk)
