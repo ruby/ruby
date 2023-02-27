@@ -544,7 +544,7 @@ pub struct Block {
 
     // FIXME: should these be code pointers instead?
     // Offsets for GC managed objects in the mainline code block
-    gc_obj_offsets: Option<Box<[u32]>>,
+    gc_obj_offsets: Box<[u32]>,
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
@@ -796,18 +796,16 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             }
 
             // Walk over references to objects in generated code.
-            if let Some(gc_obj_offsets) = &block.gc_obj_offsets {
-                for offset in gc_obj_offsets.iter() {
-                    let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
-                    // Creating an unaligned pointer is well defined unlike in C.
-                    let value_address = value_address as *const VALUE;
+            for offset in block.gc_obj_offsets.iter() {
+                let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
+                // Creating an unaligned pointer is well defined unlike in C.
+                let value_address = value_address as *const VALUE;
 
-                    // SAFETY: these point to YJIT's code buffer
-                    unsafe {
-                        let object = value_address.read_unaligned();
-                        rb_gc_mark_movable(object);
-                    };
-                }
+                // SAFETY: these point to YJIT's code buffer
+                unsafe {
+                    let object = value_address.read_unaligned();
+                    rb_gc_mark_movable(object);
+                };
             }
         }
     }
@@ -845,25 +843,23 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             }
 
             // Walk over references to objects in generated code.
-            if let Some(gc_obj_offsets) = &block.gc_obj_offsets {
-                for offset in gc_obj_offsets.iter() {
-                    let offset_to_value = offset.as_usize();
-                    let value_code_ptr = cb.get_ptr(offset_to_value);
-                    let value_ptr: *const u8 = value_code_ptr.raw_ptr();
-                    // Creating an unaligned pointer is well defined unlike in C.
-                    let value_ptr = value_ptr as *mut VALUE;
+            for offset in block.gc_obj_offsets.iter() {
+                let offset_to_value = offset.as_usize();
+                let value_code_ptr = cb.get_ptr(offset_to_value);
+                let value_ptr: *const u8 = value_code_ptr.raw_ptr();
+                // Creating an unaligned pointer is well defined unlike in C.
+                let value_ptr = value_ptr as *mut VALUE;
 
-                    // SAFETY: these point to YJIT's code buffer
-                    let object = unsafe { value_ptr.read_unaligned() };
-                    let new_addr = unsafe { rb_gc_location(object) };
+                // SAFETY: these point to YJIT's code buffer
+                let object = unsafe { value_ptr.read_unaligned() };
+                let new_addr = unsafe { rb_gc_location(object) };
 
-                    // Only write when the VALUE moves, to be copy-on-write friendly.
-                    if new_addr != object {
-                        for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                            let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                            cb.write_mem(byte_code_ptr, byte)
-                                .expect("patching existing code should be within bounds");
-                        }
+                // Only write when the VALUE moves, to be copy-on-write friendly.
+                if new_addr != object {
+                    for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
+                        let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
+                        cb.write_mem(byte_code_ptr, byte)
+                            .expect("patching existing code should be within bounds");
                     }
                 }
             }
@@ -1047,15 +1043,13 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     }
 
     // Run write barriers for all objects in generated code.
-    if let Some(gc_obj_offsets) = &block.gc_obj_offsets {
-        for offset in gc_obj_offsets.iter() {
-            let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
-            // Creating an unaligned pointer is well defined unlike in C.
-            let value_address: *const VALUE = value_address.cast();
+    for offset in block.gc_obj_offsets.iter() {
+        let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
+        // Creating an unaligned pointer is well defined unlike in C.
+        let value_address: *const VALUE = value_address.cast();
 
-            let object = unsafe { value_address.read_unaligned() };
-            obj_written!(iseq, object);
-        }
+        let object = unsafe { value_address.read_unaligned() };
+        obj_written!(iseq, object);
     }
 
     incr_counter!(compiled_block_count);
@@ -1094,7 +1088,7 @@ impl Block {
             end_addr: None,
             incoming: Vec::new(),
             outgoing: Vec::new(),
-            gc_obj_offsets: None,
+            gc_obj_offsets: Box::new([]),
             cme_dependencies: Vec::new(),
             entry_exit: None,
         };
@@ -1154,10 +1148,10 @@ impl Block {
     }
 
     pub fn set_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
-        assert_eq!(self.gc_obj_offsets, None);
+        assert_eq!(self.gc_obj_offsets.len(), 0);
         if !gc_offsets.is_empty() {
             add_counter!(num_gc_obj_refs, gc_offsets.len());
-            self.gc_obj_offsets = Some(gc_offsets.into_boxed_slice());
+            self.gc_obj_offsets = gc_offsets.into_boxed_slice();
         }
     }
 
