@@ -360,7 +360,7 @@ def get_included(file)
     file_name = File.join dir, file
 
     if File.exist? file_name then
-      included = IO.readlines file_name
+      included = File.readlines file_name
       break
     end
   end
