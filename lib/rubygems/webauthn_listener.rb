@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "webauthn_listener/response/response_ok"
-require_relative "webauthn_listener/response/response_no_content"
-require_relative "webauthn_listener/response/response_bad_request"
-require_relative "webauthn_listener/response/response_not_found"
-require_relative "webauthn_listener/response/response_method_not_allowed"
+require_relative "webauthn_listener/response"
 
 ##
 # The WebauthnListener class retrieves an OTP after a user successfully WebAuthns with the Gem host.
@@ -45,24 +41,26 @@ class Gem::WebauthnListener
       method, req_uri, _protocol = request_line.split(" ")
       req_uri = URI.parse(req_uri)
 
+      responder = SocketResponder.new(socket)
+
       unless root_path?(req_uri)
-        ResponseNotFound.send(socket, host)
+        responder.send(NotFoundResponse.for(host))
         raise Gem::WebauthnVerificationError, "Page at #{req_uri.path} not found."
       end
 
       case method.upcase
       when "OPTIONS"
-        ResponseNoContent.send(socket, host)
+        responder.send(NoContentResponse.for(host))
         next # will be GET
       when "GET"
         if otp = parse_otp_from_uri(req_uri)
-          ResponseOk.send(socket, host)
+          responder.send(OkResponse.for(host))
           return otp
         end
-        ResponseBadRequest.send(socket, host)
+        responder.send(BadRequestResponse.for(host))
         raise Gem::WebauthnVerificationError, "Did not receive OTP from #{host}."
       else
-        ResponseMethodNotAllowed.send(socket, host)
+        responder.send(MethodNotAllowedResponse.for(host))
         raise Gem::WebauthnVerificationError, "Invalid HTTP method #{method.upcase} received."
       end
     end
@@ -79,5 +77,16 @@ class Gem::WebauthnListener
 
     return if uri.query.nil?
     CGI.parse(uri.query).dig("code", 0)
+  end
+
+  class SocketResponder
+    def initialize(socket)
+      @socket = socket
+    end
+
+    def send(response)
+      @socket.print response.to_s
+      @socket.close
+    end
   end
 end
