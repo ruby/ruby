@@ -8,7 +8,11 @@ describe :marshal_load, shared: true do
 
   it "raises an ArgumentError when the dumped data is truncated" do
     obj = {first: 1, second: 2, third: 3}
-    -> { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError)
+    -> { Marshal.send(@method, Marshal.dump(obj)[0, 5]) }.should raise_error(ArgumentError, "marshal data too short")
+  end
+
+  it "raises an ArgumentError when the argument is empty String" do
+    -> { Marshal.send(@method, "") }.should raise_error(ArgumentError, "marshal data too short")
   end
 
   it "raises an ArgumentError when the dumped class is missing" do

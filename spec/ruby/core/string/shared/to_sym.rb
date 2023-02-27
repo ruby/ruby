@@ -67,6 +67,6 @@ describe :string_to_sym, shared: true do
     invalid_utf8.should_not.valid_encoding?
     -> {
       invalid_utf8.send(@method)
-    }.should raise_error(EncodingError, /invalid/)
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
   end
 end

@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 require 'zlib'
 
 describe "Zlib::Inflate#finish" do
