@@ -158,7 +158,7 @@ module Gem
   # The path to standard location of the user's state directory.
 
   def self.state_home
-    @data_home ||= (ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state"))
+    @state_home ||= (ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state"))
   end
 
   ##
