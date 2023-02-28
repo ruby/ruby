@@ -141,6 +141,19 @@ macro_rules! make_counters {
     }
 }
 
+/// Macro to increase a counter by name and count
+macro_rules! incr_counter_by {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($counter_name:ident, $count:expr) => {
+        #[allow(unused_unsafe)]
+        {
+            unsafe { $crate::stats::COUNTERS.$counter_name += $count as u64 }
+        }
+    };
+}
+pub(crate) use incr_counter_by;
+
 /// Macro to increment a counter by name
 macro_rules! incr_counter {
     // Unsafe is ok here because options are initialized
