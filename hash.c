@@ -50,7 +50,7 @@
 #include "vm_sync.h"
 
 #if USE_MMTK
-#include "mmtk.h" // For mmtk_register_ppp
+#include "internal/mmtk.h" // For mmtk_register_ppp
 #endif
 
 #ifndef HASH_DEBUG

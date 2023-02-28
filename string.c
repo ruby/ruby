@@ -46,7 +46,7 @@
 #include "vm_sync.h"
 
 #if USE_MMTK
-#include "mmtk.h"
+#include "internal/mmtk.h"
 #endif
 
 #if defined HAVE_CRYPT_R

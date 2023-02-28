@@ -19,7 +19,7 @@
 
 #if USE_MMTK
 #include "internal/gc.h"
-#include "mmtk.h"
+#include "internal/mmtk.h"
 #endif
 
 #ifndef EXIT_SUCCESS

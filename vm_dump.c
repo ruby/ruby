@@ -38,7 +38,7 @@
 #include "ractor_core.h"
 
 #if USE_MMTK
-#include "mmtk.h"
+#include "internal/mmtk.h"
 #endif
 
 #define MAX_POSBUF 128
