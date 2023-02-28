@@ -709,7 +709,7 @@ pub fn gen_single_block(
     let starting_insn_idx = insn_idx;
 
     // Allocate the new block
-    let blockref = Block::new(blockid, &ctx, cb.get_write_ptr());
+    let blockref = Block::new(blockid, &ctx, cb.get_write_pos() as u32);
 
     // Initialize a JIT state object
     let mut jit = JITState::new(&blockref);
@@ -834,7 +834,7 @@ pub fn gen_single_block(
         block.set_gc_obj_offsets(gc_offsets);
 
         // Mark the end position of the block
-        block.set_end_addr(cb.get_write_ptr());
+        block.set_end_pos(cb.get_write_pos() as u32);
 
         // Store the index of the last instruction in the block
         block.set_end_idx(insn_idx);
@@ -7672,7 +7672,11 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-
+        assert!(
+            mem_size < u32::MAX as usize,
+            "--yjit-exec-mem-size must not be larger than {}",
+            u32::MAX / 1024 / 1024
+        );
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
@@ -7923,7 +7927,7 @@ mod tests {
             idx: 0,
         };
         let cb = CodeBlock::new_dummy(256 * 1024);
-        let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
+        let block = Block::new(blockid, &Context::default(), cb.get_write_pos() as u32);
 
         return (
             JITState::new(&block),

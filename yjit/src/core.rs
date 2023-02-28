@@ -13,6 +13,7 @@ use std::cell::*;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
+use std::num::NonZeroU32;
 use std::rc::{Rc};
 use YARVOpnd::*;
 use TempMapping::*;
@@ -516,7 +517,7 @@ impl BranchTarget {
     fn get_address(&self) -> Option<CodePtr> {
         match self {
             BranchTarget::Stub(stub) => stub.address,
-            BranchTarget::Block(blockref) => Some(blockref.borrow().start_addr),
+            BranchTarget::Block(blockref) => Some(blockref.borrow().get_start_addr()),
         }
     }
 
@@ -564,8 +565,8 @@ struct Branch {
     block: BlockRef,
 
     // Positions where the generated code starts and ends
-    start_addr: Option<CodePtr>,
-    end_addr: Option<CodePtr>, // exclusive
+    start_pos: Option<NonZeroU32>,
+    end_pos: Option<NonZeroU32>, // exclusive
 
     // Branch target blocks and their contexts
     targets: [Option<Box<BranchTarget>>; 2],
@@ -577,7 +578,37 @@ struct Branch {
 impl Branch {
     // Compute the size of the branch code
     fn code_size(&self) -> usize {
-        (self.end_addr.unwrap().raw_ptr() as usize) - (self.start_addr.unwrap().raw_ptr() as usize)
+        (u32::from(self.end_pos.unwrap()) - u32::from(self.start_pos.unwrap())) as usize
+    }
+
+    /// Compute the code starting address from start_pos
+    fn get_start_addr(&self) -> Option<CodePtr> {
+        self.start_pos.map(|start_pos| {
+            let cb = CodegenGlobals::get_inline_cb();
+            cb.get_ptr(u32::from(start_pos) as usize)
+        })
+    }
+
+    /// Compute the code ending address from start_pos
+    fn get_end_addr(&self) -> Option<CodePtr> {
+        self.end_pos.map(|end_pos| {
+            let cb = CodegenGlobals::get_inline_cb();
+            cb.get_ptr(u32::from(end_pos) as usize)
+        })
+    }
+
+    /// Update the code starting position by a pointer
+    fn set_start_addr(&mut self, start_addr: CodePtr) {
+        let cb = CodegenGlobals::get_inline_cb();
+        let start_pos = (start_addr.raw_ptr() as usize) - cb.get_ptr(0).raw_ptr() as usize;
+        self.start_pos = Some(NonZeroU32::new(start_pos as u32).unwrap());
+    }
+
+    /// Update the code ending position by a pointer
+    fn set_end_addr(&mut self, end_addr: CodePtr) {
+        let cb = CodegenGlobals::get_inline_cb();
+        let end_pos = (end_addr.raw_ptr() as usize) - cb.get_ptr(0).raw_ptr() as usize;
+        self.end_pos = Some(NonZeroU32::new(end_pos as u32).unwrap());
     }
 
     /// Get the address of one of the branch destination
@@ -615,8 +646,8 @@ pub struct Block {
     ctx: Context,
 
     // Positions where the generated code starts and ends
-    start_addr: CodePtr,
-    end_addr: Option<CodePtr>,
+    start_pos: u32,
+    end_pos: Option<NonZeroU32>,
 
     // List of incoming branches (from predecessors)
     // These are reference counted (ownership shared between predecessor and successors)
@@ -1142,7 +1173,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
 
     // Mark code pages for code GC
     let iseq_payload = get_iseq_payload(block.blockid.iseq).unwrap();
-    for page in cb.addrs_to_pages(block.start_addr, block.end_addr.unwrap()) {
+    for page in cb.addrs_to_pages(block.get_start_addr(), block.get_end_addr().unwrap()) {
         iseq_payload.pages.insert(page);
     }
 }
@@ -1165,13 +1196,13 @@ fn remove_block_version(blockref: &BlockRef) {
 //===========================================================================
 
 impl Block {
-    pub fn new(blockid: BlockId, ctx: &Context, start_addr: CodePtr) -> BlockRef {
+    pub fn new(blockid: BlockId, ctx: &Context, start_pos: u32) -> BlockRef {
         let block = Block {
             blockid,
             end_idx: 0,
             ctx: ctx.clone(),
-            start_addr,
-            end_addr: None,
+            start_pos,
+            end_pos: None,
             incoming: Vec::new(),
             outgoing: Vec::new(),
             gc_obj_offsets: Box::new([]),
@@ -1206,12 +1237,16 @@ impl Block {
 
     #[allow(unused)]
     pub fn get_start_addr(&self) -> CodePtr {
-        self.start_addr
+        let cb = CodegenGlobals::get_inline_cb();
+        cb.get_ptr(self.start_pos as usize)
     }
 
     #[allow(unused)]
     pub fn get_end_addr(&self) -> Option<CodePtr> {
-        self.end_addr
+        self.end_pos.map(|end_pos| {
+            let cb = CodegenGlobals::get_inline_cb();
+            cb.get_ptr(u32::from(end_pos) as usize)
+        })
     }
 
     /// Get an immutable iterator over cme dependencies
@@ -1221,9 +1256,9 @@ impl Block {
 
     /// Set the end address in the generated for the block
     /// This can be done only once for a block
-    pub fn set_end_addr(&mut self, addr: CodePtr) {
+    pub fn set_end_pos(&mut self, end_pos: u32) {
         // TODO: assert constraint that blocks can shrink but not grow in length
-        self.end_addr = Some(addr);
+        self.end_pos = Some(NonZeroU32::new(end_pos).unwrap());
     }
 
     /// Set the index of the last instruction in the block
@@ -1262,7 +1297,7 @@ impl Block {
 
     // Compute the size of the block code
     pub fn code_size(&self) -> usize {
-        (self.end_addr.unwrap().raw_ptr() as usize) - (self.start_addr.raw_ptr() as usize)
+        (u32::from(self.end_pos.unwrap()) - u32::from(self.start_pos)) as usize
     }
 }
 
@@ -1831,11 +1866,11 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     */
 
     // Remove old comments
-    if let (Some(start_addr), Some(end_addr)) = (branch.start_addr, branch.end_addr) {
+    if let (Some(start_addr), Some(end_addr)) = (branch.get_start_addr(), branch.get_end_addr()) {
         cb.remove_comments(start_addr, end_addr)
     }
 
-    let branch_terminates_block = branch.end_addr == branch.block.borrow().end_addr;
+    let branch_terminates_block = branch.get_end_addr() == branch.block.borrow().get_end_addr();
 
     // Generate the branch
     let mut asm = Assembler::new();
@@ -1849,17 +1884,17 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     // Rewrite the branch
     let old_write_pos = cb.get_write_pos();
     let old_dropped_bytes = cb.has_dropped_bytes();
-    cb.set_write_ptr(branch.start_addr.unwrap());
+    cb.set_write_ptr(branch.get_start_addr().unwrap());
     cb.set_dropped_bytes(false);
     asm.compile(cb);
 
-    branch.end_addr = Some(cb.get_write_ptr());
+    branch.set_end_addr(cb.get_write_ptr());
 
     // The block may have shrunk after the branch is rewritten
     let mut block = branch.block.borrow_mut();
     if branch_terminates_block {
         // Adjust block size
-        block.end_addr = branch.end_addr;
+        block.set_end_pos(cb.get_write_pos() as u32);
     }
 
     // cb.write_pos is both a write cursor and a marker for the end of
@@ -1886,8 +1921,8 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
         block: block.clone(),
 
         // Positions where the generated code starts and ends
-        start_addr: None,
-        end_addr: None,
+        start_pos: None,
+        end_pos: None,
 
         // Branch target blocks and their contexts
         targets: [None, None],
@@ -1991,9 +2026,9 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let mut branch_modified = false;
 
         // If the new block can be generated right after the branch (at cb->write_pos)
-        if Some(cb.get_write_ptr()) == branch.end_addr {
+        if Some(cb.get_write_ptr()) == branch.get_end_addr() {
             // This branch should be terminating its block
-            assert!(branch.end_addr == branch.block.borrow().end_addr);
+            assert!(branch.get_end_addr() == branch.block.borrow().get_end_addr());
 
             // Change the branch shape to indicate the target block will be placed next
             branch.gen_fn.set_shape(target_branch_shape);
@@ -2005,7 +2040,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             // Ensure that the branch terminates the codeblock just like
             // before entering this if block. This drops bytes off the end
             // in case we shrank the branch when regenerating.
-            cb.set_write_ptr(branch.end_addr.unwrap());
+            cb.set_write_ptr(branch.get_end_addr().unwrap());
         }
 
         // Compile the new block version
@@ -2027,7 +2062,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             let mut block: RefMut<_> = block_rc.borrow_mut();
 
             // Branch shape should reflect layout
-            assert!(!(branch.gen_fn.get_shape() == target_branch_shape && Some(block.start_addr) != branch.end_addr));
+            assert!(!(branch.gen_fn.get_shape() == target_branch_shape && Some(block.get_start_addr()) != branch.get_end_addr()));
 
             // Add this branch to the list of incoming branches for the target
             block.push_incoming(branch_rc.clone());
@@ -2042,7 +2077,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             // Restore interpreter sp, since the code hitting the stub expects the original.
             unsafe { rb_set_cfp_sp(cfp, original_interp_sp) };
 
-            block_rc.borrow().start_addr
+            block_rc.borrow().get_start_addr()
         }
         None => {
             // Code GC needs to borrow blocks for invalidation, so their mutable
@@ -2075,7 +2110,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     assert!(
         new_branch_size <= branch_size_on_entry,
         "branch stubs should never enlarge branches (start_addr: {:?}, old_size: {}, new_size: {})",
-        branch.start_addr.unwrap().raw_ptr(), branch_size_on_entry, new_branch_size,
+        branch.get_start_addr().unwrap().raw_ptr(), branch_size_on_entry, new_branch_size,
     );
 
     // Return a pointer to the compiled block version
@@ -2184,7 +2219,7 @@ impl Assembler
 
         self.pos_marker(move |code_ptr| {
             let mut branch = branchref.borrow_mut();
-            branch.start_addr = Some(code_ptr);
+            branch.set_start_addr(code_ptr);
         });
     }
 
@@ -2197,7 +2232,7 @@ impl Assembler
 
         self.pos_marker(move |code_ptr| {
             let mut branch = branchref.borrow_mut();
-            branch.end_addr = Some(code_ptr);
+            branch.set_end_addr(code_ptr);
         });
     }
 }
@@ -2247,7 +2282,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
     // If the block already exists
     if let Some(blockref) = maybe_block {
         let mut block = blockref.borrow_mut();
-        let block_addr = block.start_addr;
+        let block_addr = block.get_start_addr();
 
         block.push_incoming(branchref.clone());
 
@@ -2406,7 +2441,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     remove_block_version(blockref);
 
     // Get a pointer to the generated code for this block
-    let block_start = block.start_addr;
+    let block_start = block.get_start_addr();
 
     // Make the the start of the block do an exit. This handles OOM situations
     // and some cases where we can't efficiently patch incoming branches.
@@ -2420,7 +2455,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         .expect("invalidation needs the entry_exit field");
     {
         let block_end = block
-            .end_addr
+            .get_end_addr()
             .expect("invalidation needs constructed block");
 
         if block_start == block_entry_exit {
@@ -2493,7 +2528,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Check if the invalidated block immediately follows
-        let target_next = Some(block.start_addr) == branch.end_addr;
+        let target_next = Some(block.get_start_addr()) == branch.get_end_addr();
 
         if target_next {
             // The new block will no longer be adjacent.
@@ -2506,13 +2541,13 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         let old_branch_size = branch.code_size();
         regenerate_branch(cb, &mut branch);
 
-        if target_next && branch.end_addr > block.end_addr {
+        if target_next && branch.get_end_addr() > block.get_end_addr() {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
         }
         if !target_next && branch.code_size() > old_branch_size {
             panic!(
                 "invalidated branch grew in size (start_addr: {:?}, old_size: {}, new_size: {})",
-                branch.start_addr.unwrap().raw_ptr(), old_branch_size, branch.code_size()
+                branch.get_start_addr().unwrap().raw_ptr(), old_branch_size, branch.code_size()
             );
         }
     }
