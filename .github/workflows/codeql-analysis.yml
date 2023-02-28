@@ -1,20 +1,20 @@
 name: "CodeQL"
 
 on:
-  # push:
-  #   paths-ignore:
-  #     - 'doc/**'
-  #     - '**/man'
-  #     - '**.md'
-  #     - '**.rdoc'
-  #     - '**/.document'
-  # pull_request:
-  #   paths-ignore:
-  #     - 'doc/**'
-  #     - '**/man'
-  #     - '**.md'
-  #     - '**.rdoc'
-  #     - '**/.document'
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
