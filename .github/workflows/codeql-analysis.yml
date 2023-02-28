@@ -87,6 +87,8 @@ jobs:
       with:
         patterns: |
           +**/*.rb
+          -lib/uri/mailto.rb:rb/overly-large-range
+          -lib/uri/rfc3986_parser.rb:rb/overly-large-range
           -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
           -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
           -test/ruby/test_io.rb:rb/non-constant-kernel-open
@@ -96,6 +98,8 @@ jobs:
           -spec/ruby/core/io/readlines_spec.rb:rb/non-constant-kernel-open
           -spec/ruby/core/io/foreach_spec.rb:rb/non-constant-kernel-open
           -spec/ruby/core/io/write_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/io/read_spec.rb:rb/non-constant-kernel-open
+          -spec/ruby/core/kernel/open_spec.rb:rb/non-constant-kernel-open
         input: sarif-results/${{ matrix.language }}.sarif
         output: sarif-results/${{ matrix.language }}.sarif
       if: ${{ matrix.language == 'ruby' }}
