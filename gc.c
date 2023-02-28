@@ -15478,9 +15478,6 @@ Init_GC(void)
 #undef rb_intern
     VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
-#if USE_MMTK
-    VALUE rb_mMMTk;
-#endif
     VALUE gc_constants;
 
     rb_mGC = rb_define_module("GC");
@@ -15590,11 +15587,7 @@ Init_GC(void)
 #endif
 
 #if USE_MMTK
-    rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
-    rb_define_singleton_method(rb_mMMTk, "plan_name", rb_mmtk_plan_name, 0);
-    rb_define_singleton_method(rb_mMMTk, "enabled?", rb_mmtk_enabled, 0);
-    rb_define_singleton_method(rb_mMMTk, "harness_begin", rb_mmtk_harness_begin, 0);
-    rb_define_singleton_method(rb_mMMTk, "harness_end", rb_mmtk_harness_end, 0);
+    rb_mmtk_define_gc_mmtk_module();
 #endif
 
     {

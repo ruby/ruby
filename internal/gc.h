@@ -255,24 +255,12 @@ void rb_gc_mark_and_move(VALUE *ptr);
 } while (0)
 
 #if USE_MMTK
-#define MMTK_DEFAULT_PLAN "MarkSweep"
-void rb_gc_init_collection(void);
-bool rb_gc_obj_free_on_exit_started(void);
-void rb_mmtk_pre_process_opts(int argc, char **argv);
-void rb_mmtk_post_process_opts(const char *arg);
-void rb_mmtk_post_process_opts_finish(bool feature_enable);
-
-void rb_mmtk_update_global_weak_tables_early(void);
-void rb_mmtk_update_global_weak_tables(void);
-
 void rb_mmtk_mark_roots(void);
 void rb_mmtk_mark_children(VALUE obj);
 void rb_mmtk_update_object_references(VALUE obj);
 void rb_mmtk_obj_free(VALUE obj);
 void rb_mmtk_run_finalizer(VALUE obj, VALUE table);
 #endif
-
-bool rb_mmtk_enabled_p(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */

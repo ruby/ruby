@@ -13,13 +13,20 @@
 #include "vm_core.h"
 #include "vm_sync.h"
 
-// Declare some data types defined elsewhere.
+////////////////////////////////////////////////////////////////////////////////
+// Workaround: Declare some data types defined elsewhere.
+////////////////////////////////////////////////////////////////////////////////
+
 // rb_objspace_t from gc.c
 typedef struct rb_objspace rb_objspace_t;
 #define rb_objspace (*rb_objspace_of(GET_VM()))
 #define rb_objspace_of(vm) ((vm)->objspace)
 // From ractor.c.  gc.c also declared this function locally.
 bool rb_obj_is_main_ractor(VALUE gv);
+
+////////////////////////////////////////////////////////////////////////////////
+// Global and thread-local states.
+////////////////////////////////////////////////////////////////////////////////
 
 static bool mmtk_enable = false;
 
@@ -40,10 +47,81 @@ bool obj_free_on_exit_started = false;
 // Use up to 80% of memory for the heap
 static const int rb_mmtk_heap_limit_percentage = 80;
 
+struct RubyMMTKThreadIterator {
+    rb_thread_t **threads;
+    size_t num_threads;
+    size_t cursor;
+};
+
+struct RubyMMTKGlobal {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond_world_stopped;
+    pthread_cond_t cond_world_started;
+    size_t stopped_ractors;
+    size_t start_the_world_count;
+    struct RubyMMTKThreadIterator thread_iter;
+} rb_mmtk_global = {
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+    .cond_world_stopped = PTHREAD_COND_INITIALIZER,
+    .cond_world_started = PTHREAD_COND_INITIALIZER,
+    .stopped_ractors = 0,
+    .start_the_world_count = 0,
+    .thread_iter = {
+        .threads = NULL,
+        .num_threads = 0,
+        .cursor = 0,
+    },
+};
+
+struct rb_mmtk_address_buffer {
+    void **slots;
+    size_t len;
+    size_t capa;
+};
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
+#else // RB_THREAD_LOCAL_SPECIFIER
+#error We currently need language-supported TLS
+#endif // RB_THREAD_LOCAL_SPECIFIER
+
+static void
+rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
+{
+    int err;
+    if ((err = pthread_mutex_lock(&rb_mmtk_global.mutex)) != 0) {
+        fprintf(stderr, "ERROR: cannot lock rb_mmtk_global.mutex: %s", strerror(err));
+        abort();
+    }
+
+    func(arg);
+
+    if ((err = pthread_mutex_unlock(&rb_mmtk_global.mutex)) != 0) {
+        fprintf(stderr, "ERROR: cannot release rb_mmtk_global.mutex: %s", strerror(err));
+        abort();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Query for enabled/disabled.
+////////////////////////////////////////////////////////////////////////////////
+
 bool
 rb_mmtk_enabled_p(void)
 {
     return mmtk_enable;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// MMTk binding initialization
+////////////////////////////////////////////////////////////////////////////////
+
+void
+rb_gc_init_collection(void)
+{
+    rb_thread_t *cur_thread = GET_THREAD();
+    mmtk_initialize_collection((void*)cur_thread);
+    cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
 }
 
 static size_t rb_mmtk_system_physical_memory(void)
@@ -93,29 +171,33 @@ static void rb_mmtk_heap_limit(bool *is_dynamic, size_t *min_size, size_t *max_s
 void
 rb_mmtk_main_thread_init(void)
 {
-MMTk_Builder *mmtk_builder = mmtk_builder_default();
+    MMTk_Builder *mmtk_builder = mmtk_builder_default();
 
-        mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
+    mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
 
-        bool is_dynamic;
-        size_t min_size, max_size;
-        rb_mmtk_heap_limit(&is_dynamic, &min_size, &max_size);
-        if (is_dynamic) {
-            mmtk_builder_set_dynamic_heap_size(mmtk_builder, min_size, max_size);
-        } else {
-            mmtk_builder_set_fixed_heap_size(mmtk_builder, max_size);
-        }
+    bool is_dynamic;
+    size_t min_size, max_size;
+    rb_mmtk_heap_limit(&is_dynamic, &min_size, &max_size);
+    if (is_dynamic) {
+        mmtk_builder_set_dynamic_heap_size(mmtk_builder, min_size, max_size);
+    } else {
+        mmtk_builder_set_fixed_heap_size(mmtk_builder, max_size);
+    }
 
 #if RACTOR_CHECK_MODE
-        ruby_binding_options.ractor_check_mode = true;
-        ruby_binding_options.suffix_size = sizeof(uint32_t);
+    ruby_binding_options.ractor_check_mode = true;
+    ruby_binding_options.suffix_size = sizeof(uint32_t);
 #else
-        ruby_binding_options.ractor_check_mode = false;
-        ruby_binding_options.suffix_size = 0;
+    ruby_binding_options.ractor_check_mode = false;
+    ruby_binding_options.suffix_size = 0;
 #endif
 
-        mmtk_init_binding(mmtk_builder, &ruby_binding_options, &ruby_upcalls);
+    mmtk_init_binding(mmtk_builder, &ruby_binding_options, &ruby_upcalls);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Object layout
+////////////////////////////////////////////////////////////////////////////////
 
 size_t
 rb_mmtk_prefix_size(void)
@@ -130,6 +212,371 @@ rb_mmtk_suffix_size(void)
     return ruby_binding_options.suffix_size;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Tracing
+////////////////////////////////////////////////////////////////////////////////
+
+static inline MMTk_ObjectReference
+rb_mmtk_call_object_closure(MMTk_ObjectReference object, bool pin) {
+    return rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
+                                                            rb_mmtk_gc_thread_tls->gc_context,
+                                                            object,
+                                                            pin);
+}
+
+static inline void
+rb_mmtk_mark(VALUE obj, bool pin)
+{
+    rb_mmtk_assert_mmtk_worker();
+    RUBY_DEBUG_LOG("Marking: %s %s %p",
+        pin ? "(pin)" : "     ",
+        RB_SPECIAL_CONST_P(obj) ? "(spc)" : "     ",
+        (void*)obj);
+
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        rb_mmtk_call_object_closure((MMTk_ObjectReference)obj, pin);
+    }
+}
+
+// This function is used to visit and update all fields during tracing.
+// It shall call both gc_mark_children and gc_update_object_references during copying GC.
+static inline void
+rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
+{
+    rb_mmtk_assert_mmtk_worker();
+
+    VALUE obj = (VALUE)object;
+
+    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
+    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
+        return;
+    }
+
+    rb_mmtk_mark_children(obj);
+    rb_mmtk_update_object_references(obj);
+}
+
+// This is used to determine the pinning fields of potential pinning parents (PPPs).
+// It should only call gc_mark_children.
+static inline void
+rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
+{
+    rb_mmtk_assert_mmtk_worker();
+
+    VALUE obj = (VALUE)object;
+
+    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
+    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
+        return;
+    }
+
+    rb_mmtk_mark_children(obj);
+}
+
+void
+rb_mmtk_mark_movable(VALUE obj)
+{
+    rb_mmtk_mark(obj, false);
+}
+
+void
+rb_mmtk_mark_pin(VALUE obj)
+{
+    rb_mmtk_mark(obj, true);
+}
+
+void
+rb_mmtk_mark_and_move(VALUE *field)
+{
+    VALUE obj = *field;
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        MMTk_ObjectReference old_ref = (MMTk_ObjectReference)obj;
+        MMTk_ObjectReference new_ref = rb_mmtk_call_object_closure(old_ref, false);
+        if (new_ref != old_ref) {
+            *field = (VALUE)new_ref;
+        }
+    }
+}
+
+bool
+rb_mmtk_object_moved_p(VALUE value)
+{
+    if (!SPECIAL_CONST_P(value)) {
+        MMTk_ObjectReference object = (MMTk_ObjectReference)value;
+        return rb_mmtk_call_object_closure(object, false) != object;
+    } else {
+        return false;
+    }
+}
+
+VALUE
+rb_mmtk_maybe_forward(VALUE value)
+{
+    if (!SPECIAL_CONST_P(value)) {
+        return (VALUE)rb_mmtk_call_object_closure((MMTk_ObjectReference)value, false);
+    } else {
+        return value;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Finalization and exiting
+////////////////////////////////////////////////////////////////////////////////
+
+int
+rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE obj = (VALUE)key;
+    VALUE finalizer_array = (VALUE)value;
+    VALUE observed_id = rb_obj_id(obj);
+
+    RUBY_DEBUG_LOG("Running finalizer on exits for %p", (void*)obj);
+    rb_mmtk_run_finalizer(observed_id, finalizer_array);
+
+    return ST_CONTINUE;
+}
+
+static void
+rb_mmtk_call_obj_free_inner(VALUE obj, bool on_exit) {
+    if (on_exit) {
+        if (rb_obj_is_thread(obj)) {
+            RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_mutex(obj)) {
+            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_fiber(obj)) {
+            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_main_ractor(obj)) {
+            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+    }
+
+    RUBY_DEBUG_LOG("Freeing object: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
+    rb_mmtk_obj_free(obj);
+
+    // The object may contain dangling pointers after `obj_free`.
+    // Clear its flags field to ensure the GC does not attempt to scan it.
+    // TODO: We can instead clear the VO bit (a.k.a. alloc-bit) when mmtk-core supports that.
+    RBASIC(obj)->flags = 0;
+    *(VALUE*)(&RBASIC(obj)->klass) = 0;
+}
+
+static inline void
+rb_mmtk_call_obj_free(MMTk_ObjectReference object)
+{
+    rb_mmtk_assert_mmtk_worker();
+
+    VALUE obj = (VALUE)object;
+
+    rb_mmtk_call_obj_free_inner(obj, false);
+}
+
+void
+rb_mmtk_call_obj_free_on_exit(void)
+{
+    struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_obj_free_candidates();
+
+    for (size_t i = 0; i < resurrrected_objs.len; i++) {
+        void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
+
+        VALUE obj = (VALUE)resurrected;
+        rb_mmtk_call_obj_free_inner(obj, true);
+    }
+
+    mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
+}
+
+bool
+rb_gc_obj_free_on_exit_started(void) {
+    return obj_free_on_exit_started;
+}
+
+void
+rb_gc_set_obj_free_on_exit_started(void) {
+    obj_free_on_exit_started = true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Weak table processing
+////////////////////////////////////////////////////////////////////////////////
+
+struct rb_mmtk_weak_table_rebuilding_context {
+    st_table *old_table;
+    st_table *new_table;
+    bool update_values;
+    rb_mmtk_hash_on_delete_func on_delete;
+    void *on_delete_arg;
+};
+
+static int
+rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t arg)
+{
+    struct rb_mmtk_weak_table_rebuilding_context *ctx =
+        (struct rb_mmtk_weak_table_rebuilding_context*)arg;
+
+    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+        st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key, false);
+        st_data_t new_value = ctx->update_values ?
+            (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
+            value;
+        st_insert(ctx->new_table, new_key, new_value);
+        RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
+            (void*)key, (void*)value, (void*)new_key, (void*)new_value);
+    } else {
+        // The key is dead. Discard the entry.
+        RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p)",
+            (void*)key, (void*)value);
+        if (ctx->on_delete != NULL) {
+            ctx->on_delete(key, value, ctx->on_delete_arg);
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+struct rb_mmtk_weak_table_updating_context {
+    bool update_values;
+    rb_mmtk_hash_on_delete_func on_delete;
+    void *on_delete_arg;
+};
+
+static int
+rb_mmtk_update_weak_table_should_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    struct rb_mmtk_weak_table_updating_context *ctx =
+        (struct rb_mmtk_weak_table_updating_context*)argp;
+
+    if (!mmtk_is_live_object((MMTk_ObjectReference)key)) {
+        return ST_DELETE;
+    }
+
+    if (ctx->update_values && !mmtk_is_live_object((MMTk_ObjectReference)key)) {
+        return ST_DELETE;
+    }
+
+    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)key);
+    if (new_key != NULL && new_key != (MMTk_ObjectReference)key) {
+        return ST_REPLACE;
+    }
+
+    if (ctx->update_values) {
+        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)value);
+        if (new_value != NULL && new_value != (MMTk_ObjectReference)value) {
+            return ST_REPLACE;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    struct rb_mmtk_weak_table_updating_context *ctx =
+        (struct rb_mmtk_weak_table_updating_context*)argp;
+
+    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)*key);
+    if (new_key != NULL && new_key != (MMTk_ObjectReference)*key) {
+        *key = (st_data_t)new_key;
+    }
+
+    if (ctx->update_values) {
+        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)*value);
+        if (new_value != NULL && new_value != (MMTk_ObjectReference)*value) {
+            *value = (st_data_t)new_value;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+/*
+ * Update a weak hash table after a copying GC finished.
+ * If a key points to a live object, keep the key-value pair,
+ * and update the key (and optionally the value) to point to their new addresses.
+ * If a key points to a dead object, discard the key-value pair.
+ */
+void
+rb_mmtk_update_weak_table(st_table *table,
+                          bool addr_hashed,
+                          bool update_values,
+                          rb_mmtk_hash_on_delete_func on_delete,
+                          void *on_delete_arg)
+{
+    if (!table || table->num_entries == 0) return;
+
+    if (addr_hashed) {
+        // The has table uses the address of the key object as key.
+        // If a key object is moved, its hash is changed as well.
+        // Therefore we must rebuild the whole hash table.
+        // TODO: Implement address-based hashing to avoid this need.
+
+        st_table *old_table = table;
+        st_table *new_table = st_init_table(old_table->type);
+
+        struct rb_mmtk_weak_table_rebuilding_context ctx = {
+            .old_table = old_table,
+            .new_table = new_table,
+            .update_values = update_values,
+            .on_delete = on_delete,
+            .on_delete_arg = on_delete_arg,
+        };
+        if (st_foreach(old_table, rb_mmtk_update_weak_table_migrate_each, (st_data_t)&ctx)) {
+            fprintf(stderr, "Did anything go wrong?");
+            abort();
+        }
+
+        // Swap the contents of the old and the new table.
+        // Note: The mutator may be rebuilding the same table when GC is updating it.
+        // (see `rebuild_table` in st.c)
+        // If the old table was not big enough, it will allocate a new table, but that may trigger GC.
+        // After GC finishes and the new table is allocated,
+        // the mutator will copy entries from the old table.
+        // If we replace the whole old table,
+        // the mutator shouldn't notice that the entire old table has been replaced during GC.
+        st_table old_table_copy = *old_table;
+        *old_table = *new_table;
+        *new_table = old_table_copy;
+
+        st_free_table(new_table);
+    } else {
+        // The table uses the content of the key object to compute the hash.
+        // The hash will not change if the object is moved.
+        // We can update the table in place.
+        struct rb_mmtk_weak_table_updating_context ctx = {
+            .update_values = update_values,
+            .on_delete = on_delete,
+            .on_delete_arg = on_delete_arg,
+        };
+        if (st_foreach_with_replace(table,
+                                    rb_mmtk_update_weak_table_should_replace,
+                                    rb_mmtk_update_weak_table_replace,
+                                    (st_data_t)&ctx)) {
+            fprintf(stderr, "Did anything go wrong?");
+            abort();
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// MMTk-specific Ruby module (GC::MMTk)
+////////////////////////////////////////////////////////////////////////////////
+
+void
+rb_mmtk_define_gc_mmtk_module(void)
+{
+    VALUE rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
+    rb_define_singleton_method(rb_mMMTk, "plan_name", rb_mmtk_plan_name, 0);
+    rb_define_singleton_method(rb_mMMTk, "enabled?", rb_mmtk_enabled, 0);
+    rb_define_singleton_method(rb_mMMTk, "harness_begin", rb_mmtk_harness_begin, 0);
+    rb_define_singleton_method(rb_mMMTk, "harness_end", rb_mmtk_harness_end, 0);
+}
 
 /*
  *  call-seq:
@@ -204,100 +651,9 @@ rb_mmtk_harness_end(VALUE _)
     return Qnil;
 }
 
-#endif // USE_MMTK
-
-bool
-rb_gc_obj_free_on_exit_started(void) {
-    return obj_free_on_exit_started;
-}
-
-void
-rb_gc_set_obj_free_on_exit_started(void) {
-    obj_free_on_exit_started = true;
-}
-
-struct RubyMMTKThreadIterator {
-    rb_thread_t **threads;
-    size_t num_threads;
-    size_t cursor;
-};
-
-struct RubyMMTKGlobal {
-    pthread_mutex_t mutex;
-    pthread_cond_t cond_world_stopped;
-    pthread_cond_t cond_world_started;
-    size_t stopped_ractors;
-    size_t start_the_world_count;
-    struct RubyMMTKThreadIterator thread_iter;
-} rb_mmtk_global = {
-    .mutex = PTHREAD_MUTEX_INITIALIZER,
-    .cond_world_stopped = PTHREAD_COND_INITIALIZER,
-    .cond_world_started = PTHREAD_COND_INITIALIZER,
-    .stopped_ractors = 0,
-    .start_the_world_count = 0,
-    .thread_iter = {
-        .threads = NULL,
-        .num_threads = 0,
-        .cursor = 0,
-    },
-};
-
-struct rb_mmtk_address_buffer {
-    void **slots;
-    size_t len;
-    size_t capa;
-};
-
-#ifdef RB_THREAD_LOCAL_SPECIFIER
-RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
-#else // RB_THREAD_LOCAL_SPECIFIER
-#error We currently need language-supported TLS
-#endif // RB_THREAD_LOCAL_SPECIFIER
-
-static void
-rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
-{
-    int err;
-    if ((err = pthread_mutex_lock(&rb_mmtk_global.mutex)) != 0) {
-        fprintf(stderr, "ERROR: cannot lock rb_mmtk_global.mutex: %s", strerror(err));
-        abort();
-    }
-
-    func(arg);
-
-    if ((err = pthread_mutex_unlock(&rb_mmtk_global.mutex)) != 0) {
-        fprintf(stderr, "ERROR: cannot release rb_mmtk_global.mutex: %s", strerror(err));
-        abort();
-    }
-}
-
-void
-rb_gc_init_collection(void)
-{
-    rb_thread_t *cur_thread = GET_THREAD();
-    mmtk_initialize_collection((void*)cur_thread);
-    cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
-}
-
-static inline MMTk_ObjectReference
-rb_mmtk_call_object_closure(MMTk_ObjectReference object, bool pin) {
-    return rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
-                                                            rb_mmtk_gc_thread_tls->gc_context,
-                                                            object,
-                                                            pin);
-}
-
-static void
-rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
-{
-    rb_mmtk_gc_thread_tls = gc_thread_tls;
-}
-
-static MMTk_VMWorkerThread
-rb_mmtk_get_gc_thread_tls(void)
-{
-    return rb_mmtk_gc_thread_tls;
-}
+////////////////////////////////////////////////////////////////////////////////
+// Debugging
+////////////////////////////////////////////////////////////////////////////////
 
 static inline bool
 rb_mmtk_is_mmtk_worker(void)
@@ -317,7 +673,7 @@ rb_mmtk_assert_mmtk_worker(void)
     RUBY_ASSERT_MESG(rb_mmtk_is_mmtk_worker(), "The current thread is not an MMTk worker");
 }
 
-static inline void
+void
 rb_mmtk_assert_mutator(void)
 {
     RUBY_ASSERT_MESG(rb_mmtk_is_mutator(), "The current thread is not a mutator (i.e. Ruby thread)");
@@ -330,6 +686,22 @@ rb_mmtk_panic_if_multiple_ractor(const char *msg)
         fprintf(stderr, "Panic: %s is not implememted for multiple ractors.\n", msg);
         abort();
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// MMTk-Ruby Upcalls
+////////////////////////////////////////////////////////////////////////////////
+
+static void
+rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
+{
+    rb_mmtk_gc_thread_tls = gc_thread_tls;
+}
+
+static MMTk_VMWorkerThread
+rb_mmtk_get_gc_thread_tls(void)
+{
+    return rb_mmtk_gc_thread_tls;
 }
 
 static void
@@ -508,334 +880,6 @@ rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worke
     RUBY_DEBUG_LOG("[Worker: %p] Finished scanning thread for thread: %p, ec: %p", worker, thread, ec);
 }
 
-static inline void
-rb_mmtk_mark(VALUE obj, bool pin)
-{
-    rb_mmtk_assert_mmtk_worker();
-    RUBY_DEBUG_LOG("Marking: %s %s %p",
-        pin ? "(pin)" : "     ",
-        RB_SPECIAL_CONST_P(obj) ? "(spc)" : "     ",
-        (void*)obj);
-
-    if (!RB_SPECIAL_CONST_P(obj)) {
-        rb_mmtk_call_object_closure((MMTk_ObjectReference)obj, pin);
-    }
-}
-
-void
-rb_mmtk_mark_movable(VALUE obj)
-{
-    rb_mmtk_mark(obj, false);
-}
-
-void
-rb_mmtk_mark_pin(VALUE obj)
-{
-    rb_mmtk_mark(obj, true);
-}
-
-void
-rb_mmtk_mark_and_move(VALUE *field)
-{
-    VALUE obj = *field;
-    if (!RB_SPECIAL_CONST_P(obj)) {
-        MMTk_ObjectReference old_ref = (MMTk_ObjectReference)obj;
-        MMTk_ObjectReference new_ref = rb_mmtk_call_object_closure(old_ref, false);
-        if (new_ref != old_ref) {
-            *field = (VALUE)new_ref;
-        }
-    }
-}
-
-// This function is used to visit and update all fields during tracing.
-// It shall call both gc_mark_children and gc_update_object_references during copying GC.
-static inline void
-rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
-{
-    rb_mmtk_assert_mmtk_worker();
-
-    VALUE obj = (VALUE)object;
-
-    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
-    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
-        return;
-    }
-
-    rb_mmtk_mark_children(obj);
-    rb_mmtk_update_object_references(obj);
-}
-
-// This is used to determine the pinning fields of potential pinning parents (PPPs).
-// It should only call gc_mark_children.
-static inline void
-rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
-{
-    rb_mmtk_assert_mmtk_worker();
-
-    VALUE obj = (VALUE)object;
-
-    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
-    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
-        return;
-    }
-
-    rb_mmtk_mark_children(obj);
-}
-
-static void
-rb_mmtk_call_obj_free_inner(VALUE obj, bool on_exit) {
-    if (on_exit) {
-        if (rb_obj_is_thread(obj)) {
-            RUBY_DEBUG_LOG("Skipped thread: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_mutex(obj)) {
-            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_fiber(obj)) {
-            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-        if (rb_obj_is_main_ractor(obj)) {
-            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-            return;
-        }
-    }
-
-    RUBY_DEBUG_LOG("Freeing object: %p: %s", (void*)obj, rb_type_str(RB_BUILTIN_TYPE(obj)));
-    rb_mmtk_obj_free(obj);
-
-    // The object may contain dangling pointers after `obj_free`.
-    // Clear its flags field to ensure the GC does not attempt to scan it.
-    // TODO: We can instead clear the VO bit (a.k.a. alloc-bit) when mmtk-core supports that.
-    RBASIC(obj)->flags = 0;
-    *(VALUE*)(&RBASIC(obj)->klass) = 0;
-}
-
-int
-rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data)
-{
-    VALUE obj = (VALUE)key;
-    VALUE finalizer_array = (VALUE)value;
-    VALUE observed_id = rb_obj_id(obj);
-
-    RUBY_DEBUG_LOG("Running finalizer on exits for %p", (void*)obj);
-    rb_mmtk_run_finalizer(observed_id, finalizer_array);
-
-    return ST_CONTINUE;
-}
-
-void
-rb_mmtk_call_obj_free_on_exit(void)
-{
-    struct MMTk_RawVecOfObjRef resurrrected_objs = mmtk_get_all_obj_free_candidates();
-
-    for (size_t i = 0; i < resurrrected_objs.len; i++) {
-        void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
-
-        VALUE obj = (VALUE)resurrected;
-        rb_mmtk_call_obj_free_inner(obj, true);
-    }
-
-    mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
-}
-
-static inline void
-rb_mmtk_call_obj_free(MMTk_ObjectReference object)
-{
-    rb_mmtk_assert_mmtk_worker();
-
-    VALUE obj = (VALUE)object;
-
-    rb_mmtk_call_obj_free_inner(obj, false);
-}
-
-bool
-rb_mmtk_object_moved_p(VALUE value)
-{
-    if (!SPECIAL_CONST_P(value)) {
-        MMTk_ObjectReference object = (MMTk_ObjectReference)value;
-        return rb_mmtk_call_object_closure(object, false) != object;
-    } else {
-        return false;
-    }
-}
-
-VALUE
-rb_mmtk_maybe_forward(VALUE value)
-{
-    if (!SPECIAL_CONST_P(value)) {
-        return (VALUE)rb_mmtk_call_object_closure((MMTk_ObjectReference)value, false);
-    } else {
-        return value;
-    }
-}
-
-struct rb_mmtk_weak_table_rebuilding_context {
-    st_table *old_table;
-    st_table *new_table;
-    bool update_values;
-    rb_mmtk_hash_on_delete_func on_delete;
-    void *on_delete_arg;
-};
-
-static int
-rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t arg)
-{
-    struct rb_mmtk_weak_table_rebuilding_context *ctx =
-        (struct rb_mmtk_weak_table_rebuilding_context*)arg;
-
-    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
-        st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key, false);
-        st_data_t new_value = ctx->update_values ?
-            (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
-            value;
-        st_insert(ctx->new_table, new_key, new_value);
-        RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
-            (void*)key, (void*)value, (void*)new_key, (void*)new_value);
-    } else {
-        // The key is dead. Discard the entry.
-        RUBY_DEBUG_LOG("Discarding key-value pair: (%p, %p)",
-            (void*)key, (void*)value);
-        if (ctx->on_delete != NULL) {
-            ctx->on_delete(key, value, ctx->on_delete_arg);
-        }
-    }
-
-    return ST_CONTINUE;
-}
-
-struct rb_mmtk_weak_table_updating_context {
-    bool update_values;
-    rb_mmtk_hash_on_delete_func on_delete;
-    void *on_delete_arg;
-};
-
-static int
-rb_mmtk_update_weak_table_should_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    struct rb_mmtk_weak_table_updating_context *ctx =
-        (struct rb_mmtk_weak_table_updating_context*)argp;
-
-    if (!mmtk_is_live_object((MMTk_ObjectReference)key)) {
-        return ST_DELETE;
-    }
-
-    if (ctx->update_values && !mmtk_is_live_object((MMTk_ObjectReference)key)) {
-        return ST_DELETE;
-    }
-
-    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)key);
-    if (new_key != NULL && new_key != (MMTk_ObjectReference)key) {
-        return ST_REPLACE;
-    }
-
-    if (ctx->update_values) {
-        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)value);
-        if (new_value != NULL && new_value != (MMTk_ObjectReference)value) {
-            return ST_REPLACE;
-        }
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    struct rb_mmtk_weak_table_updating_context *ctx =
-        (struct rb_mmtk_weak_table_updating_context*)argp;
-
-    MMTk_ObjectReference new_key = mmtk_get_forwarded_object((MMTk_ObjectReference)*key);
-    if (new_key != NULL && new_key != (MMTk_ObjectReference)*key) {
-        *key = (st_data_t)new_key;
-    }
-
-    if (ctx->update_values) {
-        MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)*value);
-        if (new_value != NULL && new_value != (MMTk_ObjectReference)*value) {
-            *value = (st_data_t)new_value;
-        }
-    }
-
-    return ST_CONTINUE;
-}
-
-
-/*
- * Update a weak hash table after a copying GC finished.
- * If a key points to a live object, keep the key-value pair,
- * and update the key (and optionally the value) to point to their new addresses.
- * If a key points to a dead object, discard the key-value pair.
- */
-void
-rb_mmtk_update_weak_table(st_table *table,
-                          bool addr_hashed,
-                          bool update_values,
-                          rb_mmtk_hash_on_delete_func on_delete,
-                          void *on_delete_arg)
-{
-    if (!table || table->num_entries == 0) return;
-
-    if (addr_hashed) {
-        // The has table uses the address of the key object as key.
-        // If a key object is moved, its hash is changed as well.
-        // Therefore we must rebuild the whole hash table.
-        // TODO: Implement address-based hashing to avoid this need.
-
-        st_table *old_table = table;
-        st_table *new_table = st_init_table(old_table->type);
-
-        struct rb_mmtk_weak_table_rebuilding_context ctx = {
-            .old_table = old_table,
-            .new_table = new_table,
-            .update_values = update_values,
-            .on_delete = on_delete,
-            .on_delete_arg = on_delete_arg,
-        };
-        if (st_foreach(old_table, rb_mmtk_update_weak_table_migrate_each, (st_data_t)&ctx)) {
-            fprintf(stderr, "Did anything go wrong?");
-            abort();
-        }
-
-        // Swap the contents of the old and the new table.
-        // Note: The mutator may be rebuilding the same table when GC is updating it.
-        // (see `rebuild_table` in st.c)
-        // If the old table was not big enough, it will allocate a new table, but that may trigger GC.
-        // After GC finishes and the new table is allocated,
-        // the mutator will copy entries from the old table.
-        // If we replace the whole old table,
-        // the mutator shouldn't notice that the entire old table has been replaced during GC.
-        st_table old_table_copy = *old_table;
-        *old_table = *new_table;
-        *new_table = old_table_copy;
-
-        st_free_table(new_table);
-    } else {
-        // The table uses the content of the key object to compute the hash.
-        // The hash will not change if the object is moved.
-        // We can update the table in place.
-        struct rb_mmtk_weak_table_updating_context ctx = {
-            .update_values = update_values,
-            .on_delete = on_delete,
-            .on_delete_arg = on_delete_arg,
-        };
-        if (st_foreach_with_replace(table,
-                                    rb_mmtk_update_weak_table_should_replace,
-                                    rb_mmtk_update_weak_table_replace,
-                                    (st_data_t)&ctx)) {
-            fprintf(stderr, "Did anything go wrong?");
-            abort();
-        }
-    }
-}
-
-struct rb_mmtk_update_value_hashed_weak_table_context {
-    bool update_values;
-};
-
-
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -856,6 +900,10 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_update_global_weak_tables,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Commandline options parsing
+////////////////////////////////////////////////////////////////////////////////
+
 static size_t
 rb_mmtk_parse_heap_limit(const char *argv, bool* had_error)
 {
@@ -870,7 +918,6 @@ rb_mmtk_parse_heap_limit(const char *argv, bool* had_error)
     // if there were non-numbers in the string
     // try and parse them as IEC units
     if (*endval) {
-
         if (strcmp(endval, "TiB") == 0)  {
             pow = 40; // tebibytes. 2^40
         } else if (strcmp(endval, "GiB") == 0)  {
@@ -1043,4 +1090,4 @@ void rb_mmtk_post_process_opts_finish(bool feature_enable) {
     }
 }
 
-
+#endif // USE_MMTK
