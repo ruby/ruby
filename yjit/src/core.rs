@@ -400,7 +400,7 @@ pub enum BranchShape {
     Default, // Neither target is next
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BranchGenFn {
     Branchif(BranchShape),
     Branchnil(BranchShape),
@@ -558,6 +558,7 @@ struct BranchStub {
 
 /// Store info about an outgoing branch in a code segment
 /// Note: care must be taken to minimize the size of branch objects
+#[derive(Debug)]
 struct Branch {
     // Block this is attached to
     block: BlockRef,
@@ -571,19 +572,6 @@ struct Branch {
 
     // Branch code generation function
     gen_fn: BranchGenFn,
-}
-
-impl std::fmt::Debug for Branch {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: expand this if needed. #[derive(Debug)] on Branch gave a
-        // strange error related to BranchGenFn
-        formatter
-            .debug_struct("Branch")
-            .field("start", &self.start_addr)
-            .field("end", &self.end_addr)
-            .field("targets", &self.targets)
-            .finish()
-    }
 }
 
 impl Branch {
