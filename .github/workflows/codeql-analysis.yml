@@ -87,6 +87,8 @@ jobs:
       with:
         patterns: |
           +**/*.rb
+          -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
+          -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
           -test/ruby/test_io.rb:rb/non-constant-kernel-open
           -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
           -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
