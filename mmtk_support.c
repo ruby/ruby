@@ -1,6 +1,13 @@
-#include "internal/mmtk_support.h"
+#include "ruby/internal/config.h"
 
 #if USE_MMTK
+#include "internal/mmtk_support.h"
+
+#include "internal.h"
+#include "internal/gc.h"
+#include "internal/mmtk.h"
+#include "ruby/ruby.h"
+#include "vm_core.h"
 
 /*
  *  call-seq:
@@ -8,7 +15,7 @@
  *
  *  Returns the name of the current MMTk plan.
  */
-static VALUE
+VALUE
 rb_mmtk_plan_name(VALUE _)
 {
     if (!rb_mmtk_enabled_p()) {
@@ -30,7 +37,7 @@ rb_mmtk_plan_name(VALUE _)
  *
  *    defined? GC::MMTk
  */
-static VALUE
+VALUE
 rb_mmtk_enabled(VALUE _)
 {
     return RBOOL(rb_mmtk_enabled_p());
@@ -46,7 +53,7 @@ rb_mmtk_enabled(VALUE _)
  *  and start collecting statistic data, such as the number of GC triggered,
  *  time spent in GC, time spent in mutator, etc.
  */
-static VALUE
+VALUE
 rb_mmtk_harness_begin(VALUE _)
 {
     if (!rb_mmtk_enabled_p()) {
@@ -65,7 +72,7 @@ rb_mmtk_harness_begin(VALUE _)
  *  When this method is called, MMTk will stop collecting statistic data and
  *  print out the data already collected.
  */
-static VALUE
+VALUE
 rb_mmtk_harness_end(VALUE _)
 {
     if (!rb_mmtk_enabled_p()) {

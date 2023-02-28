@@ -110,6 +110,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		memory_view.$(OBJEXT) \
 		mjit.$(OBJEXT) \
 		mjit_c.$(OBJEXT) \
+		mmtk_support.$(OBJEXT) \
 		node.$(OBJEXT) \
 		numeric.$(OBJEXT) \
 		object.$(OBJEXT) \
