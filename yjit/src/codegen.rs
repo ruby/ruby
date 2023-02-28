@@ -16,7 +16,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
-use std::os::raw::{c_int, c_uint};
+use std::os::raw::{c_int};
 use std::ptr;
 use std::slice;
 
@@ -48,7 +48,7 @@ pub struct JITState {
     iseq: IseqPtr,
 
     // Index of the current instruction being compiled
-    insn_idx: u32,
+    insn_idx: u16,
 
     // Opcode for the instruction being compiled
     opcode: usize,
@@ -86,7 +86,7 @@ impl JITState {
         self.block.clone()
     }
 
-    pub fn get_insn_idx(&self) -> u32 {
+    pub fn get_insn_idx(&self) -> u16 {
         self.insn_idx
     }
 
@@ -110,8 +110,8 @@ impl JITState {
     }
 
     // Get the index of the next instruction
-    fn next_insn_idx(&self) -> u32 {
-        self.insn_idx + insn_len(self.get_opcode())
+    fn next_insn_idx(&self) -> u16 {
+        self.insn_idx + insn_len(self.get_opcode()) as u16
     }
 
     // Check if we are compiling the instruction at the stub PC
@@ -489,7 +489,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
         // Generate the exit with the cache in jitstate.
         block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx).unwrap_code_ptr());
     } else {
-        let block_entry_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
+        let block_entry_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx.into()) };
         block.entry_exit = Some(gen_outlined_exit(block_entry_pc, &block_ctx, ocb));
     }
 }
@@ -559,9 +559,9 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
+fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u16) {
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
-    let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+    let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
     let expected_pc_opnd = Opnd::const_ptr(expected_pc as *const u8);
 
     asm.cmp(pc_opnd, expected_pc_opnd);
@@ -586,7 +586,7 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
 
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
-pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> Option<CodePtr> {
+pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u16) -> Option<CodePtr> {
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
@@ -705,7 +705,8 @@ pub fn gen_single_block(
     // Instruction sequence to compile
     let iseq = blockid.iseq;
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let mut insn_idx: c_uint = blockid.idx;
+    let iseq_size: u16 = iseq_size.try_into().unwrap();
+    let mut insn_idx: u16 = blockid.idx;
     let starting_insn_idx = insn_idx;
 
     // Allocate the new block
@@ -730,7 +731,7 @@ pub fn gen_single_block(
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
         // Get the current pc and opcode
-        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
@@ -812,7 +813,7 @@ pub fn gen_single_block(
         ctx.reset_chain_depth();
 
         // Move to the next instruction to compile
-        insn_idx += insn_len(opcode);
+        insn_idx += insn_len(opcode) as u16;
 
         // If the instruction terminates this block
         if status == EndBlock {
@@ -3454,7 +3455,8 @@ fn gen_opt_case_dispatch(
         };
 
         // Jump to the offset of case or else
-        let jump_block = BlockId { iseq: jit.iseq, idx: jit.next_insn_idx() + jump_offset };
+        let jump_idx = jit.next_insn_idx() as u32 + jump_offset;
+        let jump_block = BlockId { iseq: jit.iseq, idx: jump_idx.try_into().unwrap() };
         gen_direct_jump(jit, &ctx, jump_block, asm);
         EndBlock
     } else {
@@ -3485,7 +3487,7 @@ fn gen_branchif(
     };
     let jump_block = BlockId {
         iseq: jit.iseq,
-        idx: jump_idx as u32,
+        idx: jump_idx.try_into().unwrap(),
     };
 
     // Test if any bit (outside of the Qnil bit) is on
@@ -3635,10 +3637,10 @@ fn gen_jump(
     }
 
     // Get the branch target instruction offsets
-    let jump_idx = (jit.next_insn_idx() as i32) + jump_offset;
+    let jump_idx = jit.next_insn_idx() as i32 + jump_offset;
     let jump_block = BlockId {
         iseq: jit.iseq,
-        idx: jump_idx as u32,
+        idx: jump_idx.try_into().unwrap(),
     };
 
     // Generate the jump instruction
@@ -5282,7 +5284,7 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    let mut start_pc_offset = 0;
+    let mut start_pc_offset: u16 = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
 
     // This struct represents the metadata about the caller-specified
@@ -5354,7 +5356,7 @@ fn gen_send_iseq(
         num_params -= opts_missing as u32;
         unsafe {
             let opt_table = get_iseq_body_param_opt_table(iseq);
-            start_pc_offset = (*opt_table.offset(opts_filled as isize)).as_u32();
+            start_pc_offset = (*opt_table.offset(opts_filled as isize)).try_into().unwrap();
         }
     }
 
@@ -5541,7 +5543,7 @@ fn gen_send_iseq(
             unsafe {
                 let opt_table = get_iseq_body_param_opt_table(iseq);
                 let offset = (opt_num - remaining_opt as i32) as isize;
-                start_pc_offset = (*opt_table.offset(offset)).as_u32();
+                start_pc_offset = (*opt_table.offset(offset)).try_into().unwrap();
             };
         }
         // We are going to assume that the splat fills

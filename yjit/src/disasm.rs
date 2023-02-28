@@ -44,7 +44,7 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 }
 
 #[cfg(feature = "disasm")]
-pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> String {
+pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> String {
     let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
@@ -239,7 +239,7 @@ pub extern "C" fn rb_yjit_insns_compiled(_ec: EcPtr, _ruby_self: VALUE, iseqw: V
     }
 }
 
-fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
+fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u16)> {
     let mut insn_vec = Vec::new();
 
     // Get a list of block versions generated for this iseq
@@ -250,13 +250,13 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
         let block = blockref.borrow();
         let start_idx = block.get_blockid().idx;
         let end_idx = block.get_end_idx();
-        assert!(end_idx <= unsafe { get_iseq_encoded_size(iseq) });
+        assert!(u32::from(end_idx) <= unsafe { get_iseq_encoded_size(iseq) });
 
         // For each YARV instruction in the block
         let mut insn_idx = start_idx;
         while insn_idx < end_idx {
             // Get the current pc and opcode
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
@@ -269,7 +269,7 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
             insn_vec.push((op_name, insn_idx));
 
             // Move to the next instruction
-            insn_idx += insn_len(opcode);
+            insn_idx += insn_len(opcode) as u16;
         }
     }
 

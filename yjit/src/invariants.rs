@@ -417,7 +417,7 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
-pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u32) {
+pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u16) {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
@@ -435,7 +435,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         // This should come from a running iseq, so direct threading translation
         // should have been done
         assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
-        assert!(insn_idx < unsafe { get_iseq_encoded_size(iseq) });
+        assert!(u32::from(insn_idx) < unsafe { get_iseq_encoded_size(iseq) });
 
         // Ensure that the instruction the insn_idx is pointing to is in
         // fact a opt_getconstant_path instruction.
