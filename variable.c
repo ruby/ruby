@@ -2432,9 +2432,9 @@ autoload_delete(VALUE module, ID name)
                 rb_hash_delete(autoload_features, autoload_data->feature);
             }
 
-            // If the autoload table is empty, we can delete it.
+            // If the autoload table is empty, we can remove the reference.
             if (table->num_entries == 0) {
-                rb_attr_delete(module, autoload);
+                rb_class_ivar_set(module, autoload, Qfalse);
             }
         }
     }
