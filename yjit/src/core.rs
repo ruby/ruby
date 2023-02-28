@@ -1150,7 +1150,7 @@ impl Block {
     pub fn set_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
         assert_eq!(self.gc_obj_offsets.len(), 0);
         if !gc_offsets.is_empty() {
-            add_counter!(num_gc_obj_refs, gc_offsets.len());
+            incr_counter_by!(num_gc_obj_refs, gc_offsets.len());
             self.gc_obj_offsets = gc_offsets.into_boxed_slice();
         }
     }

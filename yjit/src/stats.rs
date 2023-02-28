@@ -142,7 +142,7 @@ macro_rules! make_counters {
 }
 
 /// Macro to increase a counter by name and count
-macro_rules! add_counter {
+macro_rules! incr_counter_by {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
     ($counter_name:ident, $count:expr) => {
@@ -152,7 +152,7 @@ macro_rules! add_counter {
         }
     };
 }
-pub(crate) use add_counter;
+pub(crate) use incr_counter_by;
 
 /// Macro to increment a counter by name
 macro_rules! incr_counter {
