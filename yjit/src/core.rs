@@ -402,9 +402,9 @@ pub enum BranchShape {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BranchGenFn {
-    Branchif(BranchShape),
-    Branchnil(BranchShape),
-    Branchunless(BranchShape),
+    BranchIf(BranchShape),
+    BranchNil(BranchShape),
+    BranchUnless(BranchShape),
     JumpToTarget0(BranchShape),
     JNZToTarget0,
     JZToTarget0,
@@ -415,7 +415,7 @@ pub enum BranchGenFn {
 impl BranchGenFn {
     pub fn call(self, asm: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>) {
         match self {
-            BranchGenFn::Branchif(shape) => {
+            BranchGenFn::BranchIf(shape) => {
                 match shape {
                     BranchShape::Next0 => asm.jz(target1.unwrap().into()),
                     BranchShape::Next1 => asm.jnz(target0.into()),
@@ -425,7 +425,7 @@ impl BranchGenFn {
                     }
                 }
             }
-            BranchGenFn::Branchnil(shape) => {
+            BranchGenFn::BranchNil(shape) => {
                 match shape {
                     BranchShape::Next0 => asm.jne(target1.unwrap().into()),
                     BranchShape::Next1 => asm.je(target0.into()),
@@ -435,7 +435,7 @@ impl BranchGenFn {
                     }
                 }
             }
-            BranchGenFn::Branchunless(shape) => {
+            BranchGenFn::BranchUnless(shape) => {
                 match shape {
                     BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
                     BranchShape::Next1 => asm.jz(target0.into()),
@@ -471,9 +471,9 @@ impl BranchGenFn {
 
     pub fn get_shape(self) -> BranchShape {
         match self {
-            BranchGenFn::Branchif(shape) |
-            BranchGenFn::Branchnil(shape) |
-            BranchGenFn::Branchunless(shape) |
+            BranchGenFn::BranchIf(shape) |
+            BranchGenFn::BranchNil(shape) |
+            BranchGenFn::BranchUnless(shape) |
             BranchGenFn::JumpToTarget0(shape) => shape,
             BranchGenFn::JNZToTarget0 |
             BranchGenFn::JZToTarget0 |
@@ -484,9 +484,9 @@ impl BranchGenFn {
 
     pub fn set_shape(&mut self, new_shape: BranchShape) {
         match self {
-            BranchGenFn::Branchif(shape) |
-            BranchGenFn::Branchnil(shape) |
-            BranchGenFn::Branchunless(shape) => {
+            BranchGenFn::BranchIf(shape) |
+            BranchGenFn::BranchNil(shape) |
+            BranchGenFn::BranchUnless(shape) => {
                 *shape = new_shape;
             }
             BranchGenFn::JumpToTarget0(shape) => {

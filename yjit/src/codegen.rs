@@ -3508,7 +3508,7 @@ fn gen_branchif(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::Branchif(BranchShape::Default),
+            BranchGenFn::BranchIf(BranchShape::Default),
         );
     }
 
@@ -3562,7 +3562,7 @@ fn gen_branchunless(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::Branchunless(BranchShape::Default),
+            BranchGenFn::BranchUnless(BranchShape::Default),
         );
     }
 
@@ -3613,7 +3613,7 @@ fn gen_branchnil(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::Branchnil(BranchShape::Default),
+            BranchGenFn::BranchNil(BranchShape::Default),
         );
     }
 
