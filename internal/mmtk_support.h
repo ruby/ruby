@@ -10,12 +10,6 @@
 #include "ruby/ruby.h"
 
 #define MMTK_DEFAULT_PLAN "MarkSweep"
-void rb_mmtk_pre_process_opts(int argc, char **argv);
-void rb_mmtk_post_process_opts(const char *arg);
-void rb_mmtk_post_process_opts_finish(bool feature_enable);
-
-void rb_mmtk_update_global_weak_tables_early(void);
-void rb_mmtk_update_global_weak_tables(void);
 
 // Enabled?
 bool rb_mmtk_enabled_p(void);
@@ -52,6 +46,9 @@ rb_mmtk_update_weak_table(st_table *table,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg);
 
+void rb_mmtk_update_global_weak_tables_early(void);
+void rb_mmtk_update_global_weak_tables(void);
+
 // MMTk-specific Ruby module (GC::MMTk)
 void rb_mmtk_define_gc_mmtk_module(void);
 VALUE rb_mmtk_plan_name(VALUE _);
@@ -62,5 +59,10 @@ VALUE rb_mmtk_harness_end(VALUE _);
 // Debugging
 void rb_mmtk_assert_mmtk_worker(void);
 void rb_mmtk_assert_mutator(void);
+
+// Commandline options parsing
+void rb_mmtk_pre_process_opts(int argc, char **argv);
+void rb_mmtk_post_process_opts(const char *arg);
+void rb_mmtk_post_process_opts_finish(bool feature_enable);
 
 #endif // INTERNAL_MMTK_SUPPORT_H
