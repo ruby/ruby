@@ -112,7 +112,6 @@ protect.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 protect.o: $(hdrdir)/ruby/internal/intern/error.h
 protect.o: $(hdrdir)/ruby/internal/intern/eval.h
 protect.o: $(hdrdir)/ruby/internal/intern/file.h
-protect.o: $(hdrdir)/ruby/internal/intern/gc.h
 protect.o: $(hdrdir)/ruby/internal/intern/hash.h
 protect.o: $(hdrdir)/ruby/internal/intern/io.h
 protect.o: $(hdrdir)/ruby/internal/intern/load.h

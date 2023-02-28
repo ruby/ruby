@@ -152,7 +152,7 @@
 #   If the given object is not an element in the set,
 #   adds it and returns +self+; otherwise, returns +nil+.
 # - \#merge:
-#   Adds each given object to the set; returns +self+.
+#   Merges the elements of each given enumerable object to the set; returns +self+.
 # - \#replace:
 #   Replaces the contents of the set with the contents
 #   of a given enumerable.
@@ -596,13 +596,15 @@ class Set
   # Equivalent to Set#select!
   alias filter! select!
 
-  # Merges the elements of the given enumerable object to the set and
+  # Merges the elements of the given enumerable objects to the set and
   # returns self.
-  def merge(enum)
-    if enum.instance_of?(self.class)
-      @hash.update(enum.instance_variable_get(:@hash))
-    else
-      do_with_enum(enum) { |o| add(o) }
+  def merge(*enums, **nil)
+    enums.each do |enum|
+      if enum.instance_of?(self.class)
+        @hash.update(enum.instance_variable_get(:@hash))
+      else
+        do_with_enum(enum) { |o| add(o) }
+      end
     end
 
     self

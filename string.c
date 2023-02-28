@@ -337,7 +337,7 @@ rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
         return;
     }
 
-    // if the root string isn't embedded, we don't need to touch the ponter.
+    // if the root string isn't embedded, we don't need to touch the pointer.
     // it already points to the shame shared buffer
     if (!STR_EMBED_P(new_root)) {
         return;
@@ -11875,7 +11875,7 @@ sym_start_with(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    end_with?(*string_or_regexp) -> true or false
+ *    end_with?(*strings) -> true or false
  *
  *
  *  Equivalent to <tt>self.to_s.end_with?</tt>; see String#end_with?.

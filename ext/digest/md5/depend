@@ -115,7 +115,6 @@ md5.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 md5.o: $(hdrdir)/ruby/internal/intern/error.h
 md5.o: $(hdrdir)/ruby/internal/intern/eval.h
 md5.o: $(hdrdir)/ruby/internal/intern/file.h
-md5.o: $(hdrdir)/ruby/internal/intern/gc.h
 md5.o: $(hdrdir)/ruby/internal/intern/hash.h
 md5.o: $(hdrdir)/ruby/internal/intern/io.h
 md5.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -278,7 +277,6 @@ md5init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 md5init.o: $(hdrdir)/ruby/internal/intern/error.h
 md5init.o: $(hdrdir)/ruby/internal/intern/eval.h
 md5init.o: $(hdrdir)/ruby/internal/intern/file.h
-md5init.o: $(hdrdir)/ruby/internal/intern/gc.h
 md5init.o: $(hdrdir)/ruby/internal/intern/hash.h
 md5init.o: $(hdrdir)/ruby/internal/intern/io.h
 md5init.o: $(hdrdir)/ruby/internal/intern/load.h

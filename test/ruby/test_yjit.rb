@@ -1155,6 +1155,67 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_to_invalidated_block
+    # [Bug #19463]
+    assert_compiles(<<~RUBY, result: [1, 1, :ugokanai])
+      klass = Class.new do
+        def self.lookup(hash, key) = hash[key]
+
+        def self.foo(a, b) = []
+
+        def self.test(hash, key)
+          [lookup(hash, key), key, "".freeze]
+          # 05 opt_send_without_block :lookup
+          # 07 getlocal_WC_0          :hash
+          # 09 opt_str_freeze         ""
+          # 12 newarray               3
+          # 14 leave
+          #
+          # YJIT will put instructions (07..14) into a block.
+          # When String#freeze is redefined from within lookup(),
+          # the return address to the block is still on-stack. We rely
+          # on invalidation patching the code at the return address
+          # to service this situation correctly.
+        end
+      end
+
+      # get YJIT to compile test()
+      hash = { 1 => [] }
+      31.times { klass.test(hash, 1) }
+
+      # inject invalidation into lookup()
+      evil_hash = Hash.new do |_, key|
+        class String
+          undef :freeze
+          def freeze = :ugokanai
+        end
+
+        key
+      end
+      klass.test(evil_hash, 1)
+    RUBY
+  end
+
+  def test_nested_send
+    #[Bug #19464]
+    assert_compiles(<<~RUBY, result: [:ok, :ok])
+      klass = Class.new do
+        class << self
+          alias_method :my_send, :send
+
+          def bar = :ok
+
+          def foo = bar
+        end
+      end
+
+      with_break = -> { break klass.send(:my_send, :foo) }
+      wo_break = -> { klass.send(:my_send, :foo) }
+
+      [with_break[], wo_break[]]
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

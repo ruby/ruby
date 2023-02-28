@@ -4,7 +4,7 @@ require_relative '../http'
 
 if $0 == __FILE__
   require 'open-uri'
-  IO.foreach(__FILE__) do |line|
+  File.foreach(__FILE__) do |line|
     puts line
     break if line.start_with?('end')
   end
@@ -16,7 +16,7 @@ if $0 == __FILE__
     next if ['(Unused)', 'Unassigned', 'Description'].include?(mes)
     puts "  #{code} => '#{mes}',"
   end
-  puts "}"
+  puts "} # :nodoc:"
 end
 
 Net::HTTP::STATUS_CODES = {
@@ -55,15 +55,16 @@ Net::HTTP::STATUS_CODES = {
   410 => 'Gone',
   411 => 'Length Required',
   412 => 'Precondition Failed',
-  413 => 'Payload Too Large',
+  413 => 'Content Too Large',
   414 => 'URI Too Long',
   415 => 'Unsupported Media Type',
   416 => 'Range Not Satisfiable',
   417 => 'Expectation Failed',
   421 => 'Misdirected Request',
-  422 => 'Unprocessable Entity',
+  422 => 'Unprocessable Content',
   423 => 'Locked',
   424 => 'Failed Dependency',
+  425 => 'Too Early',
   426 => 'Upgrade Required',
   428 => 'Precondition Required',
   429 => 'Too Many Requests',
@@ -78,6 +79,6 @@ Net::HTTP::STATUS_CODES = {
   506 => 'Variant Also Negotiates',
   507 => 'Insufficient Storage',
   508 => 'Loop Detected',
-  510 => 'Not Extended',
+  510 => 'Not Extended (OBSOLETED)',
   511 => 'Network Authentication Required',
-}
+} # :nodoc:

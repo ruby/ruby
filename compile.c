@@ -4847,7 +4847,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             if (!COMPILE(cond_seq, "when cond", val)) return -1;
         }
 
-        // Emit patern === target
+        // Emit pattern === target
         ADD_INSN1(cond_seq, vals, topn, INT2FIX(1));
         ADD_CALL(cond_seq, vals, idEqq, INT2FIX(1));
         ADD_INSNL(cond_seq, val, branchif, l1);
@@ -8270,7 +8270,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
     NODE *args_node = node->nd_args;
 
     if (parent_block != NULL) {
-        COMPILE_ERROR(iseq, nd_line(line_node), "should not call builtins here.");
+        COMPILE_ERROR(ERROR_ARGS_AT(line_node) "should not call builtins here.");
         return COMPILE_NG;
     }
     else {
@@ -10262,6 +10262,18 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
     }
     printf("---------------------\n");
     fflush(stdout);
+}
+
+bool
+rb_insns_leaf_p(int i)
+{
+    return insn_leaf_p(i);
+}
+
+int
+rb_insn_len(VALUE insn)
+{
+    return insn_len(insn);
 }
 
 const char *

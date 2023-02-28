@@ -112,7 +112,6 @@ recursion.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 recursion.o: $(hdrdir)/ruby/internal/intern/error.h
 recursion.o: $(hdrdir)/ruby/internal/intern/eval.h
 recursion.o: $(hdrdir)/ruby/internal/intern/file.h
-recursion.o: $(hdrdir)/ruby/internal/intern/gc.h
 recursion.o: $(hdrdir)/ruby/internal/intern/hash.h
 recursion.o: $(hdrdir)/ruby/internal/intern/io.h
 recursion.o: $(hdrdir)/ruby/internal/intern/load.h

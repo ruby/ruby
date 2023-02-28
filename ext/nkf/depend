@@ -125,7 +125,6 @@ nkf.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nkf.o: $(hdrdir)/ruby/internal/intern/error.h
 nkf.o: $(hdrdir)/ruby/internal/intern/eval.h
 nkf.o: $(hdrdir)/ruby/internal/intern/file.h
-nkf.o: $(hdrdir)/ruby/internal/intern/gc.h
 nkf.o: $(hdrdir)/ruby/internal/intern/hash.h
 nkf.o: $(hdrdir)/ruby/internal/intern/io.h
 nkf.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -126,7 +126,6 @@ limits.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 limits.o: $(hdrdir)/ruby/internal/intern/error.h
 limits.o: $(hdrdir)/ruby/internal/intern/eval.h
 limits.o: $(hdrdir)/ruby/internal/intern/file.h
-limits.o: $(hdrdir)/ruby/internal/intern/gc.h
 limits.o: $(hdrdir)/ruby/internal/intern/hash.h
 limits.o: $(hdrdir)/ruby/internal/intern/io.h
 limits.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -286,7 +285,6 @@ sizes.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sizes.o: $(hdrdir)/ruby/internal/intern/error.h
 sizes.o: $(hdrdir)/ruby/internal/intern/eval.h
 sizes.o: $(hdrdir)/ruby/internal/intern/file.h
-sizes.o: $(hdrdir)/ruby/internal/intern/gc.h
 sizes.o: $(hdrdir)/ruby/internal/intern/hash.h
 sizes.o: $(hdrdir)/ruby/internal/intern/io.h
 sizes.o: $(hdrdir)/ruby/internal/intern/load.h

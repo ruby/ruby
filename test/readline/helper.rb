@@ -1,4 +1,10 @@
 begin
+  # for standalone test suite on ruby/logger
+  require_relative '../lib/envutil'
+rescue LoadError
+end
+
+begin
   require "readline.so"
   ReadlineSo = Readline
 rescue LoadError

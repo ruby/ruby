@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.0.6"
+#define STRSCAN_VERSION "3.0.7"
 
 /* =======================================================================
                          Data Type Definitions
@@ -1038,8 +1038,9 @@ strscan_empty_p(VALUE self)
  * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
- *   s.eos?              # These two
- *   s.rest?             # are opposites.
+ *   # These two are opposites
+ *   s.eos? # => false
+ *   s.rest? # => true
  */
 static VALUE
 strscan_rest_p(VALUE self)

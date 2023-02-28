@@ -112,7 +112,6 @@ c.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 c.o: $(hdrdir)/ruby/internal/intern/error.h
 c.o: $(hdrdir)/ruby/internal/intern/eval.h
 c.o: $(hdrdir)/ruby/internal/intern/file.h
-c.o: $(hdrdir)/ruby/internal/intern/gc.h
 c.o: $(hdrdir)/ruby/internal/intern/hash.h
 c.o: $(hdrdir)/ruby/internal/intern/io.h
 c.o: $(hdrdir)/ruby/internal/intern/load.h

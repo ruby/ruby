@@ -112,7 +112,6 @@ funcall.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 funcall.o: $(hdrdir)/ruby/internal/intern/error.h
 funcall.o: $(hdrdir)/ruby/internal/intern/eval.h
 funcall.o: $(hdrdir)/ruby/internal/intern/file.h
-funcall.o: $(hdrdir)/ruby/internal/intern/gc.h
 funcall.o: $(hdrdir)/ruby/internal/intern/hash.h
 funcall.o: $(hdrdir)/ruby/internal/intern/io.h
 funcall.o: $(hdrdir)/ruby/internal/intern/load.h

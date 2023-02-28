@@ -31,7 +31,7 @@ typedef uint16_t shape_id_t;
 # define SHAPE_BITMAP_SIZE 16384
 
 # define SHAPE_MAX_VARIATIONS 8
-# define SHAPE_MAX_NUM_IVS 50
+# define SHAPE_MAX_NUM_IVS 80
 
 # define MAX_SHAPE_ID (SHAPE_MASK - 1)
 # define INVALID_SHAPE_ID SHAPE_MASK

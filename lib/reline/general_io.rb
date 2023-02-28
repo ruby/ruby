@@ -31,6 +31,10 @@ class Reline::GeneralIO
     @@input = val
   end
 
+  def self.with_raw_input
+    yield
+  end
+
   def self.getc
     unless @@buf.empty?
       return @@buf.shift

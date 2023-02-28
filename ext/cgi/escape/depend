@@ -122,7 +122,6 @@ escape.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 escape.o: $(hdrdir)/ruby/internal/intern/error.h
 escape.o: $(hdrdir)/ruby/internal/intern/eval.h
 escape.o: $(hdrdir)/ruby/internal/intern/file.h
-escape.o: $(hdrdir)/ruby/internal/intern/gc.h
 escape.o: $(hdrdir)/ruby/internal/intern/hash.h
 escape.o: $(hdrdir)/ruby/internal/intern/io.h
 escape.o: $(hdrdir)/ruby/internal/intern/load.h

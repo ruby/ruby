@@ -111,7 +111,6 @@ at_exit.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/error.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/eval.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/file.h
-at_exit.o: $(hdrdir)/ruby/internal/intern/gc.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/hash.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/io.h
 at_exit.o: $(hdrdir)/ruby/internal/intern/load.h

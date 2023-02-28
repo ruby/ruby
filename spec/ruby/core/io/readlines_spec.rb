@@ -127,6 +127,12 @@ describe "IO#readlines" do
       end
     end
   end
+
+  describe "when passed arbitrary keyword argument" do
+    it "tolerates it" do
+      @io.readlines(chomp: true, foo: :bar).should == IOSpecs.lines_without_newline_characters
+    end
+  end
 end
 
 describe "IO#readlines" do

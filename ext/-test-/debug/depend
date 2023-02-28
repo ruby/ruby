@@ -112,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -273,7 +272,6 @@ inspector.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 inspector.o: $(hdrdir)/ruby/internal/intern/error.h
 inspector.o: $(hdrdir)/ruby/internal/intern/eval.h
 inspector.o: $(hdrdir)/ruby/internal/intern/file.h
-inspector.o: $(hdrdir)/ruby/internal/intern/gc.h
 inspector.o: $(hdrdir)/ruby/internal/intern/hash.h
 inspector.o: $(hdrdir)/ruby/internal/intern/io.h
 inspector.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -434,7 +432,6 @@ profile_frames.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/error.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/eval.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/file.h
-profile_frames.o: $(hdrdir)/ruby/internal/intern/gc.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/hash.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/io.h
 profile_frames.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -31,6 +31,8 @@
 #include "bits.h"
 #include "static_assert.h"
 
+#define BIGDECIMAL_VERSION "3.1.4"
+
 /* #define ENABLE_NUMERIC_STRING */
 
 #define SIGNED_VALUE_MAX INTPTR_MAX
@@ -4140,11 +4142,11 @@ get_vp_value:
     }
     x = VpCheckGetValue(vx);
 
-    RB_GC_GUARD(one) = VpCheckGetValue(NewOneWrapLimited(1, 1));
-    RB_GC_GUARD(two) = VpCheckGetValue(VpCreateRbObject(1, "2", true));
+    one = VpCheckGetValue(NewOneWrapLimited(1, 1));
+    two = VpCheckGetValue(VpCreateRbObject(1, "2", true));
 
     n = prec + BIGDECIMAL_DOUBLE_FIGURES;
-    RB_GC_GUARD(vn) = SSIZET2NUM(n);
+    vn = SSIZET2NUM(n);
     expo = VpExponent10(vx);
     if (expo < 0 || expo >= 3) {
 	char buf[DECIMAL_SIZE_OF_BITS(SIZEOF_VALUE * CHAR_BIT) + 4];
@@ -4156,9 +4158,9 @@ get_vp_value:
     }
     w = BigDecimal_sub(x, one);
     x = BigDecimal_div2(w, BigDecimal_add(x, one), vn);
-    RB_GC_GUARD(x2) = BigDecimal_mult2(x, x, vn);
-    RB_GC_GUARD(y)  = x;
-    RB_GC_GUARD(d)  = y;
+    x2 = BigDecimal_mult2(x, x, vn);
+    y = x;
+    d = y;
     i = 1;
     while (!VpIsZero((Real*)DATA_PTR(d))) {
 	SIGNED_VALUE const ey = VpExponent10(DATA_PTR(y));
@@ -4185,6 +4187,13 @@ get_vp_value:
 	dy = BigDecimal_mult(log10, vexpo);
 	y = BigDecimal_add(y, dy);
     }
+
+    RB_GC_GUARD(one);
+    RB_GC_GUARD(two);
+    RB_GC_GUARD(vn);
+    RB_GC_GUARD(x2);
+    RB_GC_GUARD(y);
+    RB_GC_GUARD(d);
 
     return y;
 }
@@ -4402,13 +4411,10 @@ Init_bigdecimal(void)
 
     /* Constants definition */
 
-#ifndef RUBY_BIGDECIMAL_VERSION
-# error RUBY_BIGDECIMAL_VERSION is not defined
-#endif
     /*
      * The version of bigdecimal library
      */
-    rb_define_const(rb_cBigDecimal, "VERSION", rb_str_new2(RUBY_BIGDECIMAL_VERSION));
+    rb_define_const(rb_cBigDecimal, "VERSION", rb_str_new2(BIGDECIMAL_VERSION));
 
     /*
      * Base value used in internal calculations.  On a 32 bit system, BASE

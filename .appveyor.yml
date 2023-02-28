@@ -75,6 +75,7 @@ for:
     - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
   build_script:
+    - set HAVE_GIT=no
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
     - >-

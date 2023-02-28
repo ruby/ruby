@@ -124,6 +124,20 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_string
+    result = IO::Buffer.string(12) do |buffer|
+      buffer.set_string("Hello World!")
+    end
+
+    assert_equal "Hello World!", result
+  end
+
+  def test_string_negative
+    assert_raise ArgumentError do
+      IO::Buffer.string(-1)
+    end
+  end
+
   def test_resize_mapped
     buffer = IO::Buffer.new
 

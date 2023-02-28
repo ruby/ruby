@@ -112,7 +112,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/error.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/eval.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/file.h
-rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/gc.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/hash.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/io.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -165,7 +165,6 @@ closure.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 closure.o: $(hdrdir)/ruby/internal/intern/error.h
 closure.o: $(hdrdir)/ruby/internal/intern/eval.h
 closure.o: $(hdrdir)/ruby/internal/intern/file.h
-closure.o: $(hdrdir)/ruby/internal/intern/gc.h
 closure.o: $(hdrdir)/ruby/internal/intern/hash.h
 closure.o: $(hdrdir)/ruby/internal/intern/io.h
 closure.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -331,7 +330,6 @@ conversions.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 conversions.o: $(hdrdir)/ruby/internal/intern/error.h
 conversions.o: $(hdrdir)/ruby/internal/intern/eval.h
 conversions.o: $(hdrdir)/ruby/internal/intern/file.h
-conversions.o: $(hdrdir)/ruby/internal/intern/gc.h
 conversions.o: $(hdrdir)/ruby/internal/intern/hash.h
 conversions.o: $(hdrdir)/ruby/internal/intern/io.h
 conversions.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -496,7 +494,6 @@ fiddle.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/error.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/eval.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/file.h
-fiddle.o: $(hdrdir)/ruby/internal/intern/gc.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/hash.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/io.h
 fiddle.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -661,7 +658,6 @@ function.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 function.o: $(hdrdir)/ruby/internal/intern/error.h
 function.o: $(hdrdir)/ruby/internal/intern/eval.h
 function.o: $(hdrdir)/ruby/internal/intern/file.h
-function.o: $(hdrdir)/ruby/internal/intern/gc.h
 function.o: $(hdrdir)/ruby/internal/intern/hash.h
 function.o: $(hdrdir)/ruby/internal/intern/io.h
 function.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -827,7 +823,6 @@ handle.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 handle.o: $(hdrdir)/ruby/internal/intern/error.h
 handle.o: $(hdrdir)/ruby/internal/intern/eval.h
 handle.o: $(hdrdir)/ruby/internal/intern/file.h
-handle.o: $(hdrdir)/ruby/internal/intern/gc.h
 handle.o: $(hdrdir)/ruby/internal/intern/hash.h
 handle.o: $(hdrdir)/ruby/internal/intern/io.h
 handle.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1002,7 +997,6 @@ memory_view.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/error.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/eval.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/file.h
-memory_view.o: $(hdrdir)/ruby/internal/intern/gc.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/hash.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/io.h
 memory_view.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1170,7 +1164,6 @@ pinned.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 pinned.o: $(hdrdir)/ruby/internal/intern/error.h
 pinned.o: $(hdrdir)/ruby/internal/intern/eval.h
 pinned.o: $(hdrdir)/ruby/internal/intern/file.h
-pinned.o: $(hdrdir)/ruby/internal/intern/gc.h
 pinned.o: $(hdrdir)/ruby/internal/intern/hash.h
 pinned.o: $(hdrdir)/ruby/internal/intern/io.h
 pinned.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -1345,7 +1338,6 @@ pointer.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 pointer.o: $(hdrdir)/ruby/internal/intern/error.h
 pointer.o: $(hdrdir)/ruby/internal/intern/eval.h
 pointer.o: $(hdrdir)/ruby/internal/intern/file.h
-pointer.o: $(hdrdir)/ruby/internal/intern/gc.h
 pointer.o: $(hdrdir)/ruby/internal/intern/hash.h
 pointer.o: $(hdrdir)/ruby/internal/intern/io.h
 pointer.o: $(hdrdir)/ruby/internal/intern/load.h

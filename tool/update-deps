@@ -334,24 +334,25 @@ end
 #  raise ArgumentError, "can not find #{filename} (hint: #{hint0})"
 #end
 
-def read_single_cc_deps(path_i, cwd)
+def read_single_cc_deps(path_i, cwd, fn_o)
   files = {}
   compiler_wd = nil
   path_i.each_line {|line|
     next if /\A\# \d+ "(.*)"/ !~ line
     dep = $1
+
     next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
     next if /\.e?rb\z/ =~ dep
-    compiler_wd ||= dep
+    # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
+    if /\/\/\z/ =~ dep
+      compiler_wd = Pathname(dep.sub(%r{//\z}, ''))
+      next
+    end
+
     files[dep] = true
   }
-  # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
-  if %r{\A/.*//\z} =~ compiler_wd
-    files.delete compiler_wd
-    compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
-  elsif !(compiler_wd = yield)
-    raise "compiler working directory not found: #{path_i}"
-  end
+  compiler_wd ||= fn_o.to_s.start_with?("enc/") ? cwd : path_i.parent
+
   deps = []
   files.each_key {|dep|
     dep = Pathname(dep)
@@ -383,13 +384,7 @@ def read_cc_deps(cwd)
     end
     path_o = cwd + fn_o
     path_i = cwd + fn_i
-    deps[path_o] = read_single_cc_deps(path_i, cwd) do
-      if fn_o.to_s.start_with?("enc/")
-        cwd
-      else
-        path_i.parent
-      end
-    end
+    deps[path_o] = read_single_cc_deps(path_i, cwd, fn_o)
   }
   deps
 end

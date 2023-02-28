@@ -5,6 +5,8 @@ require "rubygems/installer"
 
 class TestGemExtBuilder < Gem::TestCase
   def setup
+    @orig_DESTDIR = ENV["DESTDIR"]
+    @orig_make = ENV["make"]
     super
 
     @ext = File.join @tempdir, "ext"
@@ -13,19 +15,15 @@ class TestGemExtBuilder < Gem::TestCase
     FileUtils.mkdir_p @ext
     FileUtils.mkdir_p @dest_path
 
-    @orig_DESTDIR = ENV["DESTDIR"]
-    @orig_make = ENV["make"]
-
     @spec = util_spec "a"
 
     @builder = Gem::Ext::Builder.new @spec, ""
   end
 
   def teardown
+    super
     ENV["DESTDIR"] = @orig_DESTDIR
     ENV["make"] = @orig_make
-
-    super
   end
 
   def test_class_make

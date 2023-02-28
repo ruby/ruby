@@ -113,7 +113,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/error.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/eval.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/file.h
-postponed_job.o: $(hdrdir)/ruby/internal/intern/gc.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/hash.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/io.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/load.h

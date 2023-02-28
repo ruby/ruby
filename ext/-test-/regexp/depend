@@ -112,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -273,7 +272,6 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/error.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/eval.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/file.h
-parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/gc.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/hash.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/io.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/intern/load.h

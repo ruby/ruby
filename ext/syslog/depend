@@ -111,7 +111,6 @@ syslog.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 syslog.o: $(hdrdir)/ruby/internal/intern/error.h
 syslog.o: $(hdrdir)/ruby/internal/intern/eval.h
 syslog.o: $(hdrdir)/ruby/internal/intern/file.h
-syslog.o: $(hdrdir)/ruby/internal/intern/gc.h
 syslog.o: $(hdrdir)/ruby/internal/intern/hash.h
 syslog.o: $(hdrdir)/ruby/internal/intern/io.h
 syslog.o: $(hdrdir)/ruby/internal/intern/load.h

@@ -3581,3 +3581,8 @@ assert_equal 'true', %q{
   def a.test = :test
   a.is_a?(a.singleton_class)
 }
+
+# Test send with splat to a cfunc
+assert_equal 'true', %q{
+  1.send(:==, 1, *[])
+}

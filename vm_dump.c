@@ -812,16 +812,20 @@ rb_print_backtrace(void)
 #endif
 
 #if defined __linux__
-# if defined __x86_64__ || defined __i386__ || defined __aarch64__ || defined __arm__ || defined __riscv
-#  define HAVE_PRINT_MACHINE_REGISTERS 1
+# if defined(__x86_64__) || defined(__i386__)
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
+# elif defined(__aarch64__) || defined(__arm__) || defined(__riscv) || defined(__loongarch64)
+#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
 # endif
 #elif defined __APPLE__
-# if defined __x86_64__ || defined __i386__ || defined __aarch64__
-#  define HAVE_PRINT_MACHINE_REGISTERS 1
+# if defined(__aarch64__)
+#   define dump_machine_register(reg, regstr) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
+# else
+#   define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
 # endif
 #endif
 
-#ifdef HAVE_PRINT_MACHINE_REGISTERS
+#ifdef dump_machine_register
 static int
 print_machine_register(size_t reg, const char *reg_name, int col_count, int max_col)
 {
@@ -838,19 +842,6 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     fputs(buf, stderr);
     return col_count;
 }
-# ifdef __linux__
-#   if defined(__x86_64__) || defined(__i386__)
-#       define dump_machine_register(reg) (col_count = print_machine_register(mctx->gregs[REG_##reg], #reg, col_count, 80))
-#   elif defined(__aarch64__) || defined(__arm__) || defined(__riscv)
-#       define dump_machine_register(reg, regstr) (col_count = print_machine_register(reg, regstr, col_count, 80))
-#   endif
-# elif defined __APPLE__
-#   if defined(__aarch64__)
-#     define dump_machine_register(reg, regstr) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), regstr, col_count, 80))
-#   else
-#     define dump_machine_register(reg) (col_count = print_machine_register(mctx->MCTX_SS_REG(reg), #reg, col_count, 80))
-#   endif
-# endif
 
 static void
 rb_dump_machine_register(const ucontext_t *ctx)
@@ -962,6 +953,28 @@ rb_dump_machine_register(const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[REG_S2+7], "s9");
         dump_machine_register(mctx->__gregs[REG_S2+8], "s10");
         dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
+#   elif defined __loongarch64
+        dump_machine_register(mctx->__gregs[LARCH_REG_SP], "sp");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0], "a0");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+1], "a1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+2], "a2");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+3], "a3");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+4], "a4");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+5], "a5");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+6], "a6");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+1], "s1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+2], "s2");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+3], "s3");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+4], "s4");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+5], "s5");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+6], "s6");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+7], "s7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+8], "s8");
 #   endif
     }
 # elif defined __APPLE__
@@ -1033,7 +1046,7 @@ rb_dump_machine_register(const ucontext_t *ctx)
 }
 #else
 # define rb_dump_machine_register(ctx) ((void)0)
-#endif /* HAVE_PRINT_MACHINE_REGISTERS */
+#endif /* dump_machine_register */
 
 void
 rb_vm_bugreport(const void *ctx)

@@ -114,7 +114,6 @@ coverage.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 coverage.o: $(hdrdir)/ruby/internal/intern/error.h
 coverage.o: $(hdrdir)/ruby/internal/intern/eval.h
 coverage.o: $(hdrdir)/ruby/internal/intern/file.h
-coverage.o: $(hdrdir)/ruby/internal/intern/gc.h
 coverage.o: $(hdrdir)/ruby/internal/intern/hash.h
 coverage.o: $(hdrdir)/ruby/internal/intern/io.h
 coverage.o: $(hdrdir)/ruby/internal/intern/load.h

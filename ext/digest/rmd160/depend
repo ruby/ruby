@@ -115,7 +115,6 @@ rmd160.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/error.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/eval.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/file.h
-rmd160.o: $(hdrdir)/ruby/internal/intern/gc.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/hash.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/io.h
 rmd160.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -278,7 +277,6 @@ rmd160init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/error.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/eval.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/file.h
-rmd160init.o: $(hdrdir)/ruby/internal/intern/gc.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/hash.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/io.h
 rmd160init.o: $(hdrdir)/ruby/internal/intern/load.h

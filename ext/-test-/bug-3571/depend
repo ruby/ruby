@@ -112,7 +112,6 @@ bug.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bug.o: $(hdrdir)/ruby/internal/intern/error.h
 bug.o: $(hdrdir)/ruby/internal/intern/eval.h
 bug.o: $(hdrdir)/ruby/internal/intern/file.h
-bug.o: $(hdrdir)/ruby/internal/intern/gc.h
 bug.o: $(hdrdir)/ruby/internal/intern/hash.h
 bug.o: $(hdrdir)/ruby/internal/intern/io.h
 bug.o: $(hdrdir)/ruby/internal/intern/load.h

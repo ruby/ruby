@@ -338,7 +338,7 @@ class Gem::Specification < Gem::BasicSpecification
   # The simplest way is to specify the standard SPDX ID
   # https://spdx.org/licenses/ for the license.
   # Ideally, you should pick one that is OSI (Open Source Initiative)
-  # http://opensource.org/licenses/alphabetical approved.
+  # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.

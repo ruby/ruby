@@ -3825,7 +3825,7 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
  *  call-seq:
  *     iseq.script_lines -> array or nil
  *
- *  It returns recorded script lines if it is availalble.
+ *  It returns recorded script lines if it is available.
  *  The script lines are not limited to the iseq range, but
  *  are entire lines of the source file.
  *

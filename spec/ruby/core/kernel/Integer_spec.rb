@@ -573,10 +573,17 @@ describe "Integer() given a String and base", shared: true do
         -> { Integer("0#{d}1", base) }.should raise_error(ArgumentError)
       end
     end
+  end
 
-    it "raises an ArgumentError if a base is given for a non-String value" do
-      -> { Integer(98, 15) }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError if a base is given for a non-String value" do
+    -> { Integer(98, 15) }.should raise_error(ArgumentError)
+  end
+
+  it "tries to convert the base to an integer using to_int" do
+    obj = mock('8')
+    obj.should_receive(:to_int).and_return(8)
+
+    Integer("777", obj).should == 0777
   end
 
   describe "when passed exception: false" do

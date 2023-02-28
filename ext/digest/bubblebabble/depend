@@ -112,7 +112,6 @@ bubblebabble.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/error.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/eval.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/file.h
-bubblebabble.o: $(hdrdir)/ruby/internal/intern/gc.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/hash.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/io.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/load.h

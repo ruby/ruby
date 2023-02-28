@@ -123,7 +123,6 @@ wait.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 wait.o: $(hdrdir)/ruby/internal/intern/error.h
 wait.o: $(hdrdir)/ruby/internal/intern/eval.h
 wait.o: $(hdrdir)/ruby/internal/intern/file.h
-wait.o: $(hdrdir)/ruby/internal/intern/gc.h
 wait.o: $(hdrdir)/ruby/internal/intern/hash.h
 wait.o: $(hdrdir)/ruby/internal/intern/io.h
 wait.o: $(hdrdir)/ruby/internal/intern/load.h

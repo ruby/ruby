@@ -39,7 +39,7 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
-  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
+  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash, Gem::Version, Gem::Specification].freeze
   SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed."
   SAFE_MARSHAL_PROC = proc do |object|
     object.tap do
@@ -525,12 +525,6 @@ EOF
       load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
     end
 
-    def load_marshal(data, marshal_proc: nil)
-      Marshal.load(data, marshal_proc)
-    rescue TypeError => e
-      raise MarshalError, "#{e.class}: #{e.message}"
-    end
-
     def load_gemspec(file, validate = false)
       @gemspec_cache ||= {}
       key = File.expand_path(file)
@@ -618,6 +612,12 @@ EOF
     end
 
     private
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
+    rescue TypeError => e
+      raise MarshalError, "#{e.class}: #{e.message}"
+    end
 
     def eval_yaml_gemspec(path, contents)
       Kernel.require "psych"

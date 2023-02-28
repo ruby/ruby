@@ -113,6 +113,25 @@ describe :thread_exit, shared: true do
     ScratchPad.recorded.should == nil
   end
 
+  it "kills other fibers of that thread without running their ensure clauses" do
+    t = Thread.new do
+      f = Fiber.new do
+        ScratchPad.record :fiber_resumed
+        begin
+          Fiber.yield
+        ensure
+          ScratchPad.record :fiber_ensure
+        end
+      end
+      f.resume
+      sleep
+    end
+    Thread.pass until t.stop?
+    t.send(@method)
+    t.join
+    ScratchPad.recorded.should == :fiber_resumed
+  end
+
   # This spec is a mess. It fails randomly, it hangs on MRI, it needs to be removed
   quarantine! do
   it "killing dying running does nothing" do

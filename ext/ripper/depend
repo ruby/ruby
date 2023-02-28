@@ -170,7 +170,6 @@ ripper.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ripper.o: $(hdrdir)/ruby/internal/intern/error.h
 ripper.o: $(hdrdir)/ruby/internal/intern/eval.h
 ripper.o: $(hdrdir)/ruby/internal/intern/file.h
-ripper.o: $(hdrdir)/ruby/internal/intern/gc.h
 ripper.o: $(hdrdir)/ruby/internal/intern/hash.h
 ripper.o: $(hdrdir)/ruby/internal/intern/io.h
 ripper.o: $(hdrdir)/ruby/internal/intern/load.h

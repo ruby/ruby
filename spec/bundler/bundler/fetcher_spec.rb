@@ -159,4 +159,34 @@ RSpec.describe Bundler::Fetcher do
       end
     end
   end
+
+  describe "#fetch_spec" do
+    let(:name) { "name" }
+    let(:version) { "1.3.17" }
+    let(:platform) { "platform" }
+    let(:downloader) { double("downloader") }
+    let(:body) { double(Net::HTTP::Get, :body => downloaded_data) }
+
+    context "when attempting to load a Gem::Specification" do
+      let(:spec) { Gem::Specification.new(name, version) }
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(spec)) }
+
+      it "returns the spec" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_return(body)
+        result = fetcher.fetch_spec([name, version, platform])
+        expect(result).to eq(spec)
+      end
+    end
+
+    context "when attempting to load an unexpected class" do
+      let(:downloaded_data) { Zlib::Deflate.deflate(Marshal.dump(3)) }
+
+      it "raises a HTTPError error" do
+        expect(Bundler::Fetcher::Downloader).to receive(:new).and_return(downloader)
+        expect(downloader).to receive(:fetch).once.and_return(body)
+        expect { fetcher.fetch_spec([name, version, platform]) }.to raise_error(Bundler::HTTPError, /Gemspec .* contained invalid data/i)
+      end
+    end
+  end
 end

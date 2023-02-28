@@ -787,6 +787,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTABLE(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -804,6 +805,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline VALUE
 RB_OBJ_TAINTED_RAW(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -821,6 +823,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline bool
 RB_OBJ_TAINTED(VALUE obj)
 {
+    (void)obj;
     return false;
 }
 
@@ -836,6 +839,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT_RAW(VALUE obj)
 {
+    (void)obj;
     return;
 }
 
@@ -851,6 +855,7 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_TAINT(VALUE obj)
 {
+    (void)obj;
     return;
 }
 
@@ -867,6 +872,8 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
 {
+    (void)dst;
+    (void)src;
     return;
 }
 
@@ -883,6 +890,8 @@ RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 static inline void
 RB_OBJ_INFECT(VALUE dst, VALUE src)
 {
+    (void)dst;
+    (void)src;
     return;
 }
 

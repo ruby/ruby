@@ -3247,7 +3247,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer(-1)               # => -1
  *
  *  With floating-point argument +object+ given,
- *  returns +object+ truncated to an intger:
+ *  returns +object+ truncated to an integer:
  *
  *    Integer(1.9)              # => 1  # Rounds toward zero.
  *    Integer(-1.9)             # => -1 # Rounds toward zero.

@@ -266,19 +266,21 @@ module Reline
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
     def readmultiline(prompt = '', add_hist = false, &confirm_multiline_termination)
-      unless confirm_multiline_termination
-        raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
-      end
-      inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
+      Reline::IOGate.with_raw_input do
+        unless confirm_multiline_termination
+          raise ArgumentError.new('#readmultiline needs block to confirm multiline termination')
+        end
+        inner_readline(prompt, add_hist, true, &confirm_multiline_termination)
 
-      whole_buffer = line_editor.whole_buffer.dup
-      whole_buffer.taint if RUBY_VERSION < '2.7'
-      if add_hist and whole_buffer and whole_buffer.chomp("\n").size > 0
-        Reline::HISTORY << whole_buffer
-      end
+        whole_buffer = line_editor.whole_buffer.dup
+        whole_buffer.taint if RUBY_VERSION < '2.7'
+        if add_hist and whole_buffer and whole_buffer.chomp("\n").size > 0
+          Reline::HISTORY << whole_buffer
+        end
 
-      line_editor.reset_line if line_editor.whole_buffer.nil?
-      whole_buffer
+        line_editor.reset_line if line_editor.whole_buffer.nil?
+        whole_buffer
+      end
     end
 
     def readline(prompt = '', add_hist = false)

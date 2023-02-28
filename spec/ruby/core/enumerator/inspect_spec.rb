@@ -14,4 +14,9 @@ describe "Enumerator#inspect" do
       (1..3).each.each_slice(2).inspect.should == "#<Enumerator: #<Enumerator: 1..3:each>:each_slice(2)>"
     end
   end
+
+  it "returns a not initialized representation if #initialized is not called yet" do
+    Enumerator.allocate.inspect.should == "#<Enumerator: uninitialized>"
+    Enumerator::Lazy.allocate.inspect.should == "#<Enumerator::Lazy: uninitialized>"
+  end
 end
