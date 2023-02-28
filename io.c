@@ -1838,7 +1838,7 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
 static inline int
 io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
 {
-    // If the requested operation was synchronous and the output mode is synchronus or a TTY:
+    // If the requested operation was synchronous and the output mode is synchronous or a TTY:
     if (!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY)))
         return 1;
 
