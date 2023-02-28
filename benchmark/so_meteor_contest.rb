@@ -447,7 +447,7 @@ end
 #   as an inverse.  The inverse will ALWAYS be 3 one of the piece configurations that is exactly 3 rotations away
 #   (an odd number).  Checking even vs odd then produces a higher probability of finding more pieces earlier
 #   in the cycle.  We still need to keep checking all the permutations, but our probability of finding one will
-#   diminsh over time.  Since we are TOLD how many to search for this lets us exit before checking all pieces
+#   diminish over time.  Since we are TOLD how many to search for this lets us exit before checking all pieces
 #   this bennifit is very great when seeking small numbers of solutions and is 0 when looking for more than the
 #   maximum number
 def find_top( rotation_skip)

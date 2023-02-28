@@ -2721,7 +2721,7 @@ rb_autoload_load(VALUE module, ID name)
         rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(name));
     }
 
-    // This state is stored on thes stack and is used during the autoload process.
+    // This state is stored on the stack and is used during the autoload process.
     struct autoload_load_arguments arguments = {.module = module, .name = name, .mutex = Qnil};
 
     // Figure out whether we can autoload the named constant:
