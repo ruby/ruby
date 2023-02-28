@@ -5244,11 +5244,6 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_splat);
-        return CantCompile;
-    }
-
     if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
         gen_counter_incr!(asm, send_iseq_has_rest_and_send);
         return CantCompile;
@@ -5306,6 +5301,20 @@ fn gen_send_iseq(
 
     let mut start_pc_offset = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+
+    // If we have a rest and a splat, we can take a shortcut if the
+    // number of non-splat arguments is equal to the number of required
+    // arguments.
+    // For example:
+    // def foo(a, b, *rest)
+    // foo(1, 2, *[3, 4])
+    // In this case, we can just reuse the splat array as the rest array.
+    // Because of gensplatarray, the array has already been duplicated,
+    // so there is no issue with mutability.
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 && argc - 1 != required_num {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_splat_not_equal);
+        return CantCompile;
+    }
 
     // This struct represents the metadata about the caller-specified
     // keyword arguments.
@@ -5534,7 +5543,7 @@ fn gen_send_iseq(
     };
 
     // push_splat_args does stack manipulation so we can no longer side exit
-    if flags & VM_CALL_ARGS_SPLAT != 0 {
+    if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
         // If block_arg0_splat, we still need side exits after this, but
         // doing push_splat_args here disallows it. So bail out.
         if block_arg0_splat {
@@ -5757,7 +5766,11 @@ fn gen_send_iseq(
         argc = lead_num;
     }
 
-    if iseq_has_rest {
+    // We guarded above that if there is a splat and rest
+    // the number of arguments lines up.
+    // So if we have a splat, we don't need to create an array
+    // at this point.
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT == 0 {
         assert!(argc >= required_num);
 
         // We are going to allocate so setting pc and sp.
