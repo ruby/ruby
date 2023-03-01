@@ -3584,3 +3584,13 @@ assert_equal 'true', %q{
 assert_equal 'true', %q{
   1.send(:==, 1, *[])
 }
+
+# Test send with splat to a cfunc
+assert_equal '2', %q{
+  def foo
+    Integer.sqrt(4, *[])
+  end
+  # call twice to deal with constant exiting
+  foo
+  foo
+}
