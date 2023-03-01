@@ -1221,7 +1221,7 @@ RSpec.describe "the lockfile format" do
       and include("Either installing with `--full-index` or running `bundle update rack_middleware` should fix the problem.")
   end
 
-  it "errors gracefully on a corrupt lockfile" do
+  it "auto-heals when the lockfile is missing dependent specs" do
     build_repo4 do
       build_gem "minitest-bisect", "1.6.0" do |s|
         s.add_dependency "path_expander", "~> 1.1"
@@ -1253,10 +1253,25 @@ RSpec.describe "the lockfile format" do
     L
 
     cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", :gem_repo => gem_repo4
-    bundle :install, :raise_on_error => false
+    bundle :install
 
-    expect(err).not_to include("ERROR REPORT TEMPLATE")
-    expect(err).to include("path_expander (~> 1.1), dependency of minitest-bisect-1.6.0 but missing from lockfile")
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          minitest-bisect (1.6.0)
+            path_expander (~> 1.1)
+          path_expander (1.1.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        minitest-bisect
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   it "auto-heals when the lockfile is missing specs" do
