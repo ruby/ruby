@@ -27,7 +27,7 @@ Then you can preview your changes by opening
 ## Goal
 
 The goal of Ruby documentation is to impart the most important
-and relevant in the shortest time.
+and relevant information in the shortest time.
 The reader should be able to quickly understand the usefulness
 of the subject code and how to use it.
 
