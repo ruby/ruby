@@ -348,6 +348,8 @@ make_counters! {
     num_send_polymorphic,
     num_send_x86_rel32,
     num_send_x86_reg,
+
+    iseq_stack_too_large,
 }
 
 //===========================================================================
