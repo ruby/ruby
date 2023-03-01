@@ -2389,6 +2389,43 @@ fn gen_defined(
     KeepCompiling
 }
 
+fn gen_defined_ivar(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let ivar_name = jit.get_arg(0).as_u64();
+    let pushval = jit.get_arg(2);
+
+    // Get the receiver
+    let recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    // Call rb_ivar_defined(recv, ivar_name)
+    let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+
+    // if (rb_ivar_defined(recv, ivar_name)) {
+    //  val = pushval;
+    // }
+    asm.test(def_result, Opnd::UImm(255));
+    let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+
+    // Push the return value onto the stack
+    let out_type = if pushval.special_const_p() {
+        Type::UnknownImm
+    } else {
+        Type::Unknown
+    };
+    let stack_ret = ctx.stack_push(out_type);
+    asm.mov(stack_ret, out_value);
+
+    KeepCompiling
+}
+
 fn gen_checktype(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -7635,6 +7672,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
+        YARVINSN_defined_ivar => Some(gen_defined_ivar),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
