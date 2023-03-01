@@ -123,9 +123,7 @@ pub fn assume_method_lookup_stable(
     jit_ensure_block_entry_exit(jit, ocb);
 
     let block = jit.get_block();
-    block
-        .borrow_mut()
-        .add_cme_dependency(callee_cme);
+    jit.push_cme_dependency(callee_cme);
 
     Invariants::get_instance()
         .cme_validity

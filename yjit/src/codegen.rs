@@ -66,6 +66,12 @@ pub struct JITState {
     // Whether we need to record the code address at
     // the end of this bytecode instruction for global invalidation
     record_boundary_patch_point: bool,
+
+    // The block's outgoing branches
+    outgoing: Vec<BranchRef>,
+
+    // The block's CME dependencies
+    cme_dependencies: Vec<CmePtr>,
 }
 
 impl JITState {
@@ -79,6 +85,8 @@ impl JITState {
             side_exit_for_pc: None,
             ec: None,
             record_boundary_patch_point: false,
+            outgoing: Vec::new(),
+            cme_dependencies: Vec::new(),
         }
     }
 
@@ -165,6 +173,16 @@ impl JITState {
             let ep = get_cfp_ep_level(get_ec_cfp(self.ec.unwrap()), level);
             *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize)
         }
+    }
+
+    // Push an outgoing branch ref
+    pub fn push_outgoing(&mut self, branch: BranchRef) {
+        self.outgoing.push(branch);
+    }
+
+    // Push a CME dependency
+    pub fn push_cme_dependency(&mut self, cme: CmePtr) {
+        self.cme_dependencies.push(cme);
     }
 }
 
@@ -832,6 +850,12 @@ pub fn gen_single_block(
 
         // Add the GC offsets to the block
         block.set_gc_obj_offsets(gc_offsets);
+
+        // Set CME dependencies to the block
+        block.set_cme_dependencies(jit.cme_dependencies);
+
+        // Set outgoing branches to the block
+        block.set_outgoing(jit.outgoing);
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());
@@ -1806,7 +1830,7 @@ fn gen_checkkeyword(
 // When depth_limit is exceeded, generate a jump to a side exit.
 fn jit_chain_guard(
     jcc: JCCKinds,
-    jit: &JITState,
+    jit: &mut JITState,
     ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
