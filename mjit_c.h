@@ -135,6 +135,7 @@ MJIT_RUNTIME_COUNTERS(
     send_blockarg,
     send_blockiseq,
     send_block_handler,
+    send_block_setup,
 
     send_iseq_not_simple,
     send_iseq_kw_splat,
