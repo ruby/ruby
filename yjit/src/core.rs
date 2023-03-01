@@ -559,7 +559,7 @@ struct BranchStub {
 /// Store info about an outgoing branch in a code segment
 /// Note: care must be taken to minimize the size of branch objects
 #[derive(Debug)]
-struct Branch {
+pub struct Branch {
     // Block this is attached to
     block: BlockRef,
 
@@ -626,7 +626,7 @@ pub struct Block {
     // however, using a RefCell makes it easy to get a pointer to Branch objects
     //
     // List of outgoing branches (to successors)
-    outgoing: Vec<BranchRef>,
+    outgoing: Box<[BranchRef]>,
 
     // FIXME: should these be code pointers instead?
     // Offsets for GC managed objects in the mainline code block
@@ -634,7 +634,7 @@ pub struct Block {
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
-    cme_dependencies: Vec<CmePtr>,
+    cme_dependencies: Box<[CmePtr]>,
 
     // Code address of an exit for `ctx` and `blockid`.
     // Used for block invalidation.
@@ -647,7 +647,7 @@ pub struct Block {
 pub struct BlockRef(Rc<RefCell<Block>>);
 
 /// Reference-counted pointer to a branch that can be borrowed mutably
-type BranchRef = Rc<RefCell<Branch>>;
+pub type BranchRef = Rc<RefCell<Branch>>;
 
 /// List of block versions for a given blockid
 type VersionList = Vec<BlockRef>;
@@ -869,12 +869,12 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             unsafe { rb_gc_mark_movable(block.blockid.iseq.into()) };
 
             // Mark method entry dependencies
-            for &cme_dep in &block.cme_dependencies {
+            for &cme_dep in block.cme_dependencies.iter() {
                 unsafe { rb_gc_mark_movable(cme_dep.into()) };
             }
 
             // Mark outgoing branch entries
-            for branch in &block.outgoing {
+            for branch in block.outgoing.iter() {
                 let branch = branch.borrow();
                 for target in branch.targets.iter().flatten() {
                     unsafe { rb_gc_mark_movable(target.get_blockid().iseq.into()) };
@@ -924,7 +924,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             block.blockid.iseq = unsafe { rb_gc_location(block.blockid.iseq.into()) }.as_iseq();
 
             // Update method entry dependencies
-            for cme_dep in &mut block.cme_dependencies {
+            for cme_dep in block.cme_dependencies.iter_mut() {
                 *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
@@ -953,7 +953,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             // Update outgoing branch entries
             let outgoing_branches = block.outgoing.clone(); // clone to use after borrow
             mem::drop(block); // end mut borrow: target.set_iseq and target.get_blockid() might (mut) borrow it
-            for branch in &outgoing_branches {
+            for branch in outgoing_branches.iter() {
                 let mut branch = branch.borrow_mut();
                 for target in branch.targets.iter_mut().flatten() {
                     target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
@@ -1173,9 +1173,9 @@ impl Block {
             start_addr,
             end_addr: None,
             incoming: Vec::new(),
-            outgoing: Vec::new(),
+            outgoing: Box::new([]),
             gc_obj_offsets: Box::new([]),
-            cme_dependencies: Vec::new(),
+            cme_dependencies: Box::new([]),
             entry_exit: None,
         };
 
@@ -1243,9 +1243,8 @@ impl Block {
 
     /// Instantiate a new CmeDependency struct and add it to the list of
     /// dependencies for this block.
-    pub fn add_cme_dependency(&mut self, callee_cme: CmePtr) {
-        self.cme_dependencies.push(callee_cme);
-        self.cme_dependencies.shrink_to_fit();
+    pub fn set_cme_dependencies(&mut self, cme_dependencies: Vec<CmePtr>) {
+        self.cme_dependencies = cme_dependencies.into_boxed_slice();
     }
 
     // Push an incoming branch ref and shrink the vector
@@ -1255,9 +1254,8 @@ impl Block {
     }
 
     // Push an outgoing branch ref and shrink the vector
-    fn push_outgoing(&mut self, branch: BranchRef) {
-        self.outgoing.push(branch);
-        self.outgoing.shrink_to_fit();
+    pub fn set_outgoing(&mut self, outgoing: Vec<BranchRef>) {
+        self.outgoing = outgoing.into_boxed_slice();
     }
 
     // Compute the size of the block code
@@ -1880,7 +1878,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
 }
 
 /// Create a new outgoing branch entry for a block
-fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
+fn make_branch_entry(jit: &mut JITState, block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     let branch = Branch {
         // Block this is attached to
         block: block.clone(),
@@ -1898,7 +1896,7 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
 
     // Add to the list of outgoing branches for the block
     let branchref = Rc::new(RefCell::new(branch));
-    block.borrow_mut().push_outgoing(branchref.clone());
+    jit.push_outgoing(branchref.clone());
     incr_counter!(compiled_branch_count);
 
     return branchref;
@@ -2203,7 +2201,7 @@ impl Assembler
 }
 
 pub fn gen_branch(
-    jit: &JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     target0: BlockId,
@@ -2212,7 +2210,7 @@ pub fn gen_branch(
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
 ) {
-    let branchref = make_branch_entry(&jit.get_block(), gen_fn);
+    let branchref = make_branch_entry(jit, &jit.get_block(), gen_fn);
     let branch = &mut branchref.borrow_mut();
 
     // Get the branch targets or stubs
@@ -2232,8 +2230,8 @@ pub fn gen_branch(
     asm.mark_branch_end(&branchref);
 }
 
-pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
-    let branchref = make_branch_entry(&jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
+pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
+    let branchref = make_branch_entry(jit, &jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
     let mut branch = branchref.borrow_mut();
 
     let mut new_target = BranchTarget::Stub(Box::new(BranchStub {
@@ -2276,7 +2274,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
 
 /// Create a stub to force the code up to this point to be executed
 pub fn defer_compilation(
-    jit: &JITState,
+    jit: &mut JITState,
     cur_ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -2293,7 +2291,7 @@ pub fn defer_compilation(
     next_ctx.chain_depth += 1;
 
     let block_rc = jit.get_block();
-    let branch_rc = make_branch_entry(&jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
+    let branch_rc = make_branch_entry(jit, &jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
     let mut branch = branch_rc.borrow_mut();
     let block = block_rc.borrow();
 
@@ -2338,7 +2336,7 @@ fn remove_from_graph(blockref: &BlockRef) {
     }
 
     // For each outgoing branch
-    for out_branchref in &block.outgoing {
+    for out_branchref in block.outgoing.iter() {
         let out_branch = out_branchref.borrow();
 
         // For each successor block
@@ -2364,7 +2362,7 @@ pub fn free_block(blockref: &BlockRef) {
     // Branches have a Rc pointing at the block housing them.
     // Break the cycle.
     blockref.borrow_mut().incoming.clear();
-    blockref.borrow_mut().outgoing.clear();
+    blockref.borrow_mut().outgoing = Box::new([]);
 
     // No explicit deallocation here as blocks are ref-counted.
 }
