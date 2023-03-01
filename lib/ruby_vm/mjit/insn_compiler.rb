@@ -22,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 59/101
+      # 60/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -67,7 +67,7 @@ module RubyVM::MJIT
       when :topn then topn(jit, ctx, asm)
       when :setn then setn(jit, ctx, asm)
       when :adjuststack then adjuststack(jit, ctx, asm)
-      # defined
+      when :defined then defined(jit, ctx, asm)
       # checkmatch
       # checkkeyword
       # checktype
@@ -617,7 +617,41 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # defined
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def defined(jit, ctx, asm)
+      op_type = jit.operand(0)
+      obj = jit.operand(1, ruby: true)
+      pushval = jit.operand(2, ruby: true)
+
+      # Save the PC and SP because the callee may allocate
+      # Note that this modifies REG_SP, which is why we do it first
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # Get the operands from the stack
+      v_opnd = ctx.stack_pop(1)
+
+      # Call vm_defined(ec, reg_cfp, op_type, obj, v)
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], CFP)
+      asm.mov(C_ARGS[2], op_type)
+      asm.mov(C_ARGS[3], to_value(obj))
+      asm.mov(C_ARGS[4], v_opnd)
+      asm.call(C.rb_vm_defined)
+
+      asm.test(C_RET, 255)
+      asm.mov(:rax, Qnil)
+      asm.mov(:rcx, to_value(pushval))
+      asm.cmovnz(:rax, :rcx)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
     # checkmatch
     # checkkeyword
     # checktype
