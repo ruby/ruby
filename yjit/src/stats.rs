@@ -350,6 +350,7 @@ make_counters! {
     num_send_x86_reg,
 
     iseq_stack_too_large,
+    iseq_too_long,
 }
 
 //===========================================================================

@@ -105,6 +105,15 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *con
         return std::ptr::null();
     }
 
+    // Reject ISEQs that are too long,
+    // this will allow us to use u16 for instruction indices if we want to,
+    // very long ISEQs are also much more likely to be initialization code
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    if iseq_size >= u16::MAX as u32 {
+        incr_counter!(iseq_too_long);
+        return std::ptr::null();
+    }
+
     let maybe_code_ptr = gen_entry_point(iseq, ec);
 
     match maybe_code_ptr {
