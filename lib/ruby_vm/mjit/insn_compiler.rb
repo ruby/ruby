@@ -22,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 60/101
+      # 61/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -74,7 +74,7 @@ module RubyVM::MJIT
       # defineclass
       # definemethod
       # definesmethod
-      # send
+      when :send then send(jit, ctx, asm)
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       # objtostring
       # opt_str_freeze
@@ -658,7 +658,36 @@ module RubyVM::MJIT
     # defineclass
     # definemethod
     # definesmethod
-    # send
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def send(jit, ctx, asm)
+      # Specialize on a compile-time receiver, and split a block for chain guards
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      cd = C.rb_call_data.new(jit.operand(0))
+      blockiseq = jit.operand(1)
+
+      if jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq, false) == CantCompile
+        return CantCompile
+      end
+
+      # calling->ci
+      mid = C.vm_ci_mid(cd.ci)
+      argc = C.vm_ci_argc(cd.ci)
+      flags = C.vm_ci_flag(cd.ci)
+
+      # vm_sendish
+      cme = jit_search_method(jit, ctx, asm, mid, argc, flags)
+      if cme == CantCompile
+        return CantCompile
+      end
+      jit_call_general(jit, ctx, asm, mid, argc, flags, cme)
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -710,7 +739,9 @@ module RubyVM::MJIT
       cd = C.rb_call_data.new(jit.operand(0))
       blockiseq = jit.operand(1)
 
-      jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq, true)
+      if jit_caller_setup_arg_block(jit, ctx, asm, cd.ci, blockiseq, true) == CantCompile
+        return CantCompile
+      end
 
       # calling->ci
       mid = C.vm_ci_mid(cd.ci)
@@ -2052,7 +2083,8 @@ module RubyVM::MJIT
           asm.cmp([:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL], C.VM_BLOCK_HANDLER_NONE)
           asm.jne(counted_exit(side_exit(jit, ctx), :send_block_handler))
         else
-          raise NotImplementedError
+          asm.incr_counter(:send_block_setup)
+          return CantCompile
         end
       end
     end
