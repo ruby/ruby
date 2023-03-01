@@ -23,7 +23,7 @@ Gem::Specification.new do |spec|
   spec.metadata = {
     "bug_tracker_uri" => "#{github_link}/issues",
     "changelog_uri" => "#{github_link}/releases",
-    "documentation_uri" => "https://rubydoc.info/gems/uri",
+    "documentation_uri" => "https://ruby.github.io/uri/",
     "homepage_uri" => spec.homepage,
     "source_code_uri" => github_link
   }
