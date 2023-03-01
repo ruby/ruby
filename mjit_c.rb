@@ -234,6 +234,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
     end
 
+    def rb_vm_defined
+      Primitive.cstmt! %{
+        extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
+        return SIZET2NUM((size_t)rb_vm_defined);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
