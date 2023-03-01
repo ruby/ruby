@@ -35,6 +35,7 @@ module RubyVM::MJIT
       $stderr.puts("***MJIT: Printing MJIT statistics on exit***")
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
+      print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
       print_counters(stats, prefix: 'optaref_', prompt: 'opt_aref exit reasons')
       print_counters(stats, prefix: 'optgetconst_', prompt: 'opt_getconstant_path exit reasons')

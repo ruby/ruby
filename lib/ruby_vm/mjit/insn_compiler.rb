@@ -2114,7 +2114,7 @@ module RubyVM::MJIT
       # and so only have to do this once at compile time this is fine to always
       # check and side exit.
       comptime_recv = jit.peek_at_stack(argc)
-      unless comptime_recv.kind_of?(current_defined_class)
+      unless C.rb_obj_is_kind_of(comptime_recv, current_defined_class)
         return CantCompile
       end
 
@@ -2122,6 +2122,12 @@ module RubyVM::MJIT
       cme = C.rb_callable_method_entry(comptime_superclass, mid)
 
       if cme.nil?
+        return CantCompile
+      end
+
+      # workaround -- TODO: Why does this happen?
+      if me.to_i == cme.to_i
+        asm.incr_counter(:invokesuper_same_me)
         return CantCompile
       end
 
