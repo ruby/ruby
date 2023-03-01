@@ -117,6 +117,11 @@ describe "String#casecmp independent of case" do
       "B".casecmp(a).should == 1
     end
   end
+
+  it "returns 0 for empty strings in different encodings" do
+    ''.b.casecmp('').should == 0
+    ''.b.casecmp(''.encode("UTF-32LE")).should == 0
+  end
 end
 
 describe 'String#casecmp? independent of case' do
@@ -190,5 +195,10 @@ describe 'String#casecmp? independent of case' do
 
   it "returns nil if other can't be converted to a string" do
     "abc".casecmp?(mock('abc')).should be_nil
+  end
+
+  it "returns true for empty strings in different encodings" do
+    ''.b.should.casecmp?('')
+    ''.b.should.casecmp?(''.encode("UTF-32LE"))
   end
 end

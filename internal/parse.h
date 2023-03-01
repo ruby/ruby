@@ -10,13 +10,10 @@
  */
 #include "ruby/ruby.h"          /* for VALUE */
 struct rb_iseq_struct;          /* in vm_core.h */
-struct ruby_file_load_state;    /* internal/file.h */
 
 /* parse.y */
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 void *rb_parser_load_file(VALUE parser, VALUE name);
-void *rb_parser_load_state(VALUE parser, VALUE name,
-                        struct ruby_file_load_state *);
 void rb_parser_keep_script_lines(VALUE vparser);
 void rb_parser_error_tolerant(VALUE vparser);
 void rb_parser_keep_tokens(VALUE vparser);

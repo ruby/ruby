@@ -4,10 +4,10 @@ require "rubygems/bundler_version_finder"
 
 class TestGemBundlerVersionFinder < Gem::TestCase
   def setup
-    super
-
     @argv = ARGV.dup
     @dollar_0 = $0
+    super
+
     without_any_upwards_gemfiles
   end
 

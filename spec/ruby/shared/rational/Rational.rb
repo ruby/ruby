@@ -85,6 +85,11 @@ describe :kernel_Rational, shared: true do
     end
   end
 
+  it "raises a ZeroDivisionError if the second argument is 0" do
+    -> { Rational(1, 0) }.should raise_error(ZeroDivisionError, "divided by 0")
+    -> { Rational(1, 0.0) }.should raise_error(ZeroDivisionError, "divided by 0")
+  end
+
   it "raises a TypeError if the first argument is nil" do
     -> { Rational(nil) }.should raise_error(TypeError)
   end

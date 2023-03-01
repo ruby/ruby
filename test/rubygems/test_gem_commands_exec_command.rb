@@ -4,14 +4,14 @@ require "rubygems/commands/exec_command"
 
 class TestGemCommandsExecCommand < Gem::TestCase
   def setup
+    @orig_args = Gem::Command.build_args
+    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
+    @orig_extra_args = Gem::Command.extra_args.dup
+
     super
     common_installer_setup
 
     @cmd = Gem::Commands::ExecCommand.new
-
-    @orig_args = Gem::Command.build_args
-    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
-    @orig_extra_args = Gem::Command.extra_args.dup
 
     @gem_home = Gem.dir
     @gem_path = Gem.path

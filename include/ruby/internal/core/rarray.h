@@ -29,7 +29,7 @@
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
-#include "ruby/internal/rgengc.h"
+#include "ruby/internal/gc.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"

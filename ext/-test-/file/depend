@@ -121,7 +121,6 @@ fs.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 fs.o: $(hdrdir)/ruby/internal/intern/error.h
 fs.o: $(hdrdir)/ruby/internal/intern/eval.h
 fs.o: $(hdrdir)/ruby/internal/intern/file.h
-fs.o: $(hdrdir)/ruby/internal/intern/gc.h
 fs.o: $(hdrdir)/ruby/internal/intern/hash.h
 fs.o: $(hdrdir)/ruby/internal/intern/io.h
 fs.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -152,7 +151,6 @@ fs.o: $(hdrdir)/ruby/internal/memory.h
 fs.o: $(hdrdir)/ruby/internal/method.h
 fs.o: $(hdrdir)/ruby/internal/module.h
 fs.o: $(hdrdir)/ruby/internal/newobj.h
-fs.o: $(hdrdir)/ruby/internal/rgengc.h
 fs.o: $(hdrdir)/ruby/internal/scan_args.h
 fs.o: $(hdrdir)/ruby/internal/special_consts.h
 fs.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -285,7 +283,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -316,7 +313,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -455,7 +451,6 @@ stat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 stat.o: $(hdrdir)/ruby/internal/intern/error.h
 stat.o: $(hdrdir)/ruby/internal/intern/eval.h
 stat.o: $(hdrdir)/ruby/internal/intern/file.h
-stat.o: $(hdrdir)/ruby/internal/intern/gc.h
 stat.o: $(hdrdir)/ruby/internal/intern/hash.h
 stat.o: $(hdrdir)/ruby/internal/intern/io.h
 stat.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -486,7 +481,6 @@ stat.o: $(hdrdir)/ruby/internal/memory.h
 stat.o: $(hdrdir)/ruby/internal/method.h
 stat.o: $(hdrdir)/ruby/internal/module.h
 stat.o: $(hdrdir)/ruby/internal/newobj.h
-stat.o: $(hdrdir)/ruby/internal/rgengc.h
 stat.o: $(hdrdir)/ruby/internal/scan_args.h
 stat.o: $(hdrdir)/ruby/internal/special_consts.h
 stat.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -72,6 +72,17 @@ describe "Kernel#open" do
     -> { open }.should raise_error(ArgumentError)
   end
 
+  ruby_version_is "3.0" do
+    it "accepts options as keyword arguments" do
+      @file = open(@name, "r", 0666, flags: File::CREAT)
+      @file.should be_kind_of(File)
+
+      -> {
+        open(@name, "r", 0666, {flags: File::CREAT})
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
+    end
+  end
+
   describe "when given an object that responds to to_open" do
     before :each do
       ScratchPad.clear
@@ -109,9 +120,19 @@ describe "Kernel#open" do
 
     it "passes its arguments onto #to_open" do
       obj = mock('to_open')
-      obj.should_receive(:to_open).with(1,2,3)
-
+      obj.should_receive(:to_open).with(1, 2, 3)
       open(obj, 1, 2, 3)
+    end
+
+    it "passes keyword arguments onto #to_open as keyword arguments if to_open accepts them" do
+      obj = Object.new
+      def obj.to_open(*args, **kw)
+        ScratchPad << {args: args, kw: kw}
+      end
+
+      ScratchPad.record []
+      open(obj, 1, 2, 3, a: "b")
+      ScratchPad.recorded.should == [args: [1, 2, 3], kw: {a: "b"}]
     end
 
     it "passes the return value from #to_open to a block" do

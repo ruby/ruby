@@ -2539,29 +2539,6 @@ rb_parser_load_file(VALUE parser, VALUE fname_v)
     return load_file(parser, fname_v, f, 0, &opt);
 }
 
-void *
-rb_parser_load_state(VALUE parser, VALUE fname_v,
-                     struct ruby_file_load_state *fls)
-{
-    if (fls->filev != Qfalse) {
-        ruby_cmdline_options_t opt;
-
-        cmdline_options_init(&opt);
-        /* TODO: xflag for DOSISH || __CYGWIN__ */
-        if (fls->is_nonblock) {
-            struct rb_io_t *fptr;
-
-            RB_IO_POINTER(fls->filev, fptr);
-            disable_nonblock(fptr->fd);
-        }
-        if (fls->is_fifo) {
-            rb_io_wait(fls->filev, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
-        }
-        return load_file(parser, fname_v, fls->filev, 0, &opt);
-    }
-    return rb_parser_load_file(parser, fname_v);
-}
-
 /*
  *  call-seq:
  *     Process.argv0  -> frozen_string

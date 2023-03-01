@@ -122,7 +122,6 @@ strscan.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 strscan.o: $(hdrdir)/ruby/internal/intern/error.h
 strscan.o: $(hdrdir)/ruby/internal/intern/eval.h
 strscan.o: $(hdrdir)/ruby/internal/intern/file.h
-strscan.o: $(hdrdir)/ruby/internal/intern/gc.h
 strscan.o: $(hdrdir)/ruby/internal/intern/hash.h
 strscan.o: $(hdrdir)/ruby/internal/intern/io.h
 strscan.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -153,7 +152,6 @@ strscan.o: $(hdrdir)/ruby/internal/memory.h
 strscan.o: $(hdrdir)/ruby/internal/method.h
 strscan.o: $(hdrdir)/ruby/internal/module.h
 strscan.o: $(hdrdir)/ruby/internal/newobj.h
-strscan.o: $(hdrdir)/ruby/internal/rgengc.h
 strscan.o: $(hdrdir)/ruby/internal/scan_args.h
 strscan.o: $(hdrdir)/ruby/internal/special_consts.h
 strscan.o: $(hdrdir)/ruby/internal/static_assert.h

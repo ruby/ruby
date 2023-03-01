@@ -123,7 +123,6 @@ console.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 console.o: $(hdrdir)/ruby/internal/intern/error.h
 console.o: $(hdrdir)/ruby/internal/intern/eval.h
 console.o: $(hdrdir)/ruby/internal/intern/file.h
-console.o: $(hdrdir)/ruby/internal/intern/gc.h
 console.o: $(hdrdir)/ruby/internal/intern/hash.h
 console.o: $(hdrdir)/ruby/internal/intern/io.h
 console.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -154,7 +153,6 @@ console.o: $(hdrdir)/ruby/internal/memory.h
 console.o: $(hdrdir)/ruby/internal/method.h
 console.o: $(hdrdir)/ruby/internal/module.h
 console.o: $(hdrdir)/ruby/internal/newobj.h
-console.o: $(hdrdir)/ruby/internal/rgengc.h
 console.o: $(hdrdir)/ruby/internal/scan_args.h
 console.o: $(hdrdir)/ruby/internal/special_consts.h
 console.o: $(hdrdir)/ruby/internal/static_assert.h

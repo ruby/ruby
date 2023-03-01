@@ -141,6 +141,19 @@ macro_rules! make_counters {
     }
 }
 
+/// Macro to increase a counter by name and count
+macro_rules! incr_counter_by {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($counter_name:ident, $count:expr) => {
+        #[allow(unused_unsafe)]
+        {
+            unsafe { $crate::stats::COUNTERS.$counter_name += $count as u64 }
+        }
+    };
+}
+pub(crate) use incr_counter_by;
+
 /// Macro to increment a counter by name
 macro_rules! incr_counter {
     // Unsafe is ok here because options are initialized
@@ -192,6 +205,7 @@ make_counters! {
     send_cfunc_tracing,
     send_cfunc_kwargs,
     send_cfunc_splat_with_kw,
+    send_cfunc_splat_send,
     send_attrset_kwargs,
     send_iseq_tailcall,
     send_iseq_arity_error,
@@ -309,6 +323,7 @@ make_counters! {
     compilation_failure,
     block_next_count,
     defer_count,
+    defer_empty_count,
     freed_iseq_count,
 
     exit_from_branch_stub,

@@ -70,7 +70,7 @@
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
     for (size_t idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
 
-// Iterate over valid indicies in the array in a for loop
+// Iterate over valid indices in the array in a for loop
 //
 #define rb_darray_for(ary, idx_name) \
     for (size_t idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)

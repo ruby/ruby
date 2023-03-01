@@ -104,6 +104,12 @@ describe :process_exit!, shared: true do
     $?.exitstatus.should == 21
   end
 
+  it "skips ensure clauses" do
+    out = ruby_exe("begin; STDERR.puts 'before'; #{@object}.send(:exit!, 21); ensure; STDERR.puts 'ensure'; end", args: '2>&1', exit_status: 21)
+    out.should == "before\n"
+    $?.exitstatus.should == 21
+  end
+
   it "overrides the original exception and exit status when called from #at_exit" do
     code = <<-RUBY
     at_exit do

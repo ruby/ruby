@@ -114,7 +114,6 @@ coverage.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 coverage.o: $(hdrdir)/ruby/internal/intern/error.h
 coverage.o: $(hdrdir)/ruby/internal/intern/eval.h
 coverage.o: $(hdrdir)/ruby/internal/intern/file.h
-coverage.o: $(hdrdir)/ruby/internal/intern/gc.h
 coverage.o: $(hdrdir)/ruby/internal/intern/hash.h
 coverage.o: $(hdrdir)/ruby/internal/intern/io.h
 coverage.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -145,7 +144,6 @@ coverage.o: $(hdrdir)/ruby/internal/memory.h
 coverage.o: $(hdrdir)/ruby/internal/method.h
 coverage.o: $(hdrdir)/ruby/internal/module.h
 coverage.o: $(hdrdir)/ruby/internal/newobj.h
-coverage.o: $(hdrdir)/ruby/internal/rgengc.h
 coverage.o: $(hdrdir)/ruby/internal/scan_args.h
 coverage.o: $(hdrdir)/ruby/internal/special_consts.h
 coverage.o: $(hdrdir)/ruby/internal/static_assert.h

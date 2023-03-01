@@ -235,11 +235,13 @@ to the same gem path as user-installed gems.
     name = :always_install
     cls = ::Gem::Resolver::InstallerSet
     method = cls.instance_method(name)
+    cls.remove_method(name)
     cls.define_method(name) { [] }
 
     begin
       yield
     ensure
+      cls.remove_method(name)
       cls.define_method(name, method)
     end
   end

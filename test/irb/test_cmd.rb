@@ -672,6 +672,66 @@ module TestIRB
       assert_match(/C.methods:\s+m5\n/m, out)
     end
 
+    def test_ls_class
+      out, err = execute_lines(
+        "module M1\n",
+        "  def m2; end\n",
+        "  def m3; end\n",
+        "end\n",
+
+        "class C1\n",
+        "  def m1; end\n",
+        "  def m2; end\n",
+        "end\n",
+
+        "class C2 < C1\n",
+        "  include M1\n",
+        "  def m3; end\n",
+        "  def m4; end\n",
+        "  def self.m3; end\n",
+        "  def self.m5; end\n",
+        "end\n",
+        "ls C2"
+      )
+
+      assert_empty err
+      assert_match(/C2.methods:\s+m3\s+m5\n/, out)
+      assert_match(/C2#methods:\s+m3\s+m4\n.*M1#methods:\s+m2\n.*C1#methods:\s+m1\n/, out)
+    end
+
+    def test_ls_module
+      out, err = execute_lines(
+        "module M1\n",
+        "  def m1; end\n",
+        "  def m2; end\n",
+        "end\n",
+
+        "module M2\n",
+        "  include M1\n",
+        "  def m1; end\n",
+        "  def m3; end\n",
+        "  def self.m4; end\n",
+        "end\n",
+        "ls M2"
+      )
+
+      assert_empty err
+      assert_match(/M2\.methods:\s+m4\nModule#methods:/, out)
+      assert_match(/M2#methods:\s+m1\s+m3\n.*M1#methods:\s+m2\n/, out)
+    end
+
+    def test_ls_instance
+      out, err = execute_lines(
+        "class Foo; def bar; end; end\n",
+        "ls Foo.new"
+      )
+
+      assert_empty err
+      assert_match(/Foo#methods:\s+bar/, out)
+      # don't duplicate
+      assert_not_match(/Foo#methods:\s+bar\n.*Foo#methods/, out)
+    end
+
     def test_ls_grep
       pend if RUBY_ENGINE == 'truffleruby'
       out, err = execute_lines("ls 42\n")

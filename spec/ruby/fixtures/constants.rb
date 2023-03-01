@@ -44,6 +44,7 @@ module ConstantSpecs
 
   # Included in ParentA
   module ModuleB
+    LINE = __LINE__ - 1
     CS_CONST10 = :const10_9
     CS_CONST11 = :const11_2
     CS_CONST12 = :const12_1
@@ -87,7 +88,7 @@ module ConstantSpecs
   # are run.
 
   class ClassA
-    CS_CLASS_A_LINE = __LINE__ - 1
+    LINE = __LINE__ - 1
     CS_CONST10 = :const10_10
     CS_CONST10_LINE = __LINE__ - 1
     CS_CONST16 = :const16

@@ -136,7 +136,6 @@ psych.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 psych.o: $(hdrdir)/ruby/internal/intern/error.h
 psych.o: $(hdrdir)/ruby/internal/intern/eval.h
 psych.o: $(hdrdir)/ruby/internal/intern/file.h
-psych.o: $(hdrdir)/ruby/internal/intern/gc.h
 psych.o: $(hdrdir)/ruby/internal/intern/hash.h
 psych.o: $(hdrdir)/ruby/internal/intern/io.h
 psych.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -167,7 +166,6 @@ psych.o: $(hdrdir)/ruby/internal/memory.h
 psych.o: $(hdrdir)/ruby/internal/method.h
 psych.o: $(hdrdir)/ruby/internal/module.h
 psych.o: $(hdrdir)/ruby/internal/newobj.h
-psych.o: $(hdrdir)/ruby/internal/rgengc.h
 psych.o: $(hdrdir)/ruby/internal/scan_args.h
 psych.o: $(hdrdir)/ruby/internal/special_consts.h
 psych.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -314,7 +312,6 @@ psych_emitter.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/error.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/eval.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/file.h
-psych_emitter.o: $(hdrdir)/ruby/internal/intern/gc.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/hash.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/io.h
 psych_emitter.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -345,7 +342,6 @@ psych_emitter.o: $(hdrdir)/ruby/internal/memory.h
 psych_emitter.o: $(hdrdir)/ruby/internal/method.h
 psych_emitter.o: $(hdrdir)/ruby/internal/module.h
 psych_emitter.o: $(hdrdir)/ruby/internal/newobj.h
-psych_emitter.o: $(hdrdir)/ruby/internal/rgengc.h
 psych_emitter.o: $(hdrdir)/ruby/internal/scan_args.h
 psych_emitter.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_emitter.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -492,7 +488,6 @@ psych_parser.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/error.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/eval.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/file.h
-psych_parser.o: $(hdrdir)/ruby/internal/intern/gc.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/hash.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/io.h
 psych_parser.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -523,7 +518,6 @@ psych_parser.o: $(hdrdir)/ruby/internal/memory.h
 psych_parser.o: $(hdrdir)/ruby/internal/method.h
 psych_parser.o: $(hdrdir)/ruby/internal/module.h
 psych_parser.o: $(hdrdir)/ruby/internal/newobj.h
-psych_parser.o: $(hdrdir)/ruby/internal/rgengc.h
 psych_parser.o: $(hdrdir)/ruby/internal/scan_args.h
 psych_parser.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_parser.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -670,7 +664,6 @@ psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/error.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/eval.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/file.h
-psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/gc.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/hash.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/io.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -701,7 +694,6 @@ psych_to_ruby.o: $(hdrdir)/ruby/internal/memory.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/method.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/module.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/newobj.h
-psych_to_ruby.o: $(hdrdir)/ruby/internal/rgengc.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/scan_args.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_to_ruby.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -848,7 +840,6 @@ psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/error.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/eval.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/file.h
-psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/gc.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/hash.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/io.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -879,7 +870,6 @@ psych_yaml_tree.o: $(hdrdir)/ruby/internal/memory.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/method.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/module.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/newobj.h
-psych_yaml_tree.o: $(hdrdir)/ruby/internal/rgengc.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/scan_args.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/special_consts.h
 psych_yaml_tree.o: $(hdrdir)/ruby/internal/static_assert.h

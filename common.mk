@@ -2005,7 +2005,6 @@ array.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-array.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 array.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -2036,7 +2035,6 @@ array.$(OBJEXT): {$(VPATH)}internal/memory.h
 array.$(OBJEXT): {$(VPATH)}internal/method.h
 array.$(OBJEXT): {$(VPATH)}internal/module.h
 array.$(OBJEXT): {$(VPATH)}internal/newobj.h
-array.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 array.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 array.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 array.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -2206,7 +2204,6 @@ ast.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-ast.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 ast.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -2237,7 +2234,6 @@ ast.$(OBJEXT): {$(VPATH)}internal/memory.h
 ast.$(OBJEXT): {$(VPATH)}internal/method.h
 ast.$(OBJEXT): {$(VPATH)}internal/module.h
 ast.$(OBJEXT): {$(VPATH)}internal/newobj.h
-ast.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 ast.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 ast.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ast.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -2397,7 +2393,6 @@ bignum.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-bignum.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 bignum.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -2428,7 +2423,6 @@ bignum.$(OBJEXT): {$(VPATH)}internal/memory.h
 bignum.$(OBJEXT): {$(VPATH)}internal/method.h
 bignum.$(OBJEXT): {$(VPATH)}internal/module.h
 bignum.$(OBJEXT): {$(VPATH)}internal/newobj.h
-bignum.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 bignum.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 bignum.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 bignum.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -2581,7 +2575,6 @@ builtin.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-builtin.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 builtin.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -2612,7 +2605,6 @@ builtin.$(OBJEXT): {$(VPATH)}internal/memory.h
 builtin.$(OBJEXT): {$(VPATH)}internal/method.h
 builtin.$(OBJEXT): {$(VPATH)}internal/module.h
 builtin.$(OBJEXT): {$(VPATH)}internal/newobj.h
-builtin.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 builtin.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 builtin.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 builtin.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -2785,7 +2777,6 @@ class.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-class.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 class.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -2816,7 +2807,6 @@ class.$(OBJEXT): {$(VPATH)}internal/memory.h
 class.$(OBJEXT): {$(VPATH)}internal/method.h
 class.$(OBJEXT): {$(VPATH)}internal/module.h
 class.$(OBJEXT): {$(VPATH)}internal/newobj.h
-class.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 class.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 class.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 class.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -2975,7 +2965,6 @@ compar.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-compar.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 compar.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -3006,7 +2995,6 @@ compar.$(OBJEXT): {$(VPATH)}internal/memory.h
 compar.$(OBJEXT): {$(VPATH)}internal/method.h
 compar.$(OBJEXT): {$(VPATH)}internal/module.h
 compar.$(OBJEXT): {$(VPATH)}internal/newobj.h
-compar.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 compar.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 compar.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 compar.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -3188,7 +3176,6 @@ compile.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-compile.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 compile.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -3219,7 +3206,6 @@ compile.$(OBJEXT): {$(VPATH)}internal/memory.h
 compile.$(OBJEXT): {$(VPATH)}internal/method.h
 compile.$(OBJEXT): {$(VPATH)}internal/module.h
 compile.$(OBJEXT): {$(VPATH)}internal/newobj.h
-compile.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 compile.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 compile.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 compile.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -3386,7 +3372,6 @@ complex.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-complex.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 complex.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -3417,7 +3402,6 @@ complex.$(OBJEXT): {$(VPATH)}internal/memory.h
 complex.$(OBJEXT): {$(VPATH)}internal/method.h
 complex.$(OBJEXT): {$(VPATH)}internal/module.h
 complex.$(OBJEXT): {$(VPATH)}internal/newobj.h
-complex.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 complex.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 complex.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 complex.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -3586,7 +3570,6 @@ cont.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-cont.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 cont.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -3617,7 +3600,6 @@ cont.$(OBJEXT): {$(VPATH)}internal/memory.h
 cont.$(OBJEXT): {$(VPATH)}internal/method.h
 cont.$(OBJEXT): {$(VPATH)}internal/module.h
 cont.$(OBJEXT): {$(VPATH)}internal/newobj.h
-cont.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 cont.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 cont.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 cont.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -3797,7 +3779,6 @@ debug.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-debug.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 debug.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -3828,7 +3809,6 @@ debug.$(OBJEXT): {$(VPATH)}internal/memory.h
 debug.$(OBJEXT): {$(VPATH)}internal/method.h
 debug.$(OBJEXT): {$(VPATH)}internal/module.h
 debug.$(OBJEXT): {$(VPATH)}internal/newobj.h
-debug.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 debug.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 debug.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 debug.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -3975,7 +3955,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4006,7 +3985,6 @@ debug_counter.$(OBJEXT): {$(VPATH)}internal/memory.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/method.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/module.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/newobj.h
-debug_counter.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 debug_counter.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4168,7 +4146,6 @@ dir.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-dir.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 dir.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4199,7 +4176,6 @@ dir.$(OBJEXT): {$(VPATH)}internal/memory.h
 dir.$(OBJEXT): {$(VPATH)}internal/method.h
 dir.$(OBJEXT): {$(VPATH)}internal/module.h
 dir.$(OBJEXT): {$(VPATH)}internal/newobj.h
-dir.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dir.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 dir.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dir.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4337,7 +4313,6 @@ dln.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-dln.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 dln.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4368,7 +4343,6 @@ dln.$(OBJEXT): {$(VPATH)}internal/memory.h
 dln.$(OBJEXT): {$(VPATH)}internal/method.h
 dln.$(OBJEXT): {$(VPATH)}internal/module.h
 dln.$(OBJEXT): {$(VPATH)}internal/newobj.h
-dln.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dln.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 dln.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dln.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4496,7 +4470,6 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-dln_find.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4527,7 +4500,6 @@ dln_find.$(OBJEXT): {$(VPATH)}internal/memory.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/method.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/module.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/newobj.h
-dln_find.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dln_find.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4654,7 +4626,6 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-dmydln.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4685,7 +4656,6 @@ dmydln.$(OBJEXT): {$(VPATH)}internal/memory.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/method.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/module.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/newobj.h
-dmydln.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 dmydln.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4823,7 +4793,6 @@ enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -4854,7 +4823,6 @@ enc/ascii.$(OBJEXT): {$(VPATH)}internal/memory.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/method.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/module.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enc/ascii.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enc/ascii.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -4982,7 +4950,6 @@ enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5013,7 +4980,6 @@ enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/memory.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/method.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/module.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -5141,7 +5107,6 @@ enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5172,7 +5137,6 @@ enc/unicode.$(OBJEXT): {$(VPATH)}internal/memory.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/method.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/module.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enc/unicode.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enc/unicode.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -5311,7 +5275,6 @@ enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5342,7 +5305,6 @@ enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/memory.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/method.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/module.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -5481,7 +5443,6 @@ enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5512,7 +5473,6 @@ enc/utf_8.$(OBJEXT): {$(VPATH)}internal/memory.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/method.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/module.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enc/utf_8.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -5674,7 +5634,6 @@ encoding.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-encoding.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 encoding.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5705,7 +5664,6 @@ encoding.$(OBJEXT): {$(VPATH)}internal/memory.h
 encoding.$(OBJEXT): {$(VPATH)}internal/method.h
 encoding.$(OBJEXT): {$(VPATH)}internal/module.h
 encoding.$(OBJEXT): {$(VPATH)}internal/newobj.h
-encoding.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 encoding.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 encoding.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 encoding.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -5877,7 +5835,6 @@ enum.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enum.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enum.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -5908,7 +5865,6 @@ enum.$(OBJEXT): {$(VPATH)}internal/memory.h
 enum.$(OBJEXT): {$(VPATH)}internal/method.h
 enum.$(OBJEXT): {$(VPATH)}internal/module.h
 enum.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enum.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enum.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enum.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enum.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -6077,7 +6033,6 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-enumerator.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -6108,7 +6063,6 @@ enumerator.$(OBJEXT): {$(VPATH)}internal/memory.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/method.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/module.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/newobj.h
-enumerator.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 enumerator.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -6280,7 +6234,6 @@ error.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-error.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 error.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -6311,7 +6264,6 @@ error.$(OBJEXT): {$(VPATH)}internal/memory.h
 error.$(OBJEXT): {$(VPATH)}internal/method.h
 error.$(OBJEXT): {$(VPATH)}internal/module.h
 error.$(OBJEXT): {$(VPATH)}internal/newobj.h
-error.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 error.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 error.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 error.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -6498,7 +6450,6 @@ eval.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-eval.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 eval.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -6529,7 +6480,6 @@ eval.$(OBJEXT): {$(VPATH)}internal/memory.h
 eval.$(OBJEXT): {$(VPATH)}internal/method.h
 eval.$(OBJEXT): {$(VPATH)}internal/module.h
 eval.$(OBJEXT): {$(VPATH)}internal/newobj.h
-eval.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 eval.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 eval.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 eval.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -6728,7 +6678,6 @@ file.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-file.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 file.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -6759,7 +6708,6 @@ file.$(OBJEXT): {$(VPATH)}internal/memory.h
 file.$(OBJEXT): {$(VPATH)}internal/method.h
 file.$(OBJEXT): {$(VPATH)}internal/module.h
 file.$(OBJEXT): {$(VPATH)}internal/newobj.h
-file.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 file.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 file.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 file.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -6949,7 +6897,6 @@ gc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-gc.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 gc.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -6980,7 +6927,6 @@ gc.$(OBJEXT): {$(VPATH)}internal/memory.h
 gc.$(OBJEXT): {$(VPATH)}internal/method.h
 gc.$(OBJEXT): {$(VPATH)}internal/module.h
 gc.$(OBJEXT): {$(VPATH)}internal/newobj.h
-gc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 gc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 gc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 gc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -7159,7 +7105,6 @@ goruby.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-goruby.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 goruby.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -7190,7 +7135,6 @@ goruby.$(OBJEXT): {$(VPATH)}internal/memory.h
 goruby.$(OBJEXT): {$(VPATH)}internal/method.h
 goruby.$(OBJEXT): {$(VPATH)}internal/module.h
 goruby.$(OBJEXT): {$(VPATH)}internal/newobj.h
-goruby.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 goruby.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 goruby.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 goruby.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -7372,7 +7316,6 @@ hash.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-hash.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 hash.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -7403,7 +7346,6 @@ hash.$(OBJEXT): {$(VPATH)}internal/memory.h
 hash.$(OBJEXT): {$(VPATH)}internal/method.h
 hash.$(OBJEXT): {$(VPATH)}internal/module.h
 hash.$(OBJEXT): {$(VPATH)}internal/newobj.h
-hash.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 hash.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 hash.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 hash.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -7556,7 +7498,6 @@ inits.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-inits.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 inits.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -7587,7 +7528,6 @@ inits.$(OBJEXT): {$(VPATH)}internal/memory.h
 inits.$(OBJEXT): {$(VPATH)}internal/method.h
 inits.$(OBJEXT): {$(VPATH)}internal/module.h
 inits.$(OBJEXT): {$(VPATH)}internal/newobj.h
-inits.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 inits.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 inits.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 inits.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -7762,7 +7702,6 @@ io.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-io.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 io.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -7793,7 +7732,6 @@ io.$(OBJEXT): {$(VPATH)}internal/memory.h
 io.$(OBJEXT): {$(VPATH)}internal/method.h
 io.$(OBJEXT): {$(VPATH)}internal/module.h
 io.$(OBJEXT): {$(VPATH)}internal/newobj.h
-io.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 io.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 io.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 io.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -7962,7 +7900,6 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -7993,7 +7930,6 @@ io_buffer.$(OBJEXT): {$(VPATH)}internal/memory.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/method.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/module.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/newobj.h
-io_buffer.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -8172,7 +8108,6 @@ iseq.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-iseq.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 iseq.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -8203,7 +8138,6 @@ iseq.$(OBJEXT): {$(VPATH)}internal/memory.h
 iseq.$(OBJEXT): {$(VPATH)}internal/method.h
 iseq.$(OBJEXT): {$(VPATH)}internal/module.h
 iseq.$(OBJEXT): {$(VPATH)}internal/newobj.h
-iseq.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 iseq.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 iseq.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 iseq.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -8388,7 +8322,6 @@ load.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-load.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 load.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -8419,7 +8352,6 @@ load.$(OBJEXT): {$(VPATH)}internal/memory.h
 load.$(OBJEXT): {$(VPATH)}internal/method.h
 load.$(OBJEXT): {$(VPATH)}internal/module.h
 load.$(OBJEXT): {$(VPATH)}internal/newobj.h
-load.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 load.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 load.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 load.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -8563,7 +8495,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-loadpath.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -8594,7 +8525,6 @@ loadpath.$(OBJEXT): {$(VPATH)}internal/memory.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/method.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/module.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/newobj.h
-loadpath.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 loadpath.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -8734,7 +8664,6 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-localeinit.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -8765,7 +8694,6 @@ localeinit.$(OBJEXT): {$(VPATH)}internal/memory.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/method.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/module.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/newobj.h
-localeinit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 localeinit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -8896,7 +8824,6 @@ main.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-main.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 main.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -8927,7 +8854,6 @@ main.$(OBJEXT): {$(VPATH)}internal/memory.h
 main.$(OBJEXT): {$(VPATH)}internal/method.h
 main.$(OBJEXT): {$(VPATH)}internal/module.h
 main.$(OBJEXT): {$(VPATH)}internal/newobj.h
-main.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 main.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 main.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 main.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -9093,7 +9019,6 @@ marshal.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-marshal.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 marshal.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -9124,7 +9049,6 @@ marshal.$(OBJEXT): {$(VPATH)}internal/memory.h
 marshal.$(OBJEXT): {$(VPATH)}internal/method.h
 marshal.$(OBJEXT): {$(VPATH)}internal/module.h
 marshal.$(OBJEXT): {$(VPATH)}internal/newobj.h
-marshal.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 marshal.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 marshal.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 marshal.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -9273,7 +9197,6 @@ math.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-math.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 math.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -9304,7 +9227,6 @@ math.$(OBJEXT): {$(VPATH)}internal/memory.h
 math.$(OBJEXT): {$(VPATH)}internal/method.h
 math.$(OBJEXT): {$(VPATH)}internal/module.h
 math.$(OBJEXT): {$(VPATH)}internal/newobj.h
-math.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 math.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 math.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 math.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -9442,7 +9364,6 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-memory_view.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -9473,7 +9394,6 @@ memory_view.$(OBJEXT): {$(VPATH)}internal/memory.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/method.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/module.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/newobj.h
-memory_view.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 memory_view.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -9642,7 +9562,6 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-miniinit.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -9673,7 +9592,6 @@ miniinit.$(OBJEXT): {$(VPATH)}internal/memory.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/method.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/module.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/newobj.h
-miniinit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 miniinit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -9876,7 +9794,6 @@ mjit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-mjit.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 mjit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -9907,7 +9824,6 @@ mjit.$(OBJEXT): {$(VPATH)}internal/memory.h
 mjit.$(OBJEXT): {$(VPATH)}internal/method.h
 mjit.$(OBJEXT): {$(VPATH)}internal/module.h
 mjit.$(OBJEXT): {$(VPATH)}internal/newobj.h
-mjit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 mjit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 mjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 mjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -10089,7 +10005,6 @@ mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -10120,7 +10035,6 @@ mjit_c.$(OBJEXT): {$(VPATH)}internal/memory.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/method.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/module.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/newobj.h
-mjit_c.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 mjit_c.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -10287,7 +10201,6 @@ node.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-node.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 node.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -10318,7 +10231,6 @@ node.$(OBJEXT): {$(VPATH)}internal/memory.h
 node.$(OBJEXT): {$(VPATH)}internal/method.h
 node.$(OBJEXT): {$(VPATH)}internal/module.h
 node.$(OBJEXT): {$(VPATH)}internal/newobj.h
-node.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 node.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 node.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 node.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -10490,7 +10402,6 @@ numeric.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-numeric.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 numeric.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -10521,7 +10432,6 @@ numeric.$(OBJEXT): {$(VPATH)}internal/memory.h
 numeric.$(OBJEXT): {$(VPATH)}internal/method.h
 numeric.$(OBJEXT): {$(VPATH)}internal/module.h
 numeric.$(OBJEXT): {$(VPATH)}internal/newobj.h
-numeric.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 numeric.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 numeric.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 numeric.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -10690,7 +10600,6 @@ object.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-object.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 object.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -10721,7 +10630,6 @@ object.$(OBJEXT): {$(VPATH)}internal/memory.h
 object.$(OBJEXT): {$(VPATH)}internal/method.h
 object.$(OBJEXT): {$(VPATH)}internal/module.h
 object.$(OBJEXT): {$(VPATH)}internal/newobj.h
-object.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 object.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 object.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 object.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -10881,7 +10789,6 @@ pack.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-pack.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 pack.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -10912,7 +10819,6 @@ pack.$(OBJEXT): {$(VPATH)}internal/memory.h
 pack.$(OBJEXT): {$(VPATH)}internal/method.h
 pack.$(OBJEXT): {$(VPATH)}internal/module.h
 pack.$(OBJEXT): {$(VPATH)}internal/newobj.h
-pack.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 pack.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 pack.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 pack.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -11086,7 +10992,6 @@ parse.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-parse.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 parse.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -11117,7 +11022,6 @@ parse.$(OBJEXT): {$(VPATH)}internal/memory.h
 parse.$(OBJEXT): {$(VPATH)}internal/method.h
 parse.$(OBJEXT): {$(VPATH)}internal/module.h
 parse.$(OBJEXT): {$(VPATH)}internal/newobj.h
-parse.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 parse.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 parse.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 parse.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -11298,7 +11202,6 @@ proc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-proc.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 proc.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -11329,7 +11232,6 @@ proc.$(OBJEXT): {$(VPATH)}internal/memory.h
 proc.$(OBJEXT): {$(VPATH)}internal/method.h
 proc.$(OBJEXT): {$(VPATH)}internal/module.h
 proc.$(OBJEXT): {$(VPATH)}internal/newobj.h
-proc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 proc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 proc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 proc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -11518,7 +11420,6 @@ process.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-process.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 process.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -11549,7 +11450,6 @@ process.$(OBJEXT): {$(VPATH)}internal/memory.h
 process.$(OBJEXT): {$(VPATH)}internal/method.h
 process.$(OBJEXT): {$(VPATH)}internal/module.h
 process.$(OBJEXT): {$(VPATH)}internal/newobj.h
-process.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 process.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 process.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 process.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -11736,7 +11636,6 @@ ractor.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-ractor.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 ractor.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -11767,7 +11666,6 @@ ractor.$(OBJEXT): {$(VPATH)}internal/memory.h
 ractor.$(OBJEXT): {$(VPATH)}internal/method.h
 ractor.$(OBJEXT): {$(VPATH)}internal/module.h
 ractor.$(OBJEXT): {$(VPATH)}internal/newobj.h
-ractor.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 ractor.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 ractor.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ractor.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -11934,7 +11832,6 @@ random.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-random.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 random.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -11965,7 +11862,6 @@ random.$(OBJEXT): {$(VPATH)}internal/memory.h
 random.$(OBJEXT): {$(VPATH)}internal/method.h
 random.$(OBJEXT): {$(VPATH)}internal/module.h
 random.$(OBJEXT): {$(VPATH)}internal/newobj.h
-random.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 random.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 random.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 random.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -12131,7 +12027,6 @@ range.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-range.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 range.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -12162,7 +12057,6 @@ range.$(OBJEXT): {$(VPATH)}internal/memory.h
 range.$(OBJEXT): {$(VPATH)}internal/method.h
 range.$(OBJEXT): {$(VPATH)}internal/module.h
 range.$(OBJEXT): {$(VPATH)}internal/newobj.h
-range.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 range.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 range.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 range.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -12313,7 +12207,6 @@ rational.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-rational.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 rational.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -12344,7 +12237,6 @@ rational.$(OBJEXT): {$(VPATH)}internal/memory.h
 rational.$(OBJEXT): {$(VPATH)}internal/method.h
 rational.$(OBJEXT): {$(VPATH)}internal/module.h
 rational.$(OBJEXT): {$(VPATH)}internal/newobj.h
-rational.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 rational.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 rational.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 rational.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -12508,7 +12400,6 @@ re.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-re.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 re.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -12539,7 +12430,6 @@ re.$(OBJEXT): {$(VPATH)}internal/memory.h
 re.$(OBJEXT): {$(VPATH)}internal/method.h
 re.$(OBJEXT): {$(VPATH)}internal/module.h
 re.$(OBJEXT): {$(VPATH)}internal/newobj.h
-re.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 re.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 re.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 re.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -12675,7 +12565,6 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regcomp.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -12706,7 +12595,6 @@ regcomp.$(OBJEXT): {$(VPATH)}internal/memory.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/method.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/module.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regcomp.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regcomp.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -12838,7 +12726,6 @@ regenc.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regenc.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regenc.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -12869,7 +12756,6 @@ regenc.$(OBJEXT): {$(VPATH)}internal/memory.h
 regenc.$(OBJEXT): {$(VPATH)}internal/method.h
 regenc.$(OBJEXT): {$(VPATH)}internal/module.h
 regenc.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regenc.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regenc.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regenc.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regenc.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13000,7 +12886,6 @@ regerror.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regerror.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regerror.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13031,7 +12916,6 @@ regerror.$(OBJEXT): {$(VPATH)}internal/memory.h
 regerror.$(OBJEXT): {$(VPATH)}internal/method.h
 regerror.$(OBJEXT): {$(VPATH)}internal/module.h
 regerror.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regerror.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regerror.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regerror.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regerror.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13162,7 +13046,6 @@ regexec.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regexec.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regexec.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13193,7 +13076,6 @@ regexec.$(OBJEXT): {$(VPATH)}internal/memory.h
 regexec.$(OBJEXT): {$(VPATH)}internal/method.h
 regexec.$(OBJEXT): {$(VPATH)}internal/module.h
 regexec.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regexec.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regexec.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regexec.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regexec.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13328,7 +13210,6 @@ regparse.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regparse.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regparse.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13359,7 +13240,6 @@ regparse.$(OBJEXT): {$(VPATH)}internal/memory.h
 regparse.$(OBJEXT): {$(VPATH)}internal/method.h
 regparse.$(OBJEXT): {$(VPATH)}internal/module.h
 regparse.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regparse.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regparse.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regparse.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regparse.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13491,7 +13371,6 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13522,7 +13401,6 @@ regsyntax.$(OBJEXT): {$(VPATH)}internal/memory.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/method.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/module.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/newobj.h
-regsyntax.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 regsyntax.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13713,7 +13591,6 @@ ruby.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-ruby.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 ruby.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13744,7 +13621,6 @@ ruby.$(OBJEXT): {$(VPATH)}internal/memory.h
 ruby.$(OBJEXT): {$(VPATH)}internal/method.h
 ruby.$(OBJEXT): {$(VPATH)}internal/module.h
 ruby.$(OBJEXT): {$(VPATH)}internal/newobj.h
-ruby.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 ruby.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 ruby.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 ruby.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -13920,7 +13796,6 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-scheduler.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -13951,7 +13826,6 @@ scheduler.$(OBJEXT): {$(VPATH)}internal/memory.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/method.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/module.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/newobj.h
-scheduler.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 scheduler.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -14092,7 +13966,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -14123,7 +13996,6 @@ setproctitle.$(OBJEXT): {$(VPATH)}internal/memory.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/method.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/module.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/newobj.h
-setproctitle.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 setproctitle.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -14284,7 +14156,6 @@ shape.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-shape.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 shape.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -14315,7 +14186,6 @@ shape.$(OBJEXT): {$(VPATH)}internal/memory.h
 shape.$(OBJEXT): {$(VPATH)}internal/method.h
 shape.$(OBJEXT): {$(VPATH)}internal/module.h
 shape.$(OBJEXT): {$(VPATH)}internal/newobj.h
-shape.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 shape.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 shape.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 shape.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -14494,7 +14364,6 @@ signal.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-signal.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 signal.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -14525,7 +14394,6 @@ signal.$(OBJEXT): {$(VPATH)}internal/memory.h
 signal.$(OBJEXT): {$(VPATH)}internal/method.h
 signal.$(OBJEXT): {$(VPATH)}internal/module.h
 signal.$(OBJEXT): {$(VPATH)}internal/newobj.h
-signal.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 signal.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 signal.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 signal.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -14700,7 +14568,6 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-sprintf.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -14731,7 +14598,6 @@ sprintf.$(OBJEXT): {$(VPATH)}internal/memory.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/method.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/module.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/newobj.h
-sprintf.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 sprintf.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -14873,7 +14739,6 @@ st.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-st.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 st.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -14904,7 +14769,6 @@ st.$(OBJEXT): {$(VPATH)}internal/memory.h
 st.$(OBJEXT): {$(VPATH)}internal/method.h
 st.$(OBJEXT): {$(VPATH)}internal/module.h
 st.$(OBJEXT): {$(VPATH)}internal/newobj.h
-st.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 st.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 st.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 st.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -15049,7 +14913,6 @@ strftime.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-strftime.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 strftime.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -15080,7 +14943,6 @@ strftime.$(OBJEXT): {$(VPATH)}internal/memory.h
 strftime.$(OBJEXT): {$(VPATH)}internal/method.h
 strftime.$(OBJEXT): {$(VPATH)}internal/module.h
 strftime.$(OBJEXT): {$(VPATH)}internal/newobj.h
-strftime.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 strftime.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 strftime.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 strftime.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -15253,7 +15115,6 @@ string.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-string.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 string.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -15284,7 +15145,6 @@ string.$(OBJEXT): {$(VPATH)}internal/memory.h
 string.$(OBJEXT): {$(VPATH)}internal/method.h
 string.$(OBJEXT): {$(VPATH)}internal/module.h
 string.$(OBJEXT): {$(VPATH)}internal/newobj.h
-string.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 string.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 string.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 string.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -15492,7 +15352,6 @@ struct.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-struct.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 struct.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -15523,7 +15382,6 @@ struct.$(OBJEXT): {$(VPATH)}internal/memory.h
 struct.$(OBJEXT): {$(VPATH)}internal/method.h
 struct.$(OBJEXT): {$(VPATH)}internal/module.h
 struct.$(OBJEXT): {$(VPATH)}internal/newobj.h
-struct.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 struct.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 struct.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 struct.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -15694,7 +15552,6 @@ symbol.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-symbol.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 symbol.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -15725,7 +15582,6 @@ symbol.$(OBJEXT): {$(VPATH)}internal/memory.h
 symbol.$(OBJEXT): {$(VPATH)}internal/method.h
 symbol.$(OBJEXT): {$(VPATH)}internal/module.h
 symbol.$(OBJEXT): {$(VPATH)}internal/newobj.h
-symbol.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 symbol.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 symbol.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 symbol.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -15912,7 +15768,6 @@ thread.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-thread.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 thread.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -15943,7 +15798,6 @@ thread.$(OBJEXT): {$(VPATH)}internal/memory.h
 thread.$(OBJEXT): {$(VPATH)}internal/method.h
 thread.$(OBJEXT): {$(VPATH)}internal/module.h
 thread.$(OBJEXT): {$(VPATH)}internal/newobj.h
-thread.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 thread.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 thread.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 thread.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -16127,7 +15981,6 @@ time.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-time.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 time.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -16158,7 +16011,6 @@ time.$(OBJEXT): {$(VPATH)}internal/memory.h
 time.$(OBJEXT): {$(VPATH)}internal/method.h
 time.$(OBJEXT): {$(VPATH)}internal/module.h
 time.$(OBJEXT): {$(VPATH)}internal/newobj.h
-time.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 time.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 time.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 time.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -16318,7 +16170,6 @@ transcode.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-transcode.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 transcode.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -16349,7 +16200,6 @@ transcode.$(OBJEXT): {$(VPATH)}internal/memory.h
 transcode.$(OBJEXT): {$(VPATH)}internal/method.h
 transcode.$(OBJEXT): {$(VPATH)}internal/module.h
 transcode.$(OBJEXT): {$(VPATH)}internal/newobj.h
-transcode.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 transcode.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 transcode.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 transcode.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -16495,7 +16345,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -16526,7 +16375,6 @@ transient_heap.$(OBJEXT): {$(VPATH)}internal/memory.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/method.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/module.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/newobj.h
-transient_heap.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -16666,7 +16514,6 @@ util.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-util.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 util.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -16697,7 +16544,6 @@ util.$(OBJEXT): {$(VPATH)}internal/memory.h
 util.$(OBJEXT): {$(VPATH)}internal/method.h
 util.$(OBJEXT): {$(VPATH)}internal/module.h
 util.$(OBJEXT): {$(VPATH)}internal/newobj.h
-util.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 util.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 util.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 util.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -16866,7 +16712,6 @@ variable.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-variable.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 variable.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -16897,7 +16742,6 @@ variable.$(OBJEXT): {$(VPATH)}internal/memory.h
 variable.$(OBJEXT): {$(VPATH)}internal/method.h
 variable.$(OBJEXT): {$(VPATH)}internal/module.h
 variable.$(OBJEXT): {$(VPATH)}internal/newobj.h
-variable.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 variable.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 variable.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 variable.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -17067,7 +16911,6 @@ version.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-version.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 version.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -17098,7 +16941,6 @@ version.$(OBJEXT): {$(VPATH)}internal/memory.h
 version.$(OBJEXT): {$(VPATH)}internal/method.h
 version.$(OBJEXT): {$(VPATH)}internal/module.h
 version.$(OBJEXT): {$(VPATH)}internal/newobj.h
-version.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 version.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 version.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 version.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -17297,7 +17139,6 @@ vm.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-vm.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 vm.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -17328,7 +17169,6 @@ vm.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm.$(OBJEXT): {$(VPATH)}internal/method.h
 vm.$(OBJEXT): {$(VPATH)}internal/module.h
 vm.$(OBJEXT): {$(VPATH)}internal/newobj.h
-vm.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 vm.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -17524,7 +17364,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -17555,7 +17394,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/module.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/newobj.h
-vm_backtrace.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -17715,7 +17553,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -17746,7 +17583,6 @@ vm_dump.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/module.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/newobj.h
-vm_dump.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_dump.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -17908,7 +17744,6 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -17939,7 +17774,6 @@ vm_sync.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/module.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/newobj.h
-vm_sync.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_sync.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -18117,7 +17951,6 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -18148,7 +17981,6 @@ vm_trace.$(OBJEXT): {$(VPATH)}internal/memory.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/method.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/module.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/newobj.h
-vm_trace.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 vm_trace.$(OBJEXT): {$(VPATH)}internal/static_assert.h
@@ -18334,7 +18166,6 @@ yjit.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/error.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/file.h
-yjit.$(OBJEXT): {$(VPATH)}internal/intern/gc.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/io.h
 yjit.$(OBJEXT): {$(VPATH)}internal/intern/load.h
@@ -18365,7 +18196,6 @@ yjit.$(OBJEXT): {$(VPATH)}internal/memory.h
 yjit.$(OBJEXT): {$(VPATH)}internal/method.h
 yjit.$(OBJEXT): {$(VPATH)}internal/module.h
 yjit.$(OBJEXT): {$(VPATH)}internal/newobj.h
-yjit.$(OBJEXT): {$(VPATH)}internal/rgengc.h
 yjit.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 yjit.$(OBJEXT): {$(VPATH)}internal/special_consts.h
 yjit.$(OBJEXT): {$(VPATH)}internal/static_assert.h

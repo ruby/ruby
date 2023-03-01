@@ -112,7 +112,6 @@ foreach.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 foreach.o: $(hdrdir)/ruby/internal/intern/error.h
 foreach.o: $(hdrdir)/ruby/internal/intern/eval.h
 foreach.o: $(hdrdir)/ruby/internal/intern/file.h
-foreach.o: $(hdrdir)/ruby/internal/intern/gc.h
 foreach.o: $(hdrdir)/ruby/internal/intern/hash.h
 foreach.o: $(hdrdir)/ruby/internal/intern/io.h
 foreach.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -143,7 +142,6 @@ foreach.o: $(hdrdir)/ruby/internal/memory.h
 foreach.o: $(hdrdir)/ruby/internal/method.h
 foreach.o: $(hdrdir)/ruby/internal/module.h
 foreach.o: $(hdrdir)/ruby/internal/newobj.h
-foreach.o: $(hdrdir)/ruby/internal/rgengc.h
 foreach.o: $(hdrdir)/ruby/internal/scan_args.h
 foreach.o: $(hdrdir)/ruby/internal/special_consts.h
 foreach.o: $(hdrdir)/ruby/internal/static_assert.h

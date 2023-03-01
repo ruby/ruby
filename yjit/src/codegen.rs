@@ -831,7 +831,7 @@ pub fn gen_single_block(
         let gc_offsets = asm.compile(cb);
 
         // Add the GC offsets to the block
-        block.add_gc_obj_offsets(gc_offsets);
+        block.set_gc_obj_offsets(gc_offsets);
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());
@@ -1802,42 +1802,6 @@ fn gen_checkkeyword(
     KeepCompiling
 }
 
-fn gen_jnz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jnz(target0.into()),
-    }
-}
-
-fn gen_jz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jz(Target::CodePtr(target0)),
-    }
-}
-
-fn gen_jbe_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jbe(Target::CodePtr(target0)),
-    }
-}
-
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
 // When depth_limit is exceeded, generate a jump to a side exit.
 fn jit_chain_guard(
@@ -1850,9 +1814,9 @@ fn jit_chain_guard(
     side_exit: Target,
 ) {
     let target0_gen_fn = match jcc {
-        JCC_JNE | JCC_JNZ => gen_jnz_to_target0,
-        JCC_JZ | JCC_JE => gen_jz_to_target0,
-        JCC_JBE | JCC_JNA => gen_jbe_to_target0,
+        JCC_JNE | JCC_JNZ => BranchGenFn::JNZToTarget0,
+        JCC_JZ | JCC_JE => BranchGenFn::JZToTarget0,
+        JCC_JBE | JCC_JNA => BranchGenFn::JBEToTarget0,
     };
 
     if (ctx.get_chain_depth() as i32) < depth_limit {
@@ -1865,7 +1829,7 @@ fn jit_chain_guard(
 
         gen_branch(jit, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
-        target0_gen_fn(asm, side_exit.unwrap_code_ptr(), None, BranchShape::Default);
+        target0_gen_fn.call(asm, side_exit.unwrap_code_ptr(), None);
     }
 }
 
@@ -3498,27 +3462,6 @@ fn gen_opt_case_dispatch(
     }
 }
 
-fn gen_branchif_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    assert!(target1 != None);
-    match shape {
-        BranchShape::Next0 => {
-            asm.jz(target1.unwrap().into());
-        }
-        BranchShape::Next1 => {
-            asm.jnz(target0.into());
-        }
-        BranchShape::Default => {
-            asm.jnz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
-}
-
 fn gen_branchif(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -3565,27 +3508,11 @@ fn gen_branchif(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchif_branch,
+            BranchGenFn::BranchIf(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchunless_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
-        BranchShape::Next1 => asm.jz(target0.into()),
-        BranchShape::Default => {
-            asm.jz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchunless(
@@ -3635,27 +3562,11 @@ fn gen_branchunless(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchunless_branch,
+            BranchGenFn::BranchUnless(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchnil_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jne(target1.unwrap().into()),
-        BranchShape::Next1 => asm.je(target0.into()),
-        BranchShape::Default => {
-            asm.je(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchnil(
@@ -3702,7 +3613,7 @@ fn gen_branchnil(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchnil_branch,
+            BranchGenFn::BranchNil(BranchShape::Default),
         );
     }
 
@@ -4929,6 +4840,12 @@ fn gen_send_cfunc(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
+        if flags & VM_CALL_OPT_SEND != 0 {
+            // FIXME: This combination is buggy.
+            // For example `1.send(:==, 1, *[])` fails to adjust the stack properly
+            gen_counter_incr!(asm, send_cfunc_splat_send);
+            return CantCompile;
+        }
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
@@ -5948,15 +5865,7 @@ fn gen_send_iseq(
         &return_ctx,
         None,
         None,
-        |asm, target0, _target1, shape| {
-            match shape {
-                BranchShape::Default => {
-                    asm.comment("update cfp->jit_return");
-                    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
-                }
-                _ => unreachable!()
-            }
-        },
+        BranchGenFn::JITReturn,
     );
 
     // Directly jump to the entry point of the callee
@@ -6318,13 +6227,22 @@ fn gen_send_general(
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-
                         // This is for method calls like `foo.send(:bar)`
                         // The `send` method does not get its own stack frame.
                         // instead we look up the method and call it,
                         // doing some stack shifting based on the VM_CALL_OPT_SEND flag
 
                         let starting_context = ctx.clone();
+
+                        // Reject nested cases such as `send(:send, :alias_for_send, :foo))`.
+                        // We would need to do some stack manipulation here or keep track of how
+                        // many levels deep we need to stack manipulate. Because of how exits
+                        // currently work, we can't do stack manipulation until we will no longer
+                        // side exit.
+                        if flags & VM_CALL_OPT_SEND != 0 {
+                            gen_counter_incr!(asm, send_send_nested);
+                            return CantCompile;
+                        }
 
                         if argc == 0 {
                             gen_counter_incr!(asm, send_send_wrong_args);
@@ -6350,20 +6268,6 @@ fn gen_send_general(
                         if cme.is_null() {
                             gen_counter_incr!(asm, send_send_null_cme);
                             return CantCompile;
-                        }
-
-                        // We aren't going to handle `send(send(:foo))`. We would need to
-                        // do some stack manipulation here or keep track of how many levels
-                        // deep we need to stack manipulate
-                        // Because of how exits currently work, we can't do stack manipulation
-                        // until we will no longer side exit.
-                        let def_type = unsafe { get_cme_def_type(cme) };
-                        if let VM_METHOD_TYPE_OPTIMIZED = def_type {
-                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
-                            if let OPTIMIZED_METHOD_TYPE_SEND = opt_type {
-                                gen_counter_incr!(asm, send_send_nested);
-                                return CantCompile;
-                            }
                         }
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;

@@ -9,10 +9,6 @@ platform_is_not :mingw do
     it_behaves_like :thread_exit, :kill
   end
 
-  describe "Thread#kill!" do
-    it "needs to be reviewed for spec completeness"
-  end
-
   describe "Thread.kill" do
     it "causes the given thread to exit" do
       thread = Thread.new { sleep }
