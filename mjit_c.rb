@@ -226,6 +226,14 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'rb_class_get_superclass(klass)'
     end
 
+    def ID2SYM(id)
+      Primitive.cexpr! 'ID2SYM((ID)NUM2SIZET(id))'
+    end
+
+    def rb_obj_is_kind_of(obj, c)
+      Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1262,6 +1270,7 @@ module RubyVM::MJIT # :nodoc: all
       send_guard_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_symbol)")],
       send_guard_float: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_float)")],
       invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
+      invokesuper_same_me: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_same_me)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],
       getivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_heap)")],
       getivar_not_t_object: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_not_t_object)")],

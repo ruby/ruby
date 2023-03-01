@@ -164,6 +164,7 @@ MJIT_RUNTIME_COUNTERS(
     send_guard_float,
 
     invokesuper_me_changed,
+    invokesuper_same_me,
 
     getivar_megamorphic,
     getivar_not_heap,
