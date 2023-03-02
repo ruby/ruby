@@ -6030,9 +6030,11 @@ rb_str_replace(VALUE str, VALUE str2)
 static VALUE
 rb_str_clear(VALUE str)
 {
-    str_discard(str);
-    STR_SET_EMBED(str);
-    STR_SET_EMBED_LEN(str, 0);
+    str_modifiable(str);
+    if (FL_TEST_RAW(str, STR_SHARED|STR_NOFREE)) {
+        STR_SET_EMBED(str);
+    }
+    STR_SET_LEN(str, 0);
     RSTRING_PTR(str)[0] = 0;
     if (rb_enc_asciicompat(STR_ENC_GET(str)))
         ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
