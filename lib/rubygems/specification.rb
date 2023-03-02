@@ -836,11 +836,24 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns a Gem::StubSpecification for bundled gems
 
   def self.bundled_stubs
-    # TODO
+    # for Rails dependencies
     bundled_gems = %w[
-      rexml
-      rbs
-      debug
+      base64
+      benchmark
+      delegate
+      drb
+      forwardable
+      ipaddr
+      irb
+      mutex_m
+      ostruct
+      rdoc
+      singleton
+      tsort
+      weakref
+      bigdecimal
+      date
+      racc
     ]
     bundled_gems.map do |name|
       Gem::Specification.find_by_name(name)
