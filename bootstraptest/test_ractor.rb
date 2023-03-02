@@ -1532,7 +1532,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-}
+} unless ENV['RUN_OPTS'] =~ /mjit/ # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end

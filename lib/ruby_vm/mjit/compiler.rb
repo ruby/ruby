@@ -289,7 +289,7 @@ module RubyVM::MJIT
     end
 
     def mjit_blocks(iseq)
-      # Tolerate GC on any ISEQ
+      # Guard against ISEQ GC at random moments
       if C.imemo_type(iseq) != C.imemo_iseq
         return Hash.new { |h, k| h[k] = {} }
       end
