@@ -123,8 +123,6 @@ impl<T> ::std::cmp::PartialEq for __BindgenUnionField<T> {
     }
 }
 impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
-pub const SHAPE_ID_NUM_BITS: u32 = 32;
-pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 11;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -142,6 +140,8 @@ pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
 pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 11;
 pub type ID = ::std::os::raw::c_ulong;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -285,20 +285,6 @@ pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
 pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
 pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
 pub type ruby_preserved_encindex = u32;
-pub type attr_index_t = u32;
-pub type shape_id_t = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_shape {
-    pub edges: *mut rb_id_table,
-    pub edge_name: ID,
-    pub next_iv_index: attr_index_t,
-    pub capacity: u32,
-    pub type_: u8,
-    pub size_pool_index: u8,
-    pub parent_id: shape_id_t,
-}
-pub type rb_shape_t = rb_shape;
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
 pub const idUPlus: ruby_method_ids = 132;
@@ -799,6 +785,20 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
+pub type attr_index_t = u32;
+pub type shape_id_t = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_shape {
+    pub edges: *mut rb_id_table,
+    pub edge_name: ID,
+    pub next_iv_index: attr_index_t,
+    pub capacity: u32,
+    pub type_: u8,
+    pub size_pool_index: u8,
+    pub parent_id: shape_id_t,
+}
+pub type rb_shape_t = rb_shape;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1126,19 +1126,6 @@ extern "C" {
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
-    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
-    pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
-    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_transition_shape_capa(
-        shape: *mut rb_shape_t,
-        new_capacity: u32,
-    ) -> *mut rb_shape_t;
-    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
-    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -1163,6 +1150,19 @@ extern "C" {
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
+    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
+    pub fn rb_shape_id_offset() -> i32;
+    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
+    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
+    pub fn rb_shape_transition_shape_capa(
+        shape: *mut rb_shape_t,
+        new_capacity: u32,
+    ) -> *mut rb_shape_t;
+    pub fn rb_shape_get_next(shape: *mut rb_shape_t, obj: VALUE, id: ID) -> *mut rb_shape_t;
+    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
