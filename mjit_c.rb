@@ -246,6 +246,14 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'UINT2NUM(imemo_type((VALUE)NUM2SIZET(_ptr)))'
     end
 
+    def rb_iseq_only_optparam_p(iseq)
+      _iseq = iseq.to_i
+      Primitive.cstmt! %{
+        extern bool rb_iseq_only_optparam_p(const rb_iseq_t *iseq);
+        return RBOOL(rb_iseq_only_optparam_p((rb_iseq_t *)NUM2SIZET(_iseq)));
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1265,7 +1273,7 @@ module RubyVM::MJIT # :nodoc: all
       send_blockiseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_blockiseq)")],
       send_block_handler: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_handler)")],
       send_block_setup: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_setup)")],
-      send_iseq_not_simple: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_not_simple)")],
+      send_iseq_not_only_optparam: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_not_only_optparam)")],
       send_iseq_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_kw_splat)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
       send_cfunc_too_many_args: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_too_many_args)")],
