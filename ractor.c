@@ -979,7 +979,7 @@ ractor_take_will_lock(rb_ractor_t *r, struct rb_ractor_basket *b)
 
     RACTOR_LOCK(r);
     {
-        taken =ractor_take_will(r, b);
+        taken = ractor_take_will(r, b);
     }
     RACTOR_UNLOCK(r);
 
@@ -1009,6 +1009,8 @@ ractor_register_take(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *t
         }
         else if (!is_take && ractor_take_has_will(r)) {
             RUBY_DEBUG_LOG("has_will");
+            VM_ASSERT(config != NULL);
+            config->closed = true;
         }
         else if (r->sync.outgoing_port_closed) {
             closed = true;
@@ -1515,6 +1517,13 @@ ractor_selector_clear(rb_execution_context_t *ec, VALUE selv)
     return selv;
 }
 
+static VALUE
+ractor_selector_empty_p(rb_execution_context_t *ec, VALUE selv)
+{
+    struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
+    return s->take_ractors->num_entries == 0 ? Qtrue : Qfalse;
+}
+
 static int
 ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t dat)
 {
@@ -1687,6 +1696,10 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
           }
           break;
       }
+      case basket_type_will:
+        // no more messages
+        ractor_selector_remove(ec, selv, taken_basket.sender);
+        break;
       default:
         break;
     }

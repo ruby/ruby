@@ -429,6 +429,18 @@ class Ractor
     end
 
     # call-seq:
+    #   selector.empty?
+    #
+    # Returns true if the number of ractors in the waiting set at the current time is zero.
+    #
+    # Note that even if <tt>#empty?</tt> returns false, the subsequent <tt>#wait</tt>
+    # may raise an exception because other ractors may close the target ractors.
+    #
+    def empty?
+      __builtin_ractor_selector_empty_p
+    end
+
+    # call-seq:
     #   selector.wait(receive: false, yield_value: yield_value, move: false) -> [ractor or symbol, value]
     #
     # Waits Ractor events. It is lighter than Ractor.select() for many ractors.
