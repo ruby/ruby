@@ -387,7 +387,9 @@ module Bundler
 
     def add_bundled_gems_to(specs_by_name)
       Bundler.rubygems.bundled_stubs.each do |spec|
-        specs_by_name[spec.name] = spec
+        bundled_spec_name = spec.name
+        next if specs_by_name.key?(bundled_spec_name)
+        specs_by_name[bundled_spec_name] = spec
       end
 
       specs_by_name
