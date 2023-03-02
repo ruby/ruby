@@ -30,7 +30,7 @@ class TestGemSource < Gem::TestCase
   def test_initialize_git
     repository = "git@example:a.git"
 
-    source = Gem::Source::Git.new "a", repository, "master", false
+    source = Gem::Source::Git.new "a", repository, nil, false
 
     assert_equal repository, source.uri
   end
