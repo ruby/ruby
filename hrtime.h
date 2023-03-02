@@ -44,8 +44,12 @@
  */
 #ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
 typedef int128_t rb_hrtime_t;
+#define PRIdHRTIME PRId128
+#define PRIuHRTIME PRIu128
 #else
 typedef uint64_t rb_hrtime_t;
+#define PRIdHRTIME PRId64
+#define PRIuHRTIME PRIu64
 #endif
 
 /* thread.c */
