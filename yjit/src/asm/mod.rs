@@ -611,11 +611,6 @@ impl CodeBlock {
         // This currently patches every ISEQ, which works, but in the future,
         // we could limit that to patch only on-stack ISEQs for optimizing code GC.
         rb_yjit_tracing_invalidate_all();
-        // When code GC runs next time, we could have reused pages in between
-        // invalidated pages. To invalidate them, we skip freezing them here.
-        // We free or not reuse the bytes frozen by any past invalidation, so this
-        // can be safely reset to pass the frozen bytes check on invalidation.
-        CodegenGlobals::set_inline_frozen_bytes(0);
 
         // Assert that all code pages are freeable
         assert_eq!(
