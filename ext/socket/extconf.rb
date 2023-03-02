@@ -699,5 +699,7 @@ SRC
       "not needed"
     end
   end
+
+  $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")
 end
