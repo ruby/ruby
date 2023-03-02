@@ -7662,12 +7662,6 @@ pub struct CodegenGlobals {
     /// For implementing global code invalidation
     global_inval_patches: Vec<CodepagePatch>,
 
-    /// For implementing global code invalidation. The number of bytes counting from the beginning
-    /// of the inline code block that should not be changed. After patching for global invalidation,
-    /// no one should make changes to the invalidated code region anymore. This is used to
-    /// break out of invalidation race when there are multiple ractors.
-    inline_frozen_bytes: usize,
-
     // Methods for generating code for hardcoded (usually C) methods
     method_codegen_table: HashMap<usize, MethodGenFn>,
 
@@ -7766,7 +7760,6 @@ impl CodegenGlobals {
             outline_full_cfunc_return_pos: cfunc_exit_code,
             branch_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
-            inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
@@ -7894,14 +7887,6 @@ impl CodegenGlobals {
     pub fn take_global_inval_patches() -> Vec<CodepagePatch> {
         let globals = CodegenGlobals::get_instance();
         mem::take(&mut globals.global_inval_patches)
-    }
-
-    pub fn get_inline_frozen_bytes() -> usize {
-        CodegenGlobals::get_instance().inline_frozen_bytes
-    }
-
-    pub fn set_inline_frozen_bytes(frozen_bytes: usize) {
-        CodegenGlobals::get_instance().inline_frozen_bytes = frozen_bytes;
     }
 
     pub fn get_outline_full_cfunc_return_pos() -> CodePtr {

@@ -1820,14 +1820,6 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
 /// Generate code for a branch, possibly rewriting and changing the size of it
 fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
-    // FIXME
-    /*
-    if (branch->start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        // Generating this branch would modify frozen bytes. Do nothing.
-        return;
-    }
-    */
-
     // Remove old comments
     if let (Some(start_addr), Some(end_addr)) = (branch.start_addr, branch.end_addr) {
         cb.remove_comments(start_addr, end_addr)
@@ -2425,9 +2417,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // Some blocks exit on entry. Patching a jump to the entry at the
             // entry makes an infinite loop.
         } else {
-            // TODO(alan)
-            // if (block.start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) // Don't patch frozen code region
-
             // Patch in a jump to block.entry_exit.
 
             let cur_pos = cb.get_write_ptr();
@@ -2467,12 +2456,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         if let Some(incoming_block) = &incoming_target.get_block() {
             assert_eq!(blockref, incoming_block);
         }
-
-        // TODO(alan):
-        // Don't patch frozen code region
-        // if (branch.start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        //     continue;
-        // }
 
         // Create a stub for this branch target or rewire it to a valid block
         set_branch_target(target_idx as u32, block.blockid, &block.ctx, branchref, &mut branch, ocb);
