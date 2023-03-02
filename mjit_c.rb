@@ -254,6 +254,13 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_vm_opt_newarray_min
+      Primitive.cstmt! %{
+        extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+        return SIZET2NUM((size_t)rb_vm_opt_newarray_min);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
