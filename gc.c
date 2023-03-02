@@ -754,6 +754,7 @@ typedef struct rb_objspace {
         unsigned int during_incremental_marking : 1;
 #endif
         unsigned int measure_gc : 1;
+        unsigned int disable_promotion : 1;
     } flags;
 
     rb_event_flag_t hook_events;
@@ -7016,22 +7017,30 @@ rgengc_check_relation(rb_objspace_t *objspace, VALUE obj)
         }
         else {
             if (!RVALUE_OLD_P(obj)) {
-                if (RVALUE_MARKED(obj)) {
-                    /* An object pointed from an OLD object should be OLD. */
-                    gc_report(2, objspace, "relation: (O->unmarked Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
-                    RVALUE_AGE_SET_OLD(objspace, obj);
-                    if (is_incremental_marking(objspace)) {
-                        if (!RVALUE_MARKING(obj)) {
-                            gc_grey(objspace, obj);
+                if (UNLIKELY(objspace->flags.disable_promotion)) {
+                    /* We need to place the parent on the rememberset so
+                     * that next time we run minor GC, this parent will be
+                     * marked again. */
+                    rgengc_remember(objspace, old_parent);
+                }
+                else {
+                    if (RVALUE_MARKED(obj)) {
+                        /* An object pointed from an OLD object should be OLD. */
+                        gc_report(2, objspace, "relation: (O->unmarked Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
+                        RVALUE_AGE_SET_OLD(objspace, obj);
+                        if (is_incremental_marking(objspace)) {
+                            if (!RVALUE_MARKING(obj)) {
+                                gc_grey(objspace, obj);
+                            }
+                        }
+                        else {
+                            rgengc_remember(objspace, obj);
                         }
                     }
                     else {
-                        rgengc_remember(objspace, obj);
+                        gc_report(2, objspace, "relation: (O->Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
+                        RVALUE_AGE_SET_CANDIDATE(objspace, obj);
                     }
-                }
-                else {
-                    gc_report(2, objspace, "relation: (O->Y) %s -> %s\n", obj_info(old_parent), obj_info(obj));
-                    RVALUE_AGE_SET_CANDIDATE(objspace, obj);
                 }
             }
         }
@@ -7067,8 +7076,10 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
 
     if (!RVALUE_PAGE_WB_UNPROTECTED(page, obj)) {
         if (!RVALUE_OLD_P(obj)) {
-            gc_report(3, objspace, "gc_aging: YOUNG: %s\n", obj_info(obj));
-            RVALUE_AGE_INC(objspace, obj);
+            if (LIKELY(!objspace->flags.disable_promotion)) {
+                gc_report(3, objspace, "gc_aging: YOUNG: %s\n", obj_info(obj));
+                RVALUE_AGE_INC(objspace, obj);
+            }
         }
         else if (is_full_marking(objspace)) {
             GC_ASSERT(RVALUE_PAGE_UNCOLLECTIBLE(page, obj) == FALSE);
@@ -7504,7 +7515,6 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         if (RGENGC_CHECK_MODE && !RVALUE_MARKED(obj)) {
             rb_bug("gc_mark_stacked_objects: %s is not marked.", obj_info(obj));
         }
-        gc_mark_children(objspace, obj);
 
 #if GC_ENABLE_INCREMENTAL_MARK
         if (incremental) {
@@ -7512,14 +7522,21 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
                 rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
+        }
+        else {
+            /* just ignore marking bits */
+        }
+#endif
+
+        gc_mark_children(objspace, obj);
+
+#if GC_ENABLE_INCREMENTAL_MARK
+        if (incremental) {
             popped_count++;
 
             if (popped_count + (objspace->marked_slots - marked_slots_at_the_beginning) > count) {
                 break;
             }
-        }
-        else {
-            /* just ignore marking bits */
         }
 #endif
     }
@@ -8852,8 +8869,6 @@ rgengc_remembersetbits_set(rb_objspace_t *objspace, VALUE obj)
     struct heap_page *page = GET_HEAP_PAGE(obj);
     bits_t *bits = &page->marking_bits[0];
 
-    GC_ASSERT(!is_incremental_marking(objspace));
-
     if (MARKED_IN_BITMAP(bits, obj)) {
         return FALSE;
     }
@@ -9066,11 +9081,17 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
         }
         else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
             if (!RVALUE_WB_UNPROTECTED(b)) {
-                gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %p -> %s\n", (void *)a, obj_info(b));
-                RVALUE_AGE_SET_OLD(objspace, b);
+                if (UNLIKELY(objspace->flags.disable_promotion)) {
+                    /* no-op because it doesn't matter whether b has been
+                     * marked or not. */
+                }
+                else {
+                    gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %p -> %s\n", (void *)a, obj_info(b));
+                    RVALUE_AGE_SET_OLD(objspace, b);
 
-                if (RVALUE_BLACK_P(b)) {
-                    gc_grey(objspace, b);
+                    if (RVALUE_BLACK_P(b)) {
+                        gc_grey(objspace, b);
+                    }
                 }
             }
             else {
@@ -11638,6 +11659,21 @@ static VALUE
 gc_disable(rb_execution_context_t *ec, VALUE _)
 {
     return rb_gc_disable();
+}
+
+static VALUE
+gc_set_disable_promotion(VALUE _, VALUE v)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    objspace->flags.disable_promotion = RTEST(v);
+    return v;
+}
+
+static VALUE 
+gc_get_disable_promotion(VALUE _)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return objspace->flags.disable_promotion ? Qtrue : Qfalse;
 }
 
 #if GC_CAN_COMPILE_COMPACTION
@@ -14957,6 +14993,9 @@ Init_GC(void)
 #endif
 
     rb_define_singleton_method(rb_mGC, "using_rvargc?", gc_using_rvargc_p, 0);
+
+    rb_define_singleton_method(rb_mGC, "disable_promotion=", gc_set_disable_promotion, 1);
+    rb_define_singleton_method(rb_mGC, "disable_promotion", gc_get_disable_promotion, 0);
 
     if (GC_COMPACTION_SUPPORTED) {
         rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);

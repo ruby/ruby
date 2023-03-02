@@ -643,4 +643,55 @@ class TestGc < Test::Unit::TestCase
     Module.new.class_eval( (["# shareable_constant_value: literal"] +
                             (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
   end
+
+  def test_disable_promotion
+    omit "disable_promotion is enabled" if GC.disable_promotion
+
+    original_disable_promotion = GC.disable_promotion
+
+    require "objspace"
+
+    GC.disable_promotion = true
+
+    obj = Object.new
+    4.times { GC.start }
+
+    assert_not_include ObjectSpace.dump(obj), '"old":true'
+
+    GC.disable_promotion = false
+
+    4.times { GC.start }
+
+    assert_include ObjectSpace.dump(obj), '"old":true'
+  ensure
+    GC.disable_promotion = original_disable_promotion
+  end
+
+  def test_disable_promotion_write_barrier
+    omit "disable_promotion is enabled" if GC.disable_promotion
+
+    original_disable_promotion = GC.disable_promotion
+
+    require "objspace"
+
+    ary = []
+    4.times { GC.start }
+
+    assert_include ObjectSpace.dump(ary), '"old":true'
+
+    GC.disable_promotion = true
+
+    obj = Object.new
+    ary << obj
+
+    assert_not_include ObjectSpace.dump(obj), '"old":true'
+
+    GC.disable_promotion = false
+
+    GC.start
+
+    assert_include ObjectSpace.dump(obj), '"old":true'
+  ensure
+    GC.disable_promotion = original_disable_promotion
+  end
 end
