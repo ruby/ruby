@@ -39,7 +39,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
     @ui.errs.rewind
     @installed_specs.clear
 
-    @cmd.invoke *args
+    @cmd.invoke(*args)
   ensure
     Gem::Specification.unresolved_deps.clear
     Gem.loaded_specs.clear
