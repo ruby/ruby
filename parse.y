@@ -790,6 +790,7 @@ static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, I
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc);
 static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
 static NODE *new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_else, NODE *ensure, const YYLTYPE *loc);
+static NODE *new_postarg(struct parser_params *p, NODE *head, NODE *post, const YYLTYPE *loc);
 
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
@@ -1482,7 +1483,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> bv_decls opt_bv_decl bvar
 %type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
-%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
+%type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_tail mlhs_inner
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg
@@ -2272,12 +2273,12 @@ mlhs_basic	: mlhs_head
 		    /*% %*/
 		    /*% ripper: mlhs_add_star!($1, $3) %*/
 		    }
-		| mlhs_head tSTAR mlhs_node ',' mlhs_post
+		| mlhs_head tSTAR mlhs_node mlhs_tail
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG($3,$5,&@$), &@$);
+			$$ = NEW_MASGN($1, new_postarg(p, $3, $4, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, $3), $5) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, $3), $4) %*/
 		    }
 		| mlhs_head tSTAR
 		    {
@@ -2286,12 +2287,12 @@ mlhs_basic	: mlhs_head
 		    /*% %*/
 		    /*% ripper: mlhs_add_star!($1, Qnil) %*/
 		    }
-		| mlhs_head tSTAR ',' mlhs_post
+		| mlhs_head tSTAR mlhs_tail
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$);
+			$$ = NEW_MASGN($1, new_postarg(p, NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, Qnil), $4) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, Qnil), $3) %*/
 		    }
 		| tSTAR mlhs_node
 		    {
@@ -2300,12 +2301,12 @@ mlhs_basic	: mlhs_head
 		    /*% %*/
 		    /*% ripper: mlhs_add_star!(mlhs_new!, $2) %*/
 		    }
-		| tSTAR mlhs_node ',' mlhs_post
+		| tSTAR mlhs_node mlhs_tail
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG($2,$4,&@$), &@$);
+			$$ = NEW_MASGN(0, new_postarg(p, $2, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $2), $4) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, $2), $3) %*/
 		    }
 		| tSTAR
 		    {
@@ -2314,12 +2315,12 @@ mlhs_basic	: mlhs_head
 		    /*% %*/
 		    /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
 		    }
-		| tSTAR ',' mlhs_post
+		| tSTAR mlhs_tail
 		    {
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
+			$$ = NEW_MASGN(0, new_postarg(p, NODE_SPECIAL_NO_NAME_REST, $2, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $3) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $2) %*/
 		    }
 		;
 
@@ -2346,6 +2347,23 @@ mlhs_head	: mlhs_item ','
 			$$ = list_append(p, $1, $2);
 		    /*% %*/
 		    /*% ripper: mlhs_add!($1, $2) %*/
+		    }
+		;
+
+mlhs_tail	: ','
+		    {
+		    /*%%%*/
+			$$ = Qnull;
+		    /*% %*/
+		    /*% ripper: mlhs_new! %*/
+		    }
+		| ',' mlhs_post
+		    {
+			$$ = $2;
+		    }
+		| ',' mlhs_post ','
+		    {
+			$$ = $2;
 		    }
 		;
 
@@ -13087,6 +13105,13 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
     }
     fixpos(result, head);
     return result;
+}
+
+static NODE *
+new_postarg(struct parser_params *p, NODE *head, NODE *post, const YYLTYPE *loc)
+{
+    if (!post) return head;
+    return NEW_POSTARG(head, post, loc);
 }
 #endif
 
