@@ -2318,7 +2318,6 @@ module RubyVM::MJIT
       iseq = def_iseq_ptr(cme.def)
       opt_pc = jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
       if opt_pc == CantCompile
-        # We hit some unsupported path of vm_callee_setup_arg
         return CantCompile
       end
 
@@ -2327,14 +2326,14 @@ module RubyVM::MJIT
         asm.incr_counter(:send_tailcall)
         return CantCompile
       end
-      jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:)
+      jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:)
     end
 
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:)
+    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:)
       # We will not have side exits from here. Adjust the stack.
       if flags & C.VM_CALL_OPT_SEND != 0
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
@@ -2358,7 +2357,8 @@ module RubyVM::MJIT
 
       # Jump to a stub for the callee ISEQ
       callee_ctx = Context.new
-      stub_next_block(iseq, iseq.body.iseq_encoded.to_i, callee_ctx, asm)
+      pc = (iseq.body.iseq_encoded + opt_pc).to_i
+      stub_next_block(iseq, pc, callee_ctx, asm)
 
       EndBlock
     end
@@ -2621,6 +2621,12 @@ module RubyVM::MJIT
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
 
+      if iseq
+        # This was not handled in jit_callee_setup_arg
+        opts_filled = argc - iseq.body.param.lead_num # TODO: kwarg
+        opts_missing = iseq.body.param.opt_num - opts_filled
+        local_size += opts_missing
+      end
       local_size.times do |i|
         asm.comment('set local variables') if i == 0
         local_index = ctx.sp_offset + i
@@ -2720,9 +2726,29 @@ module RubyVM::MJIT
           end
 
           return 0
+        elsif C.rb_iseq_only_optparam_p(iseq)
+          if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+            return CantCompile
+          end
+          if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
+            return CantCompile
+          end
+
+          lead_num = iseq.body.param.lead_num
+          opt_num = iseq.body.param.opt_num
+          opt = argc - lead_num
+
+          if opt < 0 || opt > opt_num
+            asm.incr_counter(:send_arity)
+            return CantCompile
+          end
+
+          # Qnil push is handled in jit_push_frame
+
+          return iseq.body.param.opt_table[opt]
         else
           # We don't support the remaining `else if`s yet.
-          asm.incr_counter(:send_iseq_not_simple)
+          asm.incr_counter(:send_iseq_not_only_optparam)
           return CantCompile
         end
       end
