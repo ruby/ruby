@@ -1466,7 +1466,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath def_name defn_head defs_head
 %type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
+%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr log_expr
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -1828,7 +1828,18 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% ripper: END!($3) %*/
 		    }
 		| command_asgn
-		| mlhs '=' lex_ctxt command_call
+		| mlhs '=' lex_ctxt mrhs_arg modifier_rescue stmt
+		    {
+		    /*%%%*/
+			YYLTYPE loc = code_loc_gen(&@5, &@6);
+			$$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
+		    /*% %*/
+		    /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
+		    }
+		| log_expr
+		;
+
+log_expr	: mlhs '=' lex_ctxt command_call
 		    {
 		    /*%%%*/
 			value_expr($4);
@@ -1843,14 +1854,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% %*/
 		    /*% ripper: assign!($1, $4) %*/
 		    }
-                | mlhs '=' lex_ctxt mrhs_arg modifier_rescue stmt
-                    {
-                    /*%%%*/
-                        YYLTYPE loc = code_loc_gen(&@5, &@6);
-			$$ = node_assign(p, $1, NEW_RESCUE($4, NEW_RESBODY(0, remove_begin($6), 0, &loc), 0, &@$), $3, &@$);
-                    /*% %*/
-                    /*% ripper: massign!($1, rescue_mod!($4, $6)) %*/
-                    }
 		| mlhs '=' lex_ctxt mrhs_arg
 		    {
 		    /*%%%*/
@@ -1983,15 +1986,15 @@ command_rhs	: command_call   %prec tOP_ASGN
 		;
 
 expr		: command_call
-		| expr keyword_and expr
+		| log_expr keyword_and log_expr
 		    {
 			$$ = logop(p, idAND, $1, $3, &@2, &@$);
 		    }
-		| expr keyword_or expr
+		| log_expr keyword_or log_expr
 		    {
 			$$ = logop(p, idOR, $1, $3, &@2, &@$);
 		    }
-		| keyword_not opt_nl expr
+		| keyword_not opt_nl log_expr
 		    {
 			$$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
 		    }

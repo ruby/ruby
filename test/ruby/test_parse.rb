@@ -152,6 +152,19 @@ class TestParse < Test::Unit::TestCase
     assert_equal([1, 2], [c::FOO, c::BAR])
   end
 
+  def test_massign_in_logical_expr
+    all_assertions do |all|
+      [['a', true], 'a, b', '(a, b)'].product(['1, 2', ['[1, 2]', true]]) do
+        |(lhs, ls), (rhs, rs)|
+        next if ls and rs
+        all.for("true and #{lhs} = #{rhs}") {|code| assert_valid_syntax(code)}
+        all.for("false or #{lhs} = #{rhs}") {|code| assert_valid_syntax(code)}
+        all.for("#{lhs} = #{rhs} and true") {|code| assert_valid_syntax(code)}
+        all.for("#{lhs} = #{rhs} or false") {|code| assert_valid_syntax(code)}
+      end
+    end
+  end
+
   def test_dynamic_constant_assignment
     assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /dynamic constant/) do
       begin;
