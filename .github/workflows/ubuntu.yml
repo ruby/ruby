@@ -107,7 +107,7 @@ jobs:
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rbs"
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
           PRECHECK_BUNDLED_GEMS: "no"
       - name: make skipped tests
         run: |
