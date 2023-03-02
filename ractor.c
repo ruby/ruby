@@ -518,6 +518,7 @@ basket_type_name(enum rb_ractor_basket_type type)
       case basket_type_deleted: return "deleted";
       case basket_type_reserved: return "reserved";
       case basket_type_take_basket: return "take_basket";
+      case basket_type_yielding: return "yielding";
     }
     VM_ASSERT(0);
     return NULL;
@@ -1532,7 +1533,7 @@ ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t dat)
     int ret;
 
     if (!basket_none_p(tb)) {
-        RUBY_DEBUG_LOG("already taken:%s", basket_type_name(tb->type));
+        RUBY_DEBUG_LOG("already taken:%s", basket_type_name(tb->type.e));
         return ST_STOP;
     }
 
@@ -1546,7 +1547,7 @@ ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t dat)
                 ret = ST_STOP;
             }
             else {
-                RUBY_DEBUG_LOG("has will, but already taken");
+                RUBY_DEBUG_LOG("has will, but already taken (%s)", basket_type_name(tb->type.e));
                 ret = ST_CONTINUE;
             }
         }
@@ -1558,7 +1559,7 @@ ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t dat)
                 ret = ST_STOP;
             }
             else {
-                RUBY_DEBUG_LOG("closed, but already taken");
+                RUBY_DEBUG_LOG("closed, but already taken (%s)", basket_type_name(tb->type.e));
                 ret = ST_CONTINUE;
             }
         }
@@ -1644,8 +1645,8 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
       retry_waiting:
         while (1) {
             if (!basket_none_p(tb)) {
-                RUBY_DEBUG_LOG("taken:%s from r:%u", basket_type_name(tb->type),
-                               rb_ractor_id(RACTOR_PTR(tb->sender)));
+                RUBY_DEBUG_LOG("taken:%s from r:%u", basket_type_name(tb->type.e),
+                               tb->sender ? rb_ractor_id(RACTOR_PTR(tb->sender)) : 0);
                 break;
             }
             if (do_receive && !ractor_queue_empty_p(cr, rq)) {
@@ -1687,11 +1688,16 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
       case basket_type_yielding:
         rb_bug("unreachable");
       case basket_type_deleted: {
+          ractor_selector_remove(ec, selv, taken_basket.sender);
+
           rb_ractor_t *r = RACTOR_PTR(taken_basket.sender);
-          if (!ractor_take_will_lock(r, &taken_basket)) {
+          if (ractor_take_will_lock(r, &taken_basket)) {
+              RUBY_DEBUG_LOG("has_will");
+          }
+          else {
+              RUBY_DEBUG_LOG("no will");
               // rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
               // remove and retry wait
-              ractor_selector_remove(ec, selv, taken_basket.sender);
               goto retry;
           }
           break;
@@ -1703,6 +1709,8 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
       default:
         break;
     }
+
+    RUBY_DEBUG_LOG("taken_basket:%s", basket_type_name(taken_basket.type.e));
 
     ret_v = ractor_basket_accept(&taken_basket);
     ret_r = taken_basket.sender;
@@ -1768,6 +1776,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
                     if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_yielding, basket_type_deleted) != basket_type_yielding) {
                         rb_bug("unreachable");
                     }
+                    RUBY_DEBUG_LOG("set delete for r:%u", rb_ractor_id(RACTOR_PTR(b.sender)));
                 }
 
                 if (b.p.take.config) {
