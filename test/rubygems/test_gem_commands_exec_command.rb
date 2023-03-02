@@ -78,7 +78,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       }
     end
     @cmd.invoke "--gem", "cocoapods", "-v", "> 1", "--version", "< 1.3", "--verbose", "--", "pod", "install", "--no-color", "--help", "--verbose"
- end
+  end
 
   def test_single_arg_parsing
     @cmd.when_invoked do |options|
