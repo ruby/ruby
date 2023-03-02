@@ -739,7 +739,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
       invoke "gem", "list", "--local"
       assert_empty @ui.error
-      assert_match /\A\s*\** LOCAL GEMS \**\s*\z/m, @ui.output
+      assert_match(/\A\s*\** LOCAL GEMS \**\s*\z/m, @ui.output)
 
       invoke "gem", "env", "GEM_HOME"
       assert_equal "#{@gem_home}/gem_exec\n", @ui.output
