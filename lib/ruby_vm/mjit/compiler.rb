@@ -131,13 +131,55 @@ module RubyVM::MJIT
     # @param pc [Integer]
     def invalidate_blocks(iseq, pc)
       list_blocks(iseq, pc).each do |block|
-        invalidate_block(iseq, block)
+        invalidate_block(block)
       end
 
       # If they were the ISEQ's first blocks, re-compile MJIT entry as well
       if iseq.body.iseq_encoded.to_i == pc
         iseq.body.jit_func = 0
         iseq.body.total_calls = 0
+      end
+    end
+
+    def invalidate_block(block)
+      iseq = block.iseq
+      # Remove this block from the version array
+      remove_block(iseq, block)
+
+      # Invalidate the block with entry exit
+      unless block.invalidated
+        @cb.with_write_addr(block.start_addr) do
+          asm = Assembler.new
+          asm.comment('invalidate_block')
+          asm.jmp(block.entry_exit)
+          @cb.write(asm)
+        end
+        block.invalidated = true
+      end
+
+      # Re-stub incoming branches
+      block.incoming.each do |branch_stub|
+        target = [branch_stub.target0, branch_stub.target1].compact.find do |target|
+          target.pc == block.pc && target.ctx == block.ctx
+        end
+        next if target.nil?
+        # TODO: Could target.address be a stub address? Is invalidation not needed in that case?
+
+        # If the target being re-generated is currently a fallthrough block,
+        # the fallthrough code must be rewritten with a jump to the stub.
+        if target.address == branch_stub.end_addr
+          branch_stub.shape = Default
+        end
+
+        target.address = Assembler.new.then do |ocb_asm|
+          @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, target == branch_stub.target0)
+          @ocb.write(ocb_asm)
+        end
+        @cb.with_write_addr(branch_stub.start_addr) do
+          branch_asm = Assembler.new
+          branch_stub.compile.call(branch_asm)
+          @cb.write(branch_asm)
+        end
       end
     end
 
@@ -170,7 +212,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
-      block = Block.new(pc:, ctx: ctx.dup)
+      block = Block.new(iseq: jit.iseq, pc:, ctx: ctx.dup)
       jit.block = block
       asm.block(block)
 
@@ -219,47 +261,6 @@ module RubyVM::MJIT
     def incr_counter(name)
       if C.mjit_opts.stats
         C.rb_mjit_counters[name][0] += 1
-      end
-    end
-
-    def invalidate_block(iseq, block)
-      # Remove this block from the version array
-      remove_block(iseq, block)
-
-      # Invalidate the block with entry exit
-      unless block.invalidated
-        @cb.with_write_addr(block.start_addr) do
-          asm = Assembler.new
-          asm.comment('invalidate_block')
-          asm.jmp(block.entry_exit)
-          @cb.write(asm)
-        end
-        block.invalidated = true
-      end
-
-      # Re-stub incoming branches
-      block.incoming.each do |branch_stub|
-        target = [branch_stub.target0, branch_stub.target1].compact.find do |target|
-          target.pc == block.pc && target.ctx == block.ctx
-        end
-        next if target.nil?
-        # TODO: Could target.address be a stub address? Is invalidation not needed in that case?
-
-        # If the target being re-generated is currently a fallthrough block,
-        # the fallthrough code must be rewritten with a jump to the stub.
-        if target.address == branch_stub.end_addr
-          branch_stub.shape = Default
-        end
-
-        target.address = Assembler.new.then do |ocb_asm|
-          @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, target == branch_stub.target0)
-          @ocb.write(ocb_asm)
-        end
-        @cb.with_write_addr(branch_stub.start_addr) do
-          branch_asm = Assembler.new
-          branch_stub.compile.call(branch_asm)
-          @cb.write(branch_asm)
-        end
       end
     end
 

@@ -13,10 +13,12 @@ module RubyVM::MJIT
       # C.mjit_cancel_all("Ractor is spawned")
     end
 
-    def self.on_constant_state_changed(_id)
-      # to be used later
+    # Global constant changes like const_set
+    def self.on_constant_state_changed(id)
+      Invariants.on_constant_state_changed(id)
     end
 
+    # ISEQ-specific constant invalidation
     def self.on_constant_ic_update(iseq, ic, insn_idx)
       iseq = C.rb_iseq_t.new(iseq)
       ic = C.IC.new(ic)

@@ -249,7 +249,7 @@ module RubyVM::MJIT
 
         # Invalidate output code on any constant writes associated with
         # constants referenced within the current block.
-        #assume_stable_constant_names(jit, ocb, idlist);
+        Invariants.assume_stable_constant_names(jit, idlist)
 
         putobject(jit, ctx, asm, val: ice.value)
       end

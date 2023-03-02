@@ -353,6 +353,28 @@ rb_mjit_before_ractor_spawn(void)
     mjit_call_p = false;
 }
 
+static void
+mjit_constant_state_changed(void *data)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    RB_VM_LOCK_ENTER();
+    rb_vm_barrier();
+
+    WITH_MJIT_ISOLATED({
+        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_state_changed"), 1, SIZET2NUM((size_t)data));
+    });
+
+    RB_VM_LOCK_LEAVE();
+}
+
+void
+rb_mjit_constant_state_changed(ID id)
+{
+    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    // Asynchronously hook the Ruby code since this is hooked during a "Ruby critical section".
+    rb_workqueue_register(0, mjit_constant_state_changed, (void *)id);
+}
+
 void
 rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
 {

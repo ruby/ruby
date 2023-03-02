@@ -15,6 +15,7 @@ module RubyVM::MJIT
         @exit_compiler = exit_compiler
         @bop_blocks = Set.new # TODO: actually invalidate this
         @cme_blocks = Hash.new { |h, k| h[k] = Set.new }
+        @const_blocks = Hash.new { |h, k| h[k] = Set.new }
         @patches = {}
 
         # freeze # workaround a binding.irb issue. TODO: resurrect this
@@ -37,6 +38,13 @@ module RubyVM::MJIT
         @cme_blocks[cme.to_i] << jit.block
       end
 
+      def assume_stable_constant_names(jit, idlist)
+        (0..).each do |i|
+          break if (id = idlist[i]) == 0
+          @const_blocks[id] << jit.block
+        end
+      end
+
       # @param asm [RubyVM::MJIT::Assembler]
       def record_global_inval_patch(asm, target)
         asm.pos_marker do |address|
@@ -57,6 +65,7 @@ module RubyVM::MJIT
           end
           # TODO: re-generate branches that refer to this block
         end
+        @cme_blocks.delete(cme.to_i)
       end
 
       def on_constant_ic_update(iseq, ic, insn_idx)
@@ -75,6 +84,12 @@ module RubyVM::MJIT
           raise 'insn_idx + 1 was not at the updated IC'
         end
         @compiler.invalidate_blocks(iseq, pc.to_i)
+      end
+
+      def on_constant_state_changed(id)
+        @const_blocks.fetch(id, []).each do |block|
+          @compiler.invalidate_block(block)
+        end
       end
 
       def on_tracing_invalidate_all
