@@ -9,7 +9,7 @@ class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
 
   def self.hex2utf8(s)
-    s.split(' ').map { |c| c.to_i(16) }.pack('U*')
+    s.split(' ').map! { |c| c.to_i(16) }.pack('U*')
   end
 
   def self.expand_filename(basename)
@@ -79,6 +79,7 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
         titlecase[code] = hex2utf8 data[14] unless data[14].empty?
       end
     end
+
     read_data_file('CaseFolding') do |code, data|
       casefold[code] = hex2utf8(data[2]) if data[1] =~ /^[CF]$/
     end
@@ -161,15 +162,58 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
     end
   end
 
+  ENCODINGS_CODEPOINTS = {
+    "US-ASCII" => 128,
+    "ASCII-8BIT" => 128,
+    "ISO-8859-1" => 256,
+    "ISO-8859-2" => 256,
+    "ISO-8859-3" => 249,
+    "ISO-8859-4" => 256,
+    "ISO-8859-5" => 256,
+    "ISO-8859-6" => 211,
+    "ISO-8859-7" => 253,
+    "ISO-8859-8" => 220,
+    "ISO-8859-9" => 256,
+    "ISO-8859-10" => 256,
+    "ISO-8859-11" => 248,
+    "ISO-8859-13" => 256,
+    "ISO-8859-14" => 256,
+    "ISO-8859-15" => 256,
+    "ISO-8859-16" => 256,
+    "Windows-1250" => 251,
+    "Windows-1251" => 255,
+    "Windows-1252" => 251,
+    "Windows-1253" => 239,
+    "Windows-1254" => 249,
+    "Windows-1255" => 268,
+    "Windows-1256" => 256,
+    "Windows-1257" => 244,
+    "KOI8-R" => 256,
+    "KOI8-U" => 256,
+    "Big5" => 554,
+    "EUC-JP" => 981,
+    "EUC-KR" => 1386,
+    "GB2312" => 813,
+    "GBK" => 1019,
+    "Shift_JIS" => 716,
+    "Windows-31J" => 837,
+  }
+
   def self.generate_case_mapping_tests(encoding)
     all_tests
+    i = 0
     # preselect codepoints to speed up testing for small encodings
-    codepoints = @@codepoints.select do |code|
+    codepoints = []
+    @@codepoints.each do |code|
       begin
         code.encode(encoding)
-        true
       rescue Encoding::UndefinedConversionError
-        false
+        next
+      end
+      i += 1
+      codepoints << code
+      if ENCODINGS_CODEPOINTS[encoding] == i
+        break
       end
     end
     all_tests.each do |test|
@@ -206,12 +250,18 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
   def self.generate_ascii_only_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
-    codepoints = @@codepoints.select do |code|
+    i= 0
+    codepoints = []
+    @@codepoints.each do |code|
       begin
         code.encode(encoding)
-        true
       rescue Encoding::UndefinedConversionError
-        false
+        next
+      end
+      i += 1
+      codepoints << code
+      if ENCODINGS_CODEPOINTS[encoding] == i
+        break
       end
     end
     define_method "test_#{encoding}_upcase" do
