@@ -386,16 +386,8 @@ module Bundler
     end
 
     def add_bundled_gems_to(specs_by_name)
-      bundled_gems = %w[
-        rexml
-        rbs
-        debug
-      ]
-
-      bundled_gems.each do |gem_name|
-        spec = Gem::Specification.find_by_name(gem_name)
-        specs_by_name[gem_name] = spec
-      rescue Gem::MissingSpecError
+      Bundler.rubygems.bundled_stubs.each do |spec|
+        specs_by_name[spec.name] = spec
       end
 
       specs_by_name
@@ -569,6 +561,16 @@ module Bundler
     else
       def default_stubs
         Gem::Specification.send(:default_stubs, "*.gemspec")
+      end
+    end
+
+    if Gem::Specification.respond_to?(:bundled_stubs)
+      def bundled_stubs
+        Gem::Specification.bundled_stubs
+      end
+    else
+      def bundled_stubs
+        [] # noop
       end
     end
   end

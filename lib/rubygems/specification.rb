@@ -833,6 +833,22 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Returns a Gem::StubSpecification for bundled gems
+
+  def self.bundled_stubs
+    # TODO
+    bundled_gems = %w[
+      rexml
+      rbs
+      debug
+    ]
+    bundled_gems.map do |name|
+      Gem::Specification.find_by_name(name)
+    rescue Gem::MissingSpecError
+    end.compact
+  end
+
+  ##
   # Returns a Gem::StubSpecification for installed gem named +name+
   # only returns stubs that match Gem.platforms
 
