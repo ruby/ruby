@@ -6885,6 +6885,49 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         ADD_INSNL(ret, line_node, jump, matched);
         break;
       }
+      case NODE_IASGN: {
+        ID id = node->nd_vid;
+
+        if (in_alt_pattern) {
+            COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
+                rb_id2str(id));
+            return COMPILE_NG;
+        }
+
+        ADD_INSN2(ret, line_node, setinstancevariable,
+		  ID2SYM(id),
+		  get_ivar_ic_value(iseq, node->nd_vid));
+        ADD_INSNL(ret, line_node, jump, matched);
+        break;
+      }
+      case NODE_CVASGN: {
+        ID id = node->nd_vid;
+
+        if (in_alt_pattern) {
+            COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
+                rb_id2str(id));
+            return COMPILE_NG;
+        }
+
+        ADD_INSN2(ret, line_node, setclassvariable,
+		  ID2SYM(id),
+		  get_ivar_ic_value(iseq, node->nd_vid));
+        ADD_INSNL(ret, line_node, jump, matched);
+        break;
+      }
+      case NODE_GASGN: {
+        ID id = node->nd_entry;
+
+        if (in_alt_pattern) {
+            COMPILE_ERROR(ERROR_ARGS "illegal variable in alternative pattern (%"PRIsVALUE")",
+                rb_id2str(id));
+            return COMPILE_NG;
+        }
+
+        ADD_INSN1(ret, node, setglobal, ID2SYM(id));
+        ADD_INSNL(ret, line_node, jump, matched);
+        break;
+      }
       case NODE_IF:
       case NODE_UNLESS: {
         LABEL *match_failed;

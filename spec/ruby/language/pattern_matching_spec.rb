@@ -1399,5 +1399,96 @@ describe "Pattern matching" do
         end
       RUBY
     end
+
+    ruby_version_is "3.2" do
+      it "supports binding instance variables" do
+        eval(<<~RUBY).should == true
+          case %w[a b c]
+          in [@a, @b, *]
+            true
+          end
+        RUBY
+
+        @a.should == 'a'
+        @b.should == 'b'
+
+        eval(<<~RUBY)
+          %w[foo bar] => @a, @b
+        RUBY
+
+        @a.should == 'foo'
+        @b.should == 'bar'
+
+        eval(<<~RUBY)
+          42 in Integer => @a
+        RUBY
+
+        @a.should == 42
+      end
+
+      it "supports binding class variables" do
+        result = nil
+        Module.new do
+          result = module_eval(<<~RUBY)
+            @@a = 0
+            case 2
+            in @@a
+              true
+            end
+
+            @@a
+          RUBY
+        end
+
+        result.should == 2
+      end
+
+      it "supports binding global variables" do
+        eval(<<~RUBY).should == true
+          $a = 0
+          case Hash[a: 1, b: 2022]
+          in {a: $a, **$b}
+            true
+          end
+        RUBY
+
+        $a.should == 1
+        $b.should == {b: 2022}
+
+        eval(<<~RUBY)
+          42 => $a
+        RUBY
+
+        $a.should == 42
+      end
+
+      it "doesn't support non-local variable binding in alternation pattern" do
+        -> {
+          eval <<~RUBY
+            case 0
+            in 0 | @a
+            end
+          RUBY
+        }.should raise_error(SyntaxError, /illegal variable in alternative pattern/)
+
+        -> {
+          Module.new do
+            module_eval(<<~RUBY)
+              case 0
+              in 0 | @@a
+              end
+            RUBY
+          end
+        }.should raise_error(SyntaxError, /illegal variable in alternative pattern/)
+
+        -> {
+          eval <<~RUBY
+            case 0
+            in 0 | $a
+            end
+          RUBY
+        }.should raise_error(SyntaxError, /illegal variable in alternative pattern/)
+      end
+    end
   end
 end

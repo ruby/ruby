@@ -4662,6 +4662,10 @@ p_rest		: tSTAR tIDENTIFIER
 		    {
 			$$ = $2;
 		    }
+		| tSTAR nonlocal_var
+		    {
+			$$ = $2;
+		    }
 		| tSTAR
 		    {
 			$$ = 0;
@@ -4766,6 +4770,10 @@ p_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 		        $$ = $2;
 		    }
+		| kwrest_mark nonlocal_var
+		    {
+		        $$ = $2;
+		    }
 		| kwrest_mark
 		    {
 		        $$ = 0;
@@ -4860,6 +4868,13 @@ p_variable	: tIDENTIFIER
 		    {
 		    /*%%%*/
 			error_duplicate_pattern_variable(p, $1, &@1);
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
+		    }
+		| nonlocal_var
+		    {
+		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
 		    /*% ripper: assignable(p, var_field(p, $1)) %*/
