@@ -73,7 +73,7 @@ pub enum Opnd
     InsnOut{ idx: usize, num_bits: u8 },
 
     // Pointer to a slot on the VM stack
-    Stack { idx: i32, sp_offset: i16, num_bits: u8 },
+    Stack { idx: i32, sp_offset: i8, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
