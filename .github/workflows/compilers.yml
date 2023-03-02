@@ -234,7 +234,12 @@ jobs:
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
-      - run: ./autogen.sh
+      - name: autogen
+        run: |
+          if [ ! -f ./autogen.sh ]; then
+            ls -la
+          fi
+          ./autogen.sh
         working-directory: src
       - name: Run configure
         run: >
