@@ -1649,7 +1649,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 10)
+    def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 20)
       opcode => :je | :jne | :jnz | :jz
 
       if ctx.chain_depth < limit
@@ -2572,12 +2572,13 @@ module RubyVM::MJIT
       end
 
       asm.comment("Guard #{comptime_symbol.inspect} is on stack")
-      mid_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_changed)
-      jit_guard_known_klass(jit, ctx, asm, comptime_symbol.class, ctx.stack_opnd(argc), comptime_symbol, mid_changed_exit)
+      class_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_class_changed)
+      jit_guard_known_klass(jit, ctx, asm, comptime_symbol.class, ctx.stack_opnd(argc), comptime_symbol, class_changed_exit)
       asm.mov(C_ARGS[0], ctx.stack_opnd(argc))
       asm.call(C.rb_get_symbol_id)
       asm.cmp(C_RET, mid)
-      jit_chain_guard(:jne, jit, ctx, asm, mid_changed_exit)
+      id_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_id_changed)
+      jit_chain_guard(:jne, jit, ctx, asm, id_changed_exit)
 
       # rb_callable_method_entry_with_refinements
       cme = jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift:)

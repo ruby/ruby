@@ -157,7 +157,8 @@ MJIT_RUNTIME_COUNTERS(
 
     send_optimized_send_no_args,
     send_optimized_send_not_sym_or_str,
-    send_optimized_send_mid_changed,
+    send_optimized_send_mid_class_changed,
+    send_optimized_send_mid_id_changed,
     send_optimized_send_null_mid,
     send_optimized_send_send,
 
