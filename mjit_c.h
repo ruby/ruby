@@ -161,9 +161,6 @@ MJIT_RUNTIME_COUNTERS(
     send_optimized_send_null_mid,
     send_optimized_send_send,
 
-    send_guard_symbol,
-    send_guard_float,
-
     invokesuper_me_changed,
     invokesuper_same_me,
 
