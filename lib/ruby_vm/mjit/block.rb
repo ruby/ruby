@@ -1,4 +1,5 @@
 class RubyVM::MJIT::Block < Struct.new(
+  :iseq,        # @param ``
   :pc,          # @param [Integer] Starting PC
   :ctx,         # @param [RubyVM::MJIT::Context] **Starting** Context (TODO: freeze?)
   :start_addr,  # @param [Integer] Starting address of this block's JIT code
