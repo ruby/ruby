@@ -1617,4 +1617,100 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
 }
 
+## Ractor::Selector
+
+# Selector#empty? returns true
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.empty?
+}
+
+# Selector#empty? returns false if there is target ractors
+assert_equal 'false', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{}
+  s.empty?
+}
+
+# Selector#clear removes all ractors from the waiting list
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  s.clear
+  s.empty?
+}
+
+# Selector#wait can wait multiple ractors
+assert_equal '[10, 20, true]', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  r, v = s.wait
+  vs = []
+  vs << v
+  r, v = s.wait
+  vs << v
+  [*vs.sort, s.empty?]
+}
+
+# Selector#wait can wait multiple ractors with receiving.
+assert_equal '30', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+
+  results = []
+  until s.empty?
+    results << s.wait
+
+    # Note that s.wait can raise an exception because other Ractors/Threads
+    # can take from the same ractors in the waiting set.
+    # In this case there is no other takers so `s.wait` doesn't raise an error.
+  end
+
+  results.size
+}
+
+# Selector#wait can support dynamic addition
+assert_equal '600', %q{
+  RN = 100
+  s = Ractor::Selector.new
+  rs = RN.times.map{
+    Ractor.new{
+      Ractor.main << Ractor.new{ Ractor.yield :v3; :v4 }
+      Ractor.main << Ractor.new{ Ractor.yield :v5; :v6 }
+      Ractor.yield :v1
+      :v2
+    }
+  }
+
+  rs.each{|r| s.add(r)}
+  h = {v1: 0, v2: 0, v3: 0, v4: 0, v5: 0, v6: 0}
+
+  loop do
+    case s.wait receive: true
+    in :receive, r
+      s.add r
+    in r, v
+      h[v] += 1
+      break if h.all?{|k, v| v == RN}
+    end
+  end
+
+  h.sum{|k, v| v}
+}
+
+# Selector should be GCed (free'ed) withtou trouble
+assert_equal 'ok', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+  :ok
+}
+
 end # if !ENV['GITHUB_WORKFLOW']
