@@ -261,7 +261,7 @@ module Bundler
     end
 
     def lock
-      @definition.lock(Bundler.default_lockfile)
+      @definition.lock
     end
   end
 end
