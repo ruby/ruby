@@ -711,6 +711,14 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
   end
 
+  def C.RUBY_FLONUM_FLAG
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FLONUM_FLAG) }
+  end
+
+  def C.RUBY_FLONUM_MASK
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FLONUM_MASK) }
+  end
+
   def C.RUBY_IMMEDIATE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_IMMEDIATE_MASK) }
   end
@@ -1292,8 +1300,6 @@ module RubyVM::MJIT # :nodoc: all
       send_optimized_send_mid_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_mid_changed)")],
       send_optimized_send_null_mid: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_null_mid)")],
       send_optimized_send_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_send)")],
-      send_guard_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_symbol)")],
-      send_guard_float: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_guard_float)")],
       invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
       invokesuper_same_me: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_same_me)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],

@@ -1234,9 +1234,7 @@ module RubyVM::MJIT
         recv_opnd = ctx.stack_opnd(1)
 
         not_array_exit = counted_exit(side_exit, :optaref_recv_not_array)
-        if jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_array_exit) == CantCompile
-          return CantCompile
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_array_exit)
 
         # Bail if idx is not a FIXNUM
         asm.mov(:rax, idx_opnd)
@@ -1269,9 +1267,7 @@ module RubyVM::MJIT
 
         # Guard that the receiver is a Hash
         not_hash_exit = counted_exit(side_exit, :optaref_recv_not_hash)
-        if jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_hash_exit) == CantCompile
-          return CantCompile
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_hash_exit)
 
         # Prepare to call rb_hash_aref(). It might call #hash on the key.
         jit_prepare_routine_call(jit, ctx, asm)
@@ -1319,14 +1315,10 @@ module RubyVM::MJIT
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is an Array
-        if jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit) == CantCompile
-          return CantCompile
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit)
 
         # Guard key is a fixnum
-        if jit_guard_known_klass(jit, ctx, asm, comptime_key.class, key, comptime_key, side_exit) == CantCompile
-          return CantCompile
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_key.class, key, comptime_key, side_exit)
 
         # We might allocate or raise
         jit_prepare_routine_call(jit, ctx, asm)
@@ -1358,9 +1350,7 @@ module RubyVM::MJIT
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is a Hash
-        if jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit) == CantCompile
-          return CantCompile
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit)
 
         # We might allocate or raise
         jit_prepare_routine_call(jit, ctx, asm)
@@ -1720,9 +1710,13 @@ module RubyVM::MJIT
         assert_equal(8, C.RUBY_SPECIAL_SHIFT)
         asm.cmp(BytePtr[*obj_opnd], C.RUBY_SYMBOL_FLAG)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == Float
-        asm.incr_counter(:send_guard_float)
-        return CantCompile
+      elsif known_klass == Float && flonum?(comptime_obj)
+        # We will guard flonum vs heap float as though they were separate classes
+        asm.comment('guard object is flonum')
+        asm.mov(:rax, obj_opnd)
+        asm.and(:rax, C.RUBY_FLONUM_MASK)
+        asm.cmp(:rax, C.RUBY_FLONUM_FLAG)
+        jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       elsif known_klass.singleton_class?
         asm.comment('guard known object with singleton class')
         asm.mov(:rax, C.to_value(comptime_obj))
@@ -1865,9 +1859,7 @@ module RubyVM::MJIT
         end
 
         # Guard that a is a String
-        if jit_guard_known_klass(jit, ctx, asm, comptime_a.class, a_opnd, comptime_a, side_exit) == CantCompile
-          return false
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_a.class, a_opnd, comptime_a, side_exit)
 
         equal_label = asm.new_label(:equal)
         ret_label = asm.new_label(:ret)
@@ -1881,9 +1873,7 @@ module RubyVM::MJIT
         # Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         # Note: any T_STRING is valid here, but we check for a ::String for simplicity
         # To pass a mutable static variable (rb_cString) requires an unsafe block
-        if jit_guard_known_klass(jit, ctx, asm, comptime_b.class, b_opnd, comptime_b, side_exit) == CantCompile
-          return false
-        end
+        jit_guard_known_klass(jit, ctx, asm, comptime_b.class, b_opnd, comptime_b, side_exit)
 
         asm.comment('call rb_str_eql_internal')
         asm.mov(C_ARGS[0], a_opnd)
@@ -2117,9 +2107,7 @@ module RubyVM::MJIT
       # Guard the receiver class (part of vm_search_method_fastpath)
       recv_opnd = ctx.stack_opnd(recv_idx)
       megamorphic_exit = counted_exit(side_exit, :send_klass_megamorphic)
-      if jit_guard_known_klass(jit, ctx, asm, comptime_recv_klass, recv_opnd, comptime_recv, megamorphic_exit) == CantCompile
-        return CantCompile
-      end
+      jit_guard_known_klass(jit, ctx, asm, comptime_recv_klass, recv_opnd, comptime_recv, megamorphic_exit)
 
       # Do method lookup (vm_cc_cme(cc) != NULL)
       cme = C.rb_callable_method_entry(comptime_recv_klass, mid)
@@ -2585,9 +2573,7 @@ module RubyVM::MJIT
 
       asm.comment("Guard #{comptime_symbol.inspect} is on stack")
       mid_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_changed)
-      if jit_guard_known_klass(jit, ctx, asm, comptime_symbol.class, ctx.stack_opnd(argc), comptime_symbol, mid_changed_exit) == CantCompile
-        return CantCompile
-      end
+      jit_guard_known_klass(jit, ctx, asm, comptime_symbol.class, ctx.stack_opnd(argc), comptime_symbol, mid_changed_exit)
       asm.mov(C_ARGS[0], ctx.stack_opnd(argc))
       asm.call(C.rb_get_symbol_id)
       asm.cmp(C_RET, mid)
@@ -2814,6 +2800,10 @@ module RubyVM::MJIT
 
     def fixnum?(obj)
       (C.to_value(obj) & C.RUBY_FIXNUM_FLAG) == C.RUBY_FIXNUM_FLAG
+    end
+
+    def flonum?(obj)
+      (C.to_value(obj) & C.RUBY_FLONUM_MASK) == C.RUBY_FLONUM_FLAG
     end
 
     def static_symbol?(obj)
