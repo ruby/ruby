@@ -22,7 +22,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 61/101
+      # 62/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -81,7 +81,7 @@ module RubyVM::MJIT
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       # opt_newarray_max
-      # opt_newarray_min
+      when :opt_newarray_min then opt_newarray_min(jit, ctx, asm)
       when :invokesuper then invokesuper(jit, ctx, asm)
       # invokeblock
       when :leave then leave(jit, ctx, asm)
@@ -725,7 +725,31 @@ module RubyVM::MJIT
 
     # opt_str_uminus
     # opt_newarray_max
-    # opt_newarray_min
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_newarray_min(jit, ctx, asm)
+      num = jit.operand(0)
+
+      # Save the PC and SP because we may allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      offset_magnitude = C.VALUE.size * num
+      values_opnd = ctx.sp_opnd(-offset_magnitude)
+      asm.lea(:rax, values_opnd)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], num)
+      asm.mov(C_ARGS[2], :rax)
+      asm.call(C.rb_vm_opt_newarray_min)
+
+      ctx.stack_pop(num)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
