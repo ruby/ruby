@@ -241,6 +241,11 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def imemo_type(ptr)
+      _ptr = ptr.to_i
+      Primitive.cexpr! 'UINT2NUM(imemo_type((VALUE)NUM2SIZET(_ptr)))'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -668,6 +673,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.VM_METHOD_TYPE_ZSUPER
     Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ZSUPER) }
+  end
+
+  def C.imemo_iseq
+    Primitive.cexpr! %q{ UINT2NUM(imemo_iseq) }
   end
 
   def C.INVALID_SHAPE_ID

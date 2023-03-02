@@ -420,6 +420,7 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
       VM_METHOD_TYPE_REFINED
+      imemo_iseq
     ],
     ULONG: %w[
       INVALID_SHAPE_ID
