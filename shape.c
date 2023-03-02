@@ -350,6 +350,44 @@ rb_shape_transition_shape_capa(rb_shape_t* shape, uint32_t new_capacity)
     return new_shape;
 }
 
+// Same as rb_shape_get_iv_index, but uses a provided valid shape id and index
+// to return a result faster if branches of the shape tree are closely related.
+bool
+rb_shape_get_iv_index_with_hint(rb_shape_t * shape, ID id, attr_index_t *value, shape_id_t shape_id_hint, attr_index_t index_hint)
+{
+    if (shape_id_hint == INVALID_SHAPE_ID)
+        return rb_shape_get_iv_index(shape, id, value);
+
+    rb_shape_t * shape_hint = rb_shape_get_shape_by_id(shape_id_hint);
+    RUBY_ASSERT(rb_shape_get_iv_index(shape_hint, id, value) && *value == index_hint);
+
+    while (shape->next_iv_index > index_hint) {
+        while (shape_hint->next_iv_index > shape->next_iv_index) {
+            shape_hint = rb_shape_get_parent(shape_hint);
+        }
+
+        if (shape_hint == shape) {
+            // We've found a common ancestor so use the index hint
+            if (index_hint == (attr_index_t)-1) {
+                return false;
+            } else {
+                *value = index_hint;
+                return true;
+            }
+        }
+        if (shape->edge_name == id) {
+            // We found the matching id before a common ancestor
+            // Fall through to rb_shape_get_iv_index to check and return the
+            // correct value.
+            break;
+        }
+
+        shape = rb_shape_get_parent(shape);
+    }
+
+    return rb_shape_get_iv_index(shape, id, value);
+}
+
 bool
 rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
 {

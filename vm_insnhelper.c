@@ -1273,7 +1273,9 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             }
         }
         else {
-            if (rb_shape_get_iv_index(shape, id, &index)) {
+            //fprintf(stderr, "searching for shape %i prev: %i\n", shape_id, cached_id);
+            //if (rb_shape_get_iv_index(shape, id, &index)) {
+            if (rb_shape_get_iv_index_with_hint(shape, id, &index, cached_id, index)) {
                 // This fills in the cache with the shared cache object.
                 // "ent" is the shared cache object
                 fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
