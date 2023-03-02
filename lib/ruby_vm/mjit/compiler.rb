@@ -143,6 +143,9 @@ module RubyVM::MJIT
 
     def invalidate_block(block)
       iseq = block.iseq
+      # Avoid touching GCed ISEQs. We assume it won't be re-entered.
+      return if C.imemo_type(iseq) != C.imemo_iseq
+
       # Remove this block from the version array
       remove_block(iseq, block)
 
@@ -286,6 +289,11 @@ module RubyVM::MJIT
     end
 
     def mjit_blocks(iseq)
+      # Tolerate GC on any ISEQ
+      if C.imemo_type(iseq) != C.imemo_iseq
+        return Hash.new { |h, k| h[k] = {} }
+      end
+
       unless iseq.body.mjit_blocks
         iseq.body.mjit_blocks = Hash.new { |h, k| h[k] = {} }
         # For some reason, rb_mjit_iseq_mark didn't protect this Hash
