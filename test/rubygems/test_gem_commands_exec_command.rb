@@ -177,8 +177,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
   end
 
   def test_gem_with_platform_dependencies
-    platforms = Gem.platforms.dup
-
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
@@ -218,8 +216,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
   def test_gem_with_platform_and_platform_dependencies
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     pend "terminates on mswin" if Gem.win_platform?
-
-    platforms = Gem.platforms.dup
 
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|
