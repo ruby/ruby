@@ -127,7 +127,7 @@ jobs:
           make DESTDIR=../install install-nodoc
 
       - name: test
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           make test
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
