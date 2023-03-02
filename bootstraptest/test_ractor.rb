@@ -284,8 +284,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
     test i
   }
 } unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') || # https://bugs.ruby-lang.org/issues/17878
-  true # too flaky everywhere http://ci.rvm.jp/results/trunk@ruby-sp1/4321096
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
