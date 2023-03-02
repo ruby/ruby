@@ -656,6 +656,23 @@ module TestIRB
       $VERBOSE = verbose
     end
 
+    def test_prompt_main_escape
+      irb = IRB::Irb.new(IRB::WorkSpace.new("main\a\t\r\n"))
+      assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_inspect_escape
+      main = Struct.new(:inspect).new("main\\n\nmain")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
+      assert_equal("irb(main\\n main)>", irb.prompt('irb(%M)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_truncate
+      irb = IRB::Irb.new(IRB::WorkSpace.new("a" * 100))
+      assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
+      assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
+    end
+
     def test_lineno
       input = TestInputMethod.new([
         "\n",
