@@ -10,6 +10,7 @@ use crate::codegen::{JITState};
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::codegen::CodegenGlobals;
+use crate::options::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -88,13 +89,20 @@ impl Assembler
     const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
 
     /// Get the list of registers from which we can allocate on this platform
-    pub fn get_alloc_regs() -> Vec<Reg>
+    pub fn get_out_regs() -> Vec<Reg>
     {
         vec![
             RAX_REG,
             RCX_REG,
             RDX_REG,
         ]
+    }
+
+    /// Get the list of registers for stack temps
+    pub fn get_temp_regs() -> Vec<Reg> {
+        let num_regs = get_option!(temp_regs);
+        let mut regs = vec![R8_REG, R9_REG, R10_REG];
+        regs.drain(0..num_regs).collect()
     }
 
     /// Get a list of all of the caller-save registers
@@ -109,7 +117,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -670,19 +678,13 @@ impl Assembler
                     emit_csel(cb, *truthy, *falsy, *out, cmovl);
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
+                Insn::SpillTemps { .. } => unreachable!("SpillTemps was not lowered"),
                 Insn::PadInvalPatch => {
                     let code_size = cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()));
                     if code_size < JMP_PTR_BYTES {
                         nop(cb, (JMP_PTR_BYTES - code_size) as u32);
                     }
                 }
-
-                // We want to keep the panic here because some instructions that
-                // we feed to the backend could get lowered into other
-                // instructions. So it's possible that some of our backend
-                // instructions can never make it to the emit stage.
-                #[allow(unreachable_patterns)]
-                _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn)
             };
 
             // On failure, jump to the next page and retry the current insn
@@ -699,9 +701,9 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, out_regs: Vec<Reg>, temp_regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().x86_split().alloc_regs(regs);
+        let mut asm = self.alloc_temp_regs(temp_regs).x86_split().alloc_out_regs(out_regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {

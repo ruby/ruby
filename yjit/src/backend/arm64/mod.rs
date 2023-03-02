@@ -171,8 +171,12 @@ impl Assembler
     /// These are caller-saved registers
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
     /// because of the way it's used in gen_leave() and gen_leave_exit()
-    pub fn get_alloc_regs() -> Vec<Reg> {
+    pub fn get_out_regs() -> Vec<Reg> {
         vec![X11_REG, X12_REG, X13_REG]
+    }
+
+    pub fn get_temp_regs() -> Vec<Reg> {
+        vec![] // FIXME: Not using this yet since sssigning registers to Store insns doesn't work.
     }
 
     /// Get a list of all of the caller-saved registers
@@ -224,7 +228,7 @@ impl Assembler
                         Opnd::mem(64, base, 0)
                     }
                 },
-                _ => unreachable!("Can only split memory addresses.")
+                _ => unreachable!("Can only split Mem operands, but got {:?}", opnd)
             }
         }
 
@@ -349,7 +353,7 @@ impl Assembler
             }
         }
 
-        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names));
+        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names), self.spilled_temps);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -1047,6 +1051,7 @@ impl Assembler
                     csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GE);
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
+                Insn::SpillTemps { .. } => unreachable!("SpillTemps was not lowered"),
                 Insn::PadInvalPatch => {
                     while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < JMP_PTR_BYTES && !cb.has_dropped_bytes() {
                         nop(cb);
@@ -1074,9 +1079,9 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, out_regs: Vec<Reg>, temp_regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().arm64_split().alloc_regs(regs);
+        let mut asm = self.alloc_temp_regs(temp_regs).arm64_split().alloc_out_regs(out_regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -1130,7 +1135,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, vec![X3_REG], vec![]);
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());
