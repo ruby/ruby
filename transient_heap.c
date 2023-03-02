@@ -716,7 +716,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
 
     while (marked_index >= 0) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
-        asan_unpoison_memory_region(header, sizeof *header, true);
+        asan_unpoison_memory_region(header, sizeof *header, false);
         VALUE obj = header->obj;
         TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
         if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("transient_heap_block_evacuate: wrong header %p %s\n", (void *)header, rb_obj_info(obj));
