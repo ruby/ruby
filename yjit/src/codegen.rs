@@ -319,7 +319,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 
     // Verify stack operand types
-    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u16);
+    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
     for i in 0..top_idx {
         let (learned_mapping, learned_type) = ctx.get_opnd_mapping(StackOpnd(i));
         let stack_val = jit.peek_at_stack(ctx, i as isize);
@@ -5854,7 +5854,7 @@ fn gen_send_iseq(
 
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
-        let stack_offs: u16 = (argc - arg_idx - 1).try_into().unwrap();
+        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
         let arg_type = ctx.get_opnd_type(StackOpnd(stack_offs));
         callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
     }

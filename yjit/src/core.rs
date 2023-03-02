@@ -340,13 +340,13 @@ pub enum YARVOpnd {
     SelfOpnd,
 
     // Temporary stack operand with stack index
-    StackOpnd(u16),
+    StackOpnd(u8),
 }
 
 impl From<Opnd> for YARVOpnd {
     fn from(value: Opnd) -> Self {
         match value {
-            Opnd::Stack { idx, .. } => StackOpnd(idx as u16),
+            Opnd::Stack { idx, .. } => StackOpnd(idx.try_into().unwrap()),
             _ => unreachable!("{:?} cannot be converted to YARVOpnd", value)
         }
     }
@@ -358,11 +358,11 @@ impl From<Opnd> for YARVOpnd {
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
-    stack_size: u16,
+    stack_size: u8,
 
     // Offset of the JIT SP relative to the interpreter SP
     // This represents how far the JIT's SP is from the "real" SP
-    sp_offset: i16,
+    sp_offset: i8,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
@@ -1265,15 +1265,15 @@ impl Block {
 }
 
 impl Context {
-    pub fn get_stack_size(&self) -> u16 {
+    pub fn get_stack_size(&self) -> u8 {
         self.stack_size
     }
 
-    pub fn get_sp_offset(&self) -> i16 {
+    pub fn get_sp_offset(&self) -> i8 {
         self.sp_offset
     }
 
-    pub fn set_sp_offset(&mut self, offset: i16) {
+    pub fn set_sp_offset(&mut self, offset: i8) {
         self.sp_offset = offset;
     }
 
@@ -1359,8 +1359,8 @@ impl Context {
             }
         }
 
-        self.stack_size -= n as u16;
-        self.sp_offset -= n as i16;
+        self.stack_size -= n as u8;
+        self.sp_offset -= n as i8;
 
         return top;
     }
@@ -1368,7 +1368,7 @@ impl Context {
     pub fn shift_stack(&mut self, argc: usize) {
         assert!(argc < self.stack_size.into());
 
-        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+        let method_name_index = (self.stack_size as usize) - (argc as usize) - 1;
 
         for i in method_name_index..(self.stack_size - 1) as usize {
 
