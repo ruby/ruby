@@ -109,6 +109,8 @@ struct rb_internal_thread_event_hook {
 static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
+
 #define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
 
 rb_internal_thread_event_hook_t *
@@ -203,7 +205,7 @@ enum rtimer_state {
 static const struct itimerspec zero;
 static struct {
     rb_atomic_t state_; /* rtimer_state */
-    rb_pid_t owner;
+    rb_serial_t fork_gen;
     timer_t timerid;
 } timer_posix = {
     /* .state = */ RTIMER_DEAD,
@@ -253,7 +255,7 @@ static void *timer_pthread_fn(void *);
 static struct {
     int low[2];
     rb_atomic_t armed; /* boolean */
-    rb_pid_t owner;
+    rb_serial_t fork_gen;
     pthread_t thid;
 } timer_pthread = {
     { -1, -1 },
@@ -268,7 +270,7 @@ static void threadptr_trap_interrupt(rb_thread_t *);
 static void ubf_wakeup_all_threads(void);
 static int ubf_threads_empty(void);
 
-#define TIMER_THREAD_CREATED_P() (signal_self_pipe.owner_process == getpid())
+#define TIMER_THREAD_CREATED_P() (signal_self_pipe.fork_gen == current_fork_gen)
 
 /* for testing, and in case we come across a platform w/o pipes: */
 #define BUSY_WAIT_SIGNALS (0)
@@ -533,6 +535,7 @@ static void thread_cache_reset(void);
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
+    current_fork_gen++;
     thread_cache_reset();
     rb_thread_sched_init(sched);
     thread_sched_to_running(sched, GET_THREAD());
@@ -1560,7 +1563,7 @@ static struct {
     int ub_main[2]; /* unblock main thread from native_ppoll_sleep */
 
     /* volatile for signal handler use: */
-    volatile rb_pid_t owner_process;
+    volatile rb_serial_t fork_gen;
 } signal_self_pipe = {
     {-1, -1},
     {-1, -1},
@@ -1605,10 +1608,10 @@ rb_thread_wakeup_timer_thread_fd(int fd)
  * process could not react to the original signal in time.
  */
 static void
-ubf_timer_arm(rb_pid_t current) /* async signal safe */
+ubf_timer_arm(rb_serial_t fork_gen) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
-    if ((!current || timer_posix.owner == current) &&
+    if ((!fork_gen || timer_posix.fork_gen == fork_gen) &&
         timer_state_cas(RTIMER_DISARM, RTIMER_ARMING) == RTIMER_DISARM) {
         struct itimerspec it;
 
@@ -1642,7 +1645,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         }
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
-    if (!current || current == timer_pthread.owner) {
+    if (!fork_gen || fork_gen == timer_pthread.fork_gen) {
         if (ATOMIC_EXCHANGE(timer_pthread.armed, 1) == 0)
             rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
     }
@@ -1652,8 +1655,6 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
 void
 rb_thread_wakeup_timer_thread(int sig)
 {
-    rb_pid_t current;
-
     /* non-sighandler path */
     if (sig <= 0) {
         rb_thread_wakeup_timer_thread_fd(signal_self_pipe.normal[1]);
@@ -1664,8 +1665,7 @@ rb_thread_wakeup_timer_thread(int sig)
     }
 
     /* must be safe inside sighandler, so no mutex */
-    current = getpid();
-    if (signal_self_pipe.owner_process == current) {
+    if (signal_self_pipe.fork_gen == current_fork_gen) {
         rb_thread_wakeup_timer_thread_fd(signal_self_pipe.normal[1]);
 
         /*
@@ -1690,7 +1690,7 @@ rb_thread_wakeup_timer_thread(int sig)
 
             if (ec) {
                 RUBY_VM_SET_TRAP_INTERRUPT(ec);
-                ubf_timer_arm(current);
+                ubf_timer_arm(current_fork_gen);
 
                 /* some ubfs can interrupt single-threaded process directly */
                 if (vm->ubf_async_safe && mth->unblock.func) {
@@ -1904,11 +1904,11 @@ ubf_timer_invalidate(void)
 }
 
 static void
-ubf_timer_pthread_create(rb_pid_t current)
+ubf_timer_pthread_create(rb_serial_t fork_gen)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
-    if (timer_pthread.owner == current)
+    if (timer_pthread.fork_gen == fork_gen)
         return;
 
     if (setup_communication_pipe_internal(timer_pthread.low) < 0)
@@ -1916,7 +1916,7 @@ ubf_timer_pthread_create(rb_pid_t current)
 
     err = pthread_create(&timer_pthread.thid, 0, timer_pthread_fn, GET_VM());
     if (!err)
-        timer_pthread.owner = current;
+        timer_pthread.fork_gen = fork_gen;
     else
         rb_warn("pthread_create failed for timer: %s, signals racy",
                 strerror(err));
@@ -1924,7 +1924,7 @@ ubf_timer_pthread_create(rb_pid_t current)
 }
 
 static void
-ubf_timer_create(rb_pid_t current)
+ubf_timer_create(rb_serial_t fork_gen)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
 #  if defined(__sun)
@@ -1945,24 +1945,23 @@ ubf_timer_create(rb_pid_t current)
         if (prev != RTIMER_DEAD) {
             rb_bug("timer_posix was not dead: %u\n", (unsigned)prev);
         }
-        timer_posix.owner = current;
+        timer_posix.fork_gen = fork_gen;
     }
     else {
         rb_warn("timer_create failed: %s, signals racy", strerror(errno));
     }
 #endif
     if (UBF_TIMER == UBF_TIMER_PTHREAD)
-        ubf_timer_pthread_create(current);
+        ubf_timer_pthread_create(fork_gen);
 }
 
 static void
 rb_thread_create_timer_thread(void)
 {
     /* we only create the pipe, and lazy-spawn */
-    rb_pid_t current = getpid();
-    rb_pid_t owner = signal_self_pipe.owner_process;
+    rb_serial_t fork_gen = signal_self_pipe.fork_gen;
 
-    if (owner && owner != current) {
+    if (fork_gen && fork_gen != current_fork_gen) {
         CLOSE_INVALIDATE_PAIR(signal_self_pipe.normal);
         CLOSE_INVALIDATE_PAIR(signal_self_pipe.ub_main);
         ubf_timer_invalidate();
@@ -1971,11 +1970,11 @@ rb_thread_create_timer_thread(void)
     if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
     if (setup_communication_pipe_internal(signal_self_pipe.ub_main) < 0) return;
 
-    ubf_timer_create(current);
-    if (owner != current) {
+    ubf_timer_create(current_fork_gen);
+    if (fork_gen != current_fork_gen) {
         /* validate pipe on this process */
         sigwait_th = THREAD_INVALID;
-        signal_self_pipe.owner_process = current;
+        signal_self_pipe.fork_gen = current_fork_gen;
     }
 }
 
@@ -1985,7 +1984,7 @@ ubf_timer_disarm(void)
 #if UBF_TIMER == UBF_TIMER_POSIX
     rb_atomic_t prev;
 
-    if (timer_posix.owner && timer_posix.owner != getpid()) return;
+    if (timer_posix.fork_gen && timer_posix.fork_gen != current_fork_gen) return;
     prev = timer_state_cas(RTIMER_ARMED, RTIMER_DISARM);
     switch (prev) {
       case RTIMER_DISARM: return; /* likely */
@@ -2018,7 +2017,7 @@ static void
 ubf_timer_destroy(void)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
-    if (timer_posix.owner == getpid()) {
+    if (timer_posix.fork_gen == current_fork_gen) {
         rb_atomic_t expect = RTIMER_DISARM;
         size_t i, max = 10000000;
 
@@ -2055,7 +2054,7 @@ done:
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
 
-    timer_pthread.owner = 0;
+    timer_pthread.fork_gen = 0;
     ubf_timer_disarm();
     rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
     err = pthread_join(timer_pthread.thid, 0);
@@ -2136,15 +2135,15 @@ rb_reserved_fd_p(int fd)
 
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     if (fd == timer_pthread.low[0] || fd == timer_pthread.low[1])
-        goto check_pid;
+        goto check_fork_gen;
 #endif
     if (fd == signal_self_pipe.normal[0] || fd == signal_self_pipe.normal[1])
-        goto check_pid;
+        goto check_fork_gen;
     if (fd == signal_self_pipe.ub_main[0] || fd == signal_self_pipe.ub_main[1])
-        goto check_pid;
+        goto check_fork_gen;
     return 0;
-check_pid:
-    if (signal_self_pipe.owner_process == getpid()) /* async-signal-safe */
+check_fork_gen:
+    if (signal_self_pipe.fork_gen == current_fork_gen) /* async-signal-safe */
         return 1;
     return 0;
 }
@@ -2159,7 +2158,7 @@ int
 rb_sigwait_fd_get(const rb_thread_t *th)
 {
     if (signal_self_pipe.normal[0] >= 0) {
-        VM_ASSERT(signal_self_pipe.owner_process == getpid());
+        VM_ASSERT(signal_self_pipe.fork_gen == current_fork_gen);
         /*
          * no need to keep firing the timer if any thread is sleeping
          * on the signal self-pipe
