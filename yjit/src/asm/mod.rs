@@ -687,6 +687,7 @@ impl CodeBlock {
     }
 
     /// Stubbed CodeBlock for testing conditions that can arise due to code GC. Can't execute generated code.
+    #[cfg(target_arch = "aarch64")]
     pub fn new_dummy_with_freed_pages(mut freed_pages: Vec<usize>) -> Self {
         use std::ptr::NonNull;
         use crate::virtualmem::*;
