@@ -867,26 +867,30 @@ pub struct Assembler
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
-    /// The number of stack temps spilled onto the stack
+    /// The number of stack temps spilled to the stack
     pub(super) spilled_temps: u8,
+
+    /// The number of stack temps that could be pushed to the stack
+    pub(super) stack_max: u32,
 }
 
 impl Assembler
 {
     pub fn new() -> Self {
-        Self::new_with_spilled_temps(0)
+        Self::new_with_stack_info(0, 0)
     }
 
-    pub fn new_with_spilled_temps(spilled_temps: u8) -> Self {
-        Self::new_with_label_names(Vec::default(), spilled_temps)
+    pub fn new_with_stack_info(spilled_temps: u8, stack_max: u32) -> Self {
+        Self::new_with_label_names(Vec::default(), spilled_temps, stack_max)
     }
 
-    pub fn new_with_label_names(label_names: Vec<String>, spilled_temps: u8) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, spilled_temps: u8, stack_max: u32) -> Self {
         Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
             label_names,
             spilled_temps,
+            stack_max,
         }
     }
 
@@ -937,7 +941,7 @@ impl Assembler
     /// Allocate registers or memory oprands to Stack operands
     pub fn alloc_temp_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps, self.stack_max);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -946,9 +950,10 @@ impl Assembler
                     // Using u8::max to spill only registers that have not been spilled
                     for stack_idx in u8::max(asm.spilled_temps, spilled_temps)..stack_size {
                         // Spill if a register is allocated to the index
-                        if let Some(&reg) = regs.get(stack_idx as usize) {
+                        let reg_idx = stack_idx as isize - (asm.stack_max as isize - regs.len() as isize);
+                        if (0..regs.len() as isize).contains(&reg_idx) {
                             let offset = sp_offset - (stack_size as i8) + (stack_idx as i8);
-                            asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(reg));
+                            asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx as usize]));
                         }
                     }
                     // For simplicity, never reuse registers that have been spilled in the same Assembler
@@ -960,10 +965,11 @@ impl Assembler
                         *opnd = iterator.map_opnd(*opnd);
                         if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
                             let stack_idx = (stack_size as i32 - idx - 1) as usize;
-                            *opnd = match regs.get(stack_idx) {
-                                // Use a register if it's allocated to the index and not spilled yet
-                                Some(&reg) if (asm.spilled_temps <= stack_idx as u8) => Opnd::Reg(reg).with_num_bits(num_bits).unwrap(),
-                                _ => Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32),
+                            let reg_idx = stack_idx as isize - (asm.stack_max as isize - regs.len() as isize);
+                            *opnd = if (0..regs.len() as isize).contains(&reg_idx) && asm.spilled_temps <= stack_idx as u8 {
+                                Opnd::Reg(regs[reg_idx as usize]).with_num_bits(num_bits).unwrap()
+                            } else {
+                                Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32)
                             };
                         }
                     }
@@ -1045,7 +1051,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps, self.stack_max);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {

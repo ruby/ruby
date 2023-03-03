@@ -456,10 +456,10 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
 }
 
 /// Generate an exit to the interpreter in the outlined code block
-fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
+fn gen_outlined_exit(exit_pc: *mut VALUE, jit: &JITState, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
     let mut cb = ocb.unwrap();
     let exit_code = cb.get_write_ptr();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_with_stack_info(ctx.spilled_temps, get_iseq_stack_max(jit.iseq));
 
     // Spill before returning to the interpreter
     asm.spill_temps(&mut ctx.clone());
@@ -486,7 +486,7 @@ fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -
 fn get_side_exit(jit: &mut JITState, ocb: &mut OutlinedCb, ctx: &Context) -> Target {
     match jit.side_exit_for_pc {
         None => {
-            let exit_code = gen_outlined_exit(jit.pc, ctx, ocb);
+            let exit_code = gen_outlined_exit(jit.pc, jit, ctx, ocb);
             jit.side_exit_for_pc = Some(exit_code);
             exit_code.as_side_exit()
         }
@@ -512,7 +512,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
         block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx).unwrap_code_ptr());
     } else {
         let block_entry_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
-        block.entry_exit = Some(gen_outlined_exit(block_entry_pc, &block_ctx, ocb));
+        block.entry_exit = Some(gen_outlined_exit(block_entry_pc, jit, &block_ctx, ocb));
     }
 }
 
@@ -699,7 +699,7 @@ fn jump_to_next_insn(
     // We are at the end of the current instruction. Record the boundary.
     if jit.record_boundary_patch_point {
         let exit_pc = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
-        let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, ocb);
+        let exit_pos = gen_outlined_exit(exit_pc, jit, &reset_depth, ocb);
         record_global_inval_patch(asm, exit_pos);
         jit.record_boundary_patch_point = false;
     }
@@ -740,7 +740,7 @@ pub fn gen_single_block(
     jit.ec = Some(ec);
 
     // Create a backend assembler instance
-    let mut asm = Assembler::new_with_spilled_temps(ctx.spilled_temps);
+    let mut asm = Assembler::new_with_stack_info(ctx.spilled_temps, unsafe { get_iseq_body_stack_max(jit.iseq) });
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -776,7 +776,7 @@ pub fn gen_single_block(
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_outlined_exit(jit.pc, &ctx, ocb);
+            let exit_pos = gen_outlined_exit(jit.pc, &jit, &ctx, ocb);
             record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }

@@ -821,6 +821,16 @@ pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback:
     })
 }
 
+// A wrapper of get_iseq_body_stack_max to avoid linker failures on cargo test
+#[cfg(not(test))]
+pub fn get_iseq_stack_max(iseq: IseqPtr) -> u32 {
+    unsafe { get_iseq_body_stack_max(iseq) }
+}
+#[cfg(test)]
+pub fn get_iseq_stack_max(_iseq: IseqPtr) -> u32 {
+    0
+}
+
 /// Free the per-iseq payload
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {

@@ -117,7 +117,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps, self.stack_max);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
