@@ -657,7 +657,8 @@ module TestIRB
     end
 
     def test_prompt_main_escape
-      irb = IRB::Irb.new(IRB::WorkSpace.new("main\a\t\r\n"))
+      main = Struct.new(:to_s).new("main\a\t\r\n")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
       assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
     end
 
@@ -668,7 +669,9 @@ module TestIRB
     end
 
     def test_prompt_main_truncate
-      irb = IRB::Irb.new(IRB::WorkSpace.new("a" * 100))
+      main = Struct.new(:to_s).new("a" * 100)
+      def main.inspect; to_s.inspect; end
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
       assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
       assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
     end
