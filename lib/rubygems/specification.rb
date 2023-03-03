@@ -1612,6 +1612,8 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if extensions.empty?
     return if default_gem?
+    # we need to fresh build when same name and version of default gems
+    return if self.class.find_by_full_name(full_name)&.default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, "extensions"))
