@@ -3142,19 +3142,42 @@ rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_
     return obj;
 }
 
-VALUE
-rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
+static VALUE
+typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_t *type, size_t size)
 {
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, wb_protected, sizeof(struct RTypedData));
+    return newobj_of(GET_RACTOR(), klass, T_DATA, (VALUE)type, 1 | typed_flag, (VALUE)datap, wb_protected, size);
+}
+
+VALUE
+rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
+{
+    if (UNLIKELY(type->flags & RUBY_TYPED_EMBEDDABLE)) {
+        rb_raise(rb_eTypeError, "Cannot wrap an embeddable TypedData");
+    }
+
+    return typed_data_alloc(klass, 0, datap, type, sizeof(struct RTypedData));
 }
 
 VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
-    VALUE obj = rb_data_typed_object_wrap(klass, 0, type);
+    if (type->flags & RUBY_TYPED_EMBEDDABLE) {
+        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+            rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
+        }
+
+        size_t embed_size = offsetof(struct RTypedData, data) + size;
+        if (rb_gc_size_allocatable_p(embed_size)) {
+            VALUE obj = typed_data_alloc(klass, TYPED_DATA_EMBEDDED, 0, type, embed_size);
+            memset((char *)obj + offsetof(struct RTypedData, data), 0, size);
+            return obj;
+        }
+    }
+
+    VALUE obj = typed_data_alloc(klass, 0, NULL, type, sizeof(struct RTypedData));
     DATA_PTR(obj) = xcalloc(1, size);
     return obj;
 }
@@ -3162,14 +3185,23 @@ rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type
 size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
+    size_t size = 0;
     if (RTYPEDDATA_P(obj)) {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         const void *ptr = RTYPEDDATA_DATA(obj);
+
+        if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+#ifdef HAVE_MALLOC_USABLE_SIZE
+            size += malloc_usable_size((void *)ptr);
+#endif
+        }
+
         if (ptr && type->function.dsize) {
-            return type->function.dsize(ptr);
+            size += type->function.dsize(ptr);
         }
     }
-    return 0;
+
+    return size;
 }
 
 const char *
@@ -3454,17 +3486,23 @@ rb_data_free(rb_objspace_t *objspace, VALUE obj)
 
         if (dfree) {
             if (dfree == RUBY_DEFAULT_FREE) {
-                xfree(data);
-                RB_DEBUG_COUNTER_INC(obj_data_xfree);
+                if (!RTYPEDDATA_EMBEDDED_P(obj)) {
+                    xfree(data);
+                    RB_DEBUG_COUNTER_INC(obj_data_xfree);
+                }
             }
             else if (free_immediately) {
                 (*dfree)(data);
+                if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+                    xfree(data);
+                }
+
                 RB_DEBUG_COUNTER_INC(obj_data_imm_free);
             }
             else {
-                RB_DEBUG_COUNTER_INC(obj_data_zombie);
                 make_zombie(objspace, obj, dfree, data);
-                return false;
+                RB_DEBUG_COUNTER_INC(obj_data_zombie);
+                return FALSE;
             }
         }
         else {
@@ -7313,7 +7351,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_DATA:
         {
-            void *const ptr = DATA_PTR(obj);
+            void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+
             if (ptr) {
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
                     gc_mark_from_offset(objspace, obj);
