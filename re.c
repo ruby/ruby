@@ -3859,7 +3859,7 @@ void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const ch
  *      Regexp.new('foo', 'i')  # => /foo/i
  *      Regexp.new('foo', 'im') # => /foo/im
  *
- *  - The logical OR of one or more of the constants
+ *  - The bit-wise OR of one or more of the constants
  *    Regexp::EXTENDED, Regexp::IGNORECASE, Regexp::MULTILINE, and
  *    Regexp::NOENCODING:
  *
