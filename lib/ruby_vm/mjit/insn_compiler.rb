@@ -185,24 +185,6 @@ module RubyVM::MJIT
       jit_getivar(jit, ctx, asm, comptime_obj, id)
     end
 
-      #id = jit.operand(0)
-      #ivc = jit.operand(1)
-
-      ## rb_vm_setinstancevariable could raise exceptions
-      #jit_prepare_routine_call(jit, ctx, asm)
-
-      #val_opnd = ctx.stack_pop
-
-      #asm.comment('rb_vm_setinstancevariable')
-      #asm.mov(:rdi, jit.iseq.to_i)
-      #asm.mov(:rsi, [CFP, C.rb_control_frame_t.offsetof(:self)])
-      #asm.mov(:rdx, id)
-      #asm.mov(:rcx, val_opnd)
-      #asm.mov(:r8, ivc)
-      #asm.call(C.rb_vm_setinstancevariable)
-
-      #KeepCompiling
-
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -273,8 +255,59 @@ module RubyVM::MJIT
         # If we don't have an instance variable index, then we need to
         # transition out of the current shape.
         if ivar_index.nil?
-          asm.incr_counter(:setivar_no_index)
-          return CantCompile
+          shape = C.rb_shape_get_shape_by_id(shape_id)
+
+          current_capacity = shape.capacity
+          new_capacity = current_capacity * 2
+
+          # If the object doesn't have the capacity to store the IV,
+          # then we'll need to allocate it.
+          needs_extension = shape.next_iv_index >= current_capacity
+
+          # We can write to the object, but we need to transition the shape
+          ivar_index = shape.next_iv_index
+
+          capa_shape =
+            if needs_extension
+              # We need to add an extended table to the object
+              # First, create an outgoing transition that increases the capacity
+              C.rb_shape_transition_shape_capa(shape, new_capacity)
+            else
+              nil
+            end
+
+          dest_shape =
+            if capa_shape
+              C.rb_shape_get_next(capa_shape, comptime_receiver, ivar_name)
+            else
+              C.rb_shape_get_next(shape, comptime_receiver, ivar_name)
+            end
+          new_shape_id = C.rb_shape_id(dest_shape)
+
+          if new_shape_id == C.OBJ_TOO_COMPLEX_SHAPE_ID
+            asm.incr_counter(:setivar_too_complex)
+            return CantCompile
+          end
+
+          if needs_extension
+            # Generate the C call so that runtime code will increase
+            # the capacity and set the buffer.
+            asm.mov(C_ARGS[0], :rax)
+            asm.mov(C_ARGS[1], current_capacity)
+            asm.mov(C_ARGS[2], new_capacity)
+            asm.call(C.rb_ensure_iv_list_size)
+
+            # Load the receiver again after the function call
+            asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+          end
+
+          write_val = ctx.stack_pop(1)
+          jit_write_iv(asm, comptime_receiver, :rax, :rcx, ivar_index, write_val, needs_extension)
+
+          # Store the new shape
+          asm.comment('write shape')
+          asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)]) # reload after jit_write_iv
+          asm.mov(DwordPtr[:rax, C.rb_shape_id_offset], new_shape_id)
         else
           # If the iv index already exists, then we don't need to
           # transition to a new shape.  The reason is because we find
@@ -282,7 +315,7 @@ module RubyVM::MJIT
           # made the transition already, then there's no reason to
           # update the shape on the object.  Just set the IV.
           write_val = ctx.stack_pop(1)
-          jit_write_iv(asm, comptime_receiver, :rax, :rcx, ivar_index, write_val)
+          jit_write_iv(asm, comptime_receiver, :rax, :rcx, ivar_index, write_val, false)
         end
 
         skip_wb = asm.new_label('skip_wb')
@@ -295,7 +328,7 @@ module RubyVM::MJIT
         asm.jbe(skip_wb)
 
         asm.comment('write barrier')
-        asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:self)])
+        asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:self)]) # reload after jit_write_iv
         asm.mov(C_ARGS[1], write_val)
         asm.call(C.rb_gc_writebarrier)
 
@@ -2351,9 +2384,9 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    def jit_write_iv(asm, comptime_receiver, recv_reg, temp_reg, ivar_index, set_value)
+    def jit_write_iv(asm, comptime_receiver, recv_reg, temp_reg, ivar_index, set_value, needs_extension)
       # Compile time self is embedded and the ivar index lands within the object
-      embed_test_result = C.FL_TEST_RAW(comptime_receiver, C.ROBJECT_EMBED)
+      embed_test_result = C.FL_TEST_RAW(comptime_receiver, C.ROBJECT_EMBED) && !needs_extension
 
       if embed_test_result
         # Find the IV offset

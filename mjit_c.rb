@@ -304,6 +304,27 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_shape_transition_shape_capa(shape, new_capacity)
+      _shape = shape.to_i
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_transition_shape_capa((rb_shape_t *)NUM2SIZET(_shape), NUM2UINT(new_capacity)))'
+      rb_shape_t.new(shape_addr)
+    end
+
+    def rb_shape_get_next(shape, obj, id)
+      _shape = shape.to_i
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'
+      rb_shape_t.new(shape_addr)
+    end
+
+    def rb_shape_id(shape)
+      _shape = shape.to_i
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_id((rb_shape_t *)NUM2SIZET(_shape)))'
+    end
+
+    def rb_ensure_iv_list_size
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ensure_iv_list_size)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1379,7 +1400,7 @@ module RubyVM::MJIT # :nodoc: all
       setivar_frozen: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_frozen)")],
       setivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_not_heap)")],
       setivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_megamorphic)")],
-      setivar_no_index: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_no_index)")],
+      setivar_too_complex: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_too_complex)")],
       expandarray_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_splat)")],
       expandarray_postarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_postarg)")],
       expandarray_not_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_not_array)")],
