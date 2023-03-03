@@ -278,6 +278,10 @@ module RubyVM::MJIT # :nodoc: all
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
     end
 
+    def rb_fix_mul_fix
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_mul_fix)'
+    end
+
     #========================================================================================
     #
     # Old stuff
