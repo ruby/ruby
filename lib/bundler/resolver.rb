@@ -299,7 +299,7 @@ module Bundler
     end
 
     def filter_prereleases(specs, package)
-      return specs unless package.ignores_prereleases?
+      return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
     end
