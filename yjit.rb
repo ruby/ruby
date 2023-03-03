@@ -261,6 +261,8 @@ module RubyVM::YJIT
         $stderr.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
       end
 
+      $stderr.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
+      $stderr.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
       $stderr.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
       $stderr.puts "bindings_set:          " + format_number(13, stats[:binding_set])
       $stderr.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0

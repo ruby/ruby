@@ -44,7 +44,9 @@ module Bundler
           incomplete = true
         end
 
-        @incomplete_specs += lookup[name] if incomplete && check
+        if incomplete && check
+          @incomplete_specs += lookup[name].any? ? lookup[name] : [LazySpecification.new(name, nil, nil)]
+        end
       end
 
       specs

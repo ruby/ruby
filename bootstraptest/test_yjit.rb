@@ -3584,3 +3584,24 @@ assert_equal 'true', %q{
 assert_equal 'true', %q{
   1.send(:==, 1, *[])
 }
+
+# Test empty splat with cfunc
+assert_equal '2', %q{
+  def foo
+    Integer.sqrt(4, *[])
+  end
+  # call twice to deal with constant exiting
+  foo
+  foo
+}
+
+# Test non-empty splat with cfunc
+assert_equal 'Hello World', %q{
+  def bar
+    args = ["Hello "]
+    greeting = "World"
+    greeting.insert(0, *args)
+    greeting
+  end
+  bar
+}

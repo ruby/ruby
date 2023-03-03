@@ -34,8 +34,8 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-Our official distribution site is https://cache.ruby-lang.org/pub/ruby/. You can download
-the whole archive of the release packages and the snapshot of the repository.
+You can download release packages and the snapshot of the repository. If you want to
+download whole versions of Ruby, please visit https://www.ruby-lang.org/en/downloads/releases/.
 
 ### Download with Git
 

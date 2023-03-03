@@ -319,7 +319,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 
     // Verify stack operand types
-    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u16);
+    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
     for i in 0..top_idx {
         let (learned_mapping, learned_type) = ctx.get_opnd_mapping(StackOpnd(i));
         let stack_val = jit.peek_at_stack(ctx, i as isize);
@@ -4864,22 +4864,20 @@ fn gen_send_cfunc(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        if flags & VM_CALL_OPT_SEND != 0 {
-            // FIXME: This combination is buggy.
-            // For example `1.send(:==, 1, *[])` fails to adjust the stack properly
-            gen_counter_incr!(asm, send_cfunc_splat_send);
-            return CantCompile;
-        }
+        assert!(cfunc_argc >= 0);
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
             gen_counter_incr!(asm, send_cfunc_toomany_args);
             return CantCompile;
         }
+
         // We are going to assume that the splat fills
-        // all the remaining arguments. In the generated code
-        // we test if this is true and if not side exit.
-        argc = required_args as i32;
+        // all the remaining arguments. So the number of args
+        // should just equal the number of args the cfunc takes.
+        // In the generated code we test if this is true
+        // and if not side exit.
+        argc = cfunc_argc;
         passed_argc = argc;
         push_splat_args(required_args, ctx, asm, ocb, side_exit)
     }
@@ -5856,7 +5854,7 @@ fn gen_send_iseq(
 
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
-        let stack_offs: u16 = (argc - arg_idx - 1).try_into().unwrap();
+        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
         let arg_type = ctx.get_opnd_type(StackOpnd(stack_offs));
         callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
     }
@@ -7664,12 +7662,6 @@ pub struct CodegenGlobals {
     /// For implementing global code invalidation
     global_inval_patches: Vec<CodepagePatch>,
 
-    /// For implementing global code invalidation. The number of bytes counting from the beginning
-    /// of the inline code block that should not be changed. After patching for global invalidation,
-    /// no one should make changes to the invalidated code region anymore. This is used to
-    /// break out of invalidation race when there are multiple ractors.
-    inline_frozen_bytes: usize,
-
     // Methods for generating code for hardcoded (usually C) methods
     method_codegen_table: HashMap<usize, MethodGenFn>,
 
@@ -7772,7 +7764,6 @@ impl CodegenGlobals {
             outline_full_cfunc_return_pos: cfunc_exit_code,
             branch_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
-            inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
@@ -7900,14 +7891,6 @@ impl CodegenGlobals {
     pub fn take_global_inval_patches() -> Vec<CodepagePatch> {
         let globals = CodegenGlobals::get_instance();
         mem::take(&mut globals.global_inval_patches)
-    }
-
-    pub fn get_inline_frozen_bytes() -> usize {
-        CodegenGlobals::get_instance().inline_frozen_bytes
-    }
-
-    pub fn set_inline_frozen_bytes(frozen_bytes: usize) {
-        CodegenGlobals::get_instance().inline_frozen_bytes = frozen_bytes;
     }
 
     pub fn get_outline_full_cfunc_return_pos() -> CodePtr {

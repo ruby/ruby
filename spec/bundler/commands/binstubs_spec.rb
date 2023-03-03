@@ -166,6 +166,21 @@ RSpec.describe "bundle binstubs <gem>" do
           end
         end
 
+        context "and the version is newer when given `gems.rb` and `gems.locked`" do
+          before do
+            gemfile bundled_app("gems.rb"), gemfile
+            lockfile bundled_app("gems.locked"), lockfile.gsub(system_bundler_version, "999.999")
+          end
+
+          it "runs the correct version of bundler" do
+            sys_exec "bin/bundle install", :env => { "BUNDLE_GEMFILE" => "gems.rb" }, :raise_on_error => false
+
+            expect(exitstatus).to eq(42)
+            expect(err).to include("Activating bundler (~> 999.999) failed:").
+              and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 999.999'`")
+          end
+        end
+
         context "and the version is older and a different major" do
           let(:system_bundler_version) { "55" }
 
@@ -175,6 +190,22 @@ RSpec.describe "bundle binstubs <gem>" do
 
           it "runs the correct version of bundler" do
             sys_exec "bin/bundle install", :raise_on_error => false
+            expect(exitstatus).to eq(42)
+            expect(err).to include("Activating bundler (~> 44.0) failed:").
+              and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 44.0'`")
+          end
+        end
+
+        context "and the version is older and a different major when given `gems.rb` and `gems.locked`" do
+          let(:system_bundler_version) { "55" }
+
+          before do
+            gemfile bundled_app("gems.rb"), gemfile
+            lockfile bundled_app("gems.locked"), lockfile.gsub(/BUNDLED WITH\n   .*$/m, "BUNDLED WITH\n   44.0")
+          end
+
+          it "runs the correct version of bundler" do
+            sys_exec "bin/bundle install", :env => { "BUNDLE_GEMFILE" => "gems.rb" }, :raise_on_error => false
             expect(exitstatus).to eq(42)
             expect(err).to include("Activating bundler (~> 44.0) failed:").
               and include("To install the version of bundler this project requires, run `gem install bundler -v '~> 44.0'`")

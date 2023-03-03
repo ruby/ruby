@@ -341,13 +341,13 @@ pub enum YARVOpnd {
     SelfOpnd,
 
     // Temporary stack operand with stack index
-    StackOpnd(u16),
+    StackOpnd(u8),
 }
 
 impl From<Opnd> for YARVOpnd {
     fn from(value: Opnd) -> Self {
         match value {
-            Opnd::Stack { idx, .. } => StackOpnd(idx as u16),
+            Opnd::Stack { idx, .. } => StackOpnd(idx.try_into().unwrap()),
             _ => unreachable!("{:?} cannot be converted to YARVOpnd", value)
         }
     }
@@ -359,11 +359,11 @@ impl From<Opnd> for YARVOpnd {
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
-    stack_size: u16,
+    stack_size: u8,
 
     // Offset of the JIT SP relative to the interpreter SP
     // This represents how far the JIT's SP is from the "real" SP
-    sp_offset: i16,
+    sp_offset: i8,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
@@ -1300,15 +1300,15 @@ impl Block {
 }
 
 impl Context {
-    pub fn get_stack_size(&self) -> u16 {
+    pub fn get_stack_size(&self) -> u8 {
         self.stack_size
     }
 
-    pub fn get_sp_offset(&self) -> i16 {
+    pub fn get_sp_offset(&self) -> i8 {
         self.sp_offset
     }
 
-    pub fn set_sp_offset(&mut self, offset: i16) {
+    pub fn set_sp_offset(&mut self, offset: i8) {
         self.sp_offset = offset;
     }
 
@@ -1394,8 +1394,8 @@ impl Context {
             }
         }
 
-        self.stack_size -= n as u16;
-        self.sp_offset -= n as i16;
+        self.stack_size -= n as u8;
+        self.sp_offset -= n as i8;
 
         return top;
     }
@@ -1403,7 +1403,7 @@ impl Context {
     pub fn shift_stack(&mut self, argc: usize) {
         assert!(argc < self.stack_size.into());
 
-        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+        let method_name_index = (self.stack_size as usize) - (argc as usize) - 1;
 
         for i in method_name_index..(self.stack_size - 1) as usize {
 
@@ -1855,14 +1855,6 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
 /// Generate code for a branch, possibly rewriting and changing the size of it
 fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
-    // FIXME
-    /*
-    if (branch->start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        // Generating this branch would modify frozen bytes. Do nothing.
-        return;
-    }
-    */
-
     // Remove old comments
     if let (Some(start_addr), Some(end_addr)) = (branch.get_start_addr(), branch.get_end_addr()) {
         cb.remove_comments(start_addr, end_addr)
@@ -2460,9 +2452,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // Some blocks exit on entry. Patching a jump to the entry at the
             // entry makes an infinite loop.
         } else {
-            // TODO(alan)
-            // if (block.start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) // Don't patch frozen code region
-
             // Patch in a jump to block.entry_exit.
 
             let cur_pos = cb.get_write_ptr();
@@ -2502,12 +2491,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         if let Some(incoming_block) = &incoming_target.get_block() {
             assert_eq!(blockref, incoming_block);
         }
-
-        // TODO(alan):
-        // Don't patch frozen code region
-        // if (branch.start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        //     continue;
-        // }
 
         // Create a stub for this branch target or rewire it to a valid block
         set_branch_target(target_idx as u32, block.blockid, &block.ctx, branchref, &mut branch, ocb);

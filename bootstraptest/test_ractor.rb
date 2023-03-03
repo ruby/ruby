@@ -284,8 +284,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
     test i
   }
 } unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') || # https://bugs.ruby-lang.org/issues/17878
-  true # too flaky everywhere http://ci.rvm.jp/results/trunk@ruby-sp1/4321096
+  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -480,7 +479,6 @@ assert_equal 'ok', %q{
 }
 
 # multiple Ractors can receive (wait) from one Ractor
-yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
 assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   pipe = Ractor.new do
     loop do
@@ -503,8 +501,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
     rs.delete r
     n
   }.sort
-} unless /mswin/ =~ RUBY_PLATFORM || # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
-  yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3603398545/jobs/6071549328#step:18:33
+} unless /mswin/ =~ RUBY_PLATFORM # randomly hangs on mswin https://github.com/ruby/ruby/actions/runs/3753871445/jobs/6377551069#step:20:131
 
 # Ractor.select also support multiple take, receive and yield
 assert_equal '[true, true, true]', %q{
@@ -518,9 +515,9 @@ assert_equal '[true, true, true]', %q{
     end
   }
   received = []
-  take = []
+  taken = []
   yielded = []
-  until rs.empty?
+  until received.size == RN && taken.size == RN && yielded.size == RN
     r, v = Ractor.select(CR, *rs, yield_value: 'yield')
     case r
     when :receive
@@ -528,11 +525,17 @@ assert_equal '[true, true, true]', %q{
     when :yield
       yielded << v
     else
-      take << v
+      taken << v
       rs.delete r
     end
   end
-  [received.all?('sendyield'), yielded.all?(nil), take.all?('take')]
+  r = [received == ['sendyield'] * RN,
+       yielded  == [nil] * RN,
+       taken    == ['take'] * RN,
+  ]
+
+  STDERR.puts [received, yielded, taken].inspect
+  r
 }
 
 # multiple Ractors can send to one Ractor
@@ -1488,7 +1491,7 @@ assert_equal "#{n}#{n}", %Q{
       end
     end
   }.map{|r| r.take}.join
-} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3692339025/jobs/6251137785
+}
 
 # NameError
 assert_equal "ok", %q{
@@ -1529,7 +1532,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} unless yjit_enabled # flaky with YJIT https://github.com/ruby/ruby/actions/runs/3575374374/jobs/6011846425
+}
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
@@ -1610,6 +1613,103 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
+}
+
+## Ractor::Selector
+
+# Selector#empty? returns true
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.empty?
+}
+
+# Selector#empty? returns false if there is target ractors
+assert_equal 'false', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{}
+  s.empty?
+}
+
+# Selector#clear removes all ractors from the waiting list
+assert_equal 'true', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  s.clear
+  s.empty?
+}
+
+# Selector#wait can wait multiple ractors
+assert_equal '[10, 20, true]', %q{
+  s = Ractor::Selector.new
+  s.add Ractor.new{10}
+  s.add Ractor.new{20}
+  r, v = s.wait
+  vs = []
+  vs << v
+  r, v = s.wait
+  vs << v
+  [*vs.sort, s.empty?]
+}
+
+# Selector#wait can wait multiple ractors with receiving.
+assert_equal '30', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+
+  results = []
+  until s.empty?
+    results << s.wait
+
+    # Note that s.wait can raise an exception because other Ractors/Threads
+    # can take from the same ractors in the waiting set.
+    # In this case there is no other takers so `s.wait` doesn't raise an error.
+  end
+
+  results.size
+}
+
+# Selector#wait can support dynamic addition
+yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
+assert_equal '600', %q{
+  RN = 100
+  s = Ractor::Selector.new
+  rs = RN.times.map{
+    Ractor.new{
+      Ractor.main << Ractor.new{ Ractor.yield :v3; :v4 }
+      Ractor.main << Ractor.new{ Ractor.yield :v5; :v6 }
+      Ractor.yield :v1
+      :v2
+    }
+  }
+
+  rs.each{|r| s.add(r)}
+  h = {v1: 0, v2: 0, v3: 0, v4: 0, v5: 0, v6: 0}
+
+  loop do
+    case s.wait receive: true
+    in :receive, r
+      s.add r
+    in r, v
+      h[v] += 1
+      break if h.all?{|k, v| v == RN}
+    end
+  end
+
+  h.sum{|k, v| v}
+} unless yjit_enabled # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4466770
+
+# Selector should be GCed (free'ed) withtou trouble
+assert_equal 'ok', %q{
+  RN = 30
+  rs = RN.times.map{
+    Ractor.new{ :v }
+  }
+  s = Ractor::Selector.new(*rs)
+  :ok
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
