@@ -3452,6 +3452,45 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static bool
+rb_data_free(rb_objspace_t *objspace, VALUE obj)
+{
+    if (DATA_PTR(obj)) {
+        int free_immediately = false;
+        void (*dfree)(void *);
+        void *data = DATA_PTR(obj);
+
+        if (RTYPEDDATA_P(obj)) {
+            free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+            dfree = RANY(obj)->as.typeddata.type->function.dfree;
+        }
+        else {
+            dfree = RANY(obj)->as.data.dfree;
+        }
+
+        if (dfree) {
+            if (dfree == RUBY_DEFAULT_FREE) {
+                xfree(data);
+                RB_DEBUG_COUNTER_INC(obj_data_xfree);
+            }
+            else if (free_immediately) {
+                (*dfree)(data);
+                RB_DEBUG_COUNTER_INC(obj_data_imm_free);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_data_zombie);
+                make_zombie(objspace, obj, dfree, data);
+                return false;
+            }
+        }
+        else {
+            RB_DEBUG_COUNTER_INC(obj_data_empty);
+        }
+    }
+
+    return true;
+}
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3608,42 +3647,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
         break;
       case T_DATA:
-        if (DATA_PTR(obj)) {
-            int free_immediately = FALSE;
-            void (*dfree)(void *);
-            void *data = DATA_PTR(obj);
-
-            if (RTYPEDDATA_P(obj)) {
-                free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-                dfree = RANY(obj)->as.typeddata.type->function.dfree;
-                if (0 && free_immediately == 0) {
-                    /* to expose non-free-immediate T_DATA */
-                    fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
-                }
-            }
-            else {
-                dfree = RANY(obj)->as.data.dfree;
-            }
-
-            if (dfree) {
-                if (dfree == RUBY_DEFAULT_FREE) {
-                    xfree(data);
-                    RB_DEBUG_COUNTER_INC(obj_data_xfree);
-                }
-                else if (free_immediately) {
-                    (*dfree)(data);
-                    RB_DEBUG_COUNTER_INC(obj_data_imm_free);
-                }
-                else {
-                    make_zombie(objspace, obj, dfree, data);
-                    RB_DEBUG_COUNTER_INC(obj_data_zombie);
-                    return FALSE;
-                }
-            }
-            else {
-                RB_DEBUG_COUNTER_INC(obj_data_empty);
-            }
-        }
+        if (!rb_data_free(objspace, obj)) return false;
         break;
       case T_MATCH:
         if (RANY(obj)->as.match.rmatch) {
@@ -4582,16 +4586,8 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                 if (rb_obj_is_mutex(vp)) break;
                 if (rb_obj_is_fiber(vp)) break;
                 if (rb_obj_is_main_ractor(vp)) break;
-                if (RTYPEDDATA_P(vp)) {
-                    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
-                }
-                RANY(p)->as.free.flags = 0;
-                if (RANY(p)->as.data.dfree == RUBY_DEFAULT_FREE) {
-                    xfree(DATA_PTR(p));
-                }
-                else if (RANY(p)->as.data.dfree) {
-                    make_zombie(objspace, vp, RANY(p)->as.data.dfree, RANY(p)->as.data.data);
-                }
+
+                rb_data_free(objspace, vp);
                 break;
               case T_FILE:
                 if (RANY(p)->as.file.fptr) {
