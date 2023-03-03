@@ -136,7 +136,6 @@ module TestIRB
     }.each do |scenario, cases|
       cases.each do |inspect_mode, input, expected|
         define_method "test_#{inspect_mode}_inspect_mode_#{scenario}" do
-          pend if RUBY_ENGINE == 'truffleruby'
           verbose, $VERBOSE = $VERBOSE, nil
           irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new([input]))
           irb.context.inspect_mode = inspect_mode
@@ -152,7 +151,6 @@ module TestIRB
     end
 
     def test_object_inspection_falls_back_to_kernel_inspect_when_errored
-      omit if RUBY_ENGINE == "truffleruby"
       verbose, $VERBOSE = $VERBOSE, nil
       main = Object.new
       main.singleton_class.module_eval <<~RUBY
@@ -175,7 +173,7 @@ module TestIRB
     end
 
     def test_object_inspection_prints_useful_info_when_kernel_inspect_also_errored
-      omit if RUBY_VERSION < '2.7' || RUBY_ENGINE == "truffleruby"
+      omit if RUBY_VERSION < '2.7'
       verbose, $VERBOSE = $VERBOSE, nil
       main = Object.new
       main.singleton_class.module_eval <<~RUBY
