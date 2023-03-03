@@ -836,29 +836,13 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns a Gem::StubSpecification for bundled gems
 
   def self.bundled_stubs
-    # for Rails dependencies
-    bundled_gems = %w[
-      base64
-      benchmark
-      delegate
-      drb
-      forwardable
-      ipaddr
-      irb
-      mutex_m
-      ostruct
-      rdoc
-      singleton
-      tsort
-      weakref
-      bigdecimal
-      date
-      racc
-    ]
-    bundled_gems.map do |name|
+    require_relative "../bundled_gems"
+    Gem.bundled_gems.map do |name|
       Gem::Specification.find_by_name(name)
     rescue Gem::MissingSpecError
     end.compact
+  rescue LoadError
+    []
   end
 
   ##
