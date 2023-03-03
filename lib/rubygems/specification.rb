@@ -1022,6 +1022,12 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Find the best specification matching a +full_name+.
+  def self.find_by_full_name(full_name)
+    stubs.find {|s| s.full_name == full_name }&.to_spec
+  end
+
+  ##
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path(path)
