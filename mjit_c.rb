@@ -297,6 +297,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_push)'
     end
 
+    def rb_fix_aref
+      Primitive.cstmt! %{
+        extern VALUE rb_fix_aref(VALUE fix, VALUE idx);
+        return SIZET2NUM((size_t)rb_fix_aref);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff

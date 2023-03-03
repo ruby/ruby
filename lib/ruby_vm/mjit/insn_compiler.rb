@@ -1781,6 +1781,29 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_int_aref(jit, ctx, asm, argc)
+      return false if argc != 1
+      return false unless two_fixnums_on_stack?(jit)
+
+      side_exit = side_exit(jit, ctx)
+      guard_two_fixnums(jit, ctx, asm, side_exit)
+
+      asm.comment('rb_int_aref')
+      y_opnd = ctx.stack_pop
+      x_opnd = ctx.stack_pop
+
+      asm.mov(C_ARGS[0], x_opnd)
+      asm.mov(C_ARGS[1], y_opnd)
+      asm.call(C.rb_fix_aref)
+
+      ret_opnd = ctx.stack_push
+      asm.mov(ret_opnd, C_RET)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_ary_push(jit, ctx, asm, argc)
       return false if argc != 1
       asm.comment('rb_ary_push')
@@ -1810,6 +1833,7 @@ module RubyVM::MJIT
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
       register_cfunc_method(Integer, :/, :jit_rb_int_div)
+      register_cfunc_method(Integer, :[], :jit_rb_int_aref)
 
       register_cfunc_method(Array, :<<, :jit_rb_ary_push)
     end
