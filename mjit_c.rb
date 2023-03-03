@@ -269,6 +269,15 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'rb_obj_frozen_p(obj)'
     end
 
+    def rb_intern(str)
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_intern(RSTRING_PTR(str)))'
+    end
+
+    def rb_method_entry_at(klass, mid)
+      me_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_method_entry_at(klass, (ID)NUM2SIZET(mid)))'
+      me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1232,6 +1241,17 @@ module RubyVM::MJIT # :nodoc: all
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), body)")],
       original_id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), original_id)")],
       method_serial: [CType::Immediate.parse("uintptr_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), method_serial)")],
+    )
+  end
+
+  def C.rb_method_entry_t
+    @rb_method_entry_t ||= CType::Struct.new(
+      "rb_method_entry_struct", Primitive.cexpr!("SIZEOF(struct rb_method_entry_struct)"),
+      flags: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_method_entry_struct *)NULL)), flags)")],
+      defined_class: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_method_entry_struct *)NULL)), defined_class)")],
+      def: [CType::Pointer.new { self.rb_method_definition_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_method_entry_struct *)NULL)), def)")],
+      called_id: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_method_entry_struct *)NULL)), called_id)")],
+      owner: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_method_entry_struct *)NULL)), owner)")],
     )
   end
 

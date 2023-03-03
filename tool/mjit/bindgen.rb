@@ -471,6 +471,7 @@ generator = BindingGenerator.new(
     rb_call_data
     rb_callable_method_entry_struct
     rb_callable_method_entry_t
+    rb_method_entry_t
     rb_callcache
     rb_callinfo
     rb_control_frame_t
