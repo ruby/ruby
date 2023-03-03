@@ -289,6 +289,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_mul_fix)'
     end
 
+    def rb_fix_div_fix
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_div_fix)'
+    end
+
     def rb_ary_push
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_push)'
     end
