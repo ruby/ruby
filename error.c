@@ -1322,7 +1322,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
         actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
     }
     else {
-        return DATA_PTR(obj);
+        return RTYPEDDATA_GET_DATA(obj);
     }
 
     const char *expected = data_type->wrap_struct_name;
