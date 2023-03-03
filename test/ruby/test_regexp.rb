@@ -700,6 +700,11 @@ class TestRegexp < Test::Unit::TestCase
       assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
 
       assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
+
+      assert_nil(Regexp.new("").timeout)
+      assert_equal(1.0, Regexp.new("", timeout: 1.0).timeout)
+      assert_nil(Regexp.compile("").timeout)
+      assert_equal(1.0, Regexp.compile("", timeout: 1.0).timeout)
     end
 
     assert_raise(RegexpError) { Regexp.new(")(") }
