@@ -5215,6 +5215,14 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
+    // Reject ISEQs with very large temp stacks,
+    // this will allow us to use u8/i8 values to track stack_size and sp_offset
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    if stack_max >= i8::MAX as u32 {
+        incr_counter!(iseq_stack_too_large);
+        return CantCompile;
+    }
+
     // No support for callees with these parameters yet as they require allocation
     // or complex handling.
     if unsafe { get_iseq_flags_has_post(iseq) } {

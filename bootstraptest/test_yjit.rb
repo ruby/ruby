@@ -3605,3 +3605,30 @@ assert_equal 'Hello World', %q{
   end
   bar
 }
+
+# Regression: this creates a temp stack with > 127 elements
+assert_normal_exit %q{
+  def foo(a)
+    [
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a, a, a,
+      a, a, a, a, a, a, a, a,
+    ]
+  end
+
+  def entry
+    foo(1)
+  end
+
+  entry
+}
