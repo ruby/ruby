@@ -370,6 +370,10 @@ module RubyVM::MJIT
 
     def jbe(dst)
       case dst
+      # JBE rel8
+      in Label => dst_label
+        # 76 cb
+        insn(opcode: 0x76, imm: dst_label)
       # JBE rel32
       in Integer => dst_addr
         # 0F 86 cd
@@ -441,6 +445,10 @@ module RubyVM::MJIT
 
     def jnz(dst)
       case dst
+      # JE rel8
+      in Label => dst_label
+        # 75 cb
+        insn(opcode: 0x75, imm: dst_label)
       # JNZ rel32
       in Integer => dst_addr
         # 0F 85 cd

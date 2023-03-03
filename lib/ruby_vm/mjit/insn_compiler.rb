@@ -183,25 +183,122 @@ module RubyVM::MJIT
       jit_getivar(jit, ctx, asm, comptime_obj, id)
     end
 
+      #id = jit.operand(0)
+      #ivc = jit.operand(1)
+
+      ## rb_vm_setinstancevariable could raise exceptions
+      #jit_prepare_routine_call(jit, ctx, asm)
+
+      #val_opnd = ctx.stack_pop
+
+      #asm.comment('rb_vm_setinstancevariable')
+      #asm.mov(:rdi, jit.iseq.to_i)
+      #asm.mov(:rsi, [CFP, C.rb_control_frame_t.offsetof(:self)])
+      #asm.mov(:rdx, id)
+      #asm.mov(:rcx, val_opnd)
+      #asm.mov(:r8, ivc)
+      #asm.call(C.rb_vm_setinstancevariable)
+
+      #KeepCompiling
+
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def setinstancevariable(jit, ctx, asm)
-      id = jit.operand(0)
-      ivc = jit.operand(1)
+      starting_context = ctx.dup # make a copy for use with jit_chain_guard
 
-      # rb_vm_setinstancevariable could raise exceptions
-      jit_prepare_routine_call(jit, ctx, asm)
+      # Defer compilation so we can specialize on a runtime `self`
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
 
-      val_opnd = ctx.stack_pop
+      ivar_name = jit.operand(0)
+      comptime_receiver = jit.peek_at_self
+      comptime_val_klass = C.rb_class_of(comptime_receiver)
 
-      asm.comment('rb_vm_setinstancevariable')
-      asm.mov(:rdi, jit.iseq.to_i)
-      asm.mov(:rsi, [CFP, C.rb_control_frame_t.offsetof(:self)])
-      asm.mov(:rdx, id)
-      asm.mov(:rcx, val_opnd)
-      asm.mov(:r8, ivc)
-      asm.call(C.rb_vm_setinstancevariable)
+      # If the comptime receiver is frozen, writing an IV will raise an exception
+      # and we don't want to JIT code to deal with that situation.
+      if C.rb_obj_frozen_p(comptime_receiver)
+        asm.incr_counter(:setivar_frozen)
+        return CantCompile
+      end
+
+      # Check if the comptime receiver is a T_OBJECT
+      receiver_t_object = C.BUILTIN_TYPE(comptime_receiver) == C.T_OBJECT
+
+      # If the receiver isn't a T_OBJECT, or uses a custom allocator,
+      # then just write out the IV write as a function call.
+      # too-complex shapes can't use index access, so we use rb_ivar_get for them too.
+      if !receiver_t_object || shape_too_complex?(comptime_receiver) || ctx.chain_depth >= 10
+        asm.comment('call rb_vm_setinstancevariable')
+
+        ic = jit.operand(1)
+
+        # The function could raise exceptions.
+        # Note that this modifies REG_SP, which is why we do it first
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        # Get the operands from the stack
+        val_opnd = ctx.stack_pop(1)
+
+        # Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
+        asm.mov(:rdi, jit.iseq.to_i)
+        asm.mov(:rsi, [CFP, C.rb_control_frame_t.offsetof(:self)])
+        asm.mov(:rdx, ivar_name)
+        asm.mov(:rcx, val_opnd)
+        asm.mov(:r8, ic)
+        asm.call(C.rb_vm_setinstancevariable)
+      else
+        # Get the iv index
+        shape_id = C.rb_shape_get_shape_id(comptime_receiver)
+        ivar_index = C.rb_shape_get_iv_index(shape_id, ivar_name)
+
+        # Get the receiver
+        asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
+
+        # Generate a side exit
+        side_exit = side_exit(jit, ctx)
+
+        # Upgrade type
+        guard_object_is_heap(asm, :rax, counted_exit(side_exit, :setivar_not_heap))
+
+        asm.comment('guard shape')
+        asm.cmp(DwordPtr[:rax, C.rb_shape_id_offset], shape_id)
+        megamorphic_side_exit = counted_exit(side_exit, :setivar_megamorphic)
+        jit_chain_guard(:jne, jit, starting_context, asm, megamorphic_side_exit)
+
+        # If we don't have an instance variable index, then we need to
+        # transition out of the current shape.
+        if ivar_index.nil?
+          asm.incr_counter(:setivar_no_index)
+          return CantCompile
+        else
+          # If the iv index already exists, then we don't need to
+          # transition to a new shape.  The reason is because we find
+          # the iv index by searching up the shape tree.  If we've
+          # made the transition already, then there's no reason to
+          # update the shape on the object.  Just set the IV.
+          write_val = ctx.stack_pop(1)
+          jit_write_iv(asm, comptime_receiver, :rax, :rcx, ivar_index, write_val)
+        end
+
+        skip_wb = asm.new_label('skip_wb')
+        # If the value we're writing is an immediate, we don't need to WB
+        asm.test(write_val, C.RUBY_IMMEDIATE_MASK)
+        asm.jnz(skip_wb)
+
+        # If the value we're writing is nil or false, we don't need to WB
+        asm.cmp(write_val, Qnil)
+        asm.jbe(skip_wb)
+
+        asm.comment('write barrier')
+        asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:self)])
+        asm.mov(C_ARGS[1], write_val)
+        asm.call(C.rb_gc_writebarrier)
+
+        asm.write_label(skip_wb)
+      end
 
       KeepCompiling
     end
@@ -2079,6 +2176,31 @@ module RubyVM::MJIT
       EndBlock
     end
 
+    def jit_write_iv(asm, comptime_receiver, recv_reg, temp_reg, ivar_index, set_value)
+      # Compile time self is embedded and the ivar index lands within the object
+      embed_test_result = C.FL_TEST_RAW(comptime_receiver, C.ROBJECT_EMBED)
+
+      if embed_test_result
+        # Find the IV offset
+        offs = C.RObject.offsetof(:as, :ary) + ivar_index * C.VALUE.size
+
+        # Write the IV
+        asm.comment('write IV')
+        asm.mov(temp_reg, set_value)
+        asm.mov([recv_reg, offs], temp_reg)
+      else
+        # Compile time value is *not* embedded.
+
+        # Get a pointer to the extended table
+        asm.mov(recv_reg, [recv_reg, C.RObject.offsetof(:as, :heap, :ivptr)])
+
+        # Write the ivar in to the extended table
+        asm.comment("write IV");
+        asm.mov(temp_reg, set_value)
+        asm.mov([recv_reg, C.VALUE.size * ivar_index], temp_reg)
+      end
+    end
+
     # vm_caller_setup_arg_block
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
@@ -2833,6 +2955,10 @@ module RubyVM::MJIT
 
     def static_symbol?(obj)
       (C.to_value(obj) & 0xff) == C.RUBY_SYMBOL_FLAG
+    end
+
+    def shape_too_complex?(obj)
+      C.rb_shape_get_shape_id(obj) == C.OBJ_TOO_COMPLEX_SHAPE_ID
     end
 
     # @param jit [RubyVM::MJIT::JITState]
