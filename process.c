@@ -511,13 +511,6 @@ clear_pid_cache(void)
     cached_pid = Qnil;
 }
 
-static inline void
-rb_process_atfork(void)
-{
-    clear_pid_cache();
-    rb_thread_atfork(); /* calls mjit_resume() */
-}
-
 /*
  *  call-seq:
  *     Process.pid   -> integer
@@ -1564,9 +1557,13 @@ before_fork_ruby(void)
 }
 
 static void
-after_fork_ruby(void)
+after_fork_ruby(rb_pid_t pid)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
+    if (pid == 0) {
+        clear_pid_cache();
+        rb_thread_atfork();
+    }
     after_exec();
 }
 #endif
@@ -4073,11 +4070,10 @@ rb_fork_ruby2(struct rb_process_status *status)
             status->pid = pid;
             status->error = err;
         }
-        after_fork_ruby();
+        after_fork_ruby(pid);
         disable_child_handler_fork_parent(&old); /* yes, bad name */
 
         if (pid >= 0) { /* fork succeed */
-            if (pid == 0) rb_process_atfork();
             return pid;
         }
 
@@ -6849,8 +6845,7 @@ rb_daemon(int nochdir, int noclose)
 #ifdef HAVE_DAEMON
     before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork_ruby();
-    rb_process_atfork();
+    after_fork_ruby(0);
 #else
     int n;
 
