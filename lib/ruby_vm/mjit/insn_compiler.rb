@@ -1757,6 +1757,27 @@ module RubyVM::MJIT
       true
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_ary_push(jit, ctx, asm, argc)
+      return false if argc != 1
+      asm.comment('rb_ary_push')
+
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      item_opnd = ctx.stack_pop
+      ary_opnd = ctx.stack_pop
+      asm.mov(C_ARGS[0], ary_opnd)
+      asm.mov(C_ARGS[1], item_opnd)
+      asm.call(C.rb_ary_push)
+
+      ret_opnd = ctx.stack_push
+      asm.mov(ret_opnd, C_RET)
+
+      true
+    end
+
     #
     # Helpers
     #
@@ -1768,6 +1789,8 @@ module RubyVM::MJIT
       register_cfunc_method(Integer, :==, :jit_rb_int_equal)
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
+
+      register_cfunc_method(Array, :<<, :jit_rb_ary_push)
     end
 
     def register_cfunc_method(klass, mid_sym, func)
