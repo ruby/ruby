@@ -180,6 +180,11 @@ MJIT_RUNTIME_COUNTERS(
     optgetconst_not_cached,
     optgetconst_cref,
 
+    setivar_frozen,
+    setivar_not_heap,
+    setivar_megamorphic,
+    setivar_no_index,
+
     expandarray_splat,
     expandarray_postarg,
     expandarray_not_array,

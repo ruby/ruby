@@ -37,6 +37,7 @@ module RubyVM::MJIT
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')
+      print_counters(stats, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons')
       print_counters(stats, prefix: 'optaref_', prompt: 'opt_aref exit reasons')
       print_counters(stats, prefix: 'optgetconst_', prompt: 'opt_getconstant_path exit reasons')
       print_counters(stats, prefix: 'expandarray_', prompt: 'expandarray exit reasons')
