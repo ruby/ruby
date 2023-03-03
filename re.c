@@ -3937,11 +3937,11 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
         str = RREGEXP_SRC(re);
     }
     else {
-        if (!UNDEF_P(opts)) {
+        if (!NIL_P(opts)) {
             int f;
             if (FIXNUM_P(opts)) flags = FIX2INT(opts);
             else if ((f = str_to_option(opts)) >= 0) flags = f;
-            else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
+            else if (rb_bool_expected(opts, "ignorecase", FALSE))
                 flags = ONIG_OPTION_IGNORECASE;
         }
         str = StringValue(src);
