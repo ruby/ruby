@@ -215,7 +215,7 @@ module IRB
           select_message(receiver, message, proc_candidates | hash_candidates)
         end
 
-      when /^(:[^:.]*)$/
+      when /^(:[^:.]+)$/
         # Symbol
         if doc_namespace
           nil

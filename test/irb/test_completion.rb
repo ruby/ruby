@@ -292,6 +292,8 @@ module TestIRB
       _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
+      # Do not complete empty symbol for performance reason
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":", bind: binding))
     end
 
     def test_complete_invalid_three_colons
