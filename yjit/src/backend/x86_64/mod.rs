@@ -101,7 +101,7 @@ impl Assembler
     /// Get the list of registers for stack temps
     pub fn get_temp_regs() -> Vec<Reg> {
         let num_regs = get_option!(temp_regs);
-        let mut regs = vec![R8_REG, R9_REG, R10_REG];
+        let mut regs = vec![RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG, R11_REG];
         regs.drain(0..num_regs).collect()
     }
 
