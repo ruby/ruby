@@ -998,6 +998,31 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to include("autobuild (1.10.1)")
   end
 
+  # Newer rails depends on Bundler, while ancient Rails does not. Bundler tries
+  # a first resolution pass that does not consider pre-releases. However, when
+  # using a pre-release Bundler (like the .dev version), that results in that
+  # pre-release being ignored and resolving to a version that does not depend on
+  # Bundler at all. We should avoid that and still consider .dev Bundler.
+  #
+  it "does not ignore prereleases with there's only one candidate" do
+    build_repo4 do
+      build_gem "rails", "7.4.0.2" do |s|
+        s.add_dependency "bundler", ">= 1.15.0"
+      end
+
+      build_gem "rails", "2.3.18"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rails"
+    G
+
+    bundle "lock"
+    expect(lockfile).to_not include("rails (2.3.18)")
+    expect(lockfile).to include("rails (7.4.0.2)")
+  end
+
   it "deals with platform specific incompatibilities" do
     build_repo4 do
       build_gem "activerecord", "6.0.6"
