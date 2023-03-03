@@ -8,6 +8,7 @@ use std::convert::From;
 use std::io::Write;
 use std::mem::take;
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
+use crate::stats::incr_counter;
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
 use crate::core::{Context, Type, TempMapping};
@@ -954,6 +955,7 @@ impl Assembler
                         if (0..regs.len() as isize).contains(&reg_idx) {
                             let offset = sp_offset - (stack_size as i8) + (stack_idx as i8);
                             asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx as usize]));
+                            incr_counter!(temp_spills)
                         }
                     }
                     // For simplicity, never reuse registers that have been spilled in the same Assembler
@@ -967,8 +969,10 @@ impl Assembler
                             let stack_idx = (stack_size as i32 - idx - 1) as usize;
                             let reg_idx = stack_idx as isize - (asm.stack_max as isize - regs.len() as isize);
                             *opnd = if (0..regs.len() as isize).contains(&reg_idx) && asm.spilled_temps <= stack_idx as u8 {
+                                incr_counter!(temp_reg_opnds);
                                 Opnd::Reg(regs[reg_idx as usize]).with_num_bits(num_bits).unwrap()
                             } else {
+                                incr_counter!(temp_mem_opnds);
                                 Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32)
                             };
                         }
