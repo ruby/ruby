@@ -11,6 +11,8 @@ module RubyVM::MJIT
         @ocb.write(asm)
       end
 
+      @cfunc_codegen_table = {}
+      register_cfunc_codegen_funcs
       # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
@@ -1676,8 +1678,47 @@ module RubyVM::MJIT
     end
 
     #
+    # C func
+    #
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_obj_not(jit, ctx, asm)
+      recv = ctx.stack_pop
+      # This `test` sets ZF only for Qnil and Qfalse, which let cmovz set.
+      asm.test(recv, ~Qnil)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmovz(:rax, :rcx)
+      asm.mov(ctx.stack_push, :rax)
+
+      true
+    end
+
+    #
     # Helpers
     #
+
+    def register_cfunc_codegen_funcs
+      register_cfunc_method(BasicObject, '!', :jit_rb_obj_not)
+    end
+
+    def register_cfunc_method(klass, mid_str, func)
+      mid = C.rb_intern(mid_str)
+      me = C.rb_method_entry_at(klass, mid)
+
+      assert_equal(false, me.nil?)
+
+      # Only cfuncs are supported
+      method_serial = me.def.method_serial
+
+      @cfunc_codegen_table[method_serial] = method(func)
+    end
+
+    def lookup_cfunc_codegen(cme_def)
+      @cfunc_codegen_table[cme_def.method_serial]
+    end
 
     def jit_getlocal_generic(jit, ctx, asm, idx:, level:)
       # Load environment pointer EP at level
@@ -2543,6 +2584,17 @@ module RubyVM::MJIT
       if cfunc.argc == -2
         asm.incr_counter(:send_cfunc_ruby_array_varg)
         return CantCompile
+      end
+
+      # Delegate to codegen for C methods if we have it.
+      if flags & C.VM_CALL_KWARG == 0 && flags & C.VM_CALL_OPT_SEND == 0
+        known_cfunc_codegen = lookup_cfunc_codegen(cme.def)
+        if known_cfunc_codegen&.call(jit, ctx, asm)
+          # cfunc codegen generated code. Terminate the block so
+          # there isn't multiple calls in the same block.
+          jump_to_next_insn(jit, ctx, asm)
+          return EndBlock
+        end
       end
 
       # We will not have side exits from here. Adjust the stack.
