@@ -1194,7 +1194,7 @@ module RubyVM::MJIT
         return EndBlock
       end
 
-      if jit_equality_specialized(jit, ctx, asm)
+      if jit_equality_specialized(jit, ctx, asm, true)
         jump_to_next_insn(jit, ctx, asm)
         EndBlock
       else
@@ -1702,6 +1702,14 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_obj_not_equal(jit, ctx, asm, argc)
+      return false if argc != 1
+      jit_equality_specialized(jit, ctx, asm, false)
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_int_equal(jit, ctx, asm, argc)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
@@ -1756,6 +1764,7 @@ module RubyVM::MJIT
     def register_cfunc_codegen_funcs
       register_cfunc_method(BasicObject, :!, :jit_rb_obj_not)
 
+      register_cfunc_method(BasicObject, :!=, :jit_rb_obj_not_equal)
       register_cfunc_method(Integer, :==, :jit_rb_int_equal)
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
@@ -2040,7 +2049,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_equality_specialized(jit, ctx, asm)
+    def jit_equality_specialized(jit, ctx, asm, gen_eq)
       # Create a side-exit to fall back to the interpreter
       side_exit = side_exit(jit, ctx)
 
@@ -2061,8 +2070,8 @@ module RubyVM::MJIT
         asm.mov(:rax, a_opnd)
         asm.mov(:rcx, b_opnd)
         asm.cmp(:rax, :rcx)
-        asm.mov(:rax, Qfalse)
-        asm.mov(:rcx, Qtrue)
+        asm.mov(:rax, gen_eq ? Qfalse : Qtrue)
+        asm.mov(:rcx, gen_eq ? Qtrue  : Qfalse)
         asm.cmove(:rax, :rcx)
 
         # Push the output on the stack
@@ -2097,7 +2106,7 @@ module RubyVM::MJIT
         asm.comment('call rb_str_eql_internal')
         asm.mov(C_ARGS[0], a_opnd)
         asm.mov(C_ARGS[1], b_opnd)
-        asm.call(C.rb_str_eql_internal)
+        asm.call(gen_eq ? C.rb_str_eql_internal : C.rb_str_neq_internal)
 
         # Push the output on the stack
         ctx.stack_pop(2)
@@ -2106,7 +2115,7 @@ module RubyVM::MJIT
         asm.jmp(ret_label)
 
         asm.write_label(equal_label)
-        asm.mov(dst, Qtrue)
+        asm.mov(dst, gen_eq ? Qtrue : Qfalse)
 
         asm.write_label(ret_label)
 

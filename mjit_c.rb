@@ -168,6 +168,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_eql_internal)'
     end
 
+    def rb_str_neq_internal
+      Primitive.cstmt! %{
+        extern VALUE rb_str_neq_internal(VALUE str1, VALUE str2);
+        return SIZET2NUM((size_t)rb_str_neq_internal);
+      }
+    end
+
     def rb_ary_resurrect
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_resurrect)'
     end
