@@ -1694,8 +1694,9 @@ module RubyVM::MJIT
       asm.mov(:rax, Qfalse)
       asm.mov(:rcx, Qtrue)
       asm.cmovz(:rax, :rcx)
-      asm.mov(ctx.stack_push, :rax)
 
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
       true
     end
 
@@ -1738,13 +1739,11 @@ module RubyVM::MJIT
     def jit_rb_int_mul(jit, ctx, asm, argc)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
-      asm.comment('rb_int_mul')
 
       side_exit = side_exit(jit, ctx)
       guard_two_fixnums(jit, ctx, asm, side_exit)
 
-      jit_prepare_routine_call(jit, ctx, asm)
-
+      asm.comment('rb_int_mul')
       y_opnd = ctx.stack_pop
       x_opnd = ctx.stack_pop
       asm.mov(C_ARGS[0], x_opnd)
@@ -1753,7 +1752,29 @@ module RubyVM::MJIT
 
       ret_opnd = ctx.stack_push
       asm.mov(ret_opnd, C_RET)
+      true
+    end
 
+    def jit_rb_int_div(jit, ctx, asm, argc)
+      return false if argc != 1
+      return false unless two_fixnums_on_stack?(jit)
+
+      side_exit = side_exit(jit, ctx)
+      guard_two_fixnums(jit, ctx, asm, side_exit)
+
+      asm.comment('rb_int_div')
+      y_opnd = ctx.stack_pop
+      x_opnd = ctx.stack_pop
+      asm.mov(:rax, y_opnd)
+      asm.cmp(:rax, C.to_value(0))
+      asm.je(side_exit)
+
+      asm.mov(C_ARGS[0], x_opnd)
+      asm.mov(C_ARGS[1], :rax)
+      asm.call(C.rb_fix_div_fix)
+
+      ret_opnd = ctx.stack_push
+      asm.mov(ret_opnd, C_RET)
       true
     end
 
@@ -1774,7 +1795,6 @@ module RubyVM::MJIT
 
       ret_opnd = ctx.stack_push
       asm.mov(ret_opnd, C_RET)
-
       true
     end
 
@@ -1789,6 +1809,7 @@ module RubyVM::MJIT
       register_cfunc_method(Integer, :==, :jit_rb_int_equal)
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
+      register_cfunc_method(Integer, :/, :jit_rb_int_div)
 
       register_cfunc_method(Array, :<<, :jit_rb_ary_push)
     end
