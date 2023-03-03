@@ -618,6 +618,21 @@ module RubyVM::MJIT
         else
           raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
+      in DwordPtr[reg: dst_reg, disp: dst_disp]
+        case src
+        # MOV r/m32, imm32 (Mod 01: [reg]+disp8)
+        in Integer => src_imm if r64?(dst_reg) && imm8?(dst_disp) && imm32?(src_imm)
+          # C7 /0 id
+          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+          insn(
+            opcode: 0xc7,
+            mod_rm: ModRM[mod: Mod01, reg: 0, rm: dst_reg],
+            disp: dst_disp,
+            imm: imm32(src_imm),
+          )
+        else
+          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
+        end
       in Array[Symbol => dst_reg, Integer => dst_disp]
         # Optimize encoding when disp is 0
         return mov([dst_reg], src) if dst_disp == 0

@@ -4,6 +4,7 @@
 
 #include "ruby/internal/config.h"
 #include "internal/string.h"
+#include "internal/variable.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
@@ -183,7 +184,7 @@ MJIT_RUNTIME_COUNTERS(
     setivar_frozen,
     setivar_not_heap,
     setivar_megamorphic,
-    setivar_no_index,
+    setivar_too_complex,
 
     expandarray_splat,
     expandarray_postarg,
