@@ -1686,7 +1686,7 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc)
       return false if argc != 0
-      asm.comment('jit_rb_obj_not')
+      asm.comment('rb_obj_not')
 
       recv = ctx.stack_pop
       # This `test` sets ZF only for Qnil and Qfalse, which let cmovz set.
@@ -1702,10 +1702,35 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_int_equal(jit, ctx, asm, argc)
+      return false if argc != 1
+      return false unless two_fixnums_on_stack?(jit)
+
+      side_exit = side_exit(jit, ctx)
+      guard_two_fixnums(jit, ctx, asm, side_exit)
+
+      # Compare the arguments
+      asm.comment('rb_int_equal')
+      arg1 = ctx.stack_pop(1)
+      arg0 = ctx.stack_pop(1)
+      asm.mov(:rax, arg1)
+      asm.cmp(arg0, :rax)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmove(:rax, :rcx)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_int_mul(jit, ctx, asm, argc)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
-      asm.comment('jit_rb_int_mul')
+      asm.comment('rb_int_mul')
 
       side_exit = side_exit(jit, ctx)
       guard_two_fixnums(jit, ctx, asm, side_exit)
@@ -1730,6 +1755,9 @@ module RubyVM::MJIT
 
     def register_cfunc_codegen_funcs
       register_cfunc_method(BasicObject, :!, :jit_rb_obj_not)
+
+      register_cfunc_method(Integer, :==, :jit_rb_int_equal)
+      register_cfunc_method(Integer, :===, :jit_rb_int_equal)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
     end
 
