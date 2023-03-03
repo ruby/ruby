@@ -19,11 +19,13 @@ module TestIRB
       def Reline.get_screen_size
         [36, 80]
       end
+      save_encodings
     end
 
     def teardown
       Reline.instance_eval { undef :get_screen_size }
       Reline.define_singleton_method(:get_screen_size, @get_screen_size)
+      restore_encodings
     end
 
     def test_last_value
@@ -658,20 +660,20 @@ module TestIRB
 
     def test_prompt_main_escape
       main = Struct.new(:to_s).new("main\a\t\r\n")
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
       assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
     end
 
     def test_prompt_main_inspect_escape
       main = Struct.new(:inspect).new("main\\n\nmain")
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
       assert_equal("irb(main\\n main)>", irb.prompt('irb(%M)>', nil, 1, 1))
     end
 
     def test_prompt_main_truncate
       main = Struct.new(:to_s).new("a" * 100)
       def main.inspect; to_s.inspect; end
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main))
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
       assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
       assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
     end
