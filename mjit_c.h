@@ -117,7 +117,7 @@ MJIT_RUNTIME_COUNTERS(
     send_kwarg,
     send_missing_cme,
     send_private,
-    send_protected,
+    send_protected_check_failed,
     send_tailcall,
     send_notimplemented,
     send_cfunc,

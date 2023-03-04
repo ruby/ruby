@@ -237,8 +237,12 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'ID2SYM((ID)NUM2SIZET(id))'
     end
 
-    def rb_obj_is_kind_of(obj, c)
+    def obj_is_kind_of(obj, c)
       Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
+    end
+
+    def rb_obj_is_kind_of
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_obj_is_kind_of)'
     end
 
     def rb_vm_defined
@@ -1363,7 +1367,7 @@ module RubyVM::MJIT # :nodoc: all
       send_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_kwarg)")],
       send_missing_cme: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_missing_cme)")],
       send_private: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_private)")],
-      send_protected: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_protected)")],
+      send_protected_check_failed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_protected_check_failed)")],
       send_tailcall: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_tailcall)")],
       send_notimplemented: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_notimplemented)")],
       send_cfunc: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc)")],
