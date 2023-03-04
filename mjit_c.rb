@@ -127,8 +127,11 @@ module RubyVM::MJIT # :nodoc: all
     end
 
     def FL_TEST_RAW(obj, flags)
-      _value = to_value(obj)
-      Primitive.cexpr! 'RBOOL(FL_TEST_RAW((VALUE)NUM2SIZET(_value), (VALUE)NUM2SIZET(flags)))'
+      Primitive.cexpr! 'RBOOL(FL_TEST_RAW(obj, (VALUE)NUM2SIZET(flags)))'
+    end
+
+    def FL_TEST(obj, flags)
+      Primitive.cexpr! 'RBOOL(FL_TEST(obj, (VALUE)NUM2SIZET(flags)))'
     end
 
     def rb_hash_aref
@@ -357,6 +360,10 @@ module RubyVM::MJIT # :nodoc: all
 
     def rb_str_concat_literals
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_concat_literals)'
+    end
+
+    def rb_class_attached_object(klass)
+      Primitive.cexpr! 'rb_class_attached_object(klass)'
     end
 
     #========================================================================================
@@ -826,6 +833,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.RUBY_FLONUM_MASK
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FLONUM_MASK) }
+  end
+
+  def C.RUBY_FL_SINGLETON
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FL_SINGLETON) }
   end
 
   def C.RUBY_IMMEDIATE_MASK
