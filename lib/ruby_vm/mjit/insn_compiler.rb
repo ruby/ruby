@@ -2226,6 +2226,7 @@ module RubyVM::MJIT
       end
     end
 
+    # Note: This clobbers :rax
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -2235,6 +2236,7 @@ module RubyVM::MJIT
       jit_save_sp(jit, ctx, asm)
     end
 
+    # Note: This clobbers :rax
     # @param jit [RubyVM::MJIT::JITState]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_save_pc(jit, asm, comment: 'save PC to CFP')
@@ -2331,20 +2333,37 @@ module RubyVM::MJIT
         asm.incr_counter(:getivar_special_const)
         return CantCompile
       end
-      if obj_opnd.nil? # getivar
-        asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
-      else # attr_reader
-        asm.mov(:rax, obj_opnd)
-      end
-      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :getivar_not_heap))
 
       case C.BUILTIN_TYPE(comptime_obj)
       when C.T_OBJECT
         # This is the only supported case for now (ROBJECT_IVPTR)
       else
-        asm.incr_counter(:getivar_not_t_object)
-        return CantCompile
+        # General case. Call rb_ivar_get().
+        # VALUE rb_ivar_get(VALUE obj, ID id)
+        asm.comment('call rb_ivar_get()')
+        asm.mov(C_ARGS[0], obj_opnd ? obj_opnd : [CFP, C.rb_control_frame_t.offsetof(:self)])
+        asm.mov(C_ARGS[1], ivar_id)
+
+        # The function could raise exceptions.
+        jit_prepare_routine_call(jit, ctx, asm) # clobbers obj_opnd and :rax
+
+        asm.call(C.rb_ivar_get)
+
+        if obj_opnd # attr_reader
+          ctx.stack_pop
+        end
+
+        # Push the ivar on the stack
+        out_opnd = ctx.stack_push
+        asm.mov(out_opnd, C_RET)
+
+        # Jump to next instruction. This allows guard chains to share the same successor.
+        jump_to_next_insn(jit, ctx, asm)
+        return EndBlock
       end
+
+      asm.mov(:rax, obj_opnd ? obj_opnd : [CFP, C.rb_control_frame_t.offsetof(:self)])
+      guard_object_is_heap(asm, :rax, counted_exit(side_exit, :getivar_not_heap))
 
       shape_id = C.rb_shape_get_shape_id(comptime_obj)
       if shape_id == C.OBJ_TOO_COMPLEX_SHAPE_ID
