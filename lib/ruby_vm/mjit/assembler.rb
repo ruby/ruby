@@ -700,6 +700,16 @@ module RubyVM::MJIT
           mod_rm: ModRM[mod: Mod11, reg: 1, rm: dst_reg],
           imm: imm8(src_imm),
         )
+      # OR r/m64, imm32 (Mod 11: reg)
+      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+        # REX.W + 81 /1 id
+        # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x81,
+          mod_rm: ModRM[mod: Mod11, reg: 1, rm: dst_reg],
+          imm: imm32(src_imm),
+        )
       # OR r64, r/m64 (Mod 01: [reg]+disp8)
       in [Symbol => dst_reg, Array[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
         # REX.W + 0B /r
