@@ -2075,6 +2075,30 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_true(jit, ctx, asm, argc, _known_recv_class)
+      return false if argc != 0
+      asm.comment('nil? == true');
+      ctx.stack_pop(1)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, Qtrue)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_false(jit, ctx, asm, argc, _known_recv_class)
+      return false if argc != 0
+      asm.comment('nil? == false');
+      ctx.stack_pop(1)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, Qfalse)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('rb_obj_not')
@@ -2255,8 +2279,8 @@ module RubyVM::MJIT
       # Specialization for C methods. See register_cfunc_method for details.
       register_cfunc_method(BasicObject, :!, :jit_rb_obj_not)
 
-      #register_cfunc_method(NilClass, :nil?, :jit_rb_true)
-      #register_cfunc_method(Kernel, :nil?, :jit_rb_false)
+      register_cfunc_method(NilClass, :nil?, :jit_rb_true)
+      register_cfunc_method(Kernel, :nil?, :jit_rb_false)
       #register_cfunc_method(Kernel, :is_a?, :jit_rb_kernel_is_a)
       #register_cfunc_method(Kernel, :kind_of?, :jit_rb_kernel_is_a)
       #register_cfunc_method(Kernel, :instance_of?, :jit_rb_kernel_instance_of)
