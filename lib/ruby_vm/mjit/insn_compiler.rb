@@ -2901,9 +2901,19 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq, is_super)
+      side_exit = side_exit(jit, ctx)
       if C.vm_ci_flag(ci) & C.VM_CALL_ARGS_BLOCKARG != 0
-        asm.incr_counter(:send_blockarg)
-        return CantCompile
+        # TODO: Skip the check using Context?
+        block_code = jit.peek_at_stack(0)
+        block_opnd = ctx.stack_opnd(0) # to be popped after eliminating side exit possibility
+        if block_code.nil?
+          asm.cmp(block_opnd, Qnil)
+          asm.jne(counted_exit(side_exit, :send_block_not_nil))
+          return C.VM_BLOCK_HANDLER_NONE
+        else
+          asm.incr_counter(:send_blockarg)
+          return CantCompile
+        end
       elsif blockiseq != 0
         return blockiseq
       else
@@ -2913,7 +2923,7 @@ module RubyVM::MJIT
           asm.comment('guard no block given')
           jit_get_lep(jit, asm, reg: :rax)
           asm.cmp([:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL], C.VM_BLOCK_HANDLER_NONE)
-          asm.jne(counted_exit(side_exit(jit, ctx), :send_block_handler))
+          asm.jne(counted_exit(side_exit, :send_block_handler))
           return C.VM_BLOCK_HANDLER_NONE
         else
           # Not implemented yet. Is this even necessary?
@@ -2940,9 +2950,9 @@ module RubyVM::MJIT
       end
 
       # Get a compile-time receiver and its class
-      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)
+      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       recv_idx += send_shift
-      comptime_recv = jit.peek_at_stack(recv_idx)
+      comptime_recv = jit.peek_at_stack(recv_idx + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # this offset is in ctx but not in SP
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
       # Guard the receiver class (part of vm_search_method_fastpath)
@@ -3090,9 +3100,9 @@ module RubyVM::MJIT
       end
 
       # Get a compile-time receiver
-      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)
+      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       recv_idx += send_shift
-      comptime_recv = jit.peek_at_stack(recv_idx)
+      comptime_recv = jit.peek_at_stack(recv_idx + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # this offset is in ctx but not in SP
       recv_opnd = ctx.stack_opnd(recv_idx)
 
       jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
@@ -3188,7 +3198,7 @@ module RubyVM::MJIT
 
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
-      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)
+      recv_idx = argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
       asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -(1 + recv_idx))) # Pop receiver and arguments to prepare for side exits
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
@@ -3279,7 +3289,7 @@ module RubyVM::MJIT
 
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
-      sp_index = -(1 + argc) # Pop receiver and arguments for side exits # TODO: subtract one more for VM_CALL_ARGS_BLOCKARG
+      sp_index = -(1 + argc + (flags & C.VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # Pop receiver and arguments for side exits. blockarg is not popped yet
       asm.lea(SP, ctx.sp_opnd(C.VALUE.size * sp_index))
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], SP)
       ctx.sp_offset = -sp_index
@@ -3356,6 +3366,12 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+      if flags & C.VM_CALL_ARGS_BLOCKARG != 0
+        # Not working yet
+        asm.incr_counter(:send_optimized_blockarg)
+        return CantCompile
+      end
+
       case cme.def.body.optimized.type
       when C.OPTIMIZED_METHOD_TYPE_SEND
         jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
@@ -3478,6 +3494,11 @@ module RubyVM::MJIT
       asm.cmp(CFP, :rax)
       asm.jbe(counted_exit(side_exit(jit, ctx), :send_stackoverflow))
 
+      # Pop blockarg after all side exits
+      if flags & C.VM_CALL_ARGS_BLOCKARG != 0
+        ctx.stack_pop(1)
+      end
+
       if iseq
         # This was not handled in jit_callee_setup_arg
         opts_filled = argc - iseq.body.param.lead_num # TODO: kwarg
@@ -3516,7 +3537,7 @@ module RubyVM::MJIT
       end
       asm.mov(:rax, iseq.to_i)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:iseq)], :rax)
-      self_index = ctx.sp_offset - (1 + argc) # TODO: +1 for VM_CALL_ARGS_BLOCKARG
+      self_index = ctx.sp_offset - (1 + argc) # blockarg has been popped
       asm.mov(:rax, [SP, C.VALUE.size * self_index])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:self)], :rax)
       asm.lea(:rax, [SP, C.VALUE.size * ep_offset])
@@ -3532,7 +3553,7 @@ module RubyVM::MJIT
       if iseq
         # Stub cfp->jit_return
         return_ctx = ctx.dup
-        return_ctx.stack_size -= argc # Pop args # TODO: subtract 1 more for VM_CALL_ARGS_BLOCKARG
+        return_ctx.stack_size -= argc # Pop args. blockarg has been popped
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
         branch_stub = BranchStub.new(
           iseq: jit.iseq,
