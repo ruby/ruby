@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 68/101
+      # 69/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -91,7 +91,7 @@ module RubyVM::MJIT
       when :jump then jump(jit, ctx, asm)
       when :branchif then branchif(jit, ctx, asm)
       when :branchunless then branchunless(jit, ctx, asm)
-      # branchnil
+      when :branchnil then branchnil(jit, ctx, asm)
       # once
       when :opt_case_dispatch then opt_case_dispatch(jit, ctx, asm)
       when :opt_plus then opt_plus(jit, ctx, asm)
@@ -1234,7 +1234,57 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # branchnil
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def branchnil(jit, ctx, asm)
+      # Check for interrupts, but only on backward branches that may create loops
+      jump_offset = jit.operand(0, signed: true)
+      if jump_offset < 0
+        jit_check_ints(jit, ctx, asm)
+      end
+
+      # TODO: skip check for known truthy
+
+      val = ctx.stack_pop
+      asm.cmp(val, Qnil)
+
+      # Set stubs
+      branch_stub = BranchStub.new(
+        iseq: jit.iseq,
+        shape: Default,
+        target0: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * (jit.insn.len + jump_offset)), # branch target
+        target1: BranchTarget.new(ctx:, pc: jit.pc + C.VALUE.size * jit.insn.len),                 # fallthrough
+      )
+      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
+        @ocb.write(ocb_asm)
+      end
+      branch_stub.target1.address = Assembler.new.then do |ocb_asm|
+        @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, false)
+        @ocb.write(ocb_asm)
+      end
+
+      # Jump to target0 on je
+      branch_stub.compile = proc do |branch_asm|
+        branch_asm.comment("branchnil #{branch_stub.shape}")
+        branch_asm.stub(branch_stub) do
+          case branch_stub.shape
+          in Default
+            branch_asm.je(branch_stub.target0.address)
+            branch_asm.jmp(branch_stub.target1.address)
+          in Next0
+            branch_asm.jne(branch_stub.target1.address)
+          in Next1
+            branch_asm.je(branch_stub.target0.address)
+          end
+        end
+      end
+      branch_stub.compile.call(asm)
+
+      EndBlock
+    end
+
     # once
 
     # @param jit [RubyVM::MJIT::JITState]
