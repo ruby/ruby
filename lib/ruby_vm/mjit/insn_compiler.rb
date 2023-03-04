@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 64/101
+      # 65/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -36,7 +36,7 @@ module RubyVM::MJIT
       # setspecial
       when :getinstancevariable then getinstancevariable(jit, ctx, asm)
       when :setinstancevariable then setinstancevariable(jit, ctx, asm)
-      # getclassvariable
+      when :getclassvariable then getclassvariable(jit, ctx, asm)
       # setclassvariable
       when :opt_getconstant_path then opt_getconstant_path(jit, ctx, asm)
       # getconstant
@@ -408,7 +408,25 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # getclassvariable
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getclassvariable(jit, ctx, asm)
+      # rb_vm_getclassvariable can raise exceptions.
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:iseq)])
+      asm.mov(C_ARGS[1], CFP)
+      asm.mov(C_ARGS[2], jit.operand(0))
+      asm.mov(C_ARGS[3], jit.operand(1))
+      asm.call(C.rb_vm_getclassvariable)
+
+      top = ctx.stack_push
+      asm.mov(top, C_RET)
+
+      KeepCompiling
+    end
+
     # setclassvariable
 
     # @param jit [RubyVM::MJIT::JITState]

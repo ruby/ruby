@@ -329,6 +329,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_ivar_get)'
     end
 
+    def rb_vm_getclassvariable
+      Primitive.cstmt! %{
+        extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
+        return SIZET2NUM((size_t)rb_vm_getclassvariable);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
