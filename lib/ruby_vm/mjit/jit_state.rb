@@ -37,5 +37,21 @@ module RubyVM::MJIT
     def peek_at_self
       C.to_ruby(cfp.self)
     end
+
+    def peek_at_block_handler(level)
+      ep = ep_at_level(cfp, level:)
+      ep[C.VM_ENV_DATA_INDEX_SPECVAL]
+    end
+
+    private
+
+    def ep_at_level(cfp, level:)
+      ep = cfp.ep
+      level.times do
+        # VM_ENV_PREV_EP
+        ep = C.VALUE.new(ep[C.VM_ENV_DATA_INDEX_SPECVAL] & ~0x03)
+      end
+      ep
+    end
   end
 end

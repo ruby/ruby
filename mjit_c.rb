@@ -702,6 +702,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_CFRAME_KW) }
   end
 
+  def C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
+    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) }
+  end
+
   def C.VM_FRAME_MAGIC_CFUNC
     Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_MAGIC_CFUNC) }
   end
@@ -824,6 +828,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.SHAPE_MASK
     Primitive.cexpr! %q{ ULONG2NUM(SHAPE_MASK) }
+  end
+
+  def C.rb_block_param_proxy
+    Primitive.cexpr! %q{ PTR2NUM(rb_block_param_proxy) }
   end
 
   def C.rb_cFalseClass
@@ -1408,6 +1416,10 @@ module RubyVM::MJIT # :nodoc: all
       expandarray_postarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_postarg)")],
       expandarray_not_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_not_array)")],
       expandarray_rhs_too_small: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), expandarray_rhs_too_small)")],
+      getblockpp_block_param_modified: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getblockpp_block_param_modified)")],
+      getblockpp_block_handler_none: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getblockpp_block_handler_none)")],
+      getblockpp_not_gc_guarded: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getblockpp_not_gc_guarded)")],
+      getblockpp_not_iseq_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getblockpp_not_iseq_block)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
   end
