@@ -2094,6 +2094,27 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_obj_equal(jit, ctx, asm, argc)
+      return false if argc != 1
+      asm.comment('equal?')
+      obj1 = ctx.stack_pop(1)
+      obj2 = ctx.stack_pop(1)
+
+      asm.mov(:rax, obj1)
+      asm.mov(:rcx, obj2)
+      asm.cmp(:rax, :rcx)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmove(:rax, :rcx)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_obj_not_equal(jit, ctx, asm, argc)
       return false if argc != 1
       jit_equality_specialized(jit, ctx, asm, false)
@@ -2217,16 +2238,48 @@ module RubyVM::MJIT
     #
 
     def register_cfunc_codegen_funcs
+      # Specialization for C methods. See register_cfunc_method for details.
       register_cfunc_method(BasicObject, :!, :jit_rb_obj_not)
 
+      #register_cfunc_method(cNilClass, :nil?, :jit_rb_true)
+      #register_cfunc_method(mKernel, :nil?, :jit_rb_false)
+      #register_cfunc_method(mKernel, :is_a?, :jit_rb_kernel_is_a)
+      #register_cfunc_method(mKernel, :kind_of?, :jit_rb_kernel_is_a)
+      #register_cfunc_method(mKernel, :instance_of?, :jit_rb_kernel_instance_of)
+
+      register_cfunc_method(BasicObject, :==, :jit_rb_obj_equal)
+      register_cfunc_method(BasicObject, :equal?, :jit_rb_obj_equal)
       register_cfunc_method(BasicObject, :!=, :jit_rb_obj_not_equal)
+      register_cfunc_method(Kernel, :eql?, :jit_rb_obj_equal)
+      register_cfunc_method(Module, :==, :jit_rb_obj_equal)
+      #register_cfunc_method(Module, :===, :jit_rb_mod_eqq)
+      register_cfunc_method(Symbol, :==, :jit_rb_obj_equal)
+      register_cfunc_method(Symbol, :===, :jit_rb_obj_equal)
       register_cfunc_method(Integer, :==, :jit_rb_int_equal)
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
+
+      # rb_str_to_s() methods in string.c
+      #register_cfunc_method(cString, :empty?, :jit_rb_str_empty_p)
+      #register_cfunc_method(cString, :to_s, :jit_rb_str_to_s)
+      #register_cfunc_method(cString, :to_str, :jit_rb_str_to_s)
+      #register_cfunc_method(cString, :bytesize, :jit_rb_str_bytesize)
+      #register_cfunc_method(cString, :<<, :jit_rb_str_concat)
+      #register_cfunc_method(cString, :+@, :jit_rb_str_uplus)
+
+      # rb_ary_empty_p() method in array.c
+      #register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
+
+      #register_cfunc_method(Kernel, :respond_to?, :jit_obj_respond_to)
+      #register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
+
+      # Thread.current
+      #register_cfunc_method(rb_singleton_class(rb_cThread), :current, :jit_thread_s_current)
+
+      #---
+      register_cfunc_method(Array, :<<, :jit_rb_ary_push)
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
       register_cfunc_method(Integer, :/, :jit_rb_int_div)
       register_cfunc_method(Integer, :[], :jit_rb_int_aref)
-
-      register_cfunc_method(Array, :<<, :jit_rb_ary_push)
     end
 
     def register_cfunc_method(klass, mid_sym, func)
