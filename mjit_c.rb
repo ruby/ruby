@@ -373,6 +373,13 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_vm_concat_array
+      Primitive.cstmt! %{
+        extern VALUE rb_vm_concat_array(VALUE ary1, VALUE ary2st);
+        return SIZET2NUM((size_t)rb_vm_concat_array);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
