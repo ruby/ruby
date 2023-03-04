@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 69/101
+      # 70/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -79,7 +79,7 @@ module RubyVM::MJIT
       when :send then send(jit, ctx, asm)
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       when :objtostring then objtostring(jit, ctx, asm)
-      # opt_str_freeze
+      when :opt_str_freeze then opt_str_freeze(jit, ctx, asm)
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       # opt_newarray_max
@@ -1016,7 +1016,23 @@ module RubyVM::MJIT
       end
     end
 
-    # opt_str_freeze
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_str_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C.STRING_REDEFINED_OP_FLAG, C.BOP_FREEZE)
+        return CantCompile;
+      end
+
+      str = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push
+      asm.mov(:rax, to_value(str))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
