@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 62/101
+      # 63/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -93,7 +93,7 @@ module RubyVM::MJIT
       when :branchunless then branchunless(jit, ctx, asm)
       # branchnil
       # once
-      # opt_case_dispatch
+      when :opt_case_dispatch then opt_case_dispatch(jit, ctx, asm)
       when :opt_plus then opt_plus(jit, ctx, asm)
       when :opt_minus then opt_minus(jit, ctx, asm)
       when :opt_mult then opt_mult(jit, ctx, asm)
@@ -1066,7 +1066,15 @@ module RubyVM::MJIT
 
     # branchnil
     # once
-    # opt_case_dispatch
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def opt_case_dispatch(jit, ctx, asm)
+      # Just go to === branches for now
+      ctx.stack_pop
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
