@@ -179,6 +179,7 @@ MJIT_RUNTIME_COUNTERS(
 
     optgetconst_not_cached,
     optgetconst_cref,
+    optgetconst_cache_miss,
 
     setivar_frozen,
     setivar_not_heap,

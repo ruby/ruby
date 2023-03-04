@@ -344,6 +344,13 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_vm_ic_hit_p
+      Primitive.cstmt! %{
+        extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
+        return SIZET2NUM((size_t)rb_vm_ic_hit_p);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1427,6 +1434,7 @@ module RubyVM::MJIT # :nodoc: all
       optaref_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optaref_send)")],
       optgetconst_not_cached: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_not_cached)")],
       optgetconst_cref: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_cref)")],
+      optgetconst_cache_miss: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), optgetconst_cache_miss)")],
       setivar_frozen: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_frozen)")],
       setivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_not_heap)")],
       setivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), setivar_megamorphic)")],

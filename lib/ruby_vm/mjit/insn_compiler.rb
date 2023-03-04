@@ -457,9 +457,26 @@ module RubyVM::MJIT
       end
 
       if ice.ic_cref # with cref
-        # Not supported yet
-        asm.incr_counter(:optgetconst_cref)
-        return CantCompile
+        # Cache is keyed on a certain lexical scope. Use the interpreter's cache.
+        side_exit = side_exit(jit, ctx)
+
+        # Call function to verify the cache. It doesn't allocate or call methods.
+        asm.mov(C_ARGS[0], ic.to_i)
+        asm.mov(C_ARGS[1], [CFP, C.rb_control_frame_t.offsetof(:ep)])
+        asm.call(C.rb_vm_ic_hit_p)
+
+        # Check the result. SysV only specifies one byte for _Bool return values,
+        # so it's important we only check one bit to ignore the higher bits in the register.
+        asm.test(C_RET, 1)
+        asm.jz(counted_exit(side_exit, :optgetconst_cache_miss))
+
+        asm.mov(:rax, ic.to_i) # inline_cache
+        asm.mov(:rax, [:rax, C.iseq_inline_constant_cache.offsetof(:entry)]) # ic_entry
+        asm.mov(:rax, [:rax, C.iseq_inline_constant_cache_entry.offsetof(:value)]) # ic_entry_val
+
+        # Push ic->entry->value
+        stack_top = ctx.stack_push
+        asm.mov(stack_top, :rax)
       else # without cref
         # TODO: implement this
         # Optimize for single ractor mode.
