@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 70/101
+      # 71/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -39,7 +39,7 @@ module RubyVM::MJIT
       when :getclassvariable then getclassvariable(jit, ctx, asm)
       # setclassvariable
       when :opt_getconstant_path then opt_getconstant_path(jit, ctx, asm)
-      # getconstant
+      when :getconstant then getconstant(jit, ctx, asm)
       # setconstant
       # getglobal
       # setglobal
@@ -495,7 +495,30 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # getconstant
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getconstant(jit, ctx, asm)
+      id = jit.operand(0)
+
+      # vm_get_ev_const can raise exceptions.
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      allow_nil_opnd = ctx.stack_pop(1)
+      klass_opnd = ctx.stack_pop(1)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], klass_opnd)
+      asm.mov(C_ARGS[2], id)
+      asm.mov(C_ARGS[3], allow_nil_opnd)
+      asm.call(C.rb_vm_get_ev_const)
+
+      top = ctx.stack_push
+      asm.mov(top, C_RET)
+
+      KeepCompiling
+    end
+
     # setconstant
     # getglobal
     # setglobal

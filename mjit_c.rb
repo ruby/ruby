@@ -366,6 +366,13 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'rb_class_attached_object(klass)'
     end
 
+    def rb_vm_get_ev_const
+      Primitive.cstmt! %{
+        extern VALUE rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil);
+        return SIZET2NUM((size_t)rb_vm_get_ev_const);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
