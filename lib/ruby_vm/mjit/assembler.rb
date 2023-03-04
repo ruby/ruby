@@ -828,6 +828,15 @@ module RubyVM::MJIT
           opcode: 0x85,
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
         )
+      # TEST r/m64, r64 (Mod 11: reg)
+      in [Symbol => left_reg, Symbol => right_reg] if r64?(left_reg) && r64?(right_reg)
+        # REX.W + 85 /r
+        # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x85,
+          mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
+        )
       else
         raise NotImplementedError, "test: not-implemented operands: #{left.inspect}, #{right.inspect}"
       end

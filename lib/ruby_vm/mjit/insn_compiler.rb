@@ -2640,7 +2640,7 @@ module RubyVM::MJIT
       # and so only have to do this once at compile time this is fine to always
       # check and side exit.
       comptime_recv = jit.peek_at_stack(argc)
-      unless C.rb_obj_is_kind_of(comptime_recv, current_defined_class)
+      unless C.obj_is_kind_of(comptime_recv, current_defined_class)
         return CantCompile
       end
 
@@ -2707,8 +2707,11 @@ module RubyVM::MJIT
           return CantCompile
         end
       when C.METHOD_VISI_PROTECTED
-        asm.incr_counter(:send_protected)
-        return CantCompile # TODO: support this
+        # If the method call is an FCALL, it is always valid
+        if flags & C.VM_CALL_FCALL == 0
+          # otherwise we need an ancestry check to ensure the receiver is valid to be called as protected
+          jit_protected_callee_ancestry_guard(asm, cme, side_exit(jit, ctx))
+        end
       else
         # TODO: Change them to a constant and use case-in instead
         raise 'unreachable'
@@ -2721,6 +2724,21 @@ module RubyVM::MJIT
       recv_opnd = ctx.stack_opnd(recv_idx)
 
       jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, send_shift:)
+    end
+
+    # Generate ancestry guard for protected callee.
+    # Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
+    def jit_protected_callee_ancestry_guard(asm, cme, side_exit)
+      # See vm_call_method().
+      def_class = cme.defined_class
+      # Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
+      # VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
+
+      asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:self)])
+      asm.mov(C_ARGS[1], to_value(def_class))
+      asm.call(C.rb_obj_is_kind_of)
+      asm.test(C_RET, C_RET)
+      asm.jz(counted_exit(side_exit, :send_protected_check_failed))
     end
 
     # vm_call_method_each_type
