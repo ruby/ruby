@@ -439,6 +439,7 @@ generator = BindingGenerator.new(
       RUBY_T_MASK
       RUBY_T_ICLASS
       RUBY_T_MODULE
+      RUBY_T_STRING
       RMODULE_IS_REFINEMENT
     ],
     PTR: %w[

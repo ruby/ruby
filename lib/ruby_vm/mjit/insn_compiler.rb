@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 65/101
+      # 66/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -78,7 +78,7 @@ module RubyVM::MJIT
       # definesmethod
       when :send then send(jit, ctx, asm)
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
-      # objtostring
+      when :objtostring then objtostring(jit, ctx, asm)
       # opt_str_freeze
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
@@ -933,7 +933,30 @@ module RubyVM::MJIT
       jit_call_general(jit, ctx, asm, mid, argc, flags, cme, C.VM_BLOCK_HANDLER_NONE)
     end
 
-    # objtostring
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def objtostring(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      recv = ctx.stack_opnd(0)
+      comptime_recv = jit.peek_at_stack(0)
+
+      if C.RB_TYPE_P(comptime_recv, C.RUBY_T_STRING)
+        side_exit = side_exit(jit, ctx)
+
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv, comptime_recv, side_exit)
+        # No work needed. The string value is already on the top of the stack.
+        KeepCompiling
+      else
+        cd = C.rb_call_data.new(jit.operand(0))
+        opt_send_without_block(jit, ctx, asm, cd:)
+      end
+    end
+
     # opt_str_freeze
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -1486,7 +1509,7 @@ module RubyVM::MJIT
         recv_opnd = ctx.stack_opnd(1)
 
         not_array_exit = counted_exit(side_exit, :optaref_recv_not_array)
-        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_array_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv_opnd, comptime_recv, not_array_exit)
 
         # Bail if idx is not a FIXNUM
         asm.mov(:rax, idx_opnd)
@@ -1519,7 +1542,7 @@ module RubyVM::MJIT
 
         # Guard that the receiver is a Hash
         not_hash_exit = counted_exit(side_exit, :optaref_recv_not_hash)
-        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv_opnd, comptime_recv, not_hash_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv_opnd, comptime_recv, not_hash_exit)
 
         # Prepare to call rb_hash_aref(). It might call #hash on the key.
         jit_prepare_routine_call(jit, ctx, asm)
@@ -1567,10 +1590,10 @@ module RubyVM::MJIT
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is an Array
-        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv, comptime_recv, side_exit)
 
         # Guard key is a fixnum
-        jit_guard_known_klass(jit, ctx, asm, comptime_key.class, key, comptime_key, side_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_key), key, comptime_key, side_exit)
 
         # We might allocate or raise
         jit_prepare_routine_call(jit, ctx, asm)
@@ -1602,7 +1625,7 @@ module RubyVM::MJIT
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is a Hash
-        jit_guard_known_klass(jit, ctx, asm, comptime_recv.class, recv, comptime_recv, side_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv, comptime_recv, side_exit)
 
         # We might allocate or raise
         jit_prepare_routine_call(jit, ctx, asm)
@@ -2284,7 +2307,7 @@ module RubyVM::MJIT
         end
 
         # Guard that a is a String
-        jit_guard_known_klass(jit, ctx, asm, comptime_a.class, a_opnd, comptime_a, side_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_a), a_opnd, comptime_a, side_exit)
 
         equal_label = asm.new_label(:equal)
         ret_label = asm.new_label(:ret)
@@ -2298,7 +2321,7 @@ module RubyVM::MJIT
         # Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         # Note: any T_STRING is valid here, but we check for a ::String for simplicity
         # To pass a mutable static variable (rb_cString) requires an unsafe block
-        jit_guard_known_klass(jit, ctx, asm, comptime_b.class, b_opnd, comptime_b, side_exit)
+        jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_b), b_opnd, comptime_b, side_exit)
 
         asm.comment('call rb_str_eql_internal')
         asm.mov(C_ARGS[0], a_opnd)
@@ -3071,7 +3094,7 @@ module RubyVM::MJIT
 
       asm.comment("Guard #{comptime_symbol.inspect} is on stack")
       class_changed_exit = counted_exit(side_exit(jit, ctx), :send_optimized_send_mid_class_changed)
-      jit_guard_known_klass(jit, ctx, asm, comptime_symbol.class, ctx.stack_opnd(argc), comptime_symbol, class_changed_exit)
+      jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_symbol), ctx.stack_opnd(argc), comptime_symbol, class_changed_exit)
       asm.mov(C_ARGS[0], ctx.stack_opnd(argc))
       asm.call(C.rb_get_symbol_id)
       asm.cmp(C_RET, mid)
