@@ -24,14 +24,14 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 63/101
+      # 64/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
       when :setlocal then setlocal(jit, ctx, asm)
       # getblockparam
       # setblockparam
-      # getblockparamproxy
+      when :getblockparamproxy then getblockparamproxy(jit, ctx, asm)
       # getspecial
       # setspecial
       when :getinstancevariable then getinstancevariable(jit, ctx, asm)
@@ -165,7 +165,77 @@ module RubyVM::MJIT
 
     # getblockparam
     # setblockparam
-    # getblockparamproxy
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getblockparamproxy(jit, ctx, asm)
+      # To get block_handler
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      starting_context = ctx.dup # make a copy for use with jit_chain_guard
+
+      # A mirror of the interpreter code. Checking for the case
+      # where it's pushing rb_block_param_proxy.
+      side_exit = side_exit(jit, ctx)
+
+      # EP level
+      level = jit.operand(1)
+
+      # Peek at the block handler so we can check whether it's nil
+      comptime_handler = jit.peek_at_block_handler(level)
+
+      # When a block handler is present, it should always be a GC-guarded
+      # pointer (VM_BH_ISEQ_BLOCK_P)
+      if comptime_handler != 0 && comptime_handler & 0x3 != 0x1
+        asm.incr_counter(:getblockpp_not_gc_guarded)
+        return CantCompile
+      end
+
+      # Load environment pointer EP from CFP
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
+
+      # Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
+      asm.test([ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS], C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)
+      asm.jnz(counted_exit(side_exit, :getblockpp_block_param_modified))
+
+      # Load the block handler for the current frame
+      # note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
+      block_handler = :rax
+      asm.mov(block_handler, [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+
+      # Specialize compilation for the case where no block handler is present
+      if comptime_handler == 0
+        # Bail if there is a block handler
+        asm.cmp(block_handler, 0)
+
+        jit_chain_guard(:jnz, jit, starting_context, asm, counted_exit(side_exit, :getblockpp_block_handler_none))
+
+        putobject(jit, ctx, asm, val: Qnil)
+      else
+        # Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
+        asm.and(block_handler, 0x3)
+
+        # Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
+        asm.cmp(block_handler, 0x1)
+
+        jit_chain_guard(:jnz, jit, starting_context, asm, counted_exit(side_exit, :getblockpp_not_iseq_block))
+
+        # Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
+        top = ctx.stack_push
+        asm.mov(:rax, C.rb_block_param_proxy)
+        asm.mov(top, :rax)
+      end
+
+      jump_to_next_insn(jit, ctx, asm)
+
+      EndBlock
+    end
+
     # getspecial
     # setspecial
 

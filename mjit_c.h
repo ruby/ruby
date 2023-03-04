@@ -190,6 +190,11 @@ MJIT_RUNTIME_COUNTERS(
     expandarray_not_array,
     expandarray_rhs_too_small,
 
+    getblockpp_block_param_modified,
+    getblockpp_block_handler_none,
+    getblockpp_not_gc_guarded,
+    getblockpp_not_iseq_block,
+
     compiled_block_count
 )
 #undef MJIT_RUNTIME_COUNTERS

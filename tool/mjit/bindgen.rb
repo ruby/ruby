@@ -408,6 +408,7 @@ generator = BindingGenerator.new(
       VM_FRAME_MAGIC_CFUNC
       VM_FRAME_FLAG_CFRAME
       VM_FRAME_FLAG_CFRAME_KW
+      VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
       VM_METHOD_TYPE_ISEQ
       VM_METHOD_TYPE_NOTIMPLEMENTED
       VM_METHOD_TYPE_CFUNC
@@ -447,6 +448,7 @@ generator = BindingGenerator.new(
       rb_cNilClass
       rb_cSymbol
       rb_cTrueClass
+      rb_block_param_proxy
     ],
   },
   types: %w[
