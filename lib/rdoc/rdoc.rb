@@ -119,7 +119,7 @@ class RDoc::RDoc
   # +files+.
 
   def gather_files files
-    files = ["."] if files.empty?
+    files = [@options.root.to_s] if files.empty?
 
     file_list = normalized_file_list files, true, @options.exclude
 
