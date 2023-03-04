@@ -29,7 +29,7 @@ module RubyVM::MJIT
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
       when :setlocal then setlocal(jit, ctx, asm)
-      # getblockparam
+      when :getblockparam then getblockparam(jit, ctx, asm)
       # setblockparam
       when :getblockparamproxy then getblockparamproxy(jit, ctx, asm)
       # getspecial
@@ -163,7 +163,77 @@ module RubyVM::MJIT
       jit_setlocal_generic(jit, ctx, asm, idx:, level:)
     end
 
-    # getblockparam
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def getblockparam(jit, ctx, asm)
+      # EP level
+      level = jit.operand(1)
+
+      # Save the PC and SP because we might allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # A mirror of the interpreter code. Checking for the case
+      # where it's pushing rb_block_param_proxy.
+      side_exit = side_exit(jit, ctx)
+
+      # Load environment pointer EP from CFP
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
+
+      # Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
+      # FIXME: This is testing bits in the same place that the WB check is testing.
+      # We should combine these at some point
+      asm.test([ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS], C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)
+
+      # If the frame flag has been modified, then the actual proc value is
+      # already in the EP and we should just use the value.
+      frame_flag_modified = asm.new_label('frame_flag_modified')
+      asm.jnz(frame_flag_modified)
+
+      # This instruction writes the block handler to the EP.  If we need to
+      # fire a write barrier for the write, then exit (we'll let the
+      # interpreter handle it so it can fire the write barrier).
+      # flags & VM_ENV_FLAG_WB_REQUIRED
+      asm.test([ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS], C.VM_ENV_FLAG_WB_REQUIRED)
+
+      # if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+      asm.jnz(side_exit)
+
+      # Convert the block handler in to a proc
+      # call rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
+      asm.mov(C_ARGS[0], EC)
+      # The block handler for the current frame
+      # note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
+      asm.mov(C_ARGS[1], [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+      asm.call(C.rb_vm_bh_to_procval)
+
+      # Load environment pointer EP from CFP (again)
+      ep_reg = :rcx
+      jit_get_ep(asm, level, reg: ep_reg)
+
+      # Write the value at the environment pointer
+      idx = jit.operand(0)
+      offs = -(C.VALUE.size * idx)
+      asm.mov([ep_reg, offs], C_RET);
+
+      # Set the frame modified flag
+      asm.mov(:rax, [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS]) # flag_check
+      asm.or(:rax, C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) # modified_flag
+      asm.mov([ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_FLAGS], :rax)
+
+      asm.write_label(frame_flag_modified)
+
+      # Push the proc on the stack
+      stack_ret = ctx.stack_push
+      ep_reg = :rax
+      jit_get_ep(asm, level, reg: ep_reg)
+      asm.mov(:rax, [ep_reg, offs])
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
     # setblockparam
 
     # @param jit [RubyVM::MJIT::JITState]

@@ -380,6 +380,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_vm_bh_to_procval
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_vm_bh_to_procval)'
+    end
+
     #========================================================================================
     #
     # Old stuff
