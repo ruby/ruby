@@ -104,6 +104,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'INT2NUM(BUILTIN_TYPE((VALUE)NUM2SIZET(_value)))'
     end
 
+    def RB_TYPE_P(obj, type)
+      Primitive.cexpr! 'RBOOL(RB_TYPE_P(obj, NUM2UINT(type)))'
+    end
+
     def rb_shape_get_shape_id(obj)
       _value = to_value(obj)
       Primitive.cexpr! 'UINT2NUM((unsigned int)rb_shape_get_shape_id((VALUE)NUM2SIZET(_value)))'
@@ -835,6 +839,10 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.RUBY_T_MODULE
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MODULE) }
+  end
+
+  def C.RUBY_T_STRING
+    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_STRING) }
   end
 
   def C.SHAPE_MASK
