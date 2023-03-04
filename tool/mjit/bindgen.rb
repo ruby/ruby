@@ -500,6 +500,7 @@ generator = BindingGenerator.new(
     rb_method_cfunc_t
     rb_method_optimized_t
     method_optimized_type
+    rb_thread_struct
   ],
   dynamic_types: %w[
     VALUE
@@ -509,6 +510,7 @@ generator = BindingGenerator.new(
     'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux
     rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
+    rb_thread_struct: %w[status locking_native_thread to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
   },
   ruby_fields: {
     rb_iseq_constant_body: %w[
