@@ -1559,7 +1559,7 @@ module RubyVM::MJIT
 
       side_exit = side_exit(jit, ctx)
 
-      if comptime_recv.class == Array && fixnum?(comptime_obj)
+      if C.rb_class_of(comptime_recv) == Array && fixnum?(comptime_obj)
         unless Invariants.assume_bop_not_redefined(jit, C.ARRAY_REDEFINED_OP_FLAG, C.BOP_AREF)
           return CantCompile
         end
@@ -1592,7 +1592,7 @@ module RubyVM::MJIT
         # Let guard chains share the same successor
         jump_to_next_insn(jit, ctx, asm)
         EndBlock
-      elsif comptime_recv.class == Hash
+      elsif C.rb_class_of(comptime_recv) == Hash
         unless Invariants.assume_bop_not_redefined(jit, C.HASH_REDEFINED_OP_FLAG, C.BOP_AREF)
           return CantCompile
         end
@@ -1645,7 +1645,7 @@ module RubyVM::MJIT
       key = ctx.stack_opnd(1)
       _val = ctx.stack_opnd(0)
 
-      if comptime_recv.class == Array && fixnum?(comptime_key)
+      if C.rb_class_of(comptime_recv) == Array && fixnum?(comptime_key)
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is an Array
@@ -1680,7 +1680,7 @@ module RubyVM::MJIT
 
         jump_to_next_insn(jit, ctx, asm)
         EndBlock
-      elsif comptime_recv.class == Hash
+      elsif C.rb_class_of(comptime_recv) == Hash
         side_exit = side_exit(jit, ctx)
 
         # Guard receiver is a Hash
@@ -2224,7 +2224,7 @@ module RubyVM::MJIT
         asm.and(:rax, C.RUBY_FLONUM_MASK)
         asm.cmp(:rax, C.RUBY_FLONUM_FLAG)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass.singleton_class?
+      elsif C.FL_TEST(known_klass, C.RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
         asm.comment('guard known object with singleton class')
         asm.mov(:rax, C.to_value(comptime_obj))
         asm.cmp(obj_opnd, :rax)
@@ -2359,7 +2359,7 @@ module RubyVM::MJIT
         asm.mov(dst, :rax)
 
         true
-      elsif comptime_a.class == String && comptime_b.class == String
+      elsif C.rb_class_of(comptime_a) == String && C.rb_class_of(comptime_b) == String
         unless Invariants.assume_bop_not_redefined(jit, C.STRING_REDEFINED_OP_FLAG, C.BOP_EQ)
           # if overridden, emit the generic version
           return false

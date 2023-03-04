@@ -441,6 +441,7 @@ generator = BindingGenerator.new(
       RUBY_T_MODULE
       RUBY_T_STRING
       RMODULE_IS_REFINEMENT
+      RUBY_FL_SINGLETON
     ],
     PTR: %w[
       rb_cFalseClass
