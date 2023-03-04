@@ -351,6 +351,10 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_obj_as_string_result
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_obj_as_string_result)'
+    end
+
     #========================================================================================
     #
     # Old stuff

@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 66/101
+      # 67/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -49,7 +49,7 @@ module RubyVM::MJIT
       # putspecialobject
       when :putstring then putstring(jit, ctx, asm)
       # concatstrings
-      # anytostring
+      when :anytostring then anytostring(jit, ctx, asm)
       # toregexp
       # intern
       when :newarray then newarray(jit, ctx, asm)
@@ -556,7 +556,28 @@ module RubyVM::MJIT
     end
 
     # concatstrings
-    # anytostring
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def anytostring(jit, ctx, asm)
+      # Save the PC and SP since we might call #to_s
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      str = ctx.stack_pop(1)
+      val = ctx.stack_pop(1)
+
+      asm.mov(C_ARGS[0], str)
+      asm.mov(C_ARGS[1], val)
+      asm.call(C.rb_obj_as_string_result)
+
+      # Push the return value
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
     # toregexp
     # intern
 
