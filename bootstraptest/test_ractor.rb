@@ -1673,7 +1673,7 @@ assert_equal '30', %q{
 }
 
 # Selector#wait can support dynamic addition
-yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit')
+yjit_enabled = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 assert_equal '600', %q{
   RN = 100
   s = Ractor::Selector.new
