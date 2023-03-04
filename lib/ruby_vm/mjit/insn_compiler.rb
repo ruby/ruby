@@ -2271,6 +2271,25 @@ module RubyVM::MJIT
       true
     end
 
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_thread_s_current(jit, ctx, asm, argc, _known_recv_class)
+      return false if argc != 0
+      asm.comment('Thread.current')
+      ctx.stack_pop(1)
+
+      # ec->thread_ptr
+      asm.mov(:rax, [EC, C.rb_execution_context_t.offsetof(:thread_ptr)])
+
+      # thread->self
+      asm.mov(:rax, [:rax, C.rb_thread_struct.offsetof(:self)])
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+      true
+    end
+
     #
     # Helpers
     #
@@ -2311,7 +2330,7 @@ module RubyVM::MJIT
       #register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
 
       # Thread.current
-      #register_cfunc_method(rb_singleton_class(rb_cThread), :current, :jit_thread_s_current)
+      register_cfunc_method(C.rb_singleton_class(Thread), :current, :jit_thread_s_current)
 
       #---
       register_cfunc_method(Array, :<<, :jit_rb_ary_push)

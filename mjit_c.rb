@@ -384,6 +384,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_vm_bh_to_procval)'
     end
 
+    def rb_singleton_class(obj)
+      Primitive.cexpr! 'rb_singleton_class(obj)'
+    end
+
     #========================================================================================
     #
     # Old stuff
@@ -1529,6 +1533,57 @@ module RubyVM::MJIT # :nodoc: all
     @rb_shape_t ||= self.rb_shape
   end
 
+  def C.rb_thread_struct
+    @rb_thread_struct ||= CType::Struct.new(
+      "rb_thread_struct", Primitive.cexpr!("SIZEOF(struct rb_thread_struct)"),
+      lt_node: [self.ccan_list_node, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), lt_node)")],
+      self: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), self)")],
+      ractor: [CType::Pointer.new { self.rb_ractor_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ractor)")],
+      vm: [CType::Pointer.new { self.rb_vm_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), vm)")],
+      nt: [CType::Pointer.new { self.rb_native_thread }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), nt)")],
+      ec: [CType::Pointer.new { self.rb_execution_context_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ec)")],
+      sched: [self.rb_thread_sched_item, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), sched)")],
+      serial: [self.rb_atomic_t, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), serial)")],
+      last_status: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), last_status)")],
+      calling: [CType::Pointer.new { self.rb_calling_info }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), calling)")],
+      top_self: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), top_self)")],
+      top_wrapper: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), top_wrapper)")],
+      priority: [CType::Immediate.parse("int8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), priority)")],
+      running_time_us: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), running_time_us)")],
+      blocking_region_buffer: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), blocking_region_buffer)")],
+      thgroup: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), thgroup)")],
+      value: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), value)")],
+      pending_interrupt_queue: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), pending_interrupt_queue)")],
+      pending_interrupt_mask_stack: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), pending_interrupt_mask_stack)")],
+      interrupt_lock: [self.rb_nativethread_lock_t, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), interrupt_lock)")],
+      unblock: [self.rb_unblock_callback, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), unblock)")],
+      locking_mutex: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), locking_mutex)")],
+      keeping_mutexes: [CType::Pointer.new { self.rb_mutex_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), keeping_mutexes)")],
+      join_list: [CType::Pointer.new { self.rb_waiting_list }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), join_list)")],
+      invoke_arg: [CType::Union.new(
+        "", Primitive.cexpr!("SIZEOF(((struct rb_thread_struct *)NULL)->invoke_arg)"),
+        proc: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct rb_thread_struct *)NULL)->invoke_arg.proc)"),
+          proc: [self.VALUE, Primitive.cexpr!("OFFSETOF(((struct rb_thread_struct *)NULL)->invoke_arg.proc, proc)")],
+          args: [self.VALUE, Primitive.cexpr!("OFFSETOF(((struct rb_thread_struct *)NULL)->invoke_arg.proc, args)")],
+          kw_splat: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF(((struct rb_thread_struct *)NULL)->invoke_arg.proc, kw_splat)")],
+        ),
+        func: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct rb_thread_struct *)NULL)->invoke_arg.func)"),
+          func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF(((struct rb_thread_struct *)NULL)->invoke_arg.func, func)")],
+          arg: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF(((struct rb_thread_struct *)NULL)->invoke_arg.func, arg)")],
+        ),
+      ), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), invoke_arg)")],
+      invoke_type: [self.thread_invoke_type, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), invoke_type)")],
+      stat_insn_usage: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), stat_insn_usage)")],
+      root_fiber: [CType::Pointer.new { self.rb_fiber_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), root_fiber)")],
+      scheduler: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), scheduler)")],
+      blocking: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), blocking)")],
+      name: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), name)")],
+      ext_config: [self.rb_ext_config, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ext_config)")],
+    )
+  end
+
   def C.VALUE
     @VALUE ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(VALUE)"), Primitive.cexpr!("SIGNED_TYPE_P(VALUE)"))
   end
@@ -1543,10 +1598,6 @@ module RubyVM::MJIT # :nodoc: all
 
   def C._Bool
     CType::Bool.new
-  end
-
-  def C.rb_thread_struct
-    CType::Stub.new(:rb_thread_struct)
   end
 
   def C.vm_call_handler
@@ -1651,6 +1702,50 @@ module RubyVM::MJIT # :nodoc: all
 
   def C.rb_mjit_unit_list
     CType::Stub.new(:rb_mjit_unit_list)
+  end
+
+  def C.rb_ractor_t
+    CType::Stub.new(:rb_ractor_t)
+  end
+
+  def C.rb_vm_t
+    CType::Stub.new(:rb_vm_t)
+  end
+
+  def C.rb_native_thread
+    CType::Stub.new(:rb_native_thread)
+  end
+
+  def C.rb_thread_sched_item
+    CType::Stub.new(:rb_thread_sched_item)
+  end
+
+  def C.rb_calling_info
+    CType::Stub.new(:rb_calling_info)
+  end
+
+  def C.rb_nativethread_lock_t
+    CType::Stub.new(:rb_nativethread_lock_t)
+  end
+
+  def C.rb_unblock_callback
+    CType::Stub.new(:rb_unblock_callback)
+  end
+
+  def C.rb_mutex_struct
+    CType::Stub.new(:rb_mutex_struct)
+  end
+
+  def C.rb_waiting_list
+    CType::Stub.new(:rb_waiting_list)
+  end
+
+  def C.thread_invoke_type
+    CType::Stub.new(:thread_invoke_type)
+  end
+
+  def C.rb_ext_config
+    CType::Stub.new(:rb_ext_config)
   end
 
   ### MJIT bindgen end ###
