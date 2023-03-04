@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 71/101
+      # 72/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -57,7 +57,7 @@ module RubyVM::MJIT
       when :duparray then duparray(jit, ctx, asm)
       # duphash
       when :expandarray then expandarray(jit, ctx, asm)
-      # concatarray
+      when :concatarray then concatarray(jit, ctx, asm)
       when :splatarray then splatarray(jit, ctx, asm)
       when :newhash then newhash(jit, ctx, asm)
       # newrange
@@ -750,7 +750,28 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # concatarray
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def concatarray(jit, ctx, asm)
+      # Save the PC and SP because the callee may allocate
+      # Note that this modifies REG_SP, which is why we do it first
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # Get the operands from the stack
+      ary2st_opnd = ctx.stack_pop(1)
+      ary1_opnd = ctx.stack_pop(1)
+
+      # Call rb_vm_concat_array(ary1, ary2st)
+      asm.mov(C_ARGS[0], ary1_opnd)
+      asm.mov(C_ARGS[1], ary2st_opnd)
+      asm.call(C.rb_vm_concat_array)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
