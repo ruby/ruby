@@ -355,6 +355,10 @@ module RubyVM::MJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_obj_as_string_result)'
     end
 
+    def rb_str_concat_literals
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_concat_literals)'
+    end
+
     #========================================================================================
     #
     # Old stuff

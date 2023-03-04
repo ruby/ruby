@@ -24,7 +24,7 @@ module RubyVM::MJIT
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 67/101
+      # 68/101
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -48,7 +48,7 @@ module RubyVM::MJIT
       when :putobject then putobject(jit, ctx, asm)
       # putspecialobject
       when :putstring then putstring(jit, ctx, asm)
-      # concatstrings
+      when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
       # toregexp
       # intern
@@ -555,7 +555,28 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # concatstrings
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def concatstrings(jit, ctx, asm)
+      n = jit.operand(0)
+
+      # Save the PC and SP because we are allocating
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.lea(:rax, ctx.sp_opnd(-C.VALUE.size * n))
+
+      # call rb_str_concat_literals(size_t n, const VALUE *strings);
+      asm.mov(C_ARGS[0], n)
+      asm.mov(C_ARGS[1], :rax)
+      asm.call(C.rb_str_concat_literals)
+
+      ctx.stack_pop(n)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
