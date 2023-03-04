@@ -168,7 +168,6 @@ MJIT_RUNTIME_COUNTERS(
 
     getivar_megamorphic,
     getivar_not_heap,
-    getivar_not_t_object,
     getivar_special_const,
     getivar_too_complex,
 
