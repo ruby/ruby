@@ -1076,11 +1076,11 @@ module RubyVM::MJIT
       flags = C.vm_ci_flag(cd.ci)
 
       # vm_sendish
-      cme = jit_search_method(jit, ctx, asm, mid, argc, flags)
+      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, argc, flags)
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler)
+      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, comptime_recv_klass)
     end
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -1099,11 +1099,11 @@ module RubyVM::MJIT
       flags = C.vm_ci_flag(cd.ci)
 
       # vm_sendish
-      cme = jit_search_method(jit, ctx, asm, mid, argc, flags)
+      cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, argc, flags)
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, C.VM_BLOCK_HANDLER_NONE)
+      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, C.VM_BLOCK_HANDLER_NONE, comptime_recv_klass)
     end
 
     # @param jit [RubyVM::MJIT::JITState]
@@ -1211,7 +1211,7 @@ module RubyVM::MJIT
       if cme == CantCompile
         return CantCompile
       end
-      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler)
+      jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, nil)
     end
 
     # invokeblock
@@ -2075,7 +2075,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_obj_not(jit, ctx, asm, argc)
+    def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('rb_obj_not')
 
@@ -2094,7 +2094,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_obj_equal(jit, ctx, asm, argc)
+    def jit_rb_obj_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('equal?')
       obj1 = ctx.stack_pop(1)
@@ -2115,7 +2115,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_obj_not_equal(jit, ctx, asm, argc)
+    def jit_rb_obj_not_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       jit_equality_specialized(jit, ctx, asm, false)
     end
@@ -2123,7 +2123,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_int_equal(jit, ctx, asm, argc)
+    def jit_rb_int_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
@@ -2148,7 +2148,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_int_mul(jit, ctx, asm, argc)
+    def jit_rb_int_mul(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
@@ -2167,7 +2167,7 @@ module RubyVM::MJIT
       true
     end
 
-    def jit_rb_int_div(jit, ctx, asm, argc)
+    def jit_rb_int_div(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
@@ -2193,7 +2193,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_int_aref(jit, ctx, asm, argc)
+    def jit_rb_int_aref(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
 
@@ -2216,7 +2216,21 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_rb_ary_push(jit, ctx, asm, argc)
+    def jit_rb_str_to_s(jit, ctx, asm, argc, known_recv_class)
+      return false if argc != 0
+      if known_recv_class == String
+        asm.comment('to_s on plain string')
+        # The method returns the receiver, which is already on the stack.
+        # No stack movement.
+        return true
+      end
+      false
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_ary_push(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_ary_push')
 
@@ -2241,11 +2255,11 @@ module RubyVM::MJIT
       # Specialization for C methods. See register_cfunc_method for details.
       register_cfunc_method(BasicObject, :!, :jit_rb_obj_not)
 
-      #register_cfunc_method(cNilClass, :nil?, :jit_rb_true)
-      #register_cfunc_method(mKernel, :nil?, :jit_rb_false)
-      #register_cfunc_method(mKernel, :is_a?, :jit_rb_kernel_is_a)
-      #register_cfunc_method(mKernel, :kind_of?, :jit_rb_kernel_is_a)
-      #register_cfunc_method(mKernel, :instance_of?, :jit_rb_kernel_instance_of)
+      #register_cfunc_method(NilClass, :nil?, :jit_rb_true)
+      #register_cfunc_method(Kernel, :nil?, :jit_rb_false)
+      #register_cfunc_method(Kernel, :is_a?, :jit_rb_kernel_is_a)
+      #register_cfunc_method(Kernel, :kind_of?, :jit_rb_kernel_is_a)
+      #register_cfunc_method(Kernel, :instance_of?, :jit_rb_kernel_instance_of)
 
       register_cfunc_method(BasicObject, :==, :jit_rb_obj_equal)
       register_cfunc_method(BasicObject, :equal?, :jit_rb_obj_equal)
@@ -2259,12 +2273,12 @@ module RubyVM::MJIT
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
 
       # rb_str_to_s() methods in string.c
-      #register_cfunc_method(cString, :empty?, :jit_rb_str_empty_p)
-      #register_cfunc_method(cString, :to_s, :jit_rb_str_to_s)
-      #register_cfunc_method(cString, :to_str, :jit_rb_str_to_s)
-      #register_cfunc_method(cString, :bytesize, :jit_rb_str_bytesize)
-      #register_cfunc_method(cString, :<<, :jit_rb_str_concat)
-      #register_cfunc_method(cString, :+@, :jit_rb_str_uplus)
+      #register_cfunc_method(String, :empty?, :jit_rb_str_empty_p)
+      register_cfunc_method(String, :to_s, :jit_rb_str_to_s)
+      register_cfunc_method(String, :to_str, :jit_rb_str_to_s)
+      #register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)
+      #register_cfunc_method(String, :<<, :jit_rb_str_concat)
+      #register_cfunc_method(String, :+@, :jit_rb_str_uplus)
 
       # rb_ary_empty_p() method in array.c
       #register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
@@ -2903,7 +2917,7 @@ module RubyVM::MJIT
       # Invalidate on redefinition (part of vm_search_method_fastpath)
       Invariants.assume_method_lookup_stable(jit, cme)
 
-      return cme
+      return cme, comptime_recv_klass
     end
 
     def jit_search_super_method(jit, ctx, asm, mid, argc, flags)
@@ -3001,8 +3015,8 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler)
-      jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler)
+    def jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
+      jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
     end
 
     # vm_call_method
@@ -3010,7 +3024,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     # @param send_shift [Integer] The number of shifts needed for VM_CALL_OPT_SEND
-    def jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, send_shift: 0)
+    def jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift: 0)
       # The main check of vm_call_method before vm_call_method_each_type
       case C.METHOD_ENTRY_VISI(cme)
       when C.METHOD_VISI_PUBLIC
@@ -3038,7 +3052,7 @@ module RubyVM::MJIT
       comptime_recv = jit.peek_at_stack(recv_idx)
       recv_opnd = ctx.stack_opnd(recv_idx)
 
-      jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, send_shift:)
+      jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
     end
 
     # Generate ancestry guard for protected callee.
@@ -3060,7 +3074,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, send_shift:)
+    def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
         jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
@@ -3068,7 +3082,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_notimplemented)
         return CantCompile
       when C.VM_METHOD_TYPE_CFUNC
-        jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+        jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_ATTRSET
         asm.incr_counter(:send_attrset)
         return CantCompile
@@ -3084,7 +3098,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_alias)
         return CantCompile
       when C.VM_METHOD_TYPE_OPTIMIZED
-        jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+        jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_UNDEF
         asm.incr_counter(:send_undef)
         return CantCompile
@@ -3157,7 +3171,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+    def jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
         return CantCompile
       end
@@ -3165,14 +3179,14 @@ module RubyVM::MJIT
         return CantCompile
       end
 
-      jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+      jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
     end
 
     # jit_call_cfunc_with_frame
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+    def jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       cfunc = cme.def.body.cfunc
 
       if argc + 1 > 6
@@ -3204,7 +3218,7 @@ module RubyVM::MJIT
       # Delegate to codegen for C methods if we have it.
       if flags & C.VM_CALL_KWARG == 0 && flags & C.VM_CALL_OPT_SEND == 0
         known_cfunc_codegen = lookup_cfunc_codegen(cme.def)
-        if known_cfunc_codegen&.call(jit, ctx, asm, argc)
+        if known_cfunc_codegen&.call(jit, ctx, asm, argc, known_recv_class)
           # cfunc codegen generated code. Terminate the block so
           # there isn't multiple calls in the same block.
           jump_to_next_insn(jit, ctx, asm)
@@ -3298,10 +3312,10 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+    def jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       case cme.def.body.optimized.type
       when C.OPTIMIZED_METHOD_TYPE_SEND
-        jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+        jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.OPTIMIZED_METHOD_TYPE_CALL
         asm.incr_counter(:send_optimized_call)
         return CantCompile
@@ -3324,7 +3338,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+    def jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
         return CantCompile
       end
@@ -3345,7 +3359,7 @@ module RubyVM::MJIT
       send_shift += 1
 
       kw_splat = flags & C.VM_CALL_KW_SPLAT != 0
-      jit_call_symbol(jit, ctx, asm, cme, C.VM_CALL_FCALL, argc, kw_splat, block_handler, send_shift:)
+      jit_call_symbol(jit, ctx, asm, cme, C.VM_CALL_FCALL, argc, kw_splat, block_handler, known_recv_class, send_shift:)
     end
 
     # @param ctx [RubyVM::MJIT::Context]
@@ -3369,7 +3383,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_symbol(jit, ctx, asm, cme, flags, argc, kw_splat, block_handler, send_shift:)
+    def jit_call_symbol(jit, ctx, asm, cme, flags, argc, kw_splat, block_handler, known_recv_class, send_shift:)
       flags |= C.VM_CALL_OPT_SEND | (kw_splat ? C.VM_CALL_KW_SPLAT : 0)
 
       comptime_symbol = jit.peek_at_stack(argc)
@@ -3394,13 +3408,13 @@ module RubyVM::MJIT
       jit_chain_guard(:jne, jit, ctx, asm, id_changed_exit)
 
       # rb_callable_method_entry_with_refinements
-      cme = jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift:)
+      cme, _ = jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift:)
       if cme == CantCompile
         return CantCompile
       end
 
       if flags & C.VM_CALL_FCALL != 0
-        return jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, send_shift:)
+        return jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift:)
       end
 
       raise NotImplementedError # unreachable for now
