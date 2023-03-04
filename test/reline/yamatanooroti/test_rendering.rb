@@ -839,6 +839,18 @@ begin
       EOC
     end
 
+    def test_multiline_completion
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  St\n  St\C-p\t")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   String
+        prompt>   St
+      EOC
+    end
+
     def test_completion_journey_2nd_line
       write_inputrc <<~LINES
         set editing-mode vi
