@@ -105,6 +105,33 @@ impl Assembler
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 
+    fn x86_merge(mut self) -> Assembler {
+        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut iterator = self.into_draining_iter();
+
+        while let Some((index, mut insn)) = iterator.next_unmapped() {
+            match (&insn, iterator.peek()) {
+                // Merge `lea` and `mov` into a single `lea` when possible
+                (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
+                if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
+                    asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
+                    iterator.map_insn_index(&mut asm);
+                    iterator.next_unmapped(); // Pop merged Insn::Mov
+                }
+                _ => {
+                    let mut opnd_iter = insn.opnd_iter_mut();
+                    while let Some(opnd) = opnd_iter.next() {
+                        *opnd = iterator.map_opnd(*opnd);
+                    }
+                    asm.push_insn(insn);
+                }
+            }
+            iterator.map_insn_index(&mut asm);
+        }
+        asm
+    }
+
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
@@ -701,7 +728,10 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().x86_split().alloc_regs(regs);
+        let asm = self.lower_stack();
+        let asm = asm.x86_split();
+        let asm = asm.x86_merge();
+        let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -891,5 +921,23 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c31d8");
+    }
+
+    #[test]
+    fn test_merge_lea_reg() {
+        let (mut asm, mut cb) = setup_asm();
+        let sp = asm.lea(Opnd::mem(64, SP, 8));
+        asm.mov(SP, sp); // should be merged to lea
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(format!("{:x}", cb), "488d5b08");
+    }
+
+    #[test]
+    fn test_merge_lea_mem() {
+        let (mut asm, mut cb) = setup_asm();
+        let sp = asm.lea(Opnd::mem(64, SP, 8));
+        asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(format!("{:x}", cb), "488d4308488903");
     }
 }
