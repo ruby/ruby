@@ -547,6 +547,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ UINT2NUM(BOP_EQ) }
   end
 
+  def C.BOP_FREEZE
+    Primitive.cexpr! %q{ UINT2NUM(BOP_FREEZE) }
+  end
+
   def C.BOP_GE
     Primitive.cexpr! %q{ UINT2NUM(BOP_GE) }
   end
