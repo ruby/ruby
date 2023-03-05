@@ -2480,7 +2480,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_guard_known_klass(jit, ctx, asm, known_klass, obj_opnd, comptime_obj, side_exit, limit: 5)
+    def jit_guard_known_klass(jit, ctx, asm, known_klass, obj_opnd, comptime_obj, side_exit, limit: 10)
       # Only memory operand is supported for now
       assert_equal(true, obj_opnd.is_a?(Array))
 
@@ -2908,12 +2908,12 @@ module RubyVM::MJIT
         block_opnd = ctx.stack_opnd(0) # to be popped after eliminating side exit possibility
         if block_code.nil?
           asm.cmp(block_opnd, Qnil)
-          asm.jne(counted_exit(side_exit, :send_block_not_nil))
+          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit, :send_block_not_nil))
           return C.VM_BLOCK_HANDLER_NONE
         elsif C.to_value(block_code) == C.rb_block_param_proxy
           asm.mov(:rax, C.rb_block_param_proxy)
           asm.cmp(block_opnd, :rax)
-          asm.jne(counted_exit(side_exit, :send_block_not_proxy))
+          jit_chain_guard(:jne, jit, ctx, asm, counted_exit(side_exit, :send_block_not_proxy))
           return C.rb_block_param_proxy
         else
           asm.incr_counter(:send_blockarg_not_nil_or_proxy)
