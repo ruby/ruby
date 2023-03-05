@@ -339,7 +339,6 @@ module RubyVM::MJIT
 
       ivar_name = jit.operand(0)
       comptime_receiver = jit.peek_at_self
-      comptime_val_klass = C.rb_class_of(comptime_receiver)
 
       # If the comptime receiver is frozen, writing an IV will raise an exception
       # and we don't want to JIT code to deal with that situation.
@@ -1989,7 +1988,6 @@ module RubyVM::MJIT
     def getlocal_WC_0(jit, ctx, asm)
       # Get operands
       idx = jit.operand(0)
-      level = 0
 
       # Get EP
       asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:ep)])
@@ -2016,7 +2014,6 @@ module RubyVM::MJIT
     # @param asm [RubyVM::MJIT::Assembler]
     def setlocal_WC_0(jit, ctx, asm)
       slot_idx = jit.operand(0)
-      local_idx = slot_to_local_idx(jit.iseq, slot_idx)
 
       # Load environment pointer EP (level 0) from CFP
       ep_reg = :rax
