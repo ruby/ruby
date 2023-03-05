@@ -403,6 +403,15 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_aliased_callable_method_entry(cme)
+      _cme = cme.to_i
+      cme_addr = Primitive.cstmt! %{
+        extern const rb_callable_method_entry_t * rb_aliased_callable_method_entry(const rb_callable_method_entry_t *me);
+        return SIZET2NUM((size_t)rb_aliased_callable_method_entry((const rb_callable_method_entry_t *)NUM2SIZET(_cme)));
+      }
+      rb_callable_method_entry_t.new(cme_addr)
+    end
+
     #========================================================================================
     #
     # Old stuff
