@@ -4,6 +4,7 @@
 
 #include "ruby/internal/config.h"
 #include "internal/string.h"
+#include "internal/struct.h"
 #include "internal/variable.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -161,15 +162,15 @@ MJIT_RUNTIME_COUNTERS(
     send_optimized_call_block,
     send_optimized_call_kwarg,
     send_optimized_call_splat,
-    send_optimized_blockarg,
+    send_optimized_struct_aref_error,
 
+    send_optimized_blockarg,
     send_optimized_block_call,
-    send_optimized_struct_aref,
     send_optimized_struct_aset,
     send_optimized_unknown_type,
 
-    send_optimized_bmethod_not_iseq,
-    send_optimized_bmethod_blockarg,
+    send_bmethod_not_iseq,
+    send_bmethod_blockarg,
 
     invokesuper_me_changed,
     invokesuper_same_me,

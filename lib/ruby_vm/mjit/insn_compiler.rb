@@ -3372,7 +3372,7 @@ module RubyVM::MJIT
       proc_block = proc_t.block
 
       if proc_block.type != C.block_type_iseq
-        asm.incr_counter(:send_optimized_bmethod_not_iseq)
+        asm.incr_counter(:send_bmethod_not_iseq)
         return CantCompile
       end
 
@@ -3389,7 +3389,7 @@ module RubyVM::MJIT
       # Passing a block to a block needs logic different from passing
       # a block to a method and sometimes requires allocation. Bail for now.
       if block_handler != C.VM_BLOCK_HANDLER_NONE
-        asm.incr_counter(:send_optimized_bmethod_blockarg)
+        asm.incr_counter(:send_bmethod_blockarg)
         return CantCompile
       end
 
@@ -3427,8 +3427,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_optimized_block_call)
         return CantCompile
       when C.OPTIMIZED_METHOD_TYPE_STRUCT_AREF
-        asm.incr_counter(:send_optimized_struct_aref)
-        return CantCompile
+        jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.OPTIMIZED_METHOD_TYPE_STRUCT_ASET
         asm.incr_counter(:send_optimized_struct_aset)
         return CantCompile
@@ -3522,6 +3521,50 @@ module RubyVM::MJIT
       stack_ret = ctx.stack_push
       asm.mov(stack_ret, C_RET)
       return KeepCompiling
+    end
+
+    # vm_call_opt_struct_aref
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+      if argc != 0
+        asm.incr_counter(:send_optimized_struct_aref_error)
+        return CantCompile
+      end
+
+      off = cme.def.body.optimized.index
+
+      recv_idx = argc # blockarg is not supported
+      recv_idx += send_shift
+      comptime_recv = jit.peek_at_stack(recv_idx)
+
+      # This is a .send call and we need to adjust the stack
+      if flags & C.VM_CALL_OPT_SEND != 0
+        jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+      end
+
+      # All structs from the same Struct class should have the same
+      # length. So if our comptime_recv is embedded all runtime
+      # structs of the same class should be as well, and the same is
+      # true of the converse.
+      embedded = C.FL_TEST_RAW(comptime_recv, C.RSTRUCT_EMBED_LEN_MASK)
+
+      asm.comment('struct aref')
+      asm.mov(:rax, ctx.stack_pop(1)) # recv
+
+      if embedded
+        asm.mov(:rax, [:rax, C.RStruct.offsetof(:as, :ary) + (C.VALUE.size * off)])
+      else
+        asm.mov(:rax, [:rax, C.RStruct.offsetof(:as, :heap, :ptr)])
+        asm.mov(:rax, [:rax, C.VALUE.size * off])
+      end
+
+      ret = ctx.stack_push
+      asm.mov(ret, :rax)
+
+      jump_to_next_insn(jit, ctx, asm)
+      EndBlock
     end
 
     # @param ctx [RubyVM::MJIT::Context]
