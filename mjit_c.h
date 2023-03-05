@@ -140,7 +140,7 @@ MJIT_RUNTIME_COUNTERS(
     send_block_not_nil,
     send_block_not_proxy,
 
-    send_iseq_not_only_optparam,
+    send_iseq_kwparam,
     send_iseq_kw_splat,
 
     send_cfunc_variadic,
@@ -164,6 +164,9 @@ MJIT_RUNTIME_COUNTERS(
     send_optimized_send_mid_id_changed,
     send_optimized_send_null_mid,
     send_optimized_send_send,
+    send_optimized_call_block,
+    send_optimized_call_kwarg,
+    send_optimized_call_splat,
     send_optimized_blockarg,
 
     invokesuper_me_changed,

@@ -272,6 +272,14 @@ module RubyVM::MJIT # :nodoc: all
       }
     end
 
+    def rb_iseq_only_kwparam_p(iseq)
+      _iseq = iseq.to_i
+      Primitive.cstmt! %{
+        extern bool rb_iseq_only_kwparam_p(const rb_iseq_t *iseq);
+        return RBOOL(rb_iseq_only_kwparam_p((rb_iseq_t *)NUM2SIZET(_iseq)));
+      }
+    end
+
     def rb_vm_opt_newarray_min
       Primitive.cstmt! %{
         extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
@@ -386,6 +394,13 @@ module RubyVM::MJIT # :nodoc: all
 
     def rb_singleton_class(obj)
       Primitive.cexpr! 'rb_singleton_class(obj)'
+    end
+
+    def rb_optimized_call
+      Primitive.cstmt! %{
+        extern VALUE rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
+        return SIZET2NUM((size_t)rb_optimized_call);
+      }
     end
 
     #========================================================================================
@@ -1448,7 +1463,7 @@ module RubyVM::MJIT # :nodoc: all
       send_block_setup: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_setup)")],
       send_block_not_nil: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_not_nil)")],
       send_block_not_proxy: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_block_not_proxy)")],
-      send_iseq_not_only_optparam: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_not_only_optparam)")],
+      send_iseq_kwparam: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_kwparam)")],
       send_iseq_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_iseq_kw_splat)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
       send_cfunc_too_many_args: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_cfunc_too_many_args)")],
@@ -1468,6 +1483,9 @@ module RubyVM::MJIT # :nodoc: all
       send_optimized_send_mid_id_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_mid_id_changed)")],
       send_optimized_send_null_mid: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_null_mid)")],
       send_optimized_send_send: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_send_send)")],
+      send_optimized_call_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_block)")],
+      send_optimized_call_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_kwarg)")],
+      send_optimized_call_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_splat)")],
       send_optimized_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_blockarg)")],
       invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
       invokesuper_same_me: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_same_me)")],
