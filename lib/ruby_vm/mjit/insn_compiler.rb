@@ -2694,7 +2694,7 @@ module RubyVM::MJIT
       end
     end
 
-    # Note: This clobbers :rax
+    # NOTE: This clobbers :rax
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
@@ -3377,8 +3377,7 @@ module RubyVM::MJIT
       when C.OPTIMIZED_METHOD_TYPE_SEND
         jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.OPTIMIZED_METHOD_TYPE_CALL
-        asm.incr_counter(:send_optimized_call)
-        return CantCompile
+        jit_call_opt_call(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.OPTIMIZED_METHOD_TYPE_BLOCK_CALL
         asm.incr_counter(:send_optimized_block_call)
         return CantCompile
@@ -3420,6 +3419,64 @@ module RubyVM::MJIT
 
       kw_splat = flags & C.VM_CALL_KW_SPLAT != 0
       jit_call_symbol(jit, ctx, asm, cme, C.VM_CALL_FCALL, argc, kw_splat, block_handler, known_recv_class, send_shift:)
+    end
+
+    # vm_call_opt_call
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_opt_call(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
+      if block_handler != C.VM_BLOCK_HANDLER_NONE
+        asm.incr_counter(:send_optimized_call_block)
+        return CantCompile
+      end
+
+      if flags & C.VM_CALL_KWARG != 0
+        asm.incr_counter(:send_optimized_call_kwarg)
+        return CantCompile
+      end
+
+      if flags & C.VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_optimized_call_splat)
+        return CantCompile
+      end
+
+      # TODO: implement this
+      # Optimize for single ractor mode and avoid runtime check for
+      # "defined with an un-shareable Proc in a different Ractor"
+      # if !assume_single_ractor_mode(jit, ocb)
+      #   return CantCompile
+      # end
+
+      # If this is a .send call we need to adjust the stack
+      if flags & C.VM_CALL_OPT_SEND != 0
+        jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
+      end
+
+      # About to reset the SP, need to load this here
+      recv_idx = argc # blockarg is not supported. send_shift is already handled.
+      asm.mov(:rcx, ctx.stack_opnd(recv_idx)) # recv
+
+      # Save the PC and SP because the callee can make Ruby calls
+      jit_prepare_routine_call(jit, ctx, asm) # NOTE: clobbers rax
+
+      asm.lea(:rax, ctx.sp_opnd(0)) # sp
+
+      kw_splat = flags & C.VM_CALL_KW_SPLAT
+
+      asm.mov(C_ARGS[0], :rcx)
+      asm.mov(C_ARGS[1], EC)
+      asm.mov(C_ARGS[2], argc)
+      asm.lea(C_ARGS[3], [:rax, -argc * C.VALUE.size]) # stack_argument_pointer. NOTE: C_ARGS[3] is rcx
+      asm.mov(C_ARGS[4], kw_splat)
+      asm.mov(C_ARGS[5], C.VM_BLOCK_HANDLER_NONE)
+      asm.call(C.rb_optimized_call)
+
+      ctx.stack_pop(argc + 1)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+      return KeepCompiling
     end
 
     # @param ctx [RubyVM::MJIT::Context]
@@ -3635,9 +3692,8 @@ module RubyVM::MJIT
           # Qnil push is handled in jit_push_frame
 
           return iseq.body.param.opt_table[opt]
-        else
-          # We don't support the remaining `else if`s yet.
-          asm.incr_counter(:send_iseq_not_only_optparam)
+        elsif C.rb_iseq_only_kwparam_p(iseq) && (flags & C.VM_CALL_ARGS_SPLAT) == 0
+          asm.incr_counter(:send_iseq_kwparam)
           return CantCompile
         end
       end
