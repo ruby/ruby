@@ -152,9 +152,6 @@ static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
 static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
 static inline void mjit_finish(bool close_handle_p){}
 
-static inline void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
-static inline void rb_mjit_before_ractor_spawn(void) {}
-static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 static inline void rb_mjit_collect_vm_usage_insn(int insn) {}
 
 # endif // USE_MJIT
