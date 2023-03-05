@@ -9,6 +9,9 @@
 
 #include "ruby/internal/config.h" // defines USE_MJIT
 
+// ISO C requires a translation unit to contain at least one declaration
+void rb_mjit(void) {}
+
 #if USE_MJIT
 
 #include "constant.h"
