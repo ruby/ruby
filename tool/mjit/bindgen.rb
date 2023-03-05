@@ -214,6 +214,7 @@ class BindingGenerator
             to_ruby = @ruby_fields.fetch(node.spelling, []).include?(field)
             if child.bitwidth > 0
               if bit_fields_end <= i # give up offsetof calculation for non-leading bit fields
+                binding.irb
                 raise "non-leading bit fields are not supported. consider including '#{field}' in skip_fields."
               end
               offsetof = node.offsetof.fetch(field)
@@ -407,6 +408,9 @@ generator = BindingGenerator.new(
       VM_ENV_FLAG_WB_REQUIRED
       VM_FRAME_MAGIC_METHOD
       VM_FRAME_MAGIC_CFUNC
+      VM_FRAME_MAGIC_BLOCK
+      VM_FRAME_FLAG_BMETHOD
+      VM_FRAME_FLAG_LAMBDA
       VM_FRAME_FLAG_CFRAME
       VM_FRAME_FLAG_CFRAME_KW
       VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
@@ -423,6 +427,7 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_ZSUPER
       VM_METHOD_TYPE_REFINED
       imemo_iseq
+      block_type_iseq
     ],
     ULONG: %w[
       INVALID_SHAPE_ID
@@ -490,6 +495,7 @@ generator = BindingGenerator.new(
     rb_method_definition_struct
     rb_method_iseq_t
     rb_method_type_t
+    rb_method_bmethod_t
     rb_mjit_compile_info
     rb_mjit_runtime_counters
     rb_mjit_unit
@@ -501,6 +507,10 @@ generator = BindingGenerator.new(
     rb_method_optimized_t
     method_optimized_type
     rb_thread_struct
+    rb_proc_t
+    rb_block
+    rb_block_type
+    rb_captured_block
   ],
   dynamic_types: %w[
     VALUE
@@ -511,6 +521,7 @@ generator = BindingGenerator.new(
     rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
     rb_thread_struct: %w[status locking_native_thread to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
+    :'' => %w[is_from_method is_lambda is_isolated], # rb_proc_t
   },
   ruby_fields: {
     rb_iseq_constant_body: %w[
