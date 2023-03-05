@@ -3131,7 +3131,8 @@ module RubyVM::MJIT
     def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
-        jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
+        iseq = def_iseq_ptr(cme.def)
+        jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:)
       when C.VM_METHOD_TYPE_NOTIMPLEMENTED
         asm.incr_counter(:send_notimplemented)
         return CantCompile
@@ -3146,8 +3147,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_missing)
         return CantCompile
       when C.VM_METHOD_TYPE_BMETHOD
-        asm.incr_counter(:send_bmethod)
-        return CantCompile
+        jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_ALIAS
         jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_OPTIMIZED
@@ -3171,8 +3171,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, block_handler, send_shift:)
-      iseq = def_iseq_ptr(cme.def)
+    def jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:, frame_type: nil, prev_ep: nil)
       opt_pc = jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
       if opt_pc == CantCompile
         return CantCompile
@@ -3183,14 +3182,14 @@ module RubyVM::MJIT
         asm.incr_counter(:send_tailcall)
         return CantCompile
       end
-      jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:)
+      jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep:)
     end
 
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:)
+    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep:)
       # We will not have side exits from here. Adjust the stack.
       if flags & C.VM_CALL_OPT_SEND != 0
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
@@ -3204,12 +3203,13 @@ module RubyVM::MJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
       jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
-      frame_type = C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
+      frame_type ||= C.VM_FRAME_MAGIC_METHOD | C.VM_ENV_FLAG_LOCAL
       jit_push_frame(
         jit, ctx, asm, cme, flags, argc, frame_type, block_handler,
         iseq:       iseq,
         local_size: iseq.body.local_table_size - iseq.body.param.size,
         stack_max:  iseq.body.stack_max,
+        prev_ep:,
       )
 
       # Jump to a stub for the callee ISEQ
@@ -3361,7 +3361,47 @@ module RubyVM::MJIT
       jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd)
     end
 
+    # vm_call_bmethod
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
+    def jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+      proc_addr = cme.def.body.bmethod.proc
+
+      proc_t = C.rb_yjit_get_proc_ptr(proc_addr)
+      proc_block = proc_t.block
+
+      if proc_block.type != C.block_type_iseq
+        asm.incr_counter(:send_optimized_bmethod_not_iseq)
+        return CantCompile
+      end
+
+      capture = proc_block.as.captured
+      iseq = capture.code.iseq
+
+      # TODO: implement this
+      # Optimize for single ractor mode and avoid runtime check for
+      # "defined with an un-shareable Proc in a different Ractor"
+      # if !assume_single_ractor_mode(jit, ocb)
+      #     return CantCompile;
+      # end
+
+      # Passing a block to a block needs logic different from passing
+      # a block to a method and sometimes requires allocation. Bail for now.
+      if block_handler != C.VM_BLOCK_HANDLER_NONE
+        asm.incr_counter(:send_optimized_bmethod_blockarg)
+        return CantCompile
+      end
+
+      frame_type = C.VM_FRAME_MAGIC_BLOCK | C.VM_FRAME_FLAG_BMETHOD | C.VM_FRAME_FLAG_LAMBDA
+      prev_ep = capture.ep
+      jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:, frame_type:, prev_ep:)
+    end
+
     # vm_call_alias
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       cme = C.rb_aliased_callable_method_entry(cme)
       jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
@@ -3550,7 +3590,7 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
-    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0)
+    def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
       # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
       asm.comment('stack overflow check')
       asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
@@ -3580,7 +3620,10 @@ module RubyVM::MJIT
       asm.mov(:rax, cme.to_i)
       asm.mov([SP, C.VALUE.size * (ep_offset - 2)], :rax)
       # ep[-1]: block handler or prev env ptr
-      if block_handler == C.VM_BLOCK_HANDLER_NONE
+      if prev_ep
+        asm.mov(:rax, prev_ep.to_i | 1) # tagged prev ep
+        asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
+      elsif block_handler == C.VM_BLOCK_HANDLER_NONE
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C.VM_BLOCK_HANDLER_NONE)
       elsif block_handler == C.rb_block_param_proxy
         # vm_caller_setup_arg_block:

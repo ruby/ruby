@@ -152,12 +152,6 @@ MJIT_RUNTIME_COUNTERS(
     send_ivar_opt_send,
     send_ivar_blockarg,
 
-    send_optimized_call,
-    send_optimized_block_call,
-    send_optimized_struct_aref,
-    send_optimized_struct_aset,
-    send_optimized_unknown_type,
-
     send_optimized_send_no_args,
     send_optimized_send_not_sym_or_str,
     send_optimized_send_mid_class_changed,
@@ -168,6 +162,14 @@ MJIT_RUNTIME_COUNTERS(
     send_optimized_call_kwarg,
     send_optimized_call_splat,
     send_optimized_blockarg,
+
+    send_optimized_block_call,
+    send_optimized_struct_aref,
+    send_optimized_struct_aset,
+    send_optimized_unknown_type,
+
+    send_optimized_bmethod_not_iseq,
+    send_optimized_bmethod_blockarg,
 
     invokesuper_me_changed,
     invokesuper_same_me,
