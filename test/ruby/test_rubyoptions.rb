@@ -1128,13 +1128,6 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_mjit_debug
-    if JITSupport.supported?
-      env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
-      assert_in_out_err([env, "--disable-yjit", "--mjit-debug=-O0 -O1", "--mjit-verbose=2", "" ], "", [], /-O0 -O1/)
-    end
-  end
-
   private
 
   def yjit_force_enabled?
