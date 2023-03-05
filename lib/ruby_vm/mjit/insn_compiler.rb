@@ -2147,6 +2147,33 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_mod_eqq(jit, ctx, asm, argc, _known_recv_class)
+      return false if argc != 1
+
+      asm.comment('Module#===')
+      # By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
+      # only live on these objects. With that, we can call rb_obj_is_kind_of() without
+      # jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
+      # Ruby methods with these inputs.
+      # Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
+      # right hand side.
+      lhs = ctx.stack_opnd(1) # the module
+      rhs = ctx.stack_opnd(0)
+      asm.mov(C_ARGS[0], rhs);
+      asm.mov(C_ARGS[1], lhs);
+      asm.call(C.rb_obj_is_kind_of)
+
+      # Return the result
+      ctx.stack_pop(2)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      return true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_int_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
@@ -2309,7 +2336,7 @@ module RubyVM::MJIT
       register_cfunc_method(BasicObject, :!=, :jit_rb_obj_not_equal)
       register_cfunc_method(Kernel, :eql?, :jit_rb_obj_equal)
       register_cfunc_method(Module, :==, :jit_rb_obj_equal)
-      #register_cfunc_method(Module, :===, :jit_rb_mod_eqq)
+      register_cfunc_method(Module, :===, :jit_rb_mod_eqq)
       register_cfunc_method(Symbol, :==, :jit_rb_obj_equal)
       register_cfunc_method(Symbol, :===, :jit_rb_obj_equal)
       register_cfunc_method(Integer, :==, :jit_rb_int_equal)
