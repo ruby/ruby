@@ -133,11 +133,12 @@ MJIT_RUNTIME_COUNTERS(
     send_arity,
     send_c_tracing,
 
-    send_blockarg,
+    send_blockarg_not_nil_or_proxy,
     send_blockiseq,
     send_block_handler,
     send_block_setup,
     send_block_not_nil,
+    send_block_not_proxy,
 
     send_iseq_not_only_optparam,
     send_iseq_kw_splat,

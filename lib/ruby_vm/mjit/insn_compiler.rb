@@ -2903,15 +2903,20 @@ module RubyVM::MJIT
     def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq, is_super)
       side_exit = side_exit(jit, ctx)
       if C.vm_ci_flag(ci) & C.VM_CALL_ARGS_BLOCKARG != 0
-        # TODO: Skip the check using Context?
+        # TODO: Skip cmp + jne using Context?
         block_code = jit.peek_at_stack(0)
         block_opnd = ctx.stack_opnd(0) # to be popped after eliminating side exit possibility
         if block_code.nil?
           asm.cmp(block_opnd, Qnil)
           asm.jne(counted_exit(side_exit, :send_block_not_nil))
           return C.VM_BLOCK_HANDLER_NONE
+        elsif C.to_value(block_code) == C.rb_block_param_proxy
+          asm.mov(:rax, C.rb_block_param_proxy)
+          asm.cmp(block_opnd, :rax)
+          asm.jne(counted_exit(side_exit, :send_block_not_proxy))
+          return C.rb_block_param_proxy
         else
-          asm.incr_counter(:send_blockarg)
+          asm.incr_counter(:send_blockarg_not_nil_or_proxy)
           return CantCompile
         end
       elsif blockiseq != 0
@@ -3009,10 +3014,6 @@ module RubyVM::MJIT
       end
       if flags & C.VM_CALL_KW_SPLAT != 0
         asm.incr_counter(:send_kw_splat)
-        return CantCompile
-      end
-      if flags & C.VM_CALL_ARGS_BLOCKARG != 0
-        asm.incr_counter(:send_blockarg)
         return CantCompile
       end
 
@@ -3519,6 +3520,16 @@ module RubyVM::MJIT
       # ep[-1]: block handler or prev env ptr
       if block_handler == C.VM_BLOCK_HANDLER_NONE
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C.VM_BLOCK_HANDLER_NONE)
+      elsif block_handler == C.rb_block_param_proxy
+        # vm_caller_setup_arg_block:
+        #   VALUE handler = VM_CF_BLOCK_HANDLER(reg_cfp);
+        #   reg_cfp->block_code = (const void *) handler;
+        jit_get_lep(jit, asm, reg: :rax)
+        asm.mov(:rax, [:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL]) # handler
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax)
+
+        asm.mov(:rax, C.rb_block_param_proxy)
+        asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
       else # assume blockiseq
         asm.mov(:rax, block_handler)
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax)
