@@ -5,7 +5,7 @@
 # - repository-url: URL from where clone for test
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
-minitest        5.17.0  https://github.com/seattlerb/minitest d4fc359899f96944be147609e045b9e921881f19
+minitest        5.18.0  https://github.com/seattlerb/minitest d4fc359899f96944be147609e045b9e921881f19
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.0.6  https://github.com/ruby/rake
 test-unit       3.5.7   https://github.com/test-unit/test-unit
