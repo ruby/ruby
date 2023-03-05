@@ -2281,6 +2281,24 @@ module RubyVM::MJIT
     # @param jit [RubyVM::MJIT::JITState]
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
+    def jit_rb_str_getbyte(jit, ctx, asm, argc, _known_recv_class)
+      return false if argc != 1
+      asm.comment('rb_str_getbyte')
+
+      index_opnd = ctx.stack_pop
+      str_opnd = ctx.stack_pop
+      asm.mov(C_ARGS[0], str_opnd)
+      asm.mov(C_ARGS[1], index_opnd)
+      asm.call(C.rb_str_getbyte)
+
+      ret_opnd = ctx.stack_push
+      asm.mov(ret_opnd, C_RET)
+      true
+    end
+
+    # @param jit [RubyVM::MJIT::JITState]
+    # @param ctx [RubyVM::MJIT::Context]
+    # @param asm [RubyVM::MJIT::Assembler]
     def jit_rb_ary_push(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_ary_push')
@@ -2364,6 +2382,7 @@ module RubyVM::MJIT
       register_cfunc_method(Integer, :*, :jit_rb_int_mul)
       register_cfunc_method(Integer, :/, :jit_rb_int_div)
       register_cfunc_method(Integer, :[], :jit_rb_int_aref)
+      register_cfunc_method(String, :getbyte, :jit_rb_str_getbyte)
     end
 
     def register_cfunc_method(klass, mid_sym, func)

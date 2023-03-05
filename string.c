@@ -6072,7 +6072,7 @@ rb_str_chr(VALUE str)
  *
  *  Related: String#setbyte.
  */
-static VALUE
+VALUE
 rb_str_getbyte(VALUE str, VALUE index)
 {
     long pos = NUM2LONG(index);

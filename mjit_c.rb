@@ -420,6 +420,13 @@ module RubyVM::MJIT # :nodoc: all
       rb_proc_t.new(proc_t_addr)
     end
 
+    def rb_str_getbyte
+      Primitive.cstmt! %{
+        extern VALUE rb_str_getbyte(VALUE str, VALUE index);
+        return SIZET2NUM((size_t)rb_str_getbyte);
+      }
+    end
+
     #========================================================================================
     #
     # Old stuff
