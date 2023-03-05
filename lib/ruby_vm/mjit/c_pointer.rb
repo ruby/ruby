@@ -253,6 +253,11 @@ module RubyVM::MJIT # :nodoc: all
           [value.to_i].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
       end
 
+      # Get a raw address
+      def to_i
+        @addr
+      end
+
       private
 
       def dest_addr
