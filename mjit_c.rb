@@ -897,6 +897,10 @@ module RubyVM::MJIT # :nodoc: all
     Primitive.cexpr! %q{ ULONG2NUM(RMODULE_IS_REFINEMENT) }
   end
 
+  def C.RSTRUCT_EMBED_LEN_MASK
+    Primitive.cexpr! %q{ ULONG2NUM(RSTRUCT_EMBED_LEN_MASK) }
+  end
+
   def C.RUBY_FIXNUM_FLAG
     Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
   end
@@ -1039,6 +1043,22 @@ module RubyVM::MJIT # :nodoc: all
         ),
         ary: CType::Pointer.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), as)")],
+    )
+  end
+
+  def C.RStruct
+    @RStruct ||= CType::Struct.new(
+      "RStruct", Primitive.cexpr!("SIZEOF(struct RStruct)"),
+      basic: [self.RBasic, Primitive.cexpr!("OFFSETOF((*((struct RStruct *)NULL)), basic)")],
+      as: [CType::Union.new(
+        "", Primitive.cexpr!("SIZEOF(((struct RStruct *)NULL)->as)"),
+        heap: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RStruct *)NULL)->as.heap)"),
+          len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, len)")],
+          ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, ptr)")],
+        ),
+        ary: CType::Pointer.new { self.VALUE },
+      ), Primitive.cexpr!("OFFSETOF((*((struct RStruct *)NULL)), as)")],
     )
   end
 
@@ -1554,13 +1574,13 @@ module RubyVM::MJIT # :nodoc: all
       send_optimized_call_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_block)")],
       send_optimized_call_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_kwarg)")],
       send_optimized_call_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_call_splat)")],
+      send_optimized_struct_aref_error: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_struct_aref_error)")],
       send_optimized_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_blockarg)")],
       send_optimized_block_call: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_block_call)")],
-      send_optimized_struct_aref: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_struct_aref)")],
       send_optimized_struct_aset: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_struct_aset)")],
       send_optimized_unknown_type: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_unknown_type)")],
-      send_optimized_bmethod_not_iseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_bmethod_not_iseq)")],
-      send_optimized_bmethod_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_optimized_bmethod_blockarg)")],
+      send_bmethod_not_iseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_bmethod_not_iseq)")],
+      send_bmethod_blockarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), send_bmethod_blockarg)")],
       invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
       invokesuper_same_me: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), invokesuper_same_me)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_runtime_counters *)NULL)), getivar_megamorphic)")],

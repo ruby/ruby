@@ -448,6 +448,7 @@ generator = BindingGenerator.new(
       RUBY_T_STRING
       RMODULE_IS_REFINEMENT
       RUBY_FL_SINGLETON
+      RSTRUCT_EMBED_LEN_MASK
     ],
     PTR: %w[
       rb_cFalseClass
@@ -468,6 +469,7 @@ generator = BindingGenerator.new(
     RArray
     RBasic
     RObject
+    RStruct
     attr_index_t
     compile_branch
     compile_status
