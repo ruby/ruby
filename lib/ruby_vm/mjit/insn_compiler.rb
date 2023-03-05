@@ -3149,8 +3149,7 @@ module RubyVM::MJIT
         asm.incr_counter(:send_bmethod)
         return CantCompile
       when C.VM_METHOD_TYPE_ALIAS
-        asm.incr_counter(:send_alias)
-        return CantCompile
+        jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_OPTIMIZED
         jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       when C.VM_METHOD_TYPE_UNDEF
@@ -3360,6 +3359,12 @@ module RubyVM::MJIT
       end
 
       jit_getivar(jit, ctx, asm, comptime_recv, ivar_id, recv_opnd)
+    end
+
+    # vm_call_alias
+    def jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
+      cme = C.rb_aliased_callable_method_entry(cme)
+      jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
     end
 
     # vm_call_optimized
