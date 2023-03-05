@@ -187,7 +187,7 @@ rb_mjit_recompile_const(const rb_iseq_t *iseq)
 // Default permitted number of units with a JIT code kept in memory.
 #define DEFAULT_MAX_CACHE_SIZE 100
 // A default threshold used to add iseq to JIT.
-#define DEFAULT_CALL_THRESHOLD 1
+#define DEFAULT_CALL_THRESHOLD 30
 
 #define opt_match_noarg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --mjit-" name " is ignored"), 1) : 1)
