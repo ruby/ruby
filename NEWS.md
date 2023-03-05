@@ -43,7 +43,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.17.0
+* minitest 5.18.0
 * rbs 3.0.2
 * typeprof 0.21.6
 
