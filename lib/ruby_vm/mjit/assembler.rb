@@ -324,6 +324,17 @@ module RubyVM::MJIT
           disp: left_disp,
           imm: imm8(right_imm),
         )
+      # CMP r/m64, imm8 (Mod 10: [reg]+disp32)
+      in [Array[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if r64?(left_reg) && imm32?(left_disp) && imm8?(right_imm)
+        # REX.W + 83 /7 ib
+        # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
+        insn(
+          prefix: REX_W,
+          opcode: 0x83,
+          mod_rm: ModRM[mod: Mod10, reg: 7, rm: left_reg],
+          disp: imm32(left_disp),
+          imm: imm8(right_imm),
+        )
       # CMP r/m64, imm8 (Mod 11: reg)
       in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm8?(right_imm)
         # REX.W + 83 /7 ib
