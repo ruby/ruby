@@ -239,6 +239,10 @@ module RubyVM::MJIT
 
         case status = @insn_compiler.compile(jit, ctx, asm, insn)
         when KeepCompiling
+          # For now, reset the chain depth after each instruction as only the
+          # first instruction in the block can concern itself with the depth.
+          ctx.chain_depth = 0
+
           index += insn.len
         when EndBlock
           # TODO: pad nops if entry exit exists (not needed for x86_64?)

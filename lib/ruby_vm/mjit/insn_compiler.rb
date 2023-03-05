@@ -3623,6 +3623,7 @@ module RubyVM::MJIT
         return_ctx = ctx.dup
         return_ctx.stack_size -= argc # Pop args. blockarg has been popped
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
+        return_ctx.chain_depth = 0
         branch_stub = BranchStub.new(
           iseq: jit.iseq,
           shape: Default,
