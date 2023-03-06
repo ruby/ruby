@@ -1570,6 +1570,7 @@ assert_equal "ok", %q{
   end
 }
 
+# check method cache invalidation
 assert_equal "ok", %q{
   module M
     def foo
@@ -1609,6 +1610,33 @@ assert_equal "ok", %q{
   "ok"
 }
 
+# check method cache invalidation
+assert_equal 'true', %q{
+  class C1; def self.foo = 1; end
+  class C2; def self.foo = 2; end
+  class C3; def self.foo = 3; end
+  class C4; def self.foo = 5; end
+  class C5; def self.foo = 7; end
+  class C6; def self.foo = 11; end
+  class C7; def self.foo = 13; end
+  class C8; def self.foo = 17; end
+
+  LN = 10_000
+  RN = 10
+  CS = [C1, C2, C3, C4, C5, C6, C7, C8]
+  rs = RN.times.map{|i|
+    Ractor.new(CS.shuffle){|cs|
+      LN.times.sum{
+        cs.inject(1){|r, c| r * c.foo} # c.foo invalidates method cache entry
+      }
+    }
+  }
+
+  n = CS.inject(1){|r, c| r * c.foo} * LN
+  rs.map{|r| r.take} == Array.new(RN){n}
+}
+
+# check experimental warning
 assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   Warning[:experimental] = $VERBOSE = true
   STDERR.reopen(STDOUT)
