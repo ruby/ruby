@@ -29,8 +29,13 @@ MJIT_SYMBOL_EXPORT_END
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
+#elif MJIT_STATS && YJIT_STATS
+// Both flags could be enabled at the same time. You need to call both in that case.
+#define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
+#define COLLECT_USAGE_REGISTER(reg, s)     /* none */
 #elif MJIT_STATS
-// for --mjit-stats TODO: make it possible to support both MJIT_STATS and YJIT_STATS
+// for --mjit-stats
 #define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
 #define COLLECT_USAGE_REGISTER(reg, s)		/* none */
