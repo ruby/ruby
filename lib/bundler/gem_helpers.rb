@@ -34,6 +34,11 @@ module Bundler
     end
     module_function :local_platform
 
+    def generic_local_platform_is_ruby?
+      generic_local_platform == Gem::Platform::RUBY
+    end
+    module_function :generic_local_platform_is_ruby?
+
     def platform_specificity_match(spec_platform, user_platform)
       spec_platform = Gem::Platform.new(spec_platform)
 

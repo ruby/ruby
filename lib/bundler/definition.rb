@@ -592,7 +592,7 @@ module Bundler
     end
 
     def current_ruby_platform_locked?
-      return false unless generic_local_platform == Gem::Platform::RUBY
+      return false unless generic_local_platform_is_ruby?
       return false if Bundler.settings[:force_ruby_platform] && !@platforms.include?(Gem::Platform::RUBY)
 
       current_platform_locked?
