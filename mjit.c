@@ -310,7 +310,11 @@ rb_mjit_collect_vm_usage_insn(int insn)
 
 #endif // YJIT_STATS
 
+extern VALUE rb_gc_enable(void);
+extern VALUE rb_gc_disable(void);
+
 #define WITH_MJIT_ISOLATED(stmt) do { \
+    VALUE was_disabled = rb_gc_disable(); \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
     rb_mjit_global_events = global_hooks->events; \
     global_hooks->events = 0; \
@@ -321,6 +325,7 @@ rb_mjit_collect_vm_usage_insn(int insn)
     mjit_call_p = (mjit_cancel_p ? false : original_call_p); \
     mjit_stats_p = mjit_opts.stats; \
     global_hooks->events = rb_mjit_global_events; \
+    if (!was_disabled) rb_gc_enable(); \
 } while (0);
 
 void
