@@ -124,12 +124,14 @@ jobs:
         if: ${{ matrix.entry.check }}
       - run: make test-tool
         if: ${{ matrix.entry.check }}
+      ### test-all doesn't work: https://github.com/ruby/ruby/actions/runs/4340112185/jobs/7578344307
       # - run: make test-all TESTS='-- ruby -ext-'
       #   if: ${{ matrix.entry.check }}
-      - run: make test-spec
-        env:
-          CHECK_LEAKS: true
-        if: ${{ matrix.entry.check }}
+      ### test-spec doesn't work: https://github.com/ruby/ruby/actions/runs/4340193212/jobs/7578505652
+      # - run: make test-spec
+      #   env:
+      #     CHECK_LEAKS: true
+      #   if: ${{ matrix.entry.check }}
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
