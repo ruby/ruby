@@ -13,6 +13,13 @@ module RubyVM::MJIT
   def self.resume
     Primitive.cexpr! 'mjit_resume()'
   end
+
+  if Primitive.mjit_stats_enabled_p
+    at_exit do
+      Primitive.mjit_stop_stats
+      print_stats
+    end
+  end
 end
 
 if RubyVM::MJIT.enabled?
@@ -23,15 +30,8 @@ if RubyVM::MJIT.enabled?
     return # miniruby doesn't support MJIT
   end
 
-  # forward declaration for ruby_vm/mjit/compiler
-  RubyVM::MJIT::C = Object.new # :nodoc:
-
   require 'ruby_vm/mjit/c_type'
-  require 'ruby_vm/mjit/instruction'
   require 'ruby_vm/mjit/compiler'
   require 'ruby_vm/mjit/hooks'
-
-  module RubyVM::MJIT
-    private_constant(*constants)
-  end
+  require 'ruby_vm/mjit/stats'
 end

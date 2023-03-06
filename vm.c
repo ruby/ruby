@@ -382,32 +382,6 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #if USE_MJIT || USE_YJIT
-# ifdef MJIT_HEADER
-NOINLINE(static COLDFUNC VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
-# else
-static inline VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
-# endif
-static VALUE
-mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
-{
-    uintptr_t mjit_state = (uintptr_t)(body->jit_func);
-    ASSUME(MJIT_FUNC_STATE_P(mjit_state));
-    switch ((enum rb_mjit_func_state)mjit_state) {
-      case MJIT_FUNC_NOT_COMPILED:
-        if (body->total_calls == mjit_opts.call_threshold) {
-            rb_mjit_add_iseq_to_process(iseq);
-            if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
-                return body->jit_func(ec, ec->cfp);
-            }
-        }
-        break;
-      case MJIT_FUNC_COMPILING:
-      case MJIT_FUNC_FAILED:
-        break;
-    }
-    return Qundef;
-}
-
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
 // If it is not, add ISEQ to the compilation queue and return Qundef for MJIT.
 // YJIT compiles on the thread running the iseq.
@@ -441,8 +415,13 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else if (UNLIKELY(MJIT_FUNC_STATE_P(func = body->jit_func))) {
-        return mjit_check_iseq(ec, iseq, body);
+    else { // mjit_call_p
+        if (body->total_calls == mjit_opts.call_threshold) {
+            rb_mjit_compile(iseq);
+        }
+        if ((func = body->jit_func) == 0) {
+            return Qundef;
+        }
     }
 
     // Call the JIT code

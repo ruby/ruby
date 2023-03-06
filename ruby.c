@@ -1615,6 +1615,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     // rb_call_builtin_inits depends on RubyVM::MJIT.enabled?
     if (opt->mjit.on)
         mjit_enabled = true;
+    if (opt->mjit.stats)
+        mjit_stats_enabled = true;
 #endif
 
     Init_ext(); /* load statically linked extensions before rubygems */

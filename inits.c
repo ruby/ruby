@@ -106,8 +106,8 @@ rb_call_builtin_inits(void)
     BUILTIN(nilclass);
     BUILTIN(marshal);
 #if USE_MJIT
-    BUILTIN(mjit);
     BUILTIN(mjit_c);
+    BUILTIN(mjit);
 #endif
     Init_builtin_prelude();
 }
