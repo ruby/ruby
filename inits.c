@@ -62,6 +62,7 @@ rb_call_inits(void)
     CALL(Binding);
     CALL(Math);
     CALL(GC);
+    CALL(WeakMap);
     CALL(Enumerator);
     CALL(Ractor);
     CALL(VM);
