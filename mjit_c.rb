@@ -490,7 +490,7 @@ module RubyVM::MJIT # :nodoc: all
 
     def vm_ci_mid(ci)
       _ci_addr = ci.to_i
-      Primitive.cexpr! 'UINT2NUM(vm_ci_mid((CALL_INFO)NUM2PTR(_ci_addr)))'
+      Primitive.cexpr! 'SIZET2NUM((size_t)vm_ci_mid((CALL_INFO)NUM2PTR(_ci_addr)))'
     end
 
     def rb_splat_or_kwargs_p(ci)
