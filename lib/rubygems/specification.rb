@@ -1708,6 +1708,8 @@ class Gem::Specification < Gem::BasicSpecification
         false
       end
     end
+  rescue ArgumentError => e
+    raise e, "#{name} #{version}: #{e.message}"
   end
 
   # The date this gem was created.
