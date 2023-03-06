@@ -176,7 +176,7 @@ impl Assembler
     }
 
     pub fn get_temp_regs() -> Vec<Reg> {
-        vec![] // FIXME: Not using this yet since sssigning registers to Store insns doesn't work.
+        vec![] // FIXME: Not using this yet since assigning registers to Store insns doesn't work.
     }
 
     /// Get a list of all of the caller-saved registers
