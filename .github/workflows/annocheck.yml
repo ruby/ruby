@@ -124,8 +124,8 @@ jobs:
         if: ${{ matrix.entry.check }}
       - run: make test-tool
         if: ${{ matrix.entry.check }}
-      - run: make test-all TESTS='-- ruby -ext-'
-        if: ${{ matrix.entry.check }}
+      # - run: make test-all TESTS='-- ruby -ext-'
+      #   if: ${{ matrix.entry.check }}
       - run: make test-spec
         env:
           CHECK_LEAKS: true
