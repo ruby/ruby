@@ -656,7 +656,7 @@ module Net   #:nodoc:
   # - {:min_version=}[rdoc-ref:Net::HTTP#min_version=]:
   #   Sets the minimum SSL version.
   # - {#peer_cert}[rdoc-ref:Net::HTTP#peer_cert]:
-  #   Returns the X509 certificate chain for the session's socket peer.
+  #   Returns the X509 certificate chain for the session’s socket peer.
   # - {:ssl_version}[rdoc-ref:Net::HTTP#ssl_version]:
   #   Returns the SSL version.
   # - {:ssl_version=}[rdoc-ref:Net::HTTP#ssl_version=]:
