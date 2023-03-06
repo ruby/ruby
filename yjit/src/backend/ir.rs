@@ -939,7 +939,7 @@ impl Assembler
         Target::Label(label_idx)
     }
 
-    /// Allocate registers or memory oprands to Stack operands
+    /// Allocate registers or memory operands for Stack operands
     pub fn alloc_temp_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps, self.stack_max);
