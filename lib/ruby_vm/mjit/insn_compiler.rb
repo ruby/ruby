@@ -1273,7 +1273,7 @@ module RubyVM::MJIT
     # @param ctx [RubyVM::MJIT::Context]
     # @param asm [RubyVM::MJIT::Assembler]
     def jit_push_frame(jit, ctx, asm, ci, cme, flags, argc, frame_type, iseq: nil, local_size: 0, stack_max: 0)
-      # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max) 
+      # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
       asm.comment('stack overflow check')
       asm.lea(:rax, ctx.sp_opnd(C.rb_control_frame_t.size + C.VALUE.size * (local_size + stack_max)))
       asm.cmp(CFP, :rax)
