@@ -38,9 +38,10 @@ module MSpec
   @expectation  = nil
   @expectations = false
   @skips = []
+  @subprocesses = []
 
   class << self
-    attr_reader :file, :include, :exclude, :skips
+    attr_reader :file, :include, :exclude, :skips, :subprocesses
     attr_writer :repeat, :randomize
     attr_accessor :formatter
   end

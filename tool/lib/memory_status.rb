@@ -12,7 +12,7 @@ module Memory
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
-      IO.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
+      File.foreach(PROC_FILE, encoding: Encoding::ASCII_8BIT) do |l|
         yield($1.downcase.intern, $2.to_i * 1024) if VM_PAT =~ l
       end
     end

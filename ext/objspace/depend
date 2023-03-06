@@ -113,7 +113,6 @@ object_tracing.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/error.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/eval.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/file.h
-object_tracing.o: $(hdrdir)/ruby/internal/intern/gc.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/hash.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/io.h
 object_tracing.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -144,7 +143,6 @@ object_tracing.o: $(hdrdir)/ruby/internal/memory.h
 object_tracing.o: $(hdrdir)/ruby/internal/method.h
 object_tracing.o: $(hdrdir)/ruby/internal/module.h
 object_tracing.o: $(hdrdir)/ruby/internal/newobj.h
-object_tracing.o: $(hdrdir)/ruby/internal/rgengc.h
 object_tracing.o: $(hdrdir)/ruby/internal/scan_args.h
 object_tracing.o: $(hdrdir)/ruby/internal/special_consts.h
 object_tracing.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -290,7 +288,6 @@ objspace.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 objspace.o: $(hdrdir)/ruby/internal/intern/error.h
 objspace.o: $(hdrdir)/ruby/internal/intern/eval.h
 objspace.o: $(hdrdir)/ruby/internal/intern/file.h
-objspace.o: $(hdrdir)/ruby/internal/intern/gc.h
 objspace.o: $(hdrdir)/ruby/internal/intern/hash.h
 objspace.o: $(hdrdir)/ruby/internal/intern/io.h
 objspace.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -321,7 +318,6 @@ objspace.o: $(hdrdir)/ruby/internal/memory.h
 objspace.o: $(hdrdir)/ruby/internal/method.h
 objspace.o: $(hdrdir)/ruby/internal/module.h
 objspace.o: $(hdrdir)/ruby/internal/newobj.h
-objspace.o: $(hdrdir)/ruby/internal/rgengc.h
 objspace.o: $(hdrdir)/ruby/internal/scan_args.h
 objspace.o: $(hdrdir)/ruby/internal/special_consts.h
 objspace.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -486,7 +482,6 @@ objspace_dump.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/error.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/eval.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/file.h
-objspace_dump.o: $(hdrdir)/ruby/internal/intern/gc.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/hash.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/io.h
 objspace_dump.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -517,7 +512,6 @@ objspace_dump.o: $(hdrdir)/ruby/internal/memory.h
 objspace_dump.o: $(hdrdir)/ruby/internal/method.h
 objspace_dump.o: $(hdrdir)/ruby/internal/module.h
 objspace_dump.o: $(hdrdir)/ruby/internal/newobj.h
-objspace_dump.o: $(hdrdir)/ruby/internal/rgengc.h
 objspace_dump.o: $(hdrdir)/ruby/internal/scan_args.h
 objspace_dump.o: $(hdrdir)/ruby/internal/special_consts.h
 objspace_dump.o: $(hdrdir)/ruby/internal/static_assert.h

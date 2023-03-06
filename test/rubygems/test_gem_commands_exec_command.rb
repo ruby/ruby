@@ -4,14 +4,14 @@ require "rubygems/commands/exec_command"
 
 class TestGemCommandsExecCommand < Gem::TestCase
   def setup
+    @orig_args = Gem::Command.build_args
+    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
+    @orig_extra_args = Gem::Command.extra_args.dup
+
     super
     common_installer_setup
 
     @cmd = Gem::Commands::ExecCommand.new
-
-    @orig_args = Gem::Command.build_args
-    @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
-    @orig_extra_args = Gem::Command.extra_args.dup
 
     @gem_home = Gem.dir
     @gem_path = Gem.path
@@ -39,7 +39,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
     @ui.errs.rewind
     @installed_specs.clear
 
-    @cmd.invoke *args
+    @cmd.invoke(*args)
   ensure
     Gem::Specification.unresolved_deps.clear
     Gem.loaded_specs.clear
@@ -78,7 +78,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       }
     end
     @cmd.invoke "--gem", "cocoapods", "-v", "> 1", "--version", "< 1.3", "--verbose", "--", "pod", "install", "--no-color", "--help", "--verbose"
- end
+  end
 
   def test_single_arg_parsing
     @cmd.when_invoked do |options|
@@ -177,8 +177,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
   end
 
   def test_gem_with_platform_dependencies
-    platforms = Gem.platforms.dup
-
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
@@ -218,8 +216,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
   def test_gem_with_platform_and_platform_dependencies
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     pend "terminates on mswin" if Gem.win_platform?
-
-    platforms = Gem.platforms.dup
 
     spec_fetcher do |fetcher|
       fetcher.download "a", 2 do |s|
@@ -743,7 +739,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
       invoke "gem", "list", "--local"
       assert_empty @ui.error
-      assert_match /\A\s*\** LOCAL GEMS \**\s*\z/m, @ui.output
+      assert_match(/\A\s*\** LOCAL GEMS \**\s*\z/m, @ui.output)
 
       invoke "gem", "env", "GEM_HOME"
       assert_equal "#{@gem_home}/gem_exec\n", @ui.output

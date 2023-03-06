@@ -64,7 +64,7 @@ describe "Struct#deconstruct_keys" do
     obj.deconstruct_keys(nil).should == {x: 1, y: 2}
   end
 
-  it "raise TypeError if passed anything accept nil or array" do
+  it "raise TypeError if passed anything except nil or array" do
     struct = Struct.new(:x, :y)
     s = struct.new(1, 2)
 

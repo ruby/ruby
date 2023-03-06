@@ -147,7 +147,7 @@ fn main() {
         // From include/ruby/internal/core/rclass.h
         .allowlist_function("rb_class_get_superclass")
 
-        // From include/ruby/internal/intern/gc.h
+        // From include/ruby/internal/gc.h
         .allowlist_function("rb_gc_mark")
         .allowlist_function("rb_gc_mark_movable")
         .allowlist_function("rb_gc_location")

@@ -42,4 +42,16 @@ describe "An Exception reaching the top level" do
       EOS
     end
   end
+
+  describe "kills all threads and fibers, ensure clauses are only run for threads current fibers, not for suspended fibers" do
+    it "with ensure on the root fiber" do
+      file = fixture(__FILE__, "thread_fiber_ensure.rb")
+      ruby_exe(file, args: "2>&1", exit_status: 0).should == "current fiber ensure\n"
+    end
+
+    it "with ensure on non-root fiber" do
+      file = fixture(__FILE__, "thread_fiber_ensure_non_root_fiber.rb")
+      ruby_exe(file, args: "2>&1", exit_status: 0).should == "current fiber ensure\n"
+    end
+  end
 end

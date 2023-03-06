@@ -208,5 +208,9 @@ if $0 == __FILE__
     end
   end
   require 'rubygems'
+  begin
+    require 'rake'
+  rescue LoadError
+  end
   Test::Unit::Worker.new.run(ARGV)
 end

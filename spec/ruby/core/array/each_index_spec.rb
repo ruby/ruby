@@ -40,3 +40,19 @@ describe "Array#each_index" do
   it_behaves_like :enumeratorize, :each_index
   it_behaves_like :enumeratorized_with_origin_size, :each_index, [1,2,3]
 end
+
+describe "Array#each_index" do
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.each_index do |index|
+      ScratchPad << index
+      array << i if i < 100
+      i += 1
+    end
+
+    ScratchPad.recorded.should == (0..102).to_a # element indices
+  end
+end

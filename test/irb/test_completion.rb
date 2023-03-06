@@ -11,31 +11,18 @@ module TestIRB
       IRB::InputCompletor.class_variable_set(:@@files_from_load_path, nil)
     end
 
-    def test_nonstring_module_name
-      begin
-        require "irb/completion"
-        bug5938 = '[ruby-core:42244]'
-        bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-        cmds = bundle_exec + %W[-W0 -rirb -rirb/completion -e IRB.setup(__FILE__)
-         -e IRB.conf[:MAIN_CONTEXT]=IRB::Irb.new.context
-         -e module\sFoo;def\sself.name;//;end;end
-         -e IRB::InputCompletor::CompletionProc.call("[1].first.")
-         -- -f --]
-        status = assert_in_out_err(cmds, "", //, [], bug5938)
-        assert(status.success?, bug5938)
-      rescue LoadError
-        pend "cannot load irb/completion"
-      end
-    end
-
     class TestMethodCompletion < TestCompletion
       def test_complete_string
         assert_include(IRB::InputCompletor.retrieve_completion_data("'foo'.up", bind: binding), "'foo'.upcase")
+        # completing 'foo bar'.up
+        assert_include(IRB::InputCompletor.retrieve_completion_data("bar'.up", bind: binding), "bar'.upcase")
         assert_equal("String.upcase", IRB::InputCompletor.retrieve_completion_data("'foo'.upcase", bind: binding, doc_namespace: true))
       end
 
       def test_complete_regexp
         assert_include(IRB::InputCompletor.retrieve_completion_data("/foo/.ma", bind: binding), "/foo/.match")
+        # completing /foo bar/.ma
+        assert_include(IRB::InputCompletor.retrieve_completion_data("bar/.ma", bind: binding), "bar/.match")
         assert_equal("Regexp.match", IRB::InputCompletor.retrieve_completion_data("/foo/.match", bind: binding, doc_namespace: true))
       end
 
@@ -131,7 +118,6 @@ module TestIRB
       end
 
       def test_complete_require_library_name_first
-        pend 'Need to use virtual library paths'
         candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
         assert_equal "'csv", candidates.first
       end
@@ -310,6 +296,8 @@ module TestIRB
       _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
+      # Do not complete empty symbol for performance reason
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":", bind: binding))
     end
 
     def test_complete_invalid_three_colons
@@ -352,11 +340,9 @@ module TestIRB
       bind = obj.instance_exec { binding }
 
       assert_include(IRB::InputCompletor.retrieve_completion_data("public_hog", bind: bind), "public_hoge")
-      assert_include(IRB::InputCompletor.retrieve_completion_data("public_hoge.to_s", bind: bind), "public_hoge.to_s")
       assert_include(IRB::InputCompletor.retrieve_completion_data("public_hoge", bind: bind, doc_namespace: true), "public_hoge")
 
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hog", bind: bind), "private_hoge")
-      assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge.to_s", bind: bind), "private_hoge.to_s")
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge", bind: bind, doc_namespace: true), "private_hoge")
     end
   end

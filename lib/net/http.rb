@@ -173,7 +173,7 @@ module Net   #:nodoc:
   # {Request Fields}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields].
   # A host may also accept other custom fields.
   #
-  # == Sessions
+  # == \HTTP Sessions
   #
   # A _session_ is a connection between a server (host) and a client that:
   #
@@ -368,7 +368,7 @@ module Net   #:nodoc:
   #   http.proxy_user      # => "pname"
   #   http.proxy_pass      # => "ppass"
   #
-  # === Proxy Using <tt>ENV['http_proxy']</tt>
+  # === Proxy Using '<tt>ENV['http_proxy']</tt>'
   #
   # When environment variable <tt>'http_proxy'</tt>
   # is set to a \URI string,
@@ -453,6 +453,271 @@ module Net   #:nodoc:
   #   does not decompress the body, but deletes the header.
   # - Any other value:
   #   leaves the body and header unchanged.
+  #
+  # == What's Here
+  #
+  # This is a categorized summary of methods and attributes.
+  #
+  # === \Net::HTTP Objects
+  #
+  # - {::new}[rdoc-ref:Net::HTTP.new]:
+  #   Creates a new instance.
+  # - {#inspect}[rdoc-ref:Net::HTTP#inspect]:
+  #   Returns a string representation of +self+.
+  #
+  # === Sessions
+  #
+  # - {::start}[rdoc-ref:Net::HTTP.start]:
+  #   Begins a new session in a new \Net::HTTP object.
+  # - {#started?}[rdoc-ref:Net::HTTP#started?]
+  #   (aliased as {#active?}[rdoc-ref:Net::HTTP#active?]):
+  #   Returns whether in a session.
+  # - {#finish}[rdoc-ref:Net::HTTP#finish]:
+  #   Ends an active session.
+  # - {#start}[rdoc-ref:Net::HTTP#start]:
+  #   Begins a new session in an existing \Net::HTTP object (+self+).
+  #
+  # === Connections
+  #
+  # - {:continue_timeout}[rdoc-ref:Net::HTTP#continue_timeout]:
+  #   Returns the continue timeout.
+  # - {#continue_timeout=}[rdoc-ref:Net::HTTP#continue_timeout=]:
+  #   Sets the continue timeout seconds.
+  # - {:keep_alive_timeout}[rdoc-ref:Net::HTTP#keep_alive_timeout]:
+  #   Returns the keep-alive timeout.
+  # - {:keep_alive_timeout=}[rdoc-ref:Net::HTTP#keep_alive_timeout=]:
+  #   Sets the keep-alive timeout.
+  # - {:max_retries}[rdoc-ref:Net::HTTP#max_retries]:
+  #   Returns the maximum retries.
+  # - {#max_retries=}[rdoc-ref:Net::HTTP#max_retries=]:
+  #   Sets the maximum retries.
+  # - {:open_timeout}[rdoc-ref:Net::HTTP#open_timeout]:
+  #   Returns the open timeout.
+  # - {:open_timeout=}[rdoc-ref:Net::HTTP#open_timeout=]:
+  #   Sets the open timeout.
+  # - {:read_timeout}[rdoc-ref:Net::HTTP#read_timeout]:
+  #   Returns the open timeout.
+  # - {:read_timeout=}[rdoc-ref:Net::HTTP#read_timeout=]:
+  #   Sets the read timeout.
+  # - {:ssl_timeout}[rdoc-ref:Net::HTTP#ssl_timeout]:
+  #   Returns the ssl timeout.
+  # - {:ssl_timeout=}[rdoc-ref:Net::HTTP#ssl_timeout=]:
+  #   Sets the ssl timeout.
+  # - {:write_timeout}[rdoc-ref:Net::HTTP#write_timeout]:
+  #   Returns the write timeout.
+  # - {write_timeout=}[rdoc-ref:Net::HTTP#write_timeout=]:
+  #   Sets the write timeout.
+  #
+  # === Requests
+  #
+  # - {::get}[rdoc-ref:Net::HTTP.get]:
+  #   Sends a GET request and returns the string response body.
+  # - {::get_print}[rdoc-ref:Net::HTTP.get_print]:
+  #   Sends a GET request and write the string response body to $stdout.
+  # - {::get_response}[rdoc-ref:Net::HTTP.get_response]:
+  #   Sends a GET request and returns a response object.
+  # - {::post_form}[rdoc-ref:Net::HTTP.post_form]:
+  #   Sends a POST request with form data and returns a response object.
+  # - {::post}[rdoc-ref:Net::HTTP.post]:
+  #   Sends a POST request with data and returns a response object.
+  # - {#copy}[rdoc-ref:Net::HTTP#copy]:
+  #   Sends a COPY request and returns a response object.
+  # - {#delete}[rdoc-ref:Net::HTTP#delete]:
+  #   Sends a DELETE request and returns a response object.
+  # - {#get}[rdoc-ref:Net::HTTP#get]:
+  #   Sends a GET request and returns a response object.
+  # - {#head}[rdoc-ref:Net::HTTP#head]:
+  #   Sends a HEAD request and returns a response object.
+  # - {#lock}[rdoc-ref:Net::HTTP#lock]:
+  #   Sends a LOCK request and returns a response object.
+  # - {#mkcol}[rdoc-ref:Net::HTTP#mkcol]:
+  #   Sends a MKCOL request and returns a response object.
+  # - {#move}[rdoc-ref:Net::HTTP#move]:
+  #   Sends a MOVE request and returns a response object.
+  # - {#options}[rdoc-ref:Net::HTTP#options]:
+  #   Sends a OPTIONS request and returns a response object.
+  # - {#patch}[rdoc-ref:Net::HTTP#patch]:
+  #   Sends a PATCH request and returns a response object.
+  # - {#post}[rdoc-ref:Net::HTTP#post]:
+  #   Sends a POST request and returns a response object.
+  # - {#propfind}[rdoc-ref:Net::HTTP#propfind]:
+  #   Sends a PROPFIND request and returns a response object.
+  # - {#proppatch}[rdoc-ref:Net::HTTP#proppatch]:
+  #   Sends a PROPPATCH request and returns a response object.
+  # - {#put}[rdoc-ref:Net::HTTP#put]:
+  #   Sends a PUT request and returns a response object.
+  # - {#request}[rdoc-ref:Net::HTTP#request]:
+  #   Sends a request and returns a response object.
+  # - {#request_get}[rdoc-ref:Net::HTTP#request_get]
+  #   (aliased as {#get2}[rdoc-ref:Net::HTTP#get2]):
+  #   Sends a GET request and forms a response object;
+  #   if a block given, calls the block with the object,
+  #   otherwise returns the object.
+  # - {#request_head}[rdoc-ref:Net::HTTP#request_head]
+  #   (aliased as {#head2}[rdoc-ref:Net::HTTP#head2]):
+  #   Sends a HEAD request and forms a response object;
+  #   if a block given, calls the block with the object,
+  #   otherwise returns the object.
+  # - {#request_post}[rdoc-ref:Net::HTTP#request_post]
+  #   (aliased as {#post2}[rdoc-ref:Net::HTTP#post2]):
+  #   Sends a POST request and forms a response object;
+  #   if a block given, calls the block with the object,
+  #   otherwise returns the object.
+  # - {#send_request}[rdoc-ref:Net::HTTP#send_request]:
+  #   Sends a request and returns a response object.
+  # - {#trace}[rdoc-ref:Net::HTTP#trace]:
+  #   Sends a TRACE request and returns a response object.
+  # - {#unlock}[rdoc-ref:Net::HTTP#unlock]:
+  #   Sends an UNLOCK request and returns a response object.
+  #
+  # === Responses
+  #
+  # - {:close_on_empty_response}[rdoc-ref:Net::HTTP#close_on_empty_response]:
+  #   Returns whether to close connection on empty response.
+  # - {:close_on_empty_response=}[rdoc-ref:Net::HTTP#close_on_empty_response=]:
+  #   Sets whether to close connection on empty response.
+  # - {:ignore_eof}[rdoc-ref:Net::HTTP#ignore_eof]:
+  #   Returns whether to ignore end-of-file when reading a response body
+  #   with <tt>Content-Length</tt> headers.
+  # - {:ignore_eof=}[rdoc-ref:Net::HTTP#ignore_eof=]:
+  #   Sets whether to ignore end-of-file when reading a response body
+  #   with <tt>Content-Length</tt> headers.
+  # - {:response_body_encoding}[rdoc-ref:Net::HTTP#response_body_encoding]:
+  #   Returns the encoding to use for the response body.
+  # - {#response_body_encoding=}[rdoc-ref:Net::HTTP#response_body_encoding=]:
+  #   Sets the response body encoding.
+  #
+  # === Proxies
+  #
+  # - {:proxy_address}[rdoc-ref:Net::HTTP#proxy_address]:
+  #   Returns the proxy address.
+  # - {:proxy_address=}[rdoc-ref:Net::HTTP#proxy_address=]:
+  #   Sets the proxy address.
+  # - {::proxy_class?}[rdoc-ref:Net::HTTP.proxy_class?]:
+  #   Returns whether +self+ is a proxy class.
+  # - {#proxy?}[rdoc-ref:Net::HTTP#proxy?]:
+  #   Returns whether +self+ has a proxy.
+  # - {#proxy_address}[rdoc-ref:Net::HTTP#proxy_address]
+  #   (aliased as {#proxyaddr}[rdoc-ref:Net::HTTP#proxyaddr]):
+  #   Returns the proxy address.
+  # - {#proxy_from_env?}[rdoc-ref:Net::HTTP#proxy_from_env?]:
+  #   Returns whether the proxy is taken from an environment variable.
+  # - {:proxy_from_env=}[rdoc-ref:Net::HTTP#proxy_from_env=]:
+  #   Sets whether the proxy is to be taken from an environment variable.
+  # - {:proxy_pass}[rdoc-ref:Net::HTTP#proxy_pass]:
+  #   Returns the proxy password.
+  # - {:proxy_pass=}[rdoc-ref:Net::HTTP#proxy_pass=]:
+  #   Sets the proxy password.
+  # - {:proxy_port}[rdoc-ref:Net::HTTP#proxy_port]:
+  #   Returns the proxy port.
+  # - {:proxy_port=}[rdoc-ref:Net::HTTP#proxy_port=]:
+  #   Sets the proxy port.
+  # - {#proxy_user}[rdoc-ref:Net::HTTP#proxy_user]:
+  #   Returns the proxy user name.
+  # - {:proxy_user=}[rdoc-ref:Net::HTTP#proxy_user=]:
+  #   Sets the proxy user.
+  #
+  # === Security
+  #
+  # - {:ca_file}[rdoc-ref:Net::HTTP#ca_file]:
+  #   Returns the path to a CA certification file.
+  # - {:ca_file=}[rdoc-ref:Net::HTTP#ca_file=]:
+  #   Sets the path to a CA certification file.
+  # - {:ca_path}[rdoc-ref:Net::HTTP#ca_path]:
+  #   Returns the path of to CA directory containing certification files.
+  # - {:ca_path=}[rdoc-ref:Net::HTTP#ca_path=]:
+  #   Sets the path of to CA directory containing certification files.
+  # - {:cert}[rdoc-ref:Net::HTTP#cert]:
+  #   Returns the OpenSSL::X509::Certificate object to be used for client certification.
+  # - {:cert=}[rdoc-ref:Net::HTTP#cert=]:
+  #   Sets the OpenSSL::X509::Certificate object to be used for client certification.
+  # - {:cert_store}[rdoc-ref:Net::HTTP#cert_store]:
+  #   Returns the X509::Store to be used for verifying peer certificate.
+  # - {:cert_store=}[rdoc-ref:Net::HTTP#cert_store=]:
+  #   Sets the X509::Store to be used for verifying peer certificate.
+  # - {:ciphers}[rdoc-ref:Net::HTTP#ciphers]:
+  #   Returns the available SSL ciphers.
+  # - {:ciphers=}[rdoc-ref:Net::HTTP#ciphers=]:
+  #   Sets the available SSL ciphers.
+  # - {:extra_chain_cert}[rdoc-ref:Net::HTTP#extra_chain_cert]:
+  #   Returns the extra X509 certificates to be added to the certificate chain.
+  # - {:extra_chain_cert=}[rdoc-ref:Net::HTTP#extra_chain_cert=]:
+  #   Sets the extra X509 certificates to be added to the certificate chain.
+  # - {:key}[rdoc-ref:Net::HTTP#key]:
+  #   Returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
+  # - {:key=}[rdoc-ref:Net::HTTP#key=]:
+  #   Sets the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
+  # - {:max_version}[rdoc-ref:Net::HTTP#max_version]:
+  #   Returns the maximum SSL version.
+  # - {:max_version=}[rdoc-ref:Net::HTTP#max_version=]:
+  #   Sets the maximum SSL version.
+  # - {:min_version}[rdoc-ref:Net::HTTP#min_version]:
+  #   Returns the minimum SSL version.
+  # - {:min_version=}[rdoc-ref:Net::HTTP#min_version=]:
+  #   Sets the minimum SSL version.
+  # - {#peer_cert}[rdoc-ref:Net::HTTP#peer_cert]:
+  #   Returns the X509 certificate chain for the session's socket peer.
+  # - {:ssl_version}[rdoc-ref:Net::HTTP#ssl_version]:
+  #   Returns the SSL version.
+  # - {:ssl_version=}[rdoc-ref:Net::HTTP#ssl_version=]:
+  #   Sets the SSL version.
+  # - {#use_ssl=}[rdoc-ref:Net::HTTP#use_ssl=]:
+  #   Sets whether a new session is to use Transport Layer Security.
+  # - {#use_ssl?}[rdoc-ref:Net::HTTP#use_ssl?]:
+  #   Returns whether +self+ uses SSL.
+  # - {:verify_callback}[rdoc-ref:Net::HTTP#verify_callback]:
+  #   Returns the callback for the server certification verification.
+  # - {:verify_callback=}[rdoc-ref:Net::HTTP#verify_callback=]:
+  #   Sets the callback for the server certification verification.
+  # - {:verify_depth}[rdoc-ref:Net::HTTP#verify_depth]:
+  #   Returns the maximum depth for the certificate chain verification.
+  # - {:verify_depth=}[rdoc-ref:Net::HTTP#verify_depth=]:
+  #   Sets the maximum depth for the certificate chain verification.
+  # - {:verify_hostname}[rdoc-ref:Net::HTTP#verify_hostname]:
+  #   Returns the flags for server the certification verification at the beginning of the SSL/TLS session.
+  # - {:verify_hostname=}[rdoc-ref:Net::HTTP#verify_hostname=]:
+  #   Sets he flags for server the certification verification at the beginning of the SSL/TLS session.
+  # - {:verify_mode}[rdoc-ref:Net::HTTP#verify_mode]:
+  #   Returns the flags for server the certification verification at the beginning of the SSL/TLS session.
+  # - {:verify_mode=}[rdoc-ref:Net::HTTP#verify_mode=]:
+  #   Sets the flags for server the certification verification at the beginning of the SSL/TLS session.
+  #
+  # === Addresses and Ports
+  #
+  # - {:address}[rdoc-ref:Net::HTTP#address]:
+  #   Returns the string host name or host IP.
+  # - {::default_port}[rdoc-ref:Net::HTTP.default_port]:
+  #   Returns integer 80, the default port to use for HTTP requests.
+  # - {::http_default_port}[rdoc-ref:Net::HTTP.http_default_port]:
+  #   Returns integer 80, the default port to use for HTTP requests.
+  # - {::https_default_port}[rdoc-ref:Net::HTTP.https_default_port]:
+  #   Returns integer 443, the default port to use for HTTPS requests.
+  # - {#ipaddr}[rdoc-ref:Net::HTTP#ipaddr]:
+  #   Returns the IP address for the connection.
+  # - {#ipaddr=}[rdoc-ref:Net::HTTP#ipaddr=]:
+  #   Sets the IP address for the connection.
+  # - {:local_host}[rdoc-ref:Net::HTTP#local_host]:
+  #   Returns the string local host used to establish the connection.
+  # - {:local_host=}[rdoc-ref:Net::HTTP#local_host=]:
+  #   Sets the string local host used to establish the connection.
+  # - {:local_port}[rdoc-ref:Net::HTTP#local_port]:
+  #   Returns the integer local port used to establish the connection.
+  # - {:local_port=}[rdoc-ref:Net::HTTP#local_port=]:
+  #   Sets the integer local port used to establish the connection.
+  # - {:port}[rdoc-ref:Net::HTTP#port]:
+  #   Returns the integer port number.
+  #
+  # === \HTTP Version
+  #
+  # - {::version_1_2?}[rdoc-ref:Net::HTTP.version_1_2?]
+  #   (aliased as {::is_version_1_2?}[rdoc-ref:Net::HTTP.is_version_1_2?]
+  #   and {::version_1_2}[rdoc-ref:Net::HTTP.version_1_2]):
+  #   Returns true; retained for compatibility.
+  #
+  # === Debugging
+  #
+  # - {#set_debug_output}[rdoc-ref:Net::HTTP#set_debug_output]:
+  #   Sets the output stream for debugging.
   #
   class HTTP < Protocol
 
@@ -826,7 +1091,7 @@ module Net   #:nodoc:
     # Creates a new \Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
-    def initialize(address, port = nil)
+    def initialize(address, port = nil) # :nodoc:
       @address = address
       @port    = (port || HTTP.default_port)
       @ipaddr = nil
@@ -926,21 +1191,22 @@ module Net   #:nodoc:
       @debug_output = output
     end
 
-    # The DNS host name or IP address to connect to.
+    # Returns the string host name or host IP given as argument +address+ in ::new.
     attr_reader :address
 
-    # The port number to connect to.
+    # Returns the integer port number given as argument +port+ in ::new.
     attr_reader :port
 
-    # The local host used to establish the connection.
+    # Sets or returns the string local host used to establish the connection;
+    # initially +nil+.
     attr_accessor :local_host
 
-    # The local port used to establish the connection.
+    # Sets or returns the integer local port used to establish the connection;
+    # initially +nil+.
     attr_accessor :local_port
 
-    # The encoding to use for the response body.  If Encoding, uses the
-    # specified encoding.  If other true value, tries to detect the response
-    # body encoding.
+    # Returns the encoding to use for the response body;
+    # see #response_body_encoding=.
     attr_reader :response_body_encoding
 
     # Sets the encoding to be used for the response body;
@@ -966,10 +1232,25 @@ module Net   #:nodoc:
       @response_body_encoding = value
     end
 
+    # Sets whether to determine the proxy from environment variable
+    # '<tt>ENV['http_proxy']</tt>';
+    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+-27ENV-5B-27http_proxy-27-5D-27].
     attr_writer :proxy_from_env
+
+    # Sets the proxy address;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_address
+
+    # Sets the proxy port;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_port
+
+    # Sets the proxy user;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_user
+
+    # Sets the proxy password;
+    # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
 
     # Returns the IP address for the connection.
@@ -1008,23 +1289,21 @@ module Net   #:nodoc:
       @ipaddr = addr
     end
 
-    # Number of seconds to wait for the connection to open. Any number
-    # may be used, including Floats for fractional seconds. If the \HTTP
-    # object cannot open a connection in this many seconds, it raises a
-    # \Net::OpenTimeout exception. The default value is 60 seconds.
+    # Sets or returns the numeric (\Integer or \Float) number of seconds
+    # to wait for a connection to open;
+    # initially 60.
+    # If the connection is not made in the given interval,
+    # an exception is raised.
     attr_accessor :open_timeout
 
-    # Number of seconds to wait for one block to be read (via one read(2)
-    # call). Any number may be used, including Floats for fractional
-    # seconds. If the \HTTP object cannot read data in this many seconds,
-    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
+    # Returns the numeric (\Integer or \Float) number of seconds
+    # to wait for one block to be read (via one read(2) call);
+    # see #read_timeout=.
     attr_reader :read_timeout
 
-    # Number of seconds to wait for one block to be written (via one write(2)
-    # call). Any number may be used, including Floats for fractional
-    # seconds. If the \HTTP object cannot write data in this many seconds,
-    # it raises a \Net::WriteTimeout exception. The default value is 60 seconds.
-    # \Net::WriteTimeout is not raised on Windows.
+    # Returns the numeric (\Integer or \Float) number of seconds
+    # to wait for one block to be written (via one write(2) call);
+    # see #write_timeout=.
     attr_reader :write_timeout
 
     # Sets the maximum number of times to retry an idempotent request in case of
@@ -1047,6 +1326,8 @@ module Net   #:nodoc:
       @max_retries = retries
     end
 
+    # Returns the maximum number of times to retry an idempotent request;
+    # see #max_retries=.
     attr_reader :max_retries
 
     # Sets the read timeout, in seconds, for +self+ to integer +sec+;
@@ -1089,9 +1370,8 @@ module Net   #:nodoc:
       @write_timeout = sec
     end
 
-    # Returns the continue timeout value.
-    # See Net::HTTP.continue_timeout=.
-    #
+    # Returns the continue timeout value;
+    # see continue_timeout=.
     attr_reader :continue_timeout
 
     # Sets the continue timeout value,
@@ -1103,14 +1383,18 @@ module Net   #:nodoc:
       @continue_timeout = sec
     end
 
-    # Seconds to reuse the connection of the previous request.
-    # If the idle time is less than this Keep-Alive Timeout,
-    # \Net::HTTP reuses the TCP/IP socket used by the previous communication.
-    # The default value is 2 seconds.
+    # Sets or returns the numeric (\Integer or \Float) number of seconds
+    # to keep the connection open after a request is sent;
+    # initially 2.
+    # If a new request is made during the given interval,
+    # the still-open connection is used;
+    # otherwise the connection will have been closed
+    # and a new connection is opened.
     attr_accessor :keep_alive_timeout
 
-    # Whether to ignore EOF when reading response bodies with defined
-    # Content-Length headers. For backwards compatibility, the default is true.
+    # Sets or returns whether to ignore end-of-file when reading a response body
+    # with <tt>Content-Length</tt> headers;
+    # initially +true+.
     attr_accessor :ignore_eof
 
     # Returns +true+ if the \HTTP session has been started:
@@ -1133,6 +1417,8 @@ module Net   #:nodoc:
 
     alias active? started?   #:nodoc: obsolete
 
+    # Sets or returns whether to close the connection when the response is empty;
+    # initially +false+.
     attr_accessor :close_on_empty_response
 
     # Returns +true+ if +self+ uses SSL, +false+ otherwise.
@@ -1171,7 +1457,7 @@ module Net   #:nodoc:
       :@verify_depth,
       :@verify_mode,
       :@verify_hostname,
-    ]
+    ] # :nodoc:
     SSL_ATTRIBUTES = [
       :ca_file,
       :ca_path,
@@ -1188,64 +1474,66 @@ module Net   #:nodoc:
       :verify_depth,
       :verify_mode,
       :verify_hostname,
-    ]
+    ] # :nodoc:
 
-    # Sets path of a CA certification file in PEM format.
-    #
-    # The file can contain several CA certificates.
+    # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
 
-    # Sets path of a CA certification directory containing certifications in
-    # PEM format.
+    # Sets or returns the path of to CA directory
+    # containing certification files in PEM format.
     attr_accessor :ca_path
 
-    # Sets an OpenSSL::X509::Certificate object as client certificate.
-    # (This method is appeared in Michal Rokos's OpenSSL extension).
+    # Sets or returns the OpenSSL::X509::Certificate object
+    # to be used for client certification.
     attr_accessor :cert
 
-    # Sets the X509::Store to verify peer certificate.
+    # Sets or returns the X509::Store to be used for verifying peer certificate.
     attr_accessor :cert_store
 
-    # Sets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers=
+    # Sets or returns the available SSL ciphers.
+    # See {OpenSSL::SSL::SSLContext#ciphers=}[rdoc-ref:OpenSSL::SSL::SSLContext#ciphers-3D].
     attr_accessor :ciphers
 
-    # Sets the extra X509 certificates to be added to the certificate chain.
-    # See OpenSSL::SSL::SSLContext#extra_chain_cert=
+    # Sets or returns the extra X509 certificates to be added to the certificate chain.
+    # See {OpenSSL::SSL::SSLContext#add_certificate}[rdoc-ref:OpenSSL::SSL::SSLContext#add_certificate].
     attr_accessor :extra_chain_cert
 
-    # Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
-    # (This method is appeared in Michal Rokos's OpenSSL extension.)
+    # Sets or returns the OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
     attr_accessor :key
 
-    # Sets the SSL timeout seconds.
+    # Sets or returns the SSL timeout seconds.
     attr_accessor :ssl_timeout
 
-    # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
+    # Sets or returns the SSL version.
+    # See {OpenSSL::SSL::SSLContext#ssl_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#ssl_version-3D].
     attr_accessor :ssl_version
 
-    # Sets the minimum SSL version.  See OpenSSL::SSL::SSLContext#min_version=
+    # Sets or returns the minimum SSL version.
+    # See {OpenSSL::SSL::SSLContext#min_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#min_version-3D].
     attr_accessor :min_version
 
-    # Sets the maximum SSL version.  See OpenSSL::SSL::SSLContext#max_version=
+    # Sets or returns the maximum SSL version.
+    # See {OpenSSL::SSL::SSLContext#max_version=}[rdoc-ref:OpenSSL::SSL::SSLContext#max_version-3D].
     attr_accessor :max_version
 
-    # Sets the verify callback for the server certification verification.
+    # Sets or returns the callback for the server certification verification.
     attr_accessor :verify_callback
 
-    # Sets the maximum depth for the certificate chain verification.
+    # Sets or returns the maximum depth for the certificate chain verification.
     attr_accessor :verify_depth
 
-    # Sets the flags for server the certification verification at beginning of
-    # SSL/TLS session.
-    #
+    # Sets or returns the flags for server the certification verification
+    # at the beginning of the SSL/TLS session.
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
     attr_accessor :verify_mode
 
-    # Sets to check the server certificate is valid for the hostname.
-    # See OpenSSL::SSL::SSLContext#verify_hostname=
+    # Sets or returns whether to verify that the server certificate is valid
+    # for the hostname.
+    # See {OpenSSL::SSL::SSLContext#verify_hostname=}[rdoc-ref:OpenSSL::SSL::SSLContext#attribute-i-verify_mode].
     attr_accessor :verify_hostname
 
-    # The X509 certificate chain (an array of strings) for the session's socket peer,
+    # Returns the X509 certificate chain (an array of strings)
+    # for the session's socket peer,
     # or +nil+ if none.
     def peer_cert
       if not use_ssl? or not @socket
@@ -1471,22 +1759,25 @@ module Net   #:nodoc:
     end
 
     class << HTTP
-      # returns true if self is a class which was created by HTTP::Proxy.
+      # Returns true if self is a class which was created by HTTP::Proxy.
       def proxy_class?
         defined?(@is_proxy_class) ? @is_proxy_class : false
       end
 
-      # Address of proxy host. If \Net::HTTP does not use a proxy, nil.
+      # Returns the address of the proxy host, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_address
 
-      # Port number of proxy host. If \Net::HTTP does not use a proxy, nil.
+      # Returns the port number of the proxy host, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_port
 
-      # User name for accessing proxy. If \Net::HTTP does not use a proxy, nil.
+      # Returns the user name for accessing the proxy, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_user
 
-      # User password for accessing proxy. \If Net::HTTP does not use a proxy,
-      # nil.
+      # Returns the password for accessing the proxy, or +nil+ if none;
+      # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_pass
     end
 

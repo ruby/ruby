@@ -421,8 +421,6 @@ module IRB # :nodoc:
     end
   end
 
-
-  DefaultEncodings = Struct.new(:external, :internal)
   class << IRB
     private
     def set_encoding(extern, intern = nil, override: true)

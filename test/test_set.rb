@@ -587,10 +587,23 @@ class TC_Set < Test::Unit::TestCase
 
   def test_merge
     set = Set[1,2,3]
-
     ret = set.merge([2,4,6])
     assert_same(set, ret)
     assert_equal(Set[1,2,3,4,6], set)
+
+    set = Set[1,2,3]
+    ret = set.merge()
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3], set)
+
+    set = Set[1,2,3]
+    ret = set.merge([2,4,6], Set[4,5,6])
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3,4,5,6], set)
+
+    assert_raise(ArgumentError) {
+      Set[].merge(a: 1)
+    }
   end
 
   def test_subtract

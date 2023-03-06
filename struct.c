@@ -1751,7 +1751,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
  *     Measure.new(amount: 1, unit: 'km')
  *     #=> #<data Measure amount=1, unit="km">
  *
- *     # Alternative shorter intialization with []
+ *     # Alternative shorter initialization with []
  *     Measure[1, 'km']
  *     #=> #<data Measure amount=1, unit="km">
  *     Measure[amount: 1, unit: 'km']

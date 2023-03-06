@@ -185,7 +185,7 @@ class ExtLibs
     extracted = false
     dest = File.dirname(list)
     url = chksums = nil
-    IO.foreach(list) do |line|
+    File.foreach(list) do |line|
       line.sub!(/\s*#.*/, '')
       if /^(\w+)\s*=\s*(.*)/ =~ line
         vars[$1] = vars.expand($2)

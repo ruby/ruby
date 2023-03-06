@@ -2979,7 +2979,8 @@ escape_asis:
                         rb_str_buf_cat(buf, (char *)&c, 1);
                     }
                     break;
-                } else {
+                }
+                else {
                     /* potential change of extended option */
                     int invert = 0;
                     int local_extend = 0;
@@ -3011,7 +3012,8 @@ escape_asis:
                                     int local_options = options;
                                     if (local_extend == 1) {
                                          local_options |= ONIG_OPTION_EXTEND;
-                                    } else {
+                                    }
+                                    else {
                                          local_options &= ~ONIG_OPTION_EXTEND;
                                     }
 
@@ -3021,7 +3023,8 @@ escape_asis:
                                                                 local_options, 1);
                                     if (ret < 0) return ret;
                                     goto begin_scan;
-                                } else {
+                                }
+                                else {
                                     /* change extended flag for rest of expression */
                                     extended_mode = local_extend == 1;
                                     goto fallthrough;
@@ -3039,7 +3042,8 @@ escape_asis:
                         }
                     }
                 }
-            } else if (!in_char_class && recurse) {
+            }
+            else if (!in_char_class && recurse) {
                 parens++;
             }
             /* FALLTHROUGH */
@@ -3855,7 +3859,7 @@ void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const ch
  *      Regexp.new('foo', 'i')  # => /foo/i
  *      Regexp.new('foo', 'im') # => /foo/im
  *
- *  - The logical OR of one or more of the constants
+ *  - The bit-wise OR of one or more of the constants
  *    Regexp::EXTENDED, Regexp::IGNORECASE, Regexp::MULTILINE, and
  *    Regexp::NOENCODING:
  *
@@ -3908,10 +3912,10 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
 {
     int flags = 0;
     rb_encoding *enc = 0;
-    VALUE str, src, opts = Qundef, n_flag = Qundef, kwargs;
+    VALUE str, src, opts = Qundef, kwargs;
     VALUE re = Qnil;
 
-    argc = rb_scan_args(argc, argv, "12:", &src, &opts, &n_flag, &kwargs);
+    rb_scan_args(argc, argv, "11:", &src, &opts, &kwargs);
 
     args->timeout = Qnil;
     if (!NIL_P(kwargs)) {
@@ -3920,10 +3924,6 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
             keywords[0] = rb_intern_const("timeout");
         }
         rb_get_kwargs(kwargs, keywords, 0, 1, &args->timeout);
-    }
-
-    if (argc == 3) {
-        rb_warn_deprecated_to_remove("3.3", "3rd argument to Regexp.new", "2nd argument");
     }
 
     if (RB_TYPE_P(src, T_REGEXP)) {
@@ -3937,19 +3937,12 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
         str = RREGEXP_SRC(re);
     }
     else {
-        if (!UNDEF_P(opts)) {
+        if (!NIL_P(opts)) {
             int f;
             if (FIXNUM_P(opts)) flags = FIX2INT(opts);
             else if ((f = str_to_option(opts)) >= 0) flags = f;
-            else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
+            else if (rb_bool_expected(opts, "ignorecase", FALSE))
                 flags = ONIG_OPTION_IGNORECASE;
-        }
-        if (!NIL_OR_UNDEF_P(n_flag)) {
-            char *kcode = StringValuePtr(n_flag);
-            if (kcode[0] == 'n' || kcode[0] == 'N') {
-                enc = rb_ascii8bit_encoding();
-                flags |= ARG_ENCODING_NONE;
-            }
         }
         str = StringValue(src);
     }
@@ -4695,7 +4688,7 @@ Init_Regexp(void)
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
-    rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
+    rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance_pass_kw, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, 1);
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);

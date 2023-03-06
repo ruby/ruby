@@ -157,13 +157,7 @@ class Reline::TestCase < Test::Unit::TestCase
   end
 
   def assert_whole_lines(expected)
-    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
-    if previous_line_index
-      lines = @line_editor.whole_lines(index: previous_line_index)
-    else
-      lines = @line_editor.whole_lines
-    end
-    assert_equal(expected, lines)
+    assert_equal(expected, @line_editor.whole_lines)
   end
 
   def assert_key_binding(input, method_symbol, editing_modes = [:emacs, :vi_insert, :vi_command])

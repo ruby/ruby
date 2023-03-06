@@ -53,7 +53,7 @@ module RubyVM::AbstractSyntaxTree
   #     #  (ERROR@1:7-1:11),
   #     #  (LASGN@1:12-1:15 :y (LIT@1:14-1:15 2))]
   #
-  #  Note that parsing continues even after the errored expresion.
+  #  Note that parsing continues even after the errored expression.
   #
   def self.parse string, keep_script_lines: false, error_tolerant: false, keep_tokens: false
     Primitive.ast_s_parse string, keep_script_lines, error_tolerant, keep_tokens

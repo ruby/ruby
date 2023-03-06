@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 platform_is :windows do
   require_relative '../fixtures/classes'
   guard -> { WIN32OLESpecs::SYSTEM_MONITOR_CONTROL_AVAILABLE } do

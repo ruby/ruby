@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative 'shared/chars'
 
 describe "String#chars" do

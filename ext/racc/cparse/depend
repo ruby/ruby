@@ -112,7 +112,6 @@ cparse.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 cparse.o: $(hdrdir)/ruby/internal/intern/error.h
 cparse.o: $(hdrdir)/ruby/internal/intern/eval.h
 cparse.o: $(hdrdir)/ruby/internal/intern/file.h
-cparse.o: $(hdrdir)/ruby/internal/intern/gc.h
 cparse.o: $(hdrdir)/ruby/internal/intern/hash.h
 cparse.o: $(hdrdir)/ruby/internal/intern/io.h
 cparse.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -143,7 +142,6 @@ cparse.o: $(hdrdir)/ruby/internal/memory.h
 cparse.o: $(hdrdir)/ruby/internal/method.h
 cparse.o: $(hdrdir)/ruby/internal/module.h
 cparse.o: $(hdrdir)/ruby/internal/newobj.h
-cparse.o: $(hdrdir)/ruby/internal/rgengc.h
 cparse.o: $(hdrdir)/ruby/internal/scan_args.h
 cparse.o: $(hdrdir)/ruby/internal/special_consts.h
 cparse.o: $(hdrdir)/ruby/internal/static_assert.h

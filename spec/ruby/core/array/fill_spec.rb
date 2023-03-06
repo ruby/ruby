@@ -72,6 +72,48 @@ describe "Array#fill" do
     -> { [].fill(1, 2) {|i|} }.should_not raise_error(ArgumentError)
     -> { [].fill(1, 2, true) {|i|} }.should raise_error(ArgumentError)
   end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.fill { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "only changes elements before error is raised, keeping the element which raised an error." do
+    a = [1, 2, 3, 4]
+    begin
+      a.fill do |i|
+        case i
+        when 0 then -1
+        when 1 then -2
+        when 2 then raise StandardError, 'Oops'
+        else 0
+        end
+      end
+    rescue StandardError
+    end
+
+    a.should == [-1, -2, 3, 4]
+  end
+
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.fill do |index|
+      ScratchPad << index
+      array << i if i < 100
+      i++
+      index
+    end
+
+    ScratchPad.recorded.should == [0, 1, 2]
+  end
 end
 
 describe "Array#fill with (filler, index, length)" do

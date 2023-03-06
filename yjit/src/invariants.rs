@@ -123,9 +123,7 @@ pub fn assume_method_lookup_stable(
     jit_ensure_block_entry_exit(jit, ocb);
 
     let block = jit.get_block();
-    block
-        .borrow_mut()
-        .add_cme_dependency(callee_cme);
+    jit.push_cme_dependency(callee_cme);
 
     Invariants::get_instance()
         .cme_validity
@@ -547,17 +545,6 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         }
         cb.set_pos(old_pos);
         cb.set_dropped_bytes(old_dropped_bytes);
-
-        // Freeze invalidated part of the codepage. We only want to wait for
-        // running instances of the code to exit from now on, so we shouldn't
-        // change the code. There could be other ractors sleeping in
-        // branch_stub_hit(), for example. We could harden this by changing memory
-        // protection on the frozen range.
-        assert!(
-            CodegenGlobals::get_inline_frozen_bytes() <= old_pos,
-            "frozen bytes should increase monotonically"
-        );
-        CodegenGlobals::set_inline_frozen_bytes(old_pos);
 
         CodegenGlobals::get_outlined_cb()
             .unwrap()

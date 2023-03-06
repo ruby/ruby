@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 require_relative 'shared/each'
 
 describe "Zlib::GzipReader#each_line" do

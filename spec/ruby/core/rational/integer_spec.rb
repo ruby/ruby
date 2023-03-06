@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 describe "Rational#integer?" do
   # Guard against the Mathn library
   guard -> { !defined?(Math.rsqrt) } do

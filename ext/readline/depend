@@ -121,7 +121,6 @@ readline.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 readline.o: $(hdrdir)/ruby/internal/intern/error.h
 readline.o: $(hdrdir)/ruby/internal/intern/eval.h
 readline.o: $(hdrdir)/ruby/internal/intern/file.h
-readline.o: $(hdrdir)/ruby/internal/intern/gc.h
 readline.o: $(hdrdir)/ruby/internal/intern/hash.h
 readline.o: $(hdrdir)/ruby/internal/intern/io.h
 readline.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -152,7 +151,6 @@ readline.o: $(hdrdir)/ruby/internal/memory.h
 readline.o: $(hdrdir)/ruby/internal/method.h
 readline.o: $(hdrdir)/ruby/internal/module.h
 readline.o: $(hdrdir)/ruby/internal/newobj.h
-readline.o: $(hdrdir)/ruby/internal/rgengc.h
 readline.o: $(hdrdir)/ruby/internal/scan_args.h
 readline.o: $(hdrdir)/ruby/internal/special_consts.h
 readline.o: $(hdrdir)/ruby/internal/static_assert.h

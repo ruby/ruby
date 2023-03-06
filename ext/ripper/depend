@@ -170,7 +170,6 @@ ripper.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 ripper.o: $(hdrdir)/ruby/internal/intern/error.h
 ripper.o: $(hdrdir)/ruby/internal/intern/eval.h
 ripper.o: $(hdrdir)/ruby/internal/intern/file.h
-ripper.o: $(hdrdir)/ruby/internal/intern/gc.h
 ripper.o: $(hdrdir)/ruby/internal/intern/hash.h
 ripper.o: $(hdrdir)/ruby/internal/intern/io.h
 ripper.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -201,7 +200,6 @@ ripper.o: $(hdrdir)/ruby/internal/memory.h
 ripper.o: $(hdrdir)/ruby/internal/method.h
 ripper.o: $(hdrdir)/ruby/internal/module.h
 ripper.o: $(hdrdir)/ruby/internal/newobj.h
-ripper.o: $(hdrdir)/ruby/internal/rgengc.h
 ripper.o: $(hdrdir)/ruby/internal/scan_args.h
 ripper.o: $(hdrdir)/ruby/internal/special_consts.h
 ripper.o: $(hdrdir)/ruby/internal/static_assert.h

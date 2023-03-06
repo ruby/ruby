@@ -480,13 +480,6 @@ rb_insn_name(VALUE insn)
     return insn_name(insn);
 }
 
-// Query the instruction length in bytes for YARV opcode insn
-int
-rb_insn_len(VALUE insn)
-{
-    return insn_len(insn);
-}
-
 unsigned int
 rb_vm_ci_argc(const struct rb_callinfo *ci)
 {
@@ -534,7 +527,8 @@ rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
     if (UNDEFINED_METHOD_ENTRY_P(cme)) {
         return VM_METHOD_TYPE_UNDEF;
-    } else {
+    }
+    else {
         return cme->def->type;
     }
 }

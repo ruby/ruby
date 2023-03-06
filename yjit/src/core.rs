@@ -221,51 +221,56 @@ impl Type {
     }
 
     /// Compute a difference between two value types
-    /// Returns 0 if the two are the same
-    /// Returns > 0 if different but compatible
-    /// Returns usize::MAX if incompatible
-    pub fn diff(self, dst: Self) -> usize {
+    pub fn diff(self, dst: Self) -> TypeDiff {
         // Perfect match, difference is zero
         if self == dst {
-            return 0;
+            return TypeDiff::Compatible(0);
         }
 
         // Any type can flow into an unknown type
         if dst == Type::Unknown {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // A CString is also a TString.
         if self == Type::CString && dst == Type::TString {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // A CArray is also a TArray.
         if self == Type::CArray && dst == Type::TArray {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Specific heap type into unknown heap type is imperfect but valid
         if self.is_heap() && dst == Type::UnknownHeap {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Specific immediate type into unknown immediate type is imperfect but valid
         if self.is_imm() && dst == Type::UnknownImm {
-            return 1;
+            return TypeDiff::Compatible(1);
         }
 
         // Incompatible types
-        return usize::MAX;
+        return TypeDiff::Incompatible;
     }
 
     /// Upgrade this type into a more specific compatible type
     /// The new type must be compatible and at least as specific as the previously known type.
     fn upgrade(&mut self, src: Self) {
         // Here we're checking that src is more specific than self
-        assert!(src.diff(*self) != usize::MAX);
+        assert!(src.diff(*self) != TypeDiff::Incompatible);
         *self = src;
     }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum TypeDiff {
+    // usize == 0: Same type
+    // usize >= 1: Different but compatible. The smaller, the more compatible.
+    Compatible(usize),
+    Incompatible,
 }
 
 // Potential mapping of a value on the temporary stack to
@@ -274,8 +279,52 @@ impl Type {
 pub enum TempMapping {
     MapToStack, // Normal stack value
     MapToSelf,  // Temp maps to the self operand
-    MapToLocal(u8), // Temp maps to a local variable with index
+    MapToLocal(LocalIndex), // Temp maps to a local variable with index
                 //ConstMapping,         // Small constant (0, 1, 2, Qnil, Qfalse, Qtrue)
+}
+
+// Index used by MapToLocal. Using this instead of u8 makes TempMapping 1 byte.
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum LocalIndex {
+    Local0,
+    Local1,
+    Local2,
+    Local3,
+    Local4,
+    Local5,
+    Local6,
+    Local7,
+}
+
+impl From<LocalIndex> for u8 {
+    fn from(idx: LocalIndex) -> Self {
+        match idx {
+            LocalIndex::Local0 => 0,
+            LocalIndex::Local1 => 1,
+            LocalIndex::Local2 => 2,
+            LocalIndex::Local3 => 3,
+            LocalIndex::Local4 => 4,
+            LocalIndex::Local5 => 5,
+            LocalIndex::Local6 => 6,
+            LocalIndex::Local7 => 7,
+        }
+    }
+}
+
+impl From<u8> for LocalIndex {
+    fn from(idx: u8) -> Self {
+        match idx {
+            0 => LocalIndex::Local0,
+            1 => LocalIndex::Local1,
+            2 => LocalIndex::Local2,
+            3 => LocalIndex::Local3,
+            4 => LocalIndex::Local4,
+            5 => LocalIndex::Local5,
+            6 => LocalIndex::Local6,
+            7 => LocalIndex::Local7,
+            _ => unreachable!("{idx} was larger than {MAX_LOCAL_TYPES}"),
+        }
+    }
 }
 
 impl Default for TempMapping {
@@ -291,13 +340,13 @@ pub enum YARVOpnd {
     SelfOpnd,
 
     // Temporary stack operand with stack index
-    StackOpnd(u16),
+    StackOpnd(u8),
 }
 
 impl From<Opnd> for YARVOpnd {
     fn from(value: Opnd) -> Self {
         match value {
-            Opnd::Stack { idx, .. } => StackOpnd(idx as u16),
+            Opnd::Stack { idx, .. } => StackOpnd(idx.try_into().unwrap()),
             _ => unreachable!("{:?} cannot be converted to YARVOpnd", value)
         }
     }
@@ -309,11 +358,11 @@ impl From<Opnd> for YARVOpnd {
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
-    stack_size: u16,
+    stack_size: u8,
 
     // Offset of the JIT SP relative to the interpreter SP
     // This represents how far the JIT's SP is from the "real" SP
-    sp_offset: i16,
+    sp_offset: i8,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
@@ -351,9 +400,110 @@ pub enum BranchShape {
     Default, // Neither target is next
 }
 
-// Branch code generation function signature
-type BranchGenFn =
-    fn(cb: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>, shape: BranchShape) -> ();
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BranchGenFn {
+    BranchIf(BranchShape),
+    BranchNil(BranchShape),
+    BranchUnless(BranchShape),
+    JumpToTarget0(BranchShape),
+    JNZToTarget0,
+    JZToTarget0,
+    JBEToTarget0,
+    JITReturn,
+}
+
+impl BranchGenFn {
+    pub fn call(self, asm: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>) {
+        match self {
+            BranchGenFn::BranchIf(shape) => {
+                match shape {
+                    BranchShape::Next0 => asm.jz(target1.unwrap().into()),
+                    BranchShape::Next1 => asm.jnz(target0.into()),
+                    BranchShape::Default => {
+                        asm.jnz(target0.into());
+                        asm.jmp(target1.unwrap().into());
+                    }
+                }
+            }
+            BranchGenFn::BranchNil(shape) => {
+                match shape {
+                    BranchShape::Next0 => asm.jne(target1.unwrap().into()),
+                    BranchShape::Next1 => asm.je(target0.into()),
+                    BranchShape::Default => {
+                        asm.je(target0.into());
+                        asm.jmp(target1.unwrap().into());
+                    }
+                }
+            }
+            BranchGenFn::BranchUnless(shape) => {
+                match shape {
+                    BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
+                    BranchShape::Next1 => asm.jz(target0.into()),
+                    BranchShape::Default => {
+                        asm.jz(target0.into());
+                        asm.jmp(target1.unwrap().into());
+                    }
+                }
+            }
+            BranchGenFn::JumpToTarget0(shape) => {
+                if shape == BranchShape::Next1 {
+                    panic!("Branch shape Next1 not allowed in JumpToTarget0!");
+                }
+                if shape == BranchShape::Default {
+                    asm.jmp(target0.into());
+                }
+            }
+            BranchGenFn::JNZToTarget0 => {
+                asm.jnz(target0.into())
+            }
+            BranchGenFn::JZToTarget0 => {
+                asm.jz(Target::CodePtr(target0))
+            }
+            BranchGenFn::JBEToTarget0 => {
+                asm.jbe(Target::CodePtr(target0))
+            }
+            BranchGenFn::JITReturn => {
+                asm.comment("update cfp->jit_return");
+                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
+            }
+        }
+    }
+
+    pub fn get_shape(self) -> BranchShape {
+        match self {
+            BranchGenFn::BranchIf(shape) |
+            BranchGenFn::BranchNil(shape) |
+            BranchGenFn::BranchUnless(shape) |
+            BranchGenFn::JumpToTarget0(shape) => shape,
+            BranchGenFn::JNZToTarget0 |
+            BranchGenFn::JZToTarget0 |
+            BranchGenFn::JBEToTarget0 |
+            BranchGenFn::JITReturn => BranchShape::Default,
+        }
+    }
+
+    pub fn set_shape(&mut self, new_shape: BranchShape) {
+        match self {
+            BranchGenFn::BranchIf(shape) |
+            BranchGenFn::BranchNil(shape) |
+            BranchGenFn::BranchUnless(shape) => {
+                *shape = new_shape;
+            }
+            BranchGenFn::JumpToTarget0(shape) => {
+                if new_shape == BranchShape::Next1 {
+                    panic!("Branch shape Next1 not allowed in JumpToTarget0!");
+                }
+                *shape = new_shape;
+            }
+            BranchGenFn::JNZToTarget0 |
+            BranchGenFn::JZToTarget0 |
+            BranchGenFn::JBEToTarget0 |
+            BranchGenFn::JITReturn => {
+                assert_eq!(new_shape, BranchShape::Default);
+            }
+        }
+    }
+}
 
 /// A place that a branch could jump to
 #[derive(Debug)]
@@ -408,7 +558,8 @@ struct BranchStub {
 
 /// Store info about an outgoing branch in a code segment
 /// Note: care must be taken to minimize the size of branch objects
-struct Branch {
+#[derive(Debug)]
+pub struct Branch {
     // Block this is attached to
     block: BlockRef,
 
@@ -421,22 +572,6 @@ struct Branch {
 
     // Branch code generation function
     gen_fn: BranchGenFn,
-
-    // Shape of the branch
-    shape: BranchShape,
-}
-
-impl std::fmt::Debug for Branch {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: expand this if needed. #[derive(Debug)] on Branch gave a
-        // strange error related to BranchGenFn
-        formatter
-            .debug_struct("Branch")
-            .field("start", &self.start_addr)
-            .field("end", &self.end_addr)
-            .field("targets", &self.targets)
-            .finish()
-    }
 }
 
 impl Branch {
@@ -491,15 +626,15 @@ pub struct Block {
     // however, using a RefCell makes it easy to get a pointer to Branch objects
     //
     // List of outgoing branches (to successors)
-    outgoing: Vec<BranchRef>,
+    outgoing: Box<[BranchRef]>,
 
     // FIXME: should these be code pointers instead?
     // Offsets for GC managed objects in the mainline code block
-    gc_obj_offsets: Vec<u32>,
+    gc_obj_offsets: Box<[u32]>,
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
-    cme_dependencies: Vec<CmePtr>,
+    cme_dependencies: Box<[CmePtr]>,
 
     // Code address of an exit for `ctx` and `blockid`.
     // Used for block invalidation.
@@ -512,7 +647,7 @@ pub struct Block {
 pub struct BlockRef(Rc<RefCell<Block>>);
 
 /// Reference-counted pointer to a branch that can be borrowed mutably
-type BranchRef = Rc<RefCell<Branch>>;
+pub type BranchRef = Rc<RefCell<Branch>>;
 
 /// List of block versions for a given blockid
 type VersionList = Vec<BlockRef>;
@@ -734,12 +869,12 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             unsafe { rb_gc_mark_movable(block.blockid.iseq.into()) };
 
             // Mark method entry dependencies
-            for &cme_dep in &block.cme_dependencies {
+            for &cme_dep in block.cme_dependencies.iter() {
                 unsafe { rb_gc_mark_movable(cme_dep.into()) };
             }
 
             // Mark outgoing branch entries
-            for branch in &block.outgoing {
+            for branch in block.outgoing.iter() {
                 let branch = branch.borrow();
                 for target in branch.targets.iter().flatten() {
                     unsafe { rb_gc_mark_movable(target.get_blockid().iseq.into()) };
@@ -747,7 +882,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             }
 
             // Walk over references to objects in generated code.
-            for offset in &block.gc_obj_offsets {
+            for offset in block.gc_obj_offsets.iter() {
                 let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
                 // Creating an unaligned pointer is well defined unlike in C.
                 let value_address = value_address as *const VALUE;
@@ -789,12 +924,12 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             block.blockid.iseq = unsafe { rb_gc_location(block.blockid.iseq.into()) }.as_iseq();
 
             // Update method entry dependencies
-            for cme_dep in &mut block.cme_dependencies {
+            for cme_dep in block.cme_dependencies.iter_mut() {
                 *cme_dep = unsafe { rb_gc_location((*cme_dep).into()) }.as_cme();
             }
 
             // Walk over references to objects in generated code.
-            for offset in &block.gc_obj_offsets {
+            for offset in block.gc_obj_offsets.iter() {
                 let offset_to_value = offset.as_usize();
                 let value_code_ptr = cb.get_ptr(offset_to_value);
                 let value_ptr: *const u8 = value_code_ptr.raw_ptr();
@@ -818,7 +953,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             // Update outgoing branch entries
             let outgoing_branches = block.outgoing.clone(); // clone to use after borrow
             mem::drop(block); // end mut borrow: target.set_iseq and target.get_blockid() might (mut) borrow it
-            for branch in &outgoing_branches {
+            for branch in outgoing_branches.iter() {
                 let mut branch = branch.borrow_mut();
                 for target in branch.targets.iter_mut().flatten() {
                     target.set_iseq(unsafe { rb_gc_location(target.get_blockid().iseq.into()) }.as_iseq());
@@ -923,13 +1058,14 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     // For each version matching the blockid
     for blockref in versions.iter_mut() {
         let block = blockref.borrow();
-        let diff = ctx.diff(&block.ctx);
-
         // Note that we always prefer the first matching
         // version found because of inline-cache chains
-        if diff < best_diff {
-            best_version = Some(blockref.clone());
-            best_diff = diff;
+        match ctx.diff(&block.ctx) {
+            TypeDiff::Compatible(diff) if diff < best_diff => {
+                best_version = Some(blockref.clone());
+                best_diff = diff;
+            }
+            _ => {}
         }
     }
 
@@ -961,7 +1097,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         generic_ctx.sp_offset = ctx.sp_offset;
 
         debug_assert_ne!(
-            usize::MAX,
+            TypeDiff::Incompatible,
             ctx.diff(&generic_ctx),
             "should substitute a compatible context",
         );
@@ -993,7 +1129,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     }
 
     // Run write barriers for all objects in generated code.
-    for offset in &block.gc_obj_offsets {
+    for offset in block.gc_obj_offsets.iter() {
         let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
         // Creating an unaligned pointer is well defined unlike in C.
         let value_address: *const VALUE = value_address.cast();
@@ -1037,9 +1173,9 @@ impl Block {
             start_addr,
             end_addr: None,
             incoming: Vec::new(),
-            outgoing: Vec::new(),
-            gc_obj_offsets: Vec::new(),
-            cme_dependencies: Vec::new(),
+            outgoing: Box::new([]),
+            gc_obj_offsets: Box::new([]),
+            cme_dependencies: Box::new([]),
             entry_exit: None,
         };
 
@@ -1097,19 +1233,18 @@ impl Block {
         self.end_idx = end_idx;
     }
 
-    pub fn add_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
-        for offset in gc_offsets {
-            self.gc_obj_offsets.push(offset);
-            incr_counter!(num_gc_obj_refs);
+    pub fn set_gc_obj_offsets(self: &mut Block, gc_offsets: Vec<u32>) {
+        assert_eq!(self.gc_obj_offsets.len(), 0);
+        if !gc_offsets.is_empty() {
+            incr_counter_by!(num_gc_obj_refs, gc_offsets.len());
+            self.gc_obj_offsets = gc_offsets.into_boxed_slice();
         }
-        self.gc_obj_offsets.shrink_to_fit();
     }
 
     /// Instantiate a new CmeDependency struct and add it to the list of
     /// dependencies for this block.
-    pub fn add_cme_dependency(&mut self, callee_cme: CmePtr) {
-        self.cme_dependencies.push(callee_cme);
-        self.cme_dependencies.shrink_to_fit();
+    pub fn set_cme_dependencies(&mut self, cme_dependencies: Vec<CmePtr>) {
+        self.cme_dependencies = cme_dependencies.into_boxed_slice();
     }
 
     // Push an incoming branch ref and shrink the vector
@@ -1119,9 +1254,8 @@ impl Block {
     }
 
     // Push an outgoing branch ref and shrink the vector
-    fn push_outgoing(&mut self, branch: BranchRef) {
-        self.outgoing.push(branch);
-        self.outgoing.shrink_to_fit();
+    pub fn set_outgoing(&mut self, outgoing: Vec<BranchRef>) {
+        self.outgoing = outgoing.into_boxed_slice();
     }
 
     // Compute the size of the block code
@@ -1131,15 +1265,15 @@ impl Block {
 }
 
 impl Context {
-    pub fn get_stack_size(&self) -> u16 {
+    pub fn get_stack_size(&self) -> u8 {
         self.stack_size
     }
 
-    pub fn get_sp_offset(&self) -> i16 {
+    pub fn get_sp_offset(&self) -> i8 {
         self.sp_offset
     }
 
-    pub fn set_sp_offset(&mut self, offset: i16) {
+    pub fn set_sp_offset(&mut self, offset: i8) {
         self.sp_offset = offset;
     }
 
@@ -1205,7 +1339,7 @@ impl Context {
             return self.stack_push(Type::Unknown);
         }
 
-        return self.stack_push_mapping((MapToLocal(local_idx as u8), Type::Unknown));
+        return self.stack_push_mapping((MapToLocal((local_idx as u8).into()), Type::Unknown));
     }
 
     // Pop N values off the stack
@@ -1225,8 +1359,8 @@ impl Context {
             }
         }
 
-        self.stack_size -= n as u16;
-        self.sp_offset -= n as i16;
+        self.stack_size -= n as u8;
+        self.sp_offset -= n as i8;
 
         return top;
     }
@@ -1234,7 +1368,7 @@ impl Context {
     pub fn shift_stack(&mut self, argc: usize) {
         assert!(argc < self.stack_size.into());
 
-        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+        let method_name_index = (self.stack_size as usize) - (argc as usize) - 1;
 
         for i in method_name_index..(self.stack_size - 1) as usize {
 
@@ -1424,55 +1558,46 @@ impl Context {
     }
 
     /// Compute a difference score for two context objects
-    /// Returns 0 if the two contexts are the same
-    /// Returns > 0 if different but compatible
-    /// Returns usize::MAX if incompatible
-    pub fn diff(&self, dst: &Context) -> usize {
+    pub fn diff(&self, dst: &Context) -> TypeDiff {
         // Self is the source context (at the end of the predecessor)
         let src = self;
 
         // Can only lookup the first version in the chain
         if dst.chain_depth != 0 {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         // Blocks with depth > 0 always produce new versions
         // Sidechains cannot overlap
         if src.chain_depth != 0 {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         if dst.stack_size != src.stack_size {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         if dst.sp_offset != src.sp_offset {
-            return usize::MAX;
+            return TypeDiff::Incompatible;
         }
 
         // Difference sum
         let mut diff = 0;
 
         // Check the type of self
-        let self_diff = src.self_type.diff(dst.self_type);
-
-        if self_diff == usize::MAX {
-            return usize::MAX;
-        }
-
-        diff += self_diff;
+        diff += match src.self_type.diff(dst.self_type) {
+            TypeDiff::Compatible(diff) => diff,
+            TypeDiff::Incompatible => return TypeDiff::Incompatible,
+        };
 
         // For each local type we track
         for i in 0..src.local_types.len() {
             let t_src = src.local_types[i];
             let t_dst = dst.local_types[i];
-            let temp_diff = t_src.diff(t_dst);
-
-            if temp_diff == usize::MAX {
-                return usize::MAX;
-            }
-
-            diff += temp_diff;
+            diff += match t_src.diff(t_dst) {
+                TypeDiff::Compatible(diff) => diff,
+                TypeDiff::Incompatible => return TypeDiff::Incompatible,
+            };
         }
 
         // For each value on the temp stack
@@ -1487,20 +1612,17 @@ impl Context {
                     // stack operand.
                     diff += 1;
                 } else {
-                    return usize::MAX;
+                    return TypeDiff::Incompatible;
                 }
             }
 
-            let temp_diff = src_type.diff(dst_type);
-
-            if temp_diff == usize::MAX {
-                return usize::MAX;
-            }
-
-            diff += temp_diff;
+            diff += match src_type.diff(dst_type) {
+                TypeDiff::Compatible(diff) => diff,
+                TypeDiff::Incompatible => return TypeDiff::Incompatible,
+            };
         }
 
-        return diff;
+        return TypeDiff::Compatible(diff);
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
@@ -1698,14 +1820,6 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
 /// Generate code for a branch, possibly rewriting and changing the size of it
 fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
-    // FIXME
-    /*
-    if (branch->start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        // Generating this branch would modify frozen bytes. Do nothing.
-        return;
-    }
-    */
-
     // Remove old comments
     if let (Some(start_addr), Some(end_addr)) = (branch.start_addr, branch.end_addr) {
         cb.remove_comments(start_addr, end_addr)
@@ -1716,11 +1830,10 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     // Generate the branch
     let mut asm = Assembler::new();
     asm.comment("regenerate_branch");
-    (branch.gen_fn)(
+    branch.gen_fn.call(
         &mut asm,
         branch.get_target_address(0).unwrap(),
         branch.get_target_address(1),
-        branch.shape,
     );
 
     // Rewrite the branch
@@ -1757,7 +1870,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
 }
 
 /// Create a new outgoing branch entry for a block
-fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
+fn make_branch_entry(jit: &mut JITState, block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
     let branch = Branch {
         // Block this is attached to
         block: block.clone(),
@@ -1770,15 +1883,12 @@ fn make_branch_entry(block: &BlockRef, gen_fn: BranchGenFn) -> BranchRef {
         targets: [None, None],
 
         // Branch code generation function
-        gen_fn: gen_fn,
-
-        // Shape of the branch
-        shape: BranchShape::Default,
+        gen_fn,
     };
 
     // Add to the list of outgoing branches for the block
     let branchref = Rc::new(RefCell::new(branch));
-    block.borrow_mut().push_outgoing(branchref.clone());
+    jit.push_outgoing(branchref.clone());
     incr_counter!(compiled_branch_count);
 
     return branchref;
@@ -1867,7 +1977,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
     // If this block hasn't yet been compiled
     if block.is_none() {
-        let branch_old_shape = branch.shape;
+        let branch_old_shape = branch.gen_fn.get_shape();
         let mut branch_modified = false;
 
         // If the new block can be generated right after the branch (at cb->write_pos)
@@ -1876,7 +1986,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             assert!(branch.end_addr == branch.block.borrow().end_addr);
 
             // Change the branch shape to indicate the target block will be placed next
-            branch.shape = target_branch_shape;
+            branch.gen_fn.set_shape(target_branch_shape);
 
             // Rewrite the branch with the new, potentially more compact shape
             regenerate_branch(cb, &mut branch);
@@ -1896,7 +2006,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         if block.is_none() && branch_modified {
             // We couldn't generate a new block for the branch, but we modified the branch.
             // Restore the branch by regenerating it.
-            branch.shape = branch_old_shape;
+            branch.gen_fn.set_shape(branch_old_shape);
             regenerate_branch(cb, &mut branch);
         }
     }
@@ -1907,7 +2017,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             let mut block: RefMut<_> = block_rc.borrow_mut();
 
             // Branch shape should reflect layout
-            assert!(!(branch.shape == target_branch_shape && Some(block.start_addr) != branch.end_addr));
+            assert!(!(branch.gen_fn.get_shape() == target_branch_shape && Some(block.start_addr) != branch.end_addr));
 
             // Add this branch to the list of incoming branches for the target
             block.push_incoming(branch_rc.clone());
@@ -2083,7 +2193,7 @@ impl Assembler
 }
 
 pub fn gen_branch(
-    jit: &JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     target0: BlockId,
@@ -2092,7 +2202,7 @@ pub fn gen_branch(
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
 ) {
-    let branchref = make_branch_entry(&jit.get_block(), gen_fn);
+    let branchref = make_branch_entry(jit, &jit.get_block(), gen_fn);
     let branch = &mut branchref.borrow_mut();
 
     // Get the branch targets or stubs
@@ -2107,28 +2217,13 @@ pub fn gen_branch(
     // Call the branch generation function
     asm.mark_branch_start(&branchref);
     if let Some(dst_addr) = branch.get_target_address(0) {
-        gen_fn(asm, dst_addr, branch.get_target_address(1), BranchShape::Default);
+        gen_fn.call(asm, dst_addr, branch.get_target_address(1));
     }
     asm.mark_branch_end(&branchref);
 }
 
-fn gen_jump_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    if shape == BranchShape::Next1 {
-        panic!("Branch shape Next1 not allowed in gen_jump_branch!");
-    }
-
-    if shape == BranchShape::Default {
-        asm.jmp(target0.into());
-    }
-}
-
-pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
-    let branchref = make_branch_entry(&jit.get_block(), gen_jump_branch);
+pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
+    let branchref = make_branch_entry(jit, &jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
     let mut branch = branchref.borrow_mut();
 
     let mut new_target = BranchTarget::Stub(Box::new(BranchStub {
@@ -2148,17 +2243,17 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
 
         new_target = BranchTarget::Block(blockref.clone());
 
-        branch.shape = BranchShape::Default;
+        branch.gen_fn.set_shape(BranchShape::Default);
 
         // Call the branch generation function
         asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branchref);
-        gen_jump_branch(asm, block_addr, None, BranchShape::Default);
+        branch.gen_fn.call(asm, block_addr, None);
         asm.mark_branch_end(&branchref);
     } else {
         // `None` in new_target.address signals gen_block_series() to compile the
         // target block right after this one (fallthrough).
-        branch.shape = BranchShape::Next0;
+        branch.gen_fn.set_shape(BranchShape::Next0);
 
         // The branch is effectively empty (a noop)
         asm.comment("gen_direct_jmp: fallthrough");
@@ -2171,7 +2266,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
 
 /// Create a stub to force the code up to this point to be executed
 pub fn defer_compilation(
-    jit: &JITState,
+    jit: &mut JITState,
     cur_ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -2188,7 +2283,7 @@ pub fn defer_compilation(
     next_ctx.chain_depth += 1;
 
     let block_rc = jit.get_block();
-    let branch_rc = make_branch_entry(&jit.get_block(), gen_jump_branch);
+    let branch_rc = make_branch_entry(jit, &jit.get_block(), BranchGenFn::JumpToTarget0(BranchShape::Default));
     let mut branch = branch_rc.borrow_mut();
     let block = block_rc.borrow();
 
@@ -2202,9 +2297,14 @@ pub fn defer_compilation(
     asm.comment("defer_compilation");
     asm.mark_branch_start(&branch_rc);
     if let Some(dst_addr) = branch.get_target_address(0) {
-        gen_jump_branch(asm, dst_addr, None, BranchShape::Default);
+        branch.gen_fn.call(asm, dst_addr, None);
     }
     asm.mark_branch_end(&branch_rc);
+
+    // If the block we're deferring from is empty
+    if jit.get_block().borrow().get_blockid().idx == jit.get_insn_idx() {
+        incr_counter!(defer_empty_count);
+    }
 
     incr_counter!(defer_count);
 }
@@ -2228,7 +2328,7 @@ fn remove_from_graph(blockref: &BlockRef) {
     }
 
     // For each outgoing branch
-    for out_branchref in &block.outgoing {
+    for out_branchref in block.outgoing.iter() {
         let out_branch = out_branchref.borrow();
 
         // For each successor block
@@ -2254,7 +2354,7 @@ pub fn free_block(blockref: &BlockRef) {
     // Branches have a Rc pointing at the block housing them.
     // Break the cycle.
     blockref.borrow_mut().incoming.clear();
-    blockref.borrow_mut().outgoing.clear();
+    blockref.borrow_mut().outgoing = Box::new([]);
 
     // No explicit deallocation here as blocks are ref-counted.
 }
@@ -2317,9 +2417,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // Some blocks exit on entry. Patching a jump to the entry at the
             // entry makes an infinite loop.
         } else {
-            // TODO(alan)
-            // if (block.start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) // Don't patch frozen code region
-
             // Patch in a jump to block.entry_exit.
 
             let cur_pos = cb.get_write_ptr();
@@ -2360,12 +2457,6 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             assert_eq!(blockref, incoming_block);
         }
 
-        // TODO(alan):
-        // Don't patch frozen code region
-        // if (branch.start_addr < cb_get_ptr(cb, yjit_codepage_frozen_bytes)) {
-        //     continue;
-        // }
-
         // Create a stub for this branch target or rewire it to a valid block
         set_branch_target(target_idx as u32, block.blockid, &block.ctx, branchref, &mut branch, ocb);
 
@@ -2389,7 +2480,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // The new block will no longer be adjacent.
             // Note that we could be enlarging the branch and writing into the
             // start of the block being invalidated.
-            branch.shape = BranchShape::Default;
+            branch.gen_fn.set_shape(BranchShape::Default);
         }
 
         // Rewrite the branch with the new jump target address
@@ -2465,22 +2556,22 @@ mod tests {
     #[test]
     fn types() {
         // Valid src => dst
-        assert_eq!(Type::Unknown.diff(Type::Unknown), 0);
-        assert_eq!(Type::UnknownImm.diff(Type::UnknownImm), 0);
-        assert_ne!(Type::UnknownImm.diff(Type::Unknown), usize::MAX);
-        assert_ne!(Type::Fixnum.diff(Type::Unknown), usize::MAX);
-        assert_ne!(Type::Fixnum.diff(Type::UnknownImm), usize::MAX);
+        assert_eq!(Type::Unknown.diff(Type::Unknown), TypeDiff::Compatible(0));
+        assert_eq!(Type::UnknownImm.diff(Type::UnknownImm), TypeDiff::Compatible(0));
+        assert_ne!(Type::UnknownImm.diff(Type::Unknown), TypeDiff::Incompatible);
+        assert_ne!(Type::Fixnum.diff(Type::Unknown), TypeDiff::Incompatible);
+        assert_ne!(Type::Fixnum.diff(Type::UnknownImm), TypeDiff::Incompatible);
 
         // Invalid src => dst
-        assert_eq!(Type::Unknown.diff(Type::UnknownImm), usize::MAX);
-        assert_eq!(Type::Unknown.diff(Type::Fixnum), usize::MAX);
-        assert_eq!(Type::Fixnum.diff(Type::UnknownHeap), usize::MAX);
+        assert_eq!(Type::Unknown.diff(Type::UnknownImm), TypeDiff::Incompatible);
+        assert_eq!(Type::Unknown.diff(Type::Fixnum), TypeDiff::Incompatible);
+        assert_eq!(Type::Fixnum.diff(Type::UnknownHeap), TypeDiff::Incompatible);
     }
 
     #[test]
     fn context() {
         // Valid src => dst
-        assert_eq!(Context::default().diff(&Context::default()), 0);
+        assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
         let mut ctx = Context::default();

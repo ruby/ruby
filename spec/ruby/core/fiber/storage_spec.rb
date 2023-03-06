@@ -11,7 +11,7 @@ describe "Fiber.new(storage:)" do
     end
 
     it "creates a fiber with lazily initialized storage" do
-      Fiber.new(storage: nil) { Fiber.current.storage }.resume.should == {}
+      Fiber.new(storage: nil) { Fiber[:x] = 10; Fiber.current.storage }.resume.should == {x: 10}
     end
 
     it "creates a fiber by inheriting the storage of the parent fiber" do
@@ -30,18 +30,19 @@ end
 describe "Fiber#storage=" do
   ruby_version_is "3.2" do
     it "can clear the storage of the fiber" do
-      fiber = Fiber.new(storage: {life: 42}) {
+      fiber = Fiber.new(storage: {life: 42}) do
         Fiber.current.storage = nil
+        Fiber[:x] = 10
         Fiber.current.storage
-      }
-      fiber.resume.should == {}
+      end
+      fiber.resume.should == {x: 10}
     end
 
     it "can set the storage of the fiber" do
-      fiber = Fiber.new(storage: {life: 42}) {
+      fiber = Fiber.new(storage: {life: 42}) do
         Fiber.current.storage = {life: 43}
         Fiber.current.storage
-      }
+      end
       fiber.resume.should == {life: 43}
     end
 
@@ -87,6 +88,12 @@ describe "Fiber.[]=" do
 
     it "sets the value of the given key in the storage of the current fiber" do
       Fiber.new { Fiber[:life] = 43; Fiber[:life] }.resume.should == 43
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "deletes the fiber storage key when assigning nil" do
+      Fiber.new(storage: {life: 42}) { Fiber[:life] = nil; Fiber.current.storage }.resume.should == {}
     end
   end
 end

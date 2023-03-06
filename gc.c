@@ -100,6 +100,7 @@
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/compile.h"
 #include "internal/complex.h"
 #include "internal/cont.h"
 #include "internal/error.h"
@@ -2485,8 +2486,37 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 {
     const VALUE *pc = ec->cfp->pc;
     if (pc && VM_FRAME_RUBYFRAME_P(ec->cfp)) {
-        /* increment PC because source line is calculated with PC-1 */
-        ec->cfp->pc++;
+        int prev_opcode = rb_vm_insn_addr2opcode((void *)*ec->cfp->iseq->body->iseq_encoded);
+        for (const VALUE *insn = ec->cfp->iseq->body->iseq_encoded; insn < pc; insn += rb_insn_len(prev_opcode)) {
+            prev_opcode = rb_vm_insn_addr2opcode((void *)*insn);
+        }
+
+        /* If the previous instruction is a leaf instruction, then the PC is
+         * the currently executing instruction. We should increment the PC
+         * because the source line is calculated with PC-1 in calc_pos.
+         *
+         * If the previous instruction is not a leaf instruction and the
+         * current instruction is not a leaf instruction, then the PC was
+         * incremented before the instruction was ran (meaning the currently
+         * executing instruction is actually the previous instruction), so we
+         * should not increment the PC otherwise we will calculate the source
+         * line for the next instruction.
+         *
+         * However, this implementation still has a bug. Consider the
+         * following situation:
+         *
+         *   non-leaf
+         *   leaf <-
+         *
+         * Where the PC currently points to a leaf instruction. We don't know
+         * which instruction we really are at since we could be at the non-leaf
+         * instruction (since it incremented the PC before executing the
+         * instruction). We could also be at the leaf instruction since the PC
+         * doesn't get incremented until the instruction finishes.
+         */
+        if (rb_insns_leaf_p(prev_opcode)) {
+            ec->cfp->pc++;
+        }
     }
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
     ec->cfp->pc = pc;
@@ -9762,7 +9792,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
 {
     GC_ASSERT(during_gc != 0);
 
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passsed? */
+    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passed? */
     gc_record(objspace, 1, gc_enter_event_cstr(event));
     RUBY_DEBUG_LOG("%s (%s)", gc_enter_event_cstr(event), gc_current_status(objspace));
     gc_report(1, objspace, "gc_exit: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));

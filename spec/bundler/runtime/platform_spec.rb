@@ -365,7 +365,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     simulate_windows do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "nokogiri", :platforms => [:mingw, :mswin, :x64_mingw, :jruby]
+        gem "nokogiri", :platforms => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
         gem "platform_specific"
       G
 
