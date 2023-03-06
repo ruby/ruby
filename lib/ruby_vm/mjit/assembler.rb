@@ -811,7 +811,7 @@ module RubyVM::MJIT
     def test(left, right)
       case [left, right]
       # TEST r/m8*, imm8 (Mod 01: [reg]+disp8)
-      in [Array[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm) && right_imm >= 0
+      in [BytePtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm) && right_imm >= 0
         # REX + F6 /0 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
