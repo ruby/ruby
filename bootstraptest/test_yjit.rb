@@ -3947,3 +3947,19 @@ assert_equal 'true', %q{
 
   calling_my_func
 }
+
+# Fix failed case for large splat
+assert_equal 'true', %q{
+  def d(a, b=:b)
+  end
+
+  def calling_func
+    ary = 1380888.times;
+    d(*ary)
+  end
+  begin
+    calling_func
+  rescue ArgumentError
+    true
+  end
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
