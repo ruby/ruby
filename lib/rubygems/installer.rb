@@ -521,6 +521,8 @@ class Gem::Installer
     else
       regenerate_plugins_for(spec, @plugins_dir)
     end
+  rescue ArgumentError => e
+    raise e, "#{latest.name} #{latest.version} #{spec.name} #{spec.version}: #{e.message}"
   end
 
   ##
