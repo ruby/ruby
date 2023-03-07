@@ -29,7 +29,7 @@ module RubyVM::RJIT
     def peek_at_stack(depth_from_top)
       raise 'not at current insn' unless at_current_insn?
       offset = -(1 + depth_from_top)
-      # rb_mjit_branch_stub_hit updates SP, so you don't need to worry about sp_offset
+      # rb_rjit_branch_stub_hit updates SP, so you don't need to worry about sp_offset
       value = (cfp.sp + offset).*
       C.to_ruby(value)
     end

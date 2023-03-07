@@ -27,12 +27,12 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
 #elif RJIT_STATS && YJIT_STATS
 // Both flags could be enabled at the same time. You need to call both in that case.
-#define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
 #define COLLECT_USAGE_REGISTER(reg, s)     /* none */
 #elif RJIT_STATS
-// for --mjit-stats
-#define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn)
+// for --rjit-stats
+#define COLLECT_USAGE_INSN(insn)           rb_rjit_collect_vm_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
 #define COLLECT_USAGE_REGISTER(reg, s)		/* none */
 #elif YJIT_STATS

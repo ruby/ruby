@@ -32,7 +32,7 @@
 #include "internal/variable.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "ruby/vm.h"
@@ -257,7 +257,7 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
         }
     }
 
-    mjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
+    rjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
 
     rb_ec_finalize(ec);
 

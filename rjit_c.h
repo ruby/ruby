@@ -1,4 +1,4 @@
-// This file is parsed by tool/mjit/generate.rb to generate mjit_c.rb
+// This file is parsed by tool/rjit/generate.rb to generate rjit_c.rb
 #ifndef RJIT_C_H
 #define RJIT_C_H
 
@@ -10,44 +10,44 @@
 #include "vm_callinfo.h"
 #include "builtin.h"
 #include "ccan/list/list.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "shape.h"
 
 // Macros to check if a position is already compiled using compile_status.stack_size_for_pos
 #define NOT_COMPILED_STACK_SIZE -1
 #define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
 
-// Linked list of struct rb_mjit_unit.
-struct rb_mjit_unit_list {
+// Linked list of struct rb_rjit_unit.
+struct rb_rjit_unit_list {
     struct ccan_list_head head;
     int length; // the list length
 };
 
-enum rb_mjit_unit_type {
+enum rb_rjit_unit_type {
     // Single-ISEQ unit for unit_queue
     RJIT_UNIT_ISEQ = 0,
-    // Multi-ISEQ unit for mjit_batch
+    // Multi-ISEQ unit for rjit_batch
     RJIT_UNIT_BATCH = 1,
-    // All-ISEQ unit for mjit_compact
+    // All-ISEQ unit for rjit_compact
     RJIT_UNIT_COMPACT = 2,
 };
 
 // The unit structure that holds metadata of ISeq for RJIT.
 // TODO: Use different structs for ISEQ and BATCH/COMPACT
-struct rb_mjit_unit {
+struct rb_rjit_unit {
     struct ccan_list_node unode;
     // Unique order number of unit.
     int id;
     // Type of this unit
-    enum rb_mjit_unit_type type;
+    enum rb_rjit_unit_type type;
 
     /* RJIT_UNIT_ISEQ */
     // ISEQ for a non-batch unit
     rb_iseq_t *iseq;
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    // mjit_compile's optimization switches
-    struct rb_mjit_compile_info compile_info;
+    // rjit_compile's optimization switches
+    struct rb_rjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
     // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
@@ -57,7 +57,7 @@ struct rb_mjit_unit {
     // Dlopen handle of the loaded object file.
     void *handle;
     // Units compacted by this batch
-    struct rb_mjit_unit_list units; // RJIT_UNIT_BATCH only
+    struct rb_rjit_unit_list units; // RJIT_UNIT_BATCH only
 };
 
 // Storage to keep data which is consistent in each conditional branch.
@@ -77,7 +77,7 @@ struct inlined_call_context {
 };
 
 // Storage to keep compiler's status.  This should have information
-// which is global during one `mjit_compile` call.  Ones conditional
+// which is global during one `rjit_compile` call.  Ones conditional
 // in each branch should be stored in `compile_branch`.
 struct compile_status {
     bool success; // has true if compilation has had no issue
@@ -91,8 +91,8 @@ struct compile_status {
     const struct rb_iseq_constant_body *compiled_iseq;
     int compiled_id; // Just a copy of compiled_iseq->jit_unit->id
     // Mutated optimization levels
-    struct rb_mjit_compile_info *compile_info;
-    // If `inlined_iseqs[pos]` is not NULL, `mjit_compile_body` tries to inline ISeq there.
+    struct rb_rjit_compile_info *compile_info;
+    // If `inlined_iseqs[pos]` is not NULL, `rjit_compile_body` tries to inline ISeq there.
     const struct rb_iseq_constant_body **inlined_iseqs;
     struct inlined_call_context inline_context;
 };
@@ -105,12 +105,12 @@ struct compile_status {
 // TODO: Make it configurable
 #define RJIT_CODE_SIZE 64 * 1024 * 1024
 
-extern uint8_t *rb_mjit_mem_block;
+extern uint8_t *rb_rjit_mem_block;
 
-#define RJIT_RUNTIME_COUNTERS(...) struct rb_mjit_runtime_counters { size_t __VA_ARGS__; };
+#define RJIT_RUNTIME_COUNTERS(...) struct rb_rjit_runtime_counters { size_t __VA_ARGS__; };
 RJIT_RUNTIME_COUNTERS(
     vm_insns_count,
-    mjit_insns_count,
+    rjit_insns_count,
 
     send_args_splat,
     send_klass_megamorphic,
@@ -208,6 +208,6 @@ RJIT_RUNTIME_COUNTERS(
     compiled_block_count
 )
 #undef RJIT_RUNTIME_COUNTERS
-extern struct rb_mjit_runtime_counters rb_mjit_counters;
+extern struct rb_rjit_runtime_counters rb_rjit_counters;
 
 #endif /* RJIT_C_H */

@@ -105,7 +105,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     SEP \
     X(frozen_string_literal) \
     SEP \
-    X(mjit) \
+    X(rjit) \
     SEP \
     X(yjit) \
     /* END OF FEATURES */
@@ -119,11 +119,11 @@ enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     feature_debug_flag_first,
 #if defined(RJIT_FORCE_ENABLE) || !USE_YJIT
-    DEFINE_FEATURE(jit) = feature_mjit,
+    DEFINE_FEATURE(jit) = feature_rjit,
 #else
     DEFINE_FEATURE(jit) = feature_yjit,
 #endif
-    feature_jit_mask = FEATURE_BIT(mjit) | FEATURE_BIT(yjit),
+    feature_jit_mask = FEATURE_BIT(rjit) | FEATURE_BIT(yjit),
 
     feature_debug_flag_begin = feature_debug_flag_first - 1,
     EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
@@ -214,7 +214,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->intern.enc.index = -1;
     opt->features.set = DEFAULT_FEATURES;
 #ifdef RJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DRJIT_FORCE_ENABLE" */
-    opt->features.set |= FEATURE_BIT(mjit);
+    opt->features.set |= FEATURE_BIT(rjit);
 #elif defined(YJIT_FORCE_ENABLE)
     opt->features.set |= FEATURE_BIT(yjit);
 #endif
@@ -262,7 +262,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
 # define PLATFORM_JIT_OPTION "--yjit"
 #else
-# define PLATFORM_JIT_OPTION "--mjit (experimental)"
+# define PLATFORM_JIT_OPTION "--rjit (experimental)"
 #endif
     static const struct ruby_opt_message usage_msg[] = {
         M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
@@ -287,7 +287,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
 #if USE_RJIT
-        M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
+        M("--rjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
 #endif
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler"),
@@ -322,7 +322,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
         M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
 #if USE_RJIT
-        M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
+        M("rjit", "",           "C compiler-based JIT compiler (default: disabled)"),
 #endif
 #if USE_YJIT
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
@@ -333,7 +333,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("experimental", "",     "experimental features"),
     };
 #if USE_RJIT
-    extern const struct ruby_opt_message mjit_option_messages[];
+    extern const struct ruby_opt_message rjit_option_messages[];
 #endif
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
@@ -372,8 +372,8 @@ usage(const char *name, int help, int highlight, int columns)
         SHOW(warn_categories[i]);
 #if USE_RJIT
     printf("%s""RJIT options (experimental):%s\n", sb, se);
-    for (i = 0; mjit_option_messages[i].str; ++i)
-        SHOW(mjit_option_messages[i]);
+    for (i = 0; rjit_option_messages[i].str; ++i)
+        SHOW(rjit_option_messages[i]);
 #endif
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
@@ -1492,11 +1492,11 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 FEATURE_SET(opt->features, FEATURE_BIT(jit));
 #endif
             }
-            else if (is_option_with_optarg("mjit", '-', true, false, false)) {
+            else if (is_option_with_optarg("rjit", '-', true, false, false)) {
 #if USE_RJIT
-                extern void mjit_setup_options(const char *s, struct mjit_options *mjit_opt);
-                FEATURE_SET(opt->features, FEATURE_BIT(mjit));
-                mjit_setup_options(s, &opt->mjit);
+                extern void rjit_setup_options(const char *s, struct rjit_options *rjit_opt);
+                FEATURE_SET(opt->features, FEATURE_BIT(rjit));
+                rjit_setup_options(s, &opt->rjit);
 #else
                 rb_warn("RJIT support is disabled.");
 #endif
@@ -1613,10 +1613,10 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
-    if (opt->mjit.on)
-        mjit_enabled = true;
-    if (opt->mjit.stats)
-        mjit_stats_enabled = true;
+    if (opt->rjit.on)
+        rjit_enabled = true;
+    if (opt->rjit.stats)
+        rjit_stats_enabled = true;
 #endif
 
     Init_ext(); /* load statically linked extensions before rubygems */
@@ -1626,18 +1626,18 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     // Initialize JITs after prelude because JITing prelude is typically not optimal.
 #if USE_RJIT
-    // Also, mjit_init is safe only after rb_call_builtin_inits() defines RubyVM::RJIT::Compiler.
-    if (opt->mjit.on)
-        mjit_init(&opt->mjit);
+    // Also, rjit_init is safe only after rb_call_builtin_inits() defines RubyVM::RJIT::Compiler.
+    if (opt->rjit.on)
+        rjit_init(&opt->rjit);
 #endif
 #if USE_YJIT
     if (opt->yjit)
         rb_yjit_init();
 #endif
     // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
-    // or mjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
+    // or rjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
     // Therefore we need to call this again here to set the initial root fiber's jit_cont.
-    rb_jit_cont_init(); // must be after mjit_enabled = true and rb_yjit_init()
+    rb_jit_cont_init(); // must be after rjit_enabled = true and rb_yjit_init()
 
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
@@ -1940,8 +1940,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
 #if USE_RJIT
-    if (FEATURE_SET_P(opt->features, mjit)) {
-        opt->mjit.on = true; // set opt->mjit.on for Init_ruby_description() and calling mjit_init()
+    if (FEATURE_SET_P(opt->features, rjit)) {
+        opt->rjit.on = true; // set opt->rjit.on for Init_ruby_description() and calling rjit_init()
     }
 #endif
 #if USE_YJIT

@@ -130,11 +130,11 @@ module RubyVM::RJIT
         end
         @patches.clear
 
-        C.mjit_for_each_iseq do |iseq|
+        C.rjit_for_each_iseq do |iseq|
           # Avoid entering past code
           iseq.body.jit_func = 0
           # Avoid reusing past code
-          iseq.body.mjit_blocks.clear if iseq.body.mjit_blocks
+          iseq.body.rjit_blocks.clear if iseq.body.rjit_blocks
           # Compile this again if not converted to trace_* insns
           iseq.body.total_calls = 0
         end

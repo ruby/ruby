@@ -18,7 +18,7 @@ gc.rb
 io.rb
 kernel.rb
 marshal.rb
-mjit.rb
+rjit.rb
 numeric.rb
 nilclass.rb
 pack.rb

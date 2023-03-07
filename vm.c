@@ -29,7 +29,7 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
@@ -379,7 +379,7 @@ jit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_enabled_p();
-    if (yjit_enabled || mjit_call_p) {
+    if (yjit_enabled || rjit_call_p) {
         body->total_calls++;
     }
     else {
@@ -402,9 +402,9 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else { // mjit_call_p
-        if (body->total_calls == mjit_opts.call_threshold) {
-            rb_mjit_compile(iseq);
+    else { // rjit_call_p
+        if (body->total_calls == rjit_opts.call_threshold) {
+            rb_rjit_compile(iseq);
         }
         if ((func = body->jit_func) == 0) {
             return Qundef;
@@ -1969,7 +1969,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
-                rb_mjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
+                rb_rjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
             }
         }
@@ -2816,7 +2816,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
-        mjit_mark();
+        rjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");

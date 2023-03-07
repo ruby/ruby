@@ -25,7 +25,7 @@ module JITSupport
   ]
 
   module_function
-  # Run Ruby script with --mjit-wait (Synchronous JIT compilation).
+  # Run Ruby script with --rjit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
   def eval_with_jit(env = nil, script, **opts)
     stdout, stderr = nil, nil
@@ -40,13 +40,13 @@ module JITSupport
 
   def eval_with_jit_without_retry(env = nil, script, verbose: 0, call_threshold: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
-      '--disable-gems', "--mjit-verbose=#{verbose}",
-      "--mjit-call-threshold=#{call_threshold}", "--mjit-max-cache=#{max_cache}",
+      '--disable-gems', "--rjit-verbose=#{verbose}",
+      "--rjit-call-threshold=#{call_threshold}", "--rjit-max-cache=#{max_cache}",
     ]
     args << '--disable-yjit'
-    args << '--mjit-wait' if wait
-    args << '--mjit-save-temps' if save_temps
-    args << '--mjit-debug' if defined?(@mjit_debug) && @mjit_debug
+    args << '--rjit-wait' if wait
+    args << '--rjit-save-temps' if save_temps
+    args << '--rjit-debug' if defined?(@rjit_debug) && @rjit_debug
     args << '-e' << script
     args.unshift(env ? base_env.merge!(env) : base_env)
     EnvUtil.invoke_ruby(args,
@@ -69,7 +69,7 @@ module JITSupport
     @yjit_supported = ![nil, 'no'].include?(RbConfig::CONFIG['YJIT_SUPPORT'])
   end
 
-  def remove_mjit_logs(stderr)
+  def remove_rjit_logs(stderr)
     if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # utility for -DFORCE_RJIT_ENABLE
       stderr.gsub(/^RJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
     else
@@ -87,7 +87,7 @@ module JITSupport
       stderr.include?("error trying to exec 'cc1': execvp: No such file or directory")
   end
 
-  def mjit_force_enabled?
+  def rjit_force_enabled?
     "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?RJIT_FORCE_ENABLE\b/)
   end
 end

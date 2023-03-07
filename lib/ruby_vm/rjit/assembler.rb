@@ -911,9 +911,9 @@ module RubyVM::RJIT
     end
 
     def incr_counter(name)
-      if C.mjit_opts.stats
+      if C.rjit_opts.stats
         comment("increment counter #{name}")
-        mov(:rax, C.rb_mjit_counters[name].to_i)
+        mov(:rax, C.rb_rjit_counters[name].to_i)
         add([:rax], 1) # TODO: lock
       end
     end

@@ -1,13 +1,13 @@
-require 'ruby_vm/mjit/assembler'
-require 'ruby_vm/mjit/block'
-require 'ruby_vm/mjit/branch_stub'
-require 'ruby_vm/mjit/code_block'
-require 'ruby_vm/mjit/context'
-require 'ruby_vm/mjit/exit_compiler'
-require 'ruby_vm/mjit/insn_compiler'
-require 'ruby_vm/mjit/instruction'
-require 'ruby_vm/mjit/invariants'
-require 'ruby_vm/mjit/jit_state'
+require 'ruby_vm/rjit/assembler'
+require 'ruby_vm/rjit/block'
+require 'ruby_vm/rjit/branch_stub'
+require 'ruby_vm/rjit/code_block'
+require 'ruby_vm/rjit/context'
+require 'ruby_vm/rjit/exit_compiler'
+require 'ruby_vm/rjit/insn_compiler'
+require 'ruby_vm/rjit/instruction'
+require 'ruby_vm/rjit/invariants'
+require 'ruby_vm/rjit/jit_state'
 
 module RubyVM::RJIT
   # Compilation status
@@ -266,45 +266,45 @@ module RubyVM::RJIT
     end
 
     def incr_counter(name)
-      if C.mjit_opts.stats
-        C.rb_mjit_counters[name][0] += 1
+      if C.rjit_opts.stats
+        C.rb_rjit_counters[name][0] += 1
       end
     end
 
     def list_blocks(iseq, pc)
-      mjit_blocks(iseq)[pc].values
+      rjit_blocks(iseq)[pc].values
     end
 
     # @param [Integer] pc
     # @param [RubyVM::RJIT::Context] ctx
     # @return [RubyVM::RJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
-      mjit_blocks(iseq)[pc][ctx]
+      rjit_blocks(iseq)[pc][ctx]
     end
 
     # @param [RubyVM::RJIT::Block] block
     def set_block(iseq, block)
-      mjit_blocks(iseq)[block.pc][block.ctx] = block
+      rjit_blocks(iseq)[block.pc][block.ctx] = block
     end
 
     # @param [RubyVM::RJIT::Block] block
     def remove_block(iseq, block)
-      mjit_blocks(iseq)[block.pc].delete(block.ctx)
+      rjit_blocks(iseq)[block.pc].delete(block.ctx)
     end
 
-    def mjit_blocks(iseq)
+    def rjit_blocks(iseq)
       # Guard against ISEQ GC at random moments
       if C.imemo_type(iseq) != C.imemo_iseq
         return Hash.new { |h, k| h[k] = {} }
       end
 
-      unless iseq.body.mjit_blocks
-        iseq.body.mjit_blocks = Hash.new { |h, k| h[k] = {} }
-        # For some reason, rb_mjit_iseq_mark didn't protect this Hash
+      unless iseq.body.rjit_blocks
+        iseq.body.rjit_blocks = Hash.new { |h, k| h[k] = {} }
+        # For some reason, rb_rjit_iseq_mark didn't protect this Hash
         # from being freed. So we rely on GC_REFS to keep the Hash.
-        GC_REFS << iseq.body.mjit_blocks
+        GC_REFS << iseq.body.rjit_blocks
       end
-      iseq.body.mjit_blocks
+      iseq.body.rjit_blocks
     end
   end
 end

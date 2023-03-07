@@ -18,7 +18,7 @@
 #include "variable.h"
 #include "transient_heap.h"
 #include "yjit.h"
-#include "mjit.h"
+#include "rjit.h"
 
 VALUE rb_cRactor;
 static VALUE rb_cRactorSelector;
@@ -2008,7 +2008,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->debug = cr->debug;
 
     rb_yjit_before_ractor_spawn();
-    rb_mjit_before_ractor_spawn();
+    rb_rjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);

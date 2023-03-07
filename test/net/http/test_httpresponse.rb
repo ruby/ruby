@@ -312,7 +312,7 @@ EOS
   end
 
   def test_read_body_block_mod
-    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3019353
+    # http://ci.rvm.jp/results/trunk-rjit-wait@silicon-docker/3019353
     if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
       omit 'too unstable with --jit-wait, and extending read_timeout did not help it'
     end

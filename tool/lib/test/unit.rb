@@ -92,8 +92,8 @@ module Test
       module RJITFirst
         def group(list)
           # RJIT first
-          mjit, others = list.partition {|e| /test_mjit/ =~ e}
-          mjit + others
+          rjit, others = list.partition {|e| /test_rjit/ =~ e}
+          rjit + others
         end
       end
 

@@ -2929,9 +2929,9 @@ AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(RJIT_CC)dnl
 AS_CASE(["$GCC:$target_os"],
-    [yes:aix*], [mjit_std_cflag="-std=gnu99"],
-    [mjit_std_cflag=])
-AC_SUBST(RJIT_CFLAGS, [${RJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}])dnl
+    [yes:aix*], [rjit_std_cflag="-std=gnu99"],
+    [rjit_std_cflag=])
+AC_SUBST(RJIT_CFLAGS, [${RJIT_CFLAGS-"-w ${rjit_std_cflag} ${orig_cflags}"}])dnl
 AC_SUBST(RJIT_OPTFLAGS, [${RJIT_OPTFLAGS-'$(optflags)'}])dnl
 AC_SUBST(RJIT_DEBUGFLAGS, [${RJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
 AC_SUBST(RJIT_LDSHARED)dnl

@@ -1,22 +1,22 @@
 module RubyVM::RJIT
   # Return true if RJIT is enabled.
   def self.enabled?
-    Primitive.cexpr! 'RBOOL(mjit_enabled)'
+    Primitive.cexpr! 'RBOOL(rjit_enabled)'
   end
 
   # Stop generating JITed code.
   def self.pause(wait: true)
-    Primitive.cexpr! 'mjit_pause(RTEST(wait))'
+    Primitive.cexpr! 'rjit_pause(RTEST(wait))'
   end
 
   # Start generating JITed code again after pause.
   def self.resume
-    Primitive.cexpr! 'mjit_resume()'
+    Primitive.cexpr! 'rjit_resume()'
   end
 
-  if Primitive.mjit_stats_enabled_p
+  if Primitive.rjit_stats_enabled_p
     at_exit do
-      Primitive.mjit_stop_stats
+      Primitive.rjit_stop_stats
       print_stats
     end
   end
@@ -30,8 +30,8 @@ if RubyVM::RJIT.enabled?
     return # miniruby doesn't support RJIT
   end
 
-  require 'ruby_vm/mjit/c_type'
-  require 'ruby_vm/mjit/compiler'
-  require 'ruby_vm/mjit/hooks'
-  require 'ruby_vm/mjit/stats'
+  require 'ruby_vm/rjit/c_type'
+  require 'ruby_vm/rjit/compiler'
+  require 'ruby_vm/rjit/hooks'
+  require 'ruby_vm/rjit/stats'
 end

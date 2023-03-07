@@ -89,7 +89,7 @@
 #include "internal/time.h"
 #include "internal/warnings.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/debug.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -2282,8 +2282,8 @@ threadptr_get_interrupts(rb_thread_t *th)
 
 #if USE_RJIT
 // process.c
-extern bool mjit_waitpid_finished;
-extern int mjit_waitpid_status;
+extern bool rjit_waitpid_finished;
+extern int rjit_waitpid_status;
 #endif
 
 int
@@ -2338,9 +2338,9 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 #if USE_RJIT
         // Handle waitpid_signal for RJIT issued by ruby_sigchld_handler. This needs to be done
         // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
-        if (mjit_waitpid_finished && th == th->vm->ractor.main_thread) {
-            mjit_waitpid_finished = false;
-            mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
+        if (rjit_waitpid_finished && th == th->vm->ractor.main_thread) {
+            rjit_waitpid_finished = false;
+            rjit_notify_waitpid(WIFEXITED(rjit_waitpid_status) ? WEXITSTATUS(rjit_waitpid_status) : -1);
         }
 #endif
 
@@ -4659,7 +4659,7 @@ rb_thread_atfork(void)
     rb_reset_random_seed();
 
     /* For child, starting RJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
-    mjit_child_after_fork();
+    rjit_child_after_fork();
 }
 
 static void

@@ -1,7 +1,7 @@
 module RubyVM::RJIT
   module Hooks # :nodoc: all
     def self.on_bop_redefined(_redefined_flag, _bop)
-      # C.mjit_cancel_all("BOP is redefined")
+      # C.rjit_cancel_all("BOP is redefined")
     end
 
     def self.on_cme_invalidate(cme)
@@ -10,7 +10,7 @@ module RubyVM::RJIT
     end
 
     def self.on_ractor_spawn
-      # C.mjit_cancel_all("Ractor is spawned")
+      # C.rjit_cancel_all("Ractor is spawned")
     end
 
     # Global constant changes like const_set

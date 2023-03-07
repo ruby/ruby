@@ -18,9 +18,9 @@ module RubyVM::RJIT
       start_addr = write_addr
 
       # Write machine code
-      C.mjit_mark_writable
+      C.rjit_mark_writable
       @write_pos += asm.assemble(start_addr)
-      C.mjit_mark_executable
+      C.rjit_mark_executable
 
       end_addr = write_addr
 
@@ -30,8 +30,8 @@ module RubyVM::RJIT
       end
       asm.comments.clear
 
-      # Dump disasm if --mjit-dump-disasm
-      if C.mjit_opts.dump_disasm && start_addr < end_addr
+      # Dump disasm if --rjit-dump-disasm
+      if C.rjit_opts.dump_disasm && start_addr < end_addr
         dump_disasm(start_addr, end_addr)
       end
       start_addr

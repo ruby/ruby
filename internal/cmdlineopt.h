@@ -1,7 +1,7 @@
 #ifndef INTERNAL_CMDLINEOPT_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_CMDLINEOPT_H
 
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 
 typedef struct {
@@ -24,7 +24,7 @@ typedef struct ruby_cmdline_options {
     ruby_features_t warn;
     unsigned int dump;
 #if USE_RJIT
-    struct mjit_options mjit;
+    struct rjit_options rjit;
 #endif
 
     int sflag, xflag;
