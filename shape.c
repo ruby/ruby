@@ -44,7 +44,7 @@ rb_shape_each_shape(each_shape_callback callback, void *data)
     }
 }
 
-rb_shape_t*
+RUBY_FUNC_EXPORTED rb_shape_t*
 rb_shape_get_shape_by_id(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
@@ -71,7 +71,7 @@ rb_rclass_shape_id(VALUE obj)
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
 
-shape_id_t
+RUBY_FUNC_EXPORTED shape_id_t
 rb_shape_get_shape_id(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
@@ -514,7 +514,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
     return midway_shape;
 }
 
-bool
+RUBY_FUNC_EXPORTED bool
 rb_shape_obj_too_complex(VALUE obj)
 {
     return rb_shape_get_shape_id(obj) == OBJ_TOO_COMPLEX_SHAPE_ID;
