@@ -11,7 +11,7 @@ require_relative '../lib/jit_support'
 return unless JITSupport.yjit_supported?
 
 # Tests for YJIT with assertions on compilation and side exits
-# insipired by the MJIT tests in test/ruby/test_mjit.rb
+# insipired by the RJIT tests in test/ruby/test_mjit.rb
 class TestYJIT < Test::Unit::TestCase
   running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 

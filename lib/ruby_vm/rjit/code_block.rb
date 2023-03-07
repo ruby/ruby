@@ -1,4 +1,4 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   class CodeBlock
     # @param mem_block [Integer] JIT buffer address
     # @param mem_size  [Integer] JIT buffer size
@@ -11,7 +11,7 @@ module RubyVM::MJIT
       @outlined  = outlined
     end
 
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def write(asm)
       return 0 if @write_pos + asm.size >= @mem_size
 

@@ -1079,7 +1079,7 @@ void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
-#if USE_MJIT
+#if USE_RJIT
 static struct waitpid_state mjit_waitpid_state;
 
 // variables shared with thread.c
@@ -1095,7 +1095,7 @@ waitpid_signal(struct waitpid_state *w)
         rb_threadptr_interrupt(rb_ec_thread_ptr(w->ec));
         return TRUE;
     }
-#if USE_MJIT
+#if USE_RJIT
     else if (w == &mjit_waitpid_state && w->ret) { /* mjit_add_waiting_pid */
         mjit_waitpid_finished = true;
         mjit_waitpid_status = w->status;
@@ -1197,7 +1197,7 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->status = 0;
 }
 
-#if USE_MJIT
+#if USE_RJIT
 /*
  * must be called with vm->waitpid_lock held, this is not interruptible
  */
@@ -4187,8 +4187,8 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     }
 }
 
-#if USE_MJIT
-// This is used to create MJIT's child Ruby process
+#if USE_RJIT
+// This is used to create RJIT's child Ruby process
 pid_t
 rb_mjit_fork(void)
 {
@@ -4267,7 +4267,7 @@ fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, si
  * The "async_signal_safe" name is a lie, but it is used by pty.c and
  * maybe other exts.  fork() is not async-signal-safe due to pthread_atfork
  * and future POSIX revisions will remove it from a list of signal-safe
- * functions.  rb_waitpid is not async-signal-safe since MJIT, either.
+ * functions.  rb_waitpid is not async-signal-safe since RJIT, either.
  * For our purposes, we do not need async-signal-safety, here
  */
 rb_pid_t
@@ -4297,7 +4297,7 @@ rb_fork_ruby2(struct rb_process_status *status)
 
     while (1) {
         prefork();
-        if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
+        if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause RJIT.
         disable_child_handler_before_fork(&old);
         before_fork_ruby();
         pid = rb_fork();
@@ -4719,7 +4719,7 @@ rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
     /*
-     * Prevent a race with MJIT where the compiler process where
+     * Prevent a race with RJIT where the compiler process where
      * can hold an FD of ours in between vfork + execve
      */
     if (!eargp->waitpid_state && mjit_enabled) {

@@ -1,13 +1,13 @@
 require 'set'
 
-module RubyVM::MJIT
+module RubyVM::RJIT
   class Invariants
     class << self
-      # Called by RubyVM::MJIT::Compiler to lazily initialize this
+      # Called by RubyVM::RJIT::Compiler to lazily initialize this
       # @param cb [CodeBlock]
       # @param ocb [CodeBlock]
-      # @param compiler [RubyVM::MJIT::Compiler]
-      # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
+      # @param compiler [RubyVM::RJIT::Compiler]
+      # @param exit_compiler [RubyVM::RJIT::ExitCompiler]
       def initialize(cb, ocb, compiler, exit_compiler)
         @cb = cb
         @ocb = ocb
@@ -21,7 +21,7 @@ module RubyVM::MJIT
         # freeze # workaround a binding.irb issue. TODO: resurrect this
       end
 
-      # @param jit [RubyVM::MJIT::JITState]
+      # @param jit [RubyVM::RJIT::JITState]
       # @param klass [Integer]
       # @param op [Integer]
       def assume_bop_not_redefined(jit, klass, op)
@@ -32,7 +32,7 @@ module RubyVM::MJIT
         true
       end
 
-      # @param jit [RubyVM::MJIT::JITState]
+      # @param jit [RubyVM::RJIT::JITState]
       def assume_method_lookup_stable(jit, cme)
         ensure_block_entry_exit(jit, cause: 'assume_method_lookup_stable')
         @cme_blocks[cme.to_i] << jit.block
@@ -45,7 +45,7 @@ module RubyVM::MJIT
         end
       end
 
-      # @param asm [RubyVM::MJIT::Assembler]
+      # @param asm [RubyVM::RJIT::Assembler]
       def record_global_inval_patch(asm, target)
         asm.pos_marker do |address|
           if @patches.key?(address)
@@ -103,8 +103,8 @@ module RubyVM::MJIT
         invalidate_all
       end
 
-      # @param jit [RubyVM::MJIT::JITState]
-      # @param block [RubyVM::MJIT::Block]
+      # @param jit [RubyVM::RJIT::JITState]
+      # @param block [RubyVM::RJIT::Block]
       def ensure_block_entry_exit(jit, cause:)
         block = jit.block
         if block.entry_exit.nil?

@@ -4,7 +4,7 @@ describe "Process.wait2" do
   before :all do
     # HACK: this kludge is temporarily necessary because some
     # misbehaving spec somewhere else does not clear processes
-    # Note: background processes are unavoidable with MJIT,
+    # Note: background processes are unavoidable with RJIT,
     # but we shouldn't reap them from Ruby-space
     begin
       Process.wait(-1, Process::WNOHANG)

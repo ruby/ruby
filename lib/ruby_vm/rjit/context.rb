@@ -1,4 +1,4 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   class Context < Struct.new(
     :stack_size,  # @param [Integer] The number of values on the stack
     :sp_offset,   # @param [Integer] JIT sp offset relative to the interpreter's sp

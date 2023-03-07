@@ -1,4 +1,4 @@
-name: MJIT bindgen
+name: RJIT bindgen
 on:
   push:
     paths-ignore:

@@ -1,5 +1,5 @@
-#ifndef RUBY_MJIT_H
-#define RUBY_MJIT_H 1
+#ifndef RUBY_RJIT_H
+#define RUBY_RJIT_H 1
 /**********************************************************************
 
   mjit.h - Interface to MRI method JIT compiler
@@ -9,35 +9,35 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h" // defines USE_MJIT
+#include "ruby/internal/config.h" // defines USE_RJIT
 #include "ruby/internal/stdbool.h"
 #include "vm_core.h"
 
-# if USE_MJIT
+# if USE_RJIT
 
-#ifndef MJIT_STATS
-# define MJIT_STATS RUBY_DEBUG
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
 #endif
 
 #include "ruby.h"
 #include "vm_core.h"
 
 // Special address values of a function generated from the
-// corresponding iseq by MJIT:
+// corresponding iseq by RJIT:
 enum rb_mjit_func_state {
     // ISEQ has not been compiled yet
-    MJIT_FUNC_NOT_COMPILED = 0,
+    RJIT_FUNC_NOT_COMPILED = 0,
     // ISEQ is already queued for the machine code generation but the
     // code is not ready yet for the execution
-    MJIT_FUNC_COMPILING = 1,
+    RJIT_FUNC_COMPILING = 1,
     // ISEQ included not compilable insn, some internal assertion failed
     // or the unit is unloaded
-    MJIT_FUNC_FAILED = 2,
+    RJIT_FUNC_FAILED = 2,
 };
 // Return true if jit_func is part of enum rb_mjit_func_state
-#define MJIT_FUNC_STATE_P(jit_func) ((uintptr_t)(jit_func) <= (uintptr_t)MJIT_FUNC_FAILED)
+#define RJIT_FUNC_STATE_P(jit_func) ((uintptr_t)(jit_func) <= (uintptr_t)RJIT_FUNC_FAILED)
 
-// MJIT options which can be defined on the MRI command line.
+// RJIT options which can be defined on the MRI command line.
 struct mjit_options {
     // Converted from "jit" feature flag to tell the enablement
     // information to ruby_show_version().
@@ -46,7 +46,7 @@ struct mjit_options {
     // include the pre-compiled header, C code file generated for ISEQ,
     // and the corresponding object file.
     bool save_temps;
-    // Print MJIT warnings to stderr.
+    // Print RJIT warnings to stderr.
     bool warnings;
     // Disable compiler optimization and add debug symbols. It can be
     // very slow.
@@ -57,17 +57,17 @@ struct mjit_options {
     bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int call_threshold;
-    // Collect MJIT statistics
+    // Collect RJIT statistics
     bool stats;
-    // Force printing info about MJIT work of level VERBOSE or
+    // Force printing info about RJIT work of level VERBOSE or
     // less. 0=silence, 1=medium, 2=verbose.
     int verbose;
-    // Maximal permitted number of iseq JIT codes in a MJIT memory
+    // Maximal permitted number of iseq JIT codes in a RJIT memory
     // cache.
     int max_cache_size;
-    // [experimental] Do not start MJIT until MJIT.resume is called.
+    // [experimental] Do not start RJIT until RJIT.resume is called.
     bool pause;
-    // [experimental] Call custom RubyVM::MJIT.compile instead of MJIT.
+    // [experimental] Call custom RubyVM::RJIT.compile instead of RJIT.
     bool custom;
     // Enable disasm of all JIT code
     bool dump_disasm;
@@ -131,7 +131,7 @@ VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
 void mjit_finish(bool close_handle_p);
 
-# else // USE_MJIT
+# else // USE_RJIT
 
 static inline void mjit_cancel_all(const char *reason){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
@@ -154,5 +154,5 @@ static inline void mjit_finish(bool close_handle_p){}
 
 static inline void rb_mjit_collect_vm_usage_insn(int insn) {}
 
-# endif // USE_MJIT
-#endif // RUBY_MJIT_H
+# endif // USE_RJIT
+#endif // RUBY_RJIT_H

@@ -2,11 +2,11 @@ require 'fiddle'
 require 'fiddle/pack'
 require_relative 'c_pointer'
 
-module RubyVM::MJIT
+module RubyVM::RJIT
   module CType
     module Struct
       # @param name [String]
-      # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
+      # @param members [Hash{ Symbol => [Integer, RubyVM::RJIT::CType::*] }]
       def self.new(name, sizeof, **members)
         name = members.keys.join('_') if name.empty?
         CPointer.with_class_name('Struct', name) do
@@ -17,7 +17,7 @@ module RubyVM::MJIT
 
     module Union
       # @param name [String]
-      # @param members [Hash{ Symbol => RubyVM::MJIT::CType::* }]
+      # @param members [Hash{ Symbol => RubyVM::RJIT::CType::* }]
       def self.new(name, sizeof, **members)
         name = members.keys.join('_') if name.empty?
         CPointer.with_class_name('Union', name) do

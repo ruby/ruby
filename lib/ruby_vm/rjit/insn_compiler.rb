@@ -1,7 +1,7 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   class InsnCompiler
     # @param ocb [CodeBlock]
-    # @param exit_compiler [RubyVM::MJIT::ExitCompiler]
+    # @param exit_compiler [RubyVM::RJIT::ExitCompiler]
     def initialize(cb, ocb, exit_compiler)
       @ocb = ocb
       @exit_compiler = exit_compiler
@@ -16,10 +16,10 @@ module RubyVM::MJIT
       # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
-    # @param insn `RubyVM::MJIT::Instruction`
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    # @param insn `RubyVM::RJIT::Instruction`
     def compile(jit, ctx, asm, insn)
       asm.incr_counter(:mjit_insns_count)
       asm.comment("Insn: #{insn.name}")
@@ -137,35 +137,35 @@ module RubyVM::MJIT
     # Insns
     #
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def nop(jit, ctx, asm)
       # Do nothing
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getlocal(jit, ctx, asm)
       idx = jit.operand(0)
       level = jit.operand(1)
       jit_getlocal_generic(jit, ctx, asm, idx:, level:)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setlocal(jit, ctx, asm)
       idx = jit.operand(0)
       level = jit.operand(1)
       jit_setlocal_generic(jit, ctx, asm, idx:, level:)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getblockparam(jit, ctx, asm)
       # EP level
       level = jit.operand(1)
@@ -236,9 +236,9 @@ module RubyVM::MJIT
 
     # setblockparam
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getblockparamproxy(jit, ctx, asm)
       # To get block_handler
       unless jit.at_current_insn?
@@ -309,9 +309,9 @@ module RubyVM::MJIT
     # getspecial
     # setspecial
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getinstancevariable(jit, ctx, asm)
       # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
@@ -325,9 +325,9 @@ module RubyVM::MJIT
       jit_getivar(jit, ctx, asm, comptime_obj, id)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setinstancevariable(jit, ctx, asm)
       starting_context = ctx.dup # make a copy for use with jit_chain_guard
 
@@ -477,9 +477,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getclassvariable(jit, ctx, asm)
       # rb_vm_getclassvariable can raise exceptions.
       jit_prepare_routine_call(jit, ctx, asm)
@@ -498,9 +498,9 @@ module RubyVM::MJIT
 
     # setclassvariable
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_getconstant_path(jit, ctx, asm)
       # Cut the block for invalidation
       unless jit.at_current_insn?
@@ -564,9 +564,9 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getconstant(jit, ctx, asm)
       id = jit.operand(0)
 
@@ -592,16 +592,16 @@ module RubyVM::MJIT
     # getglobal
     # setglobal
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putnil(jit, ctx, asm)
       putobject(jit, ctx, asm, val: Qnil)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putself(jit, ctx, asm)
       stack_top = ctx.stack_push
       asm.mov(:rax, [CFP, C.rb_control_frame_t.offsetof(:self)])
@@ -609,9 +609,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putobject(jit, ctx, asm, val: jit.operand(0))
       # Push it to the stack
       stack_top = ctx.stack_push
@@ -628,9 +628,9 @@ module RubyVM::MJIT
 
     # putspecialobject
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putstring(jit, ctx, asm)
       put_val = jit.operand(0, ruby: true)
 
@@ -647,9 +647,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def concatstrings(jit, ctx, asm)
       n = jit.operand(0)
 
@@ -670,9 +670,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def anytostring(jit, ctx, asm)
       # Save the PC and SP since we might call #to_s
       jit_prepare_routine_call(jit, ctx, asm)
@@ -694,9 +694,9 @@ module RubyVM::MJIT
     # toregexp
     # intern
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def newarray(jit, ctx, asm)
       n = jit.operand(0)
 
@@ -729,9 +729,9 @@ module RubyVM::MJIT
 
     # newarraykwsplat
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def duparray(jit, ctx, asm)
       ary = jit.operand(0)
 
@@ -751,9 +751,9 @@ module RubyVM::MJIT
 
     # duphash
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def expandarray(jit, ctx, asm)
       # Both arguments are rb_num_t which is unsigned
       num = jit.operand(0)
@@ -819,9 +819,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def concatarray(jit, ctx, asm)
       # Save the PC and SP because the callee may allocate
       # Note that this modifies REG_SP, which is why we do it first
@@ -842,9 +842,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def splatarray(jit, ctx, asm)
       flag = jit.operand(0)
 
@@ -866,9 +866,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def newhash(jit, ctx, asm)
       num = jit.operand(0)
 
@@ -911,17 +911,17 @@ module RubyVM::MJIT
 
     # newrange
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def pop(jit, ctx, asm)
       ctx.stack_pop
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def dup(jit, ctx, asm)
       val1 = ctx.stack_opnd(0)
       val2 = ctx.stack_push
@@ -930,9 +930,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def dupn(jit, ctx, asm)
       n = jit.operand(0)
 
@@ -955,9 +955,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def swap(jit, ctx, asm)
       stack0_mem = ctx.stack_opnd(0)
       stack1_mem = ctx.stack_opnd(1)
@@ -972,9 +972,9 @@ module RubyVM::MJIT
 
     # opt_reverse
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def topn(jit, ctx, asm)
       n = jit.operand(0)
 
@@ -986,9 +986,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setn(jit, ctx, asm)
       n = jit.operand(0)
 
@@ -1000,18 +1000,18 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def adjuststack(jit, ctx, asm)
       n = jit.operand(0)
       ctx.stack_pop(n)
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def defined(jit, ctx, asm)
       op_type = jit.operand(0)
       obj = jit.operand(1, ruby: true)
@@ -1051,9 +1051,9 @@ module RubyVM::MJIT
     # definemethod
     # definesmethod
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def send(jit, ctx, asm)
       # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
@@ -1082,9 +1082,9 @@ module RubyVM::MJIT
       jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, comptime_recv_klass)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_send_without_block(jit, ctx, asm, cd: C.rb_call_data.new(jit.operand(0)))
       # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
@@ -1105,9 +1105,9 @@ module RubyVM::MJIT
       jit_call_general(jit, ctx, asm, mid, argc, flags, cme, C.VM_BLOCK_HANDLER_NONE, comptime_recv_klass)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def objtostring(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1129,9 +1129,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_str_freeze(jit, ctx, asm)
       unless Invariants.assume_bop_not_redefined(jit, C.STRING_REDEFINED_OP_FLAG, C.BOP_FREEZE)
         return CantCompile;
@@ -1147,9 +1147,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_nil_p(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
@@ -1157,9 +1157,9 @@ module RubyVM::MJIT
     # opt_str_uminus
     # opt_newarray_max
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_newarray_min(jit, ctx, asm)
       num = jit.operand(0)
 
@@ -1182,9 +1182,9 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def invokesuper(jit, ctx, asm)
       # Specialize on a compile-time receiver, and split a block for chain guards
       unless jit.at_current_insn?
@@ -1215,9 +1215,9 @@ module RubyVM::MJIT
 
     # invokeblock
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def leave(jit, ctx, asm)
       assert_equal(ctx.stack_size, 1)
 
@@ -1244,9 +1244,9 @@ module RubyVM::MJIT
 
     # throw
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jump(jit, ctx, asm)
       # Check for interrupts, but only on backward branches that may create loops
       jump_offset = jit.operand(0, signed: true)
@@ -1259,9 +1259,9 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def branchif(jit, ctx, asm)
       # Check for interrupts, but only on backward branches that may create loops
       jump_offset = jit.operand(0, signed: true)
@@ -1311,9 +1311,9 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def branchunless(jit, ctx, asm)
       # Check for interrupts, but only on backward branches that may create loops
       jump_offset = jit.operand(0, signed: true)
@@ -1363,9 +1363,9 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def branchnil(jit, ctx, asm)
       # Check for interrupts, but only on backward branches that may create loops
       jump_offset = jit.operand(0, signed: true)
@@ -1416,18 +1416,18 @@ module RubyVM::MJIT
 
     # once
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_case_dispatch(jit, ctx, asm)
       # Just go to === branches for now
       ctx.stack_pop
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_plus(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1471,9 +1471,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_minus(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1517,23 +1517,23 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_mult(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_div(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_mod(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1575,9 +1575,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_eq(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1592,9 +1592,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_neq(jit, ctx, asm)
       # opt_neq is passed two rb_call_data as arguments:
       # first for ==, second for !=
@@ -1602,44 +1602,44 @@ module RubyVM::MJIT
       opt_send_without_block(jit, ctx, asm, cd: neq_cd)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_lt(jit, ctx, asm)
       jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovl, bop: C.BOP_LT)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_le(jit, ctx, asm)
       jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovle, bop: C.BOP_LE)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_gt(jit, ctx, asm)
       jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovg, bop: C.BOP_GT)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_ge(jit, ctx, asm)
       jit_fixnum_cmp(jit, ctx, asm, opcode: :cmovge, bop: C.BOP_GE)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_ltlt(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_and(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1676,9 +1676,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_or(jit, ctx, asm)
       unless jit.at_current_insn?
         defer_compilation(jit, ctx, asm)
@@ -1716,9 +1716,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_aref(jit, ctx, asm)
       cd = C.rb_call_data.new(jit.operand(0))
       argc = C.vm_ci_argc(cd.ci)
@@ -1806,9 +1806,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_aset(jit, ctx, asm)
       # Defer compilation so we can specialize on a runtime `self`
       unless jit.at_current_insn?
@@ -1892,44 +1892,44 @@ module RubyVM::MJIT
     # opt_aset_with
     # opt_aref_with
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_length(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_size(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_empty_p(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_succ(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_not(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_regexpmatch2(jit, ctx, asm)
       opt_send_without_block(jit, ctx, asm)
     end
@@ -1974,17 +1974,17 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def opt_invokebuiltin_delegate_leave(jit, ctx, asm)
       opt_invokebuiltin_delegate(jit, ctx, asm)
       # opt_invokebuiltin_delegate is always followed by leave insn
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getlocal_WC_0(jit, ctx, asm)
       # Get operands
       idx = jit.operand(0)
@@ -2001,17 +2001,17 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def getlocal_WC_1(jit, ctx, asm)
       idx = jit.operand(0)
       jit_getlocal_generic(jit, ctx, asm, idx:, level: 1)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setlocal_WC_0(jit, ctx, asm)
       slot_idx = jit.operand(0)
 
@@ -2043,24 +2043,24 @@ module RubyVM::MJIT
       KeepCompiling
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def setlocal_WC_1(jit, ctx, asm)
       idx = jit.operand(0)
       jit_setlocal_generic(jit, ctx, asm, idx:, level: 1)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putobject_INT2FIX_0_(jit, ctx, asm)
       putobject(jit, ctx, asm, val: C.to_value(0))
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def putobject_INT2FIX_1_(jit, ctx, asm)
       putobject(jit, ctx, asm, val: C.to_value(1))
     end
@@ -2069,9 +2069,9 @@ module RubyVM::MJIT
     # C func
     #
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_true(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('nil? == true');
@@ -2081,9 +2081,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_false(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('nil? == false');
@@ -2093,9 +2093,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('rb_obj_not')
@@ -2112,9 +2112,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('equal?')
@@ -2133,17 +2133,17 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_not_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       jit_equality_specialized(jit, ctx, asm, false)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_mod_eqq(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
 
@@ -2168,9 +2168,9 @@ module RubyVM::MJIT
       return true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_int_equal(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
@@ -2193,9 +2193,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_int_mul(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
@@ -2238,9 +2238,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_int_aref(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       return false unless two_fixnums_on_stack?(jit)
@@ -2261,9 +2261,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_to_s(jit, ctx, asm, argc, known_recv_class)
       return false if argc != 0
       if known_recv_class == String
@@ -2275,9 +2275,9 @@ module RubyVM::MJIT
       false
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_getbyte(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_str_getbyte')
@@ -2293,9 +2293,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_ary_push(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_ary_push')
@@ -2313,9 +2313,9 @@ module RubyVM::MJIT
       true
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_thread_s_current(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('Thread.current')
@@ -2462,7 +2462,7 @@ module RubyVM::MJIT
       local_table_size - op - 1
     end
 
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def guard_object_is_heap(asm, object_opnd, side_exit)
       asm.comment('guard object is heap')
       # Test that the object is not an immediate
@@ -2474,7 +2474,7 @@ module RubyVM::MJIT
       asm.je(side_exit)
     end
 
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def guard_object_is_array(asm, object_reg, flags_reg, side_exit)
       asm.comment('guard object is array')
       # Pull out the type mask
@@ -2486,9 +2486,9 @@ module RubyVM::MJIT
       asm.jne(side_exit)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_chain_guard(opcode, jit, ctx, asm, side_exit, limit: 20)
       opcode => :je | :jne | :jnz | :jz
 
@@ -2520,9 +2520,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_guard_known_klass(jit, ctx, asm, known_klass, obj_opnd, comptime_obj, side_exit, limit: 10)
       # Only memory operand is supported for now
       assert_equal(true, obj_opnd.is_a?(Array))
@@ -2584,16 +2584,16 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
+    # @param jit [RubyVM::RJIT::JITState]
     def two_fixnums_on_stack?(jit)
       comptime_recv = jit.peek_at_stack(1)
       comptime_arg = jit.peek_at_stack(0)
       return fixnum?(comptime_recv) && fixnum?(comptime_arg)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def guard_two_fixnums(jit, ctx, asm, side_exit)
       # Get stack operands without popping them
       arg1 = ctx.stack_opnd(0)
@@ -2610,9 +2610,9 @@ module RubyVM::MJIT
       # TODO: upgrade type, and skip the check when possible
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_fixnum_cmp(jit, ctx, asm, opcode:, bop:)
       opcode => :cmovl | :cmovle | :cmovg | :cmovge
 
@@ -2658,9 +2658,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_equality_specialized(jit, ctx, asm, gen_eq)
       # Create a side-exit to fall back to the interpreter
       side_exit = side_exit(jit, ctx)
@@ -2738,9 +2738,9 @@ module RubyVM::MJIT
     end
 
     # NOTE: This clobbers :rax
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_prepare_routine_call(jit, ctx, asm)
       jit.record_boundary_patch_point = true
       jit_save_pc(jit, asm)
@@ -2748,8 +2748,8 @@ module RubyVM::MJIT
     end
 
     # Note: This clobbers :rax
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_save_pc(jit, asm, comment: 'save PC to CFP')
       next_pc = jit.pc + jit.insn.len * C.VALUE.size # Use the next one for backtrace and side exits
       asm.comment(comment)
@@ -2757,9 +2757,9 @@ module RubyVM::MJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_save_sp(jit, ctx, asm)
       if ctx.sp_offset != 0
         asm.comment('save SP to CFP')
@@ -2769,9 +2769,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jump_to_next_insn(jit, ctx, asm)
       reset_depth = ctx.dup
       reset_depth.chain_depth = 0
@@ -2792,9 +2792,9 @@ module RubyVM::MJIT
     end
 
     # rb_vm_check_ints
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_check_ints(jit, ctx, asm)
       asm.comment('RUBY_VM_CHECK_INTS(ec)')
       asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
@@ -2813,15 +2813,15 @@ module RubyVM::MJIT
     end
 
     # GET_LEP
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_get_lep(jit, asm, reg:)
       level = get_lvar_level(jit.iseq)
       jit_get_ep(asm, level, reg:)
     end
 
     # vm_get_ep
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_get_ep(asm, level, reg:)
       asm.mov(reg, [CFP, C.rb_control_frame_t.offsetof(:ep)])
       level.times do
@@ -2832,9 +2832,9 @@ module RubyVM::MJIT
     end
 
     # vm_getivar
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_getivar(jit, ctx, asm, comptime_obj, ivar_id, obj_opnd = nil)
       side_exit = side_exit(jit, ctx)
       starting_ctx = ctx.dup # copy for jit_chain_guard
@@ -2940,9 +2940,9 @@ module RubyVM::MJIT
     end
 
     # vm_caller_setup_arg_block
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_caller_setup_arg_block(jit, ctx, asm, ci, blockiseq, is_super)
       side_exit = side_exit(jit, ctx)
       if C.vm_ci_flag(ci) & C.VM_CALL_ARGS_BLOCKARG != 0
@@ -2982,9 +2982,9 @@ module RubyVM::MJIT
     end
 
     # vm_search_method
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_search_method(jit, ctx, asm, mid, argc, flags, send_shift: 0)
       assert_equal(true, jit.at_current_insn?)
 
@@ -3109,17 +3109,17 @@ module RubyVM::MJIT
     end
 
     # vm_call_general
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
       jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class)
     end
 
     # vm_call_method
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     # @param send_shift [Integer] The number of shifts needed for VM_CALL_OPT_SEND
     def jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift: 0)
       # The main check of vm_call_method before vm_call_method_each_type
@@ -3168,9 +3168,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_method_each_type
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       case cme.def.type
       when C.VM_METHOD_TYPE_ISEQ
@@ -3211,9 +3211,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_iseq_setup
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:, frame_type: nil, prev_ep: nil)
       opt_pc = jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
       if opt_pc == CantCompile
@@ -3229,9 +3229,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_iseq_setup_normal (vm_call_iseq_setup_2 -> vm_call_iseq_setup_normal)
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep:)
       # We will not have side exits from here. Adjust the stack.
       if flags & C.VM_CALL_OPT_SEND != 0
@@ -3264,9 +3264,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_cfunc
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
         return CantCompile
@@ -3279,9 +3279,9 @@ module RubyVM::MJIT
     end
 
     # jit_call_cfunc_with_frame
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       cfunc = cme.def.body.cfunc
 
@@ -3373,9 +3373,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_ivar (+ part of vm_call_method_each_type)
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_ivar(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
       if flags & C.VM_CALL_ARGS_SPLAT != 0
         asm.incr_counter(:send_ivar_splat)
@@ -3405,9 +3405,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_bmethod
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       proc_addr = cme.def.body.bmethod.proc
 
@@ -3442,18 +3442,18 @@ module RubyVM::MJIT
     end
 
     # vm_call_alias
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       cme = C.rb_aliased_callable_method_entry(cme)
       jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
     end
 
     # vm_call_optimized
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if flags & C.VM_CALL_ARGS_BLOCKARG != 0
         # Not working yet
@@ -3481,9 +3481,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_opt_send
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
         return CantCompile
@@ -3509,9 +3509,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_opt_call
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_opt_call(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if block_handler != C.VM_BLOCK_HANDLER_NONE
         asm.incr_counter(:send_optimized_call_block)
@@ -3567,9 +3567,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_opt_struct_aref
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       if argc != 0
         asm.incr_counter(:send_optimized_struct_aref_error)
@@ -3610,8 +3610,8 @@ module RubyVM::MJIT
       EndBlock
     end
 
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       # We don't support `send(:send, ...)` for now.
       assert_equal(1, send_shift)
@@ -3628,9 +3628,9 @@ module RubyVM::MJIT
     end
 
     # vm_call_symbol
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_symbol(jit, ctx, asm, cme, flags, argc, kw_splat, block_handler, known_recv_class, send_shift:)
       flags |= C.VM_CALL_OPT_SEND | (kw_splat ? C.VM_CALL_KW_SPLAT : 0)
 
@@ -3673,9 +3673,9 @@ module RubyVM::MJIT
     # Frame structure:
     # | args | locals | cme/cref | block_handler/prev EP | frame type (EP here) | stack bottom (SP here)
     #
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_push_frame(jit, ctx, asm, cme, flags, argc, frame_type, block_handler, iseq: nil, local_size: 0, stack_max: 0, prev_ep: nil)
       # CHECK_VM_STACK_OVERFLOW0: next_cfp <= sp + (local_size + stack_max)
       asm.comment('stack overflow check')
@@ -3788,9 +3788,9 @@ module RubyVM::MJIT
     end
 
     # vm_callee_setup_arg: Set up args and return opt_pc (or CantCompile)
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
       if flags & C.VM_CALL_KW_SPLAT == 0
         if C.rb_simple_iseq_p(iseq)
@@ -3839,9 +3839,9 @@ module RubyVM::MJIT
     end
 
     # CALLER_SETUP_ARG: Return CantCompile if not supported
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_caller_setup_arg(jit, ctx, asm, flags)
       if flags & C.VM_CALL_ARGS_SPLAT != 0
         # We don't support vm_caller_setup_arg_splat
@@ -3856,9 +3856,9 @@ module RubyVM::MJIT
     end
 
     # CALLER_REMOVE_EMPTY_KW_SPLAT: Return CantCompile if not supported
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags)
       if (flags & C.VM_CALL_KW_SPLAT) > 0
         # We don't support removing the last Hash argument
@@ -3908,9 +3908,9 @@ module RubyVM::MJIT
       C.rb_shape_get_shape_id(obj) == C.OBJ_TOO_COMPLEX_SHAPE_ID
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def defer_compilation(jit, ctx, asm)
       # Make a stub to compile the current insn
       stub_next_block(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation')
@@ -3940,8 +3940,8 @@ module RubyVM::MJIT
       branch_stub.compile.call(asm)
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
     def side_exit(jit, ctx)
       if side_exit = jit.side_exits[jit.pc]
         return side_exit

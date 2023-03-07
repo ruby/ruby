@@ -111,8 +111,8 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
-        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+        # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)

@@ -275,7 +275,7 @@ static int ubf_threads_empty(void);
 
 /*
  * sigwait_th is the thread which owns sigwait_fd and sleeps on it
- * (using ppoll).  MJIT worker can be sigwait_th==0, so we initialize
+ * (using ppoll).  RJIT worker can be sigwait_th==0, so we initialize
  * it to THREAD_INVALID at startup and fork time.  It is the ONLY thread
  * allowed to read from sigwait_fd, otherwise starvation can occur.
  */

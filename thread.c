@@ -100,7 +100,7 @@
 #include "vm_debug.h"
 #include "vm_sync.h"
 
-#if USE_MJIT && defined(HAVE_SYS_WAIT_H)
+#if USE_RJIT && defined(HAVE_SYS_WAIT_H)
 #include <sys/wait.h>
 #endif
 
@@ -2280,7 +2280,7 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-#if USE_MJIT
+#if USE_RJIT
 // process.c
 extern bool mjit_waitpid_finished;
 extern int mjit_waitpid_status;
@@ -2335,8 +2335,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             th->status = prev_status;
         }
 
-#if USE_MJIT
-        // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
+#if USE_RJIT
+        // Handle waitpid_signal for RJIT issued by ruby_sigchld_handler. This needs to be done
         // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
         if (mjit_waitpid_finished && th == th->vm->ractor.main_thread) {
             mjit_waitpid_finished = false;
@@ -4621,7 +4621,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     rb_ractor_atfork(vm, th);
 
-    /* may be held by MJIT threads in parent */
+    /* may be held by RJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
     rb_native_mutex_initialize(&vm->workqueue_lock);
 
@@ -4658,7 +4658,7 @@ rb_thread_atfork(void)
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
 
-    /* For child, starting MJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
+    /* For child, starting RJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
     mjit_child_after_fork();
 }
 

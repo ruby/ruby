@@ -405,19 +405,19 @@ AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
-: ${MJIT_CC=$CC}
+: ${RJIT_CC=$CC}
 AS_IF([test "x$cross_compiling" = xno], [
-    AC_PATH_PROG([MJIT_CC], ${MJIT_CC})
+    AC_PATH_PROG([RJIT_CC], ${RJIT_CC})
 
     # if $CC is in /usr/lib/ccache/$CC, search original $CC (disable ccache)
     AS_IF([echo $RUBY_DEBUG | grep ci > /dev/null &&
-           echo $MJIT_CC | grep ^/usr/lib/ccache > /dev/null], [
-           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` MJIT_CC=`which $CC`])
+           echo $RJIT_CC | grep ^/usr/lib/ccache > /dev/null], [
+           PATH=`echo $PATH | sed "s/\/usr\/lib\/ccache://"` RJIT_CC=`which $CC`])
 
     AS_CASE([$target_os],
-	[*mingw*], [command -v cygpath > /dev/null && MJIT_CC=`cygpath -ma $MJIT_CC`])
+	[*mingw*], [command -v cygpath > /dev/null && RJIT_CC=`cygpath -ma $RJIT_CC`])
     shift 2
-    MJIT_CC="$MJIT_CC${1+ }$*"
+    RJIT_CC="$RJIT_CC${1+ }$*"
 ])
 
 AS_CASE(["$build_os"],
@@ -1236,7 +1236,7 @@ main()
 		AS_CASE(["$target_cpu"], [powerpc64*], [
 			ac_cv_func___builtin_setjmp=no
 		])
-		# With gcc-8's -fcf-protection, MJIT's __builtin_longjmp fails.
+		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
 		AS_CASE(["$CC $CFLAGS "], [*" -fcf-protection "*], [cf_protection=yes], [cf_protection=no])
 		AS_IF([test "$cf_protection" = yes], [
 			ac_cv_func___builtin_setjmp=no
@@ -2927,14 +2927,14 @@ LIBEXT=a
 
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
-AC_SUBST(MJIT_CC)dnl
+AC_SUBST(RJIT_CC)dnl
 AS_CASE(["$GCC:$target_os"],
     [yes:aix*], [mjit_std_cflag="-std=gnu99"],
     [mjit_std_cflag=])
-AC_SUBST(MJIT_CFLAGS, [${MJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}])dnl
-AC_SUBST(MJIT_OPTFLAGS, [${MJIT_OPTFLAGS-'$(optflags)'}])dnl
-AC_SUBST(MJIT_DEBUGFLAGS, [${MJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
-AC_SUBST(MJIT_LDSHARED)dnl
+AC_SUBST(RJIT_CFLAGS, [${RJIT_CFLAGS-"-w ${mjit_std_cflag} ${orig_cflags}"}])dnl
+AC_SUBST(RJIT_OPTFLAGS, [${RJIT_OPTFLAGS-'$(optflags)'}])dnl
+AC_SUBST(RJIT_DEBUGFLAGS, [${RJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
+AC_SUBST(RJIT_LDSHARED)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -3727,13 +3727,13 @@ AC_SUBST(INSTALLDOC)
 
 AC_ARG_ENABLE(jit-support,
     AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
-    [MJIT_SUPPORT=$enableval],
+    [RJIT_SUPPORT=$enableval],
     [AS_CASE(["$target_os"],
-        [wasi | mingw* | solaris*], [MJIT_SUPPORT=no],
-        [MJIT_SUPPORT=yes]
+        [wasi | mingw* | solaris*], [RJIT_SUPPORT=no],
+        [RJIT_SUPPORT=yes]
     )])
 
-AC_SUBST(MJIT_SUPPORT)
+AC_SUBST(RJIT_SUPPORT)
 
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
@@ -3835,15 +3835,15 @@ AS_CASE(["${YJIT_SUPPORT}"],
         AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
     ])
     AC_DEFINE(USE_YJIT, 1)
-    AC_DEFINE(USE_MJIT, 1)
+    AC_DEFINE(USE_RJIT, 1)
 ], [
     AC_DEFINE(USE_YJIT, 0)
-    AC_DEFINE(USE_MJIT, 0)
+    AC_DEFINE(USE_RJIT, 0)
 ])
 
 # If YJIT links capstone, libcapstone stops working on the C side.
-# capstone should be linked for MJIT only when YJIT doesn't.
-AS_IF([test x"$MJIT_SUPPORT" = "xyes" -a -z "$CARGO_BUILD_ARGS" ], [
+# capstone should be linked for RJIT only when YJIT doesn't.
+AS_IF([test x"$RJIT_SUPPORT" = "xyes" -a -z "$CARGO_BUILD_ARGS" ], [
     AC_CHECK_LIB([capstone], [cs_disasm])
 ])
 
@@ -4054,7 +4054,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 ])
 
-: ${MJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(MJIT_CC)|g']`}
+: ${RJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(RJIT_CC)|g']`}
 
 MAINLIBS="$LIBS"
 LIBS=$ORIG_LIBS
@@ -4541,7 +4541,7 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
-config_summary "MJIT support"        "$MJIT_SUPPORT"
+config_summary "RJIT support"        "$RJIT_SUPPORT"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module RubyVM::MJIT
+module RubyVM::RJIT
   def self.runtime_stats
     stats = {}
 
@@ -32,7 +32,7 @@ module RubyVM::MJIT
 
     def print_stats
       stats = runtime_stats
-      $stderr.puts("***MJIT: Printing MJIT statistics on exit***")
+      $stderr.puts("***RJIT: Printing RJIT statistics on exit***")
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons')

@@ -1,4 +1,4 @@
-name: MJIT
+name: RJIT
 on:
   push:
     paths-ignore:
@@ -112,7 +112,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "MJIT / ${{ matrix.run_opts }}",
+              "env": "RJIT / ${{ matrix.run_opts }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}"

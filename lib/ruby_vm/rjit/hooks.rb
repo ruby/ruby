@@ -1,4 +1,4 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   module Hooks # :nodoc: all
     def self.on_bop_redefined(_redefined_flag, _bop)
       # C.mjit_cancel_all("BOP is redefined")

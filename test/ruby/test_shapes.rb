@@ -348,7 +348,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_basic_shape_transition
-    omit "Failing with MJIT for some reason" if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    omit "Failing with RJIT for some reason" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     obj = Example.new
     shape = RubyVM::Shape.of(obj)
     refute_equal(RubyVM::Shape.root_shape, shape)

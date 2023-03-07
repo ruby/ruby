@@ -7,12 +7,12 @@ require 'tempfile'
 require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
-  def self.mjit_enabled? = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+  def self.mjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
   def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
 
   NO_JIT_DESCRIPTION =
     if mjit_enabled?
-      RUBY_DESCRIPTION.sub(/\+MJIT /, '')
+      RUBY_DESCRIPTION.sub(/\+RJIT /, '')
     elsif yjit_enabled?
       RUBY_DESCRIPTION.sub(/\+YJIT( (dev|dev_nodebug|stats))? /, '')
     else
@@ -140,7 +140,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+MJIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -225,8 +225,8 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
 
-    omit "This fails on some CIs for now. To be fixed in MJIT's side."
-    return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
+    omit "This fails on some CIs for now. To be fixed in RJIT's side."
+    return if RbConfig::CONFIG["RJIT_SUPPORT"] == 'no'
     return if yjit_force_enabled?
 
     [

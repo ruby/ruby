@@ -164,7 +164,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq && ISEQ_BODY(iseq)) {
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        mjit_free_iseq(iseq); /* Notify MJIT */
+        mjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
 #endif
@@ -356,7 +356,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
 
         if (reference_updating) {
-#if USE_MJIT
+#if USE_RJIT
             rb_mjit_iseq_update_references(body);
 #endif
 #if USE_YJIT
@@ -364,7 +364,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 #endif
         }
         else {
-#if USE_MJIT
+#if USE_RJIT
             rb_mjit_iseq_mark(body->mjit_blocks);
 #endif
 #if USE_YJIT
