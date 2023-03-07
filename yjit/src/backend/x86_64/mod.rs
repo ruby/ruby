@@ -105,6 +105,9 @@ impl Assembler
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 
+    /// Merge IR instructions for the x86 platform. As of x86_split, all `out` operands
+    /// are Opnd::Out, but you sometimes want to use Opnd::Reg for example to shorten the
+    /// generated code, which is what this pass does.
     fn x86_merge(mut self) -> Assembler {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
