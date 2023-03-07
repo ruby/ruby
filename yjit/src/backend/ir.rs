@@ -1230,6 +1230,7 @@ impl AssemblerDrainingIterator {
         self.insns.next().map(|insn| (index, insn))
     }
 
+    /// Returns the next instruction without incrementing the iterator's index.
     pub fn peek(&mut self) -> Option<&Insn> {
         self.insns.peek()
     }
