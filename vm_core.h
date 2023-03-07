@@ -1421,11 +1421,16 @@ VM_ENV_ENVVAL(const VALUE *ep)
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
 #endif
-        VM_ASSERT(VM_ENV_ESCAPED_P(ep));
+    // This function may be called during GC when scanning imemo_env.
+    // If that happens, the object ep[VM_ENV_DATA_INDEX_ENV] points to may have been moved.
+    // If moved, there will be a tombstone (equivalent to T_MOVED) in that place,
+    // and it should not be read from.
+    // Therefore, we disable the following assertions when MMTk is enabled.
+    VM_ASSERT(VM_ENV_ESCAPED_P(ep));
+    VM_ASSERT(vm_assert_env(envval));
 #if USE_MMTK
     }
 #endif
-    VM_ASSERT(vm_assert_env(envval));
     return envval;
 }
 
