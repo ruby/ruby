@@ -133,9 +133,7 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
     if (!rb_str_comparable(str1, str2)) return Qfalse;
     if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
         return Qtrue;
-    if (memcmp(ptr1, ptr2, len) == 0)
-        return Qtrue;
-    return Qfalse;
+    return RBOOL(memcmp(ptr1, ptr2, len) == 0);
 }
 
 #if __has_builtin(__builtin_constant_p)

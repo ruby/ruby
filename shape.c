@@ -558,12 +558,7 @@ rb_shape_too_complex(VALUE self)
 {
     rb_shape_t * shape;
     shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
-    if (rb_shape_id(shape) == OBJ_TOO_COMPLEX_SHAPE_ID) {
-        return Qtrue;
-    }
-    else {
-        return Qfalse;
-    }
+    return RBOOL(rb_shape_id(shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
 }
 
 static VALUE

@@ -3723,12 +3723,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
             return Qfalse;
         }
         if (eql) {
-            if (rb_eql(hash2, hash1)) {
-                return Qtrue;
-            }
-            else {
-                return Qfalse;
-            }
+            return RBOOL(rb_eql(hash2, hash1));
         }
         else {
             return rb_equal(hash2, hash1);

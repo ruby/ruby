@@ -1618,11 +1618,7 @@ rb_ivar_defined(VALUE obj, ID id)
     if (SPECIAL_CONST_P(obj)) return Qfalse;
     if (rb_shape_obj_too_complex(obj)) {
         VALUE idx;
-        if (!rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &idx)) {
-            return Qfalse;
-        }
-
-        return Qtrue;
+        return RBOOL(rb_id_table_lookup(ROBJECT_IV_HASH(obj), id, &idx));
     }
     else {
         return RBOOL(rb_shape_get_iv_index(rb_shape_get_shape(obj), id, &index));
