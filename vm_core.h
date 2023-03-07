@@ -1748,7 +1748,7 @@ void rb_vm_inc_const_missing_count(void);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 void rb_vm_pop_frame_no_int(rb_execution_context_t *ec);
-MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
+void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
@@ -1776,7 +1776,7 @@ rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
-MJIT_STATIC VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
+VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
@@ -1787,7 +1787,7 @@ void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
-MJIT_STATIC const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
+const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 

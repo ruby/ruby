@@ -46,7 +46,7 @@ static const struct rb_callcache vm_empty_cc_for_super;
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 
-MJIT_STATIC VALUE
+VALUE
 ruby_vm_special_exception_copy(VALUE exc)
 {
     VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
@@ -81,8 +81,8 @@ vm_stackoverflow(void)
     ec_stack_overflow(GET_EC(), TRUE);
 }
 
-NORETURN(MJIT_STATIC void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
-MJIT_STATIC void
+NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
+void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
     if (rb_during_gc()) {
@@ -431,7 +431,7 @@ vm_pop_frame(rb_execution_context_t *ec, rb_control_frame_t *cfp, const VALUE *e
     return flags & VM_FRAME_FLAG_FINISH;
 }
 
-MJIT_STATIC void
+void
 rb_vm_pop_frame(rb_execution_context_t *ec)
 {
     vm_pop_frame(ec, ec->cfp, ec->cfp->ep);
@@ -483,7 +483,7 @@ rb_arity_error_new(int argc, int min, int max)
     return rb_exc_new3(rb_eArgError, err_mess);
 }
 
-MJIT_STATIC void
+void
 rb_error_arity(int argc, int min, int max)
 {
     rb_exc_raise(rb_arity_error_new(argc, min, max));
@@ -515,7 +515,7 @@ vm_env_write(const VALUE *ep, int index, VALUE v)
     }
 }
 
-MJIT_STATIC VALUE
+VALUE
 rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 {
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
@@ -708,7 +708,7 @@ check_method_entry(VALUE obj, int can_be_svar)
     }
 }
 
-MJIT_STATIC const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
     const VALUE *ep = cfp->ep;
@@ -2505,7 +2505,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
     return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
 }
 
-MJIT_STATIC bool
+bool
 rb_simple_iseq_p(const rb_iseq_t *iseq)
 {
     return ISEQ_BODY(iseq)->param.flags.has_opt == FALSE &&
@@ -3362,7 +3362,7 @@ vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
 }
 
 // If true, cc->call needs to include `CALLER_SETUP_ARG` (i.e. can't be skipped in fastpath)
-MJIT_STATIC bool
+bool
 rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci)
 {
     return IS_ARGS_SPLAT(ci) || IS_ARGS_KW_OR_KW_SPLAT(ci);
