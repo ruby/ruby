@@ -57,10 +57,6 @@ main(int argc, char **argv)
         PATH_SEPARATOR
         EXTOUT_DIR"/"ARCH
         ;
-#ifndef LOAD_RELATIVE
-    static const char mjit_build_dir[] = BUILDDIR"/mjit_build_dir."SOEXT;
-    struct stat stbuf;
-#endif
     const size_t dirsize = sizeof(builddir);
     const size_t namesize = sizeof(rubypath) - dirsize;
     const char *rubyname = rubypath + dirsize;
@@ -68,12 +64,6 @@ main(int argc, char **argv)
 
     insert_env_path(LIBPATHENV, builddir, dirsize, 1);
     insert_env_path("RUBYLIB", rubylib, sizeof(rubylib), 0);
-#ifndef LOAD_RELATIVE
-    if (PRELOADENV[0] && stat(mjit_build_dir, &stbuf) == 0) {
-        insert_env_path(PRELOADENV, mjit_build_dir, sizeof(mjit_build_dir), 1);
-        setenv("MJIT_SEARCH_BUILD_DIR", "true", 0);
-    }
-#endif
 
     if (!(p = strrchr(arg0, '/'))) p = arg0; else p++;
     if (strlen(p) < namesize - 1) {

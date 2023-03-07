@@ -48,11 +48,6 @@ module JITSupport
     args << '--mjit-save-temps' if save_temps
     args << '--mjit-debug' if defined?(@mjit_debug) && @mjit_debug
     args << '-e' << script
-    base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
-    if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?
-      so = "mjit_build_dir.#{RbConfig::CONFIG['SOEXT']}"
-      base_env[preloadenv] = File.realpath(so) rescue nil
-    end
     args.unshift(env ? base_env.merge!(env) : base_env)
     EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,

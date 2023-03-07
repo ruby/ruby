@@ -481,9 +481,6 @@ probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
 
-clean-local::
-	$(Q)$(RM) -r mjit_build_dir.*
-
 # DTrace static library hacks described here:
 # https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
 ruby-glommed.$(OBJEXT):
@@ -665,13 +662,6 @@ mjit_config.h:
 	echo; \
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
-
-yes-test-almost yes-test-all programs: mjit_build_dir.$(SOEXT)
-mjit_build_dir.$(SOEXT): $(srcdir)/ruby-runner.c ruby-runner.h
-	$(ECHO) making $@
-	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) \
-		-DMAKE_MJIT_BUILD_DIR=1 \
-		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c
 
 # yes-test-basic: leaked-globals
 leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals PHONY
