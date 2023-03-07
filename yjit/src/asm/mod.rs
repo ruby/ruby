@@ -12,7 +12,7 @@ use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
 use crate::virtualmem::WriteError;
 
-#[cfg(feature = "disasm")]
+#[cfg(any(feature = "disasm", test))]
 use std::collections::BTreeMap;
 
 use crate::codegen::CodegenGlobals;
@@ -75,7 +75,7 @@ pub struct CodeBlock {
     label_refs: Vec<LabelRef>,
 
     // Comments for assembly instructions, if that feature is enabled
-    #[cfg(feature = "disasm")]
+    #[cfg(any(feature = "disasm", test))]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // True for OutlinedCb
@@ -123,7 +123,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
-            #[cfg(feature = "disasm")]
+            #[cfg(any(feature = "disasm", test))]
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
@@ -367,7 +367,7 @@ impl CodeBlock {
     #[inline]
     pub fn add_comment(&mut self, _: &str) {}
 
-    #[cfg(feature = "disasm")]
+    #[cfg(any(feature = "disasm", test))]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }

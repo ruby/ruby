@@ -756,6 +756,9 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
+    use crate::disasm::disasm_code_block;
+
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
@@ -929,18 +932,25 @@ mod tests {
     #[test]
     fn test_merge_lea_reg() {
         let (mut asm, mut cb) = setup_asm();
+
         let sp = asm.lea(Opnd::mem(64, SP, 8));
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_eq!(format!("{:x}", cb), "488d5b08");
+
+        assert_eq!(disasm_code_block(&cb), "0x0: lea rbx, [rbx + 8]\n");
     }
 
     #[test]
     fn test_merge_lea_mem() {
         let (mut asm, mut cb) = setup_asm();
+
         let sp = asm.lea(Opnd::mem(64, SP, 8));
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
-        assert_eq!(format!("{:x}", cb), "488d4308488903");
+
+        assert_eq!(disasm_code_block(&cb), indoc! {"
+            0x0: lea rax, [rbx + 8]
+            0x4: mov qword ptr [rbx], rax
+        "});
     }
 }

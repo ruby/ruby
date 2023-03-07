@@ -1,14 +1,14 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
-#[cfg(feature = "disasm")]
+#[cfg(any(feature = "disasm", test))]
 use crate::asm::CodeBlock;
 #[cfg(feature = "disasm")]
 use crate::codegen::CodePtr;
 #[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
-#[cfg(feature = "disasm")]
+#[cfg(any(feature = "disasm", test))]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb
@@ -144,7 +144,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
     }
 }
 
-#[cfg(feature = "disasm")]
+#[cfg(any(feature = "disasm", test))]
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     let mut out = String::from("");
 
@@ -193,6 +193,25 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     }
 
     return out;
+}
+
+/// Disassemble the entire code block for testing
+#[cfg(test)]
+pub fn disasm_code_block(cb: &CodeBlock) -> String {
+    let start_addr = cb.get_ptr(0).raw_ptr() as usize;
+    let end_addr = cb.get_write_ptr().raw_ptr() as usize;
+
+    let mut disasm = disasm_addr_range(cb, start_addr, end_addr);
+    disasm = unindent::unindent(&format!("\n{disasm}"));
+
+    // Code addresses will be different every time you test it. So this loop replaces
+    // code addresses that appear in disasm with `start_addr`-origin values.
+    for addr in start_addr..end_addr {
+        let from = format!("{:#x}", addr);
+        let to = format!("{:#x}", addr - start_addr);
+        disasm = disasm.replace(&from, &to);
+    }
+    disasm
 }
 
 /// Primitive called in yjit.rb
