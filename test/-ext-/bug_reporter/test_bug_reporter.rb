@@ -12,7 +12,7 @@ class TestBugReporter < Test::Unit::TestCase
     omit if ENV['RUBY_ON_BUG']
 
     description = RUBY_DESCRIPTION
-    description = description.sub(/\+RJIT /, '') unless JITSupport.mjit_force_enabled?
+    description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,

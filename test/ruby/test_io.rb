@@ -2347,8 +2347,8 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_autoclose_true_closed_by_finalizer
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
+    # http://ci.rvm.jp/results/trunk-rjit@silicon-docker/1465760
+    # http://ci.rvm.jp/results/trunk-rjit@silicon-docker/1469765
     omit 'this randomly fails with RJIT' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     feature2250 = '[ruby-core:26222]'

@@ -283,7 +283,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
+} unless ENV['RUN_OPTS'] =~ /--rjit-call-threshold=5/ || # This always fails with --rjit-wait --rjit-call-threshold=5
   (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
@@ -1532,7 +1532,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} unless ENV['RUN_OPTS'] =~ /mjit/ # flaky
+} unless ENV['RUN_OPTS'] =~ /rjit/ # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end

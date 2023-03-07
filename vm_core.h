@@ -346,7 +346,7 @@ pathobj_realpath(VALUE pathobj)
 }
 
 /* Forward declarations */
-struct rb_mjit_unit;
+struct rb_rjit_unit;
 
 typedef uintptr_t iseq_bits_t;
 
@@ -512,7 +512,7 @@ struct rb_iseq_constant_body {
 
 #if USE_RJIT
     // RJIT stores some data on each iseq.
-    VALUE mjit_blocks;
+    VALUE rjit_blocks;
 #endif
 
 #if USE_YJIT

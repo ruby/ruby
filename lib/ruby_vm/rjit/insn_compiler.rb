@@ -21,7 +21,7 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     # @param insn `RubyVM::RJIT::Instruction`
     def compile(jit, ctx, asm, insn)
-      asm.incr_counter(:mjit_insns_count)
+      asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
       # 72/101
@@ -512,7 +512,7 @@ module RubyVM::RJIT
       idlist = ic.segments
 
       # Make sure there is an exit for this block as the interpreter might want
-      # to invalidate this block from rb_mjit_constant_ic_update().
+      # to invalidate this block from rb_rjit_constant_ic_update().
       # For now, we always take an entry exit even if it was a side exit.
       Invariants.ensure_block_entry_exit(jit, cause: 'opt_getconstant_path')
 
@@ -3296,7 +3296,7 @@ module RubyVM::RJIT
       end
 
       # EXEC_EVENT_HOOK: RUBY_EVENT_C_CALL and RUBY_EVENT_C_RETURN
-      if C.rb_mjit_global_events & (C.RUBY_EVENT_C_CALL | C.RUBY_EVENT_C_RETURN) != 0
+      if C.rb_rjit_global_events & (C.RUBY_EVENT_C_CALL | C.RUBY_EVENT_C_RETURN) != 0
         asm.incr_counter(:send_c_tracing)
         return CantCompile
       end

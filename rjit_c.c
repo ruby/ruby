@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  mjit_c.c - C helpers for RJIT
+  rjit_c.c - C helpers for RJIT
 
   Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
 
@@ -9,12 +9,12 @@
 #include "ruby/internal/config.h" // defines USE_RJIT
 
 // ISO C requires a translation unit to contain at least one declaration
-void rb_mjit_c(void) {}
+void rb_rjit_c(void) {}
 
 #if USE_RJIT
 
-#include "mjit.h"
-#include "mjit_c.h"
+#include "rjit.h"
+#include "rjit_c.h"
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/fixnum.h"
@@ -44,7 +44,7 @@ void rb_mjit_c(void) {}
 
 #if RJIT_STATS
 // Insn side exit counters
-static size_t mjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
+static size_t rjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
 #endif // YJIT_STATS
 
 // macOS: brew install capstone
@@ -85,9 +85,9 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
 
 // Same as `RubyVM::RJIT.enabled?`, but this is used before it's defined.
 static VALUE
-mjit_enabled_p(rb_execution_context_t *ec, VALUE self)
+rjit_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(mjit_enabled);
+    return RBOOL(rjit_enabled);
 }
 
 static int
@@ -100,9 +100,9 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
         asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
-            extern VALUE rb_mjit_iseq_new(rb_iseq_t *iseq);
+            extern VALUE rb_rjit_iseq_new(rb_iseq_t *iseq);
             rb_iseq_t *iseq = (rb_iseq_t *)v;
-            rb_funcall(block, rb_intern("call"), 1, rb_mjit_iseq_new(iseq));
+            rb_funcall(block, rb_intern("call"), 1, rb_rjit_iseq_new(iseq));
         }
 
         asan_poison_object_if(ptr, v);
@@ -111,7 +111,7 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 static VALUE
-mjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
+rjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
 {
     rb_objspace_each_objects(for_each_iseq_i, (void *)block);
     return Qnil;
@@ -120,6 +120,6 @@ mjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 extern ID rb_get_symbol_id(VALUE name);
 
-#include "mjit_c.rbinc"
+#include "rjit_c.rbinc"
 
 #endif // USE_RJIT

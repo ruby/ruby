@@ -12,7 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "internal/gc.h"
-#include "mjit.h"
+#include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

@@ -326,7 +326,7 @@ class BindingGenerator
 end
 
 src_dir = File.expand_path('../..', __dir__)
-src_path = File.join(src_dir, 'mjit_c.rb')
+src_path = File.join(src_dir, 'rjit_c.rb')
 build_dir = File.expand_path(build_dir)
 cflags = [
   src_dir,
@@ -341,8 +341,8 @@ if Dir.exist?(clangd_cache)
   system('rm', '-rf', clangd_cache, exception: true)
 end
 
-# Parse mjit_c.h and generate mjit_c.rb
-nodes = HeaderParser.new(File.join(src_dir, 'mjit_c.h'), cflags: cflags).parse
+# Parse rjit_c.h and generate rjit_c.rb
+nodes = HeaderParser.new(File.join(src_dir, 'rjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
   uses: %w[
@@ -478,7 +478,7 @@ generator = BindingGenerator.new(
     iseq_inline_constant_cache_entry
     iseq_inline_iv_cache_entry
     iseq_inline_storage_entry
-    mjit_options
+    rjit_options
     rb_builtin_function
     rb_call_data
     rb_callable_method_entry_struct
@@ -498,9 +498,9 @@ generator = BindingGenerator.new(
     rb_method_iseq_t
     rb_method_type_t
     rb_method_bmethod_t
-    rb_mjit_compile_info
-    rb_mjit_runtime_counters
-    rb_mjit_unit
+    rb_rjit_compile_info
+    rb_rjit_runtime_counters
+    rb_rjit_unit
     rb_serial_t
     rb_shape
     rb_shape_t
@@ -527,7 +527,7 @@ generator = BindingGenerator.new(
   },
   ruby_fields: {
     rb_iseq_constant_body: %w[
-      mjit_blocks
+      rjit_blocks
     ],
     rb_iseq_location_struct: %w[
       base_label
@@ -544,5 +544,5 @@ generator = BindingGenerator.new(
 )
 generator.generate(nodes)
 
-# Write mjit_c.rb
+# Write rjit_c.rb
 File.write(src_path, generator.src)

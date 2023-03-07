@@ -81,17 +81,17 @@ module RubyVM::RJIT
     # @param branch_stub [RubyVM::RJIT::BranchStub]
     # @param target0_p [TrueClass,FalseClass]
     def compile_branch_stub(ctx, asm, branch_stub, target0_p)
-      # Call rb_mjit_branch_stub_hit
+      # Call rb_rjit_branch_stub_hit
       iseq = branch_stub.iseq
-      if C.mjit_opts.dump_disasm && C.imemo_type(iseq) == C.imemo_iseq # Guard against ISEQ GC at random moments
+      if C.rjit_opts.dump_disasm && C.imemo_type(iseq) == C.imemo_iseq # Guard against ISEQ GC at random moments
         asm.comment("branch stub hit: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq_lineno(iseq, target0_p ? branch_stub.target0.pc : branch_stub.target1.pc)}")
       end
       asm.mov(:rdi, to_value(branch_stub))
       asm.mov(:esi, ctx.sp_offset)
       asm.mov(:edx, target0_p ? 1 : 0)
-      asm.call(C.rb_mjit_branch_stub_hit)
+      asm.call(C.rb_rjit_branch_stub_hit)
 
-      # Jump to the address returned by rb_mjit_stub_hit
+      # Jump to the address returned by rb_rjit_stub_hit
       asm.jmp(:rax)
     end
 
@@ -104,10 +104,10 @@ module RubyVM::RJIT
     # @param pc [Integer]
     # @param asm [RubyVM::RJIT::Assembler]
     def incr_insn_exit(pc, asm)
-      if C.mjit_opts.stats
+      if C.rjit_opts.stats
         insn = Compiler.decode_insn(C.VALUE.new(pc).*)
         asm.comment("increment insn exit: #{insn.name}")
-        asm.mov(:rax, (C.mjit_insn_exits + insn.bin).to_i)
+        asm.mov(:rax, (C.rjit_insn_exits + insn.bin).to_i)
         asm.add([:rax], 1) # TODO: lock
       end
     end

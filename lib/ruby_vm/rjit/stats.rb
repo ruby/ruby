@@ -5,23 +5,23 @@ module RubyVM::RJIT
 
     # Insn exits
     INSNS.each_value do |insn|
-      exits = C.mjit_insn_exits[insn.bin]
+      exits = C.rjit_insn_exits[insn.bin]
       if exits > 0
         stats[:"exit_#{insn.name}"] = exits
       end
     end
 
     # Runtime stats
-    C.rb_mjit_runtime_counters.members.each do |member|
-      stats[member] = C.rb_mjit_counters.public_send(member)
+    C.rb_rjit_runtime_counters.members.each do |member|
+      stats[member] = C.rb_rjit_counters.public_send(member)
     end
 
     # Other stats are calculated here
     stats[:side_exit_count] = stats.select { |name, _count| name.start_with?('exit_') }.sum(&:last)
     if stats[:vm_insns_count] > 0
-      retired_in_mjit = stats[:mjit_insns_count] - stats[:side_exit_count]
-      stats[:total_insns_count] = retired_in_mjit + stats[:vm_insns_count]
-      stats[:ratio_in_mjit] = 100.0 * retired_in_mjit / stats[:total_insns_count]
+      retired_in_rjit = stats[:rjit_insns_count] - stats[:side_exit_count]
+      stats[:total_insns_count] = retired_in_rjit + stats[:vm_insns_count]
+      stats[:ratio_in_rjit] = 100.0 * retired_in_rjit / stats[:total_insns_count]
     end
 
     stats
@@ -47,8 +47,8 @@ module RubyVM::RJIT
       $stderr.puts "side_exit_count:       #{format_number(13, stats[:side_exit_count])}"
       $stderr.puts "total_insns_count:     #{format_number(13, stats[:total_insns_count])}" if stats.key?(:total_insns_count)
       $stderr.puts "vm_insns_count:        #{format_number(13, stats[:vm_insns_count])}" if stats.key?(:vm_insns_count)
-      $stderr.puts "mjit_insns_count:      #{format_number(13, stats[:mjit_insns_count])}"
-      $stderr.puts "ratio_in_mjit:         #{format('%12.1f', stats[:ratio_in_mjit])}%" if stats.key?(:ratio_in_mjit)
+      $stderr.puts "rjit_insns_count:      #{format_number(13, stats[:rjit_insns_count])}"
+      $stderr.puts "ratio_in_rjit:         #{format('%12.1f', stats[:ratio_in_rjit])}%" if stats.key?(:ratio_in_rjit)
 
       print_exit_counts(stats)
     end

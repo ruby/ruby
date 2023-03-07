@@ -30,7 +30,7 @@ jobs:
       matrix:
         # main variables included in the job name
         test_task: [check]
-        run_opts: ['--mjit-call-threshold=1']
+        run_opts: ['--rjit-call-threshold=1']
         arch: ['']
       fail-fast: false
     env:

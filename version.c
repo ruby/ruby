@@ -13,7 +13,7 @@
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include <stdio.h>
 
@@ -71,7 +71,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +RJIT");
+static const char ruby_description_with_rjit[] = RUBY_DESCRIPTION_WITH(" +RJIT");
 static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(YJIT_DESCRIPTION);
 const char ruby_copyright[] = "ruby - Copyright (C) "
     RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
@@ -127,7 +127,7 @@ Init_version(void)
 }
 
 #if USE_RJIT
-#define RJIT_OPTS_ON opt->mjit.on
+#define RJIT_OPTS_ON opt->rjit.on
 #else
 #define RJIT_OPTS_ON 0
 #endif
@@ -144,8 +144,8 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
     VALUE description;
 
     if (RJIT_OPTS_ON) {
-        rb_dynamic_description = ruby_description_with_mjit;
-        description = MKSTR(description_with_mjit);
+        rb_dynamic_description = ruby_description_with_rjit;
+        description = MKSTR(description_with_rjit);
     }
     else if (YJIT_OPTS_ON) {
         rb_dynamic_description = ruby_description_with_yjit;
