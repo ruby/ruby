@@ -142,7 +142,6 @@ protect.o: $(hdrdir)/ruby/internal/memory.h
 protect.o: $(hdrdir)/ruby/internal/method.h
 protect.o: $(hdrdir)/ruby/internal/module.h
 protect.o: $(hdrdir)/ruby/internal/newobj.h
-protect.o: $(hdrdir)/ruby/internal/rgengc.h
 protect.o: $(hdrdir)/ruby/internal/scan_args.h
 protect.o: $(hdrdir)/ruby/internal/special_consts.h
 protect.o: $(hdrdir)/ruby/internal/static_assert.h

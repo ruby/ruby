@@ -141,7 +141,6 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/memory.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/method.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/module.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/newobj.h
-call_without_gvl.o: $(hdrdir)/ruby/internal/rgengc.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/scan_args.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/special_consts.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/static_assert.h

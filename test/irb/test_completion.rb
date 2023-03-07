@@ -14,11 +14,15 @@ module TestIRB
     class TestMethodCompletion < TestCompletion
       def test_complete_string
         assert_include(IRB::InputCompletor.retrieve_completion_data("'foo'.up", bind: binding), "'foo'.upcase")
+        # completing 'foo bar'.up
+        assert_include(IRB::InputCompletor.retrieve_completion_data("bar'.up", bind: binding), "bar'.upcase")
         assert_equal("String.upcase", IRB::InputCompletor.retrieve_completion_data("'foo'.upcase", bind: binding, doc_namespace: true))
       end
 
       def test_complete_regexp
         assert_include(IRB::InputCompletor.retrieve_completion_data("/foo/.ma", bind: binding), "/foo/.match")
+        # completing /foo bar/.ma
+        assert_include(IRB::InputCompletor.retrieve_completion_data("bar/.ma", bind: binding), "bar/.match")
         assert_equal("Regexp.match", IRB::InputCompletor.retrieve_completion_data("/foo/.match", bind: binding, doc_namespace: true))
       end
 
@@ -292,6 +296,8 @@ module TestIRB
       _ = :aiueo
       assert_include(IRB::InputCompletor.retrieve_completion_data(":a", bind: binding), ":aiueo")
       assert_empty(IRB::InputCompletor.retrieve_completion_data(":irb_unknown_symbol_abcdefg", bind: binding))
+      # Do not complete empty symbol for performance reason
+      assert_empty(IRB::InputCompletor.retrieve_completion_data(":", bind: binding))
     end
 
     def test_complete_invalid_three_colons
@@ -334,11 +340,9 @@ module TestIRB
       bind = obj.instance_exec { binding }
 
       assert_include(IRB::InputCompletor.retrieve_completion_data("public_hog", bind: bind), "public_hoge")
-      assert_include(IRB::InputCompletor.retrieve_completion_data("public_hoge.to_s", bind: bind), "public_hoge.to_s")
       assert_include(IRB::InputCompletor.retrieve_completion_data("public_hoge", bind: bind, doc_namespace: true), "public_hoge")
 
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hog", bind: bind), "private_hoge")
-      assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge.to_s", bind: bind), "private_hoge.to_s")
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge", bind: bind, doc_namespace: true), "private_hoge")
     end
   end

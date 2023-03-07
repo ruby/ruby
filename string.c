@@ -2503,6 +2503,7 @@ rb_str_modify_expand(VALUE str, long expand)
     else if (expand > 0) {
         RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
+    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
@@ -6101,7 +6102,7 @@ rb_str_chr(VALUE str)
  *
  *  Related: String#setbyte.
  */
-static VALUE
+VALUE
 rb_str_getbyte(VALUE str, VALUE index)
 {
     long pos = NUM2LONG(index);

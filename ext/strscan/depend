@@ -152,7 +152,6 @@ strscan.o: $(hdrdir)/ruby/internal/memory.h
 strscan.o: $(hdrdir)/ruby/internal/method.h
 strscan.o: $(hdrdir)/ruby/internal/module.h
 strscan.o: $(hdrdir)/ruby/internal/newobj.h
-strscan.o: $(hdrdir)/ruby/internal/rgengc.h
 strscan.o: $(hdrdir)/ruby/internal/scan_args.h
 strscan.o: $(hdrdir)/ruby/internal/special_consts.h
 strscan.o: $(hdrdir)/ruby/internal/static_assert.h

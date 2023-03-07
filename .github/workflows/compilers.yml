@@ -79,18 +79,6 @@ jobs:
               optflags: '-O2'
             shared: disable
             # check: true
-          - name: 'gcc-11 annocheck'
-            container: gcc-11
-            env:
-              # Minimal flags to pass the check.
-              default_cc: 'gcc-11 -fcf-protection -Wa,--generate-missing-build-notes=yes'
-              optflags: '-O2'
-              LDFLAGS: '-Wl,-z,now'
-              # FIXME: Drop skipping options
-              # https://bugs.ruby-lang.org/issues/18061
-              # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-gaps"
-            check: true
           - { name: clang-16,  env: { default_cc: clang-16 } }
           - { name: clang-15,  env: { default_cc: clang-15 } }
           - { name: clang-14,  env: { default_cc: clang-14 } }
@@ -234,7 +222,12 @@ jobs:
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
-      - run: ./autogen.sh
+      - name: autogen
+        run: |
+          if [ ! -f ./autogen.sh ]; then
+            ls -la
+          fi
+          ./autogen.sh
         working-directory: src
       - name: Run configure
         run: >

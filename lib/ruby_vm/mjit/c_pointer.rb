@@ -1,4 +1,4 @@
-module RubyVM::MJIT # :nodoc: all
+module RubyVM::MJIT
   # Every class under this namespace is a pointer. Even if the type is
   # immediate, it shouldn't be dereferenced until `*` is called.
   module CPointer
@@ -47,24 +47,31 @@ module RubyVM::MJIT # :nodoc: all
         type[@addr + offset / 8] = value
       end
 
-      # @param sizeof [Integer]
+      # @param size [Integer]
       # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
-      def self.define(sizeof, members)
+      def self.define(size, members)
         Class.new(self) do
           # Return the size of this type
-          define_singleton_method(:sizeof) { sizeof }
+          define_singleton_method(:size) { size }
 
-          # Get the offset of a member named +name+
-          define_singleton_method(:offsetof) { |name|
-            _, offset = members.fetch(name)
-            offset / 8
-          }
+          # Return the offset to a field
+          define_singleton_method(:offsetof) do |field, *fields|
+            member, offset = members.fetch(field)
+            offset /= 8
+            unless fields.empty?
+              offset += member.offsetof(*fields)
+            end
+            offset
+          end
+
+          # Return member names
+          define_singleton_method(:members) { members.keys }
 
           define_method(:initialize) do |addr = nil|
             if addr.nil? # TODO: get rid of this feature later
-              addr = Fiddle.malloc(sizeof)
+              addr = Fiddle.malloc(size)
             end
-            super(addr, sizeof, members)
+            super(addr, size, members)
           end
 
           members.each do |member, (type, offset, to_ruby)|
@@ -81,6 +88,9 @@ module RubyVM::MJIT # :nodoc: all
             end
 
             define_method("#{member}=") do |value|
+              if to_ruby
+                value = C.to_value(value)
+              end
               self[member] = value
             end
           end
@@ -123,6 +133,16 @@ module RubyVM::MJIT # :nodoc: all
         Class.new(self) do
           # Return the size of this type
           define_singleton_method(:sizeof) { sizeof }
+
+          # Part of Struct's offsetof implementation
+          define_singleton_method(:offsetof) do |field, *fields|
+            member = members.fetch(field)
+            offset = 0
+            unless fields.empty?
+              offset += member.offsetof(*fields)
+            end
+            offset
+          end
 
           define_method(:initialize) do |addr|
             super(addr, sizeof, members)
@@ -253,6 +273,11 @@ module RubyVM::MJIT # :nodoc: all
           [value.to_i].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
       end
 
+      # Get a raw address
+      def to_i
+        @addr
+      end
+
       private
 
       def dest_addr
@@ -288,12 +313,12 @@ module RubyVM::MJIT # :nodoc: all
 
       # Dereference
       def *
-        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack1('c')
+        byte = Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_CHAR].unpack('c').first
         if @width == 1
           bit = (1 & (byte >> @offset))
           bit == 1
         elsif @width <= 8 && @offset == 0
-          bitmask = @width.times.sum { |i| 1 << i }
+          bitmask = @width.times.map { |i| 1 << i }.sum
           byte & bitmask
         else
           raise NotImplementedError.new("not-implemented bit field access: width=#{@width} offset=#{@offset}")

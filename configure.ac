@@ -3750,10 +3750,6 @@ AC_ARG_ENABLE(jit-support,
         [MJIT_SUPPORT=yes]
     )])
 
-AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
-	[AC_DEFINE(USE_MJIT, 1)],
-	[AC_DEFINE(USE_MJIT, 0)])
-
 AC_SUBST(MJIT_SUPPORT)
 
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
@@ -3856,7 +3852,17 @@ AS_CASE(["${YJIT_SUPPORT}"],
         AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
     ])
     AC_DEFINE(USE_YJIT, 1)
-], [AC_DEFINE(USE_YJIT, 0)])
+    AC_DEFINE(USE_MJIT, 1)
+], [
+    AC_DEFINE(USE_YJIT, 0)
+    AC_DEFINE(USE_MJIT, 0)
+])
+
+# If YJIT links capstone, libcapstone stops working on the C side.
+# capstone should be linked for MJIT only when YJIT doesn't.
+AS_IF([test x"$MJIT_SUPPORT" = "xyes" -a -z "$CARGO_BUILD_ARGS" ], [
+    AC_CHECK_LIB([capstone], [cs_disasm])
+])
 
 dnl These variables end up in ::RbConfig::CONFIG
 AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes

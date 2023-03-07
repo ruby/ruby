@@ -142,7 +142,6 @@ funcall.o: $(hdrdir)/ruby/internal/memory.h
 funcall.o: $(hdrdir)/ruby/internal/method.h
 funcall.o: $(hdrdir)/ruby/internal/module.h
 funcall.o: $(hdrdir)/ruby/internal/newobj.h
-funcall.o: $(hdrdir)/ruby/internal/rgengc.h
 funcall.o: $(hdrdir)/ruby/internal/scan_args.h
 funcall.o: $(hdrdir)/ruby/internal/special_consts.h
 funcall.o: $(hdrdir)/ruby/internal/static_assert.h

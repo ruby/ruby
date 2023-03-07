@@ -142,7 +142,6 @@ bug-14384.o: $(hdrdir)/ruby/internal/memory.h
 bug-14384.o: $(hdrdir)/ruby/internal/method.h
 bug-14384.o: $(hdrdir)/ruby/internal/module.h
 bug-14384.o: $(hdrdir)/ruby/internal/newobj.h
-bug-14384.o: $(hdrdir)/ruby/internal/rgengc.h
 bug-14384.o: $(hdrdir)/ruby/internal/scan_args.h
 bug-14384.o: $(hdrdir)/ruby/internal/special_consts.h
 bug-14384.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -156,7 +156,6 @@ limits.o: $(hdrdir)/ruby/internal/memory.h
 limits.o: $(hdrdir)/ruby/internal/method.h
 limits.o: $(hdrdir)/ruby/internal/module.h
 limits.o: $(hdrdir)/ruby/internal/newobj.h
-limits.o: $(hdrdir)/ruby/internal/rgengc.h
 limits.o: $(hdrdir)/ruby/internal/scan_args.h
 limits.o: $(hdrdir)/ruby/internal/special_consts.h
 limits.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -315,7 +314,6 @@ sizes.o: $(hdrdir)/ruby/internal/memory.h
 sizes.o: $(hdrdir)/ruby/internal/method.h
 sizes.o: $(hdrdir)/ruby/internal/module.h
 sizes.o: $(hdrdir)/ruby/internal/newobj.h
-sizes.o: $(hdrdir)/ruby/internal/rgengc.h
 sizes.o: $(hdrdir)/ruby/internal/scan_args.h
 sizes.o: $(hdrdir)/ruby/internal/special_consts.h
 sizes.o: $(hdrdir)/ruby/internal/static_assert.h

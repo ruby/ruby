@@ -152,7 +152,6 @@ pty.o: $(hdrdir)/ruby/internal/memory.h
 pty.o: $(hdrdir)/ruby/internal/method.h
 pty.o: $(hdrdir)/ruby/internal/module.h
 pty.o: $(hdrdir)/ruby/internal/newobj.h
-pty.o: $(hdrdir)/ruby/internal/rgengc.h
 pty.o: $(hdrdir)/ruby/internal/scan_args.h
 pty.o: $(hdrdir)/ruby/internal/special_consts.h
 pty.o: $(hdrdir)/ruby/internal/static_assert.h

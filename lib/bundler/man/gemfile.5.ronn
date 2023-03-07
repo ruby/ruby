@@ -228,6 +228,10 @@ All operations involving groups ([`bundle install`](bundle-install.1.html), `Bun
 `Bundler.require`) behave exactly the same as if any groups not
 matching the current platform were explicitly excluded.
 
+The following platform values are deprecated and should be replaced with `windows`:
+
+  * `mswin`, `mswin64`, `mingw32`, `x64_mingw`
+
 ### FORCE_RUBY_PLATFORM
 
 If you always want the pure ruby variant of a gem to be chosen over platform

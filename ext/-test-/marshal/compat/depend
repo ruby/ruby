@@ -142,7 +142,6 @@ usrcompat.o: $(hdrdir)/ruby/internal/memory.h
 usrcompat.o: $(hdrdir)/ruby/internal/method.h
 usrcompat.o: $(hdrdir)/ruby/internal/module.h
 usrcompat.o: $(hdrdir)/ruby/internal/newobj.h
-usrcompat.o: $(hdrdir)/ruby/internal/rgengc.h
 usrcompat.o: $(hdrdir)/ruby/internal/scan_args.h
 usrcompat.o: $(hdrdir)/ruby/internal/special_consts.h
 usrcompat.o: $(hdrdir)/ruby/internal/static_assert.h

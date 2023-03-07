@@ -19,11 +19,13 @@ module TestIRB
       def Reline.get_screen_size
         [36, 80]
       end
+      save_encodings
     end
 
     def teardown
       Reline.instance_eval { undef :get_screen_size }
       Reline.define_singleton_method(:get_screen_size, @get_screen_size)
+      restore_encodings
     end
 
     def test_last_value
@@ -134,7 +136,6 @@ module TestIRB
     }.each do |scenario, cases|
       cases.each do |inspect_mode, input, expected|
         define_method "test_#{inspect_mode}_inspect_mode_#{scenario}" do
-          pend if RUBY_ENGINE == 'truffleruby'
           verbose, $VERBOSE = $VERBOSE, nil
           irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new([input]))
           irb.context.inspect_mode = inspect_mode
@@ -150,7 +151,6 @@ module TestIRB
     end
 
     def test_object_inspection_falls_back_to_kernel_inspect_when_errored
-      omit if RUBY_ENGINE == "truffleruby"
       verbose, $VERBOSE = $VERBOSE, nil
       main = Object.new
       main.singleton_class.module_eval <<~RUBY
@@ -173,7 +173,7 @@ module TestIRB
     end
 
     def test_object_inspection_prints_useful_info_when_kernel_inspect_also_errored
-      omit if RUBY_VERSION < '2.7' || RUBY_ENGINE == "truffleruby"
+      omit if RUBY_VERSION < '2.7'
       verbose, $VERBOSE = $VERBOSE, nil
       main = Object.new
       main.singleton_class.module_eval <<~RUBY
@@ -654,6 +654,26 @@ module TestIRB
       assert_pattern_list(expected, out)
     ensure
       $VERBOSE = verbose
+    end
+
+    def test_prompt_main_escape
+      main = Struct.new(:to_s).new("main\a\t\r\n")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(main    )>", irb.prompt('irb(%m)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_inspect_escape
+      main = Struct.new(:inspect).new("main\\n\nmain")
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(main\\n main)>", irb.prompt('irb(%M)>', nil, 1, 1))
+    end
+
+    def test_prompt_main_truncate
+      main = Struct.new(:to_s).new("a" * 100)
+      def main.inspect; to_s.inspect; end
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal('irb(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%m)>', nil, 1, 1))
+      assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.prompt('irb(%M)>', nil, 1, 1))
     end
 
     def test_lineno

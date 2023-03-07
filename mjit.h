@@ -15,6 +15,10 @@
 
 # if USE_MJIT
 
+#ifndef MJIT_STATS
+# define MJIT_STATS RUBY_DEBUG
+#endif
+
 #include "ruby.h"
 #include "vm_core.h"
 
@@ -53,6 +57,8 @@ struct mjit_options {
     bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int call_threshold;
+    // Collect MJIT statistics
+    bool stats;
     // Force printing info about MJIT work of level VERBOSE or
     // less. 0=silence, 1=medium, 2=verbose.
     int verbose;
@@ -63,6 +69,8 @@ struct mjit_options {
     bool pause;
     // [experimental] Call custom RubyVM::MJIT.compile instead of MJIT.
     bool custom;
+    // Enable disasm of all JIT code
+    bool dump_disasm;
 };
 
 // State of optimization switches
@@ -85,7 +93,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN bool mjit_call_p;
 
-extern void rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq);
+extern void rb_mjit_compile(const rb_iseq_t *iseq);
 extern struct rb_mjit_compile_info* rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
 extern void rb_mjit_recompile_send(const rb_iseq_t *iseq);
 extern void rb_mjit_recompile_ivar(const rb_iseq_t *iseq);
@@ -98,9 +106,9 @@ extern void mjit_cancel_all(const char *reason);
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
-extern void mjit_update_references(const rb_iseq_t *iseq);
+extern void rb_mjit_iseq_update_references(struct rb_iseq_constant_body *const body);
 extern void mjit_mark(void);
-extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
+extern void rb_mjit_iseq_mark(VALUE mjit_blocks);
 extern void mjit_notify_waitpid(int exit_code);
 
 extern void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
@@ -112,11 +120,13 @@ extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
 
 void mjit_child_after_fork(void);
 
-#  ifdef MJIT_HEADER
-#define mjit_enabled true
-#  else // MJIT_HEADER
+extern void rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
+extern void rb_mjit_before_ractor_spawn(void);
+extern void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
+extern void rb_mjit_collect_vm_usage_insn(int insn);
+
 extern bool mjit_enabled;
-#  endif // MJIT_HEADER
+extern bool mjit_stats_enabled;
 VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
 void mjit_finish(bool close_handle_p);
@@ -137,9 +147,12 @@ static inline void rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic
 static inline void rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 
 #define mjit_enabled false
+#define mjit_stats_enabled false
 static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
 static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
 static inline void mjit_finish(bool close_handle_p){}
+
+static inline void rb_mjit_collect_vm_usage_insn(int insn) {}
 
 # endif // USE_MJIT
 #endif // RUBY_MJIT_H

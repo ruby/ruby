@@ -141,7 +141,6 @@ extract.o: $(hdrdir)/ruby/internal/memory.h
 extract.o: $(hdrdir)/ruby/internal/method.h
 extract.o: $(hdrdir)/ruby/internal/module.h
 extract.o: $(hdrdir)/ruby/internal/newobj.h
-extract.o: $(hdrdir)/ruby/internal/rgengc.h
 extract.o: $(hdrdir)/ruby/internal/scan_args.h
 extract.o: $(hdrdir)/ruby/internal/special_consts.h
 extract.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -2,7 +2,7 @@ require 'fiddle'
 require 'fiddle/pack'
 require_relative 'c_pointer'
 
-module RubyVM::MJIT # :nodoc: all
+module RubyVM::MJIT
   module CType
     module Struct
       # @param name [String]

@@ -164,7 +164,6 @@ ancdata.o: $(hdrdir)/ruby/internal/memory.h
 ancdata.o: $(hdrdir)/ruby/internal/method.h
 ancdata.o: $(hdrdir)/ruby/internal/module.h
 ancdata.o: $(hdrdir)/ruby/internal/newobj.h
-ancdata.o: $(hdrdir)/ruby/internal/rgengc.h
 ancdata.o: $(hdrdir)/ruby/internal/scan_args.h
 ancdata.o: $(hdrdir)/ruby/internal/special_consts.h
 ancdata.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -356,7 +355,6 @@ basicsocket.o: $(hdrdir)/ruby/internal/memory.h
 basicsocket.o: $(hdrdir)/ruby/internal/method.h
 basicsocket.o: $(hdrdir)/ruby/internal/module.h
 basicsocket.o: $(hdrdir)/ruby/internal/newobj.h
-basicsocket.o: $(hdrdir)/ruby/internal/rgengc.h
 basicsocket.o: $(hdrdir)/ruby/internal/scan_args.h
 basicsocket.o: $(hdrdir)/ruby/internal/special_consts.h
 basicsocket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -548,7 +546,6 @@ constants.o: $(hdrdir)/ruby/internal/memory.h
 constants.o: $(hdrdir)/ruby/internal/method.h
 constants.o: $(hdrdir)/ruby/internal/module.h
 constants.o: $(hdrdir)/ruby/internal/newobj.h
-constants.o: $(hdrdir)/ruby/internal/rgengc.h
 constants.o: $(hdrdir)/ruby/internal/scan_args.h
 constants.o: $(hdrdir)/ruby/internal/special_consts.h
 constants.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -741,7 +738,6 @@ ifaddr.o: $(hdrdir)/ruby/internal/memory.h
 ifaddr.o: $(hdrdir)/ruby/internal/method.h
 ifaddr.o: $(hdrdir)/ruby/internal/module.h
 ifaddr.o: $(hdrdir)/ruby/internal/newobj.h
-ifaddr.o: $(hdrdir)/ruby/internal/rgengc.h
 ifaddr.o: $(hdrdir)/ruby/internal/scan_args.h
 ifaddr.o: $(hdrdir)/ruby/internal/special_consts.h
 ifaddr.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -933,7 +929,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1125,7 +1120,6 @@ ipsocket.o: $(hdrdir)/ruby/internal/memory.h
 ipsocket.o: $(hdrdir)/ruby/internal/method.h
 ipsocket.o: $(hdrdir)/ruby/internal/module.h
 ipsocket.o: $(hdrdir)/ruby/internal/newobj.h
-ipsocket.o: $(hdrdir)/ruby/internal/rgengc.h
 ipsocket.o: $(hdrdir)/ruby/internal/scan_args.h
 ipsocket.o: $(hdrdir)/ruby/internal/special_consts.h
 ipsocket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1317,7 +1311,6 @@ option.o: $(hdrdir)/ruby/internal/memory.h
 option.o: $(hdrdir)/ruby/internal/method.h
 option.o: $(hdrdir)/ruby/internal/module.h
 option.o: $(hdrdir)/ruby/internal/newobj.h
-option.o: $(hdrdir)/ruby/internal/rgengc.h
 option.o: $(hdrdir)/ruby/internal/scan_args.h
 option.o: $(hdrdir)/ruby/internal/special_consts.h
 option.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1509,7 +1502,6 @@ raddrinfo.o: $(hdrdir)/ruby/internal/memory.h
 raddrinfo.o: $(hdrdir)/ruby/internal/method.h
 raddrinfo.o: $(hdrdir)/ruby/internal/module.h
 raddrinfo.o: $(hdrdir)/ruby/internal/newobj.h
-raddrinfo.o: $(hdrdir)/ruby/internal/rgengc.h
 raddrinfo.o: $(hdrdir)/ruby/internal/scan_args.h
 raddrinfo.o: $(hdrdir)/ruby/internal/special_consts.h
 raddrinfo.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1701,7 +1693,6 @@ socket.o: $(hdrdir)/ruby/internal/memory.h
 socket.o: $(hdrdir)/ruby/internal/method.h
 socket.o: $(hdrdir)/ruby/internal/module.h
 socket.o: $(hdrdir)/ruby/internal/newobj.h
-socket.o: $(hdrdir)/ruby/internal/rgengc.h
 socket.o: $(hdrdir)/ruby/internal/scan_args.h
 socket.o: $(hdrdir)/ruby/internal/special_consts.h
 socket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1893,7 +1884,6 @@ sockssocket.o: $(hdrdir)/ruby/internal/memory.h
 sockssocket.o: $(hdrdir)/ruby/internal/method.h
 sockssocket.o: $(hdrdir)/ruby/internal/module.h
 sockssocket.o: $(hdrdir)/ruby/internal/newobj.h
-sockssocket.o: $(hdrdir)/ruby/internal/rgengc.h
 sockssocket.o: $(hdrdir)/ruby/internal/scan_args.h
 sockssocket.o: $(hdrdir)/ruby/internal/special_consts.h
 sockssocket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2085,7 +2075,6 @@ tcpserver.o: $(hdrdir)/ruby/internal/memory.h
 tcpserver.o: $(hdrdir)/ruby/internal/method.h
 tcpserver.o: $(hdrdir)/ruby/internal/module.h
 tcpserver.o: $(hdrdir)/ruby/internal/newobj.h
-tcpserver.o: $(hdrdir)/ruby/internal/rgengc.h
 tcpserver.o: $(hdrdir)/ruby/internal/scan_args.h
 tcpserver.o: $(hdrdir)/ruby/internal/special_consts.h
 tcpserver.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2277,7 +2266,6 @@ tcpsocket.o: $(hdrdir)/ruby/internal/memory.h
 tcpsocket.o: $(hdrdir)/ruby/internal/method.h
 tcpsocket.o: $(hdrdir)/ruby/internal/module.h
 tcpsocket.o: $(hdrdir)/ruby/internal/newobj.h
-tcpsocket.o: $(hdrdir)/ruby/internal/rgengc.h
 tcpsocket.o: $(hdrdir)/ruby/internal/scan_args.h
 tcpsocket.o: $(hdrdir)/ruby/internal/special_consts.h
 tcpsocket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2469,7 +2457,6 @@ udpsocket.o: $(hdrdir)/ruby/internal/memory.h
 udpsocket.o: $(hdrdir)/ruby/internal/method.h
 udpsocket.o: $(hdrdir)/ruby/internal/module.h
 udpsocket.o: $(hdrdir)/ruby/internal/newobj.h
-udpsocket.o: $(hdrdir)/ruby/internal/rgengc.h
 udpsocket.o: $(hdrdir)/ruby/internal/scan_args.h
 udpsocket.o: $(hdrdir)/ruby/internal/special_consts.h
 udpsocket.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2661,7 +2648,6 @@ unixserver.o: $(hdrdir)/ruby/internal/memory.h
 unixserver.o: $(hdrdir)/ruby/internal/method.h
 unixserver.o: $(hdrdir)/ruby/internal/module.h
 unixserver.o: $(hdrdir)/ruby/internal/newobj.h
-unixserver.o: $(hdrdir)/ruby/internal/rgengc.h
 unixserver.o: $(hdrdir)/ruby/internal/scan_args.h
 unixserver.o: $(hdrdir)/ruby/internal/special_consts.h
 unixserver.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2853,7 +2839,6 @@ unixsocket.o: $(hdrdir)/ruby/internal/memory.h
 unixsocket.o: $(hdrdir)/ruby/internal/method.h
 unixsocket.o: $(hdrdir)/ruby/internal/module.h
 unixsocket.o: $(hdrdir)/ruby/internal/newobj.h
-unixsocket.o: $(hdrdir)/ruby/internal/rgengc.h
 unixsocket.o: $(hdrdir)/ruby/internal/scan_args.h
 unixsocket.o: $(hdrdir)/ruby/internal/special_consts.h
 unixsocket.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -66,6 +66,12 @@ pub struct JITState {
     // Whether we need to record the code address at
     // the end of this bytecode instruction for global invalidation
     record_boundary_patch_point: bool,
+
+    // The block's outgoing branches
+    outgoing: Vec<BranchRef>,
+
+    // The block's CME dependencies
+    cme_dependencies: Vec<CmePtr>,
 }
 
 impl JITState {
@@ -79,6 +85,8 @@ impl JITState {
             side_exit_for_pc: None,
             ec: None,
             record_boundary_patch_point: false,
+            outgoing: Vec::new(),
+            cme_dependencies: Vec::new(),
         }
     }
 
@@ -165,6 +173,16 @@ impl JITState {
             let ep = get_cfp_ep_level(get_ec_cfp(self.ec.unwrap()), level);
             *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize)
         }
+    }
+
+    // Push an outgoing branch ref
+    pub fn push_outgoing(&mut self, branch: BranchRef) {
+        self.outgoing.push(branch);
+    }
+
+    // Push a CME dependency
+    pub fn push_cme_dependency(&mut self, cme: CmePtr) {
+        self.cme_dependencies.push(cme);
     }
 }
 
@@ -301,7 +319,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 
     // Verify stack operand types
-    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u16);
+    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
     for i in 0..top_idx {
         let (learned_mapping, learned_type) = ctx.get_opnd_mapping(StackOpnd(i));
         let stack_val = jit.peek_at_stack(ctx, i as isize);
@@ -831,7 +849,13 @@ pub fn gen_single_block(
         let gc_offsets = asm.compile(cb);
 
         // Add the GC offsets to the block
-        block.add_gc_obj_offsets(gc_offsets);
+        block.set_gc_obj_offsets(gc_offsets);
+
+        // Set CME dependencies to the block
+        block.set_cme_dependencies(jit.cme_dependencies);
+
+        // Set outgoing branches to the block
+        block.set_outgoing(jit.outgoing);
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());
@@ -1802,47 +1826,11 @@ fn gen_checkkeyword(
     KeepCompiling
 }
 
-fn gen_jnz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jnz(target0.into()),
-    }
-}
-
-fn gen_jz_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jz(Target::CodePtr(target0)),
-    }
-}
-
-fn gen_jbe_to_target0(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    _target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => asm.jbe(Target::CodePtr(target0)),
-    }
-}
-
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
 // When depth_limit is exceeded, generate a jump to a side exit.
 fn jit_chain_guard(
     jcc: JCCKinds,
-    jit: &JITState,
+    jit: &mut JITState,
     ctx: &Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -1850,9 +1838,9 @@ fn jit_chain_guard(
     side_exit: Target,
 ) {
     let target0_gen_fn = match jcc {
-        JCC_JNE | JCC_JNZ => gen_jnz_to_target0,
-        JCC_JZ | JCC_JE => gen_jz_to_target0,
-        JCC_JBE | JCC_JNA => gen_jbe_to_target0,
+        JCC_JNE | JCC_JNZ => BranchGenFn::JNZToTarget0,
+        JCC_JZ | JCC_JE => BranchGenFn::JZToTarget0,
+        JCC_JBE | JCC_JNA => BranchGenFn::JBEToTarget0,
     };
 
     if (ctx.get_chain_depth() as i32) < depth_limit {
@@ -1865,7 +1853,7 @@ fn jit_chain_guard(
 
         gen_branch(jit, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
-        target0_gen_fn(asm, side_exit.unwrap_code_ptr(), None, BranchShape::Default);
+        target0_gen_fn.call(asm, side_exit.unwrap_code_ptr(), None);
     }
 }
 
@@ -3498,27 +3486,6 @@ fn gen_opt_case_dispatch(
     }
 }
 
-fn gen_branchif_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    assert!(target1 != None);
-    match shape {
-        BranchShape::Next0 => {
-            asm.jz(target1.unwrap().into());
-        }
-        BranchShape::Next1 => {
-            asm.jnz(target0.into());
-        }
-        BranchShape::Default => {
-            asm.jnz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
-}
-
 fn gen_branchif(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -3565,27 +3532,11 @@ fn gen_branchif(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchif_branch,
+            BranchGenFn::BranchIf(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchunless_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
-        BranchShape::Next1 => asm.jz(target0.into()),
-        BranchShape::Default => {
-            asm.jz(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchunless(
@@ -3635,27 +3586,11 @@ fn gen_branchunless(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchunless_branch,
+            BranchGenFn::BranchUnless(BranchShape::Default),
         );
     }
 
     EndBlock
-}
-
-fn gen_branchnil_branch(
-    asm: &mut Assembler,
-    target0: CodePtr,
-    target1: Option<CodePtr>,
-    shape: BranchShape,
-) {
-    match shape {
-        BranchShape::Next0 => asm.jne(target1.unwrap().into()),
-        BranchShape::Next1 => asm.je(target0.into()),
-        BranchShape::Default => {
-            asm.je(target0.into());
-            asm.jmp(target1.unwrap().into());
-        }
-    }
 }
 
 fn gen_branchnil(
@@ -3702,7 +3637,7 @@ fn gen_branchnil(
             ctx,
             Some(next_block),
             Some(ctx),
-            gen_branchnil_branch,
+            BranchGenFn::BranchNil(BranchShape::Default),
         );
     }
 
@@ -4929,22 +4864,20 @@ fn gen_send_cfunc(
 
     // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        if flags & VM_CALL_OPT_SEND != 0 {
-            // FIXME: This combination is buggy.
-            // For example `1.send(:==, 1, *[])` fails to adjust the stack properly
-            gen_counter_incr!(asm, send_cfunc_splat_send);
-            return CantCompile;
-        }
+        assert!(cfunc_argc >= 0);
         let required_args : u32 = (cfunc_argc as u32).saturating_sub(argc as u32 - 1);
         // + 1 because we pass self
         if required_args + 1 >= C_ARG_OPNDS.len() as u32 {
             gen_counter_incr!(asm, send_cfunc_toomany_args);
             return CantCompile;
         }
+
         // We are going to assume that the splat fills
-        // all the remaining arguments. In the generated code
-        // we test if this is true and if not side exit.
-        argc = required_args as i32;
+        // all the remaining arguments. So the number of args
+        // should just equal the number of args the cfunc takes.
+        // In the generated code we test if this is true
+        // and if not side exit.
+        argc = cfunc_argc;
         passed_argc = argc;
         push_splat_args(required_args, ctx, asm, ocb, side_exit)
     }
@@ -5279,6 +5212,14 @@ fn gen_send_iseq(
     if unsafe { vm_ci_flag(ci) } & VM_CALL_TAILCALL != 0 {
         // We can't handle tailcalls
         gen_counter_incr!(asm, send_iseq_tailcall);
+        return CantCompile;
+    }
+
+    // Reject ISEQs with very large temp stacks,
+    // this will allow us to use u8/i8 values to track stack_size and sp_offset
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    if stack_max >= i8::MAX as u32 {
+        incr_counter!(iseq_stack_too_large);
         return CantCompile;
     }
 
@@ -5921,7 +5862,7 @@ fn gen_send_iseq(
 
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
-        let stack_offs: u16 = (argc - arg_idx - 1).try_into().unwrap();
+        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
         let arg_type = ctx.get_opnd_type(StackOpnd(stack_offs));
         callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
     }
@@ -5954,15 +5895,7 @@ fn gen_send_iseq(
         &return_ctx,
         None,
         None,
-        |asm, target0, _target1, shape| {
-            match shape {
-                BranchShape::Default => {
-                    asm.comment("update cfp->jit_return");
-                    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(target0.raw_ptr()));
-                }
-                _ => unreachable!()
-            }
-        },
+        BranchGenFn::JITReturn,
     );
 
     // Directly jump to the entry point of the callee
@@ -7737,12 +7670,6 @@ pub struct CodegenGlobals {
     /// For implementing global code invalidation
     global_inval_patches: Vec<CodepagePatch>,
 
-    /// For implementing global code invalidation. The number of bytes counting from the beginning
-    /// of the inline code block that should not be changed. After patching for global invalidation,
-    /// no one should make changes to the invalidated code region anymore. This is used to
-    /// break out of invalidation race when there are multiple ractors.
-    inline_frozen_bytes: usize,
-
     // Methods for generating code for hardcoded (usually C) methods
     method_codegen_table: HashMap<usize, MethodGenFn>,
 
@@ -7841,7 +7768,6 @@ impl CodegenGlobals {
             outline_full_cfunc_return_pos: cfunc_exit_code,
             branch_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
-            inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
@@ -7969,14 +7895,6 @@ impl CodegenGlobals {
     pub fn take_global_inval_patches() -> Vec<CodepagePatch> {
         let globals = CodegenGlobals::get_instance();
         mem::take(&mut globals.global_inval_patches)
-    }
-
-    pub fn get_inline_frozen_bytes() -> usize {
-        CodegenGlobals::get_instance().inline_frozen_bytes
-    }
-
-    pub fn set_inline_frozen_bytes(frozen_bytes: usize) {
-        CodegenGlobals::get_instance().inline_frozen_bytes = frozen_bytes;
     }
 
     pub fn get_outline_full_cfunc_return_pos() -> CodePtr {

@@ -142,7 +142,6 @@ break.o: $(hdrdir)/ruby/internal/memory.h
 break.o: $(hdrdir)/ruby/internal/method.h
 break.o: $(hdrdir)/ruby/internal/module.h
 break.o: $(hdrdir)/ruby/internal/newobj.h
-break.o: $(hdrdir)/ruby/internal/rgengc.h
 break.o: $(hdrdir)/ruby/internal/scan_args.h
 break.o: $(hdrdir)/ruby/internal/special_consts.h
 break.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -462,7 +460,6 @@ yield.o: $(hdrdir)/ruby/internal/memory.h
 yield.o: $(hdrdir)/ruby/internal/method.h
 yield.o: $(hdrdir)/ruby/internal/module.h
 yield.o: $(hdrdir)/ruby/internal/newobj.h
-yield.o: $(hdrdir)/ruby/internal/rgengc.h
 yield.o: $(hdrdir)/ruby/internal/scan_args.h
 yield.o: $(hdrdir)/ruby/internal/special_consts.h
 yield.o: $(hdrdir)/ruby/internal/static_assert.h

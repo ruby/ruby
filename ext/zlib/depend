@@ -152,7 +152,6 @@ zlib.o: $(hdrdir)/ruby/internal/memory.h
 zlib.o: $(hdrdir)/ruby/internal/method.h
 zlib.o: $(hdrdir)/ruby/internal/module.h
 zlib.o: $(hdrdir)/ruby/internal/newobj.h
-zlib.o: $(hdrdir)/ruby/internal/rgengc.h
 zlib.o: $(hdrdir)/ruby/internal/scan_args.h
 zlib.o: $(hdrdir)/ruby/internal/special_consts.h
 zlib.o: $(hdrdir)/ruby/internal/static_assert.h

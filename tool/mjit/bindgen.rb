@@ -214,6 +214,7 @@ class BindingGenerator
             to_ruby = @ruby_fields.fetch(node.spelling, []).include?(field)
             if child.bitwidth > 0
               if bit_fields_end <= i # give up offsetof calculation for non-leading bit fields
+                binding.irb
                 raise "non-leading bit fields are not supported. consider including '#{field}' in skip_fields."
               end
               offsetof = node.offsetof.fetch(field)
@@ -270,6 +271,11 @@ class BindingGenerator
     end
     type = type.delete_suffix('const')
     if type.end_with?('*')
+      if type == 'const void *'
+        # `CType::Pointer.new { CType::Immediate.parse("void") }` is never useful,
+        # so specially handle that case here.
+        return 'CType::Immediate.parse("void *")'
+      end
       return "CType::Pointer.new { #{generate_type(type.delete_suffix('*').rstrip)} }"
     end
 
@@ -345,15 +351,39 @@ generator = BindingGenerator.new(
   values: {
     INT: %w[
       NOT_COMPILED_STACK_SIZE
-      VM_CALL_KW_SPLAT
-      VM_CALL_KW_SPLAT_bit
-      VM_CALL_TAILCALL
-      VM_CALL_TAILCALL_bit
-      VM_METHOD_TYPE_CFUNC
-      VM_METHOD_TYPE_ISEQ
+      VM_ENV_DATA_INDEX_SPECVAL
+      VM_ENV_DATA_INDEX_ME_CREF
     ],
     UINT: %w[
+      BOP_AND
+      BOP_AREF
+      BOP_EQ
+      BOP_GE
+      BOP_GT
+      BOP_LE
+      BOP_LT
+      BOP_MINUS
+      BOP_MOD
+      BOP_OR
+      BOP_PLUS
+      BOP_FREEZE
+      ARRAY_REDEFINED_OP_FLAG
+      HASH_REDEFINED_OP_FLAG
+      INTEGER_REDEFINED_OP_FLAG
+      STRING_REDEFINED_OP_FLAG
+      METHOD_VISI_PRIVATE
+      METHOD_VISI_PROTECTED
+      METHOD_VISI_PUBLIC
+      OPTIMIZED_METHOD_TYPE_SEND
+      OPTIMIZED_METHOD_TYPE_CALL
+      OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+      OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+      OPTIMIZED_METHOD_TYPE_STRUCT_ASET
+      ROBJECT_EMBED
+      RARRAY_EMBED_FLAG
       RUBY_EVENT_CLASS
+      RUBY_EVENT_C_CALL
+      RUBY_EVENT_C_RETURN
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
@@ -361,10 +391,64 @@ generator = BindingGenerator.new(
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
       SHAPE_ROOT
+      T_OBJECT
+      VM_BLOCK_HANDLER_NONE
+      VM_CALL_ARGS_BLOCKARG
+      VM_CALL_ARGS_SPLAT
+      VM_CALL_FCALL
+      VM_CALL_KWARG
+      VM_CALL_KW_SPLAT
+      VM_CALL_KW_SPLAT_bit
+      VM_CALL_TAILCALL
+      VM_CALL_TAILCALL_bit
+      VM_CALL_OPT_SEND
+      VM_ENV_DATA_INDEX_FLAGS
+      VM_ENV_DATA_SIZE
+      VM_ENV_FLAG_LOCAL
+      VM_ENV_FLAG_WB_REQUIRED
+      VM_FRAME_MAGIC_METHOD
+      VM_FRAME_MAGIC_CFUNC
+      VM_FRAME_MAGIC_BLOCK
+      VM_FRAME_FLAG_BMETHOD
+      VM_FRAME_FLAG_LAMBDA
+      VM_FRAME_FLAG_CFRAME
+      VM_FRAME_FLAG_CFRAME_KW
+      VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
+      VM_METHOD_TYPE_ISEQ
+      VM_METHOD_TYPE_NOTIMPLEMENTED
+      VM_METHOD_TYPE_CFUNC
+      VM_METHOD_TYPE_ATTRSET
+      VM_METHOD_TYPE_IVAR
+      VM_METHOD_TYPE_MISSING
+      VM_METHOD_TYPE_BMETHOD
+      VM_METHOD_TYPE_ALIAS
+      VM_METHOD_TYPE_OPTIMIZED
+      VM_METHOD_TYPE_UNDEF
+      VM_METHOD_TYPE_ZSUPER
+      VM_METHOD_TYPE_REFINED
+      imemo_iseq
+      block_type_iseq
     ],
     ULONG: %w[
       INVALID_SHAPE_ID
+      OBJ_TOO_COMPLEX_SHAPE_ID
+      RUBY_FIXNUM_FLAG
+      RUBY_FLONUM_FLAG
+      RUBY_FLONUM_MASK
+      RUBY_SYMBOL_FLAG
+      RUBY_SPECIAL_SHIFT
+      RUBY_IMMEDIATE_MASK
+      RARRAY_EMBED_LEN_MASK
+      RARRAY_EMBED_LEN_SHIFT
       SHAPE_MASK
+      RUBY_T_ARRAY
+      RUBY_T_MASK
+      RUBY_T_ICLASS
+      RUBY_T_MODULE
+      RUBY_T_STRING
+      RMODULE_IS_REFINEMENT
+      RUBY_FL_SINGLETON
+      RSTRUCT_EMBED_LEN_MASK
     ],
     PTR: %w[
       rb_cFalseClass
@@ -373,13 +457,19 @@ generator = BindingGenerator.new(
       rb_cNilClass
       rb_cSymbol
       rb_cTrueClass
+      rb_block_param_proxy
     ],
   },
   types: %w[
     CALL_DATA
     IC
+    ID
     IVC
     RB_BUILTIN
+    RArray
+    RBasic
+    RObject
+    RStruct
     attr_index_t
     compile_branch
     compile_status
@@ -392,6 +482,8 @@ generator = BindingGenerator.new(
     rb_builtin_function
     rb_call_data
     rb_callable_method_entry_struct
+    rb_callable_method_entry_t
+    rb_method_entry_t
     rb_callcache
     rb_callinfo
     rb_control_frame_t
@@ -405,11 +497,22 @@ generator = BindingGenerator.new(
     rb_method_definition_struct
     rb_method_iseq_t
     rb_method_type_t
+    rb_method_bmethod_t
     rb_mjit_compile_info
+    rb_mjit_runtime_counters
     rb_mjit_unit
     rb_serial_t
     rb_shape
     rb_shape_t
+    rb_method_attr_t
+    rb_method_cfunc_t
+    rb_method_optimized_t
+    method_optimized_type
+    rb_thread_struct
+    rb_proc_t
+    rb_block
+    rb_block_type
+    rb_captured_block
   ],
   dynamic_types: %w[
     VALUE
@@ -419,14 +522,24 @@ generator = BindingGenerator.new(
     'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux
     rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
     rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
+    rb_thread_struct: %w[status locking_native_thread to_kill abort_on_exception report_on_exception pending_interrupt_queue_checked],
+    :'' => %w[is_from_method is_lambda is_isolated], # rb_proc_t
   },
   ruby_fields: {
+    rb_iseq_constant_body: %w[
+      mjit_blocks
+    ],
     rb_iseq_location_struct: %w[
       base_label
-      first_lineno
       label
       pathobj
-    ]
+    ],
+    rb_callable_method_entry_t: %w[
+      defined_class
+    ],
+    rb_callable_method_entry_struct: %w[
+      defined_class
+    ],
   },
 )
 generator.generate(nodes)

@@ -203,6 +203,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
             VALUE cme;
             if (rb_yjit_enabled_p() && rb_id_table_lookup(cm_tbl, mid, &cme)) {
                 rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+            }
+            if (mjit_enabled && rb_id_table_lookup(cm_tbl, mid, &cme)) {
                 rb_mjit_cme_invalidate((rb_callable_method_entry_t *)cme);
             }
             rb_id_table_delete(cm_tbl, mid);

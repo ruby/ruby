@@ -142,7 +142,6 @@ num2int.o: $(hdrdir)/ruby/internal/memory.h
 num2int.o: $(hdrdir)/ruby/internal/method.h
 num2int.o: $(hdrdir)/ruby/internal/module.h
 num2int.o: $(hdrdir)/ruby/internal/newobj.h
-num2int.o: $(hdrdir)/ruby/internal/rgengc.h
 num2int.o: $(hdrdir)/ruby/internal/scan_args.h
 num2int.o: $(hdrdir)/ruby/internal/special_consts.h
 num2int.o: $(hdrdir)/ruby/internal/static_assert.h
