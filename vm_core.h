@@ -1819,7 +1819,7 @@ RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 #define GET_THREAD() rb_current_thread()
 #define GET_EC()     rb_current_execution_context(true)
 
-#define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
+#define RB_VM_SAVE_MACHINE_CONTEXT(th)				\
     do {							\
         FLUSH_REGISTER_WINDOWS;					\
         setjmp((th)->ec->machine.regs);				\
