@@ -3632,3 +3632,25 @@ assert_normal_exit %q{
 
   entry
 }
+
+# Test that splat and rest combined
+# properly dupe the array
+assert_equal "[]", %q{
+  def foo(*rest)
+    rest << 1
+  end
+
+  def test(splat)
+    foo(*splat)
+  end
+
+  EMPTY = []
+  custom = Object.new
+  def custom.to_a
+    EMPTY
+  end
+
+  test(custom)
+  test(custom)
+  EMPTY
+}
