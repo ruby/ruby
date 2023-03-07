@@ -2199,7 +2199,8 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (rb_stat(fname1, &st1) < 0) return Qfalse;
     if (rb_stat(fname2, &st2) < 0) return Qfalse;
     if (st1.st_dev != st2.st_dev) return Qfalse;
-    return RBOOL(st1.st_ino == st2.st_ino);
+    if (st1.st_ino != st2.st_ino) return Qfalse;
+    return Qtrue;
 #else
     extern VALUE rb_w32_file_identical_p(VALUE, VALUE);
     return rb_w32_file_identical_p(fname1, fname2);
