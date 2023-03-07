@@ -1819,6 +1819,13 @@ RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
 #define GET_THREAD() rb_current_thread()
 #define GET_EC()     rb_current_execution_context(true)
 
+#define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
+    do {							\
+        FLUSH_REGISTER_WINDOWS;					\
+        setjmp((th)->ec->machine.regs);				\
+        SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
+    } while (0)
+
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
 {
