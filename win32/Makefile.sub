@@ -1353,7 +1353,7 @@ probes.h: {$(VPATH)}probes.dmyh
 <<KEEP
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_sp_inc.inc
+	  vmtc.inc vm.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \

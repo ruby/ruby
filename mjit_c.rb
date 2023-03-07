@@ -525,11 +525,6 @@ module RubyVM::MJIT # :nodoc: all
       mjit_options.new(addr)
     end
 
-    def mjit_call_attribute_sp_inc(insn, operands)
-      _operands_addr = operands.to_i
-      Primitive.cexpr! 'LONG2NUM(mjit_call_attribute_sp_inc(NUM2INT(insn), (VALUE *)NUM2PTR(_operands_addr)))'
-    end
-
     def mjit_capture_cc_entries(compiled_body, captured_body)
       _compiled_body_addr = compiled_body.to_i
       _captured_body_addr = captured_body.to_i
