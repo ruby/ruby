@@ -428,7 +428,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         rb_mutex_t *mutex = th->keeping_mutexes;
         th->keeping_mutexes = mutex->next_mutex;
 
-        /* rb_warn("mutex #<%p> remains to be locked by terminated thread", (void *)mutexes); */
+        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
 
         const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
