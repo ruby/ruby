@@ -4288,6 +4288,9 @@ fn jit_rb_str_concat(
     // Guard that the argument is of class String at runtime.
     let arg_type = ctx.get_opnd_type(StackOpnd(0));
 
+    // Guard buffers from GC since rb_str_buf_append may allocate.
+    gen_save_sp(asm, ctx);
+
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
 
