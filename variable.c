@@ -785,7 +785,7 @@ rb_gv_get(const char *name)
     return rb_gvar_get(id);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_gvar_defined(ID id)
 {
     struct rb_global_entry *entry = rb_global_entry(id);
@@ -935,7 +935,7 @@ gen_ivtbl_get_unlocked(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
     return 0;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_ICLASS));
@@ -955,7 +955,7 @@ rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
     return r;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **ivtbl)
 {
     return rb_gen_ivtbl_get(obj, 0, ivtbl);
@@ -1072,7 +1072,7 @@ rb_generic_ivar_memsize(VALUE obj)
 }
 
 #if !SHAPE_IN_BASIC_FLAGS
-MJIT_FUNC_EXPORTED shape_id_t
+shape_id_t
 rb_generic_shape_id(VALUE obj)
 {
     struct gen_ivtbl *ivtbl = 0;
@@ -2504,7 +2504,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 
 static struct autoload_const *autoloading_const_entry(VALUE mod, ID id);
 
-MJIT_FUNC_EXPORTED int
+int
 rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
 {
     struct autoload_const *ac = autoloading_const_entry(mod, id);
@@ -2783,7 +2783,7 @@ rb_autoload_at_p(VALUE mod, ID id, int recur)
     return (ele = get_autoload_data(load, 0)) ? ele->feature : Qnil;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
     if (RB_CONST_DEPRECATED_P(ce) &&
@@ -2900,13 +2900,13 @@ rb_const_get_at(VALUE klass, ID id)
     return rb_const_get_0(klass, id, TRUE, FALSE, FALSE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_public_const_get_from(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_public_const_get_at(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, TRUE, FALSE, TRUE);
@@ -2964,7 +2964,7 @@ rb_const_source_location(VALUE klass, ID id)
     return rb_const_location(klass, id, FALSE, TRUE, FALSE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_const_source_location_at(VALUE klass, ID id)
 {
     return rb_const_location(klass, id, TRUE, FALSE, FALSE);
@@ -3208,7 +3208,7 @@ rb_const_defined_at(VALUE klass, ID id)
     return rb_const_defined_0(klass, id, TRUE, FALSE, FALSE);
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_public_const_defined_from(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
@@ -4017,7 +4017,7 @@ rb_iv_tbl_copy(VALUE dst, VALUE src)
     rb_ivar_foreach(src, tbl_copy_i, dst);
 }
 
-MJIT_FUNC_EXPORTED rb_const_entry_t *
+rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);

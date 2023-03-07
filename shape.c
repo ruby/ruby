@@ -172,7 +172,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
     return res;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_shape_frozen_shape_p(rb_shape_t* shape)
 {
     return SHAPE_FROZEN == (enum shape_type)shape->type;
@@ -424,7 +424,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent)
     return rb_shape_alloc_with_size_pool_index(edge_name, parent, parent->size_pool_index);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
 {
     rb_shape_set_shape_id(obj, rb_shape_id(shape));

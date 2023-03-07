@@ -2286,7 +2286,7 @@ extern bool mjit_waitpid_finished;
 extern int mjit_waitpid_status;
 #endif
 
-MJIT_FUNC_EXPORTED int
+int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;

@@ -1352,7 +1352,7 @@ is_batch(const char *cmd)
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
 /* License: Ruby's */
-MJIT_FUNC_EXPORTED HANDLE
+HANDLE
 rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
 {
     /* NOTE: This function is used by MJIT worker, so it can be used parallelly with

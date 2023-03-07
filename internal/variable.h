@@ -49,7 +49,6 @@ int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 void rb_iv_tbl_copy(VALUE dst, VALUE src);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
@@ -59,7 +58,6 @@ rb_shape_t * rb_grow_iv_list(VALUE obj);
 void rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize);
 struct gen_ivtbl *rb_ensure_generic_iv_list_size(VALUE obj, rb_shape_t *shape, uint32_t newsize);
 attr_index_t rb_obj_ivar_set(VALUE obj, ID id, VALUE val);
-MJIT_SYMBOL_EXPORT_END
 
 static inline bool
 ROBJ_TRANSIENT_P(VALUE obj)

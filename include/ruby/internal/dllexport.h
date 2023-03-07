@@ -69,17 +69,6 @@
 /* These macros are used for functions which are exported only for MJIT
    and NOT ensured to be exported in future versions. */
 
-#if ! defined(MJIT_HEADER)
-# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
-#elif ! RBIMPL_COMPILER_IS(MSVC)
-# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
-#else
-# define MJIT_FUNC_EXPORTED static
-#endif
-
-#define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
-#define MJIT_SYMBOL_EXPORT_END   RUBY_SYMBOL_EXPORT_END
-
 /* On mswin, MJIT header transformation can't be used since cl.exe can't output
    preprocessed output preserving macros. So this `MJIT_STATIC` is needed
    to force non-static function to static on MJIT header to avoid symbol conflict. */

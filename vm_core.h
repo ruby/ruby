@@ -1810,15 +1810,12 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
-
-MJIT_SYMBOL_EXPORT_END
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()

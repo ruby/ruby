@@ -1908,7 +1908,7 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 }
 #endif
 
-MJIT_FUNC_EXPORTED rb_event_flag_t
+rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
     const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);

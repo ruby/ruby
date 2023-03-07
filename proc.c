@@ -743,14 +743,14 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     return (struct vm_ifunc *)ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_func_proc_new(rb_block_call_func_t func, VALUE val)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
     return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
@@ -1359,7 +1359,7 @@ iseq_location(const rb_iseq_t *iseq)
     return rb_ary_new4(2, loc);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_iseq_location(const rb_iseq_t *iseq)
 {
     return iseq_location(iseq);
@@ -1471,7 +1471,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
  *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_sym_to_proc(VALUE sym)
 {
     static VALUE sym_proc_cache = Qfalse;

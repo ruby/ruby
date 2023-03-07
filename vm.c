@@ -56,15 +56,6 @@ int ruby_assert_critical_section_entered = 0;
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
-/* :FIXME: This #ifdef is because we build pch in case of mswin and
- * not in case of other situations.  That distinction might change in
- * a future.  We would better make it detectable in something better
- * than just _MSC_VER. */
-#ifdef _MSC_VER
-RUBY_FUNC_EXPORTED
-#else
-MJIT_FUNC_EXPORTED
-#endif
 VALUE vm_exec(rb_execution_context_t *, bool);
 
 extern const char *const rb_debug_counter_names[];
@@ -508,7 +499,7 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
                 struct ruby_dtrace_method_hook_args *args)
 {
@@ -685,7 +676,7 @@ rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_
     return 0;
 }
 
-MJIT_FUNC_EXPORTED rb_control_frame_t *
+rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
@@ -1267,7 +1258,7 @@ rb_proc_ractor_make_shareable(VALUE self)
     return self;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
@@ -1586,14 +1577,14 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, NULL);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                      int argc, const VALUE *argv, int kw_splat, VALUE block_handler, const rb_callable_method_entry_t *me)
 {
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, block_handler, TRUE, me);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
                   int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
@@ -1743,7 +1734,7 @@ rb_source_location(int *pline)
     }
 }
 
-MJIT_FUNC_EXPORTED const char *
+const char *
 rb_source_location_cstr(int *pline)
 {
     VALUE path = rb_source_location(pline);
@@ -1839,7 +1830,7 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
     return exc;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 {
     VALUE exc = make_localjump_error(mesg, value, reason);
@@ -4421,13 +4412,13 @@ vm_collect_usage_register(int reg, int isset)
 }
 #endif
 
-MJIT_FUNC_EXPORTED const struct rb_callcache *
+const struct rb_callcache *
 rb_vm_empty_cc(void)
 {
     return &vm_empty_cc;
 }
 
-MJIT_FUNC_EXPORTED const struct rb_callcache *
+const struct rb_callcache *
 rb_vm_empty_cc_for_super(void)
 {
     return &vm_empty_cc_for_super;

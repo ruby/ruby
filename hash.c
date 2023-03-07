@@ -1534,7 +1534,7 @@ copy_compare_by_id(VALUE hash, VALUE basis)
     return hash;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_new_with_size(st_index_t size)
 {
     VALUE ret = rb_hash_new();
@@ -1594,7 +1594,7 @@ rb_hash_dup(VALUE hash)
     return ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_resurrect(VALUE hash)
 {
     VALUE ret = hash_dup(hash, rb_cHash, 0);
@@ -1607,7 +1607,7 @@ rb_hash_modify_check(VALUE hash)
     rb_check_frozen(hash);
 }
 
-MJIT_FUNC_EXPORTED struct st_table *
+struct st_table *
 rb_hash_tbl_raw(VALUE hash, const char *file, int line)
 {
     return ar_force_convert_table(hash, file, line);
@@ -1887,7 +1887,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     return hash;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_to_hash_type(VALUE hash)
 {
     return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
@@ -2078,7 +2078,7 @@ hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
     }
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 {
     return hash_stlike_lookup(hash, key, pval);
@@ -3550,7 +3550,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *    h.keys # => [:foo, :bar, :baz]
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_keys(VALUE hash)
 {
     st_index_t size = RHASH_SIZE(hash);
@@ -3637,7 +3637,7 @@ rb_hash_values(VALUE hash)
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
     return RBOOL(hash_stlike_lookup(hash, key, NULL));
@@ -4406,7 +4406,7 @@ rb_hash_compare_by_id(VALUE hash)
  *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
     return RBOOL(RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type == &identhash);
