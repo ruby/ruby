@@ -37,9 +37,7 @@
  * ```
  */
 #undef RUBY_EXTERN
-#if defined(MJIT_HEADER) && defined(_WIN32)
-# define RUBY_EXTERN extern __declspec(dllimport)
-#elif defined(RUBY_EXPORT)
+#if defined(RUBY_EXPORT)
 # define RUBY_EXTERN extern
 #elif defined(_WIN32)
 # define RUBY_EXTERN extern __declspec(dllimport)
