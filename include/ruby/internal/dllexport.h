@@ -59,25 +59,6 @@
 # define RUBY_FUNC_EXPORTED /* void */
 #endif
 
-/**
- * @cond INTERNAL_MACRO
- *
- * These MJIT related macros are placed here because translate_mjit_header can
- * need them.  Extension libraries should not touch.
- */
-
-/* These macros are used for functions which are exported only for MJIT
-   and NOT ensured to be exported in future versions. */
-
-/* On mswin, MJIT header transformation can't be used since cl.exe can't output
-   preprocessed output preserving macros. So this `MJIT_STATIC` is needed
-   to force non-static function to static on MJIT header to avoid symbol conflict. */
-#ifdef MJIT_HEADER
-# define MJIT_STATIC static
-#else
-# define MJIT_STATIC
-#endif
-
 /** @endcond */
 
 /** Shortcut macro equivalent to `RUBY_SYMBOL_EXPORT_BEGIN extern "C" {`.
