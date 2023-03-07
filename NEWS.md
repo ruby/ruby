@@ -35,6 +35,7 @@ The following default gems are updated.
 * bundler 2.5.0.dev
 * csv 3.2.7
 * fiddle 1.1.2
+* irb 1.6.3
 * optparse 0.4.0.pre.1
 * psych 5.1.0
 * stringio 3.0.6
