@@ -1755,6 +1755,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("10:0:0".match(pattern)[0], "10:0:0")
   end
 
+  def test_bug_19467
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+  
+      assert_nil(/\A.*a.*z\z/ =~ "a" * 1000000 + "y")
+    end;
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']

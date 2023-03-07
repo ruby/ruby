@@ -2835,10 +2835,16 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR_STAR_PEEK_NEXT)  MOP_IN(OP_ANYCHAR_STAR_PEEK_NEXT);
       while (DATA_ENSURE_CHECK1) {
+	DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	if (*p == *s) {
-	  DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	  STACK_PUSH_ALT(p + 1, s, sprev, pkeep);
-	}
+	} else {
+          /* We need to increment num_fail here, for invoking a cache optimization correctly. */
+          /* Actually, the matching will be failed if we use `OP_ANYCHAR_STAR` simply in this case.*/
+#ifdef USE_CACHE_MATCH_OPT
+          msa->num_fail++;
+#endif
+        }
 	n = enclen(encode, s, end);
 	DATA_ENSURE(n);
 	if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 0))  goto fail;
@@ -2851,10 +2857,16 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR_ML_STAR_PEEK_NEXT)MOP_IN(OP_ANYCHAR_ML_STAR_PEEK_NEXT);
       while (DATA_ENSURE_CHECK1) {
+	DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, s - str, msa->match_cache);
 	if (*p == *s) {
-	  DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, s - str, msa->match_cache);
 	  STACK_PUSH_ALT(p + 1, s, sprev, pkeep);
-	}
+	} else {
+          /* We need to increment num_fail here, for invoking a cache optimization correctly. */
+          /* Actually, the matching will be failed if we use `OP_ANYCHAR_STAR_ML` simply in this case.*/
+#ifdef USE_CACHE_MATCH_OPT
+          msa->num_fail++;
+#endif
+        }
 	n = enclen(encode, s, end);
 	if (n > 1) {
 	  DATA_ENSURE(n);
