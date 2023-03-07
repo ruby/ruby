@@ -27,9 +27,7 @@
 
 /* finish iseq array */
 #include "insns.inc"
-#ifndef MJIT_HEADER
 #include "insns_info.inc"
-#endif
 
 extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
 extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
@@ -37,10 +35,8 @@ extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
 
-#ifndef MJIT_HEADER
 static const struct rb_callcache vm_empty_cc;
 static const struct rb_callcache vm_empty_cc_for_super;
-#endif
 
 /* control stack frame */
 
@@ -71,9 +67,6 @@ ec_stack_overflow(rb_execution_context_t *ec, int setup)
 }
 
 NORETURN(static void vm_stackoverflow(void));
-#ifdef MJIT_HEADER
-NOINLINE(static COLDFUNC void vm_stackoverflow(void));
-#endif
 
 static void
 vm_stackoverflow(void)
@@ -239,7 +232,6 @@ vm_check_frame(VALUE type,
 static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
-#ifndef MJIT_HEADER
 void
 rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
@@ -287,7 +279,6 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         name, stri, pos, strd);
     rb_bug("see above.");
 }
-#endif
 #define vm_check_canary(ec, sp) rb_vm_check_canary(ec, sp)
 
 #else
@@ -1981,8 +1972,6 @@ vm_ccs_verify(struct rb_class_cc_entries *ccs, ID mid, VALUE klass)
 }
 #endif
 
-#ifndef MJIT_HEADER
-
 static const rb_callable_method_entry_t *check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci);
 
 static const struct rb_callcache *
@@ -2103,7 +2092,6 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 
     return cc;
 }
-#endif
 
 static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
@@ -2117,12 +2105,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #if OPT_INLINE_METHOD_CACHE
     cd->cc = cc;
 
-    const struct rb_callcache *empty_cc =
-#ifdef MJIT_HEADER
-      rb_vm_empty_cc();
-#else
-      &vm_empty_cc;
-#endif
+    const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
 
 #if USE_DEBUG_COUNTER
@@ -2152,9 +2135,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
-#ifndef MJIT_HEADER
 ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
-#endif
 static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
@@ -2340,8 +2321,6 @@ opt_equality(const rb_iseq_t *cd_owner, VALUE recv, VALUE obj, CALL_DATA cd)
 
 #undef EQ_UNREDEFINED_P
 
-#ifndef MJIT_HEADER
-
 static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, int argc); // vm_eval.c
 NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
 
@@ -2381,8 +2360,6 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
 {
     return opt_equality_by_mid(obj1, obj2, idEqlP);
 }
-
-#endif // MJIT_HEADER
 
 extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *, int kw_splat);
 extern VALUE rb_vm_call_with_refinements(rb_execution_context_t *, VALUE, ID, int, const VALUE *, int);
@@ -4319,11 +4296,7 @@ vm_super_outside(void)
 static const struct rb_callcache *
 empty_cc_for_super(void)
 {
-#ifdef MJIT_HEADER
-    return rb_vm_empty_cc_for_super();
-#else
     return &vm_empty_cc_for_super;
-#endif
 }
 
 static const struct rb_callcache *
@@ -5195,52 +5168,19 @@ vm_invokeblock_i(struct rb_execution_context_struct *ec,
     }
 }
 
-#ifdef MJIT_HEADER
-static const struct rb_callcache *
-vm_search_method_wrap(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
-{
-    return vm_search_method((VALUE)reg_cfp->iseq, cd, recv);
-}
-
-static const struct rb_callcache *
-vm_search_invokeblock(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE recv)
-{
-    static const struct rb_callcache cc = {
-        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
-        .klass = 0,
-        .cme_  = 0,
-        .call_ = vm_invokeblock_i,
-        .aux_  = {0},
-    };
-    return &cc;
-}
-
-# define mexp_search_method vm_search_method_wrap
-# define mexp_search_super vm_search_super_method
-# define mexp_search_invokeblock vm_search_invokeblock
-#else
 enum method_explorer_type {
     mexp_search_method,
     mexp_search_invokeblock,
     mexp_search_super,
 };
-#endif
 
-static
-#ifndef MJIT_HEADER
-inline
-#endif
-VALUE
+static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
     struct rb_control_frame_struct *reg_cfp,
     struct rb_call_data *cd,
     VALUE block_handler,
-#ifdef MJIT_HEADER
-    const struct rb_callcache *(*method_explorer)(const struct rb_control_frame_struct *cfp, struct rb_call_data *cd, VALUE recv)
-#else
     enum method_explorer_type method_explorer
-#endif
 ) {
     VALUE val = Qundef;
     const struct rb_callinfo *ci = cd->ci;
@@ -5255,11 +5195,6 @@ vm_sendish(
         .ci = ci,
     };
 
-// The enum-based branch and inlining are faster in VM, but function pointers without inlining are faster in JIT.
-#ifdef MJIT_HEADER
-    calling.cc = cc = method_explorer(GET_CFP(), cd, recv);
-    val = vm_cc_call(cc)(ec, GET_CFP(), &calling);
-#else
     switch (method_explorer) {
       case mexp_search_method:
         calling.cc = cc = vm_search_method_fastpath((VALUE)reg_cfp->iseq, cd, CLASS_OF(recv));
@@ -5274,7 +5209,6 @@ vm_sendish(
         val = vm_invokeblock_i(ec, GET_CFP(), &calling);
         break;
     }
-#endif
 
     if (!UNDEF_P(val)) {
         return val;             /* CFUNC normal return */
@@ -5283,29 +5217,7 @@ vm_sendish(
         RESTORE_REGS();         /* CFP pushed in cc->call() */
     }
 
-#ifdef MJIT_HEADER
-    /* When calling ISeq which may catch an exception from JIT-ed
-       code, we should not call jit_exec directly to prevent the
-       caller frame from being canceled. That's because the caller
-       frame may have stack values in the local variables and the
-       cancelling the caller frame will purge them. But directly
-       calling jit_exec is faster... */
-    if (ISEQ_BODY(GET_ISEQ())->catch_except_p) {
-        VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
-        return vm_exec(ec, true);
-    }
-    else if (UNDEF_P(val = jit_exec(ec))) {
-        VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
-        return vm_exec(ec, false);
-    }
-    else {
-        return val;
-    }
-#else
-    /* When calling from VM, longjmp in the callee won't purge any
-       JIT-ed caller frames. So it's safe to directly call jit_exec. */
     return jit_exec(ec);
-#endif
 }
 
 /* object.c */
@@ -6298,7 +6210,6 @@ Init_vm_stack_canary(void)
     VM_ASSERT(n == 0);
 }
 
-#ifndef MJIT_HEADER
 void
 rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
@@ -6310,7 +6221,6 @@ rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 
     rb_bug("dead canary found at %s: %s", insn, str);
 }
-#endif
 
 #else
 void Init_vm_stack_canary(void) { /* nothing to do */ }

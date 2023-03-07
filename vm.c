@@ -43,11 +43,7 @@
 
 #include "builtin.h"
 
-#ifndef MJIT_HEADER
 #include "probes.h"
-#else
-#include "probes.dmyh"
-#endif
 #include "probes_helper.h"
 
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
@@ -422,14 +418,10 @@ jit_exec(rb_execution_context_t *ec)
 
 #include "vm_insnhelper.c"
 
-#ifndef MJIT_HEADER
-
 #include "vm_exec.c"
 
 #include "vm_method.c"
-#endif /* #ifndef MJIT_HEADER */
 #include "vm_eval.c"
-#ifndef MJIT_HEADER
 
 #define PROCDEBUG 0
 
@@ -688,8 +680,6 @@ rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control
     return 0;
 }
 
-#endif /* #ifndef MJIT_HEADER */
-
 static rb_control_frame_t *
 vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -723,8 +713,6 @@ rb_vm_pop_cfunc_frame(void)
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
-
-#ifndef MJIT_HEADER
 
 void
 rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp)
@@ -4423,7 +4411,5 @@ rb_vm_empty_cc_for_super(void)
 {
     return &vm_empty_cc_for_super;
 }
-
-#endif /* #ifndef MJIT_HEADER */
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

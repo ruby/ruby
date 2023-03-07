@@ -1345,10 +1345,8 @@ opt_aset_with
         val = tmp;
     }
     else {
-#ifndef MJIT_HEADER
         TOPN(0) = rb_str_resurrect(key);
         PUSH(val);
-#endif
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1365,9 +1363,7 @@ opt_aref_with
     val = vm_opt_aref_with(recv, key);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
         PUSH(rb_str_resurrect(key));
-#endif
         CALL_SIMPLE_METHOD();
     }
 }
