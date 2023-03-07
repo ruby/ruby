@@ -13062,7 +13062,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void
