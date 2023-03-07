@@ -23,7 +23,7 @@ typedef struct ruby_cmdline_options {
     ruby_features_t features;
     ruby_features_t warn;
     unsigned int dump;
-#if USE_MJIT
+#if USE_RJIT
     struct mjit_options mjit;
 #endif
 

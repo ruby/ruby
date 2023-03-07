@@ -9,7 +9,7 @@ require 'ruby_vm/mjit/instruction'
 require 'ruby_vm/mjit/invariants'
 require 'ruby_vm/mjit/jit_state'
 
-module RubyVM::MJIT
+module RubyVM::RJIT
   # Compilation status
   KeepCompiling = :KeepCompiling
   CantCompile = :CantCompile
@@ -55,8 +55,8 @@ module RubyVM::MJIT
     end
 
     # Compile an ISEQ from its entry point.
-    # @param iseq `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
-    # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
+    # @param iseq `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
+    # @param cfp `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t`
     def compile(iseq, cfp)
       # TODO: Support has_opt
       return if iseq.body.param.flags.has_opt
@@ -73,8 +73,8 @@ module RubyVM::MJIT
     end
 
     # Compile a branch stub.
-    # @param branch_stub [RubyVM::MJIT::BranchStub]
-    # @param cfp `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t`
+    # @param branch_stub [RubyVM::RJIT::BranchStub]
+    # @param cfp `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t`
     # @param target0_p [TrueClass,FalseClass]
     # @return [Integer] The starting address of the compiled branch stub
     def branch_stub_hit(branch_stub, cfp, target0_p)
@@ -127,14 +127,14 @@ module RubyVM::MJIT
       exit 1
     end
 
-    # @param iseq `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
+    # @param iseq `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
     # @param pc [Integer]
     def invalidate_blocks(iseq, pc)
       list_blocks(iseq, pc).each do |block|
         invalidate_block(block)
       end
 
-      # If they were the ISEQ's first blocks, re-compile MJIT entry as well
+      # If they were the ISEQ's first blocks, re-compile RJIT entry as well
       if iseq.body.iseq_encoded.to_i == pc
         iseq.body.jit_func = 0
         iseq.body.total_calls = 0
@@ -191,9 +191,9 @@ module RubyVM::MJIT
     # Callee-saved: rbx, rsp, rbp, r12, r13, r14, r15
     # Caller-saved: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
     #
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_prologue(asm)
-      asm.comment('MJIT entry point')
+      asm.comment('RJIT entry point')
 
       # Save callee-saved registers used by JITed code
       asm.push(CFP)
@@ -212,7 +212,7 @@ module RubyVM::MJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
     end
 
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_block(asm, jit:, pc: jit.iseq.body.iseq_encoded.to_i, ctx: Context.new)
       # Mark the block start address and prepare an exit code storage
       block = Block.new(iseq: jit.iseq, pc:, ctx: ctx.dup)
@@ -276,18 +276,18 @@ module RubyVM::MJIT
     end
 
     # @param [Integer] pc
-    # @param [RubyVM::MJIT::Context] ctx
-    # @return [RubyVM::MJIT::Block,NilClass]
+    # @param [RubyVM::RJIT::Context] ctx
+    # @return [RubyVM::RJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
       mjit_blocks(iseq)[pc][ctx]
     end
 
-    # @param [RubyVM::MJIT::Block] block
+    # @param [RubyVM::RJIT::Block] block
     def set_block(iseq, block)
       mjit_blocks(iseq)[block.pc][block.ctx] = block
     end
 
-    # @param [RubyVM::MJIT::Block] block
+    # @param [RubyVM::RJIT::Block] block
     def remove_block(iseq, block)
       mjit_blocks(iseq)[block.pc].delete(block.ctx)
     end

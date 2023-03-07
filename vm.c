@@ -368,9 +368,9 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
-#if USE_MJIT || USE_YJIT
+#if USE_RJIT || USE_YJIT
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
-// If it is not, add ISEQ to the compilation queue and return Qundef for MJIT.
+// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
 // YJIT compiles on the thread running the iseq.
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)

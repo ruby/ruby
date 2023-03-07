@@ -3172,7 +3172,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_redefinition_mismatch
-    omit "Investigating trunk-mjit failure on ci.rvm.jp" if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    omit "Investigating trunk-mjit failure on ci.rvm.jp" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     m = Module.new
     m.module_eval "A = 1", __FILE__, line = __LINE__
     e = assert_raise_with_message(TypeError, /is not a module/) {

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module RubyVM::MJIT
+module RubyVM::RJIT
   # 8-bit memory access
   class BytePtr < Data.define(:reg, :disp); end
 
@@ -905,7 +905,7 @@ module RubyVM::MJIT
       Label.new(id: @label_id += 1, name:)
     end
 
-    # @param [RubyVM::MJIT::Assembler::Label] label
+    # @param [RubyVM::RJIT::Assembler::Label] label
     def write_label(label)
       @labels[label] = @bytes.size
     end

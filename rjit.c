@@ -7,12 +7,12 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h" // defines USE_MJIT
+#include "ruby/internal/config.h" // defines USE_RJIT
 
 // ISO C requires a translation unit to contain at least one declaration
 void rb_mjit(void) {}
 
-#if USE_MJIT
+#if USE_RJIT
 
 #include "constant.h"
 #include "id_table.h"
@@ -59,12 +59,12 @@ void rb_mjit(void) {}
 
 #include "ruby/util.h"
 
-// A copy of MJIT portion of MRI options since MJIT initialization.  We
-// need them as MJIT threads still can work when the most MRI data were
+// A copy of RJIT portion of MRI options since RJIT initialization.  We
+// need them as RJIT threads still can work when the most MRI data were
 // freed.
 struct mjit_options mjit_opts;
 
-// true if MJIT is enabled.
+// true if RJIT is enabled.
 bool mjit_enabled = false;
 bool mjit_stats_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
@@ -73,7 +73,7 @@ bool mjit_call_p = false;
 // A flag to communicate that mjit_call_p should be disabled while it's temporarily false.
 bool mjit_cancel_p = false;
 
-// Print the arguments according to FORMAT to stderr only if MJIT
+// Print the arguments according to FORMAT to stderr only if RJIT
 // verbose option value is more or equal to LEVEL.
 PRINTF_ARGS(static void, 2, 3)
 verbose(int level, const char *format, ...)
@@ -126,18 +126,18 @@ mjit_notify_waitpid(int exit_code)
     // TODO: remove this function
 }
 
-// RubyVM::MJIT
-static VALUE rb_mMJIT = 0;
-// RubyVM::MJIT::C
-static VALUE rb_mMJITC = 0;
-// RubyVM::MJIT::Compiler
-static VALUE rb_MJITCompiler = 0;
-// RubyVM::MJIT::CPointer::Struct_rb_iseq_t
-static VALUE rb_cMJITIseqPtr = 0;
-// RubyVM::MJIT::CPointer::Struct_rb_control_frame_t
-static VALUE rb_cMJITCfpPtr = 0;
-// RubyVM::MJIT::Hooks
-static VALUE rb_mMJITHooks = 0;
+// RubyVM::RJIT
+static VALUE rb_mRJIT = 0;
+// RubyVM::RJIT::C
+static VALUE rb_mRJITC = 0;
+// RubyVM::RJIT::Compiler
+static VALUE rb_RJITCompiler = 0;
+// RubyVM::RJIT::CPointer::Struct_rb_iseq_t
+static VALUE rb_cRJITIseqPtr = 0;
+// RubyVM::RJIT::CPointer::Struct_rb_control_frame_t
+static VALUE rb_cRJITCfpPtr = 0;
+// RubyVM::RJIT::Hooks
+static VALUE rb_mRJITHooks = 0;
 
 void
 rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
@@ -235,7 +235,7 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     }
     else {
         rb_raise(rb_eRuntimeError,
-                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
+                 "invalid RJIT option `%s' (--help will show valid RJIT options)", s);
     }
 }
 
@@ -248,7 +248,7 @@ const struct ruby_opt_message mjit_option_messages[] = {
     M("--mjit-verbose=num",        "", "Print JIT logs of level num or less to stderr (default: 0)"),
     M("--mjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: " STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
     M("--mjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
-    M("--mjit-stats",              "", "Enable collecting MJIT statistics"),
+    M("--mjit-stats",              "", "Enable collecting RJIT statistics"),
     {0}
 };
 #undef M
@@ -292,10 +292,10 @@ uint8_t *rb_mjit_mem_block = NULL;
 // `rb_ec_ractor_hooks(ec)->events` is moved to this variable during compilation.
 rb_event_flag_t rb_mjit_global_events = 0;
 
-// Basically mjit_opts.stats, but this becomes false during MJIT compilation.
+// Basically mjit_opts.stats, but this becomes false during RJIT compilation.
 static bool mjit_stats_p = false;
 
-#if MJIT_STATS
+#if RJIT_STATS
 
 struct rb_mjit_runtime_counters rb_mjit_counters = { 0 };
 
@@ -311,7 +311,7 @@ rb_mjit_collect_vm_usage_insn(int insn)
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
 
-#define WITH_MJIT_ISOLATED(stmt) do { \
+#define WITH_RJIT_ISOLATED(stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
     rb_mjit_global_events = global_hooks->events; \
@@ -336,9 +336,9 @@ rb_mjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 static void
 mjit_cme_invalidate(void *data)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
-    WITH_MJIT_ISOLATED({
-        rb_funcall(rb_mMJITHooks, rb_intern("on_cme_invalidate"), 1, SIZET2NUM((size_t)data));
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
+    WITH_RJIT_ISOLATED({
+        rb_funcall(rb_mRJITHooks, rb_intern("on_cme_invalidate"), 1, SIZET2NUM((size_t)data));
     });
 }
 
@@ -347,7 +347,7 @@ extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, v
 void
 rb_mjit_cme_invalidate(rb_callable_method_entry_t *cme)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
     // Asynchronously hook the Ruby code since running Ruby in the middle of cme invalidation is dangerous.
     rb_workqueue_register(0, mjit_cme_invalidate, (void *)cme);
 }
@@ -362,12 +362,12 @@ rb_mjit_before_ractor_spawn(void)
 static void
 mjit_constant_state_changed(void *data)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    WITH_MJIT_ISOLATED({
-        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_state_changed"), 1, SIZET2NUM((size_t)data));
+    WITH_RJIT_ISOLATED({
+        rb_funcall(rb_mRJITHooks, rb_intern("on_constant_state_changed"), 1, SIZET2NUM((size_t)data));
     });
 
     RB_VM_LOCK_LEAVE();
@@ -376,7 +376,7 @@ mjit_constant_state_changed(void *data)
 void
 rb_mjit_constant_state_changed(ID id)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
     // Asynchronously hook the Ruby code since this is hooked during a "Ruby critical section".
     rb_workqueue_register(0, mjit_constant_state_changed, (void *)id);
 }
@@ -384,13 +384,13 @@ rb_mjit_constant_state_changed(ID id)
 void
 rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
 
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    WITH_MJIT_ISOLATED({
-        rb_funcall(rb_mMJITHooks, rb_intern("on_constant_ic_update"), 3,
+    WITH_RJIT_ISOLATED({
+        rb_funcall(rb_mRJITHooks, rb_intern("on_constant_ic_update"), 3,
                    SIZET2NUM((size_t)iseq), SIZET2NUM((size_t)ic), UINT2NUM(insn_idx));
     });
 
@@ -400,18 +400,18 @@ rb_mjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx
 void
 rb_mjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
-    WITH_MJIT_ISOLATED({
-        rb_funcall(rb_mMJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
+    WITH_RJIT_ISOLATED({
+        rb_funcall(rb_mRJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });
 }
 
 static void
 mjit_iseq_update_references(void *data)
 {
-    if (!mjit_enabled || !mjit_call_p || !rb_mMJITHooks) return;
-    WITH_MJIT_ISOLATED({
-        rb_funcall(rb_mMJITHooks, rb_intern("on_update_references"), 0);
+    if (!mjit_enabled || !mjit_call_p || !rb_mRJITHooks) return;
+    WITH_RJIT_ISOLATED({
+        rb_funcall(rb_mRJITHooks, rb_intern("on_update_references"), 0);
     });
 }
 
@@ -436,7 +436,7 @@ rb_mjit_iseq_mark(VALUE mjit_blocks)
     if (!mjit_enabled) return;
 
     // Note: This wasn't enough for some reason.
-    // We actually rely on RubyVM::MJIT::GC_REFS to mark this.
+    // We actually rely on RubyVM::RJIT::GC_REFS to mark this.
     if (mjit_blocks) {
         rb_gc_mark_movable(mjit_blocks);
     }
@@ -446,7 +446,7 @@ rb_mjit_iseq_mark(VALUE mjit_blocks)
 VALUE
 rb_mjit_iseq_new(rb_iseq_t *iseq)
 {
-    return rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
+    return rb_funcall(rb_cRJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
 }
 
 void
@@ -455,10 +455,10 @@ rb_mjit_compile(const rb_iseq_t *iseq)
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    WITH_MJIT_ISOLATED({
-        VALUE iseq_ptr = rb_funcall(rb_cMJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
-        VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
-        rb_funcall(rb_MJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
+    WITH_RJIT_ISOLATED({
+        VALUE iseq_ptr = rb_funcall(rb_cRJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
+        VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
+        rb_funcall(rb_RJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
     });
 
     RB_VM_LOCK_LEAVE();
@@ -475,9 +475,9 @@ rb_mjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
     rb_control_frame_t *cfp = GET_EC()->cfp;
     cfp->sp += sp_offset; // preserve stack values, also using the actual sp_offset to make jit.peek_at_stack work
 
-    WITH_MJIT_ISOLATED({
-        VALUE cfp_ptr = rb_funcall(rb_cMJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
-        result = rb_funcall(rb_MJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(target0_p));
+    WITH_RJIT_ISOLATED({
+        VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
+        result = rb_funcall(rb_RJITCompiler, rb_intern("branch_stub_hit"), 3, branch_stub, cfp_ptr, RBOOL(target0_p));
     });
 
     cfp->sp -= sp_offset; // reset for consistency with the code without the stub
@@ -496,10 +496,10 @@ mjit_mark(void)
     RUBY_MARK_ENTER("mjit");
 
     // Pin object pointers used in this file
-    rb_gc_mark(rb_MJITCompiler);
-    rb_gc_mark(rb_cMJITIseqPtr);
-    rb_gc_mark(rb_cMJITCfpPtr);
-    rb_gc_mark(rb_mMJITHooks);
+    rb_gc_mark(rb_RJITCompiler);
+    rb_gc_mark(rb_cRJITIseqPtr);
+    rb_gc_mark(rb_cRJITCfpPtr);
+    rb_gc_mark(rb_mRJITHooks);
 
     RUBY_MARK_LEAVE("mjit");
 }
@@ -511,22 +511,22 @@ mjit_init(const struct mjit_options *opts)
     mjit_opts = *opts;
 
     extern uint8_t* rb_yjit_reserve_addr_space(uint32_t mem_size);
-    rb_mjit_mem_block = rb_yjit_reserve_addr_space(MJIT_CODE_SIZE);
+    rb_mjit_mem_block = rb_yjit_reserve_addr_space(RJIT_CODE_SIZE);
 
-    // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
-    rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
-    if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
-        verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
+    // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
+    rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
+    if (!rb_const_defined(rb_mRJIT, rb_intern("Compiler"))) {
+        verbose(1, "Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
         mjit_enabled = false;
         return;
     }
-    rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
-    VALUE rb_cMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
-    rb_MJITCompiler = rb_funcall(rb_cMJITCompiler, rb_intern("new"), 2,
-                                 SIZET2NUM((size_t)rb_mjit_mem_block), UINT2NUM(MJIT_CODE_SIZE));
-    rb_cMJITIseqPtr = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
-    rb_cMJITCfpPtr = rb_funcall(rb_mMJITC, rb_intern("rb_control_frame_t"), 0);
-    rb_mMJITHooks = rb_const_get(rb_mMJIT, rb_intern("Hooks"));
+    rb_mRJITC = rb_const_get(rb_mRJIT, rb_intern("C"));
+    VALUE rb_cRJITCompiler = rb_const_get(rb_mRJIT, rb_intern("Compiler"));
+    rb_RJITCompiler = rb_funcall(rb_cRJITCompiler, rb_intern("new"), 2,
+                                 SIZET2NUM((size_t)rb_mjit_mem_block), UINT2NUM(RJIT_CODE_SIZE));
+    rb_cRJITIseqPtr = rb_funcall(rb_mRJITC, rb_intern("rb_iseq_t"), 0);
+    rb_cRJITCfpPtr = rb_funcall(rb_mRJITC, rb_intern("rb_control_frame_t"), 0);
+    rb_mRJITHooks = rb_const_get(rb_mRJIT, rb_intern("Hooks"));
 
     mjit_call_p = true;
     mjit_stats_p = mjit_opts.stats;
@@ -546,7 +546,7 @@ mjit_finish(bool close_handle_p)
     // TODO: implement
 }
 
-// Same as `RubyVM::MJIT::C.enabled?`, but this is used before mjit_init.
+// Same as `RubyVM::RJIT::C.enabled?`, but this is used before mjit_init.
 static VALUE
 mjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
@@ -564,4 +564,4 @@ mjit_stop_stats(rb_execution_context_t *ec, VALUE self)
 
 #include "mjit.rbinc"
 
-#endif // USE_MJIT
+#endif // USE_RJIT

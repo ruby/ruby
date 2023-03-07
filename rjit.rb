@@ -1,5 +1,5 @@
-module RubyVM::MJIT
-  # Return true if MJIT is enabled.
+module RubyVM::RJIT
+  # Return true if RJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(mjit_enabled)'
   end
@@ -22,12 +22,12 @@ module RubyVM::MJIT
   end
 end
 
-if RubyVM::MJIT.enabled?
+if RubyVM::RJIT.enabled?
   begin
     require 'fiddle'
     require 'fiddle/import'
   rescue LoadError
-    return # miniruby doesn't support MJIT
+    return # miniruby doesn't support RJIT
   end
 
   require 'ruby_vm/mjit/c_type'

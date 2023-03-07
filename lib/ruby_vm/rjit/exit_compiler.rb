@@ -1,8 +1,8 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   class ExitCompiler
     # Used for invalidating a block on entry.
     # @param pc [Integer]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_entry_exit(pc, ctx, asm, cause:)
       # Increment per-insn exit counter
       incr_insn_exit(pc, asm)
@@ -21,7 +21,7 @@ module RubyVM::MJIT
     end
 
     # Set to cfp->jit_return by default for leave insn
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_leave_exit(asm)
       asm.comment('default cfp->jit_return')
 
@@ -35,7 +35,7 @@ module RubyVM::MJIT
     end
 
     # Fire cfunc events on invalidation by TracePoint
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_full_cfunc_return(asm)
       # This chunk of code expects REG_EC to be filled properly and
       # RAX to contain the return value of the C method.
@@ -56,9 +56,9 @@ module RubyVM::MJIT
       asm.ret
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def compile_side_exit(pc, ctx, asm)
       # Increment per-insn exit counter
       incr_insn_exit(pc, asm)
@@ -76,9 +76,9 @@ module RubyVM::MJIT
       asm.ret
     end
 
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
-    # @param branch_stub [RubyVM::MJIT::BranchStub]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    # @param branch_stub [RubyVM::RJIT::BranchStub]
     # @param target0_p [TrueClass,FalseClass]
     def compile_branch_stub(ctx, asm, branch_stub, target0_p)
       # Call rb_mjit_branch_stub_hit
@@ -102,7 +102,7 @@ module RubyVM::MJIT
     end
 
     # @param pc [Integer]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param asm [RubyVM::RJIT::Assembler]
     def incr_insn_exit(pc, asm)
       if C.mjit_opts.stats
         insn = Compiler.decode_insn(C.VALUE.new(pc).*)
@@ -112,9 +112,9 @@ module RubyVM::MJIT
       end
     end
 
-    # @param jit [RubyVM::MJIT::JITState]
-    # @param ctx [RubyVM::MJIT::Context]
-    # @param asm [RubyVM::MJIT::Assembler]
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def save_pc_and_sp(pc, ctx, asm, reset_sp_offset: true)
       # Update pc (TODO: manage PC offset?)
       asm.comment("save PC#{' and SP' if ctx.sp_offset != 0} to CFP")

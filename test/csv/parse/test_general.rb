@@ -329,7 +329,7 @@ line,5,jkl
       if defined?(RubyVM::YJIT.enabled?) and RubyVM::YJIT.enabled?
         timeout = 1  # for --yjit-call-threshold=1
       end
-      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
+      if defined?(RubyVM::RJIT.enabled?) and RubyVM::RJIT.enabled?
         timeout = 5  # for --jit-wait
       end
       Timeout.timeout(timeout) do

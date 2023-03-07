@@ -16,8 +16,8 @@ RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-#ifndef MJIT_STATS
-# define MJIT_STATS RUBY_DEBUG
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
 #endif
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -25,12 +25,12 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
-#elif MJIT_STATS && YJIT_STATS
+#elif RJIT_STATS && YJIT_STATS
 // Both flags could be enabled at the same time. You need to call both in that case.
 #define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn); rb_yjit_collect_vm_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
 #define COLLECT_USAGE_REGISTER(reg, s)     /* none */
-#elif MJIT_STATS
+#elif RJIT_STATS
 // for --mjit-stats
 #define COLLECT_USAGE_INSN(insn)           rb_mjit_collect_vm_usage_insn(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */

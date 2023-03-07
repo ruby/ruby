@@ -1355,7 +1355,7 @@ is_batch(const char *cmd)
 HANDLE
 rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
 {
-    /* NOTE: This function is used by MJIT worker, so it can be used parallelly with
+    /* NOTE: This function is used by RJIT worker, so it can be used parallelly with
        Ruby's main thread. So functions touching things shared with main thread can't
        be used, like `ALLOCV` that may trigger GC or `FindFreeChildSlot` that finds
        a slot from shared memory without atomic locks. */
@@ -2222,7 +2222,7 @@ rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 WCHAR *
 rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
-    /* This is used by MJIT worker. Do not trigger GC or call Ruby method here. */
+    /* This is used by RJIT worker. Do not trigger GC or call Ruby method here. */
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
     if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;

@@ -71,7 +71,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +MJIT");
+static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +RJIT");
 static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(YJIT_DESCRIPTION);
 const char ruby_copyright[] = "ruby - Copyright (C) "
     RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
@@ -126,10 +126,10 @@ Init_version(void)
     rb_provide("ruby2_keywords.rb");
 }
 
-#if USE_MJIT
-#define MJIT_OPTS_ON opt->mjit.on
+#if USE_RJIT
+#define RJIT_OPTS_ON opt->mjit.on
 #else
-#define MJIT_OPTS_ON 0
+#define RJIT_OPTS_ON 0
 #endif
 
 #if USE_YJIT
@@ -143,7 +143,7 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     VALUE description;
 
-    if (MJIT_OPTS_ON) {
+    if (RJIT_OPTS_ON) {
         rb_dynamic_description = ruby_description_with_mjit;
         description = MKSTR(description_with_mjit);
     }

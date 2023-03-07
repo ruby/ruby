@@ -1,17 +1,17 @@
 /**********************************************************************
 
-  mjit_c.c - C helpers for MJIT
+  mjit_c.c - C helpers for RJIT
 
   Copyright (C) 2017 Takashi Kokubun <k0kubun@ruby-lang.org>.
 
 **********************************************************************/
 
-#include "ruby/internal/config.h" // defines USE_MJIT
+#include "ruby/internal/config.h" // defines USE_RJIT
 
 // ISO C requires a translation unit to contain at least one declaration
 void rb_mjit_c(void) {}
 
-#if USE_MJIT
+#if USE_RJIT
 
 #include "mjit.h"
 #include "mjit_c.h"
@@ -42,7 +42,7 @@ void rb_mjit_c(void) {}
 #define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
 #define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
 
-#if MJIT_STATS
+#if RJIT_STATS
 // Insn side exit counters
 static size_t mjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
 #endif // YJIT_STATS
@@ -83,7 +83,7 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
     return result;
 }
 
-// Same as `RubyVM::MJIT.enabled?`, but this is used before it's defined.
+// Same as `RubyVM::RJIT.enabled?`, but this is used before it's defined.
 static VALUE
 mjit_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
@@ -122,4 +122,4 @@ extern ID rb_get_symbol_id(VALUE name);
 
 #include "mjit_c.rbinc"
 
-#endif // USE_MJIT
+#endif // USE_RJIT

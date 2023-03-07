@@ -1,6 +1,6 @@
 // This file is parsed by tool/mjit/generate.rb to generate mjit_c.rb
-#ifndef MJIT_C_H
-#define MJIT_C_H
+#ifndef RJIT_C_H
+#define RJIT_C_H
 
 #include "ruby/internal/config.h"
 #include "internal/string.h"
@@ -25,14 +25,14 @@ struct rb_mjit_unit_list {
 
 enum rb_mjit_unit_type {
     // Single-ISEQ unit for unit_queue
-    MJIT_UNIT_ISEQ = 0,
+    RJIT_UNIT_ISEQ = 0,
     // Multi-ISEQ unit for mjit_batch
-    MJIT_UNIT_BATCH = 1,
+    RJIT_UNIT_BATCH = 1,
     // All-ISEQ unit for mjit_compact
-    MJIT_UNIT_COMPACT = 2,
+    RJIT_UNIT_COMPACT = 2,
 };
 
-// The unit structure that holds metadata of ISeq for MJIT.
+// The unit structure that holds metadata of ISeq for RJIT.
 // TODO: Use different structs for ISEQ and BATCH/COMPACT
 struct rb_mjit_unit {
     struct ccan_list_node unode;
@@ -41,7 +41,7 @@ struct rb_mjit_unit {
     // Type of this unit
     enum rb_mjit_unit_type type;
 
-    /* MJIT_UNIT_ISEQ */
+    /* RJIT_UNIT_ISEQ */
     // ISEQ for a non-batch unit
     rb_iseq_t *iseq;
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
@@ -53,11 +53,11 @@ struct rb_mjit_unit {
     // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
     unsigned int cc_entries_size;
 
-    /* MJIT_UNIT_BATCH, MJIT_UNIT_COMPACT */
+    /* RJIT_UNIT_BATCH, RJIT_UNIT_COMPACT */
     // Dlopen handle of the loaded object file.
     void *handle;
     // Units compacted by this batch
-    struct rb_mjit_unit_list units; // MJIT_UNIT_BATCH only
+    struct rb_mjit_unit_list units; // RJIT_UNIT_BATCH only
 };
 
 // Storage to keep data which is consistent in each conditional branch.
@@ -103,12 +103,12 @@ struct compile_status {
 //
 
 // TODO: Make it configurable
-#define MJIT_CODE_SIZE 64 * 1024 * 1024
+#define RJIT_CODE_SIZE 64 * 1024 * 1024
 
 extern uint8_t *rb_mjit_mem_block;
 
-#define MJIT_RUNTIME_COUNTERS(...) struct rb_mjit_runtime_counters { size_t __VA_ARGS__; };
-MJIT_RUNTIME_COUNTERS(
+#define RJIT_RUNTIME_COUNTERS(...) struct rb_mjit_runtime_counters { size_t __VA_ARGS__; };
+RJIT_RUNTIME_COUNTERS(
     vm_insns_count,
     mjit_insns_count,
 
@@ -207,7 +207,7 @@ MJIT_RUNTIME_COUNTERS(
 
     compiled_block_count
 )
-#undef MJIT_RUNTIME_COUNTERS
+#undef RJIT_RUNTIME_COUNTERS
 extern struct rb_mjit_runtime_counters rb_mjit_counters;
 
-#endif /* MJIT_C_H */
+#endif /* RJIT_C_H */

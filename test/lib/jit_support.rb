@@ -54,11 +54,11 @@ module JITSupport
     )
   end
 
-  # For MJIT
+  # For RJIT
   def supported?
     return @supported if defined?(@supported)
-    @supported = RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' &&
-      UNSUPPORTED_COMPILERS.all? { |regexp| !regexp.match?(RbConfig::CONFIG['MJIT_CC']) } &&
+    @supported = RbConfig::CONFIG["RJIT_SUPPORT"] != 'no' &&
+      UNSUPPORTED_COMPILERS.all? { |regexp| !regexp.match?(RbConfig::CONFIG['RJIT_CC']) } &&
       !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) &&
       !UNSUPPORTED_ARCHITECTURES.include?(RUBY_PLATFORM.split('-', 2).first)
   end
@@ -70,8 +70,8 @@ module JITSupport
   end
 
   def remove_mjit_logs(stderr)
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # utility for -DFORCE_MJIT_ENABLE
-      stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
+    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # utility for -DFORCE_RJIT_ENABLE
+      stderr.gsub(/^RJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
     else
       stderr
     end
@@ -88,6 +88,6 @@ module JITSupport
   end
 
   def mjit_force_enabled?
-    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?RJIT_FORCE_ENABLE\b/)
   end
 end

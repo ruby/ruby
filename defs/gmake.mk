@@ -13,7 +13,7 @@ endif
 
 ifneq ($(filter darwin%,$(target_os)),)
 # Remove debug option not to generate thousands of .dSYM
-MJIT_DEBUGFLAGS := $(filter-out -g%,$(MJIT_DEBUGFLAGS))
+RJIT_DEBUGFLAGS := $(filter-out -g%,$(RJIT_DEBUGFLAGS))
 
 INSTRUBY_ENV += SDKROOT=
 endif

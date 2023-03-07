@@ -98,8 +98,8 @@ end
 
 # Convert Node objects to a Ruby binding source.
 class BindingGenerator
-  BINDGEN_BEG = '### MJIT bindgen begin ###'
-  BINDGEN_END = '### MJIT bindgen end ###'
+  BINDGEN_BEG = '### RJIT bindgen begin ###'
+  BINDGEN_END = '### RJIT bindgen end ###'
   DEFAULTS = { '_Bool' => 'CType::Bool.new' }
   DEFAULTS.default_proc = proc { |_h, k| "CType::Stub.new(:#{k})" }
 

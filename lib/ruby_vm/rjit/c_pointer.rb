@@ -1,4 +1,4 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   # Every class under this namespace is a pointer. Even if the type is
   # immediate, it shouldn't be dereferenced until `*` is called.
   module CPointer
@@ -7,7 +7,7 @@ module RubyVM::MJIT
     class Struct
       # @param name [String]
       # @param sizeof [Integer]
-      # @param members [Hash{ Symbol => [RubyVM::MJIT::CType::*, Integer, TrueClass] }]
+      # @param members [Hash{ Symbol => [RubyVM::RJIT::CType::*, Integer, TrueClass] }]
       def initialize(addr, sizeof, members)
         @addr = addr
         @sizeof = sizeof
@@ -48,7 +48,7 @@ module RubyVM::MJIT
       end
 
       # @param size [Integer]
-      # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
+      # @param members [Hash{ Symbol => [Integer, RubyVM::RJIT::CType::*] }]
       def self.define(size, members)
         Class.new(self) do
           # Return the size of this type
@@ -103,7 +103,7 @@ module RubyVM::MJIT
     class Union
       # @param _name [String] To be used when it starts defining a union pointer class
       # @param sizeof [Integer]
-      # @param members [Hash{ Symbol => RubyVM::MJIT::CType::* }]
+      # @param members [Hash{ Symbol => RubyVM::RJIT::CType::* }]
       def initialize(addr, sizeof, members)
         @addr = addr
         @sizeof = sizeof
@@ -128,7 +128,7 @@ module RubyVM::MJIT
       end
 
       # @param sizeof [Integer]
-      # @param members [Hash{ Symbol => RubyVM::MJIT::CType::* }]
+      # @param members [Hash{ Symbol => RubyVM::RJIT::CType::* }]
       def self.define(sizeof, members)
         Class.new(self) do
           # Return the size of this type
@@ -242,7 +242,7 @@ module RubyVM::MJIT
       attr_reader :type
 
       # @param addr [Integer]
-      # @param type [Class] RubyVM::MJIT::CType::*
+      # @param type [Class] RubyVM::RJIT::CType::*
       def initialize(addr, type)
         @addr = addr
         @type = type
@@ -267,7 +267,7 @@ module RubyVM::MJIT
 
       # Array set
       # @param index [Integer]
-      # @param value [Integer, RubyVM::MJIT::CPointer::Struct] an address itself or an object that return an address with to_i
+      # @param value [Integer, RubyVM::RJIT::CPointer::Struct] an address itself or an object that return an address with to_i
       def []=(index, value)
         Fiddle::Pointer.new(@addr + index * Fiddle::SIZEOF_VOIDP)[0, Fiddle::SIZEOF_VOIDP] =
           [value.to_i].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
@@ -292,7 +292,7 @@ module RubyVM::MJIT
 
           # Type-level []=: Used by struct fields
           # @param addr [Integer]
-          # @param value [Integer, RubyVM::MJIT::CPointer::Struct] an address itself, or an object that return an address with to_i
+          # @param value [Integer, RubyVM::RJIT::CPointer::Struct] an address itself, or an object that return an address with to_i
           define_singleton_method(:[]=) do |addr, value|
             value = value.to_i
             Fiddle::Pointer.new(addr)[0, Fiddle::SIZEOF_VOIDP] = [value].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])

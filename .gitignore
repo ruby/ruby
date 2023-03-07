@@ -238,7 +238,7 @@ lcov*.info
 # /win32/
 /win32/*.ico
 
-# MJIT
+# RJIT
 /include/ruby-*/*/rb_mjit_min_header-*.h
 /lib/ruby_vm/mjit/instruction.rb
 /lib/ruby_vm/rjit/instruction.rb

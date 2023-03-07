@@ -1,9 +1,9 @@
-module RubyVM::MJIT
+module RubyVM::RJIT
   class JITState < Struct.new(
-    :iseq,                        # @param `RubyVM::MJIT::CPointer::Struct_rb_iseq_t`
+    :iseq,                        # @param `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
     :pc,                          # @param [Integer] The JIT target PC
-    :cfp,                         # @param `RubyVM::MJIT::CPointer::Struct_rb_control_frame_t` The JIT source CFP (before MJIT is called)
-    :block,                       # @param [RubyVM::MJIT::Block]
+    :cfp,                         # @param `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t` The JIT source CFP (before RJIT is called)
+    :block,                       # @param [RubyVM::RJIT::Block]
     :side_exits,                  # @param [Hash{ Integer => Integer }] { PC => address }
     :record_boundary_patch_point, # @param [TrueClass,FalseClass]
   )
