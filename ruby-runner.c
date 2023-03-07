@@ -9,10 +9,6 @@
 
 #include "ruby-runner.h"
 
-#ifdef MAKE_MJIT_BUILD_DIR
-const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;
-#else
-
 static void
 insert_env_path(const char *envname, const char *paths, size_t size, int prepend)
 {
@@ -91,5 +87,3 @@ main(int argc, char **argv)
     perror(rubypath);
     return -1;
 }
-
-#endif  /* MAKE_MJIT_BUILD_DIR */

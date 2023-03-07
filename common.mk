@@ -237,39 +237,12 @@ $(srcdir)/lib/ruby_vm/mjit/instruction.rb: $(tooldir)/insns2vm.rb $(tooldir)/rub
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb --basedir="$(srcdir)" $(INSNS2VMOPT) $@
 
-mjit-headers: $(MJIT_SUPPORT)-mjit-headers
-no-mjit-headers: PHONY
-yes-mjit-headers: mjit_config.h PHONY
-
 mjit.$(OBJEXT): mjit_config.h
 mjit_config.h: Makefile
 
 .PHONY: mjit-bindgen
 mjit-bindgen:
 	$(Q) $(BASERUBY) -rrubygems -C $(srcdir)/tool/mjit bindgen.rb $(CURDIR)
-
-# These rules using MJIT_HEADER_SUFFIX must be in common.mk, not
-# Makefile.in, in order to override the macro in defs/universal.mk.
-
-# Other `-Dxxx`s preceding `-DMJIT_HEADER` will be removed in transform_mjit_header.rb.
-# So `-DMJIT_HEADER` should be passed first when rb_mjit_header.h is generated.
-$(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT) \
-		$(TIMESTAMPDIR)/$(arch)/.time $(tooldir)/mjit_tabs.rb $(PREP) $(RBCONFIG)
-	$(ECHO) building $(@F:.time=.h)
-	$(Q)$(MINIRUBY) $(tooldir)/mjit_tabs.rb "$(MJIT_TABS)" \
-		$(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
-	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
-
-$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
-
-$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: \
-		$(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time \
-		$(tooldir)/transform_mjit_header.rb $(PREP) \
-		$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
-	$(ECHO) building $@
-	$(Q)$(MINIRUBY) $(tooldir)/transform_mjit_header.rb "$(CC) $(CFLAGS) -w" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
-	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
-	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 .PHONY: showflags
 exts enc trans: $(SHOWFLAGS)
@@ -684,8 +657,7 @@ clean-srcs-local::
 	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c revision.h
 	$(Q)$(RM) id.c id.h probes.dmyh probes.h
 	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
-	$(Q)$(RM) mjit_config.h rb_mjit_header.h
-	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
+	$(Q)$(RM) mjit_config.h
 
 realclean-srcs-local:: clean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(RM) \

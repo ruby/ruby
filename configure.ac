@@ -797,8 +797,6 @@ AS_IF([test "$GCC" = yes], [
                         [@%:@include <stdio.h>])
     ])
 
-    : ${MJIT_HEADER_FLAGS='-P -dD'}
-
     # -fstack-protector
     AS_CASE(["$target_os"],
     [emscripten*|wasi*], [
@@ -2933,8 +2931,6 @@ AC_ARG_WITH(mjit-tabs,
 AC_SUBST(MJIT_TABS)dnl
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
-AC_SUBST(MJIT_HEADER_FLAGS)dnl
-AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
 AC_SUBST(MJIT_CC)dnl
 AS_CASE(["$GCC:$target_os"],
     [yes:aix*], [mjit_std_cflag="-std=gnu99"],
@@ -3407,12 +3403,6 @@ AS_CASE(["$target_os"],
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
 	      [multiarch=], [unset multiarch])
-AS_IF([test ${multiarch+set}], [
-   AC_DEFINE(ENABLE_MULTIARCH)
-   MJIT_HEADER_INSTALL_DIR=include/'${arch}/${RUBY_VERSION_NAME}'
-], [
-   MJIT_HEADER_INSTALL_DIR=include/'${RUBY_VERSION_NAME}/${arch}'
-])
 
 archlibdir='${libdir}/${arch}'
 sitearchlibdir='${libdir}/${sitearch}'
