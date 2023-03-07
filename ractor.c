@@ -301,7 +301,7 @@ RACTOR_PTR(VALUE self)
 static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
-MJIT_FUNC_EXPORTED uint32_t
+uint32_t
 rb_ractor_current_id(void)
 {
     if (GET_THREAD()->ractor == NULL) {
@@ -2097,7 +2097,7 @@ rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *r, VALUE args
     }
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_main_p_(void)
 {
     VM_ASSERT(rb_multi_ractor_p());
@@ -2976,7 +2976,7 @@ shareable_p_enter(VALUE obj)
     return traverse_stop; // fail
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,

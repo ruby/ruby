@@ -116,9 +116,7 @@ ROBJECT_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 }
 
-MJIT_SYMBOL_EXPORT_BEGIN
 shape_id_t rb_rclass_shape_id(VALUE obj);
-MJIT_SYMBOL_EXPORT_END
 
 static inline shape_id_t RCLASS_SHAPE_ID(VALUE obj)
 {
@@ -132,13 +130,11 @@ int32_t rb_shape_id_offset(void);
 
 rb_shape_t * rb_shape_get_parent(rb_shape_t * shape);
 
-MJIT_SYMBOL_EXPORT_BEGIN
 rb_shape_t* rb_shape_get_shape_by_id(shape_id_t shape_id);
 shape_id_t rb_shape_get_shape_id(VALUE obj);
 rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
 bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
 bool rb_shape_obj_too_complex(VALUE obj);
-MJIT_SYMBOL_EXPORT_END
 
 void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
 rb_shape_t* rb_shape_get_shape(VALUE obj);

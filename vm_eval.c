@@ -43,7 +43,7 @@ static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *c
 
 #ifndef MJIT_HEADER
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
     struct rb_calling_info calling = {
@@ -58,7 +58,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     return vm_call0_body(ec, &calling, argv);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call_with_refinements(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, int kw_splat)
 {
     const rb_callable_method_entry_t *me =
@@ -297,7 +297,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     return ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
     return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
@@ -926,7 +926,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
     UNREACHABLE_RETURN(Qnil);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                             int argc, const VALUE *argv, int priv)
 {

@@ -240,7 +240,7 @@ static VALUE vm_stack_canary; /* Initialized later */
 static bool vm_stack_canary_was_born = false;
 
 #ifndef MJIT_HEADER
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
 {
     const struct rb_control_frame_struct *reg_cfp = ec->cfp;
@@ -2081,7 +2081,7 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     return cc;
 }
 
-MJIT_FUNC_EXPORTED const struct rb_callcache *
+const struct rb_callcache *
 rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
@@ -2517,7 +2517,7 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
 {
     return ISEQ_BODY(iseq)->param.flags.has_opt == TRUE &&
@@ -2529,7 +2529,7 @@ rb_iseq_only_optparam_p(const rb_iseq_t *iseq)
            ISEQ_BODY(iseq)->param.flags.has_block == FALSE;
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_iseq_only_kwparam_p(const rb_iseq_t *iseq)
 {
     return ISEQ_BODY(iseq)->param.flags.has_opt == FALSE &&
@@ -3567,7 +3567,7 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     return vm_call_bmethod_body(ec, calling, argv);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 {
     VALUE klass = current_class;
@@ -6299,7 +6299,7 @@ Init_vm_stack_canary(void)
 }
 
 #ifndef MJIT_HEADER
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
 {
     /* Because a method has already been called, why not call

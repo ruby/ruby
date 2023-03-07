@@ -185,7 +185,7 @@ rb_eql(VALUE obj1, VALUE obj2)
  * \private
  *++
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
 {
     return RBOOL(obj1 == obj2);
@@ -203,7 +203,7 @@ VALUE rb_obj_hash(VALUE obj);
  *++
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_not(VALUE obj)
 {
     return RBOOL(!RTEST(obj));
@@ -219,7 +219,7 @@ rb_obj_not(VALUE obj)
  *++
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_not_equal(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
@@ -266,7 +266,7 @@ rb_obj_singleton_class(VALUE obj)
 }
 
 /*! \private */
-MJIT_FUNC_EXPORTED void
+void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
@@ -1261,7 +1261,7 @@ rb_obj_frozen_p(VALUE obj)
  *  Always returns the empty string.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_nil_to_s(VALUE obj)
 {
     return rb_cNilClass_to_s;
@@ -1346,7 +1346,7 @@ nil_match(VALUE obj1, VALUE obj2)
  * The string representation of <code>true</code> is "true".
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_true_to_s(VALUE obj)
 {
     return rb_cTrueClass_to_s;
@@ -1423,7 +1423,7 @@ true_xor(VALUE obj, VALUE obj2)
  * The string representation of <code>false</code> is "false".
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_false_to_s(VALUE obj)
 {
     return rb_cFalseClass_to_s;
@@ -1494,7 +1494,7 @@ rb_true(VALUE obj)
  */
 
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_false(VALUE obj)
 {
     return Qfalse;
@@ -1579,7 +1579,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  * show information on the thing we're attached to as well.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_mod_to_s(VALUE klass)
 {
     ID id_defined_at;
@@ -3049,7 +3049,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 }
 
 /*! \private */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 {
     VALUE v;

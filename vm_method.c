@@ -509,7 +509,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int 
     cfunc->invoker = call_cfunc_invoker_func(argc);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
     *(rb_method_definition_t **)&me->def = def;
@@ -630,7 +630,7 @@ method_definition_reset(const rb_method_entry_t *me)
     }
 }
 
-MJIT_FUNC_EXPORTED rb_method_definition_t *
+rb_method_definition_t *
 rb_method_definition_create(rb_method_type_t type, ID mid)
 {
     rb_method_definition_t *def;
@@ -703,7 +703,7 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
     return me;
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class)
 {
     rb_method_definition_t *def = src_me->def;
@@ -1023,7 +1023,7 @@ lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 }
 
 #if VM_CHECK_MODE > 0
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
     return lookup_overloaded_cme(cme);
@@ -1111,7 +1111,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     struct { /* should be same fields with rb_method_iseq_struct */
@@ -1228,7 +1228,7 @@ search_method_protect(VALUE klass, ID id, VALUE *defined_class_ptr)
     }
 }
 
-MJIT_FUNC_EXPORTED const rb_method_entry_t *
+const rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id)
 {
     return search_method_protect(klass, id, NULL);
@@ -1407,7 +1407,7 @@ callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
     return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_callable_method_entry(VALUE klass, ID mid)
 {
     return callable_method_entry(klass, mid, NULL);
@@ -1438,7 +1438,7 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
     return me;
 }
 
-MJIT_FUNC_EXPORTED const rb_method_entry_t *
+const rb_method_entry_t *
 rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
@@ -1465,7 +1465,7 @@ callable_method_entry_refinements(VALUE klass, ID id, VALUE *defined_class_ptr, 
     return callable_method_entry_refeinements0(klass, id, defined_class_ptr, with_refinements, cme);
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     return callable_method_entry_refinements(klass, id, defined_class_ptr, true);
@@ -1483,7 +1483,7 @@ rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr
     return method_entry_resolve_refinement(klass, id, FALSE, defined_class_ptr);
 }
 
-MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
+const rb_callable_method_entry_t *
 rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
@@ -1530,7 +1530,6 @@ rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me)
     return resolve_refined_method(refinements, me, NULL);
 }
 
-MJIT_FUNC_EXPORTED
 const rb_callable_method_entry_t *
 rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me)
 {
@@ -2079,7 +2078,7 @@ original_method_definition(const rb_method_definition_t *def)
     return def;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
 {
     d1 = original_method_definition(d1);
