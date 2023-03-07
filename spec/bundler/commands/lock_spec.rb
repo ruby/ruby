@@ -1075,4 +1075,52 @@ RSpec.describe "bundle lock" do
       expect(lockfile).not_to include("tzinfo-data (1.2022.7)")
     end
   end
+
+  context "when resolving platform specific gems as indirect dependencies on truffleruby", :truffleruby_only do
+    before do
+      build_lib "foo", :path => bundled_app do |s|
+        s.add_dependency "nokogiri"
+      end
+
+      build_repo4 do
+        build_gem "nokogiri", "1.14.2"
+        build_gem "nokogiri", "1.14.2" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gemspec
+      G
+    end
+
+    it "locks ruby specs" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock"
+      end
+
+      expect(lockfile).to eq <<~L
+        PATH
+          remote: .
+          specs:
+            foo (1.0)
+              nokogiri
+
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.14.2)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
 end

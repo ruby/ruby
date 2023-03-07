@@ -240,7 +240,7 @@ module Bundler
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
         groups << Resolver::Candidate.new(version, :specs => ruby_specs) if ruby_specs.any?
 
-        next groups if platform_specs == ruby_specs
+        next groups if platform_specs == ruby_specs || package.force_ruby_platform?
 
         groups << Resolver::Candidate.new(version, :specs => platform_specs)
 
