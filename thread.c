@@ -173,7 +173,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
-  RB_GC_SAVE_MACHINE_CONTEXT(th); \
+  RB_VM_SAVE_MACHINE_CONTEXT(th); \
   thread_sched_to_waiting(sched);
 
 #define THREAD_BLOCKING_END(th) \
@@ -1439,7 +1439,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
         if (th->running_time_us >= limits_us) {
             RUBY_DEBUG_LOG("switch %s", "start");
 
-            RB_GC_SAVE_MACHINE_CONTEXT(th);
+            RB_VM_SAVE_MACHINE_CONTEXT(th);
             thread_sched_yield(TH_SCHED(th), th);
             rb_ractor_thread_switch(th->ractor, th);
 
@@ -1474,7 +1474,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 
         RUBY_DEBUG_LOG("");
 
-        RB_GC_SAVE_MACHINE_CONTEXT(th);
+        RB_VM_SAVE_MACHINE_CONTEXT(th);
         thread_sched_to_waiting(TH_SCHED(th));
         return TRUE;
     }
