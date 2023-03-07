@@ -848,6 +848,9 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
 }
 
 VALUE
+rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
+
+VALUE
 rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
 {
     return rb_fix_mod_fix(recv, obj);

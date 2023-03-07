@@ -1170,7 +1170,7 @@ fn gen_newarray(
     let values_ptr = if n == 0 {
         Opnd::UImm(0)
     } else {
-        asm.comment("load pointer to array elts");
+        asm.comment("load pointer to array elements");
         let offset_magnitude = (SIZEOF_VALUE as u32) * n;
         let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
         asm.lea(values_opnd)
@@ -5318,9 +5318,13 @@ fn gen_send_iseq(
     // foo(1, 2, *[3, 4])
     // In this case, we can just dup the splat array as the rest array.
     // No need to move things around between the array and stack.
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 && argc - 1 != required_num {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_splat_not_equal);
-        return CantCompile;
+
+    let non_rest_arg_count = argc - 1;
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 && non_rest_arg_count != required_num {
+        if non_rest_arg_count < required_num {
+            gen_counter_incr!(asm, send_iseq_has_rest_and_splat_fewer);
+            return CantCompile;
+        }
     }
 
     // This struct represents the metadata about the caller-specified
@@ -5789,9 +5793,36 @@ fn gen_send_iseq(
                 rb_ary_dup as *const u8,
                 vec![array],
             );
-            let stack_ret = ctx.stack_push(Type::TArray);
-            asm.mov(stack_ret, array);
+            if non_rest_arg_count > required_num {
+                // If we have more arguments than required, we need to prepend
+                // the items from the stack onto the array.
+                let diff = (non_rest_arg_count - required_num) as u32;
 
+                // diff is >0 so no need to worry about null pointer
+                asm.comment("load pointer to array elements");
+                let offset_magnitude = SIZEOF_VALUE as u32 * diff;
+                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_ptr = asm.lea(values_opnd);
+
+                asm.comment("prepend stack values to rest array");
+                let array = asm.ccall(
+                    rb_yjit_rb_ary_unshift_m as *const u8,
+                    vec![Opnd::UImm(diff as u64), values_ptr, array],
+                );
+                ctx.stack_pop(diff as usize);
+
+                // We now should have the required arguments
+                // and an array of all the rest arguments
+                argc = required_num + 1;
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+            } else {
+                // We exit on less than right now, this is only handling
+                // the case where they are equal
+                assert!(non_rest_arg_count == required_num);
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+            }
         } else {
             assert!(argc >= required_num);
             let n = (argc - required_num) as u32;
@@ -5800,7 +5831,7 @@ fn gen_send_iseq(
             let values_ptr = if n == 0 {
                 Opnd::UImm(0)
             } else {
-                asm.comment("load pointer to array elts");
+                asm.comment("load pointer to array elements");
                 let offset_magnitude = SIZEOF_VALUE as u32 * n;
                 let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
                 asm.lea(values_opnd)
