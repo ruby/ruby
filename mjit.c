@@ -73,8 +73,6 @@ bool mjit_call_p = false;
 // A flag to communicate that mjit_call_p should be disabled while it's temporarily false.
 bool mjit_cancel_p = false;
 
-#include "mjit_config.h"
-
 // Print the arguments according to FORMAT to stderr only if MJIT
 // verbose option value is more or equal to LEVEL.
 PRINTF_ARGS(static void, 2, 3)
