@@ -1755,6 +1755,11 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("10:0:0".match(pattern)[0], "10:0:0")
   end
 
+  def test_bug_19476 # [Bug #19476]
+    assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
+    assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
