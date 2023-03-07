@@ -91,7 +91,9 @@ module SyntaxSuggest
     dir = Pathname(dir)
     dir.join(time).tap { |path|
       path.mkpath
-      FileUtils.ln_sf(time, dir.join("last"))
+      alias_dir = dir.join("last")
+      FileUtils.rm_rf(alias_dir) if alias_dir.exist?
+      FileUtils.ln_sf(time, alias_dir)
     }
   end
 
