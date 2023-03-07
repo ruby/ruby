@@ -2925,10 +2925,6 @@ AS_CASE(["$target_os"],
     ])])
 LIBEXT=a
 
-AC_ARG_WITH(mjit-tabs,
-    AS_HELP_STRING([--without-mjit-tabs], [expand tabs in mjit header]),
-    [AS_IF([test $withval = no], [MJIT_TABS=false])])
-AC_SUBST(MJIT_TABS)dnl
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(MJIT_CC)dnl
