@@ -1077,6 +1077,50 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_tracing_str_uplus
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok)
+      def str_uplus
+        _ = 1
+        _ = 2
+        ret = [+"frfr", __LINE__]
+        _ = 3
+        _ = 4
+
+        ret
+      end
+
+      str_uplus
+      require 'objspace'
+      ObjectSpace.trace_object_allocations_start
+
+      str, expected_line = str_uplus
+      alloc_line = ObjectSpace.allocation_sourceline(str)
+
+      if expected_line == alloc_line
+        :ok
+      else
+        [expected_line, alloc_line]
+      end
+    RUBY
+  end
+
+  def test_str_uplus_subclass
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :subclass)
+      class S < String
+        def encoding
+          :subclass
+        end
+      end
+
+      def test(str)
+        (+str).encoding
+      end
+
+      test ""
+      test S.new
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
