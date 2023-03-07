@@ -7817,12 +7817,11 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             const rb_env_t *env = (const rb_env_t *)obj;
 
             if (LIKELY(env->ep)) {
-                // just after newobj() can be NULL here.
-                GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
-
 #if USE_MMTK
                 if (!rb_mmtk_enabled_p()) {
 #endif
+                // just after newobj() can be NULL here.
+                GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
                 GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
 #if USE_MMTK
                 }
