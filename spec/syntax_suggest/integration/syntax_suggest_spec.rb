@@ -207,5 +207,32 @@ module SyntaxSuggest
         > 4  end
       EOM
     end
+
+    it "comment inside of a method" do
+      source = <<~'EOM'
+        class Dog
+          def bark
+            # todo
+          end
+
+          def sit
+            print "sit"
+          end
+        end
+        end # extra end
+      EOM
+
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        >  1  class Dog
+        >  9  end
+        > 10  end # extra end
+      EOM
+    end
   end
 end

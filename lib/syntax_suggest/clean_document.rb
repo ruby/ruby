@@ -110,7 +110,7 @@ module SyntaxSuggest
       @document.join
     end
 
-    # Remove comments and whitespace only lines
+    # Remove comments
     #
     # replace with empty newlines
     #
@@ -156,8 +156,9 @@ module SyntaxSuggest
     #
     def clean_sweep(source:)
       source.lines.map do |line|
-        if line.match?(/^\s*(#[^{].*)?$/) # https://rubular.com/r/LLE10D8HKMkJvs
-          $/
+        if line.match?(/^\s*#([^{].*)?$/) # https://rubular.com/r/LLE10D8HKMkJvs
+          whitespace = /^(?<whitespace>\s*)#([^{].*)?$/.match(line).named_captures["whitespace"] || ""
+          whitespace + $/
         else
           line
         end
