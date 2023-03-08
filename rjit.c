@@ -198,32 +198,11 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
     if (l == 0) {
         return;
     }
-    else if (opt_match_noarg(s, l, "warnings")) {
-        rjit_opt->warnings = true;
-    }
-    else if (opt_match(s, l, "debug")) {
-        if (*s)
-            rjit_opt->debug_flags = strdup(s + 1);
-        else
-            rjit_opt->debug = true;
-    }
-    else if (opt_match_noarg(s, l, "wait")) {
-        rjit_opt->wait = true;
-    }
-    else if (opt_match_noarg(s, l, "save-temps")) {
-        rjit_opt->save_temps = true;
-    }
-    else if (opt_match(s, l, "verbose")) {
-        rjit_opt->verbose = *s ? atoi(s + 1) : 1;
-    }
-    else if (opt_match_arg(s, l, "max-cache")) {
-        rjit_opt->max_cache_size = atoi(s + 1);
+    else if (opt_match_noarg(s, l, "stats")) {
+        rjit_opt->stats = true;
     }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
-    }
-    else if (opt_match_noarg(s, l, "stats")) {
-        rjit_opt->stats = true;
     }
     // --rjit=pause is an undocumented feature for experiments
     else if (opt_match_noarg(s, l, "pause")) {
