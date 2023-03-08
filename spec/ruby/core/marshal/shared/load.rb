@@ -720,6 +720,17 @@ describe :marshal_load, shared: true do
       new_obj_metaclass_ancestors[@num_self_class, 3].should ==
         [Meths, UserRegexp, Regexp]
     end
+
+    ruby_bug "#19439", ""..."3.3" do
+      it "restore the regexp instance variables" do
+        obj = Regexp.new("hello")
+        obj.instance_variable_set(:@regexp_ivar, [42])
+
+        new_obj = Marshal.send(@method, "\x04\bI/\nhello\x00\a:\x06EF:\x11@regexp_ivar[\x06i/")
+        new_obj.instance_variables.should == [:@regexp_ivar]
+        new_obj.instance_variable_get(:@regexp_ivar).should == [42]
+      end
+    end
   end
 
   describe "for a Float" do
