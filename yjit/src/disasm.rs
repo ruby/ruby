@@ -202,7 +202,7 @@ pub fn disasm_code_block(cb: &CodeBlock) -> String {
     let end_addr = cb.get_write_ptr().raw_ptr() as usize;
 
     let mut disasm = disasm_addr_range(cb, start_addr, end_addr);
-    disasm = unindent::unindent(&format!("\n{disasm}"));
+    disasm = unindent_string(&disasm, false);
 
     // Code addresses will be different every time you test it. So this loop replaces
     // code addresses that appear in disasm with `start_addr`-origin values.
@@ -212,6 +212,64 @@ pub fn disasm_code_block(cb: &CodeBlock) -> String {
         disasm = disasm.replace(&from, &to);
     }
     disasm
+}
+
+/// Macro useful for raw string literals
+#[cfg(test)]
+macro_rules! unindent {
+    ($str:expr) => {
+        unindent_string($str, true)
+    };
+}
+#[cfg(test)]
+pub(crate) use unindent;
+
+/// Remove the minimum indent from every line, skipping the first line if `skip_first`.
+#[cfg(test)]
+pub fn unindent_string(string: &str, trim_lines: bool) -> String {
+    fn split_lines(string: &str) -> Vec<String> {
+        let mut result: Vec<String> = vec![];
+        let mut buf: Vec<u8> = vec![];
+        for byte in string.as_bytes().iter() {
+            buf.push(*byte);
+            if *byte == b'\n' {
+                result.push(String::from_utf8(buf).unwrap());
+                buf = vec![];
+            }
+        }
+        if !buf.is_empty() {
+            result.push(String::from_utf8(buf).unwrap());
+        }
+        result
+    }
+
+    // Break up a string into multiple lines
+    let mut lines = split_lines(string);
+    if trim_lines { // raw string literals come with extra lines
+        lines.remove(0);
+        lines.remove(lines.len() - 1);
+    }
+
+    // Count the minimum number of spaces
+    let spaces = lines.iter().filter_map(|line| {
+        for (i, ch) in line.as_bytes().iter().enumerate() {
+            if *ch != b' ' && *ch != b'\t' {
+                return Some(i);
+            }
+        }
+        None
+    }).min().unwrap_or(0);
+
+    // Join lines, removing spaces
+    let mut unindented: Vec<u8> = vec![];
+    for line in lines.iter() {
+        if line.len() > spaces {
+            unindented.extend_from_slice(&line.as_bytes()[spaces..]);
+        } else {
+            unindented.extend_from_slice(&line.as_bytes());
+        }
+    }
+    String::from_utf8(unindented).unwrap()
 }
 
 /// Primitive called in yjit.rb

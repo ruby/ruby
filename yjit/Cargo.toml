@@ -20,8 +20,6 @@ stats_alloc = { version = "0.1.10", optional = true }
 
 [dev-dependencies]
 capstone = "0.10.0"
-indoc = "2.0.1"
-unindent = "0.2.1"
 
 [features]
 # NOTE: Development builds select a set of these via configure.ac
