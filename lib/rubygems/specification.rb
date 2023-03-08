@@ -2191,7 +2191,7 @@ class Gem::Specification < Gem::BasicSpecification
     #       so we find them with heuristic way. We should improve it.
     return false if (full_require_paths - [extension_dir]).any? do |path|
       File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG['DLEXT']}")) ||
-        !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG['DLEXT']}")).empty?
+      !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG['DLEXT']}")).empty?
     end
 
     true
