@@ -353,7 +353,7 @@ impl Assembler
             }
         }
 
-        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names), self.spilled_temps, self.stack_max);
+        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names), self.spilled_temps);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -1081,7 +1081,9 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, out_regs: Vec<Reg>, temp_regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.alloc_temp_regs(temp_regs).arm64_split().alloc_out_regs(out_regs);
+        let asm = self.alloc_temp_regs(temp_regs);
+        let asm = asm.arm64_split();
+        let mut asm = asm.alloc_out_regs(out_regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
