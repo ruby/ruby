@@ -459,7 +459,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
 fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
     let mut cb = ocb.unwrap();
     let exit_code = cb.get_write_ptr();
-    let mut asm = Assembler::new_with_stack_info(ctx.spilled_temps);
+    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
 
     // Spill before returning to the interpreter
     asm.spill_temps(&mut ctx.clone());
@@ -740,7 +740,7 @@ pub fn gen_single_block(
     jit.ec = Some(ec);
 
     // Create a backend assembler instance
-    let mut asm = Assembler::new_with_stack_info(ctx.spilled_temps);
+    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -5993,7 +5993,7 @@ fn gen_send_iseq(
     let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
     return_ctx.stack_push(Type::Unknown);
-    return_ctx.spilled_temps = return_ctx.get_stack_size();
+    return_ctx.spilled_size = return_ctx.get_stack_size();
     return_ctx.set_sp_offset(1);
     return_ctx.reset_chain_depth();
 
