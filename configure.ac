@@ -3864,16 +3864,12 @@ AC_ARG_ENABLE(rjit,
     )]
 )
 
-AS_CASE(["${RJIT_SUPPORT}"],
+AS_CASE(["$RJIT_SUPPORT"],
 [yes|dev], [
-    AS_CASE(["${RJIT_SUPPORT}"],
+    AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Link libcapstone for --rjit-dump-disasm. If YJIT links libcapstone
-        # with cargo, linking libcapstone here doesn't work. It should be
-        # linked for RJIT only when YJIT doesn't.
-        AS_IF([test -z "$CARGO_BUILD_ARGS"], [
-            AC_CHECK_LIB([capstone], [cs_disasm])
-        ])
+        # Link libcapstone for --rjit-dump-disasm
+        AC_CHECK_LIB([capstone], [cs_disasm])
 
         # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
         AC_DEFINE(RUBY_DEBUG, 1)
