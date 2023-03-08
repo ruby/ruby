@@ -13,7 +13,7 @@ module SyntaxSuggest
       code_lines = CodeLine.from_source(source)
       block = CodeBlock.new(lines: code_lines[1])
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
-        .scan_neighbors
+        .scan_neighbors_not_empty
 
       expect(expand.code_block.to_s).to eq(source)
       expand.scan_while { |line| false }
@@ -151,7 +151,7 @@ module SyntaxSuggest
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
       expand.skip(:empty?)
       expand.skip(:hidden?)
-      expand.scan_neighbors
+      expand.scan_neighbors_not_empty
 
       expect(expand.code_block.to_s).to eq(<<~EOM.indent(4))
 

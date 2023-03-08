@@ -338,7 +338,6 @@ module SyntaxSuggest
             end
           EOM
           search.call
-          puts "done"
 
           expect(search.invalid_blocks.join).to eq(<<~'EOM')
             Foo.call do

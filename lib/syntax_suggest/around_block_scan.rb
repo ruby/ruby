@@ -61,7 +61,6 @@ module SyntaxSuggest
 
     def scan_while
       stop_next = false
-
       kw_count = 0
       end_count = 0
       index = before_lines.reverse_each.take_while do |line|
@@ -166,7 +165,55 @@ module SyntaxSuggest
       end
     end
 
-    def scan_neighbors
+    # Scanning is intentionally conservative because
+    # we have no way of rolling back an agressive block (at this time)
+    #
+    # If a block was stopped for some trivial reason, (like an empty line)
+    # but the next line would have caused it to be balanced then we
+    # can check that condition and grab just one more line either up or
+    # down.
+    #
+    # For example, below if we're scanning up, line 2 might cause
+    # the scanning to stop. This is because empty lines might
+    # denote logical breaks where the user intended to chunk code
+    # which is a good place to stop and check validity. Unfortunately
+    # it also means we might have a "dangling" keyword or end.
+    #
+    #   1 def bark
+    #   2
+    #   3 end
+    #
+    # If lines 2 and 3 are in the block, then when this method is
+    # run it would see it is unbalanced, but that acquiring line 1
+    # would make it balanced, so that's what it does.
+    def lookahead_balance_one_line
+      kw_count = 0
+      end_count = 0
+      lines.each do |line|
+        kw_count += 1 if line.is_kw?
+        end_count += 1 if line.is_end?
+      end
+
+      return self if kw_count == end_count # nothing to balance
+
+      # More ends than keywords, check if we can balance expanding up
+      if (end_count - kw_count) == 1 && next_up
+        return self unless next_up.is_kw?
+        return self unless next_up.indent >= @orig_indent
+
+        @before_index = next_up.index
+
+      # More keywords than ends, check if we can balance by expanding down
+      elsif (kw_count - end_count) == 1 && next_down
+        return self unless next_down.is_end?
+        return self unless next_down.indent >= @orig_indent
+
+        @after_index = next_down.index
+      end
+      self
+    end
+
+    def scan_neighbors_not_empty
       scan_while { |line| line.not_empty? && line.indent >= @orig_indent }
     end
 

@@ -234,5 +234,30 @@ module SyntaxSuggest
         > 10  end # extra end
       EOM
     end
+
+    it "space inside of a method" do
+      source = <<~'EOM'
+        class Dog       #  1
+          def bark      #  2
+
+          end           #  4
+
+          def sit       #  6
+            print "sit" #  7
+          end           #  8
+        end             #  9
+        end # extra end
+      EOM
+
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        > 10  end # extra end
+      EOM
+    end
   end
 end
