@@ -23,9 +23,91 @@ void rb_rjit_c(void) {}
 #include "internal/gc.h"
 #include "yjit.h"
 #include "vm_insnhelper.h"
+#include "probes.h"
+#include "probes_helper.h"
 
 #include "insns.inc"
 #include "insns_info.inc"
+
+// For mmapp(), sysconf()
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
+#include <errno.h>
+
+bool
+rb_rjit_mark_writable(void *mem_block, uint32_t mem_size)
+{
+    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+}
+
+void
+rb_rjit_mark_executable(void *mem_block, uint32_t mem_size)
+{
+    // Do not call mprotect when mem_size is zero. Some platforms may return
+    // an error for it. https://github.com/Shopify/ruby/issues/450
+    if (mem_size == 0) {
+        return;
+    }
+    if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
+            mem_block, (unsigned long)mem_size, strerror(errno));
+    }
+}
+
+VALUE
+rb_rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+{
+    rb_proc_t *proc;
+    GetProcPtr(recv, proc);
+    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
+}
+
+VALUE
+rb_rjit_str_neq_internal(VALUE str1, VALUE str2)
+{
+    return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
+}
+
+// The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
+// like the interpreter. When tracing for c_return is enabled, we patch the code after
+// the C method return to call into this to fire the event.
+void
+rb_rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
+{
+    rb_control_frame_t *cfp = ec->cfp;
+    RUBY_ASSERT_ALWAYS(cfp == GET_EC()->cfp);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+
+    RUBY_ASSERT_ALWAYS(RUBYVM_CFUNC_FRAME_P(cfp));
+    RUBY_ASSERT_ALWAYS(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    // CHECK_CFP_CONSISTENCY("full_cfunc_return"); TODO revive this
+
+    // Pop the C func's frame and fire the c_return TracePoint event
+    // Note that this is the same order as vm_call_cfunc_with_frame().
+    rb_vm_pop_frame(ec);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, return_value);
+    // Note, this deviates from the interpreter in that users need to enable
+    // a c_return TracePoint for this DTrace hook to work. A reasonable change
+    // since the Ruby return event works this way as well.
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
+
+    // Push return value into the caller's stack. We know that it's a frame that
+    // uses cfp->sp because we are patching a call done with gen_send_cfunc().
+    ec->cfp->sp[0] = return_value;
+    ec->cfp->sp++;
+}
+
+rb_proc_t *
+rb_rjit_get_proc_ptr(VALUE procv)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procv, proc);
+    return proc;
+}
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #define NUM2PTR(x) NUM2ULONG(x)

@@ -11,16 +11,16 @@ module RubyVM::RJIT # :nodoc: all
     #
     def rjit_mark_writable
       Primitive.cstmt! %{
-        extern bool rb_yjit_mark_writable(void *mem_block, uint32_t mem_size);
-        rb_yjit_mark_writable(rb_rjit_mem_block, RJIT_CODE_SIZE);
+        extern bool rb_rjit_mark_writable(void *mem_block, uint32_t mem_size);
+        rb_rjit_mark_writable(rb_rjit_mem_block, RJIT_CODE_SIZE);
         return Qnil;
       }
     end
 
     def rjit_mark_executable
       Primitive.cstmt! %{
-        extern bool rb_yjit_mark_executable(void *mem_block, uint32_t mem_size);
-        rb_yjit_mark_executable(rb_rjit_mem_block, RJIT_CODE_SIZE);
+        extern void rb_rjit_mark_executable(void *mem_block, uint32_t mem_size);
+        rb_rjit_mark_executable(rb_rjit_mem_block, RJIT_CODE_SIZE);
         return Qnil;
       }
     end
@@ -147,8 +147,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_full_cfunc_return
       Primitive.cstmt! %{
-        extern void rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
-        return SIZET2NUM((size_t)rb_full_cfunc_return);
+        extern void rb_rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
+        return SIZET2NUM((size_t)rb_rjit_full_cfunc_return);
       }
     end
 
@@ -177,8 +177,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_str_neq_internal
       Primitive.cstmt! %{
-        extern VALUE rb_str_neq_internal(VALUE str1, VALUE str2);
-        return SIZET2NUM((size_t)rb_str_neq_internal);
+        extern VALUE rb_rjit_str_neq_internal(VALUE str1, VALUE str2);
+        return SIZET2NUM((size_t)rb_rjit_str_neq_internal);
       }
     end
 
@@ -398,8 +398,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_optimized_call
       Primitive.cstmt! %{
-        extern VALUE rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
-        return SIZET2NUM((size_t)rb_optimized_call);
+        extern VALUE rb_rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
+        return SIZET2NUM((size_t)rb_rjit_optimized_call);
       }
     end
 
@@ -414,8 +414,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_yjit_get_proc_ptr(proc_addr)
       proc_t_addr = Primitive.cstmt! %{
-        extern rb_proc_t * rb_yjit_get_proc_ptr(VALUE procv);
-        return SIZET2NUM((size_t)rb_yjit_get_proc_ptr((VALUE)NUM2SIZET(proc_addr)));
+        extern rb_proc_t * rb_rjit_get_proc_ptr(VALUE procv);
+        return SIZET2NUM((size_t)rb_rjit_get_proc_ptr((VALUE)NUM2SIZET(proc_addr)));
       }
       rb_proc_t.new(proc_t_addr)
     end
