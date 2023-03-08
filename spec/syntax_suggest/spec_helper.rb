@@ -18,7 +18,7 @@ RSpec.configure do |config|
   end
 
   if config.color_mode == :automatic
-    if color_enabled? and (ENV["TERM"] == "dumb" or ENV["NO_COLOR"]&.slice(0))
+    if config.color_enabled? and (ENV["TERM"] == "dumb" or ENV["NO_COLOR"]&.slice(0))
       config.color_mode = :off
     end
   end
