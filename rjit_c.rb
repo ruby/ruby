@@ -11,16 +11,16 @@ module RubyVM::RJIT # :nodoc: all
     #
     def rjit_mark_writable
       Primitive.cstmt! %{
-        extern bool rb_yjit_mark_writable(void *mem_block, uint32_t mem_size);
-        rb_yjit_mark_writable(rb_rjit_mem_block, RJIT_CODE_SIZE);
+        extern bool rb_rjit_mark_writable(void *mem_block, uint32_t mem_size);
+        rb_rjit_mark_writable(rb_rjit_mem_block, RJIT_CODE_SIZE);
         return Qnil;
       }
     end
 
     def rjit_mark_executable
       Primitive.cstmt! %{
-        extern bool rb_yjit_mark_executable(void *mem_block, uint32_t mem_size);
-        rb_yjit_mark_executable(rb_rjit_mem_block, RJIT_CODE_SIZE);
+        extern void rb_rjit_mark_executable(void *mem_block, uint32_t mem_size);
+        rb_rjit_mark_executable(rb_rjit_mem_block, RJIT_CODE_SIZE);
         return Qnil;
       }
     end
@@ -147,8 +147,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_full_cfunc_return
       Primitive.cstmt! %{
-        extern void rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
-        return SIZET2NUM((size_t)rb_full_cfunc_return);
+        extern void rb_rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
+        return SIZET2NUM((size_t)rb_rjit_full_cfunc_return);
       }
     end
 
@@ -177,8 +177,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_str_neq_internal
       Primitive.cstmt! %{
-        extern VALUE rb_str_neq_internal(VALUE str1, VALUE str2);
-        return SIZET2NUM((size_t)rb_str_neq_internal);
+        extern VALUE rb_rjit_str_neq_internal(VALUE str1, VALUE str2);
+        return SIZET2NUM((size_t)rb_rjit_str_neq_internal);
       }
     end
 
@@ -398,8 +398,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_optimized_call
       Primitive.cstmt! %{
-        extern VALUE rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
-        return SIZET2NUM((size_t)rb_optimized_call);
+        extern VALUE rb_rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
+        return SIZET2NUM((size_t)rb_rjit_optimized_call);
       }
     end
 
@@ -414,8 +414,8 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_yjit_get_proc_ptr(proc_addr)
       proc_t_addr = Primitive.cstmt! %{
-        extern rb_proc_t * rb_yjit_get_proc_ptr(VALUE procv);
-        return SIZET2NUM((size_t)rb_yjit_get_proc_ptr((VALUE)NUM2SIZET(proc_addr)));
+        extern rb_proc_t * rb_rjit_get_proc_ptr(VALUE procv);
+        return SIZET2NUM((size_t)rb_rjit_get_proc_ptr((VALUE)NUM2SIZET(proc_addr)));
       }
       rb_proc_t.new(proc_t_addr)
     end
@@ -433,16 +433,6 @@ module RubyVM::RJIT # :nodoc: all
     #
     def rb_hash_values(cdhash_addr)
       Primitive.cexpr! 'rb_hash_values((VALUE)NUM2PTR(cdhash_addr))'
-    end
-
-    def builtin_compiler(buf, bf_ptr, index, stack_size, builtin_inline_p)
-      _bf_addr = bf_ptr.to_i
-      # Call "rjit_compile_invokebuiltin_for_#{func}" in mk_builtin_loader.rb
-      Primitive.cstmt! %{
-        RB_BUILTIN bf = (RB_BUILTIN)NUM2PTR(_bf_addr);
-        bf->compiler(buf, NIL_P(index) ? -1 : NUM2LONG(index), NUM2UINT(stack_size), RTEST(builtin_inline_p));
-        return Qnil;
-      }
     end
 
     def has_cache_for_send(cc_ptr, insn)
@@ -525,18 +515,9 @@ module RubyVM::RJIT # :nodoc: all
       rjit_options.new(addr)
     end
 
-    def rjit_capture_cc_entries(compiled_body, captured_body)
-      _compiled_body_addr = compiled_body.to_i
-      _captured_body_addr = captured_body.to_i
-      Primitive.cstmt! %{
-        extern int rjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
-        return INT2NUM(rjit_capture_cc_entries((struct rb_iseq_constant_body *)NUM2PTR(_compiled_body_addr), (struct rb_iseq_constant_body *)NUM2PTR(_captured_body_addr)));
-      }
-    end
-
     def rjit_cancel_all(reason)
       Primitive.cstmt! %{
-        rjit_cancel_all(RSTRING_PTR(reason));
+        rb_rjit_cancel_all(RSTRING_PTR(reason));
         return Qnil;
       }
     end
@@ -1169,7 +1150,6 @@ module RubyVM::RJIT # :nodoc: all
       argc: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), argc)")],
       index: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), index)")],
       name: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), name)")],
-      compiler: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), compiler)")],
     )
   end
 

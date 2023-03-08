@@ -5460,9 +5460,8 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 #define PUSH_VAL(type) (needstr == Qfalse ? Qtrue : rb_iseq_defined_string(type))
       case NODE_IVAR:
-        ADD_INSN(ret, line_node, putnil);
-        ADD_INSN3(ret, line_node, defined, INT2FIX(DEFINED_IVAR),
-                  ID2SYM(node->nd_vid), PUSH_VAL(DEFINED_IVAR));
+        ADD_INSN3(ret, line_node, defined_ivar,
+                  ID2SYM(node->nd_vid), get_ivar_ic_value(iseq,node->nd_vid), PUSH_VAL(DEFINED_IVAR));
         return;
 
       case NODE_GVAR:
@@ -12848,7 +12847,7 @@ ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_head
 }
 
 typedef void (*ibf_dump_object_function)(struct ibf_dump *dump, VALUE obj);
-static ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
+static const ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* T_NONE */
     ibf_dump_object_unsupported, /* T_OBJECT */
     ibf_dump_object_class,       /* T_CLASS */
@@ -12941,7 +12940,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 }
 
 typedef VALUE (*ibf_load_object_function)(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset);
-static ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
+static const ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* T_NONE */
     ibf_load_object_unsupported, /* T_OBJECT */
     ibf_load_object_class,       /* T_CLASS */

@@ -408,7 +408,8 @@ struct cvc_table_copy_ctx {
 };
 
 static enum rb_id_table_iterator_result
-cvc_table_copy(ID id, VALUE val, void *data) {
+cvc_table_copy(ID id, VALUE val, void *data)
+{
     struct cvc_table_copy_ctx *ctx = (struct cvc_table_copy_ctx *)data;
     struct rb_cvar_class_tbl_entry * orig_entry;
     orig_entry = (struct rb_cvar_class_tbl_entry *)val;

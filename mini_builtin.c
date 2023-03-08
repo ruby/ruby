@@ -21,6 +21,11 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     rb_ast_t *ast = rb_builtin_ast(feature_name, &name_str);
     rb_vm_t *vm = GET_VM();
 
+    if (!ast) {
+        rb_fatal("builtin_iseq_load: can not find %s; "
+                 "probably miniprelude.c is out of date",
+                 feature_name);
+    }
     vm->builtin_function_table = table;
     vm->builtin_inline_index = 0;
     static const rb_compile_option_t optimization = {

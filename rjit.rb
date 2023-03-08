@@ -5,13 +5,13 @@ module RubyVM::RJIT
   end
 
   # Stop generating JITed code.
-  def self.pause(wait: true)
-    Primitive.cexpr! 'rjit_pause(RTEST(wait))'
+  def self.pause
+    # TODO: implement this
   end
 
   # Start generating JITed code again after pause.
   def self.resume
-    Primitive.cexpr! 'rjit_resume()'
+    # TODO: implement this
   end
 
   if Primitive.rjit_stats_enabled_p

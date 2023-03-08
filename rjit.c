@@ -56,6 +56,12 @@ void rb_rjit(void) {}
 #endif
 #include "dln.h"
 
+// For mmapp(), sysconf()
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #include "ruby/util.h"
 
 // A copy of RJIT portion of MRI options since RJIT initialization.  We
@@ -93,15 +99,8 @@ verbose(int level, const char *format, ...)
     }
 }
 
-int
-rjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
-{
-    // TODO: remove this
-    return 0;
-}
-
 void
-rjit_cancel_all(const char *reason)
+rb_rjit_cancel_all(const char *reason)
 {
     if (!rjit_enabled)
         return;
@@ -114,15 +113,9 @@ rjit_cancel_all(const char *reason)
 }
 
 void
-rjit_free_iseq(const rb_iseq_t *iseq)
+rb_rjit_free_iseq(const rb_iseq_t *iseq)
 {
-    // TODO: remove this
-}
-
-void
-rjit_notify_waitpid(int exit_code)
-{
-    // TODO: remove this function
+    // TODO: implement this. GC_REFS should remove this iseq's mjit_blocks
 }
 
 // RubyVM::RJIT
@@ -137,49 +130,6 @@ static VALUE rb_cRJITIseqPtr = 0;
 static VALUE rb_cRJITCfpPtr = 0;
 // RubyVM::RJIT::Hooks
 static VALUE rb_mRJITHooks = 0;
-
-void
-rb_rjit_add_iseq_to_process(const rb_iseq_t *iseq)
-{
-    // TODO: implement
-}
-
-struct rb_rjit_compile_info*
-rb_rjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
-{
-    // TODO: remove this
-    return NULL;
-}
-
-void
-rb_rjit_recompile_send(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_ivar(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_exivar(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_inlining(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_const(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
 
 // Default permitted number of units with a JIT code kept in memory.
 #define DEFAULT_MAX_CACHE_SIZE 100
@@ -198,32 +148,11 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
     if (l == 0) {
         return;
     }
-    else if (opt_match_noarg(s, l, "warnings")) {
-        rjit_opt->warnings = true;
-    }
-    else if (opt_match(s, l, "debug")) {
-        if (*s)
-            rjit_opt->debug_flags = strdup(s + 1);
-        else
-            rjit_opt->debug = true;
-    }
-    else if (opt_match_noarg(s, l, "wait")) {
-        rjit_opt->wait = true;
-    }
-    else if (opt_match_noarg(s, l, "save-temps")) {
-        rjit_opt->save_temps = true;
-    }
-    else if (opt_match(s, l, "verbose")) {
-        rjit_opt->verbose = *s ? atoi(s + 1) : 1;
-    }
-    else if (opt_match_arg(s, l, "max-cache")) {
-        rjit_opt->max_cache_size = atoi(s + 1);
+    else if (opt_match_noarg(s, l, "stats")) {
+        rjit_opt->stats = true;
     }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
-    }
-    else if (opt_match_noarg(s, l, "stats")) {
-        rjit_opt->stats = true;
     }
     // --rjit=pause is an undocumented feature for experiments
     else if (opt_match_noarg(s, l, "pause")) {
@@ -240,50 +169,120 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rjit_option_messages[] = {
-    M("--rjit-warnings",           "", "Enable printing JIT warnings"),
-    M("--rjit-debug",              "", "Enable JIT debugging (very slow), or add cflags if specified"),
-    M("--rjit-wait",               "", "Wait until JIT compilation finishes every time (for testing)"),
-    M("--rjit-save-temps",         "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
-    M("--rjit-verbose=num",        "", "Print JIT logs of level num or less to stderr (default: 0)"),
-    M("--rjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: " STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
-    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+#if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+#endif
+    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+#ifdef HAVE_LIBCAPSTONE
+    M("--rjit-dump-disasm",        "", "Dump all JIT code"),
+#endif
     {0}
 };
 #undef M
-
-VALUE
-rjit_pause(bool wait_p)
-{
-    // TODO: remove this
-    return Qtrue;
-}
-
-VALUE
-rjit_resume(void)
-{
-    // TODO: remove this
-    return Qnil;
-}
-
-void
-rjit_child_after_fork(void)
-{
-    // TODO: remove this
-}
-
-// Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
-bool
-rjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
-{
-    // TODO: implement
-    return false;
-}
 
 //================================================================================
 //
 // New stuff from here
 //
+
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+// Align the current write position to a multiple of bytes
+static uint8_t *
+align_ptr(uint8_t *ptr, uint32_t multiple)
+{
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+#endif
+
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
+static uint8_t *
+rb_rjit_reserve_addr_space(uint32_t mem_size)
+{
+#ifndef _WIN32
+    uint8_t *mem_block;
+
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)&rb_rjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
+        // Align the requested address to page size
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
+        do {
+            mem_block = mmap(
+                req_addr,
+                mem_size,
+                PROT_NONE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                break;
+            }
+
+            // +4MB
+            req_addr += 4 * 1024 * 1024;
+        } while (req_addr < probe_region_end);
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
+        mem_block = mmap(
+            (void *)rb_rjit_reserve_addr_space,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = mmap(
+            NULL,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    }
+
+    // Check that the memory mapping was successful
+    if (mem_block == MAP_FAILED) {
+        perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
+        rb_bug("mmap failed");
+    }
+
+    return mem_block;
+#else
+    // Windows not supported for now
+    return NULL;
+#endif
+}
 
 // JIT buffer
 uint8_t *rb_rjit_mem_block = NULL;
@@ -509,8 +508,7 @@ rjit_init(const struct rjit_options *opts)
     VM_ASSERT(rjit_enabled);
     rjit_opts = *opts;
 
-    extern uint8_t* rb_yjit_reserve_addr_space(uint32_t mem_size);
-    rb_rjit_mem_block = rb_yjit_reserve_addr_space(RJIT_CODE_SIZE);
+    rb_rjit_mem_block = rb_rjit_reserve_addr_space(RJIT_CODE_SIZE);
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
@@ -537,12 +535,6 @@ rjit_init(const struct rjit_options *opts)
     if (rjit_opts.dump_disasm)
         verbose(1, "libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
 #endif
-}
-
-void
-rjit_finish(bool close_handle_p)
-{
-    // TODO: implement
 }
 
 // Same as `RubyVM::RJIT::C.enabled?`, but this is used before rjit_init.

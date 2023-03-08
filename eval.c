@@ -257,8 +257,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
         }
     }
 
-    rjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
-
     rb_ec_finalize(ec);
 
     /* unlock again if finalizer took mutexes. */

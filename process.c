@@ -1079,15 +1079,6 @@ void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
-#if USE_RJIT
-static struct waitpid_state rjit_waitpid_state;
-
-// variables shared with thread.c
-// TODO: implement the same thing with postponed_job and obviate these variables
-bool rjit_waitpid_finished = false;
-int rjit_waitpid_status = 0;
-#endif
-
 static int
 waitpid_signal(struct waitpid_state *w)
 {
@@ -1095,13 +1086,6 @@ waitpid_signal(struct waitpid_state *w)
         rb_threadptr_interrupt(rb_ec_thread_ptr(w->ec));
         return TRUE;
     }
-#if USE_RJIT
-    else if (w == &rjit_waitpid_state && w->ret) { /* rjit_add_waiting_pid */
-        rjit_waitpid_finished = true;
-        rjit_waitpid_status = w->status;
-        return TRUE;
-    }
-#endif
     return FALSE;
 }
 
@@ -1196,19 +1180,6 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->errnum = 0;
     w->status = 0;
 }
-
-#if USE_RJIT
-/*
- * must be called with vm->waitpid_lock held, this is not interruptible
- */
-void
-rjit_add_waiting_pid(rb_vm_t *vm, rb_pid_t pid)
-{
-    waitpid_state_init(&rjit_waitpid_state, pid, 0);
-    rjit_waitpid_state.ec = 0; // switch the behavior of waitpid_signal
-    ccan_list_add(&vm->waiting_pids, &rjit_waitpid_state.wnode);
-}
-#endif
 
 static VALUE
 waitpid_sleep(VALUE x)
@@ -3078,7 +3049,6 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
-    if (rjit_enabled) rjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
     before_exec(); /* stop timer thread before redirects */
 
     rb_protect(rb_execarg_parent_start1, execarg_obj, &state);
@@ -4187,30 +4157,6 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     }
 }
 
-#if USE_RJIT
-// This is used to create RJIT's child Ruby process
-pid_t
-rb_rjit_fork(void)
-{
-    struct child_handler_disabler_state old;
-    rb_vm_t *vm = GET_VM();
-    prefork();
-    disable_child_handler_before_fork(&old);
-    before_fork_ruby();
-
-    rb_native_mutex_lock(&vm->waitpid_lock);
-    pid_t pid = rb_fork();
-    if (pid > 0) rjit_add_waiting_pid(vm, pid);
-    rb_native_mutex_unlock(&vm->waitpid_lock);
-
-    after_fork_ruby();
-    disable_child_handler_fork_parent(&old);
-    if (pid == 0) rb_thread_atfork();
-
-    return pid;
-}
-#endif
-
 static rb_pid_t
 fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, size_t), void *charg,
         VALUE fds, char *errmsg, size_t errmsg_buflen,
@@ -4297,7 +4243,6 @@ rb_fork_ruby2(struct rb_process_status *status)
 
     while (1) {
         prefork();
-        if (rjit_enabled) rjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause RJIT.
         disable_child_handler_before_fork(&old);
         before_fork_ruby();
         pid = rb_fork();
@@ -4308,8 +4253,6 @@ rb_fork_ruby2(struct rb_process_status *status)
         }
         after_fork_ruby();
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-
-        if (rjit_enabled && pid > 0) rjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
 
         if (pid >= 0) { /* fork succeed */
             if (pid == 0) rb_thread_atfork();
@@ -7088,11 +7031,10 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
-    if (rjit_enabled) rjit_pause(false); // Don't leave locked mutex to child.
     before_fork_ruby();
     err = daemon(nochdir, noclose);
     after_fork_ruby();
-    rb_thread_atfork(); /* calls rjit_resume() */
+    rb_thread_atfork();
 #else
     int n;
 

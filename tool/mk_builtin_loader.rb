@@ -318,44 +318,6 @@ def mk_builtin_header file
       end
     }
 
-    bs.each_pair{|func, (argc, cfunc_name)|
-      decl = ', VALUE' * argc
-      argv = argc                    \
-           . times                   \
-           . map {|i|", argv[#{i}]"} \
-           . join('')
-      f.puts %'static void'
-      f.puts %'rjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
-      f.puts %'{'
-      f.puts %'    rb_str_catf(buf, "    VALUE self = GET_SELF();\\n");'
-      f.puts %'    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
-      if inlines.has_key? cfunc_name
-        body_lineno, text, locals, func_name = inlines[cfunc_name]
-        lineno, str = generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
-        f.puts %'    if (inlinable_p) {'
-        str.gsub(/^(?!#)/, '    ').each_line {|i|
-          j = RubyVM::CEscape.rstring2cstr(i).dup
-          j.sub!(/^    return\b/ , '    val =')
-          f.printf(%'        rb_str_catf(buf, "%%s", %s);\n', j)
-        }
-        f.puts(%'        return;')
-        f.puts(%'    }')
-      end
-      if argc > 0
-        f.puts %'    if (index == -1) {'
-        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
-        f.puts %'    }'
-        f.puts %'    else {'
-        f.puts %'        rb_str_catf(buf, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
-        f.puts %'        rb_str_catf(buf, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
-        f.puts %'    }'
-      end
-      f.puts %'    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == #{cfunc_name} */\\n", (VALUE)#{cfunc_name});'
-      f.puts %'    rb_str_catf(buf, "    val = f(ec, self#{argv});\\n");'
-      f.puts %'}'
-      f.puts
-    }
-
     if SUBLIBS[base]
       f.puts "// sub libraries"
       SUBLIBS[base].each do |sub|
@@ -371,9 +333,9 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, rjit_compile_invokebuiltin_for_#{func}),"
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}),"
     }
-    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
+    f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),"
     f.puts "  };"
 
     f.puts

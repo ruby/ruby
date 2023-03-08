@@ -286,11 +286,11 @@ usage(const char *name, int help, int highlight, int columns)
         M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
-#if USE_RJIT
-        M("--rjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
-#endif
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler"),
+#endif
+#if USE_RJIT
+        M("--rjit",        "",                     "enable pure-Ruby JIT compiler (experimental)"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
@@ -321,20 +321,17 @@ usage(const char *name, int help, int highlight, int columns)
         M("syntax_suggest", "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
         M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
-#if USE_RJIT
-        M("rjit", "",           "C compiler-based JIT compiler (default: disabled)"),
-#endif
 #if USE_YJIT
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
+#endif
+#if USE_RJIT
+        M("rjit", "",           "pure-Ruby JIT compiler (default: disabled)"),
 #endif
     };
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
     };
-#if USE_RJIT
-    extern const struct ruby_opt_message rjit_option_messages[];
-#endif
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
@@ -343,6 +340,9 @@ usage(const char *name, int help, int highlight, int columns)
         M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
     };
+#endif
+#if USE_RJIT
+    extern const struct ruby_opt_message rjit_option_messages[];
 #endif
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
@@ -370,15 +370,15 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
         SHOW(warn_categories[i]);
-#if USE_RJIT
-    printf("%s""RJIT options (experimental):%s\n", sb, se);
-    for (i = 0; rjit_option_messages[i].str; ++i)
-        SHOW(rjit_option_messages[i]);
-#endif
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
+#endif
+#if USE_RJIT
+    printf("%s""RJIT options (experimental):%s\n", sb, se);
+    for (i = 0; rjit_option_messages[i].str; ++i)
+        SHOW(rjit_option_messages[i]);
 #endif
 }
 

@@ -403,7 +403,7 @@ jit_exec(rb_execution_context_t *ec)
         }
     }
     else { // rjit_call_p
-        if (body->total_calls == rjit_opts.call_threshold) {
+        if (body->total_calls == rb_rjit_call_threshold()) {
             rb_rjit_compile(iseq);
         }
         if ((func = body->jit_func) == 0) {
@@ -413,6 +413,12 @@ jit_exec(rb_execution_context_t *ec)
 
     // Call the JIT code
     return func(ec, ec->cfp); // SystemV x64 calling convention: ec -> RDI, cfp -> RSI
+}
+#else
+static inline VALUE
+jit_exec(rb_execution_context_t *ec)
+{
+    return Qundef;
 }
 #endif
 

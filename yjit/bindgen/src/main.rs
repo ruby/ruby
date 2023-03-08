@@ -346,6 +346,7 @@ fn main() {
 
         // From include/ruby/internal/intern/variable.h
         .allowlist_function("rb_attr_get")
+        .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
 
         // From include/ruby/internal/intern/vm.h
