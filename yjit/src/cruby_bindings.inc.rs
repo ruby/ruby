@@ -848,14 +848,6 @@ pub struct rb_builtin_function {
     pub argc: ::std::os::raw::c_int,
     pub index: ::std::os::raw::c_int,
     pub name: *const ::std::os::raw::c_char,
-    pub compiler: ::std::option::Option<
-        unsafe extern "C" fn(
-            arg1: VALUE,
-            arg2: ::std::os::raw::c_long,
-            arg3: ::std::os::raw::c_uint,
-            arg4: bool,
-        ),
-    >,
 }
 pub const YARVINSN_nop: ruby_vminsn_type = 0;
 pub const YARVINSN_getlocal: ruby_vminsn_type = 1;

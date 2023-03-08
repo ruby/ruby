@@ -435,16 +435,6 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! 'rb_hash_values((VALUE)NUM2PTR(cdhash_addr))'
     end
 
-    def builtin_compiler(buf, bf_ptr, index, stack_size, builtin_inline_p)
-      _bf_addr = bf_ptr.to_i
-      # Call "rjit_compile_invokebuiltin_for_#{func}" in mk_builtin_loader.rb
-      Primitive.cstmt! %{
-        RB_BUILTIN bf = (RB_BUILTIN)NUM2PTR(_bf_addr);
-        bf->compiler(buf, NIL_P(index) ? -1 : NUM2LONG(index), NUM2UINT(stack_size), RTEST(builtin_inline_p));
-        return Qnil;
-      }
-    end
-
     def has_cache_for_send(cc_ptr, insn)
       _cc_addr = cc_ptr.to_i
       Primitive.cstmt! %{
@@ -1169,7 +1159,6 @@ module RubyVM::RJIT # :nodoc: all
       argc: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), argc)")],
       index: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), index)")],
       name: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), name)")],
-      compiler: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), compiler)")],
     )
   end
 
