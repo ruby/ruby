@@ -30,6 +30,7 @@ if r
   end
 
   # Check bundled_gems version and gemspec version same as BundledGem.build
+  require "rubygems"
   spec = Gem::Specification.load("#{n}/#{n}.gemspec")
   abort "Unexpected versions between bundled_gems:#{v} and gemspec:#{spec.version}" unless spec.version == Gem::Version.new(v)
 end
