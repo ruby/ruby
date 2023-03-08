@@ -1654,6 +1654,30 @@ class TestGem < Gem::TestCase
     ENV["SOURCE_DATE_EPOCH"] = old_epoch
   end
 
+  def test_data_home_default
+    expected = File.join(@userhome, ".local", "share")
+    assert_equal expected, Gem.data_home
+  end
+
+  def test_data_home_from_env
+    ENV["XDG_DATA_HOME"] = expected = "/test/data/home"
+    assert_equal expected, Gem.data_home
+  end
+
+  def test_state_home_default
+    Gem.instance_variable_set :@state_home, nil
+    Gem.data_home # memoize @data_home, to demonstrate GH-6418
+    expected = File.join(@userhome, ".local", "state")
+    assert_equal expected, Gem.state_home
+  end
+
+  def test_state_home_from_env
+    Gem.instance_variable_set :@state_home, nil
+    Gem.data_home # memoize @data_home, to demonstrate GH-6418
+    ENV["XDG_STATE_HOME"] = expected = "/test/state/home"
+    assert_equal expected, Gem.state_home
+  end
+
   private
 
   def ruby_install_name(name)

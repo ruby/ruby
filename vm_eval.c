@@ -41,9 +41,7 @@ typedef enum call_type {
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const VALUE *argv);
 
-#ifndef MJIT_HEADER
-
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat)
 {
     struct rb_calling_info calling = {
@@ -58,7 +56,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
     return vm_call0_body(ec, &calling, argv);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call_with_refinements(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, int kw_splat)
 {
     const rb_callable_method_entry_t *me =
@@ -297,7 +295,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     return ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat)
 {
     return rb_vm_call0(ec, recv, id, argc, argv, me, kw_splat);
@@ -352,8 +350,6 @@ rb_current_receiver(void)
     return cfp->self;
 }
 
-#endif /* #ifndef MJIT_HEADER */
-
 static inline void
 stack_check(rb_execution_context_t *ec)
 {
@@ -363,8 +359,6 @@ stack_check(rb_execution_context_t *ec)
         rb_ec_stack_overflow(ec, FALSE);
     }
 }
-
-#ifndef MJIT_HEADER
 
 void
 rb_check_stack_overflow(void)
@@ -926,7 +920,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
     UNREACHABLE_RETURN(Qnil);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                             int argc, const VALUE *argv, int priv)
 {
@@ -943,8 +937,6 @@ rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
         return rb_name_err_new(format, obj, name);
     }
 }
-
-#endif /* #ifndef MJIT_HEADER */
 
 static void
 raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE obj,
@@ -1034,8 +1026,6 @@ method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VAL
     raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
     UNREACHABLE_RETURN(Qundef);
 }
-
-#ifndef MJIT_HEADER
 
 static inline VALUE
 rb_funcallv_scope(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
@@ -2551,5 +2541,3 @@ Init_vm_eval(void)
     id_tag = rb_intern_const("tag");
     id_value = rb_intern_const("value");
 }
-
-#endif /* #ifndef MJIT_HEADER */

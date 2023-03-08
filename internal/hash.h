@@ -107,7 +107,6 @@ VALUE rb_ident_hash_new(void);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_hash_new_with_size(st_index_t size);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
@@ -117,7 +116,6 @@ VALUE rb_hash_compare_by_id_p(VALUE hash);
 
 st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
-MJIT_SYMBOL_EXPORT_END
 
 VALUE rb_hash_compare_by_id(VALUE hash);
 

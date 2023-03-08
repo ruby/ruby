@@ -89,8 +89,6 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#ifndef MJIT_HEADER
-
 /*!
  * This function asserts that a (continuous) memory region from ptr to size
  * being "poisoned".  Both read / write access to such memory region are
@@ -184,7 +182,5 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
     MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
     asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
-
-#endif /* MJIT_HEADER */
 
 #endif /* INTERNAL_SANITIZERS_H */

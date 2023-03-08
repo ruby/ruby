@@ -924,7 +924,7 @@ rb_define_class_id(ID id, VALUE super)
  * \return the value \c Class#inherited's returns
  * \pre Each of \a super and \a klass must be a \c Class object.
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_class_inherited(VALUE super, VALUE klass)
 {
     ID inherited;
@@ -2306,7 +2306,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
     long i = 0, len = RARRAY_LEN(keys);

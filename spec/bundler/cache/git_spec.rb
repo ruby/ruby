@@ -220,4 +220,57 @@ RSpec.describe "bundle cache with git" do
       expect(the_bundle).to include_gem "foo 1.0"
     end
   end
+
+  it "respects the --no-install flag" do
+    git = build_git "foo", &:add_c_extension
+    ref = git.ref_for("main", 11)
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+    bundle "config set cache_all true"
+
+    # The algorithm for the cache location for a git checkout is
+    # in Bundle::Source::Git#cache_path
+    cache_path_name = "foo-1.0-#{Digest(:SHA1).hexdigest(lib_path("foo-1.0").to_s)}"
+
+    # Run this test twice. This is because materially different codepaths
+    # will get hit the second time around.
+    # The first time, Bundler::Sources::Git#install_path is set to the system
+    # wide cache directory bundler/gems; the second time, it's set to the
+    # vendor/cache directory. We don't want the native extension to appear in
+    # either of these places, so run the `bundle cache` command twice.
+    2.times do
+      bundle :cache, "all-platforms" => true, :install => false
+
+      # it did _NOT_ actually install the gem - neither in $GEM_HOME (bundler 2 mode),
+      # nor in .bundle (bundler 3 mode)
+      expect(Pathname.new(File.join(default_bundle_path, "gems/foo-1.0-#{ref}"))).to_not exist
+      # it _did_ cache the gem in vendor/
+      expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
+      # it did _NOT_ build the gems extensions in the vendor/ dir
+      expect(Dir[bundled_app("vendor/cache/foo-1.0-#{ref}/lib/foo_c*")]).to be_empty
+      # it _did_ cache the git checkout
+      expect(default_cache_path("git", cache_path_name)).to exist
+      # And the checkout is a bare checkout
+      expect(default_cache_path("git", cache_path_name, "HEAD")).to exist
+    end
+
+    # Subsequently installing the gem should compile it.
+    # _currently_, the gem gets compiled in vendor/cache, and vendor/cache is added
+    # to the $LOAD_PATH for git extensions, so it all kind of "works". However, in the
+    # future we would like to stop adding vendor/cache to the $LOAD_PATH for git extensions
+    # and instead treat them identically to normal gems (where the gem install location,
+    # not the cache location, is added to $LOAD_PATH).
+    # Verify that the compilation worked and the result is in $LOAD_PATH by simply attempting
+    # to require it; that should make sure this spec does not break if the load path behaviour
+    # is changed.
+    bundle :install, :local => true
+    ruby <<~R, :raise_on_error => false
+      require 'bundler/setup'
+      require 'foo_c'
+    R
+    expect(last_command).to_not be_failure
+  end
 end

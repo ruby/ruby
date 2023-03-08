@@ -272,7 +272,7 @@ class Gem::Version
   # string for backwards (RubyGems 1.3.5 and earlier) compatibility.
 
   def marshal_dump
-    [version]
+    [@version]
   end
 
   ##

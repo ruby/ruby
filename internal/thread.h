@@ -49,8 +49,6 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
-MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_THREAD_H */

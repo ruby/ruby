@@ -25,7 +25,7 @@ module JITSupport
   ]
 
   module_function
-  # Run Ruby script with --mjit-wait (Synchronous JIT compilation).
+  # Run Ruby script with --rjit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
   def eval_with_jit(env = nil, script, **opts)
     stdout, stderr = nil, nil
@@ -40,30 +40,25 @@ module JITSupport
 
   def eval_with_jit_without_retry(env = nil, script, verbose: 0, call_threshold: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
-      '--disable-gems', "--mjit-verbose=#{verbose}",
-      "--mjit-call-threshold=#{call_threshold}", "--mjit-max-cache=#{max_cache}",
+      '--disable-gems', "--rjit-verbose=#{verbose}",
+      "--rjit-call-threshold=#{call_threshold}", "--rjit-max-cache=#{max_cache}",
     ]
     args << '--disable-yjit'
-    args << '--mjit-wait' if wait
-    args << '--mjit-save-temps' if save_temps
-    args << '--mjit-debug' if defined?(@mjit_debug) && @mjit_debug
+    args << '--rjit-wait' if wait
+    args << '--rjit-save-temps' if save_temps
+    args << '--rjit-debug' if defined?(@rjit_debug) && @rjit_debug
     args << '-e' << script
-    base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
-    if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?
-      so = "mjit_build_dir.#{RbConfig::CONFIG['SOEXT']}"
-      base_env[preloadenv] = File.realpath(so) rescue nil
-    end
     args.unshift(env ? base_env.merge!(env) : base_env)
     EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,
     )
   end
 
-  # For MJIT
+  # For RJIT
   def supported?
     return @supported if defined?(@supported)
-    @supported = RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' &&
-      UNSUPPORTED_COMPILERS.all? { |regexp| !regexp.match?(RbConfig::CONFIG['MJIT_CC']) } &&
+    @supported = RbConfig::CONFIG["RJIT_SUPPORT"] != 'no' &&
+      UNSUPPORTED_COMPILERS.all? { |regexp| !regexp.match?(RbConfig::CONFIG['RJIT_CC']) } &&
       !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME']) &&
       !UNSUPPORTED_ARCHITECTURES.include?(RUBY_PLATFORM.split('-', 2).first)
   end
@@ -74,9 +69,9 @@ module JITSupport
     @yjit_supported = ![nil, 'no'].include?(RbConfig::CONFIG['YJIT_SUPPORT'])
   end
 
-  def remove_mjit_logs(stderr)
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # utility for -DFORCE_MJIT_ENABLE
-      stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
+  def remove_rjit_logs(stderr)
+    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # utility for -DFORCE_RJIT_ENABLE
+      stderr.gsub(/^RJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
     else
       stderr
     end
@@ -92,7 +87,7 @@ module JITSupport
       stderr.include?("error trying to exec 'cc1': execvp: No such file or directory")
   end
 
-  def mjit_force_enabled?
-    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+  def rjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?RJIT_FORCE_ENABLE\b/)
   end
 end

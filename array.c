@@ -881,7 +881,7 @@ VALUE
     return ary;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
@@ -1123,7 +1123,7 @@ rb_check_array_type(VALUE ary)
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_check_to_array(VALUE ary)
 {
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
@@ -1655,7 +1655,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_behead(VALUE ary, long n)
 {
     if (n <= 0) {
@@ -1800,6 +1800,12 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
     ary_memcpy0(ary, 0, argc, argv, target_ary);
     ARY_SET_LEN(ary, len + argc);
     return ary;
+}
+
+/* non-static for yjit */
+VALUE
+rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary) {
+    return rb_ary_unshift_m(argc, argv, ary);
 }
 
 VALUE
@@ -1981,7 +1987,7 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
     long beg, len, step;

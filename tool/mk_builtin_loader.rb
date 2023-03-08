@@ -325,7 +325,7 @@ def mk_builtin_header file
            . map {|i|", argv[#{i}]"} \
            . join('')
       f.puts %'static void'
-      f.puts %'mjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
+      f.puts %'rjit_compile_invokebuiltin_for_#{func}(VALUE buf, long index, unsigned stack_size, bool inlinable_p)'
       f.puts %'{'
       f.puts %'    rb_str_catf(buf, "    VALUE self = GET_SELF();\\n");'
       f.puts %'    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE#{decl});\\n");'
@@ -371,7 +371,7 @@ def mk_builtin_header file
     f.puts "  // table definition"
     f.puts "  static const struct rb_builtin_function #{table}[] = {"
     bs.each.with_index{|(func, (argc, cfunc_name)), i|
-      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, mjit_compile_invokebuiltin_for_#{func}),"
+      f.puts "    RB_BUILTIN_FUNCTION(#{i}, #{func}, #{cfunc_name}, #{argc}, rjit_compile_invokebuiltin_for_#{func}),"
     }
     f.puts "    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),"
     f.puts "  };"

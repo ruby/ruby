@@ -95,22 +95,13 @@ XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1)
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
-MJIT_SUPPORT = @MJIT_SUPPORT@
-MJIT_HEADER_FLAGS = @MJIT_HEADER_FLAGS@
-MJIT_HEADER_SUFFIX =
-MJIT_HEADER_ARCH =
-MJIT_HEADER_INSTALL_DIR = @MJIT_HEADER_INSTALL_DIR@
-MJIT_CC = @MJIT_CC@
-MJIT_CFLAGS = @MJIT_CFLAGS@
-MJIT_OPTFLAGS = @MJIT_OPTFLAGS@
-MJIT_DEBUGFLAGS = @MJIT_DEBUGFLAGS@
-MJIT_LDSHARED = @MJIT_LDSHARED@
-MJIT_DLDFLAGS = $(XDLDFLAGS)
-MJIT_HEADER   = rb_mjit_header.h
-MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
-MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
-MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
-MJIT_TABS=@MJIT_TABS@
+RJIT_SUPPORT = @RJIT_SUPPORT@
+RJIT_CC = @RJIT_CC@
+RJIT_CFLAGS = @RJIT_CFLAGS@
+RJIT_OPTFLAGS = @RJIT_OPTFLAGS@
+RJIT_DEBUGFLAGS = @RJIT_DEBUGFLAGS@
+RJIT_LDSHARED = @RJIT_LDSHARED@
+RJIT_DLDFLAGS = $(XDLDFLAGS)
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
@@ -183,7 +174,6 @@ MAJOR=	@MAJOR@
 MINOR=	@MINOR@
 TEENY=	@TEENY@
 
-# here for MJIT_MIN_HEADER_NAME, not in common.mk
 RUBY_PROGRAM_VERSION = $(MAJOR).$(MINOR).$(TEENY)
 
 LIBRUBY_A     = @LIBRUBY_A@
@@ -490,18 +480,6 @@ probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
 
-main: mjit-headers
-yes-mjit-headers: $(MJIT_MIN_HEADER)
-clean-local::
-	$(Q)$(RM) \
-	  $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
-	  $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h \
-	  $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h \
-	  $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h \
-	|| $(NULLCMD)
-	$(Q)$(RM) -r mjit_build_dir.*
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
-
 # DTrace static library hacks described here:
 # https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
 ruby-glommed.$(OBJEXT):
@@ -602,7 +580,7 @@ update-known-errors:
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_sp_inc.inc
+	  vmtc.inc vm.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
@@ -641,7 +619,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
-	  $(tooldir)/ruby_vm/views/mjit_sp_inc.inc.erb \
 	  $(tooldir)/ruby_vm/views/opt_sc.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
@@ -658,44 +635,6 @@ loadpath: verconf.h
 un-runnable:
 	$(ECHO) cannot make runnable, configure with --enable-load-relative.
 	$(Q) exit 1
-
-mjit_config.h:
-	$(ECHO) making $@
-	@{ \
-	. $(tooldir)/mjit_archflag.sh; \
-	parse_arch_flags "$(UNIVERSAL_ARCHNAMES)" $(ARCH_FLAG); \
-	test "$(Q)" = @ || set -x; \
-	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
-	echo '#define RUBY_MJIT_CONFIG_H 1'; \
-	echo; \
-	sep=; \
-	echo '#ifdef LOAD_RELATIVE'; \
-	quote MJIT_HEADER_INSTALL_DIR "/$(MJIT_HEADER_INSTALL_DIR)"; \
-	echo '#else'; \
-	quote MJIT_HEADER_INSTALL_DIR "$(rubyarchhdrdir)"; \
-	echo '#endif'; \
-	quote MJIT_MIN_HEADER_NAME "$(MJIT_MIN_HEADER_NAME)"; \
-	sep=,; \
-	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
-	quote "MJIT_CFLAGS      MJIT_ARCHFLAG" $(MJIT_CFLAGS); \
-	quote "MJIT_OPTFLAGS   " $(MJIT_OPTFLAGS); \
-	quote "MJIT_DEBUGFLAGS " $(MJIT_DEBUGFLAGS); \
-	quote "MJIT_LDSHARED   " $(MJIT_LDSHARED); \
-	quote "MJIT_DLDFLAGS    MJIT_ARCHFLAG" $(MJIT_DLDFLAGS); \
-	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
-	quote 'PRELOADENV       "@PRELOADENV@"'; \
-	indent=$${archs:+'  '}; \
-	define_arch_flags; \
-	echo; \
-	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
-	} > $@
-
-yes-test-almost yes-test-all programs: mjit_build_dir.$(SOEXT)
-mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h
-	$(ECHO) making $@
-	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) \
-		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
-		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c
 
 # yes-test-basic: leaked-globals
 leaked-globals: $(COMMONOBJS) prog $(tooldir)/leaked-globals PHONY

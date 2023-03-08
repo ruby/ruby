@@ -346,7 +346,7 @@ pathobj_realpath(VALUE pathobj)
 }
 
 /* Forward declarations */
-struct rb_mjit_unit;
+struct rb_rjit_unit;
 
 typedef uintptr_t iseq_bits_t;
 
@@ -503,16 +503,16 @@ struct rb_iseq_constant_body {
 
     const rb_iseq_t *mandatory_only_iseq;
 
-#if USE_MJIT || USE_YJIT
+#if USE_RJIT || USE_YJIT
     // Function pointer for JIT code
     VALUE (*jit_func)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
     // Number of total calls with jit_exec()
     long unsigned total_calls;
 #endif
 
-#if USE_MJIT
-    // MJIT stores some data on each iseq.
-    VALUE mjit_blocks;
+#if USE_RJIT
+    // RJIT stores some data on each iseq.
+    VALUE rjit_blocks;
 #endif
 
 #if USE_YJIT
@@ -1748,7 +1748,7 @@ void rb_vm_inc_const_missing_count(void);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 void rb_vm_pop_frame_no_int(rb_execution_context_t *ec);
-MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
+void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
@@ -1776,7 +1776,7 @@ rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
-MJIT_STATIC VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
+VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
@@ -1787,7 +1787,7 @@ void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
-MJIT_STATIC const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
+const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
@@ -1810,15 +1810,12 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
-
-MJIT_SYMBOL_EXPORT_END
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()

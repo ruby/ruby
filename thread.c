@@ -89,7 +89,7 @@
 #include "internal/time.h"
 #include "internal/warnings.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/debug.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -100,7 +100,7 @@
 #include "vm_debug.h"
 #include "vm_sync.h"
 
-#if USE_MJIT && defined(HAVE_SYS_WAIT_H)
+#if USE_RJIT && defined(HAVE_SYS_WAIT_H)
 #include <sys/wait.h>
 #endif
 
@@ -428,7 +428,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         rb_mutex_t *mutex = th->keeping_mutexes;
         th->keeping_mutexes = mutex->next_mutex;
 
-        /* rb_warn("mutex #<%p> remains to be locked by terminated thread", (void *)mutexes); */
+        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
 
         const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
@@ -2280,13 +2280,13 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-#if USE_MJIT
+#if USE_RJIT
 // process.c
-extern bool mjit_waitpid_finished;
-extern int mjit_waitpid_status;
+extern bool rjit_waitpid_finished;
+extern int rjit_waitpid_status;
 #endif
 
-MJIT_FUNC_EXPORTED int
+int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
@@ -2335,12 +2335,12 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             th->status = prev_status;
         }
 
-#if USE_MJIT
-        // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
+#if USE_RJIT
+        // Handle waitpid_signal for RJIT issued by ruby_sigchld_handler. This needs to be done
         // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
-        if (mjit_waitpid_finished && th == th->vm->ractor.main_thread) {
-            mjit_waitpid_finished = false;
-            mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
+        if (rjit_waitpid_finished && th == th->vm->ractor.main_thread) {
+            rjit_waitpid_finished = false;
+            rjit_notify_waitpid(WIFEXITED(rjit_waitpid_status) ? WEXITSTATUS(rjit_waitpid_status) : -1);
         }
 #endif
 
@@ -4621,7 +4621,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     rb_ractor_atfork(vm, th);
 
-    /* may be held by MJIT threads in parent */
+    /* may be held by RJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
     rb_native_mutex_initialize(&vm->workqueue_lock);
 
@@ -4658,8 +4658,8 @@ rb_thread_atfork(void)
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
 
-    /* For child, starting MJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
-    mjit_child_after_fork();
+    /* For child, starting RJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
+    rjit_child_after_fork();
 }
 
 static void

@@ -238,11 +238,12 @@ lcov*.info
 # /win32/
 /win32/*.ico
 
-# MJIT
-/include/ruby-*/*/rb_mjit_min_header-*.h
-/lib/ruby_vm/mjit/instruction.rb
-/mjit_config.h
-/rb_mjit_header.h*
+# RJIT
+/include/ruby-*/*/rb_rjit_min_header-*.h
+/lib/ruby_vm/rjit/instruction.rb
+/lib/ruby_vm/rjit/instruction.rb
+/rjit_config.h
+/rb_rjit_header.h*
 
 # YJIT
 /yjit-bench

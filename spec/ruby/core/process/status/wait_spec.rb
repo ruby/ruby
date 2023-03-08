@@ -8,7 +8,7 @@ ruby_version_is "3.0" do
     before :all do
       begin
         leaked = Process.waitall
-        # Ruby-space should not see PIDs used by mjit
+        # Ruby-space should not see PIDs used by rjit
         raise "subprocesses leaked before wait specs: #{leaked}" unless leaked.empty?
       rescue NotImplementedError
       end

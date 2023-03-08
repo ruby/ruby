@@ -13,7 +13,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_add_git_gem
     name, version, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep "a"
 
@@ -27,7 +27,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_add_git_gem_submodules
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", true
+    @set.add_git_gem name, repository, nil, true
 
     dependency = dep "a"
 
@@ -57,7 +57,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_find_all
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep "a", "~> 1.0"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -73,7 +73,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_find_all_local
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
     @set.remote = false
 
     dependency = dep "a", "~> 1.0"
@@ -88,7 +88,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_find_all_prerelease
     name, _, repository, = git_gem "a", "1.a"
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep "a", ">= 0"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -122,7 +122,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -136,7 +136,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch_cache
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -154,7 +154,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch_filter
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep "b"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -168,7 +168,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch_root_dir
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, "master", false
+    @set.add_git_gem name, repository, nil, false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil

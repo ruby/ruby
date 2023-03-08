@@ -135,6 +135,8 @@ fn main() {
         .allowlist_function("rb_ary_store")
         .allowlist_function("rb_ary_resurrect")
         .allowlist_function("rb_ary_clear")
+        .allowlist_function("rb_ary_dup")
+        .allowlist_function("rb_yjit_rb_ary_unshift_m")
 
         // From internal/array.h
         .allowlist_function("rb_ec_ary_new_from_values")
