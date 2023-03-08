@@ -13593,7 +13593,8 @@ wkmap_has_key(VALUE self, VALUE key)
  *  Removes all map entries; returns +self+.
  */
 static VALUE
-wkmap_clear(VALUE self) {
+wkmap_clear(VALUE self)
+{
     struct weakkeymap *w;
     TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
     if (w->map) {
