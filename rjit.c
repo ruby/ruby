@@ -240,14 +240,11 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rjit_option_messages[] = {
-    M("--rjit-warnings",           "", "Enable printing JIT warnings"),
-    M("--rjit-debug",              "", "Enable JIT debugging (very slow), or add cflags if specified"),
-    M("--rjit-wait",               "", "Wait until JIT compilation finishes every time (for testing)"),
-    M("--rjit-save-temps",         "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
-    M("--rjit-verbose=num",        "", "Print JIT logs of level num or less to stderr (default: 0)"),
-    M("--rjit-max-cache=num",      "", "Max number of methods to be JIT-ed in a cache (default: " STRINGIZE(DEFAULT_MAX_CACHE_SIZE) ")"),
-    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (for testing, default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+#if RUBY_DEBUG
+    M("--rjit-dump-disasm",        "", "Dump all JIT code"),
+#endif
     {0}
 };
 #undef M
