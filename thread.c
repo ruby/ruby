@@ -2280,12 +2280,6 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-#if USE_RJIT
-// process.c
-extern bool rjit_waitpid_finished;
-extern int rjit_waitpid_status;
-#endif
-
 int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
@@ -2334,15 +2328,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             }
             th->status = prev_status;
         }
-
-#if USE_RJIT
-        // Handle waitpid_signal for RJIT issued by ruby_sigchld_handler. This needs to be done
-        // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
-        if (rjit_waitpid_finished && th == th->vm->ractor.main_thread) {
-            rjit_waitpid_finished = false;
-            rjit_notify_waitpid(WIFEXITED(rjit_waitpid_status) ? WEXITSTATUS(rjit_waitpid_status) : -1);
-        }
-#endif
 
         /* exception from another thread */
         if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
