@@ -3661,7 +3661,11 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
     if (!rb_mmtk_enabled_p()) {
     // ccs->cme can point to heap object, too.
     // Evacuating GC (such as Immix) may have moved it.
+#endif
     VM_ASSERT(id == ccs->cme->called_id);
+#if USE_MMTK
+    } else {
+        VM_ASSERT(id == 0);
     }
 #endif
 
@@ -3700,6 +3704,8 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
 #if USE_MMTK
             }
 #endif
+#if USE_MMTK
+#endif
 
             gc_mark(data->objspace, (VALUE)ccs->entries[i].ci);
             gc_mark(data->objspace, (VALUE)ccs->entries[i].cc);
@@ -3707,6 +3713,14 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
         return ID_TABLE_CONTINUE;
     }
 }
+
+#if USE_MMTK
+static enum rb_id_table_iterator_result
+cc_table_mark_i_no_id(VALUE ccs_ptr, void *data_ptr)
+{
+    return cc_table_mark_i(0, ccs_ptr, data_ptr);
+}
+#endif
 
 static void
 cc_table_mark(rb_objspace_t *objspace, VALUE klass)
@@ -3717,7 +3731,18 @@ cc_table_mark(rb_objspace_t *objspace, VALUE klass)
             .objspace = objspace,
             .klass = klass,
         };
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            // Note: rb_id_table_foreach will look up the ID from keys by accessing
+            // arrays in the heap during key2id, but the id is only used for
+            // assertion which fails with an evacuating GC (such as Immix) anyway.
+            rb_id_table_foreach_values(cc_tbl, cc_table_mark_i_no_id, &data);
+        } else {
+#endif
         rb_id_table_foreach(cc_tbl, cc_table_mark_i, &data);
+#if USE_MMTK
+        }
+#endif
     }
 }
 
