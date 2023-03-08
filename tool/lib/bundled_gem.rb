@@ -20,7 +20,7 @@ module BundledGem
     Dir.chdir(gemdir) do
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
-      abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(version)
+      abort "Unexpected versions between bundled_gems:#{version} and gemspec:#{spec.version}" unless spec.version == Gem::Version.new(version)
       output = File.join(outdir, spec.file_name)
       FileUtils.rm_rf(output)
       package = Gem::Package.new(output)
