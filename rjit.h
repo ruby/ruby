@@ -93,18 +93,11 @@ RUBY_EXTERN bool rjit_call_p;
 #define rb_rjit_call_threshold() rjit_opts.call_threshold
 
 extern void rb_rjit_compile(const rb_iseq_t *iseq);
-extern struct rb_rjit_compile_info* rb_rjit_iseq_compile_info(const struct rb_iseq_constant_body *body);
-extern void rb_rjit_recompile_send(const rb_iseq_t *iseq);
-extern void rb_rjit_recompile_ivar(const rb_iseq_t *iseq);
-extern void rb_rjit_recompile_exivar(const rb_iseq_t *iseq);
-extern void rb_rjit_recompile_inlining(const rb_iseq_t *iseq);
-extern void rb_rjit_recompile_const(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-extern void rjit_cancel_all(const char *reason);
-extern bool rjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
+extern void rb_rjit_cancel_all(const char *reason);
 extern void rjit_init(const struct rjit_options *opts);
-extern void rjit_free_iseq(const rb_iseq_t *iseq);
+extern void rb_rjit_free_iseq(const rb_iseq_t *iseq);
 extern void rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body);
 extern void rjit_mark(void);
 extern void rb_rjit_iseq_mark(VALUE rjit_blocks);
@@ -117,8 +110,6 @@ extern void rb_rjit_constant_state_changed(ID id);
 extern void rb_rjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 extern void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
 
-void rjit_child_after_fork(void);
-
 extern void rb_rjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 extern void rb_rjit_before_ractor_spawn(void);
 extern void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
@@ -126,18 +117,14 @@ extern void rb_rjit_collect_vm_usage_insn(int insn);
 
 extern bool rjit_enabled;
 extern bool rjit_stats_enabled;
-VALUE rjit_pause(bool wait_p);
-VALUE rjit_resume(void);
-void rjit_finish(bool close_handle_p);
 
 # else // USE_RJIT
 
 static inline void rb_rjit_compile(const rb_iseq_t *iseq){}
 
-static inline void rjit_cancel_all(const char *reason){}
-static inline void rjit_free_iseq(const rb_iseq_t *iseq){}
+static inline void rb_rjit_cancel_all(const char *reason){}
+static inline void rb_rjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void rjit_mark(void){}
-static inline void rjit_child_after_fork(void){}
 
 static inline void rb_rjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_rjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
@@ -151,10 +138,6 @@ static inline void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_event
 #define rjit_stats_enabled false
 
 #define rb_rjit_call_threshold() UINT_MAX
-
-static inline VALUE rjit_pause(bool wait_p){ return Qnil; } // unreachable
-static inline VALUE rjit_resume(void){ return Qnil; } // unreachable
-static inline void rjit_finish(bool close_handle_p){}
 
 static inline void rb_rjit_collect_vm_usage_insn(int insn) {}
 

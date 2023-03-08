@@ -99,15 +99,8 @@ verbose(int level, const char *format, ...)
     }
 }
 
-int
-rjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
-{
-    // TODO: remove this
-    return 0;
-}
-
 void
-rjit_cancel_all(const char *reason)
+rb_rjit_cancel_all(const char *reason)
 {
     if (!rjit_enabled)
         return;
@@ -120,15 +113,9 @@ rjit_cancel_all(const char *reason)
 }
 
 void
-rjit_free_iseq(const rb_iseq_t *iseq)
+rb_rjit_free_iseq(const rb_iseq_t *iseq)
 {
-    // TODO: remove this
-}
-
-void
-rjit_notify_waitpid(int exit_code)
-{
-    // TODO: remove this function
+    // TODO: implement this. GC_REFS should remove this iseq's mjit_blocks
 }
 
 // RubyVM::RJIT
@@ -143,49 +130,6 @@ static VALUE rb_cRJITIseqPtr = 0;
 static VALUE rb_cRJITCfpPtr = 0;
 // RubyVM::RJIT::Hooks
 static VALUE rb_mRJITHooks = 0;
-
-void
-rb_rjit_add_iseq_to_process(const rb_iseq_t *iseq)
-{
-    // TODO: implement
-}
-
-struct rb_rjit_compile_info*
-rb_rjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
-{
-    // TODO: remove this
-    return NULL;
-}
-
-void
-rb_rjit_recompile_send(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_ivar(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_exivar(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_inlining(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
-
-void
-rb_rjit_recompile_const(const rb_iseq_t *iseq)
-{
-    // TODO: remove this
-}
 
 // Default permitted number of units with a JIT code kept in memory.
 #define DEFAULT_MAX_CACHE_SIZE 100
@@ -235,34 +179,6 @@ const struct ruby_opt_message rjit_option_messages[] = {
     {0}
 };
 #undef M
-
-VALUE
-rjit_pause(bool wait_p)
-{
-    // TODO: remove this
-    return Qtrue;
-}
-
-VALUE
-rjit_resume(void)
-{
-    // TODO: remove this
-    return Qnil;
-}
-
-void
-rjit_child_after_fork(void)
-{
-    // TODO: remove this
-}
-
-// Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
-bool
-rjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
-{
-    // TODO: implement
-    return false;
-}
 
 //================================================================================
 //
@@ -619,12 +535,6 @@ rjit_init(const struct rjit_options *opts)
     if (rjit_opts.dump_disasm)
         verbose(1, "libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
 #endif
-}
-
-void
-rjit_finish(bool close_handle_p)
-{
-    // TODO: implement
 }
 
 // Same as `RubyVM::RJIT::C.enabled?`, but this is used before rjit_init.

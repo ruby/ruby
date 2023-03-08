@@ -3049,7 +3049,6 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
-    if (rjit_enabled) rjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
     before_exec(); /* stop timer thread before redirects */
 
     rb_protect(rb_execarg_parent_start1, execarg_obj, &state);
@@ -4244,7 +4243,6 @@ rb_fork_ruby2(struct rb_process_status *status)
 
     while (1) {
         prefork();
-        if (rjit_enabled) rjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause RJIT.
         disable_child_handler_before_fork(&old);
         before_fork_ruby();
         pid = rb_fork();
@@ -4255,8 +4253,6 @@ rb_fork_ruby2(struct rb_process_status *status)
         }
         after_fork_ruby();
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-
-        if (rjit_enabled && pid > 0) rjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
 
         if (pid >= 0) { /* fork succeed */
             if (pid == 0) rb_thread_atfork();
@@ -7035,11 +7031,10 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
-    if (rjit_enabled) rjit_pause(false); // Don't leave locked mutex to child.
     before_fork_ruby();
     err = daemon(nochdir, noclose);
     after_fork_ruby();
-    rb_thread_atfork(); /* calls rjit_resume() */
+    rb_thread_atfork();
 #else
     int n;
 

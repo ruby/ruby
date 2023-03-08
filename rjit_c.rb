@@ -515,18 +515,9 @@ module RubyVM::RJIT # :nodoc: all
       rjit_options.new(addr)
     end
 
-    def rjit_capture_cc_entries(compiled_body, captured_body)
-      _compiled_body_addr = compiled_body.to_i
-      _captured_body_addr = captured_body.to_i
-      Primitive.cstmt! %{
-        extern int rjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq);
-        return INT2NUM(rjit_capture_cc_entries((struct rb_iseq_constant_body *)NUM2PTR(_compiled_body_addr), (struct rb_iseq_constant_body *)NUM2PTR(_captured_body_addr)));
-      }
-    end
-
     def rjit_cancel_all(reason)
       Primitive.cstmt! %{
-        rjit_cancel_all(RSTRING_PTR(reason));
+        rb_rjit_cancel_all(RSTRING_PTR(reason));
         return Qnil;
       }
     end
