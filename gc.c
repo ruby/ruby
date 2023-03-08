@@ -3657,7 +3657,13 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
     struct cc_tbl_i_data *data = data_ptr;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+    // ccs->cme can point to heap object, too.
+    // Evacuating GC (such as Immix) may have moved it.
     VM_ASSERT(id == ccs->cme->called_id);
+    }
+#endif
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
 #if USE_MMTK
