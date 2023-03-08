@@ -289,7 +289,7 @@ align_ptr(uint8_t *ptr, uint32_t multiple)
 // Address space reservation. Memory pages are mapped on an as needed basis.
 // See the Rust mm module for details.
 static uint8_t *
-rb_mjit_reserve_addr_space(uint32_t mem_size)
+rb_rjit_reserve_addr_space(uint32_t mem_size)
 {
 #ifndef _WIN32
     uint8_t *mem_block;
@@ -297,7 +297,7 @@ rb_mjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rb_mjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)&rb_rjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
@@ -327,7 +327,7 @@ rb_mjit_reserve_addr_space(uint32_t mem_size)
     #else
         // Try to map a chunk of memory as executable
         mem_block = mmap(
-            (void *)rb_mjit_reserve_addr_space,
+            (void *)rb_rjit_reserve_addr_space,
             mem_size,
             PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS,
@@ -590,7 +590,7 @@ rjit_init(const struct rjit_options *opts)
     VM_ASSERT(rjit_enabled);
     rjit_opts = *opts;
 
-    rb_rjit_mem_block = rb_mjit_reserve_addr_space(RJIT_CODE_SIZE);
+    rb_rjit_mem_block = rb_rjit_reserve_addr_space(RJIT_CODE_SIZE);
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
