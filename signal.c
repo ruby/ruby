@@ -1085,16 +1085,6 @@ rb_vm_trap_exit(rb_vm_t *vm)
     }
 }
 
-void ruby_waitpid_all(rb_vm_t *); /* process.c */
-
-void
-ruby_sigchld_handler(rb_vm_t *vm)
-{
-    if (SIGCHLD_LOSSY || GET_SIGCHLD_HIT()) {
-        ruby_waitpid_all(vm);
-    }
-}
-
 /* returns true if a trap handler was run, false otherwise */
 int
 rb_signal_exec(rb_thread_t *th, int sig)
