@@ -955,11 +955,12 @@ impl Assembler
                     }
 
                     // Using u8::max to spill only registers that have not been spilled
-                    for stack_idx in 0..stack_size as usize {
+                    for stack_idx in 0..usize::min(stack_size as usize, asm.spilled_temps.len()) {
                         // Spill if a register is allocated to the index
-                        if stack_idx < regs.len() && !asm.spilled_temps[stack_idx] {
+                        if !asm.spilled_temps[stack_idx] && regs.len() > 0 {
                             let offset = sp_offset - (stack_size as i8) + (stack_idx as i8);
-                            asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[stack_idx]));
+                            let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                            asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
                             incr_counter!(temp_spills);
                             asm.spilled_temps[stack_idx] = true;
                         }
@@ -971,16 +972,25 @@ impl Assembler
                         *opnd = iterator.map_opnd(*opnd);
                         if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
                             let stack_idx = (stack_size as i32 - idx - 1) as usize;
-                            *opnd = match regs.get(stack_idx) {
-                                // Use a register if it's allocated to the index and not spilled yet
-                                Some(&reg) if !asm.spilled_temps[stack_idx] => {
-                                    incr_counter!(temp_reg_opnds);
-                                    Opnd::Reg(reg).with_num_bits(num_bits).unwrap()
-                                },
-                                _ => {
-                                    incr_counter!(temp_mem_opnds);
-                                    Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32)
+                            *opnd = if stack_idx < asm.spilled_temps.len() && !asm.spilled_temps[stack_idx] && regs.len() > 0 {
+                                let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                                // Spill if other registers share the same reg_idx
+                                let mut other_idx = stack_idx as isize - regs.len() as isize;
+                                while other_idx >= 0 {
+                                    if !asm.spilled_temps[other_idx as usize] {
+                                        let offset = sp_offset - (stack_size as i8) + (other_idx as i8);
+                                        asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
+                                        incr_counter!(temp_spills);
+                                        asm.spilled_temps[other_idx as usize] = true;
+                                    }
+                                    other_idx -= regs.len() as isize;
                                 }
+
+                                incr_counter!(temp_reg_opnds);
+                                Opnd::Reg(regs[reg_idx]).with_num_bits(num_bits).unwrap()
+                            } else {
+                                incr_counter!(temp_mem_opnds);
+                                Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32)
                             };
                         }
                     }
