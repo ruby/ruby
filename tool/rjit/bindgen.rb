@@ -146,7 +146,14 @@ class BindingGenerator
     end
 
     # TODO: Support nested declarations
-    nodes_index = nodes.group_by(&:spelling).transform_values(&:last)
+    nodes_index = nodes.group_by(&:spelling).transform_values do |values|
+      # Try to search a declaration with definitions
+      node_with_children = values.find { |v| !v.children.empty? }
+      next node_with_children if node_with_children
+
+      # Otherwise, assume the last one is the main declaration
+      values.last
+    end
 
     # Define types
     @types.each do |type|
