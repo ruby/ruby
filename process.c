@@ -1061,8 +1061,6 @@ do_waitpid(rb_pid_t pid, int *st, int flags)
 #endif
 }
 
-#define WAITPID_LOCK_ONLY ((struct waitpid_state *)-1)
-
 struct waitpid_state {
     struct ccan_list_node wnode;
     rb_execution_context_t *ec;
@@ -4004,13 +4002,12 @@ fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, si
             int state = 0;
             status->error = err;
 
-            VM_ASSERT((w == 0 || w == WAITPID_LOCK_ONLY) &&
-                      "only used by extensions");
+            VM_ASSERT((w == 0) && "only used by extensions");
             rb_protect(proc_syswait, (VALUE)pid, &state);
 
             status->status = state;
         }
-        else if (!w || w == WAITPID_LOCK_ONLY) {
+        else if (!w) {
             rb_syswait(pid);
         }
 
@@ -4440,7 +4437,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     rb_last_status_set((status & 0xff) << 8, pid);
 # endif
 
-    if (eargp->waitpid_state && eargp->waitpid_state != WAITPID_LOCK_ONLY) {
+    if (eargp->waitpid_state) {
         eargp->waitpid_state->pid = pid;
     }
 
@@ -4471,15 +4468,6 @@ static rb_pid_t
 rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
 {
     struct spawn_args args;
-    struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-
-    /*
-     * Prevent a race with RJIT where the compiler process where
-     * can hold an FD of ours in between vfork + execve
-     */
-    if (!eargp->waitpid_state && rjit_enabled) {
-        eargp->waitpid_state = WAITPID_LOCK_ONLY;
-    }
 
     args.execarg = execarg_obj;
     args.errmsg.ptr = errmsg;

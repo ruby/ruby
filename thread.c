@@ -4600,7 +4600,6 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_ractor_atfork(vm, th);
 
     /* may be held by RJIT threads in parent */
-    rb_native_mutex_initialize(&vm->waitpid_lock);
     rb_native_mutex_initialize(&vm->workqueue_lock);
 
     /* may be held by any thread in parent */
@@ -5267,7 +5266,6 @@ Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_native_mutex_initialize(&th->vm->waitpid_lock);
     rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->interrupt_lock);
 }

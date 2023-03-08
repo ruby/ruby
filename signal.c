@@ -1613,33 +1613,5 @@ fake_grantfd(int masterfd)
 int
 rb_grantpt(int masterfd)
 {
-    if (RUBY_SIGCHLD) {
-        rb_vm_t *vm = GET_VM();
-        int ret, e;
-
-        /*
-         * Prevent waitpid calls from Ruby by taking waitpid_lock.
-         * Pedantically, grantpt(3) is undefined if a non-default
-         * SIGCHLD handler is defined, but preventing conflicting
-         * waitpid calls ought to be sufficient.
-         *
-         * We could install the default sighandler temporarily, but that
-         * could cause SIGCHLD to be missed by other threads.  Blocking
-         * SIGCHLD won't work here, either, unless we stop and restart
-         * timer-thread (as only timer-thread sees SIGCHLD), but that
-         * seems like overkill.
-         */
-        rb_nativethread_lock_lock(&vm->waitpid_lock);
-        {
-            ret = grantpt(masterfd); /* may spawn `pt_chown' and wait on it */
-            if (ret < 0) e = errno;
-        }
-        rb_nativethread_lock_unlock(&vm->waitpid_lock);
-
-        if (ret < 0) errno = e;
-        return ret;
-    }
-    else {
-        return grantpt(masterfd);
-    }
+    return grantpt(masterfd);
 }
