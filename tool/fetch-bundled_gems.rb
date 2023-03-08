@@ -31,7 +31,7 @@ if r
 
   # Check bundled_gems version and gemspec version same as BundledGem.build
   spec = Gem::Specification.load("#{n}/#{n}.gemspec")
-  abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(v)
+  abort "Unexpected versions between bundled_gems:#{v} and gemspec:#{spec.version}" unless spec.version == Gem::Version.new(v)
 end
 c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
