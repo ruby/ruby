@@ -225,9 +225,11 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rjit_option_messages[] = {
+#if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+#endif
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
-#if RUBY_DEBUG
+#ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
 #endif
     {0}

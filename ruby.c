@@ -286,11 +286,11 @@ usage(const char *name, int help, int highlight, int columns)
         M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
-#if USE_RJIT
-        M("--rjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
-#endif
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler"),
+#endif
+#if USE_RJIT
+        M("--rjit",        "",                     "enable pure-Ruby JIT compiler (experimental)"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
