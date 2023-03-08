@@ -521,6 +521,8 @@ struct rb_iseq_constant_body {
 #endif
 };
 
+typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {

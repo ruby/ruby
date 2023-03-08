@@ -56,6 +56,12 @@ void rb_rjit(void) {}
 #endif
 #include "dln.h"
 
+// For mmapp(), sysconf()
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 #include "ruby/util.h"
 
 // A copy of RJIT portion of MRI options since RJIT initialization.  We
@@ -260,6 +266,105 @@ rjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 //
 // New stuff from here
 //
+
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+// Align the current write position to a multiple of bytes
+static uint8_t *
+align_ptr(uint8_t *ptr, uint32_t multiple)
+{
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+#endif
+
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
+static uint8_t *
+rb_mjit_reserve_addr_space(uint32_t mem_size)
+{
+#ifndef _WIN32
+    uint8_t *mem_block;
+
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)&rb_mjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
+        // Align the requested address to page size
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
+        do {
+            mem_block = mmap(
+                req_addr,
+                mem_size,
+                PROT_NONE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                break;
+            }
+
+            // +4MB
+            req_addr += 4 * 1024 * 1024;
+        } while (req_addr < probe_region_end);
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
+        mem_block = mmap(
+            (void *)rb_mjit_reserve_addr_space,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = mmap(
+            NULL,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    }
+
+    // Check that the memory mapping was successful
+    if (mem_block == MAP_FAILED) {
+        perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
+        rb_bug("mmap failed");
+    }
+
+    return mem_block;
+#else
+    // Windows not supported for now
+    return NULL;
+#endif
+}
 
 // JIT buffer
 uint8_t *rb_rjit_mem_block = NULL;
@@ -485,8 +590,7 @@ rjit_init(const struct rjit_options *opts)
     VM_ASSERT(rjit_enabled);
     rjit_opts = *opts;
 
-    extern uint8_t* rb_yjit_reserve_addr_space(uint32_t mem_size);
-    rb_rjit_mem_block = rb_yjit_reserve_addr_space(RJIT_CODE_SIZE);
+    rb_rjit_mem_block = rb_mjit_reserve_addr_space(RJIT_CODE_SIZE);
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
