@@ -1,4 +1,5 @@
 #include "internal/gc.h"
+#include "internal/thread.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ractor_core.h"

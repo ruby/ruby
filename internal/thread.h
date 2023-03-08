@@ -13,6 +13,13 @@
 
 struct rb_thread_struct;        /* in vm_core.h */
 
+#define RB_VM_SAVE_MACHINE_CONTEXT(th)				\
+    do {							\
+        FLUSH_REGISTER_WINDOWS;					\
+        setjmp((th)->ec->machine.regs);				\
+        SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
+    } while (0)
+
 /* thread.c */
 #define COVERAGE_INDEX_LINES    0
 #define COVERAGE_INDEX_BRANCHES 1
