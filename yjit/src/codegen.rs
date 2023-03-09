@@ -739,6 +739,9 @@ pub fn gen_single_block(
     jit.iseq = blockid.iseq;
     jit.ec = Some(ec);
 
+    // At each block boundary, it's safe to decrease spilled_size to stack_size
+    ctx.spilled_size = u8::min(ctx.spilled_size, ctx.get_stack_size());
+
     // Create a backend assembler instance
     let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
 
