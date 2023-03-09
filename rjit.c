@@ -500,6 +500,10 @@ rb_rjit_init(const struct rjit_options *opts)
 #endif
 }
 
+//
+// Primitive for rjit.rb
+//
+
 // Same as `RubyVM::RJIT::C.enabled?`, but this is used before rjit_init.
 static VALUE
 rjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)

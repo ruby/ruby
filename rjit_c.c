@@ -33,14 +33,14 @@
 
 #include <errno.h>
 
-bool
-rb_rjit_mark_writable(void *mem_block, uint32_t mem_size)
+static bool
+rjit_mark_writable(void *mem_block, uint32_t mem_size)
 {
     return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
 }
 
-void
-rb_rjit_mark_executable(void *mem_block, uint32_t mem_size)
+static void
+rjit_mark_executable(void *mem_block, uint32_t mem_size)
 {
     // Do not call mprotect when mem_size is zero. Some platforms may return
     // an error for it. https://github.com/Shopify/ruby/issues/450
@@ -53,16 +53,16 @@ rb_rjit_mark_executable(void *mem_block, uint32_t mem_size)
     }
 }
 
-VALUE
-rb_rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
+static VALUE
+rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 
-VALUE
-rb_rjit_str_neq_internal(VALUE str1, VALUE str2)
+static VALUE
+rjit_str_neq_internal(VALUE str1, VALUE str2)
 {
     return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
 }
@@ -70,8 +70,8 @@ rb_rjit_str_neq_internal(VALUE str1, VALUE str2)
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
 // like the interpreter. When tracing for c_return is enabled, we patch the code after
 // the C method return to call into this to fire the event.
-void
-rb_rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
+static void
+rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
 {
     rb_control_frame_t *cfp = ec->cfp;
     RUBY_ASSERT_ALWAYS(cfp == GET_EC()->cfp);
@@ -97,8 +97,8 @@ rb_rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-rb_proc_t *
-rb_rjit_get_proc_ptr(VALUE procv)
+static rb_proc_t *
+rjit_get_proc_ptr(VALUE procv)
 {
     rb_proc_t *proc;
     GetProcPtr(procv, proc);
