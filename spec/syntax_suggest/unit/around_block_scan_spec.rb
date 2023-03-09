@@ -149,8 +149,8 @@ module SyntaxSuggest
 
       block = CodeBlock.new(lines: code_lines[3])
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
-      expand.skip(:empty?)
-      expand.skip(:hidden?)
+      expand.force_add_empty
+      expand.force_add_hidden
       expand.scan_neighbors_not_empty
 
       expect(expand.code_block.to_s).to eq(<<~EOM.indent(4))

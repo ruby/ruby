@@ -62,7 +62,7 @@ module SyntaxSuggest
     # as there's no undo (currently).
     def expand_indent(block)
       AroundBlockScan.new(code_lines: @code_lines, block: block)
-        .skip(:hidden?)
+        .force_add_hidden
         .stop_after_kw
         .scan_adjacent_indent
         .code_block
@@ -126,7 +126,7 @@ module SyntaxSuggest
     # We try to resolve this edge case with `lookahead_balance_one_line` below.
     def expand_neighbors(block)
       neighbors = AroundBlockScan.new(code_lines: @code_lines, block: block)
-        .skip(:hidden?)
+        .force_add_hidden
         .stop_after_kw
         .scan_neighbors_not_empty
 
