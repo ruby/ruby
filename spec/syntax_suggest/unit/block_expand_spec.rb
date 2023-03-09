@@ -28,9 +28,9 @@ module SyntaxSuggest
       block = expansion.expand_neighbors(block)
 
       expect(block.to_s).to eq(<<~EOM.indent(2))
-          def bark       # index 1
+        def bark       # index 1
 
-          end            # index 3
+        end            # index 3
       EOM
     end
 

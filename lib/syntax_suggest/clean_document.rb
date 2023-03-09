@@ -155,10 +155,11 @@ module SyntaxSuggest
     #    ).to eq(2)
     #
     def clean_sweep(source:)
+      # Match comments, but not HEREDOC strings with #{variable} interpolation
+      # https://rubular.com/r/HPwtW9OYxKUHXQ
       source.lines.map do |line|
-        if line.match?(/^\s*#([^{].*)?$/) # https://rubular.com/r/LLE10D8HKMkJvs
-          whitespace = /^(?<whitespace>\s*)#([^{].*)?$/.match(line).named_captures["whitespace"] || ""
-          whitespace + $/
+        if line.match?(/^\s*#([^{].*|)$/)
+          $/
         else
           line
         end

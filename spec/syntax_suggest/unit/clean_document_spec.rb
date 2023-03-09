@@ -72,7 +72,6 @@ module SyntaxSuggest
       EOM
     end
 
-
     it "joins multi-line chained methods when separated by comments" do
       source = <<~EOM
         User.
@@ -114,7 +113,7 @@ module SyntaxSuggest
       lines = CleanDocument.new(source: source).lines
       expect(lines[0].to_s).to eq($/)
       expect(lines[1].to_s).to eq('puts "what"' + $/)
-      expect(lines[2].to_s).to eq('  ' + $/)
+      expect(lines[2].to_s).to eq($/)
     end
 
     it "trailing slash: does not join trailing do" do
