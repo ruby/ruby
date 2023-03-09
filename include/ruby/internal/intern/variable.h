@@ -40,6 +40,15 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_mod_name(VALUE mod);
 
 /**
+ * Sets the anonymous name of a module.
+ * 
+ * @param[in]  mod        An instance of ::rb_cModule.
+ * @param[in]  name       An instance of ::rb_cString.
+ * @retval     mod
+ */
+VALUE rb_mod_name_set(VALUE, VALUE);
+
+/**
  * Identical  to  rb_mod_name(),  except   it  returns  `#<Class:  ...>`  style
  * inspection for anonymous modules.
  *

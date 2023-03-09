@@ -134,6 +134,14 @@ rb_mod_name(VALUE mod)
     return classname(mod, &permanent);
 }
 
+VALUE
+rb_mod_name_set(VALUE mod, VALUE name)
+{
+    StringValue(name);
+    RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    return mod;
+}
+
 static VALUE
 make_temporary_path(VALUE obj, VALUE klass)
 {
