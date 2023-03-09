@@ -817,6 +817,7 @@ send
     jit_func_t func;
     if (val == Qundef && (func = jit_compile(ec))) {
         val = func(ec, ec->cfp);
+        if (ec->tag->state) THROW_EXCEPTION(val);
     }
 
     if (val == Qundef) {
@@ -841,6 +842,7 @@ opt_send_without_block
     jit_func_t func;
     if (val == Qundef && (func = jit_compile(ec))) {
         val = func(ec, ec->cfp);
+        if (ec->tag->state) THROW_EXCEPTION(val);
     }
 
     if (val == Qundef) {
@@ -948,6 +950,7 @@ invokesuper
     jit_func_t func;
     if (val == Qundef && (func = jit_compile(ec))) {
         val = func(ec, ec->cfp);
+        if (ec->tag->state) THROW_EXCEPTION(val);
     }
 
     if (val == Qundef) {
@@ -972,6 +975,7 @@ invokeblock
     jit_func_t func;
     if (val == Qundef && (func = jit_compile(ec))) {
         val = func(ec, ec->cfp);
+        if (ec->tag->state) THROW_EXCEPTION(val);
     }
 
     if (val == Qundef) {

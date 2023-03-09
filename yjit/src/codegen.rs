@@ -3699,6 +3699,37 @@ fn gen_branchnil(
     EndBlock
 }
 
+fn gen_throw(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let throw_state = jit.get_arg(0).as_u64();
+    let throwobj = asm.load(ctx.stack_pop(1));
+
+    // THROW_DATA_NEW allocates. Save SP for GC and PC for allocation tracing as
+    // well as handling the catch table. However, not using jit_prepare_routine_call
+    // since we don't need a patch point for this implementation.
+    jit_save_pc(jit, asm);
+    gen_save_sp(asm, ctx);
+
+    extern "C" {
+        fn rb_vm_throw(ec: EcPtr, reg_cfp: CfpPtr, throw_state: u32, throwobj: VALUE) -> VALUE;
+    }
+    let val = asm.ccall(rb_vm_throw as *mut u8, vec![EC, CFP, throw_state.into(), throwobj]);
+
+    asm.comment("exit from throw");
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
+
+    asm.frame_teardown();
+
+    asm.cret(val);
+    EndBlock
+}
+
 fn gen_jump(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -7741,6 +7772,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchif => Some(gen_branchif),
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
+        YARVINSN_throw => Some(gen_throw),
         YARVINSN_jump => Some(gen_jump),
 
         YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
