@@ -2415,12 +2415,10 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, [length, [offset]]) -> read length or -errno
+ *  call-seq: read(io, length, [offset]) -> read length or -errno
  *
  *  Read at most +length+ bytes from +io+ into the buffer, starting at
  *  +offset+. If an error occurs, return <tt>-errno</tt>.
- *
- *  If +length+ is not given, read until the end of the buffer.
  *
  *  If +offset+ is not given, read from the beginning of the buffer.
  *
@@ -2447,14 +2445,10 @@ io_buffer_read(int argc, VALUE *argv, VALUE self)
 
     VALUE io = argv[0];
 
-    size_t length;
-    if (argc >= 2) {
-        if (rb_int_negative_p(argv[1])) {
-            rb_raise(rb_eArgError, "Length can't be negative!");
-        }
-
-        length = NUM2SIZET(argv[1]);
+    if (rb_int_negative_p(argv[1])) {
+        rb_raise(rb_eArgError, "Length can't be negative!");
     }
+    size_t length = NUM2SIZET(argv[1]);
 
     size_t offset = 0;
     if (argc >= 3) {
@@ -2660,14 +2654,10 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
 
     VALUE io = argv[0];
 
-    size_t length;
-    if (argc >= 2) {
-        if (rb_int_negative_p(argv[1])) {
-            rb_raise(rb_eArgError, "Length can't be negative!");
-        }
-
-        length = NUM2SIZET(argv[1]);
+    if (rb_int_negative_p(argv[1])) {
+        rb_raise(rb_eArgError, "Length can't be negative!");
     }
+    size_t length = NUM2SIZET(argv[1]);
 
     size_t offset = 0;
     if (argc >= 3) {
