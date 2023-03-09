@@ -1367,18 +1367,6 @@ rb_thread_sleep_deadly(void)
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
-void
-rb_thread_sleep_interruptible(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    enum rb_thread_status prev_status = th->status;
-
-    th->status = THREAD_STOPPED;
-    native_sleep(th, 0);
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    th->status = prev_status;
-}
-
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
