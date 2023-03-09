@@ -1072,10 +1072,6 @@ struct waitpid_state {
     int errnum;
 };
 
-int rb_sigwait_fd_get(const rb_thread_t *);
-void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
-void rb_sigwait_fd_put(const rb_thread_t *, int fd);
-
 static void
 waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
 {
