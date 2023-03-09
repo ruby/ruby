@@ -1,4 +1,4 @@
-// We use the YARV bytecode constants which have a CRuby-style name
+﻿// We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
 use crate::asm::*;
@@ -2397,7 +2397,7 @@ fn gen_defined(
     KeepCompiling
 }
 
-fn gen_defined_ivar(
+fn gen_definedivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
@@ -7689,7 +7689,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
-        YARVINSN_defined_ivar => Some(gen_defined_ivar),
+        YARVINSN_definedivar => Some(gen_definedivar),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),

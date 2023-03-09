@@ -379,7 +379,7 @@ jit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_enabled_p();
-    if (yjit_enabled || rjit_call_p) {
+    if (yjit_enabled || rb_rjit_call_p) {
         body->total_calls++;
     }
     else {
@@ -402,7 +402,7 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else { // rjit_call_p
+    else { // rb_rjit_call_p
         if (body->total_calls == rb_rjit_call_threshold()) {
             rb_rjit_compile(iseq);
         }
@@ -2822,7 +2822,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
-        rjit_mark();
+        rb_rjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -2885,7 +2885,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (objspace) {
             rb_objspace_free(objspace);
         }
-        rb_native_mutex_destroy(&vm->waitpid_lock);
         rb_native_mutex_destroy(&vm->workqueue_lock);
         /* after freeing objspace, you *can't* use ruby_xfree() */
         ruby_mimfree(vm);
@@ -2895,7 +2894,6 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
-size_t rb_vm_memsize_waiting_list(struct ccan_list_head *waiting_list); // process.c
 size_t rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds); // thread.c
 size_t rb_vm_memsize_postponed_job_buffer(void); // vm_trace.c
 size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
@@ -2952,8 +2950,6 @@ vm_memsize(const void *ptr)
 
     return (
         sizeof(rb_vm_t) +
-        rb_vm_memsize_waiting_list(&vm->waiting_pids) +
-        rb_vm_memsize_waiting_list(&vm->waiting_grps) +
         rb_vm_memsize_waiting_fds(&vm->waiting_fds) +
         rb_st_memsize(vm->loaded_features_index) +
         rb_st_memsize(vm->loading_table) +

@@ -87,19 +87,19 @@ struct rb_rjit_compile_info {
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
-RUBY_EXTERN struct rjit_options rjit_opts;
-RUBY_EXTERN bool rjit_call_p;
+RUBY_EXTERN struct rjit_options rb_rjit_opts;
+RUBY_EXTERN bool rb_rjit_call_p;
 
-#define rb_rjit_call_threshold() rjit_opts.call_threshold
+#define rb_rjit_call_threshold() rb_rjit_opts.call_threshold
 
 extern void rb_rjit_compile(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
 extern void rb_rjit_cancel_all(const char *reason);
-extern void rjit_init(const struct rjit_options *opts);
+extern void rb_rjit_init(const struct rjit_options *opts);
 extern void rb_rjit_free_iseq(const rb_iseq_t *iseq);
 extern void rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body);
-extern void rjit_mark(void);
+extern void rb_rjit_mark(void);
 extern void rb_rjit_iseq_mark(VALUE rjit_blocks);
 extern void rjit_notify_waitpid(int exit_code);
 
@@ -115,8 +115,8 @@ extern void rb_rjit_before_ractor_spawn(void);
 extern void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events);
 extern void rb_rjit_collect_vm_usage_insn(int insn);
 
-extern bool rjit_enabled;
-extern bool rjit_stats_enabled;
+extern bool rb_rjit_enabled;
+extern bool rb_rjit_stats_enabled;
 
 # else // USE_RJIT
 
@@ -124,7 +124,7 @@ static inline void rb_rjit_compile(const rb_iseq_t *iseq){}
 
 static inline void rb_rjit_cancel_all(const char *reason){}
 static inline void rb_rjit_free_iseq(const rb_iseq_t *iseq){}
-static inline void rjit_mark(void){}
+static inline void rb_rjit_mark(void){}
 
 static inline void rb_rjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop) {}
 static inline void rb_rjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
@@ -133,9 +133,9 @@ static inline void rb_rjit_constant_state_changed(ID id) {}
 static inline void rb_rjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events) {}
 
-#define rjit_enabled false
-#define rjit_call_p false
-#define rjit_stats_enabled false
+#define rb_rjit_enabled false
+#define rb_rjit_call_p false
+#define rb_rjit_stats_enabled false
 
 #define rb_rjit_call_threshold() UINT_MAX
 

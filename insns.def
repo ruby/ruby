@@ -703,7 +703,7 @@ defined
 
 /* defined?(@foo) */
 DEFINE_INSN
-defined_ivar
+definedivar
 (ID id, IVC ic, VALUE pushval)
 ()
 (VALUE val)

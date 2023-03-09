@@ -28,6 +28,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     end
     assert_equal "a", retval
     assert_equal @tar.size, io.pos, "should have read to end of entry"
+  ensure
+    io&.close!
   end
 
   def test_open_closes_entry
@@ -39,6 +41,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     end
     assert entry.closed?
     assert_raise(IOError) { entry.getc }
+  ensure
+    io&.close!
   end
 
   def test_open_returns_entry
@@ -49,6 +53,8 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal ?a, entry.getc
     assert_nil entry.close
     assert entry.closed?
+  ensure
+    io&.close!
   end
 
   def test_bytes_read
