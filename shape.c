@@ -151,6 +151,30 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
     return shape;
 }
 
+static rb_shape_t *
+rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
+{
+    rb_shape_t * new_shape = rb_shape_alloc(id, shape, shape_type);
+
+    switch (shape_type) {
+      case SHAPE_IVAR:
+        new_shape->next_iv_index = shape->next_iv_index + 1;
+        break;
+      case SHAPE_CAPACITY_CHANGE:
+      case SHAPE_FROZEN:
+      case SHAPE_T_OBJECT:
+        new_shape->next_iv_index = shape->next_iv_index;
+        break;
+      case SHAPE_OBJ_TOO_COMPLEX:
+      case SHAPE_INITIAL_CAPACITY:
+      case SHAPE_ROOT:
+        rb_bug("Unreachable");
+        break;
+    }
+
+    return new_shape;
+}
+
 static rb_shape_t*
 get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_shapes_allowed, bool new_shape_necessary)
 {
@@ -179,23 +203,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
             else {
                 *variation_created = had_edges;
 
-                rb_shape_t * new_shape = rb_shape_alloc(id, shape, shape_type);
-
-                switch (shape_type) {
-                  case SHAPE_IVAR:
-                    new_shape->next_iv_index = shape->next_iv_index + 1;
-                    break;
-                  case SHAPE_CAPACITY_CHANGE:
-                  case SHAPE_FROZEN:
-                  case SHAPE_T_OBJECT:
-                    new_shape->next_iv_index = shape->next_iv_index;
-                    break;
-                  case SHAPE_OBJ_TOO_COMPLEX:
-                  case SHAPE_INITIAL_CAPACITY:
-                  case SHAPE_ROOT:
-                    rb_bug("Unreachable");
-                    break;
-                }
+                rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
 
                 rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
 
