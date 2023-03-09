@@ -268,15 +268,9 @@ impl Type {
     /// Upgrade this type into a more specific compatible type
     /// The new type must be compatible and at least as specific as the previously known type.
     fn upgrade(&mut self, new_type: Self) {
-        // It's ok to try to upgrade to a less specific type,
-        // but trying to upgrade to a different type is not valid
-        assert!((new_type.is_imm() && self.is_heap()) == false);
-        assert!((new_type.is_heap() && self.is_imm()) == false);
-
-        // If new_type is more specific than self, we upgrade the type of self
-        if new_type.diff(*self) != TypeDiff::Incompatible {
-            *self = new_type;
-        }
+        // We can only upgrade to a type that is more specific
+        assert!(new_type.diff(*self) != TypeDiff::Incompatible);
+        *self = new_type;
     }
 }
 
