@@ -36,7 +36,6 @@ class Gem::Commands::PristineCommand < Gem::Command
 
     add_option("--only-missing-extensions",
                "Only restore gems with missing extensions") do |value, options|
-      options[:extensions_set] = true
       options[:only_missing_extensions] = value
     end
 
