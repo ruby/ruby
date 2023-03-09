@@ -2,7 +2,7 @@
 
 module Bundler
   class Injector
-    INJECTED_GEMS = "injected gems".freeze
+    INJECTED_GEMS = "injected gems"
 
     def self.inject(new_deps, options = {})
       injector = new(new_deps, options)

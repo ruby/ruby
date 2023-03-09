@@ -5,17 +5,9 @@ class TestKernel < Gem::TestCase
   def setup
     super
 
-    @old_path = $:.dup
-
     util_make_gems
 
     without_any_upwards_gemfiles
-  end
-
-  def teardown
-    super
-
-    $:.replace @old_path
   end
 
   def test_gem

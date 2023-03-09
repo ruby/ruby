@@ -3,7 +3,7 @@ require_relative "../command"
 
 class Gem::Commands::HelpCommand < Gem::Command
   # :stopdoc:
-  EXAMPLES = <<-EOF.freeze
+  EXAMPLES = <<-EOF
 Some examples of 'gem' usage.
 
 * Install 'rake', either from local directory or remote server:
@@ -52,7 +52,7 @@ Some examples of 'gem' usage.
     gem update --system
   EOF
 
-  GEM_DEPENDENCIES = <<-EOF.freeze
+  GEM_DEPENDENCIES = <<-EOF
 A gem dependencies file allows installation of a consistent set of gems across
 multiple environments.  The RubyGems implementation is designed to be
 compatible with Bundler's Gemfile format.  You can see additional
@@ -229,7 +229,7 @@ default.  This may be overridden with the :development_group option:
 
   EOF
 
-  PLATFORMS = <<-'EOF'.freeze
+  PLATFORMS = <<-'EOF'
 RubyGems platforms are composed of three parts, a CPU, an OS, and a
 version.  These values are taken from values in rbconfig.rb.  You can view
 your current platform by running `gem environment`.

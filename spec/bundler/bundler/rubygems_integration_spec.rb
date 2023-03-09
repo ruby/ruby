@@ -89,5 +89,16 @@ RSpec.describe Bundler::RubygemsIntegration do
         expect(result).to eq(%w[specs prerelease_specs])
       end
     end
+
+    context "when loading an unexpected class" do
+      let(:remote_no_mirror) { double("remote", :uri => uri, :original_uri => nil) }
+      let(:unexpected_specs_response) { Marshal.dump(3) }
+
+      it "raises a MarshalError error" do
+        expect(Bundler.rubygems).to receive(:gem_remote_fetcher).once.and_return(fetcher)
+        expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(unexpected_specs_response)
+        expect { Bundler.rubygems.fetch_all_remote_specs(remote_no_mirror) }.to raise_error(Bundler::MarshalError, /unexpected class/i)
+      end
+    end
   end
 end

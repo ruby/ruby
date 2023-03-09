@@ -8,7 +8,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.4.7".freeze
+  VERSION = "3.4.8"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -824,7 +824,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.env_requirement(gem_name)
     @env_requirements_by_name ||= {}
     @env_requirements_by_name[gem_name] ||= begin
-      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || ">= 0".freeze
+      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || ">= 0"
       Gem::Requirement.create(req)
     end
   end
@@ -1301,7 +1301,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Location of Marshal quick gemspecs on remote repositories
 
-  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
+  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)

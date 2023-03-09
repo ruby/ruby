@@ -1144,6 +1144,17 @@ RSpec.describe "bundle install with git sources" do
       G
       expect(err).to include("Revision deadbeef does not exist in the repository")
     end
+
+    it "gives a helpful error message when the remote branch no longer exists" do
+      build_git "foo"
+
+      install_gemfile <<-G, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+      G
+
+      expect(err).to include("Revision deadbeef does not exist in the repository")
+    end
   end
 
   describe "bundle install with deployment mode configured and git sources" do

@@ -10,7 +10,7 @@ require "rubygems/installer"
 require "rubygems/platform"
 
 class TestGemSpecification < Gem::TestCase
-  LEGACY_YAML_SPEC = <<-EOF.freeze
+  LEGACY_YAML_SPEC = <<-EOF
 --- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
 name: keyedlist
@@ -29,7 +29,7 @@ email: flgr@ccan.de
 has_rdoc: true
   EOF
 
-  LEGACY_RUBY_SPEC = <<-EOF.freeze
+  LEGACY_RUBY_SPEC = <<-EOF
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}
@@ -3724,6 +3724,23 @@ end
     end
 
     assert Gem::Specification.find_by_name "b", ">1"
+  end
+
+  def test_find_by_full_name
+    pl = Gem::Platform.new "x86_64-linux"
+
+    a = util_spec "a", "1"
+    install_specs a
+
+    a_pl = util_spec("a", "1") {|s| s.platform = pl }
+    install_specs a_pl
+
+    assert_equal a, Gem::Specification.find_by_full_name("a-1")
+    assert_equal a_pl, Gem::Specification.find_by_full_name("a-1-x86_64-linux")
+
+    assert_nil Gem::Specification.find_by_full_name("a-2")
+    assert_nil Gem::Specification.find_by_full_name("b-1")
+    assert_nil Gem::Specification.find_by_full_name("a-1-arm64-linux")
   end
 
   def test_find_by_path

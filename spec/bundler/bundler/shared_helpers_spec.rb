@@ -290,7 +290,7 @@ RSpec.describe Bundler::SharedHelpers do
       if Gem.respond_to?(:path_separator)
         allow(Gem).to receive(:path_separator).and_return(":")
       else
-        stub_const("File::PATH_SEPARATOR", ":".freeze)
+        stub_const("File::PATH_SEPARATOR", ":")
       end
       allow(Bundler).to receive(:bundle_path) { Pathname.new("so:me/dir/bin") }
       expect { subject.send(:validate_bundle_path) }.to raise_error(
