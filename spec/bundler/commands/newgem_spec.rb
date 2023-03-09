@@ -633,7 +633,7 @@ RSpec.describe "bundle gem" do
     it "does not include the gemspec file in files" do
       bundle "gem #{gem_name}"
 
-      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
+      bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
 
       expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
     end

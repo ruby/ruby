@@ -371,4 +371,29 @@ class TestGemCommandManager < Gem::TestCase
   ensure
     Gem::Commands.send(:remove_const, :FooCommand)
   end
+
+  def test_deprecated_command_with_version
+    require "rubygems/command"
+    foo_command = Class.new(Gem::Command) do
+      extend Gem::Deprecate
+
+      rubygems_deprecate_command("9.9.9")
+
+      def execute
+        say "pew pew!"
+      end
+    end
+
+    Gem::Commands.send(:const_set, :FooCommand, foo_command)
+    @command_manager.register_command(:foo, foo_command.new("foo"))
+
+    use_ui @ui do
+      @command_manager.process_args(%w[foo])
+    end
+
+    assert_equal "pew pew!\n", @ui.output
+    assert_match(/WARNING:  foo command is deprecated. It will be removed in Rubygems 9.9.9/, @ui.error)
+  ensure
+    Gem::Commands.send(:remove_const, :FooCommand)
+  end
 end

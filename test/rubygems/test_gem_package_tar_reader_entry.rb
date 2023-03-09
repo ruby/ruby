@@ -125,6 +125,18 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal @contents, @entry.read
   end
 
+  def test_consecutive_read
+    expected = StringIO.new(@contents)
+    assert_equal expected.read, @entry.read
+    assert_equal expected.read, @entry.read
+  end
+
+  def test_consecutive_read_bytes_past_eof
+    expected = StringIO.new(@contents)
+    assert_equal expected.read, @entry.read
+    assert_equal expected.read(1), @entry.read(1)
+  end
+
   def test_read_big
     assert_equal @contents, @entry.read(@contents.size * 2)
   end
@@ -133,9 +145,24 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal @contents[0...100], @entry.read(100)
   end
 
-  def test_readpartial
+  def test_read_remaining
+    @entry.read(100)
+    assert_equal @contents[100..-1], @entry.read
+  end
+
+  def test_read_partial
+    assert_equal @contents[0...100], @entry.readpartial(100)
+  end
+
+  def test_read_partial_buffer
+    buffer = "".b
+    @entry.readpartial(100, buffer)
+    assert_equal @contents[0...100], buffer
+  end
+
+  def test_readpartial_past_eof
+    @entry.readpartial(@contents.size)
     assert_raise(EOFError) do
-      @entry.read(@contents.size)
       @entry.readpartial(1)
     end
   end
@@ -148,5 +175,36 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal 0, @entry.pos
 
     assert_equal char, @entry.getc
+  end
+
+  def test_read_zero
+    expected = StringIO.new("")
+    assert_equal expected.read(0), @entry.read(0)
+  end
+
+  def test_readpartial_zero
+    expected = StringIO.new("")
+    assert_equal expected.readpartial(0), @entry.readpartial(0)
+  end
+
+  def util_zero_byte_entry
+    tar = String.new
+    tar << tar_file_header("lib/empty", "", 0, 0, Time.now)
+    tar << "\0" * (512 - (tar.size % 512))
+    util_entry tar
+  end
+
+  def test_zero_byte_file_read
+    zero_entry = util_zero_byte_entry
+    expected = StringIO.new("")
+
+    assert_equal expected.read, zero_entry.read
+  end
+
+  def test_zero_byte_file_readpartial
+    zero_entry = util_zero_byte_entry
+    expected = StringIO.new("")
+
+    assert_equal expected.readpartial(0), zero_entry.readpartial(0)
   end
 end

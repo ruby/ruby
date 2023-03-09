@@ -52,7 +52,7 @@ module Bundler
 
     def gem_path(path, spec)
       full_path = Pathname.new(path).absolute? ? path : File.join(spec.full_gem_path, path)
-      if spec.source.instance_of?(Source::Path)
+      if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
         Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s

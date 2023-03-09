@@ -2677,6 +2677,23 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_self_referencing_dependencies
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.add_runtime_dependency @a1.name, "1"
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal <<-EXPECTED, @ui.error
+#{w}:  Self referencing dependency is unnecessary and strongly discouraged.
+#{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+    end
+  end
+
   def test_validate_rake_extension_have_rake_dependency_warning
     util_setup_validate
 

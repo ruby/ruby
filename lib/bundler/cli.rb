@@ -156,6 +156,7 @@ module Bundler
       dependency listed in the gemspec file to the newly created Gemfile.
     D
     method_option "gemspec", :type => :string, :banner => "Use the specified .gemspec to create the Gemfile"
+    method_option "gemfile", :type => :string, :banner => "Use the specified name for the gemfile instead of 'Gemfile'"
     def init
       require_relative "cli/init"
       Init.new(options.dup).run
