@@ -952,6 +952,7 @@ module RubyVM::RJIT # :nodoc: all
         ),
         method_missing_reason: self.method_missing_reason,
         v: self.VALUE,
+        bf: CType::Pointer.new { self.rb_builtin_function },
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), aux_)")],
     )
   end

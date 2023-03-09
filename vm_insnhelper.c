@@ -2789,6 +2789,17 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
     return vm_call_iseq_setup_normal(ec, cfp, calling, vm_cc_cme(cc), 0, param, local);
 }
 
+static VALUE builtin_invoker0(rb_execution_context_t *ec, VALUE self, const VALUE *argv, rb_insn_func_t funcptr);
+
+static VALUE
+vm_call_single_noarg_inline_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+                                    struct rb_calling_info *calling)
+{
+    const struct rb_builtin_function *bf = calling->cc->aux_.bf;
+    cfp->sp -= (calling->argc + 1);
+    return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
+}
+
 static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
@@ -2808,7 +2819,18 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
             VM_ASSERT(ci == calling->ci);
             VM_ASSERT(cc == calling->cc);
-            CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), cacheable_ci && vm_call_iseq_optimizable_p(ci, cc));
+
+            if (cacheable_ci && vm_call_iseq_optimizable_p(ci, cc)) {
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) &&
+                    !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
+                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                    CC_SET_FASTPATH(cc, vm_call_single_noarg_inline_builtin, true);
+                }
+                else {
+                    CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);
+                }
+            }
             return 0;
         }
         else if (rb_iseq_only_optparam_p(iseq)) {
@@ -3505,12 +3527,6 @@ static VALUE
 vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     return vm_call_attrset_direct(ec, cfp, calling->cc, calling->recv);
-}
-
-bool
-rb_vm_call_ivar_attrset_p(const vm_call_handler ch)
-{
-    return (ch == vm_call_ivar || ch == vm_call_attrset);
 }
 
 static inline VALUE
