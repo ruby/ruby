@@ -113,6 +113,47 @@ rb_shape_get_shape(VALUE obj)
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj));
 }
 
+static rb_shape_t *
+shape_alloc(void)
+{
+    rb_vm_t *vm = GET_VM();
+    shape_id_t shape_id = vm->next_shape_id;
+    vm->next_shape_id++;
+
+    if (shape_id == MAX_SHAPE_ID) {
+        // TODO: Make an OutOfShapesError ??
+        rb_bug("Out of shapes\n");
+    }
+
+    return &GET_VM()->shape_list[shape_id];
+}
+
+static rb_shape_t *
+rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
+{
+    rb_shape_t * shape = shape_alloc();
+
+    shape->edge_name = edge_name;
+    shape->next_iv_index = 0;
+    shape->parent_id = parent_id;
+
+    return shape;
+}
+
+static rb_shape_t *
+rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t size_pool_index)
+{
+    rb_shape_t * shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
+    shape->size_pool_index = size_pool_index;
+    return shape;
+}
+
+static rb_shape_t *
+rb_shape_alloc(ID edge_name, rb_shape_t * parent)
+{
+    return rb_shape_alloc_with_size_pool_index(edge_name, parent, parent->size_pool_index);
+}
+
 static rb_shape_t*
 get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, bool * variation_created, bool new_shapes_allowed, bool new_shape_necessary)
 {
@@ -381,48 +422,6 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
         shape = rb_shape_get_parent(shape);
     }
     return false;
-}
-
-static rb_shape_t *
-shape_alloc(void)
-{
-    rb_vm_t *vm = GET_VM();
-    shape_id_t shape_id = vm->next_shape_id;
-    vm->next_shape_id++;
-
-    if (shape_id == MAX_SHAPE_ID) {
-        // TODO: Make an OutOfShapesError ??
-        rb_bug("Out of shapes\n");
-    }
-
-    return &GET_VM()->shape_list[shape_id];
-}
-
-rb_shape_t *
-rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
-{
-    rb_shape_t * shape = shape_alloc();
-
-    shape->edge_name = edge_name;
-    shape->next_iv_index = 0;
-    shape->parent_id = parent_id;
-
-    return shape;
-}
-
-rb_shape_t *
-rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t size_pool_index)
-{
-    rb_shape_t * shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
-    shape->size_pool_index = size_pool_index;
-    return shape;
-}
-
-
-rb_shape_t *
-rb_shape_alloc(ID edge_name, rb_shape_t * parent)
-{
-    return rb_shape_alloc_with_size_pool_index(edge_name, parent, parent->size_pool_index);
 }
 
 void
