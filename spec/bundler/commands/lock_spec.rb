@@ -158,6 +158,44 @@ RSpec.describe "bundle lock" do
     expect(out).not_to include("re-resolving dependencies because the list of sources changed")
   end
 
+  it "updates specific gems using --update using the locked revision of unrelated git gems for resolving" do
+    ref = build_git("foo").ref_for("HEAD")
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rake"
+      gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+    G
+
+    lockfile <<~L
+      GIT
+        remote: #{file_uri_for(lib_path("foo-1.0"))}
+        revision: #{ref}
+        branch: deadbeef
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          rake (10.0.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+        rake
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "lock --update rake --verbose"
+    expect(out).to match(/Writing lockfile to.+lock/)
+    expect(lockfile).to include("rake (13.0.1)")
+  end
+
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
