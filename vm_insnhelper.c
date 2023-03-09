@@ -1823,6 +1823,18 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     }
 }
 
+NORETURN(void rb_vm_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
+
+// throw insn for JIT. While just returning errinfo from JIT code like THROW_EXCEPTION
+// works for vm_exec, it doesn't work for vm_sendish. To avoid introducing an extra
+// check just for throw instruction in the vm_sendish callers, we use longjump instead.
+void
+rb_vm_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    ec->errinfo = vm_throw(ec, reg_cfp, throw_state, throwobj);
+    rb_ec_tag_jump(ec, throw_state & VM_THROW_STATE_MASK);
+}
+
 static inline void
 vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 {

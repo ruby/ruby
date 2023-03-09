@@ -3699,6 +3699,27 @@ fn gen_branchnil(
     EndBlock
 }
 
+fn gen_throw(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let throw_state = jit.get_arg(0).as_u32();
+    let throwobj = asm.load(ctx.stack_pop(1));
+
+    jit_save_pc(jit, asm); // PC is needed for catch table handling.
+    gen_save_sp(asm, ctx); // THROW_DATA_NEW allocates.
+
+    extern "C" {
+        fn rb_vm_throw(ec: EcPtr, reg_cfp: CfpPtr, throw_state: u32, throwobj: VALUE) -> VALUE;
+    }
+
+    asm.ccall(rb_vm_throw as *mut u8, vec![EC, CFP, throw_state.into(), throwobj]);
+
+    EndBlock
+}
+
 fn gen_jump(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -7741,6 +7762,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchif => Some(gen_branchif),
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
+        YARVINSN_throw => Some(gen_throw),
         YARVINSN_jump => Some(gen_jump),
 
         YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
