@@ -273,7 +273,7 @@ impl Type {
         assert!((new_type.is_imm() && self.is_heap()) == false);
         assert!((new_type.is_heap() && self.is_imm()) == false);
 
-        // If new_type is more specific than self, we uprade the type of self
+        // If new_type is more specific than self, we upgrade the type of self
         if new_type.diff(*self) != TypeDiff::Incompatible {
             *self = new_type;
         }
