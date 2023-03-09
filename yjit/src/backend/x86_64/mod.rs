@@ -220,13 +220,29 @@ impl Assembler
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
                     asm.push_insn(insn);
                 },
-                Insn::Cmp { left, right } |
+                Insn::Cmp { left, right } => {
+                    // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
+                    // when next IR is `je`, `jne`, `csel_e`, or `csel_ne`
+                    match (&left, &right, iterator.peek()) {
+                        (Opnd::InsnOut { .. },
+                         Opnd::UImm(0) | Opnd::Imm(0),
+                         Some(Insn::Je(_) | Insn::Jne(_) | Insn::CSelE { .. } | Insn::CSelNE { .. })) => {
+                            asm.push_insn(Insn::Test { left: *left, right: *left });
+                        }
+                        _ => {
+                            if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
+                                let loaded = asm.load(*right);
+                                *right = loaded;
+                            }
+                            asm.push_insn(insn);
+                        }
+                    }
+                },
                 Insn::Test { left, right } => {
                     if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
                         let loaded = asm.load(*right);
                         *right = loaded;
                     }
-
                     asm.push_insn(insn);
                 },
                 // These instructions modify their input operand in-place, so we
@@ -942,5 +958,18 @@ mod tests {
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
         assert_eq!(format!("{:x}", cb), "488d4308488903");
+    }
+
+    #[test]
+    fn test_replace_cmp_0() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let val = asm.load(Opnd::mem(64, SP, 8));
+        asm.cmp(val, 0.into());
+        let result = asm.csel_e(Qtrue.into(), Qfalse.into());
+        asm.mov(Opnd::Reg(RAX_REG), result);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_eq!(format!("{:x}", cb), "488b43084885c0b814000000b900000000480f45c14889c0");
     }
 }
