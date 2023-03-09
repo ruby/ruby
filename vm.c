@@ -369,11 +369,9 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #if USE_RJIT || USE_YJIT
-// Try to execute the current iseq in ec.  Use JIT code if it is ready.
-// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
-// YJIT compiles on the thread running the iseq.
-static inline VALUE
-jit_exec(rb_execution_context_t *ec)
+// Try to compile the current ISeq in ec. Return 0 if not compiled.
+static inline jit_func_t
+jit_compile(rb_execution_context_t *ec)
 {
     // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
@@ -383,43 +381,42 @@ jit_exec(rb_execution_context_t *ec)
         body->total_calls++;
     }
     else {
-        return Qundef;
+        return 0;
     }
 
     // Trigger JIT compilation as needed
-    jit_func_t func;
     if (yjit_enabled) {
         if (body->total_calls == rb_yjit_call_threshold())  {
-            // If we couldn't generate any code for this iseq, then return
-            // Qundef so the interpreter will handle the call.
-            if (!rb_yjit_compile_iseq(iseq, ec)) {
-                return Qundef;
-            }
-        }
-        // YJIT tried compiling this function once before and couldn't do
-        // it, so return Qundef so the interpreter handles it.
-        if ((func = body->jit_func) == 0) {
-            return Qundef;
+            rb_yjit_compile_iseq(iseq, ec);
         }
     }
     else { // rb_rjit_call_p
         if (body->total_calls == rb_rjit_call_threshold()) {
             rb_rjit_compile(iseq);
         }
-        if ((func = body->jit_func) == 0) {
-            return Qundef;
-        }
     }
 
-    // Call the JIT code
-    return func(ec, ec->cfp); // SystemV x64 calling convention: ec -> RDI, cfp -> RSI
+    return body->jit_func;
 }
-#else
+
+// Try to execute the current iseq in ec.  Use JIT code if it is ready.
+// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
+// YJIT compiles on the thread running the iseq.
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
 {
-    return Qundef;
+    jit_func_t func = jit_compile(ec);
+    if (func) {
+        // Call the JIT code
+        return func(ec, ec->cfp);
+    }
+    else {
+        return Qundef;
+    }
 }
+#else
+static inline jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
+static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
 #endif
 
 #include "vm_insnhelper.c"

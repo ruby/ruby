@@ -5211,15 +5211,7 @@ vm_sendish(
         val = vm_invokeblock_i(ec, GET_CFP(), &calling);
         break;
     }
-
-    if (!UNDEF_P(val)) {
-        return val;             /* CFUNC normal return */
-    }
-    else {
-        RESTORE_REGS();         /* CFP pushed in cc->call() */
-    }
-
-    return jit_exec(ec);
+    return val;
 }
 
 /* object.c */
