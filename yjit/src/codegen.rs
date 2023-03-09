@@ -1,4 +1,4 @@
-// We use the YARV bytecode constants which have a CRuby-style name
+﻿// We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
 use crate::asm::*;
@@ -2389,7 +2389,7 @@ fn gen_defined(
     KeepCompiling
 }
 
-fn gen_defined_ivar(
+fn gen_definedivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
@@ -7672,7 +7672,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
-        YARVINSN_defined_ivar => Some(gen_defined_ivar),
+        YARVINSN_definedivar => Some(gen_definedivar),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
@@ -7802,11 +7802,11 @@ impl CodegenGlobals {
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
-            // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
-            // requested size is half of mem_option × 2²⁰ as it's in MiB.
+            // page size in bytes is a power of two 2ﾂｹ竅ｹ or smaller. This is because the user
+            // requested size is half of mem_option ﾃ?2ﾂｲ竅ｰ as it's in MiB.
             //
             // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
-            // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+            // (2ﾂｹ竅ｶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
             let page_size = unsafe { rb_yjit_get_page_size() };
             assert_eq!(
                 virt_block as usize % page_size.as_usize(), 0,
