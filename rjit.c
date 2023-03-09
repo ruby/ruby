@@ -72,23 +72,16 @@ bool rb_rjit_stats_enabled = false;
 // and `rb_rjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool rb_rjit_call_p = false;
 // A flag to communicate that rb_rjit_call_p should be disabled while it's temporarily false.
-bool rb_rjit_cancel_p = false;
+static bool rjit_cancel_p = false;
 
-void
-rb_rjit_cancel_all(const char *reason)
-{
-    if (!rb_rjit_enabled)
-        return;
+// JIT buffer
+uint8_t *rb_rjit_mem_block = NULL;
 
-    rb_rjit_call_p = false;
-    rb_rjit_cancel_p = true;
-}
+// `rb_ec_ractor_hooks(ec)->events` is moved to this variable during compilation.
+rb_event_flag_t rb_rjit_global_events = 0;
 
-void
-rb_rjit_free_iseq(const rb_iseq_t *iseq)
-{
-    // TODO: implement this. GC_REFS should remove this iseq's mjit_blocks
-}
+// Basically rb_rjit_opts.stats, but this becomes false during RJIT compilation.
+static bool rjit_stats_p = false;
 
 // RubyVM::RJIT
 static VALUE rb_mRJIT = 0;
@@ -103,8 +96,6 @@ static VALUE rb_cRJITCfpPtr = 0;
 // RubyVM::RJIT::Hooks
 static VALUE rb_mRJITHooks = 0;
 
-// Default permitted number of units with a JIT code kept in memory.
-#define DEFAULT_MAX_CACHE_SIZE 100
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 30
 
@@ -152,11 +143,6 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 };
 #undef M
 
-//================================================================================
-//
-// New stuff from here
-//
-
 #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
 // Align the current write position to a multiple of bytes
 static uint8_t *
@@ -179,7 +165,7 @@ align_ptr(uint8_t *ptr, uint32_t multiple)
 // Address space reservation. Memory pages are mapped on an as needed basis.
 // See the Rust mm module for details.
 static uint8_t *
-rb_rjit_reserve_addr_space(uint32_t mem_size)
+rjit_reserve_addr_space(uint32_t mem_size)
 {
 #ifndef _WIN32
     uint8_t *mem_block;
@@ -187,7 +173,7 @@ rb_rjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rb_rjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
@@ -217,7 +203,7 @@ rb_rjit_reserve_addr_space(uint32_t mem_size)
     #else
         // Try to map a chunk of memory as executable
         mem_block = mmap(
-            (void *)rb_rjit_reserve_addr_space,
+            (void *)rjit_reserve_addr_space,
             mem_size,
             PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS,
@@ -256,17 +242,7 @@ rb_rjit_reserve_addr_space(uint32_t mem_size)
 #endif
 }
 
-// JIT buffer
-uint8_t *rb_rjit_mem_block = NULL;
-
-// `rb_ec_ractor_hooks(ec)->events` is moved to this variable during compilation.
-rb_event_flag_t rb_rjit_global_events = 0;
-
-// Basically rb_rjit_opts.stats, but this becomes false during RJIT compilation.
-static bool rjit_stats_p = false;
-
 #if RJIT_STATS
-
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
 void
@@ -275,7 +251,6 @@ rb_rjit_collect_vm_usage_insn(int insn)
     if (!rjit_stats_p) return;
     rb_rjit_counters.vm_insns_count++;
 }
-
 #endif // YJIT_STATS
 
 extern VALUE rb_gc_enable(void);
@@ -290,11 +265,21 @@ extern VALUE rb_gc_disable(void);
     rjit_stats_p = false; \
     rb_rjit_call_p = false; \
     stmt; \
-    rb_rjit_call_p = (rb_rjit_cancel_p ? false : original_call_p); \
+    rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
     rjit_stats_p = rb_rjit_opts.stats; \
     global_hooks->events = rb_rjit_global_events; \
     if (!was_disabled) rb_gc_enable(); \
 } while (0);
+
+void
+rb_rjit_cancel_all(const char *reason)
+{
+    if (!rb_rjit_enabled)
+        return;
+
+    rb_rjit_call_p = false;
+    rjit_cancel_p = true;
+}
 
 void
 rb_rjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
@@ -412,6 +397,29 @@ rb_rjit_iseq_mark(VALUE rjit_blocks)
     }
 }
 
+// Called by rb_vm_mark()
+void
+rb_rjit_mark(void)
+{
+    if (!rb_rjit_enabled)
+        return;
+    RUBY_MARK_ENTER("rjit");
+
+    // Pin object pointers used in this file
+    rb_gc_mark(rb_RJITCompiler);
+    rb_gc_mark(rb_cRJITIseqPtr);
+    rb_gc_mark(rb_cRJITCfpPtr);
+    rb_gc_mark(rb_mRJITHooks);
+
+    RUBY_MARK_LEAVE("rjit");
+}
+
+void
+rb_rjit_free_iseq(const rb_iseq_t *iseq)
+{
+    // TODO: implement this. GC_REFS should remove this iseq's mjit_blocks
+}
+
 // TODO: Use this in more places
 VALUE
 rb_rjit_iseq_new(rb_iseq_t *iseq)
@@ -457,30 +465,13 @@ rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
     return (void *)NUM2SIZET(result);
 }
 
-// Called by rb_vm_mark()
-void
-rb_rjit_mark(void)
-{
-    if (!rb_rjit_enabled)
-        return;
-    RUBY_MARK_ENTER("rjit");
-
-    // Pin object pointers used in this file
-    rb_gc_mark(rb_RJITCompiler);
-    rb_gc_mark(rb_cRJITIseqPtr);
-    rb_gc_mark(rb_cRJITCfpPtr);
-    rb_gc_mark(rb_mRJITHooks);
-
-    RUBY_MARK_LEAVE("rjit");
-}
-
 void
 rb_rjit_init(const struct rjit_options *opts)
 {
     VM_ASSERT(rb_rjit_enabled);
     rb_rjit_opts = *opts;
 
-    rb_rjit_mem_block = rb_rjit_reserve_addr_space(RJIT_CODE_SIZE);
+    rb_rjit_mem_block = rjit_reserve_addr_space(RJIT_CODE_SIZE);
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
