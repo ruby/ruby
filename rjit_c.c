@@ -165,7 +165,7 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
 static VALUE
 rjit_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(rjit_enabled);
+    return RBOOL(rb_rjit_enabled);
 }
 
 static int

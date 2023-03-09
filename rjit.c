@@ -63,25 +63,25 @@
 // A copy of RJIT portion of MRI options since RJIT initialization.  We
 // need them as RJIT threads still can work when the most MRI data were
 // freed.
-struct rjit_options rjit_opts;
+struct rjit_options rb_rjit_opts;
 
 // true if RJIT is enabled.
-bool rjit_enabled = false;
-bool rjit_stats_enabled = false;
+bool rb_rjit_enabled = false;
+bool rb_rjit_stats_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
-// and `rjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
-bool rjit_call_p = false;
-// A flag to communicate that rjit_call_p should be disabled while it's temporarily false.
-bool rjit_cancel_p = false;
+// and `rb_rjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
+bool rb_rjit_call_p = false;
+// A flag to communicate that rb_rjit_call_p should be disabled while it's temporarily false.
+bool rb_rjit_cancel_p = false;
 
 void
 rb_rjit_cancel_all(const char *reason)
 {
-    if (!rjit_enabled)
+    if (!rb_rjit_enabled)
         return;
 
-    rjit_call_p = false;
-    rjit_cancel_p = true;
+    rb_rjit_call_p = false;
+    rb_rjit_cancel_p = true;
 }
 
 void
@@ -114,7 +114,7 @@ static VALUE rb_mRJITHooks = 0;
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--rjit-" name " needs an argument"), 0))
 
 void
-rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
+rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 {
     const size_t l = strlen(s);
     if (l == 0) {
@@ -140,7 +140,7 @@ rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 }
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
-const struct ruby_opt_message rjit_option_messages[] = {
+const struct ruby_opt_message rb_rjit_option_messages[] = {
 #if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
 #endif
@@ -262,7 +262,7 @@ uint8_t *rb_rjit_mem_block = NULL;
 // `rb_ec_ractor_hooks(ec)->events` is moved to this variable during compilation.
 rb_event_flag_t rb_rjit_global_events = 0;
 
-// Basically rjit_opts.stats, but this becomes false during RJIT compilation.
+// Basically rb_rjit_opts.stats, but this becomes false during RJIT compilation.
 static bool rjit_stats_p = false;
 
 #if RJIT_STATS
@@ -286,12 +286,12 @@ extern VALUE rb_gc_disable(void);
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
     rb_rjit_global_events = global_hooks->events; \
     global_hooks->events = 0; \
-    bool original_call_p = rjit_call_p; \
+    bool original_call_p = rb_rjit_call_p; \
     rjit_stats_p = false; \
-    rjit_call_p = false; \
+    rb_rjit_call_p = false; \
     stmt; \
-    rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
-    rjit_stats_p = rjit_opts.stats; \
+    rb_rjit_call_p = (rb_rjit_cancel_p ? false : original_call_p); \
+    rjit_stats_p = rb_rjit_opts.stats; \
     global_hooks->events = rb_rjit_global_events; \
     if (!was_disabled) rb_gc_enable(); \
 } while (0);
@@ -299,14 +299,14 @@ extern VALUE rb_gc_disable(void);
 void
 rb_rjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop)
 {
-    if (!rjit_call_p) return;
-    rjit_call_p = false;
+    if (!rb_rjit_call_p) return;
+    rb_rjit_call_p = false;
 }
 
 static void
 rjit_cme_invalidate(void *data)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     WITH_RJIT_ISOLATED({
         rb_funcall(rb_mRJITHooks, rb_intern("on_cme_invalidate"), 1, SIZET2NUM((size_t)data));
     });
@@ -317,7 +317,7 @@ extern int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, v
 void
 rb_rjit_cme_invalidate(rb_callable_method_entry_t *cme)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     // Asynchronously hook the Ruby code since running Ruby in the middle of cme invalidation is dangerous.
     rb_workqueue_register(0, rjit_cme_invalidate, (void *)cme);
 }
@@ -325,14 +325,14 @@ rb_rjit_cme_invalidate(rb_callable_method_entry_t *cme)
 void
 rb_rjit_before_ractor_spawn(void)
 {
-    if (!rjit_call_p) return;
-    rjit_call_p = false;
+    if (!rb_rjit_call_p) return;
+    rb_rjit_call_p = false;
 }
 
 static void
 rjit_constant_state_changed(void *data)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
@@ -346,7 +346,7 @@ rjit_constant_state_changed(void *data)
 void
 rb_rjit_constant_state_changed(ID id)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     // Asynchronously hook the Ruby code since this is hooked during a "Ruby critical section".
     rb_workqueue_register(0, rjit_constant_state_changed, (void *)id);
 }
@@ -354,7 +354,7 @@ rb_rjit_constant_state_changed(ID id)
 void
 rb_rjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
 
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
@@ -370,7 +370,7 @@ rb_rjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx
 void
 rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     WITH_RJIT_ISOLATED({
         rb_funcall(rb_mRJITHooks, rb_intern("on_tracing_invalidate_all"), 1, UINT2NUM(new_iseq_events));
     });
@@ -379,7 +379,7 @@ rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_events)
 static void
 rjit_iseq_update_references(void *data)
 {
-    if (!rjit_enabled || !rjit_call_p || !rb_mRJITHooks) return;
+    if (!rb_rjit_enabled || !rb_rjit_call_p || !rb_mRJITHooks) return;
     WITH_RJIT_ISOLATED({
         rb_funcall(rb_mRJITHooks, rb_intern("on_update_references"), 0);
     });
@@ -388,7 +388,7 @@ rjit_iseq_update_references(void *data)
 void
 rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body)
 {
-    if (!rjit_enabled) return;
+    if (!rb_rjit_enabled) return;
 
     if (body->rjit_blocks) {
         body->rjit_blocks = rb_gc_location(body->rjit_blocks);
@@ -403,7 +403,7 @@ rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body)
 void
 rb_rjit_iseq_mark(VALUE rjit_blocks)
 {
-    if (!rjit_enabled) return;
+    if (!rb_rjit_enabled) return;
 
     // Note: This wasn't enough for some reason.
     // We actually rely on RubyVM::RJIT::GC_REFS to mark this.
@@ -459,9 +459,9 @@ rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 
 // Called by rb_vm_mark()
 void
-rjit_mark(void)
+rb_rjit_mark(void)
 {
-    if (!rjit_enabled)
+    if (!rb_rjit_enabled)
         return;
     RUBY_MARK_ENTER("rjit");
 
@@ -475,10 +475,10 @@ rjit_mark(void)
 }
 
 void
-rjit_init(const struct rjit_options *opts)
+rb_rjit_init(const struct rjit_options *opts)
 {
-    VM_ASSERT(rjit_enabled);
-    rjit_opts = *opts;
+    VM_ASSERT(rb_rjit_enabled);
+    rb_rjit_opts = *opts;
 
     rb_rjit_mem_block = rb_rjit_reserve_addr_space(RJIT_CODE_SIZE);
 
@@ -486,7 +486,7 @@ rjit_init(const struct rjit_options *opts)
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
     if (!rb_const_defined(rb_mRJIT, rb_intern("Compiler"))) {
         rb_warn("Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
-        rjit_enabled = false;
+        rb_rjit_enabled = false;
         return;
     }
     rb_mRJITC = rb_const_get(rb_mRJIT, rb_intern("C"));
@@ -497,14 +497,14 @@ rjit_init(const struct rjit_options *opts)
     rb_cRJITCfpPtr = rb_funcall(rb_mRJITC, rb_intern("rb_control_frame_t"), 0);
     rb_mRJITHooks = rb_const_get(rb_mRJIT, rb_intern("Hooks"));
 
-    rjit_call_p = true;
-    rjit_stats_p = rjit_opts.stats;
+    rb_rjit_call_p = true;
+    rjit_stats_p = rb_rjit_opts.stats;
 
     // Normalize options
-    if (rjit_opts.call_threshold == 0)
-        rjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
+    if (rb_rjit_opts.call_threshold == 0)
+        rb_rjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
 #ifndef HAVE_LIBCAPSTONE
-    if (rjit_opts.dump_disasm)
+    if (rb_rjit_opts.dump_disasm)
         rb_warn("libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
 #endif
 }
@@ -513,14 +513,14 @@ rjit_init(const struct rjit_options *opts)
 static VALUE
 rjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(rjit_stats_enabled);
+    return RBOOL(rb_rjit_stats_enabled);
 }
 
 // Disable anything that could impact stats. It ends up disabling JIT calls as well.
 static VALUE
 rjit_stop_stats(rb_execution_context_t *ec, VALUE self)
 {
-    rjit_call_p = false;
+    rb_rjit_call_p = false;
     rjit_stats_p = false;
     return Qnil;
 }

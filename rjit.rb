@@ -1,7 +1,7 @@
 module RubyVM::RJIT
   # Return true if RJIT is enabled.
   def self.enabled?
-    Primitive.cexpr! 'RBOOL(rjit_enabled)'
+    Primitive.cexpr! 'RBOOL(rb_rjit_enabled)'
   end
 
   # Stop generating JITed code.

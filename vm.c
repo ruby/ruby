@@ -379,7 +379,7 @@ jit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_enabled_p();
-    if (yjit_enabled || rjit_call_p) {
+    if (yjit_enabled || rb_rjit_call_p) {
         body->total_calls++;
     }
     else {
@@ -402,7 +402,7 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else { // rjit_call_p
+    else { // rb_rjit_call_p
         if (body->total_calls == rb_rjit_call_threshold()) {
             rb_rjit_compile(iseq);
         }
@@ -2822,7 +2822,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
-        rjit_mark();
+        rb_rjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");

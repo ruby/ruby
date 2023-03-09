@@ -511,7 +511,7 @@ module RubyVM::RJIT # :nodoc: all
     end
 
     def rjit_opts
-      addr = Primitive.cexpr! 'PTR2NUM((VALUE)&rjit_opts)'
+      addr = Primitive.cexpr! 'PTR2NUM((VALUE)&rb_rjit_opts)'
       rjit_options.new(addr)
     end
 
