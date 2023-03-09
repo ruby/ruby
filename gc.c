@@ -8408,13 +8408,6 @@ gc_marks_finish(rb_objspace_t *objspace)
     gc_verify_internal_consistency(objspace);
 #endif
 
-    if (is_full_marking(objspace)) {
-        /* See the comment about RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR */
-        const double r = gc_params.oldobject_limit_factor;
-        objspace->rgengc.uncollectible_wb_unprotected_objects_limit = (size_t)(objspace->rgengc.uncollectible_wb_unprotected_objects * r);
-        objspace->rgengc.old_objects_limit = (size_t)(objspace->rgengc.old_objects * r);
-    }
-
 #if RGENGC_CHECK_MODE >= 4
     during_gc = FALSE;
     gc_marks_check(objspace, gc_check_after_marks_i, "after_marks");
