@@ -74,27 +74,6 @@ bool rjit_call_p = false;
 // A flag to communicate that rjit_call_p should be disabled while it's temporarily false.
 bool rjit_cancel_p = false;
 
-// Print the arguments according to FORMAT to stderr only if RJIT
-// verbose option value is more or equal to LEVEL.
-PRINTF_ARGS(static void, 2, 3)
-verbose(int level, const char *format, ...)
-{
-    if (rjit_opts.verbose >= level) {
-        va_list args;
-        size_t len = strlen(format);
-        char *full_format = alloca(sizeof(char) * (len + 2));
-
-        // Creating `format + '\n'` to atomically print format and '\n'.
-        memcpy(full_format, format, len);
-        full_format[len] = '\n';
-        full_format[len+1] = '\0';
-
-        va_start(args, format);
-        vfprintf(stderr, full_format, args);
-        va_end(args);
-    }
-}
-
 void
 rb_rjit_cancel_all(const char *reason)
 {
@@ -103,9 +82,6 @@ rb_rjit_cancel_all(const char *reason)
 
     rjit_call_p = false;
     rjit_cancel_p = true;
-    if (rjit_opts.warnings || rjit_opts.verbose) {
-        fprintf(stderr, "JIT cancel: Disabled JIT-ed code because %s\n", reason);
-    }
 }
 
 void
@@ -509,7 +485,7 @@ rjit_init(const struct rjit_options *opts)
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
     if (!rb_const_defined(rb_mRJIT, rb_intern("Compiler"))) {
-        verbose(1, "Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
+        rb_warn("Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
         rjit_enabled = false;
         return;
     }
@@ -529,7 +505,7 @@ rjit_init(const struct rjit_options *opts)
         rjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
 #ifndef HAVE_LIBCAPSTONE
     if (rjit_opts.dump_disasm)
-        verbose(1, "libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
+        rb_warn("libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
 #endif
 }
 
