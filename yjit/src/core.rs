@@ -154,6 +154,15 @@ impl Type {
         }
     }
 
+    /// Check if it's a T_STRING object (both TString and CString are T_STRING)
+    pub fn is_string(&self) -> bool {
+        match self {
+            Type::TString => true,
+            Type::CString => true,
+            _ => false,
+        }
+    }
+
     /// Returns an Option with the T_ value type if it is known, otherwise None
     pub fn known_value_type(&self) -> Option<ruby_value_type> {
         match self {
@@ -258,10 +267,16 @@ impl Type {
 
     /// Upgrade this type into a more specific compatible type
     /// The new type must be compatible and at least as specific as the previously known type.
-    fn upgrade(&mut self, src: Self) {
-        // Here we're checking that src is more specific than self
-        assert!(src.diff(*self) != TypeDiff::Incompatible);
-        *self = src;
+    fn upgrade(&mut self, new_type: Self) {
+        // It's ok to try to upgrade to a less specific type,
+        // but trying to upgrade to a different type is not valid
+        assert!((new_type.is_imm() && self.is_heap()) == false);
+        assert!((new_type.is_heap() && self.is_imm()) == false);
+
+        // If new_type is more specific than self, we uprade the type of self
+        if new_type.diff(*self) != TypeDiff::Incompatible {
+            *self = new_type;
+        }
     }
 }
 
