@@ -6,14 +6,10 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h" // defines USE_RJIT
-
-// ISO C requires a translation unit to contain at least one declaration
-void rb_rjit_c(void) {}
+#include "rjit.h" // defines USE_RJIT
 
 #if USE_RJIT
 
-#include "rjit.h"
 #include "rjit_c.h"
 #include "internal.h"
 #include "internal/compile.h"

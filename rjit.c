@@ -6,10 +6,7 @@
 
 **********************************************************************/
 
-#include "ruby/internal/config.h" // defines USE_RJIT
-
-// ISO C requires a translation unit to contain at least one declaration
-void rb_rjit(void) {}
+#include "rjit.h" // defines USE_RJIT
 
 #if USE_RJIT
 
@@ -32,7 +29,6 @@ void rb_rjit(void) {}
 
 #include "vm_core.h"
 #include "vm_callinfo.h"
-#include "rjit.h"
 #include "rjit_c.h"
 #include "ruby_assert.h"
 #include "ruby/debug.h"
