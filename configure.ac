@@ -3867,11 +3867,11 @@ AC_ARG_ENABLE(rjit,
 
 AS_CASE(["$RJIT_SUPPORT"],
 [yes|dev], [
+    # Link libcapstone for --rjit-dump-disasm
+    AC_CHECK_LIB([capstone], [cs_disasm])
+
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Link libcapstone for --rjit-dump-disasm
-        AC_CHECK_LIB([capstone], [cs_disasm])
-
         # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
         AC_DEFINE(RUBY_DEBUG, 1)
     ])
