@@ -2136,6 +2136,22 @@ rb_nativethread_self(void)
 int
 rb_reserved_fd_p(int fd)
 {
+    /* no false-positive if out-of-FD at startup */
+    if (fd < 0)
+        return 0;
+
+#if UBF_TIMER == UBF_TIMER_PTHREAD
+    if (fd == timer_pthread.low[0] || fd == timer_pthread.low[1])
+        goto check_pid;
+#endif
+    if (fd == signal_self_pipe.normal[0] || fd == signal_self_pipe.normal[1])
+        goto check_pid;
+    if (fd == signal_self_pipe.ub_main[0] || fd == signal_self_pipe.ub_main[1])
+        goto check_pid;
+    return 0;
+check_pid:
+    if (signal_self_pipe.owner_process == getpid()) /* async-signal-safe */
+        return 1;
     return 0;
 }
 
