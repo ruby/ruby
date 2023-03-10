@@ -357,7 +357,6 @@ generator = BindingGenerator.new(
   ],
   values: {
     INT: %w[
-      NOT_COMPILED_STACK_SIZE
       VM_ENV_DATA_INDEX_SPECVAL
       VM_ENV_DATA_INDEX_ME_CREF
     ],
@@ -478,9 +477,6 @@ generator = BindingGenerator.new(
     RObject
     RStruct
     attr_index_t
-    compile_branch
-    compile_status
-    inlined_call_context
     iseq_inline_constant_cache
     iseq_inline_constant_cache_entry
     iseq_inline_iv_cache_entry
@@ -505,9 +501,7 @@ generator = BindingGenerator.new(
     rb_method_iseq_t
     rb_method_type_t
     rb_method_bmethod_t
-    rb_rjit_compile_info
     rb_rjit_runtime_counters
-    rb_rjit_unit
     rb_serial_t
     rb_shape
     rb_shape_t

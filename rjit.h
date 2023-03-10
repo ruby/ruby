@@ -21,71 +21,21 @@
 #include "ruby.h"
 #include "vm_core.h"
 
-// Special address values of a function generated from the
-// corresponding iseq by RJIT:
-enum rb_rjit_func_state {
-    // ISEQ has not been compiled yet
-    RJIT_FUNC_NOT_COMPILED = 0,
-    // ISEQ is already queued for the machine code generation but the
-    // code is not ready yet for the execution
-    RJIT_FUNC_COMPILING = 1,
-    // ISEQ included not compilable insn, some internal assertion failed
-    // or the unit is unloaded
-    RJIT_FUNC_FAILED = 2,
-};
-// Return true if jit_func is part of enum rb_rjit_func_state
-#define RJIT_FUNC_STATE_P(jit_func) ((uintptr_t)(jit_func) <= (uintptr_t)RJIT_FUNC_FAILED)
-
 // RJIT options which can be defined on the MRI command line.
 struct rjit_options {
-    // Converted from "jit" feature flag to tell the enablement
+    // Converted from "rjit" feature flag to tell the enablement
     // information to ruby_show_version().
     bool on;
-    // Save temporary files after MRI finish.  The temporary files
-    // include the pre-compiled header, C code file generated for ISEQ,
-    // and the corresponding object file.
-    bool save_temps;
-    // Print RJIT warnings to stderr.
-    bool warnings;
-    // Disable compiler optimization and add debug symbols. It can be
-    // very slow.
-    bool debug;
-    // Add arbitrary cflags.
-    char* debug_flags;
-    // If true, all ISeqs are synchronously compiled. For testing.
-    bool wait;
     // Number of calls to trigger JIT compilation.
     unsigned int call_threshold;
     // Size of executable memory block in MiB
     unsigned int exec_mem_size;
     // Collect RJIT statistics
     bool stats;
-    // Force printing info about RJIT work of level VERBOSE or
-    // less. 0=silence, 1=medium, 2=verbose.
-    int verbose;
-    // Maximal permitted number of iseq JIT codes in a RJIT memory
-    // cache.
-    int max_cache_size;
-    // [experimental] Do not start RJIT until RJIT.resume is called.
-    bool pause;
-    // [experimental] Call custom RubyVM::RJIT.compile instead of RJIT.
-    bool custom;
     // Enable disasm of all JIT code
     bool dump_disasm;
-};
-
-// State of optimization switches
-struct rb_rjit_compile_info {
-    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (T_OBJECT)
-    bool disable_ivar_cache;
-    // Disable getinstancevariable/setinstancevariable optimizations based on inline cache (FL_EXIVAR)
-    bool disable_exivar_cache;
-    // Disable send/opt_send_without_block optimizations based on inline cache
-    bool disable_send_cache;
-    // Disable method inlining
-    bool disable_inlining;
-    // Disable opt_getinlinecache inlining
-    bool disable_const_cache;
+    // [experimental] Do not start RJIT until RJIT.resume is called.
+    bool pause;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN

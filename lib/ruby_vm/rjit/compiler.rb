@@ -39,7 +39,6 @@ module RubyVM::RJIT
       INSNS.fetch(C.rb_vm_insn_decode(encoded))
     end
 
-    # @param mem_size [Integer] JIT buffer size
     def initialize
       mem_size = C.rjit_opts.exec_mem_size * 1024 * 1024
       mem_block = C.mmap(mem_size)
