@@ -1692,9 +1692,12 @@ nucomp_to_c(VALUE self)
 
 /*
  * call-seq:
- *    nil.to_c  ->  (0+0i)
+ *   to_c -> (0+0i)
  *
- * Returns zero as a complex.
+ * Returns zero as a \Complex:
+ *
+ *   nil.to_c # => (0+0i)
+ *
  */
 static VALUE
 nilclass_to_c(VALUE self)
