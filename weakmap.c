@@ -74,7 +74,7 @@ static const rb_data_type_t weakmap_type = {
         wmap_memsize,
         wmap_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE wmap_finalize(RB_BLOCK_CALL_FUNC_ARGLIST(objid, self));
@@ -86,7 +86,7 @@ wmap_allocate(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
     w->obj2wmap = rb_init_identtable();
     w->wmap2obj = rb_init_identtable();
-    w->final = rb_func_lambda_new(wmap_finalize, obj, 1, 1);
+    RB_OBJ_WRITE(obj, &w->final, rb_func_lambda_new(wmap_finalize, obj, 1, 1));
     return obj;
 }
 
@@ -522,7 +522,7 @@ static const rb_data_type_t weakkeymap_type = {
         wkmap_memsize,
         wkmap_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -559,7 +559,7 @@ wkmap_allocate(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct weakkeymap, &weakkeymap_type, w);
     w->map = st_init_table(&weakkeymap_hash);
     w->obj2hash = rb_init_identtable();
-    w->final = rb_func_lambda_new(wkmap_finalize, obj, 1, 1);
+    RB_OBJ_WRITE(obj, &w->final, rb_func_lambda_new(wkmap_finalize, obj, 1, 1));
     return obj;
 }
 
@@ -652,6 +652,8 @@ wkmap_aset(VALUE self, VALUE key, VALUE value)
         st_insert(w->obj2hash, (st_data_t)key, (st_data_t)hash);
         rb_define_finalizer_no_check(key, w->final);
     }
+
+    RB_OBJ_WRITTEN(self, Qundef, value);
 
     return value;
 }
