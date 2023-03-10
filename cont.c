@@ -1255,6 +1255,8 @@ jit_cont_new(rb_execution_context_t *ec)
 static void
 jit_cont_free(struct rb_jit_cont *cont)
 {
+    if (!cont) return;
+
     rb_native_mutex_lock(&jit_cont_lock);
     if (cont == first_jit_cont) {
         first_jit_cont = cont->next;
