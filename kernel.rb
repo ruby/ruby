@@ -16,7 +16,7 @@ module Kernel
   #++
   #
   def class
-    Primitive.attr! 'inline'
+    Primitive.attr! :inline
     Primitive.cexpr! 'rb_obj_class(self)'
   end
 
@@ -65,7 +65,7 @@ module Kernel
   #++
   #
   def frozen?
-    Primitive.attr! 'inline'
+    Primitive.attr! :inline
     Primitive.cexpr! 'rb_obj_frozen_p(self)'
   end
 
