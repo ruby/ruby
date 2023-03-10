@@ -5,10 +5,6 @@ module RubyVM::RJIT # :nodoc: all
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/rjit/bindgen.rb instead.
   class << C = Object.new
-    #========================================================================================
-    #
-    # New stuff
-    #
     def rjit_mark_writable
       Primitive.cstmt! %{
         extern bool rjit_mark_writable(void *mem_block, uint32_t mem_size);
@@ -427,25 +423,6 @@ module RubyVM::RJIT # :nodoc: all
       }
     end
 
-    #========================================================================================
-    #
-    # Old stuff
-    #
-    def rb_hash_values(cdhash_addr)
-      Primitive.cexpr! 'rb_hash_values((VALUE)NUM2PTR(cdhash_addr))'
-    end
-
-    def has_cache_for_send(cc_ptr, insn)
-      _cc_addr = cc_ptr.to_i
-      Primitive.cstmt! %{
-        extern bool rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn);
-        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(_cc_addr);
-        bool has_cache = vm_cc_cme(cc) != NULL &&
-            !(vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_CFUNC && rb_vm_opt_cfunc_p(cc, NUM2INT(insn)));
-        return RBOOL(has_cache);
-      }
-    end
-
     def rb_shape_get_shape_by_id(shape_id)
       _shape_id = shape_id.to_i
       shape_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_shape_get_shape_by_id((shape_id_t)NUM2UINT(_shape_id)))'
@@ -463,11 +440,6 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! 'rb_iseq_path((rb_iseq_t *)NUM2PTR(_iseq_addr))'
     end
 
-    def rb_iseq_first_lineno(iseq)
-      _iseq_addr = iseq.to_i
-      Primitive.cexpr! 'rb_iseq_first_lineno((rb_iseq_t *)NUM2PTR(_iseq_addr))'
-    end
-
     def vm_ci_argc(ci)
       _ci_addr = ci.to_i
       Primitive.cexpr! 'UINT2NUM(vm_ci_argc((CALL_INFO)NUM2PTR(_ci_addr)))'
@@ -481,33 +453,6 @@ module RubyVM::RJIT # :nodoc: all
     def vm_ci_mid(ci)
       _ci_addr = ci.to_i
       Primitive.cexpr! 'SIZET2NUM((size_t)vm_ci_mid((CALL_INFO)NUM2PTR(_ci_addr)))'
-    end
-
-    def rb_splat_or_kwargs_p(ci)
-      _ci_addr = ci.to_i
-      Primitive.cstmt! %{
-        extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
-        return RBOOL(rb_splat_or_kwargs_p((CALL_INFO)NUM2PTR(_ci_addr)));
-      }
-    end
-
-    # Returns true if iseq can use fastpath for setup, otherwise NULL. This becomes true in the same condition
-    # as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup.
-    def fastpath_applied_iseq_p(ci_ptr, cc_ptr, iseq_ptr)
-      _ci_addr = ci_ptr.to_i
-      _cc_addr = cc_ptr.to_i
-      _iseq_addr = iseq_ptr.to_i
-      Primitive.cstmt! %q{
-        CALL_INFO ci = (CALL_INFO)NUM2PTR(_ci_addr);
-        CALL_CACHE cc = (CALL_CACHE)NUM2PTR(_cc_addr);
-        const rb_iseq_t *iseq = (rb_iseq_t *)NUM2PTR(_iseq_addr);
-
-        bool result = iseq != NULL
-            && !(vm_ci_flag(ci) & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
-            && vm_ci_argc(ci) == (unsigned int)ISEQ_BODY(iseq)->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
-            && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
-        return RBOOL(result);
-      }
     end
 
     def rjit_opts
@@ -528,22 +473,21 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! 'INT2NUM(rb_vm_insn_addr2opcode((void *)NUM2PTR(encoded)))'
     end
 
-    # Convert insn BINs to encoded VM pointers. This one is not used by the compiler, but useful for debugging.
-    def rb_vm_insn_encode(bin)
-      Primitive.cexpr! 'PTR2NUM((VALUE)rb_vm_get_insns_address_table()[NUM2INT(bin)])'
-    end
-
-    def insn_may_depend_on_sp_or_pc(insn, opes)
-      _opes_addr = opes.to_i
-      Primitive.cexpr! 'RBOOL(insn_may_depend_on_sp_or_pc(NUM2INT(insn), (VALUE *)NUM2PTR(_opes_addr)))'
-    end
-
     # Convert Integer VALUE to an actual Ruby object
     def to_ruby(value)
       Primitive.cexpr! '(VALUE)NUM2PTR(value)'
     end
 
-    # Convert RubyVM::InstructionSequence to C.rb_iseq_t. Not used by the compiler, but useful for debugging.
+    #
+    # Utilities: Not used by RJIT, but useful for debugging
+    #
+
+    # Convert insn BINs to encoded VM pointers.
+    def rb_vm_insn_encode(bin)
+      Primitive.cexpr! 'PTR2NUM((VALUE)rb_vm_get_insns_address_table()[NUM2INT(bin)])'
+    end
+
+    # Convert RubyVM::InstructionSequence to C.rb_iseq_t.
     def rb_iseqw_to_iseq(iseqw)
       iseq_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_iseqw_to_iseq(iseqw))'
       rb_iseq_t.new(iseq_addr)
