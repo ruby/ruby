@@ -47,6 +47,7 @@ class Gem::ConfigFile
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
   DEFAULT_IPV4_FALLBACK_ENABLED = false
+  DEFAULT_INSTALL_EXTENSION_IN_LIB = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -59,11 +60,6 @@ class Gem::ConfigFile
   # rubygems/defaults/#{RUBY_ENGINE}.rb
 
   PLATFORM_DEFAULTS = Gem.platform_defaults
-
-  ##
-  # For installation of gems to install build extensions into lib dir
-
-  INSTALL_EXTENSION_IN_LIB = Gem.install_extension_in_lib
 
   # :stopdoc:
 
@@ -148,7 +144,7 @@ class Gem::ConfigFile
   attr_accessor :cert_expiration_length_days
 
   ##
-  #
+  # Install extensions into lib as well as into the extension directory.
 
   attr_accessor :install_extension_in_lib
 
@@ -193,7 +189,7 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
-    @install_extension_in_lib = INSTALL_EXTENSION_IN_LIB
+    @install_extension_in_lib = DEFAULT_INSTALL_EXTENSION_IN_LIB
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
@@ -477,7 +473,7 @@ if you believe they were disclosed to a third party.
       @hash.fetch(:concurrent_downloads, DEFAULT_CONCURRENT_DOWNLOADS)
 
     yaml_hash[:install_extension_in_lib] =
-      @hash.fetch(:install_extension_in_lib, INSTALL_EXTENSION_IN_LIB)
+      @hash.fetch(:install_extension_in_lib, DEFAULT_INSTALL_EXTENSION_IN_LIB)
 
     yaml_hash[:ssl_verify_mode] =
       @hash[:ssl_verify_mode] if @hash.key? :ssl_verify_mode
