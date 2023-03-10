@@ -63,6 +63,12 @@ module JITSupport
       !UNSUPPORTED_ARCHITECTURES.include?(RUBY_PLATFORM.split('-', 2).first)
   end
 
+  def rjit_supported?
+    return @rjit_supported if defined?(@rjit_supported)
+    # nil in mswin
+    @rjit_supported = ![nil, 'no'].include?(RbConfig::CONFIG['RJIT_SUPPORT'])
+  end
+
   def yjit_supported?
     return @yjit_supported if defined?(@yjit_supported)
     # nil in mswin
