@@ -157,7 +157,7 @@ module RubyVM::RJIT
         # D: Operand 1: Offset
         insn(opcode: 0xe8, imm: rel32(dst_addr))
       # CALL r/m64 (Mod 11: reg)
-      in Symbol => dst_reg
+      in Symbol => dst_reg if r64?(dst_reg)
         # FF /2
         # M: Operand 1: ModRM:r/m (r)
         insn(
@@ -172,7 +172,7 @@ module RubyVM::RJIT
     def cmove(dst, src)
       case [dst, src]
       # CMOVE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg]
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 0F 44 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -188,7 +188,7 @@ module RubyVM::RJIT
     def cmovg(dst, src)
       case [dst, src]
       # CMOVG r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg]
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 0F 4F /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -204,7 +204,7 @@ module RubyVM::RJIT
     def cmovge(dst, src)
       case [dst, src]
       # CMOVGE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg]
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 0F 4D /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -220,7 +220,7 @@ module RubyVM::RJIT
     def cmovl(dst, src)
       case [dst, src]
       # CMOVL r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg]
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 0F 4C /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -236,7 +236,7 @@ module RubyVM::RJIT
     def cmovle(dst, src)
       case [dst, src]
       # CMOVLE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg]
+      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
         # REX.W + 0F 4E /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -431,11 +431,11 @@ module RubyVM::RJIT
         # E9 cd
         insn(opcode: 0xe9, imm: rel32(dst_addr))
       # JMP r/m64 (Mod 01: [reg]+disp8)
-      in Array[Symbol => dst_reg, Integer => dst_disp] if imm8?(dst_disp)
+      in Array[Symbol => dst_reg, Integer => dst_disp] if r64?(dst_reg) && imm8?(dst_disp)
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod01, reg: 4, rm: dst_reg], disp: dst_disp)
       # JMP r/m64 (Mod 11: reg)
-      in Symbol => dst_reg
+      in Symbol => dst_reg if r64?(dst_reg)
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg])
       else
