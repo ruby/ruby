@@ -58,6 +58,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":ssl_verify_mode: 0"
       fp.puts ":ssl_ca_cert: /etc/ssl/certs"
       fp.puts ":cert_expiration_length_days: 28"
+      fp.puts ":install_extension_in_lib: true"
       fp.puts ":ipv4_fallback_enabled: true"
     end
 
@@ -73,6 +74,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 0, @cfg.ssl_verify_mode
     assert_equal "/etc/ssl/certs", @cfg.ssl_ca_cert
     assert_equal 28, @cfg.cert_expiration_length_days
+    assert_equal true, @cfg.install_extension_in_lib
     assert_equal true, @cfg.ipv4_fallback_enabled
   end
 
@@ -507,6 +509,14 @@ if you believe they were disclosed to a third party.
     end
     util_config_file
     assert_equal("/home/me/mine.pem", @cfg.ssl_client_cert)
+  end
+
+  def test_load_install_extension_in_lib_from_config
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":install_extension_in_lib: false"
+    end
+    util_config_file
+    assert_equal(false, @cfg.install_extension_in_lib)
   end
 
   def util_config_file(args = @cfg_args)
