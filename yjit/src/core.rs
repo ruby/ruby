@@ -141,6 +141,7 @@ impl Type {
             Type::HeapSymbol => true,
             Type::TString => true,
             Type::CString => true,
+            Type::BlockParamProxy => true,
             _ => false,
         }
     }

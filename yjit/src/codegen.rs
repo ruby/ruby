@@ -353,9 +353,10 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         // If the actual type differs from the learned type
         if val_type.diff(learned_type) == TypeDiff::Incompatible {
             panic!(
-                "verify_ctx: ctx type ({:?}) incompatible with actual value on stack: {}",
+                "verify_ctx: ctx type ({:?}) incompatible with actual value on stack: {} ({:?})",
                 learned_type,
-                obj_info_str(stack_val)
+                obj_info_str(stack_val),
+                val_type,
             );
         }
     }
