@@ -137,14 +137,14 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   private_constant :VERSION_PATTERN
 
-  VERSION_PATTERN_WITH_JIT =
+  VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
       /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
-  private_constant :VERSION_PATTERN_WITH_JIT
+  private_constant :VERSION_PATTERN_WITH_RJIT
 
   def test_verbose
     assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
@@ -212,7 +212,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_version
-    env = {'RUBY_YJIT_ENABLE' => nil} # unset in children
+    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
     assert_in_out_err([env, '--version']) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
       if ENV['RUBY_YJIT_ENABLE'] == '1'
@@ -224,20 +224,17 @@ class TestRubyOptions < Test::Unit::TestCase
       end
       assert_equal([], e)
     end
+  end
 
-    omit "This fails on some CIs for now. To be fixed in RJIT's side."
-    return if RbConfig::CONFIG["RJIT_SUPPORT"] == 'no'
+  def test_rjit_disabled_version
+    return unless JITSupport.rjit_supported?
     return if yjit_force_enabled?
 
+    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
     [
       %w(--version --rjit --disable=rjit),
       %w(--version --enable=rjit --disable=rjit),
       %w(--version --enable-rjit --disable-rjit),
-      *([
-        %w(--version --jit --disable=jit),
-        %w(--version --enable=jit --disable=jit),
-        %w(--version --enable-jit --disable-jit),
-      ] unless JITSupport.yjit_supported?),
     ].each do |args|
       assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
@@ -245,27 +242,26 @@ class TestRubyOptions < Test::Unit::TestCase
         assert_equal([], e)
       end
     end
+  end
 
-    if JITSupport.supported?
-      [
-        %w(--version --rjit),
-        %w(--version --enable=rjit),
-        %w(--version --enable-rjit),
-        *([
-          %w(--version --jit),
-          %w(--version --enable=jit),
-          %w(--version --enable-jit),
-        ] unless JITSupport.yjit_supported?),
-      ].each do |args|
-        assert_in_out_err([env] + args) do |r, e|
-          assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if JITSupport.rjit_force_enabled?
-            assert_equal(RUBY_DESCRIPTION, r[0])
-          else
-            assert_equal(EnvUtil.invoke_ruby([env, '--rjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
-          end
-          assert_equal([], e)
+  def test_rjit_version
+    return unless JITSupport.rjit_supported?
+    return if yjit_force_enabled?
+
+    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
+    [
+      %w(--version --rjit),
+      %w(--version --enable=rjit),
+      %w(--version --enable-rjit),
+    ].each do |args|
+      assert_in_out_err([env] + args) do |r, e|
+        assert_match(VERSION_PATTERN_WITH_RJIT, r[0])
+        if JITSupport.rjit_force_enabled?
+          assert_equal(RUBY_DESCRIPTION, r[0])
+        else
+          assert_equal(EnvUtil.invoke_ruby([env, '--rjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
         end
+        assert_equal([], e)
       end
     end
   end
