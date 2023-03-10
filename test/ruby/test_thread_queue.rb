@@ -7,6 +7,18 @@ class TestThreadQueue < Test::Unit::TestCase
   Queue = Thread::Queue
   SizedQueue = Thread::SizedQueue
 
+  def test_queue_initialized
+    assert_raise_with_message(TypeError, /\bQueue.* not initialized/) {
+      Queue.allocate.push(nil)
+    }
+  end
+
+  def test_sized_queue_initialized
+    assert_raise_with_message(TypeError, /\bSizedQueue.* not initialized/) {
+      SizedQueue.allocate.push(nil)
+    }
+  end
+
   def test_queue
     grind(5, 1000, 15, Queue)
   end
