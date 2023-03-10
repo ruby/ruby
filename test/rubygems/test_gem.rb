@@ -1464,8 +1464,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_load_user_installed_plugins
-    @orig_gem_home = ENV['GEM_HOME']
-    ENV['GEM_HOME'] = @gemhome
+    @orig_gem_home = ENV["GEM_HOME"]
+    ENV["GEM_HOME"] = @gemhome
 
     plugin_path = File.join "lib", "rubygems_plugin.rb"
 
@@ -1490,7 +1490,7 @@ class TestGem < Gem::TestCase
 
     assert_equal %w[plugin], PLUGINS_LOADED
   ensure
-    ENV['GEM_HOME'] = @orig_gem_home
+    ENV["GEM_HOME"] = @orig_gem_home
   end
 
   def test_load_env_plugins
