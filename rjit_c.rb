@@ -474,6 +474,16 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! '(VALUE)NUM2PTR(value)'
     end
 
+    def HAVE_LIBCAPSTONE
+      Primitive.cstmt! %{
+        #ifdef HAVE_LIBCAPSTONE
+          return Qtrue;
+        #else
+          return Qfalse;
+        #endif
+      }
+    end
+
     #
     # Utilities: Not used by RJIT, but useful for debugging
     #
