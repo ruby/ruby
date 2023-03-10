@@ -83,7 +83,7 @@ module RubyVM::RJIT
     def compile_branch_stub(ctx, asm, branch_stub, target0_p)
       # Call rb_rjit_branch_stub_hit
       iseq = branch_stub.iseq
-      if C.rjit_opts.dump_disasm && C.imemo_type(iseq) == C.imemo_iseq # Guard against ISEQ GC at random moments
+      if C.rjit_opts.dump_disasm && C.imemo_type_p(iseq, C.imemo_iseq) # Guard against ISEQ GC at random moments
         asm.comment("branch stub hit: #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq_lineno(iseq, target0_p ? branch_stub.target0.pc : branch_stub.target1.pc)}")
       end
       asm.mov(:rdi, to_value(branch_stub))

@@ -259,9 +259,9 @@ module RubyVM::RJIT # :nodoc: all
       }
     end
 
-    def imemo_type(ptr)
+    def imemo_type_p(ptr, type)
       _ptr = ptr.to_i
-      Primitive.cexpr! 'UINT2NUM(imemo_type((VALUE)NUM2SIZET(_ptr)))'
+      Primitive.cexpr! 'RBOOL(imemo_type_p((VALUE)NUM2SIZET(_ptr), NUM2UINT(type)))'
     end
 
     def rb_iseq_only_optparam_p(iseq)

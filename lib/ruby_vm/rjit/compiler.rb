@@ -139,7 +139,7 @@ module RubyVM::RJIT
     def invalidate_block(block)
       iseq = block.iseq
       # Avoid touching GCed ISEQs. We assume it won't be re-entered.
-      return if C.imemo_type(iseq) != C.imemo_iseq
+      return unless C.imemo_type_p(iseq, C.imemo_iseq)
 
       # Remove this block from the version array
       remove_block(iseq, block)
@@ -296,7 +296,8 @@ module RubyVM::RJIT
 
     def rjit_blocks(iseq)
       # Guard against ISEQ GC at random moments
-      if C.imemo_type(iseq) != C.imemo_iseq
+
+      unless C.imemo_type_p(iseq, C.imemo_iseq)
         return Hash.new { |h, k| h[k] = {} }
       end
 
