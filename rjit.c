@@ -488,7 +488,7 @@ rb_rjit_init(const struct rjit_options *opts)
     rb_cRJITCfpPtr = rb_funcall(rb_mRJITC, rb_intern("rb_control_frame_t"), 0);
     rb_mRJITHooks = rb_const_get(rb_mRJIT, rb_intern("Hooks"));
 
-    rb_rjit_call_p = true;
+    rb_rjit_call_p = !rb_rjit_opts.pause;
     rjit_stats_p = rb_rjit_opts.stats;
 
     // Normalize options
