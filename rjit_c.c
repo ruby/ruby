@@ -33,24 +33,125 @@
 
 #include <errno.h>
 
-static bool
-rjit_mark_writable(void *mem_block, uint32_t mem_size)
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+// Align the current write position to a multiple of bytes
+static uint8_t *
+align_ptr(uint8_t *ptr, uint32_t multiple)
 {
-    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+#endif
+
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
+static uint8_t *
+rjit_reserve_addr_space(uint32_t mem_size)
+{
+#ifndef _WIN32
+    uint8_t *mem_block;
+
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
+        // Align the requested address to page size
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
+        do {
+            mem_block = mmap(
+                req_addr,
+                mem_size,
+                PROT_NONE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                break;
+            }
+
+            // +4MB
+            req_addr += 4 * 1024 * 1024;
+        } while (req_addr < probe_region_end);
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
+        mem_block = mmap(
+            (void *)rjit_reserve_addr_space,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = mmap(
+            NULL,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    }
+
+    // Check that the memory mapping was successful
+    if (mem_block == MAP_FAILED) {
+        perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
+        rb_bug("mmap failed");
+    }
+
+    return mem_block;
+#else
+    // Windows not supported for now
+    return NULL;
+#endif
 }
 
-static void
-rjit_mark_executable(void *mem_block, uint32_t mem_size)
+static VALUE
+mprotect_write(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE rb_mem_size)
 {
-    // Do not call mprotect when mem_size is zero. Some platforms may return
-    // an error for it. https://github.com/Shopify/ruby/issues/450
-    if (mem_size == 0) {
-        return;
-    }
+    void *mem_block = (void *)NUM2SIZET(rb_mem_block);
+    uint32_t mem_size = NUM2UINT(rb_mem_size);
+    return RBOOL(mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0);
+}
+
+static VALUE
+mprotect_exec(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE rb_mem_size)
+{
+    void *mem_block = (void *)NUM2SIZET(rb_mem_block);
+    uint32_t mem_size = NUM2UINT(rb_mem_size);
+    if (mem_size == 0) return Qfalse; // Some platforms return an error for mem_size 0.
+
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+    return Qtrue;
 }
 
 static VALUE

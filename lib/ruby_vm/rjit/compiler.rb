@@ -39,9 +39,10 @@ module RubyVM::RJIT
       INSNS.fetch(C.rb_vm_insn_decode(encoded))
     end
 
-    # @param mem_block [Integer] JIT buffer address
-    # @param mem_size  [Integer] JIT buffer size
-    def initialize(mem_block, mem_size)
+    # @param mem_size [Integer] JIT buffer size
+    def initialize
+      mem_size = C.rjit_opts.exec_mem_size * 1024 * 1024
+      mem_block = C.mmap(mem_size)
       @cb = CodeBlock.new(mem_block: mem_block, mem_size: mem_size / 2)
       @ocb = CodeBlock.new(mem_block: mem_block + mem_size / 2, mem_size: mem_size / 2, outlined: true)
       @exit_compiler = ExitCompiler.new

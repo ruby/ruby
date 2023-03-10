@@ -102,9 +102,6 @@ struct compile_status {
 // New stuff from here
 //
 
-// TODO: Make it configurable
-#define RJIT_CODE_SIZE 64 * 1024 * 1024
-
 extern uint8_t *rb_rjit_mem_block;
 
 #define RJIT_RUNTIME_COUNTERS(...) struct rb_rjit_runtime_counters { size_t __VA_ARGS__; };

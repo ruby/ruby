@@ -54,8 +54,10 @@ struct rjit_options {
     char* debug_flags;
     // If true, all ISeqs are synchronously compiled. For testing.
     bool wait;
-    // Number of calls to trigger JIT compilation. For testing.
+    // Number of calls to trigger JIT compilation.
     unsigned int call_threshold;
+    // Size of executable memory block in MiB
+    unsigned int exec_mem_size;
     // Collect RJIT statistics
     bool stats;
     // Force printing info about RJIT work of level VERBOSE or

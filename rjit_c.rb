@@ -5,20 +5,16 @@ module RubyVM::RJIT # :nodoc: all
   # This `class << C` section is for calling C functions. For importing variables
   # or macros as is, please consider using tool/rjit/bindgen.rb instead.
   class << C = Object.new
-    def rjit_mark_writable
-      Primitive.cstmt! %{
-        extern bool rjit_mark_writable(void *mem_block, uint32_t mem_size);
-        rjit_mark_writable(rb_rjit_mem_block, RJIT_CODE_SIZE);
-        return Qnil;
-      }
+    def mmap(mem_size)
+      Primitive.cexpr! 'SIZET2NUM((size_t)rjit_reserve_addr_space(NUM2UINT(mem_size)))'
     end
 
-    def rjit_mark_executable
-      Primitive.cstmt! %{
-        extern void rjit_mark_executable(void *mem_block, uint32_t mem_size);
-        rjit_mark_executable(rb_rjit_mem_block, RJIT_CODE_SIZE);
-        return Qnil;
-      }
+    def mprotect_write(mem_block, mem_size)
+      Primitive.mprotect_write(mem_block, mem_size)
+    end
+
+    def mprotect_exec(mem_block, mem_size)
+      Primitive.mprotect_exec(mem_block, mem_size)
     end
 
     def rjit_insn_exits
@@ -1623,6 +1619,7 @@ module RubyVM::RJIT # :nodoc: all
       debug_flags: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), debug_flags)")],
       wait: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), wait)")],
       call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), call_threshold)")],
+      exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), exec_mem_size)")],
       stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), stats)")],
       verbose: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), verbose)")],
       max_cache_size: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), max_cache_size)")],

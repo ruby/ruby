@@ -18,9 +18,9 @@ module RubyVM::RJIT
       start_addr = write_addr
 
       # Write machine code
-      C.rjit_mark_writable
+      C.mprotect_write(@mem_block, @mem_size)
       @write_pos += asm.assemble(start_addr)
-      C.rjit_mark_executable
+      C.mprotect_exec(@mem_block, @mem_size)
 
       end_addr = write_addr
 
