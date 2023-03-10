@@ -4996,6 +4996,9 @@ fn gen_send_cfunc(
     // Copy SP because REG_SP will get overwritten
     let sp = asm.lea(ctx.sp_opnd(0));
 
+    // Arguments must be spilled before popped from ctx
+    asm.spill_temps(ctx);
+
     // Pop the C function arguments from the stack (in the caller)
     ctx.stack_pop((argc + 1).try_into().unwrap());
 
