@@ -47,7 +47,7 @@ class Gem::ConfigFile
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
   DEFAULT_IPV4_FALLBACK_ENABLED = false
-  DEFAULT_INSTALL_EXTENSION_IN_LIB = false
+  DEFAULT_INSTALL_EXTENSION_IN_LIB = true
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in

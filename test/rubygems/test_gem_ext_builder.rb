@@ -162,7 +162,7 @@ install:
 
     extension_in_lib(false) do
       @orig_install_extension_in_lib = Gem.configuration.install_extension_in_lib
-      Gem.configuration.install_extension_in_lib = true
+      Gem.configuration.install_extension_in_lib = false
 
       @spec.extensions << "ext/extconf.rb"
 
