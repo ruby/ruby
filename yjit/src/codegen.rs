@@ -1387,6 +1387,39 @@ fn guard_object_is_array(
     }
 }
 
+fn guard_object_is_string(
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    object: Opnd,
+    object_opnd: YARVOpnd,
+    side_exit: Target,
+) {
+    let object_type = ctx.get_opnd_type(object_opnd);
+    if object_type.is_string() {
+        return;
+    }
+
+    let object_reg = match object {
+        Opnd::Reg(_) => object,
+        _ => asm.load(object),
+    };
+    guard_object_is_heap(ctx, asm, object_reg, object_opnd, side_exit);
+
+    asm.comment("guard object is string");
+
+    // Pull out the type mask
+    let flags_reg = asm.load(Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS));
+    let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
+
+    // Compare the result with T_STRING
+    asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
+    asm.jne(side_exit);
+
+    if object_type.diff(Type::TString) != TypeDiff::Incompatible {
+        ctx.upgrade_opnd_type(object_opnd, Type::TString);
+    }
+}
+
 /// This guards that a special flag is not set on a hash.
 /// By passing a hash with this flag set as the last argument
 /// in a splat call, you can change the way keywords are handled
@@ -1419,22 +1452,6 @@ fn guard_object_is_not_ruby2_keyword_hash(
     asm.jnz(side_exit);
 
     asm.write_label(not_ruby2_keyword);
-}
-
-fn guard_object_is_string(
-    asm: &mut Assembler,
-    object_reg: Opnd,
-    side_exit: Target,
-) {
-    asm.comment("guard object is string");
-
-    // Pull out the type mask
-    let flags_reg = asm.load(Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS));
-    let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
-
-    // Compare the result with T_STRING
-    asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
-    asm.jne(side_exit);
 }
 
 // push enough nils onto the stack to fill out an array
@@ -4336,27 +4353,14 @@ fn jit_rb_str_concat(
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // Guard that the argument is of class String at runtime.
-    let arg_type = ctx.get_opnd_type(StackOpnd(0));
+    // Guard that the concat argument is a string
+    guard_object_is_string(ctx, asm, ctx.stack_opnd(0), StackOpnd(0), side_exit);
 
     // Guard buffers from GC since rb_str_buf_append may allocate.
     gen_save_sp(asm, ctx);
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
-
-    // If we're not compile-time certain that this will always be a string, guard at runtime
-    if arg_type != Type::CString && arg_type != Type::TString {
-        let arg_opnd = asm.load(concat_arg);
-        if !arg_type.is_heap() {
-            asm.comment("guard arg not immediate");
-            asm.test(arg_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(side_exit);
-            asm.cmp(arg_opnd, Qfalse.into());
-            asm.je(side_exit);
-        }
-        guard_object_is_string(asm, arg_opnd, side_exit);
-    }
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
     // use rb_yjit_str_simple_append, which calls rb_str_cat.
@@ -7068,6 +7072,7 @@ fn gen_objtostring(
             SEND_MAX_DEPTH,
             side_exit,
         );
+
         // No work needed. The string value is already on the top of the stack.
         KeepCompiling
     } else {

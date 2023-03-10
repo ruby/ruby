@@ -129,8 +129,6 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 
-
-struct rb_thread_struct;
 size_t rb_size_pool_slot_size(unsigned char pool_id);
 
 struct rb_execution_context_struct; /* in vm_core.h */

@@ -113,36 +113,6 @@ impl Assembler
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 
-    /// Merge IR instructions for the x86 platform. As of x86_split, all `out` operands
-    /// are Opnd::Out, but you sometimes want to use Opnd::Reg for example to shorten the
-    /// generated code, which is what this pass does.
-    fn x86_merge(mut self) -> Assembler {
-        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
-        let mut iterator = self.into_draining_iter();
-
-        while let Some((index, mut insn)) = iterator.next_unmapped() {
-            match (&insn, iterator.peek()) {
-                // Merge `lea` and `mov` into a single `lea` when possible
-                (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
-                if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
-                    asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
-                    iterator.map_insn_index(&mut asm);
-                    iterator.next_unmapped(); // Pop merged Insn::Mov
-                }
-                _ => {
-                    let mut opnd_iter = insn.opnd_iter_mut();
-                    while let Some(opnd) = opnd_iter.next() {
-                        *opnd = iterator.map_opnd(*opnd);
-                    }
-                    asm.push_insn(insn);
-                }
-            }
-            iterator.map_insn_index(&mut asm);
-        }
-        asm
-    }
-
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
@@ -370,6 +340,18 @@ impl Assembler
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
                     asm.ccall(*fptr, vec![]);
+                },
+                Insn::Lea { .. } => {
+                    // Merge `lea` and `mov` into a single `lea` when possible
+                    match (&insn, iterator.peek()) {
+                        (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
+                        if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
+                            asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => asm.push_insn(insn),
+                    }
                 },
                 _ => {
                     if insn.out_opnd().is_some() {
@@ -751,7 +733,6 @@ impl Assembler
     {
         let asm = self.alloc_temp_regs(temp_regs);
         let asm = asm.x86_split();
-        let asm = asm.x86_merge();
         let mut asm = asm.alloc_out_regs(out_regs);
 
         // Create label instances in the code block
