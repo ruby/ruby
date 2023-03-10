@@ -6,11 +6,6 @@ module RubyVM::RJIT
       @ocb = ocb
       @exit_compiler = exit_compiler
 
-      @full_cfunc_return = Assembler.new.then do |asm|
-        @exit_compiler.compile_full_cfunc_return(asm)
-        @ocb.write(asm)
-      end
-
       @cfunc_codegen_table = {}
       register_cfunc_codegen_funcs
       # freeze # workaround a binding.irb issue. TODO: resurrect this
@@ -3357,7 +3352,7 @@ module RubyVM::RJIT
       asm.call(:rax) # TODO: use rel32 if close enough
       ctx.stack_pop(1 + argc)
 
-      Invariants.record_global_inval_patch(asm, @full_cfunc_return)
+      Invariants.record_global_inval_patch(asm, full_cfunc_return)
 
       asm.comment('push the return value')
       stack_ret = ctx.stack_push
@@ -3965,6 +3960,13 @@ module RubyVM::RJIT
     def to_value(obj)
       GC_REFS << obj
       C.to_value(obj)
+    end
+
+    def full_cfunc_return
+      @full_cfunc_return ||= Assembler.new.then do |asm|
+        @exit_compiler.compile_full_cfunc_return(asm)
+        @ocb.write(asm)
+      end
     end
   end
 end

@@ -47,11 +47,6 @@ module RubyVM::RJIT
       @exit_compiler = ExitCompiler.new
       @insn_compiler = InsnCompiler.new(@cb, @ocb, @exit_compiler)
       Invariants.initialize(@cb, @ocb, self, @exit_compiler)
-
-      @leave_exit = Assembler.new.then do |asm|
-        @exit_compiler.compile_leave_exit(asm)
-        @ocb.write(asm)
-      end
     end
 
     # Compile an ISEQ from its entry point.
@@ -208,7 +203,7 @@ module RubyVM::RJIT
       asm.mov(SP, [CFP, C.rb_control_frame_t.offsetof(:sp)]) # rbx = cfp->sp
 
       # Setup cfp->jit_return
-      asm.mov(:rax, @leave_exit)
+      asm.mov(:rax, leave_exit)
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:jit_return)], :rax)
     end
 
@@ -263,6 +258,13 @@ module RubyVM::RJIT
 
       incr_counter(:compiled_block_count)
       set_block(iseq, block)
+    end
+
+    def leave_exit
+      @leave_exit ||= Assembler.new.then do |asm|
+        @exit_compiler.compile_leave_exit(asm)
+        @ocb.write(asm)
+      end
     end
 
     def incr_counter(name)
