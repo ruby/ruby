@@ -60,6 +60,11 @@ class Gem::ConfigFile
 
   PLATFORM_DEFAULTS = Gem.platform_defaults
 
+  ##
+  # For installation of gems to install build extensions into lib dir
+
+  INSTALL_EXTENSION_IN_LIB = Gem.install_extension_in_lib
+
   # :stopdoc:
 
   SYSTEM_CONFIG_PATH =
@@ -143,6 +148,11 @@ class Gem::ConfigFile
   attr_accessor :cert_expiration_length_days
 
   ##
+  #
+
+  attr_accessor :install_extension_in_lib
+
+  ##
   # == Experimental ==
   # Fallback to IPv4 when IPv6 is not reachable or slow (default: false)
 
@@ -183,6 +193,7 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
+    @install_extension_in_lib = INSTALL_EXTENSION_IN_LIB
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
@@ -212,6 +223,7 @@ class Gem::ConfigFile
     @disable_default_gem_server  = @hash[:disable_default_gem_server]  if @hash.key? :disable_default_gem_server
     @sources                     = @hash[:sources]                     if @hash.key? :sources
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
+    @install_extension_in_lib    = @hash[:install_extension_in_lib]    if @hash.key? :install_extension_in_lib
     @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
@@ -463,6 +475,9 @@ if you believe they were disclosed to a third party.
 
     yaml_hash[:concurrent_downloads] =
       @hash.fetch(:concurrent_downloads, DEFAULT_CONCURRENT_DOWNLOADS)
+
+    yaml_hash[:install_extension_in_lib] =
+      @hash.fetch(:install_extension_in_lib, INSTALL_EXTENSION_IN_LIB)
 
     yaml_hash[:ssl_verify_mode] =
       @hash[:ssl_verify_mode] if @hash.key? :ssl_verify_mode

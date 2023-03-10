@@ -47,8 +47,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
       nesting = extension_nesting(extension)
 
-      # TODO: remove in RubyGems 4
-      if Gem.install_extension_in_lib && lib_dir
+      if !Gem.configuration.install_extension_in_lib && lib_dir
         nested_lib_dir = File.join(lib_dir, nesting)
         FileUtils.mkdir_p nested_lib_dir
         FileUtils.cp_r dlext_path, nested_lib_dir, remove_destination: true
