@@ -1,6 +1,11 @@
-# RJIT
+# RJIT: Ruby JIT
 
 This document has some tips that might be useful when you work on RJIT.
+
+## Project purpose
+
+This project is for experimental purposes.
+For production deployment, consider using YJIT instead.
 
 ## Supported platforms
 
