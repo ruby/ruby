@@ -3674,7 +3674,16 @@ end
     FileUtils.mkdir_p File.join(@ext.gem_dir, "lib")
 
     # ext_spec used empty extconf.rb, so we need to create dummy extension for rake-compiler case.
+    # Ex. lib/gemname.so
     FileUtils.touch File.join(@ext.gem_dir, "lib", "#{@ext.name}.#{RbConfig::CONFIG['DLEXT']}")
+
+    refute @ext.missing_extensions?
+
+    # Try to another case of extconf.rb
+    # Ex. lib/gemname/parser.so
+    FileUtils.rm File.join(@ext.gem_dir, "lib", "#{@ext.name}.#{RbConfig::CONFIG['DLEXT']}")
+    FileUtils.mkdir_p File.join(@ext.gem_dir, "lib", @ext.name)
+    FileUtils.touch File.join(@ext.gem_dir, "lib", @ext.name, "parser.#{RbConfig::CONFIG['DLEXT']}")
 
     refute @ext.missing_extensions?
   end
