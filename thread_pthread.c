@@ -2127,28 +2127,6 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 }
 #endif
 
-int
-rb_reserved_fd_p(int fd)
-{
-    /* no false-positive if out-of-FD at startup */
-    if (fd < 0)
-        return 0;
-
-#if UBF_TIMER == UBF_TIMER_PTHREAD
-    if (fd == timer_pthread.low[0] || fd == timer_pthread.low[1])
-        goto check_pid;
-#endif
-    if (fd == signal_self_pipe.normal[0] || fd == signal_self_pipe.normal[1])
-        goto check_pid;
-    if (fd == signal_self_pipe.ub_main[0] || fd == signal_self_pipe.ub_main[1])
-        goto check_pid;
-    return 0;
-check_pid:
-    if (signal_self_pipe.owner_process == getpid()) /* async-signal-safe */
-        return 1;
-    return 0;
-}
-
 rb_nativethread_id_t
 rb_nativethread_self(void)
 {
@@ -2156,31 +2134,29 @@ rb_nativethread_self(void)
 }
 
 int
-rb_sigwait_fd_get(const rb_thread_t *th)
+rb_reserved_fd_p(int fd)
 {
-    if (signal_self_pipe.normal[0] >= 0) {
-        VM_ASSERT(signal_self_pipe.owner_process == getpid());
-        /*
-         * no need to keep firing the timer if any thread is sleeping
-         * on the signal self-pipe
-         */
-        ubf_timer_disarm();
-
-        if (ATOMIC_PTR_CAS(sigwait_th, THREAD_INVALID, th) == THREAD_INVALID) {
-            return signal_self_pipe.normal[0];
-        }
-    }
-    return -1; /* avoid thundering herd and work stealing/starvation */
+    return 0;
 }
 
-void
-rb_sigwait_fd_put(const rb_thread_t *th, int fd)
+int
+rb_sigwait_fd_get(rb_thread_t *th)
 {
-    const rb_thread_t *old;
+    return -1; /* TODO */
+}
 
-    VM_ASSERT(signal_self_pipe.normal[0] == fd);
-    old = ATOMIC_PTR_EXCHANGE(sigwait_th, THREAD_INVALID);
-    if (old != th) assert(old == th);
+NORETURN(void rb_sigwait_fd_put(rb_thread_t *, int));
+void
+rb_sigwait_fd_put(rb_thread_t *th, int fd)
+{
+    rb_bug("not implemented, should not be called");
+}
+
+NORETURN(void rb_sigwait_sleep(const rb_thread_t *, int, const rb_hrtime_t *));
+void
+rb_sigwait_sleep(const rb_thread_t *th, int fd, const rb_hrtime_t *rel)
+{
+    rb_bug("not implemented, should not be called");
 }
 
 #ifndef HAVE_PPOLL
@@ -2213,50 +2189,6 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 }
 #  define ppoll(fds,nfds,ts,sigmask) ruby_ppoll((fds),(nfds),(ts),(sigmask))
 #endif
-
-void
-rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
-{
-    struct pollfd pfd;
-    struct timespec ts;
-
-    pfd.fd = sigwait_fd;
-    pfd.events = POLLIN;
-
-    if (!BUSY_WAIT_SIGNALS && ubf_threads_empty()) {
-        (void)ppoll(&pfd, 1, rb_hrtime2timespec(&ts, rel), 0);
-        check_signals_nogvl(th, sigwait_fd);
-    }
-    else {
-        rb_hrtime_t to = RB_HRTIME_MAX, end = 0;
-        int n = 0;
-
-        if (rel) {
-            to = *rel;
-            end = rb_hrtime_add(rb_hrtime_now(), to);
-        }
-        /*
-         * tricky: this needs to return on spurious wakeup (no auto-retry).
-         * But we also need to distinguish between periodic quantum
-         * wakeups, so we care about the result of consume_communication_pipe
-         *
-         * We want to avoid spurious wakeup for Mutex#sleep compatibility
-         * [ruby-core:88102]
-         */
-        for (;;) {
-            const rb_hrtime_t *sto = sigwait_timeout(th, sigwait_fd, &to, &n);
-
-            if (n) return;
-            n = ppoll(&pfd, 1, rb_hrtime2timespec(&ts, sto), 0);
-            if (check_signals_nogvl(th, sigwait_fd))
-                return;
-            if (n || (th && RUBY_VM_INTERRUPTED(th->ec)))
-                return;
-            if (rel && hrtime_update_expire(&to, end))
-                return;
-        }
-    }
-}
 
 /*
  * we need to guarantee wakeups from native_ppoll_sleep because
