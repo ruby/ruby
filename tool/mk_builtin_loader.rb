@@ -6,7 +6,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[inline]
+BUILTIN_ATTRS = %w[leaf]
 
 def string_literal(lit, str = [])
   while lit
@@ -46,15 +46,12 @@ end
 
 def inline_attrs(args)
   raise "args was empty" if args.empty?
-  attrs = []
   args.each do |arg|
     attr = symbol_literal(arg)
     unless BUILTIN_ATTRS.include?(attr)
       raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
     end
-    attrs << attr
   end
-  attrs
 end
 
 def make_cfunc_name inlines, name, lineno

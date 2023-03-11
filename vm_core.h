@@ -368,7 +368,7 @@ enum rb_iseq_type {
 // Attributes specified by Primitive.attr!
 enum rb_builtin_attr {
     // If true, this ISeq does not call methods.
-    BUILTIN_ATTR_INLINE = 0x01,
+    BUILTIN_ATTR_LEAF = 0x01,
 };
 
 struct rb_iseq_constant_body {

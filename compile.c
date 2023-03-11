@@ -8214,7 +8214,7 @@ delegate_call_p(const rb_iseq_t *iseq, unsigned int argc, const LINK_ANCHOR *arg
     }
 }
 
-// Compile Primitive.attr! :inline, ...
+// Compile Primitive.attr! :leaf, ...
 static int
 compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 {
@@ -8233,8 +8233,8 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         if (!SYMBOL_P(symbol)) goto non_symbol_arg;
 
         string = rb_sym_to_s(symbol);
-        if (strcmp(RSTRING_PTR(string), "inline") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE;
+        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
         }
         else {
             goto unknown_arg;

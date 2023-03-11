@@ -86,7 +86,7 @@ class Integer
   #
   # Returns +int+, negated.
   def -@
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_uminus(self)'
   end
 
@@ -102,7 +102,7 @@ class Integer
   #
   #   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
   def ~
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_comp(self)'
   end
 
@@ -117,7 +117,7 @@ class Integer
   #    12345.abs      #=> 12345
   #
   def abs
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_abs(self)'
   end
 
@@ -163,7 +163,7 @@ class Integer
   #      raise "overflow"
   #    end
   def bit_length
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_bit_length(self)'
   end
 
@@ -172,7 +172,7 @@ class Integer
   #
   #  Returns +true+ if +int+ is an even number.
   def even?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_even_p(self)'
   end
 
@@ -191,7 +191,7 @@ class Integer
   #
   #  Returns +true+ if +int+ is an odd number.
   def odd?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_odd_p(self)'
   end
 
@@ -226,7 +226,7 @@ class Integer
   #     (256**40 - 1).size   #=> 40
   #
   def size
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_size(self)'
   end
 
@@ -251,7 +251,7 @@ class Integer
   #
   # Returns +true+ if +int+ has a zero value.
   def zero?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
 
@@ -316,12 +316,12 @@ class Float
   #     34.56.abs      #=> 34.56
   #
   def abs
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
   def magnitude
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
@@ -332,7 +332,7 @@ class Float
   # Returns +float+, negated.
   #
   def -@
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_uminus(self)'
   end
 
@@ -343,7 +343,7 @@ class Float
   #  Returns +true+ if +float+ is 0.0.
   #
   def zero?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(FLOAT_ZERO_P(self))'
   end
 
@@ -354,7 +354,7 @@ class Float
   #  Returns +true+ if +float+ is greater than 0.
   #
   def positive?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) > 0.0)'
   end
 
@@ -365,7 +365,7 @@ class Float
   #  Returns +true+ if +float+ is less than 0.
   #
   def negative?
-    Primitive.attr! :inline
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 

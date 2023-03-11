@@ -735,7 +735,7 @@ rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
     return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
-        (iseq->body->builtin_attrs & BUILTIN_ATTR_INLINE) != 0
+        (iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF) != 0
     );
 }
 
