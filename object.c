@@ -1291,7 +1291,7 @@ rb_obj_frozen_p(VALUE obj)
  *
  *  Returns an empty String:
  *
- *   nil.to_s # => ""
+ *    nil.to_s # => ""
  *
  */
 

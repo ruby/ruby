@@ -2124,9 +2124,7 @@ nilclass_to_r(VALUE self)
  *
  *   nil.rationalize # => (0/1)
  *
- * Argument +eps+ is evaluated:
- *
- *   nil.rationalize(fail 'Calamity') # Raises RuntimeError.
+ * Argument +eps+ is ignored.
  *
  */
 static VALUE
