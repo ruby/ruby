@@ -1255,7 +1255,7 @@ rb_obj_frozen_p(VALUE obj)
 /*
  * Document-class: NilClass
  *
- *  The class of the singleton object +nil+.
+ * The class of the singleton object +nil+.
  *
  * Several of its methods act as operators:
  *
