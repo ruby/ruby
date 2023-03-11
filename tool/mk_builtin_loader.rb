@@ -6,6 +6,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
+BUILTIN_ATTRS = %w[inline]
 
 def string_literal(lit, str = [])
   while lit
@@ -25,11 +26,31 @@ def string_literal(lit, str = [])
   end
 end
 
+# e.g. [:symbol_literal, [:symbol, [:@ident, "inline", [19, 21]]]]
+def symbol_literal(lit)
+  symbol_literal, symbol_lit = lit
+  raise "#{lit.inspect} was not :symbol_literal" if symbol_literal != :symbol_literal
+  symbol, ident_lit = symbol_lit
+  raise "#{symbol_lit.inspect} was not :symbol" if symbol != :symbol
+  ident, symbol_name, = ident_lit
+  raise "#{ident.inspect} was not :@ident" if ident != :@ident
+  symbol_name
+end
+
 def inline_text argc, arg1
   raise "argc (#{argc}) of inline! should be 1" unless argc == 1
   arg1 = string_literal(arg1)
   raise "1st argument should be string literal" unless arg1
   arg1.join("").rstrip
+end
+
+def inline_attr(argc, arg1)
+  raise "argc (#{argc}) of attr! should be 1" unless argc == 1
+  attr = symbol_literal(arg1)
+  unless BUILTIN_ATTRS.include?(attr)
+    raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
+  end
+  attr
 end
 
 def make_cfunc_name inlines, name, lineno
@@ -138,10 +159,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         if /(.+)[\!\?]\z/ =~ func_name
           case $1
           when 'attr'
-            text = inline_text(argc, args.first)
-            if text != 'inline'
-              raise "Only 'inline' is allowed to be annotated (but got: '#{text}')"
-            end
+            text = inline_attr(argc, args.first)
             break
           when 'cstmt'
             text = inline_text argc, args.first
