@@ -1256,7 +1256,7 @@ module RubyVM::RJIT # :nodoc: all
       ci_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ci_size)")],
       stack_max: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), stack_max)")],
       catch_except_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), catch_except_p)")],
-      builtin_inline_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), builtin_inline_p)")],
+      builtin_attrs: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), builtin_attrs)")],
       mark_bits: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->mark_bits)"),
         list: CType::Pointer.new { self.iseq_bits_t },

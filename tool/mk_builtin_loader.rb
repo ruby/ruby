@@ -44,13 +44,17 @@ def inline_text argc, arg1
   arg1.join("").rstrip
 end
 
-def inline_attr(argc, arg1)
-  raise "argc (#{argc}) of attr! should be 1" unless argc == 1
-  attr = symbol_literal(arg1)
-  unless BUILTIN_ATTRS.include?(attr)
-    raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
+def inline_attrs(args)
+  raise "args was empty" if args.empty?
+  attrs = []
+  args.each do |arg|
+    attr = symbol_literal(arg)
+    unless BUILTIN_ATTRS.include?(attr)
+      raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
+    end
+    attrs << attr
   end
-  attr
+  attrs
 end
 
 def make_cfunc_name inlines, name, lineno
@@ -159,7 +163,8 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         if /(.+)[\!\?]\z/ =~ func_name
           case $1
           when 'attr'
-            text = inline_attr(argc, args.first)
+            # Compile-time validation only. compile.c will parse them.
+            inline_attrs(args)
             break
           when 'cstmt'
             text = inline_text argc, args.first

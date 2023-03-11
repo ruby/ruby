@@ -365,6 +365,12 @@ enum rb_iseq_type {
     ISEQ_TYPE_PLAIN
 };
 
+// Attributes specified by Primitive.attr!
+enum rb_builtin_attr {
+    // If true, this ISeq does not call methods.
+    BUILTIN_ATTR_INLINE = 0x01,
+};
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -484,12 +490,7 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
-    // If true, this ISeq is leaf *and* backtraces are not used, for example,
-    // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
-    // Note that GC allocations might use backtraces due to
-    // ObjectSpace#trace_object_allocations.
-    // For more details, see: https://bugs.ruby-lang.org/issues/16956
-    bool builtin_inline_p;
+    unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     union {
         iseq_bits_t * list; /* Find references for GC */
