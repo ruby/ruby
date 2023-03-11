@@ -20,7 +20,7 @@ skip_commits:
     - '**/*.[1-8]'
     - '**/*.ronn'
 environment:
-  ruby_version: "24-%Platform%"
+  ruby_version: "25-%Platform%"
   matrix:
     # Test only the oldest supported version because AppVeyor is unstable, its concurrency
     # is limited, and compatibility issues that happen only in newer versions are rare.
