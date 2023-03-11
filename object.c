@@ -1485,7 +1485,7 @@ rb_false_to_s(VALUE obj)
  *
  * Argument +object+ is evaluated:
  *
- *   false & (fail 'Calamity') # Raises RuntimeError.
+ *   false & raise # Raises RuntimeError.
  *
  */
 static VALUE
