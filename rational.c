@@ -2105,7 +2105,7 @@ rb_float_denominator(VALUE self)
  * call-seq:
  *   to_r  ->  (0/1)
  *
- * Returns zero as a \Rational:
+ * Returns zero as a Rational:
  *
  *   nil.to_r # => (0/1)
  *
@@ -2120,7 +2120,7 @@ nilclass_to_r(VALUE self)
  * call-seq:
  *   rationalize(eps = nil)  ->  (0/1)
  *
- * Returns zero as a \Rational:
+ * Returns zero as a Rational:
  *
  *   nil.rationalize # => (0/1)
  *

@@ -112,7 +112,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *
  * Returns +true+ or +false+.
  *
- * Like Object#== if +object+ is an instance of \Object
+ * Like Object#== if +object+ is an instance of Object
  * (and not an instance of one of its many subclasses).
  *
  * This method is commonly overridden by those subclasses,
@@ -1307,7 +1307,7 @@ rb_nil_to_s(VALUE obj)
  * call-seq:
  *   to_a -> []
  *
- * Returns an empty array.
+ * Returns an empty Array.
  *
  *   nil.to_a # => []
  *
@@ -1325,7 +1325,7 @@ nil_to_a(VALUE obj)
  * call-seq:
  *   to_h -> {}
  *
- * Returns an empty hash.
+ * Returns an empty Hash.
  *
  *   nil.to_h   #=> {}
  *

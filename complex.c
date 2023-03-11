@@ -1694,7 +1694,7 @@ nucomp_to_c(VALUE self)
  * call-seq:
  *   to_c -> (0+0i)
  *
- * Returns zero as a \Complex:
+ * Returns zero as a Complex:
  *
  *   nil.to_c # => (0+0i)
  *
