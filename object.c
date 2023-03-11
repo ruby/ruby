@@ -1361,7 +1361,7 @@ nil_inspect(VALUE obj)
  *
  * This method makes it useful to write:
  *
- *   while gets =~ /re/ do
+ *   while gets =~ /re/
  *     # ...
  *   end
  *
