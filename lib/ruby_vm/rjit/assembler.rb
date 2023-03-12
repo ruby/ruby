@@ -107,8 +107,6 @@ module RubyVM::RJIT
           opcode: 0x01,
           mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
         )
-      else
-        raise NotImplementedError, "add: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -144,8 +142,6 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
           disp: imm8(src_disp),
         )
-      else
-        raise NotImplementedError, "and: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -164,8 +160,6 @@ module RubyVM::RJIT
           opcode: 0xff,
           mod_rm: ModRM[mod: Mod11, reg: 2, rm: dst_reg],
         )
-      else
-        raise NotImplementedError, "call: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -180,8 +174,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x44],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmove: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -196,8 +188,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x4f],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmovg: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -212,8 +202,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x4d],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmovge: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -228,8 +216,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x4c],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmovl: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -244,8 +230,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x4e],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmovle: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -260,8 +244,6 @@ module RubyVM::RJIT
           opcode: [0x0f, 0x45],
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
-      else
-        raise NotImplementedError, "cmovnz: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -286,8 +268,6 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
           disp: imm8(src_disp),
         )
-      else
-        raise NotImplementedError, "cmovz: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -374,8 +354,6 @@ module RubyVM::RJIT
           opcode: 0x39,
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
         )
-      else
-        raise NotImplementedError, "cmp: not-implemented operands: #{left.inspect}, #{right.inspect}"
       end
     end
 
@@ -389,8 +367,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 86 cd
         insn(opcode: [0x0f, 0x86], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jbe: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -404,8 +380,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 84 cd
         insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "je: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -415,8 +389,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 8C cd
         insn(opcode: [0x0f, 0x8c], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jl: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -438,8 +410,6 @@ module RubyVM::RJIT
       in Symbol => dst_reg if r64?(dst_reg)
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg])
-      else
-        raise NotImplementedError, "jmp: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -449,8 +419,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 85 cd
         insn(opcode: [0x0f, 0x85], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jne: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -464,8 +432,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 85 cd
         insn(opcode: [0x0f, 0x85], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jnz: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -475,8 +441,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 80 cd
         insn(opcode: [0x0f, 0x80], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jo: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -490,8 +454,6 @@ module RubyVM::RJIT
       in Integer => dst_addr
         # 0F 84 cd
         insn(opcode: [0x0f, 0x84], imm: rel32(dst_addr))
-      else
-        raise NotImplementedError, "jz: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -517,8 +479,6 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod10, reg: dst_reg, rm: src_reg],
           disp: imm32(src_disp),
         )
-      else
-        raise NotImplementedError, "lea: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -602,8 +562,6 @@ module RubyVM::RJIT
             rd: dst_reg,
             imm: imm64(src_imm),
           )
-        else
-          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
       in Array[Symbol => dst_reg]
         case src
@@ -626,8 +584,6 @@ module RubyVM::RJIT
             opcode: 0x89,
             mod_rm: ModRM[mod: Mod00, reg: src_reg, rm: dst_reg],
           )
-        else
-          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
       in DwordPtr[reg: dst_reg, disp: dst_disp]
         case src
@@ -641,8 +597,6 @@ module RubyVM::RJIT
             disp: dst_disp,
             imm: imm32(src_imm),
           )
-        else
-          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
       in Array[Symbol => dst_reg, Integer => dst_disp]
         # Optimize encoding when disp is 0
@@ -691,11 +645,7 @@ module RubyVM::RJIT
             mod_rm: ModRM[mod: Mod10, reg: src_reg, rm: dst_reg],
             disp: imm32(dst_disp),
           )
-        else
-          raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
         end
-      else
-        raise NotImplementedError, "mov: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -731,8 +681,6 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
           disp: imm8(src_disp),
         )
-      else
-        raise NotImplementedError, "or: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -743,8 +691,6 @@ module RubyVM::RJIT
         # 50+rd
         # O: Operand 1: opcode + rd (r)
         insn(opcode: 0x50, rd: src_reg)
-      else
-        raise NotImplementedError, "push: not-implemented operands: #{src.inspect}"
       end
     end
 
@@ -755,8 +701,6 @@ module RubyVM::RJIT
         # 58+ rd
         # O: Operand 1: opcode + rd (r)
         insn(opcode: 0x58, rd: dst_reg)
-      else
-        raise NotImplementedError, "pop: not-implemented operands: #{dst.inspect}"
       end
     end
 
@@ -777,8 +721,6 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod11, reg: 7, rm: dst_reg],
           imm: imm8(src_imm),
         )
-      else
-        raise NotImplementedError, "sar: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -803,8 +745,6 @@ module RubyVM::RJIT
           opcode: 0x29,
           mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
         )
-      else
-        raise NotImplementedError, "sub: not-implemented operands: #{dst.inspect}, #{src.inspect}"
       end
     end
 
@@ -869,8 +809,6 @@ module RubyVM::RJIT
           opcode: 0x85,
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
         )
-      else
-        raise NotImplementedError, "test: not-implemented operands: #{left.inspect}, #{right.inspect}"
       end
     end
 
