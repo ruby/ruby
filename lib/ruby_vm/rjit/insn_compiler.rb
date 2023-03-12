@@ -2713,7 +2713,7 @@ module RubyVM::RJIT
         asm.comment('call rb_str_eql_internal')
         asm.mov(C_ARGS[0], a_opnd)
         asm.mov(C_ARGS[1], b_opnd)
-        asm.call(gen_eq ? C.rb_str_eql_internal : C.rb_str_neq_internal)
+        asm.call(gen_eq ? C.rb_str_eql_internal : C.rjit_str_neq_internal)
 
         # Push the output on the stack
         ctx.stack_pop(2)
@@ -3552,7 +3552,7 @@ module RubyVM::RJIT
       asm.lea(C_ARGS[3], [:rax, -argc * C.VALUE.size]) # stack_argument_pointer. NOTE: C_ARGS[3] is rcx
       asm.mov(C_ARGS[4], kw_splat)
       asm.mov(C_ARGS[5], C.VM_BLOCK_HANDLER_NONE)
-      asm.call(C.rb_optimized_call)
+      asm.call(C.rjit_optimized_call)
 
       ctx.stack_pop(argc + 1)
 

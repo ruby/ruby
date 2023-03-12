@@ -43,7 +43,7 @@ module RubyVM::RJIT
       asm.comment('full cfunc return')
       asm.mov(C_ARGS[0], EC)
       asm.mov(C_ARGS[1], :rax)
-      asm.call(C.rb_full_cfunc_return)
+      asm.call(C.rjit_full_cfunc_return)
 
       # TODO: count the exit
 

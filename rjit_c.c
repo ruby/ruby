@@ -288,8 +288,20 @@ rjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
     return Qnil;
 }
 
-extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+// bindgen funcs
 extern ID rb_get_symbol_id(VALUE name);
+extern VALUE rb_fix_aref(VALUE fix, VALUE idx);
+extern VALUE rb_str_getbyte(VALUE str, VALUE index);
+extern VALUE rb_vm_concat_array(VALUE ary1, VALUE ary2st);
+extern VALUE rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil);
+extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
+extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
+extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
+extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
+extern rb_event_flag_t rb_rjit_global_events;
+extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
 
 #include "rjit_c.rbinc"
 

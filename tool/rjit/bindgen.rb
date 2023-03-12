@@ -107,14 +107,16 @@ class BindingGenerator
 
   # @param src_path [String]
   # @param values [Hash{ Symbol => Array<String> }]
+  # @param funcs [Array<String>]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, values:, types:, dynamic_types:, skip_fields:, ruby_fields:)
+  def initialize(src_path:, values:, funcs:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
     @values = values.transform_values(&:sort)
+    @funcs = funcs.sort
     @types = types.sort
     @dynamic_types = dynamic_types.sort
     @skip_fields = skip_fields.transform_keys(&:to_s)
@@ -133,6 +135,13 @@ class BindingGenerator
         println "  end"
         println
       end
+    end
+
+    @funcs.each do |func|
+      println "  def C.#{func}"
+      println "    Primitive.cexpr! %q{ SIZET2NUM((size_t)#{func}) }"
+      println "  end"
+      println
     end
 
     # TODO: Support nested declarations
@@ -447,8 +456,47 @@ generator = BindingGenerator.new(
       rb_cNilClass
       rb_cSymbol
       rb_cTrueClass
+      rb_rjit_global_events
     ],
   },
+  funcs: %w[
+    rb_ary_entry_internal
+    rb_ary_push
+    rb_ary_resurrect
+    rb_ary_store
+    rb_ec_ary_new_from_values
+    rb_ec_str_resurrect
+    rb_ensure_iv_list_size
+    rb_fix_aref
+    rb_fix_div_fix
+    rb_fix_mod_fix
+    rb_fix_mul_fix
+    rb_gc_writebarrier
+    rb_get_symbol_id
+    rb_hash_aref
+    rb_hash_aset
+    rb_hash_bulk_insert
+    rb_hash_new
+    rb_hash_new_with_size
+    rb_ivar_get
+    rb_obj_as_string_result
+    rb_obj_is_kind_of
+    rb_str_concat_literals
+    rb_str_eql_internal
+    rb_str_getbyte
+    rb_vm_bh_to_procval
+    rb_vm_concat_array
+    rb_vm_defined
+    rb_vm_get_ev_const
+    rb_vm_getclassvariable
+    rb_vm_ic_hit_p
+    rb_vm_opt_newarray_min
+    rb_vm_setinstancevariable
+    rb_vm_splat_array
+    rjit_full_cfunc_return
+    rjit_optimized_call
+    rjit_str_neq_internal
+  ],
   types: %w[
     CALL_DATA
     IC

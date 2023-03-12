@@ -126,99 +126,12 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! 'RBOOL(FL_TEST(obj, (VALUE)NUM2SIZET(flags)))'
     end
 
-    def rb_hash_aref
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aref)'
-    end
-
-    def rb_vm_setinstancevariable
-      Primitive.cstmt! %{
-        extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
-        return SIZET2NUM((size_t)rb_vm_setinstancevariable);
-      }
-    end
-
-    def rb_full_cfunc_return
-      Primitive.cstmt! %{
-        extern void rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value);
-        return SIZET2NUM((size_t)rjit_full_cfunc_return);
-      }
-    end
-
-    def rb_ary_entry_internal
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_entry_internal)'
-    end
-
-    def rb_fix_mod_fix
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_mod_fix)'
-    end
-
     def rjit_for_each_iseq(&block)
       Primitive.rjit_for_each_iseq(block)
     end
 
-    def rb_rjit_global_events
-      Primitive.cstmt! %{
-        extern rb_event_flag_t rb_rjit_global_events;
-        return SIZET2NUM((size_t)rb_rjit_global_events);
-      }
-    end
-
-    def rb_str_eql_internal
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_eql_internal)'
-    end
-
-    def rb_str_neq_internal
-      Primitive.cstmt! %{
-        extern VALUE rjit_str_neq_internal(VALUE str1, VALUE str2);
-        return SIZET2NUM((size_t)rjit_str_neq_internal);
-      }
-    end
-
-    def rb_ary_resurrect
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_resurrect)'
-    end
-
-    def rb_ary_store
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_store)'
-    end
-
-    def rb_hash_aset
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_aset)'
-    end
-
     def get_symbol_id(name)
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_get_symbol_id(name))'
-    end
-
-    def rb_get_symbol_id
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_get_symbol_id)'
-    end
-
-    def rb_ec_ary_new_from_values
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_ary_new_from_values)'
-    end
-
-    def rb_vm_splat_array
-      Primitive.cstmt! %{
-        extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
-        return SIZET2NUM((size_t)rb_vm_splat_array);
-      }
-    end
-
-    def rb_ec_str_resurrect
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ec_str_resurrect)'
-    end
-
-    def rb_hash_new_with_size
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_new_with_size)'
-    end
-
-    def rb_hash_new
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_new)'
-    end
-
-    def rb_hash_bulk_insert
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_hash_bulk_insert)'
     end
 
     def rb_vm_frame_method_entry(cfp)
@@ -238,17 +151,6 @@ module RubyVM::RJIT # :nodoc: all
 
     def obj_is_kind_of(obj, c)
       Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
-    end
-
-    def rb_obj_is_kind_of
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_obj_is_kind_of)'
-    end
-
-    def rb_vm_defined
-      Primitive.cstmt! %{
-        extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
-        return SIZET2NUM((size_t)rb_vm_defined);
-      }
     end
 
     def imemo_type_p(ptr, type)
@@ -272,17 +174,6 @@ module RubyVM::RJIT # :nodoc: all
       }
     end
 
-    def rb_vm_opt_newarray_min
-      Primitive.cstmt! %{
-        extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
-        return SIZET2NUM((size_t)rb_vm_opt_newarray_min);
-      }
-    end
-
-    def rb_gc_writebarrier
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_gc_writebarrier)'
-    end
-
     def rb_obj_frozen_p(obj)
       Primitive.cexpr! 'rb_obj_frozen_p(obj)'
     end
@@ -294,25 +185,6 @@ module RubyVM::RJIT # :nodoc: all
     def rb_method_entry_at(klass, mid)
       me_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_method_entry_at(klass, (ID)NUM2SIZET(mid)))'
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
-    end
-
-    def rb_fix_mul_fix
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_mul_fix)'
-    end
-
-    def rb_fix_div_fix
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_fix_div_fix)'
-    end
-
-    def rb_ary_push
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ary_push)'
-    end
-
-    def rb_fix_aref
-      Primitive.cstmt! %{
-        extern VALUE rb_fix_aref(VALUE fix, VALUE idx);
-        return SIZET2NUM((size_t)rb_fix_aref);
-      }
     end
 
     def rb_shape_transition_shape_capa(shape, new_capacity)
@@ -332,67 +204,12 @@ module RubyVM::RJIT # :nodoc: all
       Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_id((rb_shape_t *)NUM2SIZET(_shape)))'
     end
 
-    def rb_ensure_iv_list_size
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ensure_iv_list_size)'
-    end
-
-    def rb_ivar_get
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_ivar_get)'
-    end
-
-    def rb_vm_getclassvariable
-      Primitive.cstmt! %{
-        extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
-        return SIZET2NUM((size_t)rb_vm_getclassvariable);
-      }
-    end
-
-    def rb_vm_ic_hit_p
-      Primitive.cstmt! %{
-        extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
-        return SIZET2NUM((size_t)rb_vm_ic_hit_p);
-      }
-    end
-
-    def rb_obj_as_string_result
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_obj_as_string_result)'
-    end
-
-    def rb_str_concat_literals
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_str_concat_literals)'
-    end
-
     def rb_class_attached_object(klass)
       Primitive.cexpr! 'rb_class_attached_object(klass)'
     end
 
-    def rb_vm_get_ev_const
-      Primitive.cstmt! %{
-        extern VALUE rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil);
-        return SIZET2NUM((size_t)rb_vm_get_ev_const);
-      }
-    end
-
-    def rb_vm_concat_array
-      Primitive.cstmt! %{
-        extern VALUE rb_vm_concat_array(VALUE ary1, VALUE ary2st);
-        return SIZET2NUM((size_t)rb_vm_concat_array);
-      }
-    end
-
-    def rb_vm_bh_to_procval
-      Primitive.cexpr! 'SIZET2NUM((size_t)rb_vm_bh_to_procval)'
-    end
-
     def rb_singleton_class(obj)
       Primitive.cexpr! 'rb_singleton_class(obj)'
-    end
-
-    def rb_optimized_call
-      Primitive.cstmt! %{
-        extern VALUE rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler);
-        return SIZET2NUM((size_t)rjit_optimized_call);
-      }
     end
 
     def rb_aliased_callable_method_entry(cme)
@@ -410,13 +227,6 @@ module RubyVM::RJIT # :nodoc: all
         return SIZET2NUM((size_t)rjit_get_proc_ptr((VALUE)NUM2SIZET(proc_addr)));
       }
       rb_proc_t.new(proc_t_addr)
-    end
-
-    def rb_str_getbyte
-      Primitive.cstmt! %{
-        extern VALUE rb_str_getbyte(VALUE str, VALUE index);
-        return SIZET2NUM((size_t)rb_str_getbyte);
-      }
     end
 
     def rb_shape_get_shape_by_id(shape_id)
@@ -904,6 +714,154 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_cTrueClass
     Primitive.cexpr! %q{ SIZET2NUM(rb_cTrueClass) }
+  end
+
+  def C.rb_rjit_global_events
+    Primitive.cexpr! %q{ SIZET2NUM(rb_rjit_global_events) }
+  end
+
+  def C.rb_ary_entry_internal
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_entry_internal) }
+  end
+
+  def C.rb_ary_push
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_push) }
+  end
+
+  def C.rb_ary_resurrect
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_resurrect) }
+  end
+
+  def C.rb_ary_store
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_store) }
+  end
+
+  def C.rb_ec_ary_new_from_values
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ec_ary_new_from_values) }
+  end
+
+  def C.rb_ec_str_resurrect
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ec_str_resurrect) }
+  end
+
+  def C.rb_ensure_iv_list_size
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ensure_iv_list_size) }
+  end
+
+  def C.rb_fix_aref
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_fix_aref) }
+  end
+
+  def C.rb_fix_div_fix
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_fix_div_fix) }
+  end
+
+  def C.rb_fix_mod_fix
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_fix_mod_fix) }
+  end
+
+  def C.rb_fix_mul_fix
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_fix_mul_fix) }
+  end
+
+  def C.rb_gc_writebarrier
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_gc_writebarrier) }
+  end
+
+  def C.rb_get_symbol_id
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_get_symbol_id) }
+  end
+
+  def C.rb_hash_aref
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_aref) }
+  end
+
+  def C.rb_hash_aset
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_aset) }
+  end
+
+  def C.rb_hash_bulk_insert
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_bulk_insert) }
+  end
+
+  def C.rb_hash_new
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_new) }
+  end
+
+  def C.rb_hash_new_with_size
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_new_with_size) }
+  end
+
+  def C.rb_ivar_get
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ivar_get) }
+  end
+
+  def C.rb_obj_as_string_result
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_obj_as_string_result) }
+  end
+
+  def C.rb_obj_is_kind_of
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_obj_is_kind_of) }
+  end
+
+  def C.rb_str_concat_literals
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_concat_literals) }
+  end
+
+  def C.rb_str_eql_internal
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_eql_internal) }
+  end
+
+  def C.rb_str_getbyte
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_getbyte) }
+  end
+
+  def C.rb_vm_bh_to_procval
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_bh_to_procval) }
+  end
+
+  def C.rb_vm_concat_array
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_concat_array) }
+  end
+
+  def C.rb_vm_defined
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_defined) }
+  end
+
+  def C.rb_vm_get_ev_const
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_get_ev_const) }
+  end
+
+  def C.rb_vm_getclassvariable
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_getclassvariable) }
+  end
+
+  def C.rb_vm_ic_hit_p
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_ic_hit_p) }
+  end
+
+  def C.rb_vm_opt_newarray_min
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_min) }
+  end
+
+  def C.rb_vm_setinstancevariable
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_setinstancevariable) }
+  end
+
+  def C.rb_vm_splat_array
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_splat_array) }
+  end
+
+  def C.rjit_full_cfunc_return
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_full_cfunc_return) }
+  end
+
+  def C.rjit_optimized_call
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_optimized_call) }
+  end
+
+  def C.rjit_str_neq_internal
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_str_neq_internal) }
   end
 
   def C.CALL_DATA
