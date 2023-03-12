@@ -503,379 +503,379 @@ module RubyVM::RJIT # :nodoc: all
   ### RJIT bindgen begin ###
 
   def C.VM_ENV_DATA_INDEX_ME_CREF
-    Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_ME_CREF) }
+    Primitive.cexpr! %q{ LONG2NUM(VM_ENV_DATA_INDEX_ME_CREF) }
   end
 
   def C.VM_ENV_DATA_INDEX_SPECVAL
-    Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_SPECVAL) }
+    Primitive.cexpr! %q{ LONG2NUM(VM_ENV_DATA_INDEX_SPECVAL) }
   end
 
   def C.ARRAY_REDEFINED_OP_FLAG
-    Primitive.cexpr! %q{ UINT2NUM(ARRAY_REDEFINED_OP_FLAG) }
+    Primitive.cexpr! %q{ SIZET2NUM(ARRAY_REDEFINED_OP_FLAG) }
   end
 
   def C.BOP_AND
-    Primitive.cexpr! %q{ UINT2NUM(BOP_AND) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_AND) }
   end
 
   def C.BOP_AREF
-    Primitive.cexpr! %q{ UINT2NUM(BOP_AREF) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_AREF) }
   end
 
   def C.BOP_EQ
-    Primitive.cexpr! %q{ UINT2NUM(BOP_EQ) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_EQ) }
   end
 
   def C.BOP_FREEZE
-    Primitive.cexpr! %q{ UINT2NUM(BOP_FREEZE) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_FREEZE) }
   end
 
   def C.BOP_GE
-    Primitive.cexpr! %q{ UINT2NUM(BOP_GE) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_GE) }
   end
 
   def C.BOP_GT
-    Primitive.cexpr! %q{ UINT2NUM(BOP_GT) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_GT) }
   end
 
   def C.BOP_LE
-    Primitive.cexpr! %q{ UINT2NUM(BOP_LE) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_LE) }
   end
 
   def C.BOP_LT
-    Primitive.cexpr! %q{ UINT2NUM(BOP_LT) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_LT) }
   end
 
   def C.BOP_MINUS
-    Primitive.cexpr! %q{ UINT2NUM(BOP_MINUS) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_MINUS) }
   end
 
   def C.BOP_MOD
-    Primitive.cexpr! %q{ UINT2NUM(BOP_MOD) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_MOD) }
   end
 
   def C.BOP_OR
-    Primitive.cexpr! %q{ UINT2NUM(BOP_OR) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_OR) }
   end
 
   def C.BOP_PLUS
-    Primitive.cexpr! %q{ UINT2NUM(BOP_PLUS) }
+    Primitive.cexpr! %q{ SIZET2NUM(BOP_PLUS) }
   end
 
   def C.HASH_REDEFINED_OP_FLAG
-    Primitive.cexpr! %q{ UINT2NUM(HASH_REDEFINED_OP_FLAG) }
+    Primitive.cexpr! %q{ SIZET2NUM(HASH_REDEFINED_OP_FLAG) }
   end
 
   def C.INTEGER_REDEFINED_OP_FLAG
-    Primitive.cexpr! %q{ UINT2NUM(INTEGER_REDEFINED_OP_FLAG) }
-  end
-
-  def C.METHOD_VISI_PRIVATE
-    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PRIVATE) }
-  end
-
-  def C.METHOD_VISI_PROTECTED
-    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PROTECTED) }
-  end
-
-  def C.METHOD_VISI_PUBLIC
-    Primitive.cexpr! %q{ UINT2NUM(METHOD_VISI_PUBLIC) }
-  end
-
-  def C.OPTIMIZED_METHOD_TYPE_BLOCK_CALL
-    Primitive.cexpr! %q{ UINT2NUM(OPTIMIZED_METHOD_TYPE_BLOCK_CALL) }
-  end
-
-  def C.OPTIMIZED_METHOD_TYPE_CALL
-    Primitive.cexpr! %q{ UINT2NUM(OPTIMIZED_METHOD_TYPE_CALL) }
-  end
-
-  def C.OPTIMIZED_METHOD_TYPE_SEND
-    Primitive.cexpr! %q{ UINT2NUM(OPTIMIZED_METHOD_TYPE_SEND) }
-  end
-
-  def C.OPTIMIZED_METHOD_TYPE_STRUCT_AREF
-    Primitive.cexpr! %q{ UINT2NUM(OPTIMIZED_METHOD_TYPE_STRUCT_AREF) }
-  end
-
-  def C.OPTIMIZED_METHOD_TYPE_STRUCT_ASET
-    Primitive.cexpr! %q{ UINT2NUM(OPTIMIZED_METHOD_TYPE_STRUCT_ASET) }
-  end
-
-  def C.RARRAY_EMBED_FLAG
-    Primitive.cexpr! %q{ UINT2NUM(RARRAY_EMBED_FLAG) }
-  end
-
-  def C.ROBJECT_EMBED
-    Primitive.cexpr! %q{ UINT2NUM(ROBJECT_EMBED) }
-  end
-
-  def C.RUBY_EVENT_CLASS
-    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_CLASS) }
-  end
-
-  def C.RUBY_EVENT_C_CALL
-    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_C_CALL) }
-  end
-
-  def C.RUBY_EVENT_C_RETURN
-    Primitive.cexpr! %q{ UINT2NUM(RUBY_EVENT_C_RETURN) }
-  end
-
-  def C.SHAPE_CAPACITY_CHANGE
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_CAPACITY_CHANGE) }
-  end
-
-  def C.SHAPE_FLAG_SHIFT
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_FLAG_SHIFT) }
-  end
-
-  def C.SHAPE_FROZEN
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_FROZEN) }
-  end
-
-  def C.SHAPE_ID_NUM_BITS
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_ID_NUM_BITS) }
-  end
-
-  def C.SHAPE_INITIAL_CAPACITY
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_INITIAL_CAPACITY) }
-  end
-
-  def C.SHAPE_IVAR
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_IVAR) }
-  end
-
-  def C.SHAPE_ROOT
-    Primitive.cexpr! %q{ UINT2NUM(SHAPE_ROOT) }
-  end
-
-  def C.STRING_REDEFINED_OP_FLAG
-    Primitive.cexpr! %q{ UINT2NUM(STRING_REDEFINED_OP_FLAG) }
-  end
-
-  def C.T_OBJECT
-    Primitive.cexpr! %q{ UINT2NUM(T_OBJECT) }
-  end
-
-  def C.VM_BLOCK_HANDLER_NONE
-    Primitive.cexpr! %q{ UINT2NUM(VM_BLOCK_HANDLER_NONE) }
-  end
-
-  def C.VM_CALL_ARGS_BLOCKARG
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_ARGS_BLOCKARG) }
-  end
-
-  def C.VM_CALL_ARGS_SPLAT
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_ARGS_SPLAT) }
-  end
-
-  def C.VM_CALL_FCALL
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_FCALL) }
-  end
-
-  def C.VM_CALL_KWARG
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KWARG) }
-  end
-
-  def C.VM_CALL_KW_SPLAT
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KW_SPLAT) }
-  end
-
-  def C.VM_CALL_KW_SPLAT_bit
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_KW_SPLAT_bit) }
-  end
-
-  def C.VM_CALL_OPT_SEND
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_OPT_SEND) }
-  end
-
-  def C.VM_CALL_TAILCALL
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL) }
-  end
-
-  def C.VM_CALL_TAILCALL_bit
-    Primitive.cexpr! %q{ UINT2NUM(VM_CALL_TAILCALL_bit) }
-  end
-
-  def C.VM_ENV_DATA_INDEX_FLAGS
-    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_DATA_INDEX_FLAGS) }
-  end
-
-  def C.VM_ENV_DATA_SIZE
-    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_DATA_SIZE) }
-  end
-
-  def C.VM_ENV_FLAG_LOCAL
-    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_FLAG_LOCAL) }
-  end
-
-  def C.VM_ENV_FLAG_WB_REQUIRED
-    Primitive.cexpr! %q{ UINT2NUM(VM_ENV_FLAG_WB_REQUIRED) }
-  end
-
-  def C.VM_FRAME_FLAG_BMETHOD
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_BMETHOD) }
-  end
-
-  def C.VM_FRAME_FLAG_CFRAME
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_CFRAME) }
-  end
-
-  def C.VM_FRAME_FLAG_CFRAME_KW
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_CFRAME_KW) }
-  end
-
-  def C.VM_FRAME_FLAG_LAMBDA
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_LAMBDA) }
-  end
-
-  def C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) }
-  end
-
-  def C.VM_FRAME_MAGIC_BLOCK
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_MAGIC_BLOCK) }
-  end
-
-  def C.VM_FRAME_MAGIC_CFUNC
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_MAGIC_CFUNC) }
-  end
-
-  def C.VM_FRAME_MAGIC_METHOD
-    Primitive.cexpr! %q{ UINT2NUM(VM_FRAME_MAGIC_METHOD) }
-  end
-
-  def C.VM_METHOD_TYPE_ALIAS
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ALIAS) }
-  end
-
-  def C.VM_METHOD_TYPE_ATTRSET
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ATTRSET) }
-  end
-
-  def C.VM_METHOD_TYPE_BMETHOD
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_BMETHOD) }
-  end
-
-  def C.VM_METHOD_TYPE_CFUNC
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_CFUNC) }
-  end
-
-  def C.VM_METHOD_TYPE_ISEQ
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ISEQ) }
-  end
-
-  def C.VM_METHOD_TYPE_IVAR
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_IVAR) }
-  end
-
-  def C.VM_METHOD_TYPE_MISSING
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_MISSING) }
-  end
-
-  def C.VM_METHOD_TYPE_NOTIMPLEMENTED
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_NOTIMPLEMENTED) }
-  end
-
-  def C.VM_METHOD_TYPE_OPTIMIZED
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_OPTIMIZED) }
-  end
-
-  def C.VM_METHOD_TYPE_REFINED
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_REFINED) }
-  end
-
-  def C.VM_METHOD_TYPE_UNDEF
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_UNDEF) }
-  end
-
-  def C.VM_METHOD_TYPE_ZSUPER
-    Primitive.cexpr! %q{ UINT2NUM(VM_METHOD_TYPE_ZSUPER) }
-  end
-
-  def C.block_type_iseq
-    Primitive.cexpr! %q{ UINT2NUM(block_type_iseq) }
-  end
-
-  def C.imemo_iseq
-    Primitive.cexpr! %q{ UINT2NUM(imemo_iseq) }
+    Primitive.cexpr! %q{ SIZET2NUM(INTEGER_REDEFINED_OP_FLAG) }
   end
 
   def C.INVALID_SHAPE_ID
-    Primitive.cexpr! %q{ ULONG2NUM(INVALID_SHAPE_ID) }
+    Primitive.cexpr! %q{ SIZET2NUM(INVALID_SHAPE_ID) }
+  end
+
+  def C.METHOD_VISI_PRIVATE
+    Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PRIVATE) }
+  end
+
+  def C.METHOD_VISI_PROTECTED
+    Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PROTECTED) }
+  end
+
+  def C.METHOD_VISI_PUBLIC
+    Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PUBLIC) }
   end
 
   def C.OBJ_TOO_COMPLEX_SHAPE_ID
-    Primitive.cexpr! %q{ ULONG2NUM(OBJ_TOO_COMPLEX_SHAPE_ID) }
+    Primitive.cexpr! %q{ SIZET2NUM(OBJ_TOO_COMPLEX_SHAPE_ID) }
+  end
+
+  def C.OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+    Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_BLOCK_CALL) }
+  end
+
+  def C.OPTIMIZED_METHOD_TYPE_CALL
+    Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_CALL) }
+  end
+
+  def C.OPTIMIZED_METHOD_TYPE_SEND
+    Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_SEND) }
+  end
+
+  def C.OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+    Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_STRUCT_AREF) }
+  end
+
+  def C.OPTIMIZED_METHOD_TYPE_STRUCT_ASET
+    Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_STRUCT_ASET) }
+  end
+
+  def C.RARRAY_EMBED_FLAG
+    Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_FLAG) }
   end
 
   def C.RARRAY_EMBED_LEN_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(RARRAY_EMBED_LEN_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_LEN_MASK) }
   end
 
   def C.RARRAY_EMBED_LEN_SHIFT
-    Primitive.cexpr! %q{ ULONG2NUM(RARRAY_EMBED_LEN_SHIFT) }
+    Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_LEN_SHIFT) }
   end
 
   def C.RMODULE_IS_REFINEMENT
-    Primitive.cexpr! %q{ ULONG2NUM(RMODULE_IS_REFINEMENT) }
+    Primitive.cexpr! %q{ SIZET2NUM(RMODULE_IS_REFINEMENT) }
+  end
+
+  def C.ROBJECT_EMBED
+    Primitive.cexpr! %q{ SIZET2NUM(ROBJECT_EMBED) }
   end
 
   def C.RSTRUCT_EMBED_LEN_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(RSTRUCT_EMBED_LEN_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(RSTRUCT_EMBED_LEN_MASK) }
+  end
+
+  def C.RUBY_EVENT_CLASS
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_CLASS) }
+  end
+
+  def C.RUBY_EVENT_C_CALL
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_C_CALL) }
+  end
+
+  def C.RUBY_EVENT_C_RETURN
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_C_RETURN) }
   end
 
   def C.RUBY_FIXNUM_FLAG
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FIXNUM_FLAG) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_FIXNUM_FLAG) }
   end
 
   def C.RUBY_FLONUM_FLAG
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FLONUM_FLAG) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_FLAG) }
   end
 
   def C.RUBY_FLONUM_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FLONUM_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_MASK) }
   end
 
   def C.RUBY_FL_SINGLETON
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_FL_SINGLETON) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_FL_SINGLETON) }
   end
 
   def C.RUBY_IMMEDIATE_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_IMMEDIATE_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_IMMEDIATE_MASK) }
   end
 
   def C.RUBY_SPECIAL_SHIFT
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_SPECIAL_SHIFT) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_SPECIAL_SHIFT) }
   end
 
   def C.RUBY_SYMBOL_FLAG
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_SYMBOL_FLAG) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_SYMBOL_FLAG) }
   end
 
   def C.RUBY_T_ARRAY
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_ARRAY) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ARRAY) }
   end
 
   def C.RUBY_T_ICLASS
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_ICLASS) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ICLASS) }
   end
 
   def C.RUBY_T_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MASK) }
   end
 
   def C.RUBY_T_MODULE
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_MODULE) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MODULE) }
   end
 
   def C.RUBY_T_STRING
-    Primitive.cexpr! %q{ ULONG2NUM(RUBY_T_STRING) }
+    Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_STRING) }
+  end
+
+  def C.SHAPE_CAPACITY_CHANGE
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_CAPACITY_CHANGE) }
+  end
+
+  def C.SHAPE_FLAG_SHIFT
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_FLAG_SHIFT) }
+  end
+
+  def C.SHAPE_FROZEN
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_FROZEN) }
+  end
+
+  def C.SHAPE_ID_NUM_BITS
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_ID_NUM_BITS) }
+  end
+
+  def C.SHAPE_INITIAL_CAPACITY
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_INITIAL_CAPACITY) }
+  end
+
+  def C.SHAPE_IVAR
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_IVAR) }
   end
 
   def C.SHAPE_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(SHAPE_MASK) }
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_MASK) }
+  end
+
+  def C.SHAPE_ROOT
+    Primitive.cexpr! %q{ SIZET2NUM(SHAPE_ROOT) }
+  end
+
+  def C.STRING_REDEFINED_OP_FLAG
+    Primitive.cexpr! %q{ SIZET2NUM(STRING_REDEFINED_OP_FLAG) }
+  end
+
+  def C.T_OBJECT
+    Primitive.cexpr! %q{ SIZET2NUM(T_OBJECT) }
+  end
+
+  def C.VM_BLOCK_HANDLER_NONE
+    Primitive.cexpr! %q{ SIZET2NUM(VM_BLOCK_HANDLER_NONE) }
+  end
+
+  def C.VM_CALL_ARGS_BLOCKARG
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_BLOCKARG) }
+  end
+
+  def C.VM_CALL_ARGS_SPLAT
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_SPLAT) }
+  end
+
+  def C.VM_CALL_FCALL
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FCALL) }
+  end
+
+  def C.VM_CALL_KWARG
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KWARG) }
+  end
+
+  def C.VM_CALL_KW_SPLAT
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT) }
+  end
+
+  def C.VM_CALL_KW_SPLAT_bit
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT_bit) }
+  end
+
+  def C.VM_CALL_OPT_SEND
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_OPT_SEND) }
+  end
+
+  def C.VM_CALL_TAILCALL
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_TAILCALL) }
+  end
+
+  def C.VM_CALL_TAILCALL_bit
+    Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_TAILCALL_bit) }
+  end
+
+  def C.VM_ENV_DATA_INDEX_FLAGS
+    Primitive.cexpr! %q{ SIZET2NUM(VM_ENV_DATA_INDEX_FLAGS) }
+  end
+
+  def C.VM_ENV_DATA_SIZE
+    Primitive.cexpr! %q{ SIZET2NUM(VM_ENV_DATA_SIZE) }
+  end
+
+  def C.VM_ENV_FLAG_LOCAL
+    Primitive.cexpr! %q{ SIZET2NUM(VM_ENV_FLAG_LOCAL) }
+  end
+
+  def C.VM_ENV_FLAG_WB_REQUIRED
+    Primitive.cexpr! %q{ SIZET2NUM(VM_ENV_FLAG_WB_REQUIRED) }
+  end
+
+  def C.VM_FRAME_FLAG_BMETHOD
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_FLAG_BMETHOD) }
+  end
+
+  def C.VM_FRAME_FLAG_CFRAME
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_FLAG_CFRAME) }
+  end
+
+  def C.VM_FRAME_FLAG_CFRAME_KW
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_FLAG_CFRAME_KW) }
+  end
+
+  def C.VM_FRAME_FLAG_LAMBDA
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_FLAG_LAMBDA) }
+  end
+
+  def C.VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) }
+  end
+
+  def C.VM_FRAME_MAGIC_BLOCK
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_MAGIC_BLOCK) }
+  end
+
+  def C.VM_FRAME_MAGIC_CFUNC
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_MAGIC_CFUNC) }
+  end
+
+  def C.VM_FRAME_MAGIC_METHOD
+    Primitive.cexpr! %q{ SIZET2NUM(VM_FRAME_MAGIC_METHOD) }
+  end
+
+  def C.VM_METHOD_TYPE_ALIAS
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ALIAS) }
+  end
+
+  def C.VM_METHOD_TYPE_ATTRSET
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ATTRSET) }
+  end
+
+  def C.VM_METHOD_TYPE_BMETHOD
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_BMETHOD) }
+  end
+
+  def C.VM_METHOD_TYPE_CFUNC
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_CFUNC) }
+  end
+
+  def C.VM_METHOD_TYPE_ISEQ
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ISEQ) }
+  end
+
+  def C.VM_METHOD_TYPE_IVAR
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_IVAR) }
+  end
+
+  def C.VM_METHOD_TYPE_MISSING
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_MISSING) }
+  end
+
+  def C.VM_METHOD_TYPE_NOTIMPLEMENTED
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_NOTIMPLEMENTED) }
+  end
+
+  def C.VM_METHOD_TYPE_OPTIMIZED
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_OPTIMIZED) }
+  end
+
+  def C.VM_METHOD_TYPE_REFINED
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_REFINED) }
+  end
+
+  def C.VM_METHOD_TYPE_UNDEF
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_UNDEF) }
+  end
+
+  def C.VM_METHOD_TYPE_ZSUPER
+    Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ZSUPER) }
+  end
+
+  def C.block_type_iseq
+    Primitive.cexpr! %q{ SIZET2NUM(block_type_iseq) }
+  end
+
+  def C.imemo_iseq
+    Primitive.cexpr! %q{ SIZET2NUM(imemo_iseq) }
   end
 
   def C.rb_block_param_proxy
