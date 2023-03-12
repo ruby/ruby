@@ -113,6 +113,8 @@ module Test
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
         # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
         pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        # For previous versions which implemented MJIT
+        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
@@ -701,7 +703,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
+              (err.respond_to?(:full_message) ? err.full_message(highlight: false, order: :top) : err.message)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
