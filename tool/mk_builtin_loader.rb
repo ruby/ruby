@@ -265,7 +265,8 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
   f = StringIO.new
   f.puts '{'
   lineno += 1
-  locals.reverse_each.with_index{|param, i|
+  # locals is nil outside methods
+  locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
     lineno += 1

@@ -106,15 +106,17 @@ class BindingGenerator
   attr_reader :src
 
   # @param src_path [String]
+  # @param consts [Hash{ Symbol => Array<String> }]
   # @param values [Hash{ Symbol => Array<String> }]
   # @param funcs [Array<String>]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, values:, funcs:, types:, dynamic_types:, skip_fields:, ruby_fields:)
+  def initialize(src_path:, consts:, values:, funcs:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
+    @consts = consts.transform_values(&:sort)
     @values = values.transform_values(&:sort)
     @funcs = funcs.sort
     @types = types.sort
@@ -128,6 +130,15 @@ class BindingGenerator
     println @preamble
 
     # Define macros/enums
+    @consts.each do |type, values|
+      values.each do |value|
+        raise "#{value} isn't a valid constant name" unless ('A'..'Z').include?(value[0])
+        println "  C::#{value} = Primitive.cexpr! %q{ #{type}2NUM(#{value}) }"
+      end
+    end
+    println
+
+    # Define variables
     @values.each do |type, values|
       values.each do |value|
         println "  def C.#{value}"
@@ -137,6 +148,7 @@ class BindingGenerator
       end
     end
 
+    # Define function pointers
     @funcs.each do |func|
       println "  def C.#{func}"
       println "    Primitive.cexpr! %q{ SIZET2NUM((size_t)#{func}) }"
@@ -351,11 +363,13 @@ end
 nodes = HeaderParser.new(File.join(src_dir, 'rjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
-  values: {
+  consts: {
     LONG: %w[
       VM_ENV_DATA_INDEX_ME_CREF
       VM_ENV_DATA_INDEX_SPECVAL
     ],
+  },
+  values: {
     SIZET: %w[
       ARRAY_REDEFINED_OP_FLAG
       BOP_AND

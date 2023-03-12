@@ -200,7 +200,7 @@ module RubyVM::RJIT
       asm.mov(C_ARGS[0], EC)
       # The block handler for the current frame
       # note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
-      asm.mov(C_ARGS[1], [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+      asm.mov(C_ARGS[1], [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL])
       asm.call(C.rb_vm_bh_to_procval)
 
       # Load environment pointer EP from CFP (again)
@@ -271,7 +271,7 @@ module RubyVM::RJIT
       # Load the block handler for the current frame
       # note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
       block_handler = :rax
-      asm.mov(block_handler, [ep_reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+      asm.mov(block_handler, [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL])
 
       # Specialize compilation for the case where no block handler is present
       if comptime_handler == 0
@@ -2821,7 +2821,7 @@ module RubyVM::RJIT
       asm.mov(reg, [CFP, C.rb_control_frame_t.offsetof(:ep)])
       level.times do
         # GET_PREV_EP: ep[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03
-        asm.mov(reg, [reg, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL])
+        asm.mov(reg, [reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL])
         asm.and(reg, ~0x03)
       end
     end
@@ -2965,7 +2965,7 @@ module RubyVM::RJIT
           # Guard no block passed. Only handle that case for now.
           asm.comment('guard no block given')
           jit_get_lep(jit, asm, reg: :rax)
-          asm.cmp([:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL], C.VM_BLOCK_HANDLER_NONE)
+          asm.cmp([:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL], C.VM_BLOCK_HANDLER_NONE)
           asm.jne(counted_exit(side_exit, :send_block_handler))
           return C.VM_BLOCK_HANDLER_NONE
         else
@@ -3092,7 +3092,7 @@ module RubyVM::RJIT
       jit_get_lep(jit, asm, reg: :rax)
 
       asm.mov(:rcx, me.to_i)
-      asm.cmp([:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_ME_CREF], :rcx)
+      asm.cmp([:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_ME_CREF], :rcx)
       asm.jne(counted_exit(side_exit, :invokesuper_me_changed))
 
       # We need to assume that both our current method entry and the super
@@ -3711,7 +3711,7 @@ module RubyVM::RJIT
         #   VALUE handler = VM_CF_BLOCK_HANDLER(reg_cfp);
         #   reg_cfp->block_code = (const void *) handler;
         jit_get_lep(jit, asm, reg: :rax)
-        asm.mov(:rax, [:rax, C.VALUE.size * C.VM_ENV_DATA_INDEX_SPECVAL]) # handler
+        asm.mov(:rax, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # handler
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax)
 
         asm.mov(:rax, C.rb_block_param_proxy)
