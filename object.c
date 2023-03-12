@@ -1286,12 +1286,12 @@ rb_obj_frozen_p(VALUE obj)
  */
 
 /*
- *  call-seq:
- *    to_s -> ''
+ * call-seq:
+ *   to_s -> ''
  *
- *  Returns an empty String:
+ * Returns an empty String:
  *
- *    nil.to_s # => ""
+ *   nil.to_s # => ""
  *
  */
 
