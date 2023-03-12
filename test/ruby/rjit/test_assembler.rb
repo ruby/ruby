@@ -118,6 +118,7 @@ module RubyVM::RJIT
       asm.cmp(:rax, 8)                  # CMP r/m64, imm8 (Mod 11: reg)
       asm.cmp(:rax, 0x100)              # CMP r/m64, imm32 (Mod 11: reg)
       asm.cmp([:rax, 8], :rbx)          # CMP r/m64, r64 (Mod 01: [reg]+disp8)
+      asm.cmp([:rax, -0x100], :rbx)     # CMP r/m64, r64 (Mod 10: [reg]+disp32)
       asm.cmp(:rax, :rbx)               # CMP r/m64, r64 (Mod 11: reg)
       assert_compile(asm, <<~EOS)
         0x0: cmp byte ptr [rax + 8], 8
@@ -127,7 +128,8 @@ module RubyVM::RJIT
         0x18: cmp rax, 8
         0x1c: cmp rax, 0x100
         0x23: cmp qword ptr [rax + 8], rbx
-        0x27: cmp rax, rbx
+        0x27: cmp qword ptr [rax - 0x100], rbx
+        0x2e: cmp rax, rbx
       EOS
     end
 

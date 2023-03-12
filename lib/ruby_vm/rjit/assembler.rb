@@ -355,6 +355,16 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod01, reg: right_reg, rm: left_reg],
           disp: left_disp,
         )
+      # CMP r/m64, r64 (Mod 10: [reg]+disp32)
+      in [QwordPtr[R64 => left_reg, IMM32 => left_disp], R64 => right_reg]
+        # REX.W + 39 /r
+        # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x39,
+          mod_rm: ModRM[mod: Mod10, reg: right_reg, rm: left_reg],
+          disp: imm32(left_disp),
+        )
       # CMP r/m64, r64 (Mod 11: reg)
       in [R64 => left_reg, R64 => right_reg]
         # REX.W + 39 /r
