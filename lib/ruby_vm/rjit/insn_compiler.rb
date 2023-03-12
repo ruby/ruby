@@ -3119,23 +3119,20 @@ module RubyVM::RJIT
     def jit_call_method(jit, ctx, asm, mid, argc, flags, cme, block_handler, known_recv_class, send_shift: 0)
       # The main check of vm_call_method before vm_call_method_each_type
       case C::METHOD_ENTRY_VISI(cme)
-      when C::METHOD_VISI_PUBLIC
+      in C::METHOD_VISI_PUBLIC
         # You can always call public methods
-      when C::METHOD_VISI_PRIVATE
+      in C::METHOD_VISI_PRIVATE
         # Allow only callsites without a receiver
         if flags & C::VM_CALL_FCALL == 0
           asm.incr_counter(:send_private)
           return CantCompile
         end
-      when C::METHOD_VISI_PROTECTED
+      in C::METHOD_VISI_PROTECTED
         # If the method call is an FCALL, it is always valid
         if flags & C::VM_CALL_FCALL == 0
           # otherwise we need an ancestry check to ensure the receiver is valid to be called as protected
           jit_protected_callee_ancestry_guard(asm, cme, side_exit(jit, ctx))
         end
-      else
-        # TODO: Change them to a constant and use case-in instead
-        raise 'unreachable'
       end
 
       # Get a compile-time receiver
@@ -3168,39 +3165,36 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
       case cme.def.type
-      when C::VM_METHOD_TYPE_ISEQ
+      in C::VM_METHOD_TYPE_ISEQ
         iseq = def_iseq_ptr(cme.def)
         jit_call_iseq_setup(jit, ctx, asm, cme, flags, argc, iseq, block_handler, send_shift:)
-      when C::VM_METHOD_TYPE_NOTIMPLEMENTED
+      in C::VM_METHOD_TYPE_NOTIMPLEMENTED
         asm.incr_counter(:send_notimplemented)
         return CantCompile
-      when C::VM_METHOD_TYPE_CFUNC
+      in C::VM_METHOD_TYPE_CFUNC
         jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      when C::VM_METHOD_TYPE_ATTRSET
+      in C::VM_METHOD_TYPE_ATTRSET
         asm.incr_counter(:send_attrset)
         return CantCompile
-      when C::VM_METHOD_TYPE_IVAR
+      in C::VM_METHOD_TYPE_IVAR
         jit_call_ivar(jit, ctx, asm, cme, flags, argc, comptime_recv, recv_opnd, send_shift:)
-      when C::VM_METHOD_TYPE_MISSING
+      in C::VM_METHOD_TYPE_MISSING
         asm.incr_counter(:send_missing)
         return CantCompile
-      when C::VM_METHOD_TYPE_BMETHOD
+      in C::VM_METHOD_TYPE_BMETHOD
         jit_call_bmethod(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
-      when C::VM_METHOD_TYPE_ALIAS
+      in C::VM_METHOD_TYPE_ALIAS
         jit_call_alias(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
-      when C::VM_METHOD_TYPE_OPTIMIZED
+      in C::VM_METHOD_TYPE_OPTIMIZED
         jit_call_optimized(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      when C::VM_METHOD_TYPE_UNDEF
+      in C::VM_METHOD_TYPE_UNDEF
         asm.incr_counter(:send_undef)
         return CantCompile
-      when C::VM_METHOD_TYPE_ZSUPER
+      in C::VM_METHOD_TYPE_ZSUPER
         asm.incr_counter(:send_zsuper)
         return CantCompile
-      when C::VM_METHOD_TYPE_REFINED
+      in C::VM_METHOD_TYPE_REFINED
         asm.incr_counter(:send_refined)
-        return CantCompile
-      else
-        asm.incr_counter(:send_unknown_type)
         return CantCompile
       end
     end
@@ -3457,20 +3451,17 @@ module RubyVM::RJIT
       end
 
       case cme.def.body.optimized.type
-      when C::OPTIMIZED_METHOD_TYPE_SEND
+      in C::OPTIMIZED_METHOD_TYPE_SEND
         jit_call_opt_send(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      when C::OPTIMIZED_METHOD_TYPE_CALL
+      in C::OPTIMIZED_METHOD_TYPE_CALL
         jit_call_opt_call(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      when C::OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+      in C::OPTIMIZED_METHOD_TYPE_BLOCK_CALL
         asm.incr_counter(:send_optimized_block_call)
         return CantCompile
-      when C::OPTIMIZED_METHOD_TYPE_STRUCT_AREF
+      in C::OPTIMIZED_METHOD_TYPE_STRUCT_AREF
         jit_call_opt_struct_aref(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      when C::OPTIMIZED_METHOD_TYPE_STRUCT_ASET
+      in C::OPTIMIZED_METHOD_TYPE_STRUCT_ASET
         asm.incr_counter(:send_optimized_struct_aset)
-        return CantCompile
-      else
-        asm.incr_counter(:send_optimized_unknown_type)
         return CantCompile
       end
     end

@@ -37,7 +37,6 @@ RJIT_RUNTIME_COUNTERS(
     send_undef,
     send_zsuper,
     send_refined,
-    send_unknown_type,
     send_stackoverflow,
     send_arity,
     send_c_tracing,
@@ -75,7 +74,6 @@ RJIT_RUNTIME_COUNTERS(
     send_optimized_blockarg,
     send_optimized_block_call,
     send_optimized_struct_aset,
-    send_optimized_unknown_type,
 
     send_bmethod_not_iseq,
     send_bmethod_blockarg,
