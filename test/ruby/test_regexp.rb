@@ -1765,4 +1765,11 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
     assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
   end
+
+  def test_linear_performance
+    pre = ->(n) {[Regexp.new("a?" * n + "a" * n), "a" * n]}
+    assert_linear_performance(factor: 29, first: 10, max: 1, pre: pre) do |re, s|
+      re =~ s
+    end
+  end
 end
