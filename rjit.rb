@@ -18,6 +18,12 @@ module RubyVM::RJIT
       print_stats
     end
   end
+  if Primitive.rjit_trace_exits_enabled_p
+    at_exit do
+      Primitive.rjit_stop_stats
+      dump_trace_exits
+    end
+  end
 end
 
 if RubyVM::RJIT.enabled?

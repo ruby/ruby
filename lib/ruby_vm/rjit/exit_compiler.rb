@@ -6,11 +6,11 @@ module RubyVM::RJIT
     # @param pc [Integer]
     # @param asm [RubyVM::RJIT::Assembler]
     def compile_entry_exit(pc, ctx, asm, cause:)
-      # Increment per-insn exit counter
-      incr_insn_exit(pc, asm)
-
       # Fix pc/sp offsets for the interpreter
       save_pc_and_sp(pc, ctx, asm, reset_sp_offset: false)
+
+      # Increment per-insn exit counter
+      count_insn_exit(pc, asm)
 
       # Restore callee-saved registers
       asm.comment("#{cause}: entry exit")
@@ -62,11 +62,11 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def compile_side_exit(pc, ctx, asm)
-      # Increment per-insn exit counter
-      incr_insn_exit(pc, asm)
-
       # Fix pc/sp offsets for the interpreter
       save_pc_and_sp(pc, ctx.dup, asm) # dup to avoid sp_offset update
+
+      # Increment per-insn exit counter
+      count_insn_exit(pc, asm)
 
       # Restore callee-saved registers
       asm.comment("exit to interpreter on #{pc_to_insn(pc).name}")
@@ -105,12 +105,17 @@ module RubyVM::RJIT
 
     # @param pc [Integer]
     # @param asm [RubyVM::RJIT::Assembler]
-    def incr_insn_exit(pc, asm)
+    def count_insn_exit(pc, asm)
       if C.rjit_opts.stats
         insn = Compiler.decode_insn(C.VALUE.new(pc).*)
         asm.comment("increment insn exit: #{insn.name}")
         asm.mov(:rax, (C.rjit_insn_exits + insn.bin).to_i)
         asm.add([:rax], 1) # TODO: lock
+      end
+      if C.rjit_opts.trace_exits
+        asm.comment('rjit_record_exit_stack')
+        asm.mov(C_ARGS[0], pc)
+        asm.call(C.rjit_record_exit_stack)
       end
     end
 

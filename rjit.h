@@ -32,6 +32,8 @@ struct rjit_options {
     unsigned int exec_mem_size;
     // Collect RJIT statistics
     bool stats;
+    // Trace side exit locations
+    bool trace_exits;
     // Enable disasm of all JIT code
     bool dump_disasm;
     // [experimental] Do not start RJIT until RJIT.resume is called.
@@ -69,6 +71,7 @@ extern void rb_rjit_collect_vm_usage_insn(int insn);
 
 extern bool rb_rjit_enabled;
 extern bool rb_rjit_stats_enabled;
+extern bool rb_rjit_trace_exits_enabled;
 
 # else // USE_RJIT
 
@@ -88,6 +91,7 @@ static inline void rb_rjit_tracing_invalidate_all(rb_event_flag_t new_iseq_event
 #define rb_rjit_enabled false
 #define rb_rjit_call_p false
 #define rb_rjit_stats_enabled false
+#define rb_rjit_trace_exits_enabled false
 
 #define rb_rjit_call_threshold() UINT_MAX
 

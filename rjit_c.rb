@@ -294,6 +294,10 @@ module RubyVM::RJIT # :nodoc: all
       }
     end
 
+    def rjit_exit_traces
+      Primitive.cexpr! 'rjit_exit_traces()'
+    end
+
     #
     # Utilities: Not used by RJIT, but useful for debugging
     #
@@ -583,6 +587,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rjit_optimized_call
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_optimized_call) }
+  end
+
+  def C.rjit_record_exit_stack
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_record_exit_stack) }
   end
 
   def C.rjit_str_neq_internal
@@ -1239,6 +1247,7 @@ module RubyVM::RJIT # :nodoc: all
       call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), call_threshold)")],
       exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), exec_mem_size)")],
       stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), stats)")],
+      trace_exits: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), trace_exits)")],
       dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), dump_disasm)")],
       pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), pause)")],
     )

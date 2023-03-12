@@ -1617,6 +1617,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         rb_rjit_enabled = true;
     if (opt->rjit.stats)
         rb_rjit_stats_enabled = true;
+    if (opt->rjit.trace_exits)
+        rb_rjit_trace_exits_enabled = true;
 #endif
 
     Init_ext(); /* load statically linked extensions before rubygems */

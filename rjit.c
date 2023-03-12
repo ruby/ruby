@@ -67,7 +67,10 @@ struct rjit_options rb_rjit_opts;
 
 // true if RJIT is enabled.
 bool rb_rjit_enabled = false;
+// true if --rjit-stats (used before rb_rjit_opts is set)
 bool rb_rjit_stats_enabled = false;
+// true if --rjit-trace-exits (used before rb_rjit_opts is set)
+bool rb_rjit_trace_exits_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `rb_rjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool rb_rjit_call_p = false;
@@ -93,6 +96,11 @@ static VALUE rb_cRJITCfpPtr = 0;
 // RubyVM::RJIT::Hooks
 static VALUE rb_mRJITHooks = 0;
 
+// Frames for --rjit-trace-exits
+VALUE rb_rjit_raw_samples = 0;
+// Line numbers for --rjit-trace-exits
+VALUE rb_rjit_line_samples = 0;
+
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 30
 // Size of executable memory block in MiB.
@@ -112,6 +120,9 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
     }
     else if (opt_match_noarg(s, l, "stats")) {
         rjit_opt->stats = true;
+    }
+    else if (opt_match_noarg(s, l, "trace-exits")) {
+        rjit_opt->trace_exits = true;
     }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
@@ -136,6 +147,7 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
 #if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #endif
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
@@ -314,6 +326,8 @@ rb_rjit_mark(void)
     rb_gc_mark(rb_cRJITIseqPtr);
     rb_gc_mark(rb_cRJITCfpPtr);
     rb_gc_mark(rb_mRJITHooks);
+    rb_gc_mark(rb_rjit_raw_samples);
+    rb_gc_mark(rb_rjit_line_samples);
 
     RUBY_MARK_LEAVE("rjit");
 }
@@ -398,6 +412,10 @@ rb_rjit_init(const struct rjit_options *opts)
     rb_cRJITIseqPtr = rb_funcall(rb_mRJITC, rb_intern("rb_iseq_t"), 0);
     rb_cRJITCfpPtr = rb_funcall(rb_mRJITC, rb_intern("rb_control_frame_t"), 0);
     rb_mRJITHooks = rb_const_get(rb_mRJIT, rb_intern("Hooks"));
+    if (rb_rjit_opts.trace_exits) {
+        rb_rjit_raw_samples = rb_ary_new();
+        rb_rjit_line_samples = rb_ary_new();
+    }
 
     // Enable RJIT and stats from here
     rb_rjit_call_p = !rb_rjit_opts.pause;
@@ -408,11 +426,18 @@ rb_rjit_init(const struct rjit_options *opts)
 // Primitive for rjit.rb
 //
 
-// Same as `RubyVM::RJIT::C.enabled?`, but this is used before rjit_init.
+// Same as `rb_rjit_opts.stats`, but this is used before rb_rjit_opts is set.
 static VALUE
 rjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
     return RBOOL(rb_rjit_stats_enabled);
+}
+
+// Same as `rb_rjit_opts.trace_exits`, but this is used before rb_rjit_opts is set.
+static VALUE
+rjit_trace_exits_enabled_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(rb_rjit_trace_exits_enabled);
 }
 
 // Disable anything that could impact stats. It ends up disabling JIT calls as well.

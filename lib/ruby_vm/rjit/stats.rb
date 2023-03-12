@@ -30,6 +30,7 @@ module RubyVM::RJIT
   class << self
     private
 
+    # --yjit-stats at_exit
     def print_stats
       stats = runtime_stats
       $stderr.puts("***RJIT: Printing RJIT statistics on exit***")
@@ -97,6 +98,88 @@ module RubyVM::RJIT
       d_groups = integer.chars.reverse.each_slice(3)
       with_commas = d_groups.map(&:join).join(',').reverse
       [with_commas, decimal].compact.join('.').rjust(pad, ' ')
+    end
+
+    # --yjit-trace-exits at_exit
+    def dump_trace_exits
+      filename = "#{Dir.pwd}/rjit_exit_locations.dump"
+      File.binwrite(filename, Marshal.dump(exit_traces))
+      $stderr.puts("RJIT exit locations dumped to:\n#{filename}")
+    end
+
+    # Convert rb_rjit_raw_samples and rb_rjit_line_samples into a StackProf format.
+    def exit_traces
+      results = C.rjit_exit_traces
+      raw_samples = results[:raw].dup
+      line_samples = results[:lines].dup
+      frames = results[:frames].dup
+      samples_count = 0
+
+      # Loop through the instructions and set the frame hash with the data.
+      # We use nonexistent.def for the file name, otherwise insns.def will be displayed
+      # and that information isn't useful in this context.
+      RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
+        frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
+        results[:frames][frame_id] = frame_hash
+        frames[frame_id] = frame_hash
+      end
+
+      # Loop through the raw_samples and build the hashes for StackProf.
+      # The loop is based off an example in the StackProf documentation and therefore
+      # this functionality can only work with that library.
+      #
+      # Raw Samples:
+      # [ length, frame1, frame2, frameN, ..., instruction, count
+      #
+      # Line Samples
+      # [ length, line_1, line_2, line_n, ..., dummy value, count
+      i = 0
+      while i < raw_samples.length
+        stack_length = raw_samples[i] + 1
+        i += 1 # consume the stack length
+
+        prev_frame_id = nil
+        stack_length.times do |idx|
+          idx += i
+          frame_id = raw_samples[idx]
+
+          if prev_frame_id
+            prev_frame = frames[prev_frame_id]
+            prev_frame[:edges][frame_id] ||= 0
+            prev_frame[:edges][frame_id] += 1
+          end
+
+          frame_info = frames[frame_id]
+          frame_info[:total_samples] += 1
+
+          frame_info[:lines][line_samples[idx]] ||= [0, 0]
+          frame_info[:lines][line_samples[idx]][0] += 1
+
+          prev_frame_id = frame_id
+        end
+
+        i += stack_length # consume the stack
+
+        top_frame_id = prev_frame_id
+        top_frame_line = 1
+
+        sample_count = raw_samples[i]
+
+        frames[top_frame_id][:samples] += sample_count
+        frames[top_frame_id][:lines] ||= {}
+        frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
+        frames[top_frame_id][:lines][top_frame_line][1] += sample_count
+
+        samples_count += sample_count
+        i += 1
+      end
+
+      results[:samples] = samples_count
+      # Set missed_samples and gc_samples to 0 as their values
+      # don't matter to us in this context.
+      results[:missed_samples] = 0
+      results[:gc_samples] = 0
+      results
     end
   end
 end
