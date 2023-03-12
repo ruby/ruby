@@ -421,38 +421,38 @@ module RubyVM::RJIT # :nodoc: all
 
     def rb_shape_get_shape_by_id(shape_id)
       _shape_id = shape_id.to_i
-      shape_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_shape_get_shape_by_id((shape_id_t)NUM2UINT(_shape_id)))'
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((VALUE)rb_shape_get_shape_by_id((shape_id_t)NUM2UINT(_shape_id)))'
       rb_shape_t.new(shape_addr)
     end
 
     def rb_iseq_check(iseq)
       _iseq_addr = iseq.to_i
-      iseq_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_iseq_check((rb_iseq_t *)NUM2PTR(_iseq_addr)))'
+      iseq_addr = Primitive.cexpr! 'SIZET2NUM((VALUE)rb_iseq_check((rb_iseq_t *)NUM2SIZET(_iseq_addr)))'
       rb_iseq_t.new(iseq_addr)
     end
 
     def rb_iseq_path(iseq)
       _iseq_addr = iseq.to_i
-      Primitive.cexpr! 'rb_iseq_path((rb_iseq_t *)NUM2PTR(_iseq_addr))'
+      Primitive.cexpr! 'rb_iseq_path((rb_iseq_t *)NUM2SIZET(_iseq_addr))'
     end
 
     def vm_ci_argc(ci)
       _ci_addr = ci.to_i
-      Primitive.cexpr! 'UINT2NUM(vm_ci_argc((CALL_INFO)NUM2PTR(_ci_addr)))'
+      Primitive.cexpr! 'UINT2NUM(vm_ci_argc((CALL_INFO)NUM2SIZET(_ci_addr)))'
     end
 
     def vm_ci_flag(ci)
       _ci_addr = ci.to_i
-      Primitive.cexpr! 'UINT2NUM(vm_ci_flag((CALL_INFO)NUM2PTR(_ci_addr)))'
+      Primitive.cexpr! 'UINT2NUM(vm_ci_flag((CALL_INFO)NUM2SIZET(_ci_addr)))'
     end
 
     def vm_ci_mid(ci)
       _ci_addr = ci.to_i
-      Primitive.cexpr! 'SIZET2NUM((size_t)vm_ci_mid((CALL_INFO)NUM2PTR(_ci_addr)))'
+      Primitive.cexpr! 'SIZET2NUM((size_t)vm_ci_mid((CALL_INFO)NUM2SIZET(_ci_addr)))'
     end
 
     def rjit_opts
-      addr = Primitive.cexpr! 'PTR2NUM((VALUE)&rb_rjit_opts)'
+      addr = Primitive.cexpr! 'SIZET2NUM((VALUE)&rb_rjit_opts)'
       rjit_options.new(addr)
     end
 
@@ -466,12 +466,12 @@ module RubyVM::RJIT # :nodoc: all
     # Convert an encoded VM pointer to an insn BIN.
     def rb_vm_insn_decode(encoded)
       # Using rb_vm_insn_addr2opcode to return trace_ insns
-      Primitive.cexpr! 'INT2NUM(rb_vm_insn_addr2opcode((void *)NUM2PTR(encoded)))'
+      Primitive.cexpr! 'INT2NUM(rb_vm_insn_addr2opcode((void *)NUM2SIZET(encoded)))'
     end
 
     # Convert Integer VALUE to an actual Ruby object
     def to_ruby(value)
-      Primitive.cexpr! '(VALUE)NUM2PTR(value)'
+      Primitive.cexpr! '(VALUE)NUM2SIZET(value)'
     end
 
     def HAVE_LIBCAPSTONE
@@ -490,12 +490,12 @@ module RubyVM::RJIT # :nodoc: all
 
     # Convert insn BINs to encoded VM pointers.
     def rb_vm_insn_encode(bin)
-      Primitive.cexpr! 'PTR2NUM((VALUE)rb_vm_get_insns_address_table()[NUM2INT(bin)])'
+      Primitive.cexpr! 'SIZET2NUM((VALUE)rb_vm_get_insns_address_table()[NUM2INT(bin)])'
     end
 
     # Convert RubyVM::InstructionSequence to C.rb_iseq_t.
     def rb_iseqw_to_iseq(iseqw)
-      iseq_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_iseqw_to_iseq(iseqw))'
+      iseq_addr = Primitive.cexpr! 'SIZET2NUM((VALUE)rb_iseqw_to_iseq(iseqw))'
       rb_iseq_t.new(iseq_addr)
     end
   end
@@ -879,31 +879,31 @@ module RubyVM::RJIT # :nodoc: all
   end
 
   def C.rb_block_param_proxy
-    Primitive.cexpr! %q{ PTR2NUM(rb_block_param_proxy) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_block_param_proxy) }
   end
 
   def C.rb_cFalseClass
-    Primitive.cexpr! %q{ PTR2NUM(rb_cFalseClass) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cFalseClass) }
   end
 
   def C.rb_cFloat
-    Primitive.cexpr! %q{ PTR2NUM(rb_cFloat) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cFloat) }
   end
 
   def C.rb_cInteger
-    Primitive.cexpr! %q{ PTR2NUM(rb_cInteger) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cInteger) }
   end
 
   def C.rb_cNilClass
-    Primitive.cexpr! %q{ PTR2NUM(rb_cNilClass) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cNilClass) }
   end
 
   def C.rb_cSymbol
-    Primitive.cexpr! %q{ PTR2NUM(rb_cSymbol) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cSymbol) }
   end
 
   def C.rb_cTrueClass
-    Primitive.cexpr! %q{ PTR2NUM(rb_cTrueClass) }
+    Primitive.cexpr! %q{ SIZET2NUM(rb_cTrueClass) }
   end
 
   def C.CALL_DATA

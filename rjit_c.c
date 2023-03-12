@@ -206,14 +206,6 @@ rjit_get_proc_ptr(VALUE procv)
     return proc;
 }
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULONG(x)
-#define PTR2NUM(x) ULONG2NUM(x)
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULL(x)
-#define PTR2NUM(x) ULL2NUM(x)
-#endif
-
 // An offsetof implementation that works for unnamed struct and union.
 // Multiplying 8 for compatibility with libclang's offsetof.
 #define OFFSETOF(ptr, member) RB_SIZE2NUM(((char *)&ptr.member - (char*)&ptr) * 8)

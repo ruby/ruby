@@ -443,7 +443,7 @@ generator = BindingGenerator.new(
       RUBY_FL_SINGLETON
       RSTRUCT_EMBED_LEN_MASK
     ],
-    PTR: %w[
+    SIZET: %w[
       rb_cFalseClass
       rb_cFloat
       rb_cInteger
