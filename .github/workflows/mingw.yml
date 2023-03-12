@@ -130,6 +130,9 @@ jobs:
         timeout-minutes: 30
         run: |
           make test
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
 
       - name: test-all
