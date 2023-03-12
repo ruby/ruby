@@ -1,5 +1,7 @@
 module RubyVM::RJIT
   class ExitCompiler
+    def initialize = freeze
+
     # Used for invalidating a block on entry.
     # @param pc [Integer]
     # @param asm [RubyVM::RJIT::Assembler]

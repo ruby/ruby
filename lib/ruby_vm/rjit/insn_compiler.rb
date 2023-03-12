@@ -8,7 +8,6 @@ module RubyVM::RJIT
 
       @cfunc_codegen_table = {}
       register_cfunc_codegen_funcs
-      # freeze # workaround a binding.irb issue. TODO: resurrect this
     end
 
     # @param jit [RubyVM::RJIT::JITState]
