@@ -2792,7 +2792,7 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_check_ints(jit, ctx, asm)
       asm.comment('RUBY_VM_CHECK_INTS(ec)')
-      asm.mov(:eax, [EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
+      asm.mov(:eax, DwordPtr[EC, C.rb_execution_context_t.offsetof(:interrupt_flag)])
       asm.test(:eax, :eax)
       asm.jnz(side_exit(jit, ctx))
     end

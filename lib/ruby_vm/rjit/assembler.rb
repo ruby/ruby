@@ -35,6 +35,13 @@ module RubyVM::RJIT
     REX_R = 0b01000100
     REX_W = 0b01001000
 
+    # Operand matchers
+    R32   = -> (op) { op.is_a?(Symbol) && r32?(op) }
+    R64   = -> (op) { op.is_a?(Symbol) && r64?(op) }
+    IMM8  = -> (op) { op.is_a?(Integer) && imm8?(op) }
+    IMM32 = -> (op) { op.is_a?(Integer) && imm32?(op) }
+    IMM64 = -> (op) { op.is_a?(Integer) && imm64?(op) }
+
     def initialize
       @bytes = []
       @labels = {}
@@ -72,7 +79,7 @@ module RubyVM::RJIT
     def add(dst, src)
       case [dst, src]
       # ADD r/m64, imm8 (Mod 00: [reg])
-      in [QwordPtr[Symbol => dst_reg], Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      in [QwordPtr[R64 => dst_reg], IMM8 => src_imm]
         # REX.W + 83 /0 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -82,7 +89,7 @@ module RubyVM::RJIT
           imm: imm8(src_imm),
         )
       # ADD r/m64, imm8 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      in [R64 => dst_reg, IMM8 => src_imm]
         # REX.W + 83 /0 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -92,7 +99,7 @@ module RubyVM::RJIT
           imm: imm8(src_imm),
         )
       # ADD r/m64 imm32 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+      in [R64 => dst_reg, IMM32 => src_imm]
         # REX.W + 81 /0 id
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -102,7 +109,7 @@ module RubyVM::RJIT
           imm: imm32(src_imm),
         )
       # ADD r/m64, r64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 01 /r
         # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
         insn(
@@ -116,7 +123,7 @@ module RubyVM::RJIT
     def and(dst, src)
       case [dst, src]
       # AND r/m64, imm8 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      in [R64 => dst_reg, IMM8 => src_imm]
         # REX.W + 83 /4 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -126,7 +133,7 @@ module RubyVM::RJIT
           imm: imm8(src_imm),
         )
       # AND r/m64, imm32 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+      in [R64 => dst_reg, IMM32 => src_imm]
         # REX.W + 81 /4 id
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -136,7 +143,7 @@ module RubyVM::RJIT
           imm: imm32(src_imm),
         )
       # AND r64, r/m64 (Mod 01: [reg]+disp8)
-      in [Symbol => dst_reg, QwordPtr[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+      in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM8 => src_disp]]
         # REX.W + 23 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -156,7 +163,7 @@ module RubyVM::RJIT
         # D: Operand 1: Offset
         insn(opcode: 0xe8, imm: rel32(dst_addr))
       # CALL r/m64 (Mod 11: reg)
-      in Symbol => dst_reg if r64?(dst_reg)
+      in R64 => dst_reg
         # FF /2
         # M: Operand 1: ModRM:r/m (r)
         insn(
@@ -169,7 +176,7 @@ module RubyVM::RJIT
     def cmove(dst, src)
       case [dst, src]
       # CMOVE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 44 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -183,7 +190,7 @@ module RubyVM::RJIT
     def cmovg(dst, src)
       case [dst, src]
       # CMOVG r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 4F /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -197,7 +204,7 @@ module RubyVM::RJIT
     def cmovge(dst, src)
       case [dst, src]
       # CMOVGE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 4D /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -211,7 +218,7 @@ module RubyVM::RJIT
     def cmovl(dst, src)
       case [dst, src]
       # CMOVL r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 4C /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -225,7 +232,7 @@ module RubyVM::RJIT
     def cmovle(dst, src)
       case [dst, src]
       # CMOVLE r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 4E /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -239,7 +246,7 @@ module RubyVM::RJIT
     def cmovnz(dst, src)
       case [dst, src]
       # CMOVNZ r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 45 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -253,7 +260,7 @@ module RubyVM::RJIT
     def cmovz(dst, src)
       case [dst, src]
       # CMOVZ r64, r/m64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 0F 44 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -262,7 +269,7 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
         )
       # CMOVZ r64, r/m64 (Mod 01: [reg]+disp8)
-      in [Symbol => dst_reg, QwordPtr[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+      in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM8 => src_disp]]
         # REX.W + 0F 44 /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -277,7 +284,7 @@ module RubyVM::RJIT
     def cmp(left, right)
       case [left, right]
       # CMP r/m8, imm8 (Mod 01: [reg]+disp8)
-      in [BytePtr[reg: left_reg, disp: left_disp], Integer => right_imm] if r64?(left_reg) && imm8?(left_disp) && imm8?(right_imm)
+      in [BytePtr[R64 => left_reg, IMM8 => left_disp], IMM8 => right_imm]
         # 80 /7 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -287,7 +294,7 @@ module RubyVM::RJIT
           imm: imm8(right_imm),
         )
       # CMP r/m32, imm32 (Mod 01: [reg]+disp8)
-      in [DwordPtr[reg: left_reg, disp: left_disp], Integer => right_imm] if imm8?(left_disp) && imm32?(right_imm)
+      in [DwordPtr[R64 => left_reg, IMM8 => left_disp], IMM32 => right_imm]
         # 81 /7 id
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -297,7 +304,7 @@ module RubyVM::RJIT
           imm: imm32(right_imm),
         )
       # CMP r/m64, imm8 (Mod 01: [reg]+disp8)
-      in [QwordPtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if r64?(left_reg) && imm8?(left_disp) && imm8?(right_imm)
+      in [QwordPtr[R64 => left_reg, IMM8 => left_disp], IMM8 => right_imm]
         # REX.W + 83 /7 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -308,7 +315,7 @@ module RubyVM::RJIT
           imm: imm8(right_imm),
         )
       # CMP r/m64, imm8 (Mod 10: [reg]+disp32)
-      in [QwordPtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if r64?(left_reg) && imm32?(left_disp) && imm8?(right_imm)
+      in [QwordPtr[R64 => left_reg, IMM32 => left_disp], IMM8 => right_imm]
         # REX.W + 83 /7 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -319,7 +326,7 @@ module RubyVM::RJIT
           imm: imm8(right_imm),
         )
       # CMP r/m64, imm8 (Mod 11: reg)
-      in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm8?(right_imm)
+      in [R64 => left_reg, IMM8 => right_imm]
         # REX.W + 83 /7 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -329,7 +336,7 @@ module RubyVM::RJIT
           imm: imm8(right_imm),
         )
       # CMP r/m64, imm32 (Mod 11: reg)
-      in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm32?(right_imm)
+      in [R64 => left_reg, IMM32 => right_imm]
         # REX.W + 81 /7 id
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -339,7 +346,7 @@ module RubyVM::RJIT
           imm: imm32(right_imm),
         )
       # CMP r/m64, r64 (Mod 01: [reg]+disp8)
-      in [QwordPtr[Symbol => left_reg, Integer => left_disp], Symbol => right_reg] if r64?(right_reg)
+      in [QwordPtr[R64 => left_reg, IMM8 => left_disp], R64 => right_reg]
         # REX.W + 39 /r
         # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
         insn(
@@ -349,7 +356,7 @@ module RubyVM::RJIT
           disp: left_disp,
         )
       # CMP r/m64, r64 (Mod 11: reg)
-      in [Symbol => left_reg, Symbol => right_reg] if r64?(left_reg) && r64?(right_reg)
+      in [R64 => left_reg, R64 => right_reg]
         # REX.W + 39 /r
         # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
         insn(
@@ -406,11 +413,11 @@ module RubyVM::RJIT
         # E9 cd
         insn(opcode: 0xe9, imm: rel32(dst_addr))
       # JMP r/m64 (Mod 01: [reg]+disp8)
-      in QwordPtr[Symbol => dst_reg, Integer => dst_disp] if r64?(dst_reg) && imm8?(dst_disp)
+      in QwordPtr[R64 => dst_reg, IMM8 => dst_disp]
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod01, reg: 4, rm: dst_reg], disp: dst_disp)
       # JMP r/m64 (Mod 11: reg)
-      in Symbol => dst_reg if r64?(dst_reg)
+      in R64 => dst_reg
         # FF /4
         insn(opcode: 0xff, mod_rm: ModRM[mod: Mod11, reg: 4, rm: dst_reg])
       end
@@ -463,7 +470,7 @@ module RubyVM::RJIT
     def lea(dst, src)
       case [dst, src]
       # LEA r64,m (Mod 01: [reg]+disp8)
-      in [Symbol => dst_reg, QwordPtr[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+      in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM8 => src_disp]]
         # REX.W + 8D /r
         # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
         insn(
@@ -473,7 +480,7 @@ module RubyVM::RJIT
           disp: imm8(src_disp),
         )
       # LEA r64,m (Mod 10: [reg]+disp32)
-      in [Symbol => dst_reg, QwordPtr[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm32?(src_disp)
+      in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM32 => src_disp]]
         # REX.W + 8D /r
         # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
         insn(
@@ -487,10 +494,31 @@ module RubyVM::RJIT
 
     def mov(dst, src)
       case dst
-      in Symbol => dst_reg
+      in R32 => dst_reg
+        case src
+        # MOV r32 r/m32 (Mod 01: [reg]+disp8)
+        in DwordPtr[R64 => src_reg, IMM8 => src_disp]
+          # 8B /r
+          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
+          insn(
+            opcode: 0x8b,
+            mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
+            disp: src_disp,
+          )
+        # MOV r32, imm32 (Mod 11: reg)
+        in IMM32 => src_imm
+          # B8+ rd id
+          # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
+          insn(
+            opcode: 0xb8,
+            rd: dst_reg,
+            imm: imm32(src_imm),
+          )
+        end
+      in R64 => dst_reg
         case src
         # MOV r64, r/m64 (Mod 00: [reg])
-        in QwordPtr[Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+        in QwordPtr[R64 => src_reg]
           # REX.W + 8B /r
           # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
           insn(
@@ -499,7 +527,7 @@ module RubyVM::RJIT
             mod_rm: ModRM[mod: Mod00, reg: dst_reg, rm: src_reg],
           )
         # MOV r64, r/m64 (Mod 01: [reg]+disp8)
-        in QwordPtr[Symbol => src_reg, Integer => src_disp] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+        in QwordPtr[R64 => src_reg, IMM8 => src_disp]
           # REX.W + 8B /r
           # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
           insn(
@@ -508,8 +536,8 @@ module RubyVM::RJIT
             mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
             disp: src_disp,
           )
-        # MOV r64, r/m64 (Mod 10: [reg]+disp16)
-        in QwordPtr[Symbol => src_reg, Integer => src_disp] if r64?(dst_reg) && r64?(src_reg) && imm32?(src_disp)
+        # MOV r64, r/m64 (Mod 10: [reg]+disp32)
+        in QwordPtr[R64 => src_reg, IMM32 => src_disp]
           # REX.W + 8B /r
           # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
           insn(
@@ -519,7 +547,7 @@ module RubyVM::RJIT
             disp: imm32(src_disp),
           )
         # MOV r64, r/m64 (Mod 11: reg)
-        in Symbol => src_reg if r64?(dst_reg) && r64?(src_reg)
+        in R64 => src_reg
           # REX.W + 8B /r
           # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
           insn(
@@ -527,26 +555,8 @@ module RubyVM::RJIT
             opcode: 0x8b,
             mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
           )
-        # MOV r32 r/m32 (Mod 01: [reg]+disp8)
-        in QwordPtr[Symbol => src_reg, Integer => src_disp] if r32?(dst_reg) && imm8?(src_disp)
-          # 8B /r
-          # RM: Operand 1: ModRM:reg (w), Operand 2: ModRM:r/m (r)
-          insn(
-            opcode: 0x8b,
-            mod_rm: ModRM[mod: Mod01, reg: dst_reg, rm: src_reg],
-            disp: src_disp,
-          )
-        # MOV r32, imm32 (Mod 11: reg)
-        in Integer => src_imm if r32?(dst_reg) && imm32?(src_imm)
-          # B8+ rd id
-          # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
-          insn(
-            opcode: 0xb8,
-            rd: dst_reg,
-            imm: imm32(src_imm),
-          )
         # MOV r/m64, imm32 (Mod 11: reg)
-        in Integer => src_imm if r64?(dst_reg) && imm32?(src_imm)
+        in IMM32 => src_imm
           # REX.W + C7 /0 id
           # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
           insn(
@@ -556,7 +566,7 @@ module RubyVM::RJIT
             imm: imm32(src_imm),
           )
         # MOV r64, imm64
-        in Integer => src_imm if r64?(dst_reg) && imm64?(src_imm)
+        in IMM64 => src_imm
           # REX.W + B8+ rd io
           # OI: Operand 1: opcode + rd (w), Operand 2: imm8/16/32/64
           insn(
@@ -566,32 +576,10 @@ module RubyVM::RJIT
             imm: imm64(src_imm),
           )
         end
-      in QwordPtr[Symbol => dst_reg]
-        case src
-        # MOV r/m64, imm32 (Mod 00: [reg])
-        in Integer => src_imm if r64?(dst_reg) && imm32?(src_imm)
-          # REX.W + C7 /0 id
-          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
-          insn(
-            prefix: REX_W,
-            opcode: 0xc7,
-            mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
-            imm: imm32(src_imm),
-          )
-        # MOV r/m64, r64 (Mod 00: [reg])
-        in Symbol => src_reg if r64?(dst_reg) && r64?(src_reg)
-          # REX.W + 89 /r
-          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
-          insn(
-            prefix: REX_W,
-            opcode: 0x89,
-            mod_rm: ModRM[mod: Mod00, reg: src_reg, rm: dst_reg],
-          )
-        end
-      in DwordPtr[reg: dst_reg, disp: dst_disp]
+      in DwordPtr[R64 => dst_reg, IMM8 => dst_disp]
         case src
         # MOV r/m32, imm32 (Mod 01: [reg]+disp8)
-        in Integer => src_imm if r64?(dst_reg) && imm8?(dst_disp) && imm32?(src_imm)
+        in IMM32 => src_imm
           # C7 /0 id
           # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
           insn(
@@ -601,13 +589,35 @@ module RubyVM::RJIT
             imm: imm32(src_imm),
           )
         end
-      in QwordPtr[Symbol => dst_reg, Integer => dst_disp]
+      in QwordPtr[R64 => dst_reg]
+        case src
+        # MOV r/m64, imm32 (Mod 00: [reg])
+        in IMM32 => src_imm
+          # REX.W + C7 /0 id
+          # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
+          insn(
+            prefix: REX_W,
+            opcode: 0xc7,
+            mod_rm: ModRM[mod: Mod00, reg: 0, rm: dst_reg],
+            imm: imm32(src_imm),
+          )
+        # MOV r/m64, r64 (Mod 00: [reg])
+        in R64 => src_reg
+          # REX.W + 89 /r
+          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x89,
+            mod_rm: ModRM[mod: Mod00, reg: src_reg, rm: dst_reg],
+          )
+        end
+      in QwordPtr[R64 => dst_reg, IMM8 => dst_disp]
         # Optimize encoding when disp is 0
         return mov([dst_reg], src) if dst_disp == 0
 
         case src
         # MOV r/m64, imm32 (Mod 01: [reg]+disp8)
-        in Integer => src_imm if r64?(dst_reg) && imm8?(dst_disp) && imm32?(src_imm)
+        in IMM32 => src_imm
           # REX.W + C7 /0 id
           # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
           insn(
@@ -617,8 +627,21 @@ module RubyVM::RJIT
             disp: dst_disp,
             imm: imm32(src_imm),
           )
+        # MOV r/m64, r64 (Mod 01: [reg]+disp8)
+        in R64 => src_reg
+          # REX.W + 89 /r
+          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
+          insn(
+            prefix: REX_W,
+            opcode: 0x89,
+            mod_rm: ModRM[mod: Mod01, reg: src_reg, rm: dst_reg],
+            disp: dst_disp,
+          )
+        end
+      in QwordPtr[R64 => dst_reg, IMM32 => dst_disp]
+        case src
         # MOV r/m64, imm32 (Mod 10: [reg]+disp32)
-        in Integer => src_imm if r64?(dst_reg) && imm32?(dst_disp) && imm32?(src_imm)
+        in IMM32 => src_imm
           # REX.W + C7 /0 id
           # MI: Operand 1: ModRM:r/m (w), Operand 2: imm8/16/32/64
           insn(
@@ -628,18 +651,8 @@ module RubyVM::RJIT
             disp: imm32(dst_disp),
             imm: imm32(src_imm),
           )
-        # MOV r/m64, r64 (Mod 01: [reg]+disp8)
-        in Symbol => src_reg if r64?(dst_reg) && imm8?(dst_disp) && r64?(src_reg)
-          # REX.W + 89 /r
-          # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
-          insn(
-            prefix: REX_W,
-            opcode: 0x89,
-            mod_rm: ModRM[mod: Mod01, reg: src_reg, rm: dst_reg],
-            disp: dst_disp,
-          )
         # MOV r/m64, r64 (Mod 10: [reg]+disp32)
-        in Symbol => src_reg if r64?(dst_reg) && imm32?(dst_disp) && r64?(src_reg)
+        in R64 => src_reg
           # REX.W + 89 /r
           # MR: Operand 1: ModRM:r/m (w), Operand 2: ModRM:reg (r)
           insn(
@@ -655,7 +668,7 @@ module RubyVM::RJIT
     def or(dst, src)
       case [dst, src]
       # OR r/m64, imm8 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      in [R64 => dst_reg, IMM8 => src_imm]
         # REX.W + 83 /1 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -665,7 +678,7 @@ module RubyVM::RJIT
           imm: imm8(src_imm),
         )
       # OR r/m64, imm32 (Mod 11: reg)
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm32?(src_imm)
+      in [R64 => dst_reg, IMM32 => src_imm]
         # REX.W + 81 /1 id
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -675,7 +688,7 @@ module RubyVM::RJIT
           imm: imm32(src_imm),
         )
       # OR r64, r/m64 (Mod 01: [reg]+disp8)
-      in [Symbol => dst_reg, QwordPtr[Symbol => src_reg, Integer => src_disp]] if r64?(dst_reg) && r64?(src_reg) && imm8?(src_disp)
+      in [R64 => dst_reg, QwordPtr[R64 => src_reg, IMM8 => src_disp]]
         # REX.W + 0B /r
         # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
         insn(
@@ -690,7 +703,7 @@ module RubyVM::RJIT
     def push(src)
       case src
       # PUSH r64
-      in Symbol => src_reg if r64?(src_reg)
+      in R64 => src_reg
         # 50+rd
         # O: Operand 1: opcode + rd (r)
         insn(opcode: 0x50, rd: src_reg)
@@ -700,7 +713,7 @@ module RubyVM::RJIT
     def pop(dst)
       case dst
       # POP r64
-      in Symbol => dst_reg if r64?(dst_reg)
+      in R64 => dst_reg
         # 58+ rd
         # O: Operand 1: opcode + rd (r)
         insn(opcode: 0x58, rd: dst_reg)
@@ -715,7 +728,7 @@ module RubyVM::RJIT
 
     def sar(dst, src)
       case [dst, src]
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      in [R64 => dst_reg, IMM8 => src_imm]
         # REX.W + C1 /7 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8
         insn(
@@ -729,8 +742,8 @@ module RubyVM::RJIT
 
     def sub(dst, src)
       case [dst, src]
-      # SUB r/m64, imm8
-      in [Symbol => dst_reg, Integer => src_imm] if r64?(dst_reg) && imm8?(src_imm)
+      # SUB r/m64, imm8 (Mod 11: reg)
+      in [R64 => dst_reg, IMM8 => src_imm]
         # REX.W + 83 /5 ib
         # MI: Operand 1: ModRM:r/m (r, w), Operand 2: imm8/16/32
         insn(
@@ -740,7 +753,7 @@ module RubyVM::RJIT
           imm: imm8(src_imm),
         )
       # SUB r/m64, r64 (Mod 11: reg)
-      in [Symbol => dst_reg, Symbol => src_reg] if r64?(dst_reg) && r64?(src_reg)
+      in [R64 => dst_reg, R64 => src_reg]
         # REX.W + 29 /r
         # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
         insn(
@@ -754,7 +767,7 @@ module RubyVM::RJIT
     def test(left, right)
       case [left, right]
       # TEST r/m8*, imm8 (Mod 01: [reg]+disp8)
-      in [BytePtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(right_imm) && right_imm >= 0
+      in [BytePtr[R64 => left_reg, IMM8 => left_disp], IMM8 => right_imm]
         # REX + F6 /0 ib
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -764,7 +777,7 @@ module RubyVM::RJIT
           imm: imm8(right_imm),
         )
       # TEST r/m64, imm32 (Mod 01: [reg]+disp8)
-      in [QwordPtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm8?(left_disp) && imm32?(right_imm)
+      in [QwordPtr[R64 => left_reg, IMM8 => left_disp], IMM32 => right_imm]
         # REX.W + F7 /0 id
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -775,7 +788,7 @@ module RubyVM::RJIT
           imm: imm32(right_imm),
         )
       # TEST r/m64, imm32 (Mod 10: [reg]+disp32)
-      in [QwordPtr[Symbol => left_reg, Integer => left_disp], Integer => right_imm] if imm32?(left_disp) && imm32?(right_imm)
+      in [QwordPtr[R64 => left_reg, IMM32 => left_disp], IMM32 => right_imm]
         # REX.W + F7 /0 id
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -786,7 +799,7 @@ module RubyVM::RJIT
           imm: imm32(right_imm),
         )
       # TEST r/m64, imm32 (Mod 11: reg)
-      in [Symbol => left_reg, Integer => right_imm] if r64?(left_reg) && imm32?(right_imm)
+      in [R64 => left_reg, IMM32 => right_imm]
         # REX.W + F7 /0 id
         # MI: Operand 1: ModRM:r/m (r), Operand 2: imm8/16/32
         insn(
@@ -796,7 +809,7 @@ module RubyVM::RJIT
           imm: imm32(right_imm),
         )
       # TEST r/m32, r32 (Mod 11: reg)
-      in [Symbol => left_reg, Symbol => right_reg] if r32?(left_reg) && r32?(right_reg)
+      in [R32 => left_reg, R32 => right_reg]
         # 85 /r
         # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
         insn(
@@ -804,7 +817,7 @@ module RubyVM::RJIT
           mod_rm: ModRM[mod: Mod11, reg: right_reg, rm: left_reg],
         )
       # TEST r/m64, r64 (Mod 11: reg)
-      in [Symbol => left_reg, Symbol => right_reg] if r64?(left_reg) && r64?(right_reg)
+      in [R64 => left_reg, R64 => right_reg]
         # REX.W + 85 /r
         # MR: Operand 1: ModRM:r/m (r), Operand 2: ModRM:reg (r)
         insn(
@@ -859,10 +872,6 @@ module RubyVM::RJIT
       end
     end
 
-    def imm32?(imm)
-      (-0x8000_0000..0x7fff_ffff).include?(imm) # TODO: consider uimm
-    end
-
     private
 
     def insn(prefix: 0, opcode:, rd: nil, mod_rm: nil, disp: nil, imm: nil)
@@ -899,34 +908,6 @@ module RubyVM::RJIT
 
     def reg_code(reg)
       reg_code_extended(reg).first
-    end
-
-    def extended_reg?(reg)
-      reg_code_extended(reg).last
-    end
-
-    def reg_code_extended(reg)
-      case reg
-      # Not extended
-      when :al, :ax, :eax, :rax then [0, false]
-      when :cl, :cx, :ecx, :rcx then [1, false]
-      when :dl, :dx, :edx, :rdx then [2, false]
-      when :bl, :bx, :ebx, :rbx then [3, false]
-      when :ah, :sp, :esp, :rsp then [4, false]
-      when :ch, :bp, :ebp, :rbp then [5, false]
-      when :dh, :si, :esi, :rsi then [6, false]
-      when :bh, :di, :edi, :rdi then [7, false]
-      # Extended
-      when :r8b,  :r8w,  :r8d,  :r8  then [0, true]
-      when :r9b,  :r9w,  :r9d,  :r9  then [1, true]
-      when :r10b, :r10w, :r10d, :r10 then [2, true]
-      when :r11b, :r11w, :r11d, :r11 then [3, true]
-      when :r12b, :r12w, :r12d, :r12 then [4, true]
-      when :r13b, :r13w, :r13d, :r13 then [5, true]
-      when :r14b, :r14w, :r14d, :r14 then [6, true]
-      when :r15b, :r15w, :r15d, :r15 then [7, true]
-      else raise ArgumentError, "unexpected reg: #{reg.inspect}"
-      end
     end
 
     # Table 2-2. 32-Bit Addressing Forms with the ModR/M Byte
@@ -992,30 +973,6 @@ module RubyVM::RJIT
       bytes
     end
 
-    def imm8?(imm)
-      (-0x80..0x7f).include?(imm)
-    end
-
-    def imm64?(imm)
-      (-0x8000_0000_0000_0000..0xffff_ffff_ffff_ffff).include?(imm)
-    end
-
-    def r32?(reg)
-      if extended_reg?(reg)
-        reg.end_with?('d')
-      else
-        reg.start_with?('e')
-      end
-    end
-
-    def r64?(reg)
-      if extended_reg?(reg)
-        reg.match?(/\Ar\d+\z/)
-      else
-        reg.start_with?('r')
-      end
-    end
-
     def rel32(addr)
       [Rel32.new(addr), Rel32Pad, Rel32Pad, Rel32Pad]
     end
@@ -1063,5 +1020,68 @@ module RubyVM::RJIT
     def write_bytes(addr)
       Fiddle::Pointer.new(addr)[0, @bytes.size] = @bytes.pack('c*')
     end
+  end
+
+  module OperandMatcher
+    def imm8?(imm)
+      (-0x80..0x7f).include?(imm)
+    end
+
+    def imm32?(imm)
+      (-0x8000_0000..0x7fff_ffff).include?(imm) # TODO: consider uimm
+    end
+
+    def imm64?(imm)
+      (-0x8000_0000_0000_0000..0xffff_ffff_ffff_ffff).include?(imm)
+    end
+
+    def r32?(reg)
+      if extended_reg?(reg)
+        reg.end_with?('d')
+      else
+        reg.start_with?('e')
+      end
+    end
+
+    def r64?(reg)
+      if extended_reg?(reg)
+        reg.match?(/\Ar\d+\z/)
+      else
+        reg.start_with?('r')
+      end
+    end
+
+    def extended_reg?(reg)
+      reg_code_extended(reg).last
+    end
+
+    def reg_code_extended(reg)
+      case reg
+      # Not extended
+      when :al, :ax, :eax, :rax then [0, false]
+      when :cl, :cx, :ecx, :rcx then [1, false]
+      when :dl, :dx, :edx, :rdx then [2, false]
+      when :bl, :bx, :ebx, :rbx then [3, false]
+      when :ah, :sp, :esp, :rsp then [4, false]
+      when :ch, :bp, :ebp, :rbp then [5, false]
+      when :dh, :si, :esi, :rsi then [6, false]
+      when :bh, :di, :edi, :rdi then [7, false]
+      # Extended
+      when :r8b,  :r8w,  :r8d,  :r8  then [0, true]
+      when :r9b,  :r9w,  :r9d,  :r9  then [1, true]
+      when :r10b, :r10w, :r10d, :r10 then [2, true]
+      when :r11b, :r11w, :r11d, :r11 then [3, true]
+      when :r12b, :r12w, :r12d, :r12 then [4, true]
+      when :r13b, :r13w, :r13d, :r13 then [5, true]
+      when :r14b, :r14w, :r14d, :r14 then [6, true]
+      when :r15b, :r15w, :r15d, :r15 then [7, true]
+      else raise ArgumentError, "unexpected reg: #{reg.inspect}"
+      end
+    end
+  end
+
+  class Assembler
+    include OperandMatcher
+    extend OperandMatcher
   end
 end
