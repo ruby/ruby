@@ -172,7 +172,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_enable
-    if JITSupport.supported?
+    if JITSupport.yjit_supported? || JITSupport.rjit_supported?
       assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
