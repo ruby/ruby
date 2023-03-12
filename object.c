@@ -112,7 +112,7 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
  *
  * Returns +true+ or +false+.
  *
- * Like Object#== if +object+ is an instance of Object
+ * Like Object#==, if +object+ is an instance of Object
  * (and not an instance of one of its many subclasses).
  *
  * This method is commonly overridden by those subclasses,
