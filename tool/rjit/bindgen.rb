@@ -368,8 +368,6 @@ generator = BindingGenerator.new(
       VM_ENV_DATA_INDEX_ME_CREF
       VM_ENV_DATA_INDEX_SPECVAL
     ],
-  },
-  values: {
     SIZET: %w[
       ARRAY_REDEFINED_OP_FLAG
       BOP_AND
@@ -461,6 +459,10 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_REFINED
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
+    ],
+  },
+  values: {
+    SIZET: %w[
       block_type_iseq
       imemo_iseq
       rb_block_param_proxy
@@ -516,8 +518,8 @@ generator = BindingGenerator.new(
     IC
     ID
     IVC
-    RB_BUILTIN
     RArray
+    RB_BUILTIN
     RBasic
     RObject
     RStruct
@@ -526,14 +528,16 @@ generator = BindingGenerator.new(
     iseq_inline_constant_cache_entry
     iseq_inline_iv_cache_entry
     iseq_inline_storage_entry
-    rjit_options
+    method_optimized_type
+    rb_block
+    rb_block_type
     rb_builtin_function
     rb_call_data
     rb_callable_method_entry_struct
     rb_callable_method_entry_t
-    rb_method_entry_t
     rb_callcache
     rb_callinfo
+    rb_captured_block
     rb_control_frame_t
     rb_cref_t
     rb_execution_context_struct
@@ -542,24 +546,23 @@ generator = BindingGenerator.new(
     rb_iseq_location_t
     rb_iseq_struct
     rb_iseq_t
-    rb_method_definition_struct
-    rb_method_iseq_t
-    rb_method_type_t
+    rb_method_attr_t
     rb_method_bmethod_t
+    rb_method_cfunc_t
+    rb_method_definition_struct
+    rb_method_entry_t
+    rb_method_iseq_t
+    rb_method_optimized_t
+    rb_method_type_t
+    rb_proc_t
     rb_rjit_runtime_counters
     rb_serial_t
     rb_shape
     rb_shape_t
-    rb_method_attr_t
-    rb_method_cfunc_t
-    rb_method_optimized_t
-    method_optimized_type
     rb_thread_struct
-    rb_proc_t
-    rb_block
-    rb_block_type
-    rb_captured_block
+    rjit_options
   ],
+  # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[
     VALUE
     shape_id_t
