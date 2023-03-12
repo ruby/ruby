@@ -42,7 +42,7 @@ jobs:
         working-directory: spec/ruby
         env:
           CHECK_LEAKS: true
-      - uses: ruby/action-slack@36bda26f63ca8a3787504418657edbbc1a3f5361 # v3.1.0
+      - uses: ruby/action-slack@68e0cffd07384c294c754c75b4cedfec1573996b # v3.1.1
         with:
           payload: |
             {
