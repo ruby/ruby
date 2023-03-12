@@ -106,16 +106,14 @@ class BindingGenerator
   attr_reader :src
 
   # @param src_path [String]
-  # @param uses [Array<String>]
   # @param values [Hash{ Symbol => Array<String> }]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, uses:, values:, types:, dynamic_types:, skip_fields:, ruby_fields:)
+  def initialize(src_path:, values:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
-    @uses = uses.sort
     @values = values.transform_values(&:sort)
     @types = types.sort
     @dynamic_types = dynamic_types.sort
@@ -126,14 +124,6 @@ class BindingGenerator
 
   def generate(nodes)
     println @preamble
-
-    # Define USE_* macros
-    @uses.each do |use|
-      println "  def C.#{use}"
-      println "    Primitive.cexpr! %q{ RBOOL(#{use} != 0) }"
-      println "  end"
-      println
-    end
 
     # Define macros/enums
     @values.each do |type, values|
@@ -352,9 +342,6 @@ end
 nodes = HeaderParser.new(File.join(src_dir, 'rjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
-  uses: %w[
-    USE_LAZY_LOAD
-  ],
   values: {
     INT: %w[
       VM_ENV_DATA_INDEX_SPECVAL

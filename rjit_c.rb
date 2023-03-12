@@ -502,10 +502,6 @@ module RubyVM::RJIT # :nodoc: all
 
   ### RJIT bindgen begin ###
 
-  def C.USE_LAZY_LOAD
-    Primitive.cexpr! %q{ RBOOL(USE_LAZY_LOAD != 0) }
-  end
-
   def C.VM_ENV_DATA_INDEX_ME_CREF
     Primitive.cexpr! %q{ INT2NUM(VM_ENV_DATA_INDEX_ME_CREF) }
   end
