@@ -14,6 +14,12 @@
 #define SHAPE_DEBUG (VM_CHECK_MODE > 0)
 #endif
 
+#define SINGLE_CHILD_TAG 0x1
+#define TAG_SINGLE_CHILD(x) (struct rb_id_table *)((uintptr_t)x | SINGLE_CHILD_TAG)
+#define SINGLE_CHILD_MASK (~((uintptr_t)SINGLE_CHILD_TAG))
+#define SINGLE_CHILD_P(x) (((uintptr_t)x) & SINGLE_CHILD_TAG)
+#define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)x & SINGLE_CHILD_MASK)
+
 static ID id_frozen;
 static ID id_t_object;
 static ID size_pool_edge_names[SIZE_POOL_COUNT];
@@ -148,6 +154,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
     shape->type = (uint8_t)type;
     shape->size_pool_index = parent->size_pool_index;
     shape->capacity = parent->capacity;
+    shape->edges = 0;
     return shape;
 }
 
@@ -188,25 +195,48 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
     if (new_shape_necessary || (new_shapes_allowed && (shape->next_iv_index < SHAPE_MAX_NUM_IVS))) {
         RB_VM_LOCK_ENTER();
         {
-            bool had_edges = !!shape->edges;
+            // If the current shape has children
+            if (shape->edges) {
+                // Check if it only has one child
+                if (SINGLE_CHILD_P(shape->edges)) {
+                    rb_shape_t * child = SINGLE_CHILD(shape->edges);
+                    // If the one child has a matching edge name, then great,
+                    // we found what we want.
+                    if (child->edge_name == id) {
+                        res = child;
+                    }
+                    else {
+                        // Otherwise we're going to have to create a new shape
+                        // and insert it as a child node, so create an id
+                        // table and insert the existing child
+                        shape->edges = rb_id_table_create(2);
+                        rb_id_table_insert(shape->edges, child->edge_name, (VALUE)child);
+                    }
+                }
+                else {
+                    // If it has more than one child, do a hash lookup to find it.
+                    VALUE lookup_result;
+                    if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
+                        res = (rb_shape_t *)lookup_result;
+                    }
+                }
 
-            if (!shape->edges) {
-                shape->edges = rb_id_table_create(0);
-            }
-
-            // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
-            // we can return that. Otherwise, we'll need to get a new shape
-            VALUE lookup_result;
-            if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
-                res = (rb_shape_t *)lookup_result;
+                // If the shape we were looking for above was found,
+                // then `res` will be set to the child.  If it isn't set, then
+                // we know we need a new child shape, and that we must insert
+                // it in to the table.
+                if (!res) {
+                    *variation_created = true;
+                    rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
+                    rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
+                    res = new_shape;
+                }
             }
             else {
-                *variation_created = had_edges;
-
+                // If the shape didn't have any outgoing edges, then create
+                // the new outgoing edge and tag the pointer.
                 rb_shape_t * new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
-
-                rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
-
+                shape->edges = TAG_SINGLE_CHILD(new_shape);
                 res = new_shape;
             }
         }
@@ -458,11 +488,19 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
         }
 
         VALUE lookup_result;
-        if (rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, &lookup_result)) {
-            next_shape = (rb_shape_t *)lookup_result;
+        if (SINGLE_CHILD_P(next_shape->edges)) {
+            rb_shape_t * child = SINGLE_CHILD(next_shape->edges);
+            if (child->edge_name == dest_shape->edge_name) {
+                return child;
+            }
         }
         else {
-            return NULL;
+            if (rb_id_table_lookup(next_shape->edges, dest_shape->edge_name, &lookup_result)) {
+                next_shape = (rb_shape_t *)lookup_result;
+            }
+            else {
+                return NULL;
+            }
         }
         break;
       case SHAPE_ROOT:
@@ -533,7 +571,12 @@ size_t
 rb_shape_edges_count(rb_shape_t *shape)
 {
     if (shape->edges) {
-        return rb_id_table_size(shape->edges);
+        if (SINGLE_CHILD_P(shape->edges)) {
+            return 1;
+        }
+        else {
+            return rb_id_table_size(shape->edges);
+        }
     }
     return 0;
 }
@@ -542,7 +585,7 @@ size_t
 rb_shape_memsize(rb_shape_t *shape)
 {
     size_t memsize = sizeof(rb_shape_t);
-    if (shape->edges) {
+    if (shape->edges && !SINGLE_CHILD_P(shape->edges)) {
         memsize += rb_id_table_memsize(shape->edges);
     }
     return memsize;
@@ -613,7 +656,13 @@ rb_shape_edges(VALUE self)
     VALUE hash = rb_hash_new();
 
     if (shape->edges) {
-        rb_id_table_foreach(shape->edges, rb_edges_to_hash, &hash);
+        if (SINGLE_CHILD_P(shape->edges)) {
+            rb_shape_t * child = SINGLE_CHILD(shape->edges);
+            rb_edges_to_hash(child->edge_name, (VALUE)child, &hash);
+        }
+        else {
+            rb_id_table_foreach(shape->edges, rb_edges_to_hash, &hash);
+        }
     }
 
     return hash;
@@ -679,8 +728,13 @@ static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE va
 static VALUE edges(struct rb_id_table* edges)
 {
     VALUE hash = rb_hash_new();
-    if (edges)
+    if (SINGLE_CHILD_P(edges)) {
+        rb_shape_t * child = SINGLE_CHILD(edges);
+        collect_keys_and_values(child->edge_name, (VALUE)child, &hash);
+    }
+    else {
         rb_id_table_foreach(edges, collect_keys_and_values, &hash);
+    }
     return hash;
 }
 
