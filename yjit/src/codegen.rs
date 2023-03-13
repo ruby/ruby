@@ -5095,6 +5095,43 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
     asm.csel_nz(ary_opnd, heap_ptr_opnd)
 }
 
+/// Pushes arguments from an array to the stack. Differs from push splat because
+/// the array can have items left over.
+fn move_rest_args_to_stack(array: Opnd, num_args: u32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: Target) {
+    asm.comment("move_rest_args_to_stack");
+
+    let array_len_opnd = get_array_len(asm, array);
+
+    asm.comment("Side exit if length doesn't not equal remaining args");
+    asm.cmp(array_len_opnd, num_args.into());
+    asm.jbe(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal));
+
+    asm.comment("Push arguments from array");
+
+    // Load the address of the embedded array
+    // (struct RArray *)(obj)->as.ary
+    let array_reg = asm.load(array);
+
+    // Conditionally load the address of the heap array
+    // (struct RArray *)(obj)->as.heap.ptr
+    let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
+    let heap_ptr_opnd = Opnd::mem(
+        (8 * size_of::<usize>()) as u8,
+        array_reg,
+        RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+    );
+    // Load the address of the embedded array
+    // (struct RArray *)(obj)->as.ary
+    let ary_opnd = asm.lea(Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+    let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+
+    for i in 0..num_args {
+        let top = ctx.stack_push(Type::Unknown);
+        asm.mov(top, Opnd::mem(64, ary_opnd, i as i32 * SIZEOF_VALUE_I32));
+    }
+}
+
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
@@ -5354,23 +5391,6 @@ fn gen_send_iseq(
 
     let mut start_pc_offset = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
-
-    // If we have a rest and a splat, we can take a shortcut if the
-    // number of non-splat arguments is equal to the number of required
-    // arguments.
-    // For example:
-    // def foo(a, b, *rest)
-    // foo(1, 2, *[3, 4])
-    // In this case, we can just dup the splat array as the rest array.
-    // No need to move things around between the array and stack.
-
-    let non_rest_arg_count = argc - 1;
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 && non_rest_arg_count != required_num {
-        if non_rest_arg_count < required_num {
-            gen_counter_incr!(asm, send_iseq_has_rest_and_splat_fewer);
-            return CantCompile;
-        }
-    }
 
     // This struct represents the metadata about the caller-specified
     // keyword arguments.
@@ -5830,9 +5850,9 @@ fn gen_send_iseq(
         gen_save_sp(asm, ctx);
 
         if flags & VM_CALL_ARGS_SPLAT != 0 {
-            // We guarded above that if there is a splat and rest
-            // the number of arguments lines up.
-            // So we are just going to dupe the array and push it onto the stack.
+            let non_rest_arg_count = argc - 1;
+            // We start by dupping the array because someone else might have
+            // a reference to it.
             let array = ctx.stack_pop(1);
             let array = asm.ccall(
                 rb_ary_dup as *const u8,
@@ -5856,14 +5876,28 @@ fn gen_send_iseq(
                 );
                 ctx.stack_pop(diff as usize);
 
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
                 // We now should have the required arguments
                 // and an array of all the rest arguments
                 argc = required_num + 1;
+            } else if non_rest_arg_count < required_num {
+                // If we have fewer arguments than required, we need to take some
+                // from the array and move them to the stack.
+                let diff = (required_num - non_rest_arg_count) as u32;
+                // This moves the arguments onto the stack. But it doesn't modify the array.
+                move_rest_args_to_stack(array, diff, ctx, asm, ocb, side_exit);
+
+                // We will now slice the array to give us a new array of the correct size
+                let ret = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
                 let stack_ret = ctx.stack_push(Type::TArray);
-                asm.mov(stack_ret, array);
+                asm.mov(stack_ret, ret);
+
+                // We now should have the required arguments
+                // and an array of all the rest arguments
+                argc = required_num + 1;
             } else {
-                // We exit on less than right now, this is only handling
-                // the case where they are equal
+                // The arguments are equal so we can just push to the stack
                 assert!(non_rest_arg_count == required_num);
                 let stack_ret = ctx.stack_push(Type::TArray);
                 asm.mov(stack_ret, array);

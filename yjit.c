@@ -845,6 +845,13 @@ VALUE
 rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
+rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
+{
+    long len = RARRAY_LEN(ary);
+    return rb_ary_subseq(ary, beg, len);
+}
+
+VALUE
 rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
 {
     return rb_fix_mod_fix(recv, obj);
