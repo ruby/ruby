@@ -620,12 +620,6 @@ rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
     return iseq->body->iseq_encoded;
 }
 
-bool
-rb_get_iseq_body_builtin_inline_p(const rb_iseq_t *iseq)
-{
-    return iseq->body->builtin_inline_p;
-}
-
 unsigned
 rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
@@ -741,7 +735,7 @@ rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
     return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
-        iseq->body->builtin_inline_p
+        (iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF) != 0
     );
 }
 
@@ -846,6 +840,9 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
+
+VALUE
+rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
 rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)

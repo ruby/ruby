@@ -34,6 +34,11 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:extensions]     = value
     end
 
+    add_option("--only-missing-extensions",
+               "Only restore gems with missing extensions") do |value, options|
+      options[:only_missing_extensions] = value
+    end
+
     add_option("--only-executables",
                "Only restore executables") do |value, options|
       options[:only_executables] = value
@@ -106,6 +111,10 @@ extensions will be restored.
           options[:extensions] && options[:args].empty?
       Gem::Specification.select do |spec|
         spec.extensions && !spec.extensions.empty?
+      end
+    elsif options[:only_missing_extensions]
+      Gem::Specification.select do |spec|
+        spec.missing_extensions?
       end
     else
       get_all_gem_names.sort.map do |gem_name|

@@ -6,7 +6,7 @@ module TestParallel
   PARALLEL_RB = "#{__dir__}/../../lib/test/unit/parallel.rb"
   TESTS = "#{__dir__}/tests_for_parallel"
   # use large timeout for --jit-wait
-  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? ? 100 : 30)
+  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 100 : 30)
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup

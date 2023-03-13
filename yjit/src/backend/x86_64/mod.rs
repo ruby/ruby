@@ -190,13 +190,29 @@ impl Assembler
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
                     asm.push_insn(insn);
                 },
-                Insn::Cmp { left, right } |
+                Insn::Cmp { left, right } => {
+                    // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
+                    // when next IR is `je`, `jne`, `csel_e`, or `csel_ne`
+                    match (&left, &right, iterator.peek()) {
+                        (Opnd::InsnOut { .. },
+                         Opnd::UImm(0) | Opnd::Imm(0),
+                         Some(Insn::Je(_) | Insn::Jne(_) | Insn::CSelE { .. } | Insn::CSelNE { .. })) => {
+                            asm.push_insn(Insn::Test { left: *left, right: *left });
+                        }
+                        _ => {
+                            if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
+                                let loaded = asm.load(*right);
+                                *right = loaded;
+                            }
+                            asm.push_insn(insn);
+                        }
+                    }
+                },
                 Insn::Test { left, right } => {
                     if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
                         let loaded = asm.load(*right);
                         *right = loaded;
                     }
-
                     asm.push_insn(insn);
                 },
                 // These instructions modify their input operand in-place, so we
@@ -316,6 +332,18 @@ impl Assembler
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
                     asm.ccall(*fptr, vec![]);
+                },
+                Insn::Lea { .. } => {
+                    // Merge `lea` and `mov` into a single `lea` when possible
+                    match (&insn, iterator.peek()) {
+                        (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
+                        if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
+                            asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => asm.push_insn(insn),
+                    }
                 },
                 _ => {
                     if insn.out_opnd().is_some() {
@@ -701,7 +729,9 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.lower_stack().x86_split().alloc_regs(regs);
+        let asm = self.lower_stack();
+        let asm = asm.x86_split();
+        let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
@@ -891,5 +921,36 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c31d8");
+    }
+
+    #[test]
+    fn test_merge_lea_reg() {
+        let (mut asm, mut cb) = setup_asm();
+        let sp = asm.lea(Opnd::mem(64, SP, 8));
+        asm.mov(SP, sp); // should be merged to lea
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(format!("{:x}", cb), "488d5b08");
+    }
+
+    #[test]
+    fn test_merge_lea_mem() {
+        let (mut asm, mut cb) = setup_asm();
+        let sp = asm.lea(Opnd::mem(64, SP, 8));
+        asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
+        asm.compile_with_num_regs(&mut cb, 1);
+        assert_eq!(format!("{:x}", cb), "488d4308488903");
+    }
+
+    #[test]
+    fn test_replace_cmp_0() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let val = asm.load(Opnd::mem(64, SP, 8));
+        asm.cmp(val, 0.into());
+        let result = asm.csel_e(Qtrue.into(), Qfalse.into());
+        asm.mov(Opnd::Reg(RAX_REG), result);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_eq!(format!("{:x}", cb), "488b43084885c0b814000000b900000000480f45c14889c0");
     }
 }

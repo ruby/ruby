@@ -24,34 +24,12 @@ module Gem
       runtime
     ].freeze
 
-    if ::Psych.respond_to? :safe_load
-      def self.safe_load(input)
-        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("3.1.0.pre1")
-          ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
-        else
-          ::Psych.safe_load(input, PERMITTED_CLASSES, PERMITTED_SYMBOLS, true)
-        end
-      end
+    def self.safe_load(input)
+      ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
+    end
 
-      def self.load(input)
-        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("3.1.0.pre1")
-          ::Psych.safe_load(input, permitted_classes: [::Symbol])
-        else
-          ::Psych.safe_load(input, [::Symbol])
-        end
-      end
-    else
-      unless Gem::Deprecate.skip
-        warn "Psych safe loading is not available. Please upgrade psych to a version that supports safe loading (>= 2.0)."
-      end
-
-      def self.safe_load(input, *args)
-        ::Psych.load input
-      end
-
-      def self.load(input)
-        ::Psych.load input
-      end
+    def self.load(input)
+      ::Psych.safe_load(input, permitted_classes: [::Symbol])
     end
   end
 end

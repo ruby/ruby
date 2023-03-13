@@ -1,4 +1,4 @@
-// We use the YARV bytecode constants which have a CRuby-style name
+﻿// We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
 use crate::asm::*;
@@ -353,9 +353,10 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         // If the actual type differs from the learned type
         if val_type.diff(learned_type) == TypeDiff::Incompatible {
             panic!(
-                "verify_ctx: ctx type ({:?}) incompatible with actual value on stack: {}",
+                "verify_ctx: ctx type ({:?}) incompatible with actual value on stack: {} ({:?})",
                 learned_type,
-                obj_info_str(stack_val)
+                obj_info_str(stack_val),
+                val_type,
             );
         }
     }
@@ -1170,7 +1171,7 @@ fn gen_newarray(
     let values_ptr = if n == 0 {
         Opnd::UImm(0)
     } else {
-        asm.comment("load pointer to array elts");
+        asm.comment("load pointer to array elements");
         let offset_magnitude = (SIZEOF_VALUE as u32) * n;
         let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
         asm.lea(values_opnd)
@@ -1376,6 +1377,39 @@ fn guard_object_is_array(
     }
 }
 
+fn guard_object_is_string(
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    object: Opnd,
+    object_opnd: YARVOpnd,
+    side_exit: Target,
+) {
+    let object_type = ctx.get_opnd_type(object_opnd);
+    if object_type.is_string() {
+        return;
+    }
+
+    let object_reg = match object {
+        Opnd::Reg(_) => object,
+        _ => asm.load(object),
+    };
+    guard_object_is_heap(ctx, asm, object_reg, object_opnd, side_exit);
+
+    asm.comment("guard object is string");
+
+    // Pull out the type mask
+    let flags_reg = asm.load(Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS));
+    let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
+
+    // Compare the result with T_STRING
+    asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
+    asm.jne(side_exit);
+
+    if object_type.diff(Type::TString) != TypeDiff::Incompatible {
+        ctx.upgrade_opnd_type(object_opnd, Type::TString);
+    }
+}
+
 /// This guards that a special flag is not set on a hash.
 /// By passing a hash with this flag set as the last argument
 /// in a splat call, you can change the way keywords are handled
@@ -1408,22 +1442,6 @@ fn guard_object_is_not_ruby2_keyword_hash(
     asm.jnz(side_exit);
 
     asm.write_label(not_ruby2_keyword);
-}
-
-fn guard_object_is_string(
-    asm: &mut Assembler,
-    object_reg: Opnd,
-    side_exit: Target,
-) {
-    asm.comment("guard object is string");
-
-    // Pull out the type mask
-    let flags_reg = asm.load(Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS));
-    let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
-
-    // Compare the result with T_STRING
-    asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
-    asm.jne(side_exit);
 }
 
 // push enough nils onto the stack to fill out an array
@@ -1866,8 +1884,8 @@ pub const SET_IVAR_MAX_DEPTH: i32 = 10;
 // hashes and arrays
 pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 
-// up to 5 different classes
-pub const SEND_MAX_DEPTH: i32 = 5;
+// up to 10 different classes
+pub const SEND_MAX_DEPTH: i32 = 20;
 
 // up to 20 different methods for send
 pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
@@ -2372,6 +2390,43 @@ fn gen_defined(
     let def_result = asm.ccall(rb_vm_defined as *const u8, vec![EC, CFP, op_type.into(), obj.into(), v_opnd]);
 
     // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+    //  val = pushval;
+    // }
+    asm.test(def_result, Opnd::UImm(255));
+    let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+
+    // Push the return value onto the stack
+    let out_type = if pushval.special_const_p() {
+        Type::UnknownImm
+    } else {
+        Type::Unknown
+    };
+    let stack_ret = ctx.stack_push(out_type);
+    asm.mov(stack_ret, out_value);
+
+    KeepCompiling
+}
+
+fn gen_definedivar(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    let ivar_name = jit.get_arg(0).as_u64();
+    let pushval = jit.get_arg(2);
+
+    // Get the receiver
+    let recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    // Call rb_ivar_defined(recv, ivar_name)
+    let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+
+    // if (rb_ivar_defined(recv, ivar_name)) {
     //  val = pushval;
     // }
     asm.test(def_result, Opnd::UImm(255));
@@ -4285,24 +4340,14 @@ fn jit_rb_str_concat(
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // Guard that the argument is of class String at runtime.
-    let arg_type = ctx.get_opnd_type(StackOpnd(0));
+    // Guard that the concat argument is a string
+    guard_object_is_string(ctx, asm, ctx.stack_opnd(0), StackOpnd(0), side_exit);
+
+    // Guard buffers from GC since rb_str_buf_append may allocate.
+    gen_save_sp(asm, ctx);
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
-
-    // If we're not compile-time certain that this will always be a string, guard at runtime
-    if arg_type != Type::CString && arg_type != Type::TString {
-        let arg_opnd = asm.load(concat_arg);
-        if !arg_type.is_heap() {
-            asm.comment("guard arg not immediate");
-            asm.test(arg_opnd, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(side_exit);
-            asm.cmp(arg_opnd, Qfalse.into());
-            asm.je(side_exit);
-        }
-        guard_object_is_string(asm, arg_opnd, side_exit);
-    }
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
     // use rb_yjit_str_simple_append, which calls rb_str_cat.
@@ -5252,11 +5297,6 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_splat);
-        return CantCompile;
-    }
-
     if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
         gen_counter_incr!(asm, send_iseq_has_rest_and_send);
         return CantCompile;
@@ -5314,6 +5354,23 @@ fn gen_send_iseq(
 
     let mut start_pc_offset = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+
+    // If we have a rest and a splat, we can take a shortcut if the
+    // number of non-splat arguments is equal to the number of required
+    // arguments.
+    // For example:
+    // def foo(a, b, *rest)
+    // foo(1, 2, *[3, 4])
+    // In this case, we can just dup the splat array as the rest array.
+    // No need to move things around between the array and stack.
+
+    let non_rest_arg_count = argc - 1;
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 && non_rest_arg_count != required_num {
+        if non_rest_arg_count < required_num {
+            gen_counter_incr!(asm, send_iseq_has_rest_and_splat_fewer);
+            return CantCompile;
+        }
+    }
 
     // This struct represents the metadata about the caller-specified
     // keyword arguments.
@@ -5542,7 +5599,7 @@ fn gen_send_iseq(
     };
 
     // push_splat_args does stack manipulation so we can no longer side exit
-    if flags & VM_CALL_ARGS_SPLAT != 0 {
+    if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
         // If block_arg0_splat, we still need side exits after this, but
         // doing push_splat_args here disallows it. So bail out.
         if block_arg0_splat {
@@ -5765,37 +5822,79 @@ fn gen_send_iseq(
         argc = lead_num;
     }
 
+
     if iseq_has_rest {
-        assert!(argc >= required_num);
 
         // We are going to allocate so setting pc and sp.
         jit_save_pc(jit, asm);
         gen_save_sp(asm, ctx);
 
-        let n = (argc - required_num) as u32;
-        argc = required_num + 1;
-        // If n is 0, then elts is never going to be read, so we can just pass null
-        let values_ptr = if n == 0 {
-            Opnd::UImm(0)
+        if flags & VM_CALL_ARGS_SPLAT != 0 {
+            // We guarded above that if there is a splat and rest
+            // the number of arguments lines up.
+            // So we are just going to dupe the array and push it onto the stack.
+            let array = ctx.stack_pop(1);
+            let array = asm.ccall(
+                rb_ary_dup as *const u8,
+                vec![array],
+            );
+            if non_rest_arg_count > required_num {
+                // If we have more arguments than required, we need to prepend
+                // the items from the stack onto the array.
+                let diff = (non_rest_arg_count - required_num) as u32;
+
+                // diff is >0 so no need to worry about null pointer
+                asm.comment("load pointer to array elements");
+                let offset_magnitude = SIZEOF_VALUE as u32 * diff;
+                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_ptr = asm.lea(values_opnd);
+
+                asm.comment("prepend stack values to rest array");
+                let array = asm.ccall(
+                    rb_yjit_rb_ary_unshift_m as *const u8,
+                    vec![Opnd::UImm(diff as u64), values_ptr, array],
+                );
+                ctx.stack_pop(diff as usize);
+
+                // We now should have the required arguments
+                // and an array of all the rest arguments
+                argc = required_num + 1;
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+            } else {
+                // We exit on less than right now, this is only handling
+                // the case where they are equal
+                assert!(non_rest_arg_count == required_num);
+                let stack_ret = ctx.stack_push(Type::TArray);
+                asm.mov(stack_ret, array);
+            }
         } else {
-            asm.comment("load pointer to array elts");
-            let offset_magnitude = SIZEOF_VALUE as u32 * n;
-            let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
-            asm.lea(values_opnd)
-        };
+            assert!(argc >= required_num);
+            let n = (argc - required_num) as u32;
+            argc = required_num + 1;
+            // If n is 0, then elts is never going to be read, so we can just pass null
+            let values_ptr = if n == 0 {
+                Opnd::UImm(0)
+            } else {
+                asm.comment("load pointer to array elements");
+                let offset_magnitude = SIZEOF_VALUE as u32 * n;
+                let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+                asm.lea(values_opnd)
+            };
 
-        let new_ary = asm.ccall(
-            rb_ec_ary_new_from_values as *const u8,
-            vec![
-                EC,
-                Opnd::UImm(n.into()),
-                values_ptr
-            ]
-        );
+            let new_ary = asm.ccall(
+                rb_ec_ary_new_from_values as *const u8,
+                vec![
+                    EC,
+                    Opnd::UImm(n.into()),
+                    values_ptr
+                ]
+            );
 
-        ctx.stack_pop(n.as_usize());
-        let stack_ret = ctx.stack_push(Type::CArray);
-        asm.mov(stack_ret, new_ary);
+            ctx.stack_pop(n.as_usize());
+            let stack_ret = ctx.stack_push(Type::CArray);
+            asm.mov(stack_ret, new_ary);
+        }
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
@@ -6954,6 +7053,7 @@ fn gen_objtostring(
             SEND_MAX_DEPTH,
             side_exit,
         );
+
         // No work needed. The string value is already on the top of the stack.
         KeepCompiling
     } else {
@@ -7578,6 +7678,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
+        YARVINSN_definedivar => Some(gen_definedivar),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),

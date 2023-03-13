@@ -224,13 +224,32 @@ class Net::HTTPResponse
   # Accept-Encoding header from the user.
   attr_accessor :decode_content
 
-  # The encoding to use for the response body. If Encoding, use that encoding.
-  # If other true value, attempt to detect the appropriate encoding, and use
-  # that.
+  # Returns the value set by body_encoding=, or +false+ if none;
+  # see #body_encoding=.
   attr_reader :body_encoding
 
-  # Set the encoding to use for the response body.  If given a String, find
-  # the related Encoding.
+  # Sets the encoding that should be used when reading the body:
+  #
+  # - If the given value is an Encoding object, that encoding will be used.
+  # - Otherwise if the value is a string, the value of
+  #   {Encoding#find(value)}[rdoc-ref:Encoding.find]
+  #   will be used.
+  # - Otherwise an encoding will be deduced from the body itself.
+  #
+  # Examples:
+  #
+  #   http = Net::HTTP.new(hostname)
+  #   req = Net::HTTP::Get.new('/')
+  #
+  #   http.request(req) do |res|
+  #     p res.body.encoding # => #<Encoding:ASCII-8BIT>
+  #   end
+  #
+  #   http.request(req) do |res|
+  #     res.body_encoding = "UTF-8"
+  #     p res.body.encoding # => #<Encoding:UTF-8>
+  #   end
+  #
   def body_encoding=(value)
     value = Encoding.find(value) if value.is_a?(String)
     @body_encoding = value
@@ -362,26 +381,26 @@ class Net::HTTPResponse
     @body
   end
 
-  # Returns the full entity body.
+  # Returns the string response body;
+  # note that repeated calls for the unmodified body return a cached string:
   #
-  # Calling this method a second or subsequent time will return the
-  # string already read.
+  #   path = '/todos/1'
+  #   Net::HTTP.start(hostname) do |http|
+  #     res = http.get(path)
+  #     p res.body
+  #     p http.head(path).body # No body.
+  #   end
   #
-  #   http.request_get('/index.html') {|res|
-  #     puts res.body
-  #   }
+  # Output:
   #
-  #   http.request_get('/index.html') {|res|
-  #     p res.body.object_id   # 538149362
-  #     p res.body.object_id   # 538149362
-  #   }
+  #   "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
+  #   nil
   #
   def body
     read_body()
   end
 
-  # Because it may be necessary to modify the body, Eg, decompression
-  # this method facilitates that.
+  # Sets the body of the response to the given value.
   def body=(value)
     @body = value
   end

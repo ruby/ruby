@@ -34,7 +34,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -164,7 +164,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq && ISEQ_BODY(iseq)) {
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        mjit_free_iseq(iseq); /* Notify MJIT */
+        rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
 #endif
@@ -356,16 +356,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
 
         if (reference_updating) {
-#if USE_MJIT
-            rb_mjit_iseq_update_references(body);
+#if USE_RJIT
+            rb_rjit_iseq_update_references(body);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_update_references(body->yjit_payload);
 #endif
         }
         else {
-#if USE_MJIT
-            rb_mjit_iseq_mark(body->mjit_blocks);
+#if USE_RJIT
+            rb_rjit_iseq_mark(body->rjit_blocks);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
@@ -1908,7 +1908,7 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 }
 #endif
 
-MJIT_FUNC_EXPORTED rb_event_flag_t
+rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
     const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);

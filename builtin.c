@@ -48,6 +48,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     vm->builtin_function_table = table;
     vm->builtin_inline_index = 0;
     const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+    ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
 
     // exec
