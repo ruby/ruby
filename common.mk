@@ -13222,6 +13222,7 @@ rjit_c.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 rjit_c.$(OBJEXT): {$(VPATH)}builtin.h
 rjit_c.$(OBJEXT): {$(VPATH)}config.h
 rjit_c.$(OBJEXT): {$(VPATH)}constant.h
+rjit_c.$(OBJEXT): {$(VPATH)}debug.h
 rjit_c.$(OBJEXT): {$(VPATH)}debug_counter.h
 rjit_c.$(OBJEXT): {$(VPATH)}defines.h
 rjit_c.$(OBJEXT): {$(VPATH)}encoding.h
