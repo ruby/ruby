@@ -239,7 +239,7 @@ rjit_record_exit_stack(const VALUE *exit_pc)
 
     // If yjit_raw_samples is less than or equal to the current length of the samples
     // we might have seen this stack trace previously.
-    int prev_stack_len_index = RARRAY_LEN(rb_rjit_raw_samples) - samples_length;
+    int prev_stack_len_index = (int)RARRAY_LEN(rb_rjit_raw_samples) - samples_length;
     VALUE prev_stack_len_obj;
     if (RARRAY_LEN(rb_rjit_raw_samples) >= samples_length && FIXNUM_P(prev_stack_len_obj = RARRAY_AREF(rb_rjit_raw_samples, prev_stack_len_index))) {
         int prev_stack_len = NUM2INT(prev_stack_len_obj);
@@ -268,7 +268,7 @@ rjit_record_exit_stack(const VALUE *exit_pc)
 
             // If we know we've seen this stack before, increment the counter by 1.
             if (seen_already) {
-                int prev_idx = RARRAY_LEN(rb_rjit_raw_samples) - 1;
+                int prev_idx = (int)RARRAY_LEN(rb_rjit_raw_samples) - 1;
                 int prev_count = NUM2INT(RARRAY_AREF(rb_rjit_raw_samples, prev_idx));
                 int new_count = prev_count + 1;
 
@@ -299,7 +299,7 @@ rjit_record_exit_stack(const VALUE *exit_pc)
 
     // Push the current line onto the yjit_line_samples Vec. This
     // points to the line in insns.def.
-    int line = RARRAY_LEN(rb_rjit_line_samples) - 1;
+    int line = (int)RARRAY_LEN(rb_rjit_line_samples) - 1;
     rb_ary_push(rb_rjit_line_samples, INT2NUM(line));
 
     // Push number of times seen onto the stack, which is 1
@@ -350,7 +350,7 @@ rjit_add_frame(VALUE hash, VALUE frame)
 static VALUE
 rjit_exit_traces(void)
 {
-    int samples_len = RARRAY_LEN(rb_rjit_raw_samples);
+    int samples_len = (int)RARRAY_LEN(rb_rjit_raw_samples);
     RUBY_ASSERT(samples_len == RARRAY_LEN(rb_rjit_line_samples));
 
     VALUE result = rb_hash_new();
