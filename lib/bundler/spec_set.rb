@@ -49,7 +49,7 @@ module Bundler
         end
       end
 
-      specs
+      specs.uniq
     end
 
     def [](key)
