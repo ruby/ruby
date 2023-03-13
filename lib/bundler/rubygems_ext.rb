@@ -82,9 +82,10 @@ module Gem
       # TODO: Gem::Specification couldn't access extension name from extconf.rb
       #       so we find them with heuristic way. We should improve it.
       if source.respond_to?(:root)
-        return false if (full_require_paths - [extension_dir]).any? do |path|
-          File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
-          !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
+        return false if raw_require_paths.any? do |path|
+          ext_dir = File.join(full_gem_path, path)
+          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
+          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
         end
       end
 
