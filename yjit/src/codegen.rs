@@ -5557,14 +5557,10 @@ fn gen_send_iseq(
         }
     }
 
-    let leaf_builtin_raw = unsafe { rb_leaf_builtin_function(iseq) };
-    let leaf_builtin: Option<*const rb_builtin_function> = if leaf_builtin_raw.is_null() {
-        None
-    } else {
-        Some(leaf_builtin_raw)
-    };
-    if let (None, Some(builtin_info)) = (block, leaf_builtin) {
-
+    let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
+    let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
+    let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
+    if let (None, Some(builtin_info), true) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0) {
         // this is a .send call not currently supported for builtins
         if flags & VM_CALL_OPT_SEND != 0 {
             gen_counter_incr!(asm, send_send_builtin);
@@ -5575,9 +5571,13 @@ fn gen_send_iseq(
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
 
-            // Save the PC and SP because the callee may allocate
-            // e.g. Integer#abs on a bignum
-            jit_prepare_routine_call(jit, ctx, asm);
+            // Skip this if it doesn't trigger GC
+            if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
+                // The callee may allocate, e.g. Integer#abs on a Bignum.
+                // Save SP for GC, save PC for allocation tracing, and prepare
+                // for global invalidation after GC's VM lock contention.
+                jit_prepare_routine_call(jit, ctx, asm);
+            }
 
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
