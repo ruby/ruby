@@ -415,6 +415,7 @@ generator = BindingGenerator.new(
       RUBY_T_MASK
       RUBY_T_MODULE
       RUBY_T_STRING
+      RUBY_T_SYMBOL
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN

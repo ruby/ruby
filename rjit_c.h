@@ -81,6 +81,12 @@ RJIT_RUNTIME_COUNTERS(
     invokesuper_me_changed,
     invokesuper_same_me,
 
+    invokeblock_none,
+    invokeblock_iseq,
+    invokeblock_ifunc,
+    invokeblock_symbol,
+    invokeblock_proc,
+
     getivar_megamorphic,
     getivar_not_heap,
     getivar_special_const,

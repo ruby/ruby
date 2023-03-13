@@ -36,6 +36,7 @@ module RubyVM::RJIT
       $stderr.puts("***RJIT: Printing RJIT statistics on exit***")
 
       print_counters(stats, prefix: 'send_', prompt: 'method call exit reasons')
+      print_counters(stats, prefix: 'invokeblock_', prompt: 'invokeblock exit reasons')
       print_counters(stats, prefix: 'invokesuper_', prompt: 'invokesuper exit reasons')
       print_counters(stats, prefix: 'getblockpp_', prompt: 'getblockparamproxy exit reasons')
       print_counters(stats, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons')

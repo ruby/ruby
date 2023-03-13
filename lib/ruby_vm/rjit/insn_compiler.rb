@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 73/102
+      # 74/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -80,7 +80,7 @@ module RubyVM::RJIT
       # opt_newarray_max
       when :opt_newarray_min then opt_newarray_min(jit, ctx, asm)
       when :invokesuper then invokesuper(jit, ctx, asm)
-      # invokeblock
+      when :invokeblock then invokeblock(jit, ctx, asm)
       when :leave then leave(jit, ctx, asm)
       # throw
       when :jump then jump(jit, ctx, asm)
@@ -1242,7 +1242,44 @@ module RubyVM::RJIT
       jit_call_general(jit, ctx, asm, mid, argc, flags, cme, block_handler, nil)
     end
 
-    # invokeblock
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def invokeblock(jit, ctx, asm)
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+
+      # Get call info
+      cd = C.rb_call_data.new(jit.operand(0))
+      ci = cd.ci
+      argc = C.vm_ci_argc(ci)
+      flags = C.vm_ci_flag(ci)
+
+      # Get block_handler
+      cfp = jit.cfp
+      lep = C.rb_vm_ep_local_ep(cfp.ep)
+      comptime_handler = lep[C::VM_ENV_DATA_INDEX_SPECVAL]
+
+      # Handle each block_handler type
+      if comptime_handler == C::VM_BLOCK_HANDLER_NONE # no block given
+        asm.incr_counter(:invokeblock_none)
+        CantCompile
+      elsif comptime_handler & 0x3 == 0x1 # VM_BH_ISEQ_BLOCK_P
+        asm.incr_counter(:invokeblock_iseq)
+        CantCompile
+      elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
+        asm.incr_counter(:invokeblock_ifunc)
+        CantCompile
+      elsif symbol?(comptime_handler)
+        asm.incr_counter(:invokeblock_symbol)
+        CantCompile
+      else # Proc
+        asm.incr_counter(:invokeblock_proc)
+        CantCompile
+      end
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -3924,8 +3961,17 @@ module RubyVM::RJIT
       (C.to_value(obj) & C::RUBY_FLONUM_MASK) == C::RUBY_FLONUM_FLAG
     end
 
+    def symbol?(obj)
+      static_symbol?(obj) || dynamic_symbol?(obj)
+    end
+
     def static_symbol?(obj)
       (C.to_value(obj) & 0xff) == C::RUBY_SYMBOL_FLAG
+    end
+
+    def dynamic_symbol?(obj)
+      return false if C::SPECIAL_CONST_P(obj)
+      C::RB_TYPE_P(obj, C::RUBY_T_SYMBOL)
     end
 
     def shape_too_complex?(obj)
