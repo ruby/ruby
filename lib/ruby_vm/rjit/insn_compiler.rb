@@ -1249,7 +1249,7 @@ module RubyVM::RJIT
       end
 
       pc = jit.pc + C.VALUE.size * (jit.insn.len + jump_offset)
-      stub_next_block(jit.iseq, pc, ctx, asm)
+      jit_direct_jump(jit.iseq, pc, ctx, asm)
       EndBlock
     end
 
@@ -2782,7 +2782,7 @@ module RubyVM::RJIT
         jit.record_boundary_patch_point = false
       end
 
-      stub_next_block(jit.iseq, next_pc, reset_depth, asm, comment: 'jump_to_next_insn')
+      jit_direct_jump(jit.iseq, next_pc, reset_depth, asm, comment: 'jump_to_next_insn')
     end
 
     # rb_vm_check_ints
@@ -3246,7 +3246,7 @@ module RubyVM::RJIT
       # Jump to a stub for the callee ISEQ
       callee_ctx = Context.new
       pc = (iseq.body.iseq_encoded + opt_pc).to_i
-      stub_next_block(iseq, pc, callee_ctx, asm)
+      jit_direct_jump(iseq, pc, callee_ctx, asm)
 
       EndBlock
     end
@@ -3898,10 +3898,14 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def defer_compilation(jit, ctx, asm)
       # Make a stub to compile the current insn
-      stub_next_block(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation')
+      if ctx.chain_depth != 0
+        raise "double defer!"
+      end
+      ctx.chain_depth += 1
+      jit_direct_jump(jit.iseq, jit.pc, ctx, asm, comment: 'defer_compilation')
     end
 
-    def stub_next_block(iseq, pc, ctx, asm, comment: 'stub_next_block')
+    def jit_direct_jump(iseq, pc, ctx, asm, comment: 'jit_direct_jump')
       branch_stub = BranchStub.new(
         iseq:,
         shape: Default,

@@ -257,7 +257,7 @@ module RubyVM::RJIT
       end
 
       incr_counter(:compiled_block_count)
-      set_block(iseq, block)
+      add_block(iseq, block)
     end
 
     def leave_exit
@@ -274,35 +274,52 @@ module RubyVM::RJIT
     end
 
     def list_blocks(iseq, pc)
-      rjit_blocks(iseq)[pc].values
+      rjit_blocks(iseq)[pc]
     end
 
     # @param [Integer] pc
     # @param [RubyVM::RJIT::Context] ctx
     # @return [RubyVM::RJIT::Block,NilClass]
     def find_block(iseq, pc, ctx)
-      rjit_blocks(iseq)[pc][ctx]
+      src = ctx
+      rjit_blocks(iseq)[pc].find do |block|
+        dst = block.ctx
+
+        # Can only lookup the first version in the chain
+        if dst.chain_depth != 0
+          next false
+        end
+
+        # Blocks with depth > 0 always produce new versions
+        # Sidechains cannot overlap
+        if src.chain_depth != 0
+          next false
+        end
+
+        src.stack_size == dst.stack_size &&
+          src.sp_offset == dst.sp_offset
+      end
     end
 
     # @param [RubyVM::RJIT::Block] block
-    def set_block(iseq, block)
-      rjit_blocks(iseq)[block.pc][block.ctx] = block
+    def add_block(iseq, block)
+      rjit_blocks(iseq)[block.pc] << block
     end
 
     # @param [RubyVM::RJIT::Block] block
     def remove_block(iseq, block)
-      rjit_blocks(iseq)[block.pc].delete(block.ctx)
+      rjit_blocks(iseq)[block.pc].delete(block)
     end
 
     def rjit_blocks(iseq)
       # Guard against ISEQ GC at random moments
 
       unless C.imemo_type_p(iseq, C.imemo_iseq)
-        return Hash.new { |h, k| h[k] = {} }
+        return Hash.new { |h, k| h[k] = [] }
       end
 
       unless iseq.body.rjit_blocks
-        iseq.body.rjit_blocks = Hash.new { |h, k| h[k] = {} }
+        iseq.body.rjit_blocks = Hash.new { |blocks, pc| blocks[pc] = [] }
         # For some reason, rb_rjit_iseq_mark didn't protect this Hash
         # from being freed. So we rely on GC_REFS to keep the Hash.
         GC_REFS << iseq.body.rjit_blocks
