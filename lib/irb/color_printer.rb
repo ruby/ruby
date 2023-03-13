@@ -4,7 +4,6 @@ require_relative 'color'
 
 module IRB
   class ColorPrinter < ::PP
-    METHOD_IS_A = Object.instance_method(:is_a?)
     METHOD_RESPOND_TO = Object.instance_method(:respond_to?)
     METHOD_INSPECT = Object.instance_method(:inspect)
 
@@ -26,7 +25,7 @@ module IRB
     end
 
     def pp(obj)
-      if METHOD_IS_A.bind(obj).call(String)
+      if String === obj
         # Avoid calling Ruby 2.4+ String#pretty_print that splits a string by "\n"
         text(obj.inspect)
       elsif !METHOD_RESPOND_TO.bind(obj).call(:inspect)
