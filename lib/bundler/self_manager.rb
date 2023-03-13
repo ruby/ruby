@@ -182,7 +182,7 @@ module Bundler
     end
 
     def current_version
-      @current_version ||= Gem::Version.new(Bundler::VERSION)
+      @current_version ||= Bundler.gem_version
     end
 
     def lockfile_version

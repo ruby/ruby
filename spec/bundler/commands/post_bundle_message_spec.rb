@@ -19,7 +19,7 @@ RSpec.describe "post bundle message" do
   let(:bundle_complete_message)    { "Bundle complete!" }
   let(:bundle_updated_message)     { "Bundle updated!" }
   let(:installed_gems_stats)       { "4 Gemfile dependencies, 5 gems now installed." }
-  let(:bundle_show_message)        { Bundler::VERSION.split(".").first.to_i < 3 ? bundle_show_system_message : bundle_show_path_message }
+  let(:bundle_show_message)        { Bundler.bundler_major_version < 3 ? bundle_show_system_message : bundle_show_path_message }
 
   describe "for fresh bundle install" do
     it "shows proper messages according to the configured groups" do
