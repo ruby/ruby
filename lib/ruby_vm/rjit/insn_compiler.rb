@@ -2994,7 +2994,7 @@ module RubyVM::RJIT
       # Get a compile-time receiver and its class
       recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       recv_idx += send_shift
-      comptime_recv = jit.peek_at_stack(recv_idx + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # this offset is in ctx but not in SP
+      comptime_recv = jit.peek_at_stack(recv_idx)
       comptime_recv_klass = C.rb_class_of(comptime_recv)
 
       # Guard the receiver class (part of vm_search_method_fastpath)
@@ -3137,7 +3137,7 @@ module RubyVM::RJIT
       # Get a compile-time receiver
       recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
       recv_idx += send_shift
-      comptime_recv = jit.peek_at_stack(recv_idx + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)) # this offset is in ctx but not in SP
+      comptime_recv = jit.peek_at_stack(recv_idx)
       recv_opnd = ctx.stack_opnd(recv_idx)
 
       jit_call_method_each_type(jit, ctx, asm, argc, flags, cme, comptime_recv, recv_opnd, block_handler, known_recv_class, send_shift:)
@@ -3690,22 +3690,18 @@ module RubyVM::RJIT
       # ep[-2]: cref_or_me
       asm.mov(:rax, cme.to_i)
       asm.mov([SP, C.VALUE.size * (ep_offset - 2)], :rax)
-      # ep[-1]: block handler or prev env ptr
+      # ep[-1]: block handler or prev env ptr (specval)
       if prev_ep
         asm.mov(:rax, prev_ep.to_i | 1) # tagged prev ep
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
       elsif block_handler == C::VM_BLOCK_HANDLER_NONE
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C::VM_BLOCK_HANDLER_NONE)
       elsif block_handler == C.rb_block_param_proxy
-        # vm_caller_setup_arg_block:
-        #   VALUE handler = VM_CF_BLOCK_HANDLER(reg_cfp);
-        #   reg_cfp->block_code = (const void *) handler;
-        jit_get_lep(jit, asm, reg: :rax)
-        asm.mov(:rax, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # handler
-        asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax)
-
-        asm.mov(:rax, C.rb_block_param_proxy)
-        asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
+        # vm_caller_setup_arg_block: block_code == rb_block_param_proxy
+        jit_get_lep(jit, asm, reg: :rax) # VM_CF_BLOCK_HANDLER: VM_CF_LEP
+        asm.mov(:rax, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # VM_CF_BLOCK_HANDLER: VM_ENV_BLOCK_HANDLER
+        asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax) # reg_cfp->block_code = handler
+        asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax) # return handler;
       else # assume blockiseq
         asm.mov(:rax, block_handler)
         asm.mov([CFP, C.rb_control_frame_t.offsetof(:block_code)], :rax)
