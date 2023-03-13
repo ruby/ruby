@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 
 module Bundler
-  VERSION = "2.7.0.dev".freeze
+  VERSION = (ENV["BUNDLER_3_MODE"] == "true" ? "3.0.0" : "2.7.0.dev").freeze
 
   def self.bundler_major_version
     @bundler_major_version ||= VERSION.split(".").first.to_i

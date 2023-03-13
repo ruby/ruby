@@ -6,6 +6,7 @@ module Bundler
     BUNDLER_KEYS = %w[
       BUNDLE_BIN_PATH
       BUNDLE_GEMFILE
+      BUNDLER_3_MODE
       BUNDLER_VERSION
       BUNDLER_SETUP
       GEM_HOME

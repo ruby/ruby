@@ -4,13 +4,6 @@ require_relative "helper"
 require "rubygems/commands/setup_command"
 
 class TestGemCommandsSetupCommand < Gem::TestCase
-  bundler_gemspec = File.expand_path("../../bundler/lib/bundler/version.rb", __dir__)
-  if File.exist?(bundler_gemspec)
-    BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
-  else
-    BUNDLER_VERS = "2.0.1"
-  end
-
   def setup
     super
 
@@ -35,7 +28,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     create_dummy_files(filelist)
 
-    gemspec = util_spec "bundler", BUNDLER_VERS do |s|
+    gemspec = util_spec "bundler", "9.9.9" do |s|
       s.bindir = "exe"
       s.executables = ["bundle", "bundler"]
     end

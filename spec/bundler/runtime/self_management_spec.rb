@@ -10,7 +10,7 @@ RSpec.describe "Self management" do
       "9.4.0"
     end
 
-    before do
+    around do |example|
       build_repo4 do
         build_bundler previous_minor
 
@@ -26,6 +26,8 @@ RSpec.describe "Self management" do
       G
 
       pristine_system_gems "bundler-#{current_version}"
+
+      with_env_vars("BUNDLER_3_MODE" => nil, &example)
     end
 
     it "installs locked version when using system path and uses it" do

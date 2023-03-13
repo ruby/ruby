@@ -105,6 +105,7 @@ module Bundler
 
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
+        ENV["BUNDLER_3_MODE"].nil? &&
         ruby_can_restart_with_same_arguments? &&
         lockfile_version
     end

@@ -265,7 +265,7 @@ module Spec
     def replace_version_file(version, dir: source_root)
       version_file = File.expand_path("lib/bundler/version.rb", dir)
       contents = File.read(version_file)
-      contents.sub!(/(^\s+VERSION\s*=\s*)"#{Gem::Version::VERSION_PATTERN}"/, %(\\1"#{version}"))
+      contents.sub!(/(^\s+VERSION\s*=\s*).*$/, %(\\1"#{version}"))
       File.open(version_file, "w") {|f| f << contents }
     end
 
