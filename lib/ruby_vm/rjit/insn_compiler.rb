@@ -1484,8 +1484,8 @@ module RubyVM::RJIT
       # Get call info
       cd = C.rb_call_data.new(jit.operand(0))
       ci = cd.ci
-      _argc = C.vm_ci_argc(ci)
-      _flags = C.vm_ci_flag(ci)
+      argc = C.vm_ci_argc(ci)
+      flags = C.vm_ci_flag(ci)
 
       # Get block_handler
       cfp = jit.cfp
@@ -1497,8 +1497,49 @@ module RubyVM::RJIT
         asm.incr_counter(:invokeblock_none)
         CantCompile
       elsif comptime_handler & 0x3 == 0x1 # VM_BH_ISEQ_BLOCK_P
-        asm.incr_counter(:invokeblock_iseq)
-        CantCompile
+        asm.comment('get local EP')
+        ep_reg = :rax
+        jit_get_lep(jit, asm, reg: ep_reg)
+        asm.mov(:rax, [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # block_handler_opnd
+
+        asm.comment('guard block_handler type')
+        side_exit = side_exit(jit, ctx)
+        asm.mov(:rcx, :rax)
+        asm.and(:rcx, 0x3) # block_handler is a tagged pointer
+        asm.cmp(:rcx, 0x1) # VM_BH_ISEQ_BLOCK_P
+        tag_changed_exit = counted_exit(side_exit, :invokeblock_tag_changed)
+        jit_chain_guard(:jne, jit, ctx, asm, tag_changed_exit)
+
+        comptime_captured = C.rb_captured_block.new(comptime_handler & ~0x3)
+        comptime_iseq = comptime_captured.code.iseq
+
+        asm.comment('guard known ISEQ')
+        asm.and(:rax, ~0x3) # captured
+        asm.mov(:rax, [:rax, C.VALUE.size * 2]) # captured->iseq
+        asm.mov(:rcx, comptime_iseq.to_i)
+        asm.cmp(:rax, :rcx)
+        block_changed_exit = counted_exit(side_exit, :invokeblock_iseq_block_changed)
+        jit_chain_guard(:jne, jit, ctx, asm, block_changed_exit)
+
+        jit_call_iseq_setup(
+          jit, ctx, asm, nil, flags, argc, comptime_iseq, :captured,
+          send_shift: 0, frame_type: C::VM_FRAME_MAGIC_BLOCK,
+        )
+        #gen_send_iseq(
+        #    jit,
+        #    ctx,
+        #    asm,
+        #    ocb,
+        #    comptime_iseq,
+        #    ci,
+        #    VM_FRAME_MAGIC_BLOCK,
+        #    None,
+        #    0,
+        #    None,
+        #    flags,
+        #    argc,
+        #    Some(captured_opnd),
+        #)
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
         asm.incr_counter(:invokeblock_ifunc)
         CantCompile
@@ -3990,8 +4031,9 @@ module RubyVM::RJIT
       # Save caller SP and PC before pushing a callee frame for backtrace and side exits
       asm.comment('save SP to caller CFP')
       recv_idx = argc + (flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0) # blockarg is not popped yet
+      recv_idx += (block_handler == :captured) ? 0 : 1 # receiver is not on stack when captured->self is used
       # Skip setting this to SP register. This cfp->sp will be copied to SP on leave insn.
-      asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -(1 + recv_idx))) # Pop receiver and arguments to prepare for side exits
+      asm.lea(:rax, ctx.sp_opnd(C.VALUE.size * -recv_idx)) # Pop receiver and arguments to prepare for side exits
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:sp)], :rax)
       jit_save_pc(jit, asm, comment: 'save PC to caller CFP')
 
@@ -4455,6 +4497,15 @@ module RubyVM::RJIT
       if prev_ep
         asm.mov(:rax, prev_ep.to_i | 1) # tagged prev ep
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
+      elsif block_handler == :captured
+        # Set captured->ep, saving captured in :rcx for captured->self
+        ep_reg = :rcx
+        jit_get_lep(jit, asm, reg: ep_reg)
+        asm.mov(:rcx, [ep_reg, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # block_handler
+        asm.and(:rcx, ~0x3) # captured
+        asm.mov(:rax, [:rcx, C.VALUE.size]) # captured->ep
+        asm.or(:rax, 0x1) # GC_GUARDED_PTR
+        asm.mov([SP, C.VALUE.size * (ep_offset - 1)], :rax)
       elsif block_handler == C::VM_BLOCK_HANDLER_NONE
         asm.mov([SP, C.VALUE.size * (ep_offset - 1)], C::VM_BLOCK_HANDLER_NONE)
       elsif block_handler == C.rb_block_param_proxy
@@ -4481,8 +4532,12 @@ module RubyVM::RJIT
       end
       asm.mov(:rax, iseq.to_i)
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:iseq)], :rax)
-      self_index = ctx.sp_offset - (1 + argc) # blockarg has been popped
-      asm.mov(:rax, [SP, C.VALUE.size * self_index])
+      if block_handler == :captured
+        asm.mov(:rax, [:rcx]) # captured->self
+      else
+        self_index = ctx.sp_offset - (1 + argc) # blockarg has been popped
+        asm.mov(:rax, [SP, C.VALUE.size * self_index])
+      end
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:self)], :rax)
       asm.lea(:rax, [SP, C.VALUE.size * ep_offset])
       asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:ep)], :rax)
@@ -4497,7 +4552,8 @@ module RubyVM::RJIT
       if iseq
         # Stub cfp->jit_return
         return_ctx = ctx.dup
-        return_ctx.stack_size -= argc # Pop args. blockarg has been popped
+        return_ctx.stack_size -= argc + ((block_handler == :captured) ? 0 : 1) # Pop args and receiver. blockarg has been popped
+        return_ctx.stack_size += 1 # push callee's return value
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
         return_ctx.chain_depth = 0
         branch_stub = BranchStub.new(
