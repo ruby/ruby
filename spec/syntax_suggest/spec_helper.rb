@@ -16,6 +16,12 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  if config.color_mode == :automatic
+    if config.color_enabled? and (ENV["TERM"] == "dumb" or ENV["NO_COLOR"]&.slice(0))
+      config.color_mode = :off
+    end
+  end
 end
 
 # Used for debugging modifications to

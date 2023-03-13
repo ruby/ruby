@@ -137,6 +137,7 @@ fn main() {
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_yjit_rb_ary_unshift_m")
+        .allowlist_function("rb_yjit_rb_ary_subseq_length")
 
         // From internal/array.h
         .allowlist_function("rb_ec_ary_new_from_values")
@@ -346,6 +347,7 @@ fn main() {
 
         // From include/ruby/internal/intern/variable.h
         .allowlist_function("rb_attr_get")
+        .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
 
         // From include/ruby/internal/intern/vm.h

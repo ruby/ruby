@@ -64,8 +64,8 @@ AC_ARG_WITH(baseruby,
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
-# BASERUBY must be >= 2.2.0. Note that `"2.2.0" > "2.2"` is true.
-AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.2"' 2>/dev/null`" = 42], [
+# BASERUBY must be >= 2.5.0. Note that `"2.5.0" > "2.5"` is true.
+AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.5"' 2>/dev/null`" = 42], [
     AS_CASE(["$build_os"], [mingw*], [
         # Can MSys shell run a command with a drive letter?
         RUBYOPT=- `cygpath -ma "$BASERUBY"` --disable=gems -e exit 2>/dev/null || HAVE_BASERUBY=no
@@ -366,12 +366,6 @@ AS_CASE(["$target_os"],
 	[AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)
 	AC_MSG_ERROR([Unsupported OS X version is required])])
-    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
-	[AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
-	    [rb_cv_tls_supported=yes],
-	    [rb_cv_tls_supported=no])])
-    AS_IF([test x"$rb_cv_tls_supported" != xyes],
-	[AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ])
 
 RUBY_MINGW32
@@ -391,6 +385,13 @@ AS_IF([test "$GCC" = yes], [
     AS_IF([test "$gcc_major" -lt 4], [
         AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
     ])
+
+    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+            [rb_cv_tls_supported=yes],
+            [rb_cv_tls_supported=no])])
+    AS_IF([test x"$rb_cv_tls_supported" != xyes],
+        [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ], [
     linker_flag=
 ])
@@ -3725,16 +3726,6 @@ AC_SUBST(CAPITARGET)
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
-AC_ARG_ENABLE(jit-support,
-    AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
-    [RJIT_SUPPORT=$enableval],
-    [AS_CASE(["$target_os"],
-        [wasi | mingw* | solaris*], [RJIT_SUPPORT=no],
-        [RJIT_SUPPORT=yes]
-    )])
-
-AC_SUBST(RJIT_SUPPORT)
-
 AC_CHECK_PROG(RUSTC, [rustc], [rustc], [no]) dnl no ac_tool_prefix
 
 dnl check if rustc is recent enough to build YJIT (rustc >= 1.58.0)
@@ -3780,8 +3771,8 @@ AC_ARG_ENABLE(yjit,
     AS_HELP_STRING([--enable-yjit],
     [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
     [YJIT_SUPPORT=$enableval],
-    [AS_CASE(["$enable_jit_support:$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
-        [yes:yes:yes|:yes:yes], [
+    [AS_CASE(["$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
+        [yes:yes], [
             YJIT_SUPPORT=yes
         ],
         [YJIT_SUPPORT=no]
@@ -3793,9 +3784,6 @@ CARGO_BUILD_ARGS=
 YJIT_LIBS=
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
-    AS_IF([test x"$enable_jit_support" = "xno"],
-        AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
-    )
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -3835,16 +3823,8 @@ AS_CASE(["${YJIT_SUPPORT}"],
         AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
     ])
     AC_DEFINE(USE_YJIT, 1)
-    AC_DEFINE(USE_RJIT, 1)
 ], [
     AC_DEFINE(USE_YJIT, 0)
-    AC_DEFINE(USE_RJIT, 0)
-])
-
-# If YJIT links capstone, libcapstone stops working on the C side.
-# capstone should be linked for RJIT only when YJIT doesn't.
-AS_IF([test x"$RJIT_SUPPORT" = "xyes" -a -z "$CARGO_BUILD_ARGS" ], [
-    AC_CHECK_LIB([capstone], [cs_disasm])
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
@@ -3854,6 +3834,54 @@ AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
+
+dnl Currently, RJIT only supports Unix x86_64 platforms.
+RJIT_TARGET_OK=no
+AS_IF([test "$cross_compiling" = no],
+    AS_CASE(["$target_cpu-$target_os"],
+        [*android*], [
+            RJIT_TARGET_OK=no
+        ],
+        [x86_64-darwin*], [
+            RJIT_TARGET_OK=yes
+        ],
+        [x86_64-*linux*], [
+            RJIT_TARGET_OK=yes
+        ],
+        [x86_64-*bsd*], [
+            RJIT_TARGET_OK=yes
+        ]
+    )
+)
+
+dnl Build RJIT on Unix x86_64 platforms or if --enable-rjit is specified.
+AC_ARG_ENABLE(rjit,
+    AS_HELP_STRING([--enable-rjit],
+    [enable pure-Ruby JIT compiler. enabled by default on Unix x86_64 platforms]),
+    [RJIT_SUPPORT=$enableval],
+    [AS_CASE(["$YJIT_TARGET_OK"],
+        [yes], [RJIT_SUPPORT=yes],
+        [RJIT_SUPPORT=no]
+    )]
+)
+
+AS_CASE(["$RJIT_SUPPORT"],
+[yes|dev], [
+    # Link libcapstone for --rjit-dump-disasm
+    AC_CHECK_LIB([capstone], [cs_disasm])
+
+    AS_CASE(["$RJIT_SUPPORT"],
+    [dev], [
+        # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
+        AC_DEFINE(RUBY_DEBUG, 1)
+    ])
+
+    AC_DEFINE(USE_RJIT, 1)
+], [
+    AC_DEFINE(USE_RJIT, 0)
+])
+
+AC_SUBST(RJIT_SUPPORT)
 
 AC_ARG_ENABLE(install-static-library,
 	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
@@ -4541,8 +4569,8 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
-config_summary "RJIT support"        "$RJIT_SUPPORT"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
+config_summary "RJIT support"        "$RJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

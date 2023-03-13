@@ -286,11 +286,11 @@ usage(const char *name, int help, int highlight, int columns)
         M("-W[level=2|:category]",   "",	   "set warning level; 0=silence, 1=medium, 2=verbose"),
         M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
         M("--jit",         "",                     "enable JIT for the platform, same as " PLATFORM_JIT_OPTION),
-#if USE_RJIT
-        M("--rjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
-#endif
 #if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler"),
+#endif
+#if USE_RJIT
+        M("--rjit",        "",                     "enable pure-Ruby JIT compiler (experimental)"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
     };
@@ -321,20 +321,17 @@ usage(const char *name, int help, int highlight, int columns)
         M("syntax_suggest", "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
         M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
-#if USE_RJIT
-        M("rjit", "",           "C compiler-based JIT compiler (default: disabled)"),
-#endif
 #if USE_YJIT
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
+#endif
+#if USE_RJIT
+        M("rjit", "",           "pure-Ruby JIT compiler (default: disabled)"),
 #endif
     };
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated", "",       "deprecated features"),
         M("experimental", "",     "experimental features"),
     };
-#if USE_RJIT
-    extern const struct ruby_opt_message rjit_option_messages[];
-#endif
 #if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
@@ -343,6 +340,9 @@ usage(const char *name, int help, int highlight, int columns)
         M("--yjit-max-versions=num",   "", "Maximum number of versions per basic block (default: 4)"),
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
     };
+#endif
+#if USE_RJIT
+    extern const struct ruby_opt_message rb_rjit_option_messages[];
 #endif
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
@@ -370,15 +370,15 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""Warning categories:%s\n", sb, se);
     for (i = 0; i < numberof(warn_categories); ++i)
         SHOW(warn_categories[i]);
-#if USE_RJIT
-    printf("%s""RJIT options (experimental):%s\n", sb, se);
-    for (i = 0; rjit_option_messages[i].str; ++i)
-        SHOW(rjit_option_messages[i]);
-#endif
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
+#endif
+#if USE_RJIT
+    printf("%s""RJIT options (experimental):%s\n", sb, se);
+    for (i = 0; rb_rjit_option_messages[i].str; ++i)
+        SHOW(rb_rjit_option_messages[i]);
 #endif
 }
 
@@ -1494,9 +1494,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             }
             else if (is_option_with_optarg("rjit", '-', true, false, false)) {
 #if USE_RJIT
-                extern void rjit_setup_options(const char *s, struct rjit_options *rjit_opt);
+                extern void rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt);
                 FEATURE_SET(opt->features, FEATURE_BIT(rjit));
-                rjit_setup_options(s, &opt->rjit);
+                rb_rjit_setup_options(s, &opt->rjit);
 #else
                 rb_warn("RJIT support is disabled.");
 #endif
@@ -1614,9 +1614,11 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
-        rjit_enabled = true;
+        rb_rjit_enabled = true;
     if (opt->rjit.stats)
-        rjit_stats_enabled = true;
+        rb_rjit_stats_enabled = true;
+    if (opt->rjit.trace_exits)
+        rb_rjit_trace_exits_enabled = true;
 #endif
 
     Init_ext(); /* load statically linked extensions before rubygems */
@@ -1626,9 +1628,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     // Initialize JITs after prelude because JITing prelude is typically not optimal.
 #if USE_RJIT
-    // Also, rjit_init is safe only after rb_call_builtin_inits() defines RubyVM::RJIT::Compiler.
+    // Also, rb_rjit_init is safe only after rb_call_builtin_inits() defines RubyVM::RJIT::Compiler.
     if (opt->rjit.on)
-        rjit_init(&opt->rjit);
+        rb_rjit_init(&opt->rjit);
 #endif
 #if USE_YJIT
     if (opt->yjit)
@@ -1941,7 +1943,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #if USE_RJIT
     if (FEATURE_SET_P(opt->features, rjit)) {
-        opt->rjit.on = true; // set opt->rjit.on for Init_ruby_description() and calling rjit_init()
+        opt->rjit.on = true; // set opt->rjit.on for Init_ruby_description() and calling rb_rjit_init()
     }
 #endif
 #if USE_YJIT

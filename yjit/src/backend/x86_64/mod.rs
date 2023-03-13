@@ -105,36 +105,6 @@ impl Assembler
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 
-    /// Merge IR instructions for the x86 platform. As of x86_split, all `out` operands
-    /// are Opnd::Out, but you sometimes want to use Opnd::Reg for example to shorten the
-    /// generated code, which is what this pass does.
-    fn x86_merge(mut self) -> Assembler {
-        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
-        let mut iterator = self.into_draining_iter();
-
-        while let Some((index, mut insn)) = iterator.next_unmapped() {
-            match (&insn, iterator.peek()) {
-                // Merge `lea` and `mov` into a single `lea` when possible
-                (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
-                if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
-                    asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
-                    iterator.map_insn_index(&mut asm);
-                    iterator.next_unmapped(); // Pop merged Insn::Mov
-                }
-                _ => {
-                    let mut opnd_iter = insn.opnd_iter_mut();
-                    while let Some(opnd) = opnd_iter.next() {
-                        *opnd = iterator.map_opnd(*opnd);
-                    }
-                    asm.push_insn(insn);
-                }
-            }
-            iterator.map_insn_index(&mut asm);
-        }
-        asm
-    }
-
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
@@ -196,37 +166,65 @@ impl Assembler
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    match (unmapped_opnds[0], unmapped_opnds[1]) {
-                        (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            *left = asm.load(*left);
-                            *right = asm.load(*right);
-                        },
-                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                            *left = asm.load(*left);
-                        },
-                        // Instruction output whose live range spans beyond this instruction
-                        (Opnd::InsnOut { idx, .. }, _) => {
-                            if live_ranges[idx] > index {
-                                *left = asm.load(*left);
-                            }
-                        },
-                        // We have to load memory operands to avoid corrupting them
-                        (Opnd::Mem(_) | Opnd::Reg(_), _) => {
-                            *left = asm.load(*left);
-                        },
-                        _ => {}
-                    };
+                    match (&left, &right, iterator.peek()) {
+                        // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
+                        (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
+                        if out == src && left == dest && live_ranges[index] == index + 1 && uimm_num_bits(*value) <= 32 => {
+                            *out = *dest;
+                            asm.push_insn(insn);
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => {
+                            match (unmapped_opnds[0], unmapped_opnds[1]) {
+                                (Opnd::Mem(_), Opnd::Mem(_)) => {
+                                    *left = asm.load(*left);
+                                    *right = asm.load(*right);
+                                },
+                                (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
+                                    *left = asm.load(*left);
+                                },
+                                // Instruction output whose live range spans beyond this instruction
+                                (Opnd::InsnOut { idx, .. }, _) => {
+                                    if live_ranges[idx] > index {
+                                        *left = asm.load(*left);
+                                    }
+                                },
+                                // We have to load memory operands to avoid corrupting them
+                                (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                                    *left = asm.load(*left);
+                                },
+                                _ => {}
+                            };
 
-                    *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
-                    asm.push_insn(insn);
+                            *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
+                            asm.push_insn(insn);
+                        }
+                    }
                 },
-                Insn::Cmp { left, right } |
+                Insn::Cmp { left, right } => {
+                    // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
+                    // when next IR is `je`, `jne`, `csel_e`, or `csel_ne`
+                    match (&left, &right, iterator.peek()) {
+                        (Opnd::InsnOut { .. },
+                         Opnd::UImm(0) | Opnd::Imm(0),
+                         Some(Insn::Je(_) | Insn::Jne(_) | Insn::CSelE { .. } | Insn::CSelNE { .. })) => {
+                            asm.push_insn(Insn::Test { left: *left, right: *left });
+                        }
+                        _ => {
+                            if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
+                                let loaded = asm.load(*right);
+                                *right = loaded;
+                            }
+                            asm.push_insn(insn);
+                        }
+                    }
+                },
                 Insn::Test { left, right } => {
                     if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
                         let loaded = asm.load(*right);
                         *right = loaded;
                     }
-
                     asm.push_insn(insn);
                 },
                 // These instructions modify their input operand in-place, so we
@@ -346,6 +344,18 @@ impl Assembler
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
                     asm.ccall(*fptr, vec![]);
+                },
+                Insn::Lea { .. } => {
+                    // Merge `lea` and `mov` into a single `lea` when possible
+                    match (&insn, iterator.peek()) {
+                        (Insn::Lea { opnd, out }, Some(Insn::Mov { dest: Opnd::Reg(reg), src }))
+                        if matches!(out, Opnd::InsnOut { .. }) && out == src && live_ranges[index] == index + 1 => {
+                            asm.push_insn(Insn::Lea { opnd: *opnd, out: Opnd::Reg(*reg) });
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => asm.push_insn(insn),
+                    }
                 },
                 _ => {
                     if insn.out_opnd().is_some() {
@@ -733,7 +743,6 @@ impl Assembler
     {
         let asm = self.lower_stack();
         let asm = asm.x86_split();
-        let asm = asm.x86_merge();
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
@@ -951,5 +960,73 @@ mod tests {
             0x0: lea rax, [rbx + 8]
             0x4: mov qword ptr [rbx], rax
         "});
+    }
+
+    #[test]
+    fn test_replace_cmp_0() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let val = asm.load(Opnd::mem(64, SP, 8));
+        asm.cmp(val, 0.into());
+        let result = asm.csel_e(Qtrue.into(), Qfalse.into());
+        asm.mov(Opnd::Reg(RAX_REG), result);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_eq!(format!("{:x}", cb), "488b43084885c0b814000000b900000000480f45c14889c0");
+    }
+
+    #[test]
+    fn test_merge_add_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.add(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983c540");
+    }
+
+    #[test]
+    fn test_merge_sub_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.sub(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983ed40");
+    }
+
+    #[test]
+    fn test_merge_and_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.and(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983e540");
+    }
+
+    #[test]
+    fn test_merge_or_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.or(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983cd40");
+    }
+
+    #[test]
+    fn test_merge_xor_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.xor(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983f540");
     }
 }

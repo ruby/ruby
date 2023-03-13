@@ -106,17 +106,19 @@ class BindingGenerator
   attr_reader :src
 
   # @param src_path [String]
-  # @param uses [Array<String>]
+  # @param consts [Hash{ Symbol => Array<String> }]
   # @param values [Hash{ Symbol => Array<String> }]
+  # @param funcs [Array<String>]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, uses:, values:, types:, dynamic_types:, skip_fields:, ruby_fields:)
+  def initialize(src_path:, consts:, values:, funcs:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
-    @uses = uses.sort
+    @consts = consts.transform_values(&:sort)
     @values = values.transform_values(&:sort)
+    @funcs = funcs.sort
     @types = types.sort
     @dynamic_types = dynamic_types.sort
     @skip_fields = skip_fields.transform_keys(&:to_s)
@@ -127,15 +129,16 @@ class BindingGenerator
   def generate(nodes)
     println @preamble
 
-    # Define USE_* macros
-    @uses.each do |use|
-      println "  def C.#{use}"
-      println "    Primitive.cexpr! %q{ RBOOL(#{use} != 0) }"
-      println "  end"
-      println
-    end
-
     # Define macros/enums
+    @consts.each do |type, values|
+      values.each do |value|
+        raise "#{value} isn't a valid constant name" unless ('A'..'Z').include?(value[0])
+        println "  C::#{value} = Primitive.cexpr! %q{ #{type}2NUM(#{value}) }"
+      end
+    end
+    println
+
+    # Define variables
     @values.each do |type, values|
       values.each do |value|
         println "  def C.#{value}"
@@ -145,8 +148,23 @@ class BindingGenerator
       end
     end
 
+    # Define function pointers
+    @funcs.each do |func|
+      println "  def C.#{func}"
+      println "    Primitive.cexpr! %q{ SIZET2NUM((size_t)#{func}) }"
+      println "  end"
+      println
+    end
+
     # TODO: Support nested declarations
-    nodes_index = nodes.group_by(&:spelling).transform_values(&:last)
+    nodes_index = nodes.group_by(&:spelling).transform_values do |values|
+      # Try to search a declaration with definitions
+      node_with_children = values.find { |v| !v.children.empty? }
+      next node_with_children if node_with_children
+
+      # Otherwise, assume the last one is the main declaration
+      values.last
+    end
 
     # Define types
     @types.each do |type|
@@ -345,19 +363,17 @@ end
 nodes = HeaderParser.new(File.join(src_dir, 'rjit_c.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
-  uses: %w[
-    USE_LAZY_LOAD
-  ],
-  values: {
-    INT: %w[
-      NOT_COMPILED_STACK_SIZE
-      VM_ENV_DATA_INDEX_SPECVAL
+  consts: {
+    LONG: %w[
       VM_ENV_DATA_INDEX_ME_CREF
+      VM_ENV_DATA_INDEX_SPECVAL
     ],
-    UINT: %w[
+    SIZET: %w[
+      ARRAY_REDEFINED_OP_FLAG
       BOP_AND
       BOP_AREF
       BOP_EQ
+      BOP_FREEZE
       BOP_GE
       BOP_GT
       BOP_LE
@@ -366,31 +382,49 @@ generator = BindingGenerator.new(
       BOP_MOD
       BOP_OR
       BOP_PLUS
-      BOP_FREEZE
-      ARRAY_REDEFINED_OP_FLAG
       HASH_REDEFINED_OP_FLAG
       INTEGER_REDEFINED_OP_FLAG
-      STRING_REDEFINED_OP_FLAG
+      INVALID_SHAPE_ID
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
-      OPTIMIZED_METHOD_TYPE_SEND
-      OPTIMIZED_METHOD_TYPE_CALL
+      OBJ_TOO_COMPLEX_SHAPE_ID
       OPTIMIZED_METHOD_TYPE_BLOCK_CALL
+      OPTIMIZED_METHOD_TYPE_CALL
+      OPTIMIZED_METHOD_TYPE_SEND
       OPTIMIZED_METHOD_TYPE_STRUCT_AREF
       OPTIMIZED_METHOD_TYPE_STRUCT_ASET
-      ROBJECT_EMBED
       RARRAY_EMBED_FLAG
+      RARRAY_EMBED_LEN_MASK
+      RARRAY_EMBED_LEN_SHIFT
+      RMODULE_IS_REFINEMENT
+      ROBJECT_EMBED
+      RSTRUCT_EMBED_LEN_MASK
       RUBY_EVENT_CLASS
       RUBY_EVENT_C_CALL
       RUBY_EVENT_C_RETURN
+      RUBY_FIXNUM_FLAG
+      RUBY_FLONUM_FLAG
+      RUBY_FLONUM_MASK
+      RUBY_FL_SINGLETON
+      RUBY_IMMEDIATE_MASK
+      RUBY_SPECIAL_SHIFT
+      RUBY_SYMBOL_FLAG
+      RUBY_T_ARRAY
+      RUBY_T_ICLASS
+      RUBY_T_MASK
+      RUBY_T_MODULE
+      RUBY_T_STRING
+      RUBY_T_SYMBOL
       SHAPE_CAPACITY_CHANGE
       SHAPE_FLAG_SHIFT
       SHAPE_FROZEN
       SHAPE_ID_NUM_BITS
       SHAPE_INITIAL_CAPACITY
       SHAPE_IVAR
+      SHAPE_MASK
       SHAPE_ROOT
+      STRING_REDEFINED_OP_FLAG
       T_OBJECT
       VM_BLOCK_HANDLER_NONE
       VM_CALL_ARGS_BLOCKARG
@@ -399,93 +433,114 @@ generator = BindingGenerator.new(
       VM_CALL_KWARG
       VM_CALL_KW_SPLAT
       VM_CALL_KW_SPLAT_bit
+      VM_CALL_OPT_SEND
       VM_CALL_TAILCALL
       VM_CALL_TAILCALL_bit
-      VM_CALL_OPT_SEND
       VM_ENV_DATA_INDEX_FLAGS
       VM_ENV_DATA_SIZE
       VM_ENV_FLAG_LOCAL
       VM_ENV_FLAG_WB_REQUIRED
-      VM_FRAME_MAGIC_METHOD
-      VM_FRAME_MAGIC_CFUNC
-      VM_FRAME_MAGIC_BLOCK
       VM_FRAME_FLAG_BMETHOD
-      VM_FRAME_FLAG_LAMBDA
       VM_FRAME_FLAG_CFRAME
       VM_FRAME_FLAG_CFRAME_KW
+      VM_FRAME_FLAG_LAMBDA
       VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
-      VM_METHOD_TYPE_ISEQ
-      VM_METHOD_TYPE_NOTIMPLEMENTED
-      VM_METHOD_TYPE_CFUNC
+      VM_FRAME_MAGIC_BLOCK
+      VM_FRAME_MAGIC_CFUNC
+      VM_FRAME_MAGIC_METHOD
+      VM_METHOD_TYPE_ALIAS
       VM_METHOD_TYPE_ATTRSET
+      VM_METHOD_TYPE_BMETHOD
+      VM_METHOD_TYPE_CFUNC
+      VM_METHOD_TYPE_ISEQ
       VM_METHOD_TYPE_IVAR
       VM_METHOD_TYPE_MISSING
-      VM_METHOD_TYPE_BMETHOD
-      VM_METHOD_TYPE_ALIAS
+      VM_METHOD_TYPE_NOTIMPLEMENTED
       VM_METHOD_TYPE_OPTIMIZED
+      VM_METHOD_TYPE_REFINED
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
-      VM_METHOD_TYPE_REFINED
-      imemo_iseq
+    ],
+  },
+  values: {
+    SIZET: %w[
       block_type_iseq
-    ],
-    ULONG: %w[
-      INVALID_SHAPE_ID
-      OBJ_TOO_COMPLEX_SHAPE_ID
-      RUBY_FIXNUM_FLAG
-      RUBY_FLONUM_FLAG
-      RUBY_FLONUM_MASK
-      RUBY_SYMBOL_FLAG
-      RUBY_SPECIAL_SHIFT
-      RUBY_IMMEDIATE_MASK
-      RARRAY_EMBED_LEN_MASK
-      RARRAY_EMBED_LEN_SHIFT
-      SHAPE_MASK
-      RUBY_T_ARRAY
-      RUBY_T_MASK
-      RUBY_T_ICLASS
-      RUBY_T_MODULE
-      RUBY_T_STRING
-      RMODULE_IS_REFINEMENT
-      RUBY_FL_SINGLETON
-      RSTRUCT_EMBED_LEN_MASK
-    ],
-    PTR: %w[
+      imemo_iseq
+      rb_block_param_proxy
       rb_cFalseClass
       rb_cFloat
       rb_cInteger
       rb_cNilClass
       rb_cSymbol
       rb_cTrueClass
-      rb_block_param_proxy
+      rb_rjit_global_events
     ],
   },
+  funcs: %w[
+    rb_ary_entry_internal
+    rb_ary_push
+    rb_ary_resurrect
+    rb_ary_store
+    rb_ec_ary_new_from_values
+    rb_ec_str_resurrect
+    rb_ensure_iv_list_size
+    rb_fix_aref
+    rb_fix_div_fix
+    rb_fix_mod_fix
+    rb_fix_mul_fix
+    rb_gc_writebarrier
+    rb_get_symbol_id
+    rb_hash_aref
+    rb_hash_aset
+    rb_hash_bulk_insert
+    rb_hash_new
+    rb_hash_new_with_size
+    rb_ivar_get
+    rb_obj_as_string_result
+    rb_obj_is_kind_of
+    rb_str_concat_literals
+    rb_str_eql_internal
+    rb_str_getbyte
+    rb_vm_bh_to_procval
+    rb_vm_concat_array
+    rb_vm_defined
+    rb_vm_get_ev_const
+    rb_vm_getclassvariable
+    rb_vm_ic_hit_p
+    rb_vm_opt_newarray_min
+    rb_vm_setinstancevariable
+    rb_vm_splat_array
+    rjit_full_cfunc_return
+    rjit_optimized_call
+    rjit_str_neq_internal
+    rjit_record_exit_stack
+    rb_ivar_defined
+  ],
   types: %w[
     CALL_DATA
     IC
     ID
     IVC
-    RB_BUILTIN
     RArray
+    RB_BUILTIN
     RBasic
     RObject
     RStruct
     attr_index_t
-    compile_branch
-    compile_status
-    inlined_call_context
     iseq_inline_constant_cache
     iseq_inline_constant_cache_entry
     iseq_inline_iv_cache_entry
     iseq_inline_storage_entry
-    rjit_options
+    method_optimized_type
+    rb_block
+    rb_block_type
     rb_builtin_function
     rb_call_data
     rb_callable_method_entry_struct
     rb_callable_method_entry_t
-    rb_method_entry_t
     rb_callcache
     rb_callinfo
+    rb_captured_block
     rb_control_frame_t
     rb_cref_t
     rb_execution_context_struct
@@ -494,26 +549,23 @@ generator = BindingGenerator.new(
     rb_iseq_location_t
     rb_iseq_struct
     rb_iseq_t
-    rb_method_definition_struct
-    rb_method_iseq_t
-    rb_method_type_t
+    rb_method_attr_t
     rb_method_bmethod_t
-    rb_rjit_compile_info
+    rb_method_cfunc_t
+    rb_method_definition_struct
+    rb_method_entry_t
+    rb_method_iseq_t
+    rb_method_optimized_t
+    rb_method_type_t
+    rb_proc_t
     rb_rjit_runtime_counters
-    rb_rjit_unit
     rb_serial_t
     rb_shape
     rb_shape_t
-    rb_method_attr_t
-    rb_method_cfunc_t
-    rb_method_optimized_t
-    method_optimized_type
     rb_thread_struct
-    rb_proc_t
-    rb_block
-    rb_block_type
-    rb_captured_block
+    rjit_options
   ],
+  # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[
     VALUE
     shape_id_t

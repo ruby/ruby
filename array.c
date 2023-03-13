@@ -1804,7 +1804,8 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 
 /* non-static for yjit */
 VALUE
-rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary) {
+rb_yjit_rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
+{
     return rb_ary_unshift_m(argc, argv, ary);
 }
 

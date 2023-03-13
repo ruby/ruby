@@ -701,6 +701,20 @@ defined
     }
 }
 
+/* defined?(@foo) */
+DEFINE_INSN
+definedivar
+(ID id, IVC ic, VALUE pushval)
+()
+(VALUE val)
+// attr bool leaf  = false;
+{
+    val = Qnil;
+    if (vm_getivar(GET_SELF(), id, GET_ISEQ(), ic, NULL, FALSE, Qundef) != Qundef) {
+        val = pushval;
+    }
+}
+
 /* check `target' matches `pattern'.
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.

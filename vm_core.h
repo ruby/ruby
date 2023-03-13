@@ -145,9 +145,6 @@ extern int ruby_assert_critical_section_entered;
 #  define SIGCHLD_LOSSY (0)
 #endif
 
-/* define to 0 to test old code path */
-#define WAITPID_USE_SIGCHLD (RUBY_SIGCHLD || SIGCHLD_LOSSY)
-
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK
 void *rb_allocate_sigaltstack(void);
@@ -368,6 +365,12 @@ enum rb_iseq_type {
     ISEQ_TYPE_PLAIN
 };
 
+// Attributes specified by Primitive.attr!
+enum rb_builtin_attr {
+    // If true, this ISeq does not call methods.
+    BUILTIN_ATTR_LEAF = 0x01,
+};
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -487,12 +490,7 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
-    // If true, this ISeq is leaf *and* backtraces are not used, for example,
-    // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
-    // Note that GC allocations might use backtraces due to
-    // ObjectSpace#trace_object_allocations.
-    // For more details, see: https://bugs.ruby-lang.org/issues/16956
-    bool builtin_inline_p;
+    unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     union {
         iseq_bits_t * list; /* Find references for GC */
@@ -520,6 +518,8 @@ struct rb_iseq_constant_body {
     void *yjit_payload;
 #endif
 };
+
+typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
@@ -649,9 +649,6 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
-    rb_nativethread_lock_t waitpid_lock;
-    struct ccan_list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
-    struct ccan_list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
     struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
@@ -1759,9 +1756,7 @@ static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->waiting_fds);
-    ccan_list_head_init(&vm->waiting_pids);
     ccan_list_head_init(&vm->workqueue);
-    ccan_list_head_init(&vm->waiting_grps);
     ccan_list_head_init(&vm->ractor.set);
 }
 

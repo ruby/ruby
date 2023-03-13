@@ -340,6 +340,10 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_udp_server
+    # http://rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20230312T023302Z.fail.html.gz
+    # Errno::EHOSTUNREACH: No route to host - recvmsg(2)
+    omit if 'rhel_zlinux' == ENV['RUBYCI_NICKNAME']
+
     begin
       ifaddrs = Socket.getifaddrs
     rescue NotImplementedError

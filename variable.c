@@ -3624,30 +3624,6 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
     }
 }
 
-static VALUE
-find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
-{
-    VALUE v = Qundef;
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR();
-    if (cvar_lookup_at(klass, id, (&v))) {
-        if (!*front) {
-            *front = klass;
-        }
-        *target = klass;
-    }
-
-    for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) {
-        if (cvar_lookup_at(klass, id, (&v))) {
-            if (!*front) {
-                *front = klass;
-            }
-            *target = klass;
-        }
-    }
-
-    return v;
-}
-
 #define CVAR_FOREACH_ANCESTORS(klass, v, r) \
     for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) { \
         if (cvar_lookup_at(klass, id, (v))) { \
@@ -3660,6 +3636,20 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
     if (cvar_lookup_at(klass, id, (v))) {r;}\
     CVAR_FOREACH_ANCESTORS(klass, v, r);\
 } while(0)
+
+static VALUE
+find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
+{
+    VALUE v = Qundef;
+    CVAR_LOOKUP(&v, {
+        if (!*front) {
+            *front = klass;
+        }
+        *target = klass;
+    });
+
+    return v;
+}
 
 static void
 check_for_cvar_table(VALUE subclass, VALUE key)
