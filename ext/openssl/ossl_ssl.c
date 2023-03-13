@@ -77,7 +77,7 @@ static const rb_data_type_t ossl_sslctx_type = {
     {
         ossl_sslctx_mark, ossl_sslctx_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1553,6 +1553,10 @@ ossl_ssl_mark(void *ptr)
 {
     SSL *ssl = ptr;
     rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
+
+    // Note: this reference is stored as @verify_callback so we don't need to mark it.
+    // However we do need to ensure GC compaction won't move it, hence why
+    // we call rb_gc_mark here.
     rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx));
 }
 
@@ -1567,7 +1571,7 @@ const rb_data_type_t ossl_ssl_type = {
     {
         ossl_ssl_mark, ossl_ssl_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1646,6 +1650,8 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
     SSL_set_info_callback(ssl, ssl_info_cb);
     verify_cb = rb_attr_get(v_ctx, id_i_verify_callback);
+    // We don't need to trigger a write barrier because it's already
+    // an instance variable of this object.
     SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)verify_cb);
 
     rb_call_super(0, NULL);
