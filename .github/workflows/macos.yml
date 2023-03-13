@@ -91,7 +91,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: "no"
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ruby/action-slack@5403b981d2e5e6b2227ecc3a356c1fe4c668af5d # v3.2.0
         with:
           payload: |
             {
