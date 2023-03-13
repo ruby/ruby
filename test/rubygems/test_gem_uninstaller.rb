@@ -215,6 +215,25 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert File.exist?(plugin_path), "plugin unintentionally removed"
   end
 
+  def test_remove_plugins_user_installed
+    write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+      io.write "# do nothing"
+    end
+
+    @spec.files += %w[lib/rubygems_plugin.rb]
+
+    Gem::Installer.at(Gem::Package.build(@spec), force: true, user_install: true).install
+
+    plugin_path = File.join Gem.user_dir, "plugins/a_plugin.rb"
+    assert File.exist?(plugin_path), "plugin not written"
+
+    Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
+
+    Gem::Uninstaller.new(@spec.name, executables: true, force: true, user_install: true).uninstall
+
+    refute File.exist?(plugin_path), "plugin not removed"
+  end
+
   def test_regenerate_plugins_for
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
       io.write "# do nothing"
