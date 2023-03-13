@@ -1248,10 +1248,10 @@ find_cache_index_table(regex_t* reg, OnigStackType *stk, OnigStackIndex *repeat_
   }
 
   if (range->upper == 0x7fffffff) {
-    return range->base_num + range->inner_num * range->lower + (is_inc ? 0 : 1) + item->num;
+    return range->base_num + range->inner_num * (range->lower - (is_inc ? 1 : 0)) + (is_inc ? 0 : 1) + item->num;
   }
 
-  return range->base_num + range->inner_num * range->lower + (range->inner_num + 1) * (count - range->lower) + item->num;
+  return range->base_num + range->inner_num * (range->lower - 1) + (range->inner_num + 1) * (count - range->lower + 1) + item->num;
 }
 
 static void
