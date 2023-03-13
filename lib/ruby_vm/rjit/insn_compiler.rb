@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 72/101
+      # 73/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -64,6 +64,7 @@ module RubyVM::RJIT
       when :setn then setn(jit, ctx, asm)
       when :adjuststack then adjuststack(jit, ctx, asm)
       when :defined then defined(jit, ctx, asm)
+      when :definedvar then definedivar(jit, ctx, asm)
       # checkmatch
       # checkkeyword
       # checktype
@@ -1029,6 +1030,40 @@ module RubyVM::RJIT
       asm.test(C_RET, 255)
       asm.mov(:rax, Qnil)
       asm.mov(:rcx, to_value(pushval))
+      asm.cmovnz(:rax, :rcx)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def definedivar(jit, ctx, asm)
+      ivar_name = jit.operand(0)
+      pushval = jit.operand(2)
+
+      # Get the receiver
+      asm.mov(:rcx, [CFP, C.rb_control_frame_t.offsetof(:self)])
+
+      # Save the PC and SP because the callee may allocate
+      # Note that this modifies REG_SP, which is why we do it first
+      jit_prepare_routine_call(jit, ctx, asm) # clobbers :rax
+
+      # Call rb_ivar_defined(recv, ivar_name)
+      asm.mov(C_ARGS[0], :rcx)
+      asm.mov(C_ARGS[1], ivar_name)
+      asm.call(C.rb_ivar_defined)
+
+      # if (rb_ivar_defined(recv, ivar_name)) {
+      #  val = pushval;
+      # }
+      asm.test(C_RET, 255)
+      asm.mov(:rax, Qnil)
+      asm.mov(:rcx, pushval)
       asm.cmovnz(:rax, :rcx)
 
       # Push the return value onto the stack
