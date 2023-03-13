@@ -351,7 +351,7 @@ RSpec.describe "bundle check" do
 
         PLATFORMS
           ruby
-          #{specific_local_platform}
+          #{local_platform}
 
         DEPENDENCIES
           rack
