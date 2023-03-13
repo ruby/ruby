@@ -1760,7 +1760,7 @@ class TestRegexp < Test::Unit::TestCase
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
       Regexp.timeout = timeout
-  
+
       assert_nil(/\A.*a.*z\z/ =~ "a" * 1000000 + "y")
     end;
   end
