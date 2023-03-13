@@ -1,14 +1,14 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
-#[cfg(any(feature = "disasm", test))]
+#[cfg(feature = "disasm")]
 use crate::asm::CodeBlock;
 #[cfg(feature = "disasm")]
 use crate::codegen::CodePtr;
 #[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
-#[cfg(any(feature = "disasm", test))]
+#[cfg(feature = "disasm")]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb
@@ -144,7 +144,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
     }
 }
 
-#[cfg(any(feature = "disasm", test))]
+#[cfg(feature = "disasm")]
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     let mut out = String::from("");
 
@@ -198,28 +198,28 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     return out;
 }
 
-/// Disassemble the entire code block for testing
-#[cfg(test)]
-pub fn disasm_code_block(cb: &CodeBlock) -> String {
-    let start_addr = cb.get_ptr(0).raw_ptr() as usize;
-    let end_addr = cb.get_write_ptr().raw_ptr() as usize;
-    let disasm = disasm_addr_range(cb, start_addr, end_addr);
-    unindent_string(&disasm, false)
-}
-
 /// Macro useful for raw string literals
 #[cfg(test)]
-macro_rules! unindent {
-    ($str:expr) => {
-        unindent_string($str, true)
+macro_rules! assert_disasm {
+    ($cb:expr, $hex:expr, $disasm:expr) => {
+        assert_eq!(format!("{:x}", $cb), $hex);
+        #[cfg(feature = "disasm")]
+        {
+            let disasm = disasm_addr_range(
+                &$cb,
+                $cb.get_ptr(0).raw_ptr() as usize,
+                $cb.get_write_ptr().raw_ptr() as usize,
+            );
+            assert_eq!(unindent(&disasm, false), unindent(&$disasm, true));
+        }
     };
 }
 #[cfg(test)]
-pub(crate) use unindent;
+pub(crate) use assert_disasm;
 
 /// Remove the minimum indent from every line, skipping the first line if `skip_first`.
-#[cfg(test)]
-pub fn unindent_string(string: &str, trim_lines: bool) -> String {
+#[cfg(all(feature = "disasm", test))]
+pub fn unindent(string: &str, trim_lines: bool) -> String {
     fn split_lines(string: &str) -> Vec<String> {
         let mut result: Vec<String> = vec![];
         let mut buf: Vec<u8> = vec![];
@@ -246,7 +246,7 @@ pub fn unindent_string(string: &str, trim_lines: bool) -> String {
     // Count the minimum number of spaces
     let spaces = lines.iter().filter_map(|line| {
         for (i, ch) in line.as_bytes().iter().enumerate() {
-            if *ch != b' ' && *ch != b'\t' {
+            if *ch != b' ' {
                 return Some(i);
             }
         }

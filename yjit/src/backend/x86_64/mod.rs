@@ -765,7 +765,9 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
-    use crate::disasm::{disasm_code_block, unindent, unindent_string};
+    use crate::disasm::{assert_disasm};
+    #[cfg(feature = "disasm")]
+    use crate::disasm::{unindent, disasm_addr_range};
 
     use super::*;
 
@@ -945,7 +947,9 @@ mod tests {
         asm.mov(SP, sp); // should be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(disasm_code_block(&cb), "0x0: lea rbx, [rbx + 8]\n");
+        assert_disasm!(cb, "488d5b08", {"
+            0x0: lea rbx, [rbx + 8]
+        "});
     }
 
     #[test]
@@ -956,7 +960,7 @@ mod tests {
         asm.mov(Opnd::mem(64, SP, 0), sp); // should NOT be merged to lea
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_eq!(disasm_code_block(&cb), unindent! {"
+        assert_disasm!(cb, "488d4308488903", {"
             0x0: lea rax, [rbx + 8]
             0x4: mov qword ptr [rbx], rax
         "});
