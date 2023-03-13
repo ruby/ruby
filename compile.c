@@ -5789,6 +5789,16 @@ check_keyword(const NODE *node)
 }
 #endif
 
+static bool
+keyword_node_single_splat_p(NODE *kwnode)
+{
+    RUBY_ASSERT(keyword_node_p(kwnode));
+
+    NODE *node = kwnode->nd_head;
+    return node->nd_head == NULL &&
+           node->nd_next->nd_next == NULL;
+}
+
 static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 int dup_rest, unsigned int *flag_ptr, struct rb_callinfo_kwarg **kwarg_ptr)
@@ -5881,7 +5891,9 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
           if (kwnode) {
               // f(*a, k:1)
               *flag_ptr |= VM_CALL_KW_SPLAT;
-              *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+              if (!keyword_node_single_splat_p(kwnode)) {
+                  *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+              }
               compile_hash(iseq, args, kwnode, TRUE, FALSE);
               argc += 1;
           }
