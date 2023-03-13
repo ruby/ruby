@@ -83,8 +83,8 @@ module Gem
       #       so we find them with heuristic way. We should improve it.
       if source.respond_to?(:root)
         return false if (full_require_paths - [extension_dir]).any? do |path|
-          File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG['DLEXT']}")) ||
-          !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG['DLEXT']}")).empty?
+          File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
+          !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
         end
       end
 
