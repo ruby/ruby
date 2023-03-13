@@ -54,6 +54,12 @@ class TestGemGemRunner < Gem::TestCase
     assert_equal %w[--commands], Gem::Command.extra_args
   end
 
+  def test_validate_encoding
+    assert_raise Gem::OptionParser::InvalidArgument do
+      @runner.run(["install\xFF", "foo"])
+    end
+  end
+
   def test_extract_build_args
     args = %w[]
     assert_equal [], @runner.extract_build_args(args)
