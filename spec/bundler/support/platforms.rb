@@ -52,10 +52,6 @@ module Spec
       [rb, java, linux, windows_platforms].flatten
     end
 
-    def specific_local_platform
-      Bundler.local_platform
-    end
-
     def not_local
       all_platforms.find {|p| p != generic_local_platform }
     end
@@ -100,7 +96,7 @@ module Spec
     end
 
     def lockfile_platforms(*extra)
-      [specific_local_platform, *extra].map(&:to_s).sort.join("\n  ")
+      [local_platform, *extra].map(&:to_s).sort.join("\n  ")
     end
   end
 end
