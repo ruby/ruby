@@ -3849,8 +3849,16 @@ module RubyVM::RJIT
         end
       end
 
+      return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
+    end
+
+    # setup_parameters_complex
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
       # We don't support setup_parameters_complex
-      asm.incr_counter(:send_iseq_kw_splat)
+      asm.incr_counter(:send_iseq_complex)
       return CantCompile
     end
 

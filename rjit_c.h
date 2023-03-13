@@ -49,7 +49,7 @@ RJIT_RUNTIME_COUNTERS(
     send_block_not_proxy,
 
     send_iseq_kwparam,
-    send_iseq_kw_splat,
+    send_iseq_complex,
 
     send_cfunc_variadic,
     send_cfunc_too_many_args,
