@@ -64,7 +64,7 @@ module RubyVM::RJIT
       when :setn then setn(jit, ctx, asm)
       when :adjuststack then adjuststack(jit, ctx, asm)
       when :defined then defined(jit, ctx, asm)
-      when :definedvar then definedivar(jit, ctx, asm)
+      when :definedivar then definedivar(jit, ctx, asm)
       # checkmatch
       # checkkeyword
       # checktype

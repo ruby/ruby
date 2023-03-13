@@ -513,6 +513,7 @@ generator = BindingGenerator.new(
     rjit_optimized_call
     rjit_str_neq_internal
     rjit_record_exit_stack
+    rb_ivar_defined
   ],
   types: %w[
     CALL_DATA

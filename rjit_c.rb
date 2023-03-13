@@ -521,6 +521,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_new_with_size) }
   end
 
+  def C.rb_ivar_defined
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ivar_defined) }
+  end
+
   def C.rb_ivar_get
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ivar_get) }
   end
