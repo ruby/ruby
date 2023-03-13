@@ -171,6 +171,9 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     // Disassemble the instructions
     let code_size = end_addr - start_addr;
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
+    // Stabilize output for cargo test
+    #[cfg(test)]
+    let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
     // Colorize outlined code in blue
@@ -200,18 +203,8 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
 pub fn disasm_code_block(cb: &CodeBlock) -> String {
     let start_addr = cb.get_ptr(0).raw_ptr() as usize;
     let end_addr = cb.get_write_ptr().raw_ptr() as usize;
-
-    let mut disasm = disasm_addr_range(cb, start_addr, end_addr);
-    disasm = unindent_string(&disasm, false);
-
-    // Code addresses will be different every time you test it. So this loop replaces
-    // code addresses that appear in disasm with `start_addr`-origin values.
-    for addr in start_addr..end_addr {
-        let from = format!("{:#x}", addr);
-        let to = format!("{:#x}", addr - start_addr);
-        disasm = disasm.replace(&from, &to);
-    }
-    disasm
+    let disasm = disasm_addr_range(cb, start_addr, end_addr);
+    unindent_string(&disasm, false)
 }
 
 /// Macro useful for raw string literals
