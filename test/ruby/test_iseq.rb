@@ -637,6 +637,8 @@ class TestISeq < Test::Unit::TestCase
     }
 
     lines
+  ensure
+    Object.send(:remove_const, :A) rescue nil
   end
 
   def test_to_binary_line_tracepoint
