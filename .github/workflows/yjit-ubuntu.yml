@@ -152,7 +152,7 @@ jobs:
           BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
         with:
           payload: |
             {
