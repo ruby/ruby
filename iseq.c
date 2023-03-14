@@ -243,7 +243,15 @@ rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
+#if USE_MMTK
+                // Note: with an evacuating GC (such as Immix),
+                // class_value may point to a moved object now.
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 RUBY_ASSERT(!RB_TYPE_P(icvarc->entry->class_value, T_NONE));
+#if USE_MMTK
+                }
+#endif
 
                 rb_gc_mark_and_move(&icvarc->entry->class_value);
             }
