@@ -40,6 +40,10 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 
+#if USE_MMTK
+#include "mmtk.h"
+#endif
+
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 #define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
 
@@ -525,11 +529,6 @@ rb_gc_update_global_tbl(void)
     if (rb_global_tbl) {
         rb_id_table_foreach_values(rb_global_tbl, update_global_entry, 0);
     }
-}
-
-void rb_gc_update_generic_iv_tbl(void(*updater)(st_table*))
-{
-    updater(generic_iv_tbl_);
 }
 
 static ID
@@ -1042,9 +1041,19 @@ rb_mark_and_update_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        ivtbl = mmtk_get_givtbl((MMTk_ObjectReference)obj);
+        RUBY_ASSERT(ivtbl != NULL);
+        gen_ivtbl_mark_and_update(ivtbl);
+    } else {
+#endif
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
         gen_ivtbl_mark_and_update(ivtbl);
     }
+#if USE_MMTK
+    }
+#endif
 }
 
 void

@@ -15673,12 +15673,6 @@ struct rb_mmtk_update_value_hashed_weak_table_context {
 };
 
 static void
-rb_mmtk_update_weak_table_addr_hashed_key_only(st_table *table)
-{
-    rb_mmtk_update_weak_table(table, true, false, NULL, NULL);
-}
-
-static void
 rb_mmtk_on_finalizer_table_delete(st_data_t key, st_data_t value, void *arg)
 {
     VALUE obj = (VALUE)key;
@@ -15737,8 +15731,6 @@ rb_mmtk_update_global_weak_tables_early(void)
 static void
 rb_mmtk_update_global_weak_tables(void)
 {
-    rb_gc_update_generic_iv_tbl(rb_mmtk_update_weak_table_addr_hashed_key_only);
-
     // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -15773,6 +15765,26 @@ rb_mmtk_update_global_weak_tables(void)
     gc_update_table_refs(objspace, global_symbols.str_sym);
 }
 
+static void*
+rb_mmtk_get_original_givtbl(MMTk_ObjectReference object) {
+    VALUE obj = (VALUE)object;
+    if (FL_TEST(obj, FL_EXIVAR)) {
+        struct gen_ivtbl *ivtbl;
+        if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+            return ivtbl;
+        } else {
+            return NULL;
+        }
+    } else {
+        return NULL;
+    }
+}
+
+static void
+rb_mmtk_move_givtbl(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref) {
+    rb_mv_generic_ivar((VALUE)old_objref, (VALUE)new_objref);
+}
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -15791,6 +15803,8 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_call_obj_free,
     rb_mmtk_update_global_weak_tables_early,
     rb_mmtk_update_global_weak_tables,
+    rb_mmtk_get_original_givtbl,
+    rb_mmtk_move_givtbl,
 };
 
 // Use up to 80% of memory for the heap
