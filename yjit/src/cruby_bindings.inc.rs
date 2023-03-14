@@ -1330,4 +1330,14 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_yjit_register_unwind_info(
+        object_file: *mut ::std::os::raw::c_uchar,
+        object_file_size: u64,
+        eh_frame: *mut ::std::os::raw::c_uchar,
+    );
+    pub fn rb_yjit_deregister_unwind_info(
+        object_file: *mut ::std::os::raw::c_uchar,
+        object_file_size: u64,
+        eh_frame: *mut ::std::os::raw::c_uchar,
+    );
 }

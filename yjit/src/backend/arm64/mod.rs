@@ -8,6 +8,7 @@ use crate::codegen::{JITState, CodegenGlobals};
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::virtualmem::CodePtr;
+use crate::backend::unwind::{CFIDirective, CStackSetupRule};
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -349,7 +350,9 @@ impl Assembler
             }
         }
 
-        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names));
+        let mut asm_local = Assembler::new_with_label_names(
+            std::mem::take(&mut self.label_names), self.stack_rule,
+        );
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -727,18 +730,26 @@ impl Assembler
         /// pointer and then storing the given value.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
             str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
+            // .cfi_adjust_cfa_offset 16
+            cb.add_cfi_directive(CFIDirective::AdjustCFAOffset(C_SP_STEP));
+
         }
 
         /// Emit a pop instruction into the given operand by loading the value
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+            // .cfi_adjust_cfa_offset -16
+            cb.add_cfi_directive(CFIDirective::AdjustCFAOffset(-C_SP_STEP));
         }
 
         // dbg!(&self.insns);
 
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
+
+        // .cfi_startproc
+        cb.add_cfi_directive(CFIDirective::StartProc(self.stack_rule));
 
         // For each instruction
         let start_write_pos = cb.get_write_pos();
@@ -782,6 +793,12 @@ impl Assembler
                 },
                 Insn::FrameSetup => {
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
+                    // .cfi_adjust_cfa_offset 16
+                    cb.add_cfi_directive(CFIDirective::AdjustCFAOffset(16));
+                    // .cfi_offset x29, -16
+                    cb.add_cfi_directive(CFIDirective::Offset(X29.unwrap_reg(), -16));
+                    // .cfi_offset x30, -8
+                    cb.add_cfi_directive(CFIDirective::Offset(X30.unwrap_reg(), -8));
 
                     // X29 (frame_pointer) = SP
                     mov(cb, X29, C_SP_REG);
@@ -791,6 +808,12 @@ impl Assembler
                     mov(cb, C_SP_REG, X29);
 
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
+                    // .cfi_adjust_cfa_offset -16
+                    cb.add_cfi_directive(CFIDirective::AdjustCFAOffset(16));
+                    // .cfi_restore x29
+                    cb.add_cfi_directive(CFIDirective::Restore(X29.unwrap_reg()));
+                    // .cfi_restore x30
+                    cb.add_cfi_directive(CFIDirective::Restore(X30.unwrap_reg()));
                 },
                 Insn::Sub { left, right, out } => {
                     subs(cb, out.into(), left.into(), right.into());
@@ -1064,11 +1087,15 @@ impl Assembler
                 if !self.label_names.is_empty() {
                     return Err(());
                 }
+
+                // If we are splitting, also split the CFI info.
+                cb.add_cfi_directive(CFIDirective::Split(src_ptr.add_bytes(JMP_PTR_BYTES)));
             } else {
                 insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
+        cb.add_cfi_directive(CFIDirective::EndProc());
 
         Ok(gc_offsets)
     }
@@ -1093,13 +1120,16 @@ impl Assembler
                 // In this case, we retry with a fresh page.
                 cb.set_label_state(starting_label_state);
                 cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation);
+                cb.clear_cfi_directives();
                 asm.arm64_emit(cb).expect("should not fail when writing to a fresh code page")
             });
 
         if cb.has_dropped_bytes() {
             cb.clear_labels();
+            cb.clear_cfi_directives();
         } else {
             cb.link_labels();
+            cb.commit_cfi_directives();
 
             // Invalidate icache for newly written out region so we don't run stale code.
             // It should invalidate only the code ranges of the current cb because the code

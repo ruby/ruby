@@ -546,6 +546,9 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         cb.set_pos(old_pos);
         cb.set_dropped_bytes(old_dropped_bytes);
 
+        CodegenGlobals::get_unwind_info_manager()
+            .borrow_mut()
+            .flush_and_register();
         CodegenGlobals::get_outlined_cb()
             .unwrap()
             .mark_all_executable();

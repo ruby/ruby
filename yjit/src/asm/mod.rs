@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fmt;
 use std::mem;
 use std::rc::Rc;
+use crate::backend::unwind::{CFIDirective, CFIDirectiveWithAddr, UnwindInfoManager};
 #[cfg(target_arch = "x86_64")]
 use crate::backend::x86_64::JMP_PTR_BYTES;
 #[cfg(target_arch = "aarch64")]
@@ -89,6 +90,9 @@ pub struct CodeBlock {
     // Keeps track of what pages we can write to after code gc.
     // `None` means all pages are free.
     freed_pages: Rc<Option<Vec<usize>>>,
+
+    cfi_directives: Vec<CFIDirectiveWithAddr>,
+    unwind_info_manager: Rc<RefCell<UnwindInfoManager>>,
 }
 
 /// Set of CodeBlock label states. Used for recovering the previous state.
@@ -104,7 +108,7 @@ impl CodeBlock {
     const PREFERRED_CODE_PAGE_SIZE: usize = 16 * 1024;
 
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, unwind_info_manager: Rc<RefCell<UnwindInfoManager>>) -> Self {
         // Pick the code page size
         let system_page_size = mem_block.borrow().system_page_size();
         let page_size = if 0 == Self::PREFERRED_CODE_PAGE_SIZE % system_page_size {
@@ -128,6 +132,8 @@ impl CodeBlock {
             outlined,
             dropped_bytes: false,
             freed_pages,
+            cfi_directives: Vec::new(),
+            unwind_info_manager,
         };
         cb.write_pos = cb.page_start();
         cb
@@ -630,17 +636,35 @@ impl CodeBlock {
         let mut virtual_pages: Vec<usize> = (self.num_mapped_pages()..self.num_virtual_pages()).collect();
         freed_pages.append(&mut virtual_pages);
 
+        let mut cb = CodegenGlobals::get_inline_cb();
+        let mut ocb = CodegenGlobals::get_outlined_cb().unwrap();
+
         if let Some(&first_page) = freed_pages.first() {
-            let mut cb = CodegenGlobals::get_inline_cb();
             cb.write_pos = cb.get_page_pos(first_page);
             cb.dropped_bytes = false;
             cb.clear_comments();
 
-            let mut ocb = CodegenGlobals::get_outlined_cb().unwrap();
             ocb.write_pos = ocb.get_page_pos(first_page);
             ocb.dropped_bytes = false;
             ocb.clear_comments();
         }
+
+        // If we freed anything, free up the unwind info we were tracking for those
+        // blocks too.
+        let unw_binding = CodegenGlobals::get_unwind_info_manager();
+        let mut unwind_info_manager = unw_binding.borrow_mut();
+        for page in freed_pages.iter() {
+            let cb_ptr_begin = cb.get_ptr(cb.get_page_pos(*page));
+            let cb_ptr_end = cb.get_ptr(cb.get_page_pos(*page) + cb.page_size());
+            unwind_info_manager.free_info_for_range(cb_ptr_begin..cb_ptr_end);
+
+            let ocb_ptr_begin = ocb.get_ptr(ocb.get_page_pos(*page));
+            let ocb_ptr_end = ocb.get_ptr(ocb.get_page_pos(*page) + ocb.page_size());
+            unwind_info_manager.free_info_for_range(ocb_ptr_begin..ocb_ptr_end);
+        }
+        cb.cfi_directives.clear();
+        ocb.cfi_directives.clear();
+        unwind_info_manager.flush_and_register();
 
         // Track which pages are free.
         let new_freed_pages = Rc::new(Some(freed_pages));
@@ -664,6 +688,27 @@ impl CodeBlock {
             Some(CodegenGlobals::get_inline_cb())
         }
     }
+
+    pub fn add_cfi_directive(&mut self, directive: CFIDirective) {
+        self.add_cfi_directive_at(directive, self.get_write_ptr());
+    }
+
+    pub fn add_cfi_directive_at(&mut self, directive: CFIDirective, at: CodePtr) {
+        self.cfi_directives.push(CFIDirectiveWithAddr {
+            addr: at,
+            directive,
+        })
+    }
+
+    pub fn commit_cfi_directives(&mut self) {
+        self.unwind_info_manager.borrow_mut().add_unwind_info(&self.cfi_directives);
+        self.cfi_directives.clear()
+    }
+
+    pub fn clear_cfi_directives(&mut self) {
+        self.cfi_directives.clear()
+    }
+
 }
 
 #[cfg(test)]

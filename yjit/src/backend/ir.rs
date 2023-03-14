@@ -19,6 +19,8 @@ use crate::backend::x86_64::*;
 #[cfg(target_arch = "aarch64")]
 use crate::backend::arm64::*;
 
+use super::unwind::CStackSetupRule;
+
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
 pub const SP: Opnd = _SP;
@@ -859,19 +861,22 @@ pub struct Assembler
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
+
+    pub(super) stack_rule: CStackSetupRule,
 }
 
 impl Assembler
 {
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default())
+        Self::new_with_label_names(Vec::default(), CStackSetupRule::NormalJumpFromJITCode)
     }
 
-    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, stack_rule: CStackSetupRule) -> Self {
         Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
-            label_names
+            label_names,
+            stack_rule
         }
     }
 
@@ -922,7 +927,9 @@ impl Assembler
     /// Convert Stack operands to memory operands
     pub fn lower_stack(mut self) -> Assembler
     {
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(
+            take(&mut self.label_names), self.stack_rule,
+        );
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -1007,7 +1014,9 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(
+            take(&mut self.label_names), self.stack_rule,
+        );
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -1154,6 +1163,7 @@ impl Assembler
             let end_addr = cb.get_write_ptr();
             dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
         }
+
         gc_offsets
     }
 
@@ -1575,6 +1585,10 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Xor { left, right, out });
         out
+    }
+
+    pub fn set_block_stack_rule(&mut self, stack_rule: CStackSetupRule) {
+        self.stack_rule = stack_rule;
     }
 }
 

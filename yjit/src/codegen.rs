@@ -3,6 +3,7 @@
 
 use crate::asm::*;
 use crate::backend::ir::*;
+use crate::backend::unwind::{CStackSetupRule, UnwindInfoManager};
 use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
@@ -12,12 +13,14 @@ use crate::utils::*;
 use CodegenStatus::*;
 use YARVOpnd::*;
 
+use std::cell::RefCell;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int, c_uint};
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -615,6 +618,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
         asm.comment("YJIT entry");
     }
 
+    asm.set_block_stack_rule(CStackSetupRule::CalledFromC);
     asm.frame_setup();
 
     // Save the CFP, EC, SP registers to the C stack
@@ -7811,6 +7815,12 @@ pub struct CodegenGlobals {
 
     /// How many times code GC has been executed.
     code_gc_count: usize,
+
+    /// Owns DWARF CFI unwind info for our generated code
+    /// n.b. it's Rc<RefCell<>> because it's shared with both the inline and
+    /// outline CodeBlocks; it has to be, because they generate code (which needs unwind
+    /// info) before CodegenGlobals is initialized.
+    unwind_info_manager: Rc<RefCell<UnwindInfoManager>>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -7830,11 +7840,12 @@ impl CodegenGlobals {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
 
+        // DWARF CFI unwind info gets owned by this component
+        let unwind_info_manager = Rc::new(RefCell::new(UnwindInfoManager::new()));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            use std::cell::RefCell;
-            use std::rc::Rc;
+
 
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
@@ -7863,8 +7874,8 @@ impl CodegenGlobals {
             let mem_block = Rc::new(RefCell::new(mem_block));
 
             let freed_pages = Rc::new(None);
-            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
-            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
+            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone(), unwind_info_manager.clone());
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages, unwind_info_manager.clone()));
 
             (cb, ocb)
         };
@@ -7890,6 +7901,7 @@ impl CodegenGlobals {
         let ocb_pages = ocb.unwrap().addrs_to_pages(ocb_start_addr, ocb_end_addr);
 
         // Mark all code memory as executable
+        unwind_info_manager.borrow_mut().flush_and_register();
         cb.mark_all_executable();
         ocb.unwrap().mark_all_executable();
 
@@ -7904,6 +7916,7 @@ impl CodegenGlobals {
             method_codegen_table: HashMap::new(),
             ocb_pages,
             code_gc_count: 0,
+            unwind_info_manager,
         };
 
         // Register the method codegen functions
@@ -8004,6 +8017,11 @@ impl CodegenGlobals {
     /// Get a mutable reference to the outlined code block
     pub fn get_outlined_cb() -> &'static mut OutlinedCb {
         &mut CodegenGlobals::get_instance().outlined_cb
+    }
+
+    /// Get a mutable reference to the unwind info manager
+    pub fn get_unwind_info_manager() -> Rc<RefCell<UnwindInfoManager>> {
+        CodegenGlobals::get_instance().unwind_info_manager.clone()
     }
 
     pub fn get_leave_exit_code() -> CodePtr {

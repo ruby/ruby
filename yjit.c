@@ -1095,6 +1095,123 @@ object_shape_count(rb_execution_context_t *ec, VALUE self)
     return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
 }
 
+// The gdb JIT debug interface declarations, as defined at
+// https://sourceware.org/gdb/onlinedocs/gdb/Declarations.html
+typedef enum
+{
+  JIT_NOACTION = 0,
+  JIT_REGISTER_FN,
+  JIT_UNREGISTER_FN
+} jit_actions_t;
+
+struct jit_code_entry
+{
+  struct jit_code_entry *next_entry;
+  struct jit_code_entry *prev_entry;
+  const char *symfile_addr;
+  uint64_t symfile_size;
+};
+
+struct jit_descriptor
+{
+  uint32_t version;
+  /* This type should be jit_actions_t, but we use uint32_t
+     to be explicit about the bitwidth.  */
+  uint32_t action_flag;
+  struct jit_code_entry *relevant_entry;
+  struct jit_code_entry *first_entry;
+};
+
+/* GDB puts a breakpoint in this function.  */
+void __attribute__((noinline))
+__jit_debug_register_code(void)
+{
+    /* This isn't in the GDB documentation, but I found I had to convince
+       gcc that this function has side effects to make sure it doesn't get
+       entirely omitted. */
+    asm volatile("");
+};
+
+/* Make sure to specify the version statically, because the
+   debugger may check the version before we can set it.  */
+struct jit_descriptor __jit_debug_descriptor = { 1, 0, 0, 0 };
+
+static rb_nativethread_lock_t __jit_debug_lock;
+
+/* Define prototypes for __register_frame; the implementations, but not prototypes, are
+   provided by the compiler */
+
+void __register_frame(void *eh_frame);
+void __deregister_frame(void *eh_frame);
+
+void
+rb_yjit_register_unwind_info(unsigned char *object_file, uint64_t object_file_size, unsigned char *eh_frame)
+{
+    rb_native_mutex_lock(&__jit_debug_lock);
+
+    __register_frame(eh_frame);
+
+    struct jit_code_entry *last_entry = __jit_debug_descriptor.first_entry;
+    while (last_entry && last_entry->next_entry) {
+        last_entry = last_entry->next_entry;
+    }
+
+    struct jit_code_entry *code_entry = malloc(sizeof(struct jit_code_entry));
+    code_entry->symfile_addr = (void*)object_file;
+    code_entry->symfile_size = object_file_size;
+    code_entry->next_entry = NULL;
+    code_entry->prev_entry = last_entry;
+    __jit_debug_descriptor.relevant_entry = code_entry;
+
+    if (code_entry->prev_entry) {
+        code_entry->prev_entry->next_entry = code_entry;
+    } else {
+        __jit_debug_descriptor.first_entry = code_entry;
+    }
+    __jit_debug_descriptor.action_flag = JIT_REGISTER_FN;
+    __jit_debug_register_code();
+
+    rb_native_mutex_unlock(&__jit_debug_lock);
+}
+
+void
+rb_yjit_deregister_unwind_info(unsigned char *object_file, uint64_t object_file_size, unsigned char *eh_frame)
+{
+    rb_native_mutex_lock(&__jit_debug_lock);
+
+    __deregister_frame(eh_frame);
+
+    struct jit_code_entry *code_entry = __jit_debug_descriptor.first_entry;
+    while (code_entry) {
+        struct jit_code_entry *orig_code_entry = code_entry;
+        bool do_free = false;
+        if (code_entry->symfile_addr == (void *)object_file) {
+            do_free = true;
+            if (code_entry->prev_entry) {
+                code_entry->prev_entry->next_entry = code_entry->next_entry;
+            } else {
+                __jit_debug_descriptor.first_entry = code_entry->next_entry;
+            }
+            if (code_entry->next_entry) {
+                code_entry->next_entry->prev_entry = code_entry->prev_entry;
+            }
+
+            __jit_debug_descriptor.action_flag = JIT_UNREGISTER_FN;
+            __jit_debug_descriptor.relevant_entry = code_entry;
+            __jit_debug_register_code();
+        }
+
+        code_entry = code_entry->next_entry;
+
+        if (do_free) {
+            free(orig_code_entry);
+        }
+    }
+
+    rb_native_mutex_unlock(&__jit_debug_lock);
+
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
@@ -1113,6 +1230,8 @@ VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 void
 rb_yjit_init(void)
 {
+    rb_native_mutex_initialize(&__jit_debug_lock);
+
     // Call the Rust initialization code
     void rb_yjit_init_rust(void);
     rb_yjit_init_rust();

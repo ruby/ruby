@@ -1,5 +1,6 @@
 use crate::asm::*;
 use crate::backend::ir::*;
+use crate::backend::unwind::CStackSetupRule;
 use crate::codegen::*;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
@@ -973,6 +974,9 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
     }
 
     // Note that we would have returned already if YJIT is off.
+    CodegenGlobals::get_unwind_info_manager()
+        .borrow_mut()
+        .flush_and_register();
     cb.mark_all_executable();
 
     CodegenGlobals::get_outlined_cb()
@@ -1804,6 +1808,9 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
     // Try to generate code for the entry block
     let block = gen_block_series(blockid, &Context::default(), ec, cb, ocb);
 
+    CodegenGlobals::get_unwind_info_manager()
+        .borrow_mut()
+        .flush_and_register();
     cb.mark_all_executable();
     ocb.unwrap().mark_all_executable();
 
@@ -1840,6 +1847,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     // Generate the branch
     let mut asm = Assembler::new();
     asm.comment("regenerate_branch");
+    asm.set_block_stack_rule(CStackSetupRule::None);
     branch.gen_fn.call(
         &mut asm,
         branch.get_target_address(0).unwrap(),
@@ -2068,6 +2076,9 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         }
     };
 
+    CodegenGlobals::get_unwind_info_manager()
+        .borrow_mut()
+        .flush_and_register();
     ocb.unwrap().mark_all_executable();
     cb.mark_all_executable();
 
@@ -2528,6 +2539,9 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
     delayed_deallocation(blockref);
 
+    CodegenGlobals::get_unwind_info_manager()
+        .borrow_mut()
+        .flush_and_register();
     ocb.unwrap().mark_all_executable();
     cb.mark_all_executable();
 

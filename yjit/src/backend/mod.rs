@@ -6,3 +6,4 @@ pub mod arm64;
 
 pub mod ir;
 mod tests;
+pub mod unwind;
