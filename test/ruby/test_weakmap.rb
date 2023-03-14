@@ -176,4 +176,12 @@ class TestWeakMap < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_compaction_bug_19529
+    obj = Object.new
+    100.times do |i|
+      GC.compact
+      @wm[i] = obj
+    end
+  end
 end
