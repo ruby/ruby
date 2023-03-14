@@ -11,6 +11,8 @@
 #if USE_RJIT
 
 #include "rjit_c.h"
+#include "include/ruby/assert.h"
+#include "include/ruby/debug.h"
 #include "internal.h"
 #include "internal/compile.h"
 #include "internal/fixnum.h"
@@ -33,24 +35,125 @@
 
 #include <errno.h>
 
-static bool
-rjit_mark_writable(void *mem_block, uint32_t mem_size)
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+// Align the current write position to a multiple of bytes
+static uint8_t *
+align_ptr(uint8_t *ptr, uint32_t multiple)
 {
-    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+#endif
+
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
+static uint8_t *
+rjit_reserve_addr_space(uint32_t mem_size)
+{
+#ifndef _WIN32
+    uint8_t *mem_block;
+
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
+        // Align the requested address to page size
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
+        do {
+            mem_block = mmap(
+                req_addr,
+                mem_size,
+                PROT_NONE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                break;
+            }
+
+            // +4MB
+            req_addr += 4 * 1024 * 1024;
+        } while (req_addr < probe_region_end);
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
+        mem_block = mmap(
+            (void *)rjit_reserve_addr_space,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = mmap(
+            NULL,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    }
+
+    // Check that the memory mapping was successful
+    if (mem_block == MAP_FAILED) {
+        perror("ruby: yjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
+        rb_bug("mmap failed");
+    }
+
+    return mem_block;
+#else
+    // Windows not supported for now
+    return NULL;
+#endif
 }
 
-static void
-rjit_mark_executable(void *mem_block, uint32_t mem_size)
+static VALUE
+mprotect_write(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE rb_mem_size)
 {
-    // Do not call mprotect when mem_size is zero. Some platforms may return
-    // an error for it. https://github.com/Shopify/ruby/issues/450
-    if (mem_size == 0) {
-        return;
-    }
+    void *mem_block = (void *)NUM2SIZET(rb_mem_block);
+    uint32_t mem_size = NUM2UINT(rb_mem_size);
+    return RBOOL(mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0);
+}
+
+static VALUE
+mprotect_exec(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE rb_mem_size)
+{
+    void *mem_block = (void *)NUM2SIZET(rb_mem_block);
+    uint32_t mem_size = NUM2UINT(rb_mem_size);
+    if (mem_size == 0) return Qfalse; // Some platforms return an error for mem_size 0.
+
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+    return Qtrue;
 }
 
 static VALUE
@@ -105,13 +208,196 @@ rjit_get_proc_ptr(VALUE procv)
     return proc;
 }
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULONG(x)
-#define PTR2NUM(x) ULONG2NUM(x)
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#define NUM2PTR(x) NUM2ULL(x)
-#define PTR2NUM(x) ULL2NUM(x)
-#endif
+// Use the same buffer size as Stackprof.
+#define BUFF_LEN 2048
+
+extern VALUE rb_rjit_raw_samples;
+extern VALUE rb_rjit_line_samples;
+
+static void
+rjit_record_exit_stack(const VALUE *exit_pc)
+{
+    // Let Primitive.rjit_stop_stats stop this
+    if (!rb_rjit_call_p) return;
+
+    // Get the opcode from the encoded insn handler at this PC
+    int insn = rb_vm_insn_addr2opcode((void *)*exit_pc);
+
+    // Create 2 array buffers to be used to collect frames and lines.
+    VALUE frames_buffer[BUFF_LEN] = { 0 };
+    int lines_buffer[BUFF_LEN] = { 0 };
+
+    // Records call frame and line information for each method entry into two
+    // temporary buffers. Returns the number of times we added to the buffer (ie
+    // the length of the stack).
+    //
+    // Call frame info is stored in the frames_buffer, line number information
+    // in the lines_buffer. The first argument is the start point and the second
+    // argument is the buffer limit, set at 2048.
+    int stack_length = rb_profile_frames(0, BUFF_LEN, frames_buffer, lines_buffer);
+    int samples_length = stack_length + 3; // 3: length, insn, count
+
+    // If yjit_raw_samples is less than or equal to the current length of the samples
+    // we might have seen this stack trace previously.
+    int prev_stack_len_index = (int)RARRAY_LEN(rb_rjit_raw_samples) - samples_length;
+    VALUE prev_stack_len_obj;
+    if (RARRAY_LEN(rb_rjit_raw_samples) >= samples_length && FIXNUM_P(prev_stack_len_obj = RARRAY_AREF(rb_rjit_raw_samples, prev_stack_len_index))) {
+        int prev_stack_len = NUM2INT(prev_stack_len_obj);
+        int idx = stack_length - 1;
+        int prev_frame_idx = 0;
+        bool seen_already = true;
+
+        // If the previous stack length and current stack length are equal,
+        // loop and compare the current frame to the previous frame. If they are
+        // not equal, set seen_already to false and break out of the loop.
+        if (prev_stack_len == stack_length) {
+            while (idx >= 0) {
+                VALUE current_frame = frames_buffer[idx];
+                VALUE prev_frame = RARRAY_AREF(rb_rjit_raw_samples, prev_stack_len_index + prev_frame_idx + 1);
+
+                // If the current frame and previous frame are not equal, set
+                // seen_already to false and break out of the loop.
+                if (current_frame != prev_frame) {
+                    seen_already = false;
+                    break;
+                }
+
+                idx--;
+                prev_frame_idx++;
+            }
+
+            // If we know we've seen this stack before, increment the counter by 1.
+            if (seen_already) {
+                int prev_idx = (int)RARRAY_LEN(rb_rjit_raw_samples) - 1;
+                int prev_count = NUM2INT(RARRAY_AREF(rb_rjit_raw_samples, prev_idx));
+                int new_count = prev_count + 1;
+
+                rb_ary_store(rb_rjit_raw_samples, prev_idx, INT2NUM(new_count));
+                rb_ary_store(rb_rjit_line_samples, prev_idx, INT2NUM(new_count));
+                return;
+            }
+        }
+    }
+
+    rb_ary_push(rb_rjit_raw_samples, INT2NUM(stack_length));
+    rb_ary_push(rb_rjit_line_samples, INT2NUM(stack_length));
+
+    int idx = stack_length - 1;
+
+    while (idx >= 0) {
+        VALUE frame = frames_buffer[idx];
+        int line = lines_buffer[idx];
+
+        rb_ary_push(rb_rjit_raw_samples, frame);
+        rb_ary_push(rb_rjit_line_samples, INT2NUM(line));
+
+        idx--;
+    }
+
+    // Push the insn value into the yjit_raw_samples Vec.
+    rb_ary_push(rb_rjit_raw_samples, INT2NUM(insn));
+
+    // Push the current line onto the yjit_line_samples Vec. This
+    // points to the line in insns.def.
+    int line = (int)RARRAY_LEN(rb_rjit_line_samples) - 1;
+    rb_ary_push(rb_rjit_line_samples, INT2NUM(line));
+
+    // Push number of times seen onto the stack, which is 1
+    // because it's the first time we've seen it.
+    rb_ary_push(rb_rjit_raw_samples, INT2NUM(1));
+    rb_ary_push(rb_rjit_line_samples, INT2NUM(1));
+}
+
+// For a given raw_sample (frame), set the hash with the caller's
+// name, file, and line number. Return the  hash with collected frame_info.
+static void
+rjit_add_frame(VALUE hash, VALUE frame)
+{
+    VALUE frame_id = SIZET2NUM(frame);
+
+    if (RTEST(rb_hash_aref(hash, frame_id))) {
+        return;
+    }
+    else {
+        VALUE frame_info = rb_hash_new();
+        // Full label for the frame
+        VALUE name = rb_profile_frame_full_label(frame);
+        // Absolute path of the frame from rb_iseq_realpath
+        VALUE file = rb_profile_frame_absolute_path(frame);
+        // Line number of the frame
+        VALUE line = rb_profile_frame_first_lineno(frame);
+
+        // If absolute path isn't available use the rb_iseq_path
+        if (NIL_P(file)) {
+            file = rb_profile_frame_path(frame);
+        }
+
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("total_samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("edges")), rb_hash_new());
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("lines")), rb_hash_new());
+
+        if (line != INT2FIX(0)) {
+            rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
+        }
+
+       rb_hash_aset(hash, frame_id, frame_info);
+    }
+}
+
+static VALUE
+rjit_exit_traces(void)
+{
+    int samples_len = (int)RARRAY_LEN(rb_rjit_raw_samples);
+    RUBY_ASSERT(samples_len == RARRAY_LEN(rb_rjit_line_samples));
+
+    VALUE result = rb_hash_new();
+    VALUE raw_samples = rb_ary_new_capa(samples_len);
+    VALUE line_samples = rb_ary_new_capa(samples_len);
+    VALUE frames = rb_hash_new();
+    int idx = 0;
+
+    // While the index is less than samples_len, parse yjit_raw_samples and
+    // yjit_line_samples, then add casted values to raw_samples and line_samples array.
+    while (idx < samples_len) {
+        int num = NUM2INT(RARRAY_AREF(rb_rjit_raw_samples, idx));
+        int line_num = NUM2INT(RARRAY_AREF(rb_rjit_line_samples, idx));
+        idx++;
+
+        rb_ary_push(raw_samples, SIZET2NUM(num));
+        rb_ary_push(line_samples, INT2NUM(line_num));
+
+        // Loop through the length of samples_len and add data to the
+        // frames hash. Also push the current value onto the raw_samples
+        // and line_samples array respectively.
+        for (int o = 0; o < num; o++) {
+            rjit_add_frame(frames, RARRAY_AREF(rb_rjit_raw_samples, idx));
+            rb_ary_push(raw_samples, SIZET2NUM(RARRAY_AREF(rb_rjit_raw_samples, idx)));
+            rb_ary_push(line_samples, RARRAY_AREF(rb_rjit_line_samples, idx));
+            idx++;
+        }
+
+        // insn BIN and lineno
+        rb_ary_push(raw_samples, RARRAY_AREF(rb_rjit_raw_samples, idx));
+        rb_ary_push(line_samples, RARRAY_AREF(rb_rjit_line_samples, idx));
+        idx++;
+
+        // Number of times seen
+        rb_ary_push(raw_samples, RARRAY_AREF(rb_rjit_raw_samples, idx));
+        rb_ary_push(line_samples, RARRAY_AREF(rb_rjit_line_samples, idx));
+        idx++;
+    }
+
+    // Set add the raw_samples, line_samples, and frames to the results
+    // hash.
+    rb_hash_aset(result, ID2SYM(rb_intern("raw")), raw_samples);
+    rb_hash_aset(result, ID2SYM(rb_intern("lines")), line_samples);
+    rb_hash_aset(result, ID2SYM(rb_intern("frames")), frames);
+
+    return result;
+}
 
 // An offsetof implementation that works for unnamed struct and union.
 // Multiplying 8 for compatibility with libclang's offsetof.
@@ -195,8 +481,20 @@ rjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
     return Qnil;
 }
 
-extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+// bindgen funcs
 extern ID rb_get_symbol_id(VALUE name);
+extern VALUE rb_fix_aref(VALUE fix, VALUE idx);
+extern VALUE rb_str_getbyte(VALUE str, VALUE index);
+extern VALUE rb_vm_concat_array(VALUE ary1, VALUE ary2st);
+extern VALUE rb_vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, VALUE allow_nil);
+extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, ICVARC ic);
+extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
+extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);
+extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
+extern rb_event_flag_t rb_rjit_global_events;
+extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
 
 #include "rjit_c.rbinc"
 

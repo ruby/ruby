@@ -64,8 +64,8 @@ AC_ARG_WITH(baseruby,
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
-# BASERUBY must be >= 2.2.0. Note that `"2.2.0" > "2.2"` is true.
-AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.2"' 2>/dev/null`" = 42], [
+# BASERUBY must be >= 2.5.0. Note that `"2.5.0" > "2.5"` is true.
+AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.5"' 2>/dev/null`" = 42], [
     AS_CASE(["$build_os"], [mingw*], [
         # Can MSys shell run a command with a drive letter?
         RUBYOPT=- `cygpath -ma "$BASERUBY"` --disable=gems -e exit 2>/dev/null || HAVE_BASERUBY=no
@@ -3867,11 +3867,11 @@ AC_ARG_ENABLE(rjit,
 
 AS_CASE(["$RJIT_SUPPORT"],
 [yes|dev], [
+    # Link libcapstone for --rjit-dump-disasm
+    AC_CHECK_LIB([capstone], [cs_disasm])
+
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Link libcapstone for --rjit-dump-disasm
-        AC_CHECK_LIB([capstone], [cs_disasm])
-
         # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
         AC_DEFINE(RUBY_DEBUG, 1)
     ])

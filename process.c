@@ -1072,10 +1072,6 @@ struct waitpid_state {
     int errnum;
 };
 
-int rb_sigwait_fd_get(const rb_thread_t *);
-void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
-void rb_sigwait_fd_put(const rb_thread_t *, int fd);
-
 static void
 waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
 {
@@ -4918,6 +4914,9 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
  *  thread calls Thread#run. Called without an argument, sleep()
  *  will sleep forever.
  *
+ *  If the +duration+ is not supplied, or is +nil+, the thread sleeps forever.
+ *  Threads in this state may still be interrupted by other threads.
+ *
  *     Time.new    #=> 2008-03-08 19:56:19 +0900
  *     sleep 1.2   #=> 1
  *     Time.new    #=> 2008-03-08 19:56:20 +0900
@@ -4935,7 +4934,7 @@ rb_f_sleep(int argc, VALUE *argv, VALUE _)
         rb_fiber_scheduler_kernel_sleepv(scheduler, argc, argv);
     }
     else {
-        if (argc == 0) {
+        if (argc == 0 || (argc == 1 && NIL_P(argv[0]))) {
             rb_thread_sleep_forever();
         }
         else {

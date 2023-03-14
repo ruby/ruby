@@ -338,16 +338,6 @@ module Gem
   end
 
   ##
-  # The path to the data directory specified by the gem name.  If the
-  # package is not available as a gem, return nil.
-
-  def self.datadir(gem_name)
-    spec = @loaded_specs[gem_name]
-    return nil if spec.nil?
-    spec.datadir
-  end
-
-  ##
   # A Zlib::Deflate.deflate wrapper
 
   def self.deflate(data)

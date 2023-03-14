@@ -174,29 +174,41 @@ impl Assembler
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    match (unmapped_opnds[0], unmapped_opnds[1]) {
-                        (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            *left = asm.load(*left);
-                            *right = asm.load(*right);
-                        },
-                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
-                            *left = asm.load(*left);
-                        },
-                        // Instruction output whose live range spans beyond this instruction
-                        (Opnd::InsnOut { idx, .. }, _) => {
-                            if live_ranges[idx] > index {
-                                *left = asm.load(*left);
-                            }
-                        },
-                        // We have to load memory operands to avoid corrupting them
-                        (Opnd::Mem(_) | Opnd::Reg(_), _) => {
-                            *left = asm.load(*left);
-                        },
-                        _ => {}
-                    };
+                    match (&left, &right, iterator.peek()) {
+                        // Merge this insn, e.g. `add REG, right -> out`, and `mov REG, out` if possible
+                        (Opnd::Reg(_), Opnd::UImm(value), Some(Insn::Mov { dest, src }))
+                        if out == src && left == dest && live_ranges[index] == index + 1 && uimm_num_bits(*value) <= 32 => {
+                            *out = *dest;
+                            asm.push_insn(insn);
+                            iterator.map_insn_index(&mut asm);
+                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                        }
+                        _ => {
+                            match (unmapped_opnds[0], unmapped_opnds[1]) {
+                                (Opnd::Mem(_), Opnd::Mem(_)) => {
+                                    *left = asm.load(*left);
+                                    *right = asm.load(*right);
+                                },
+                                (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
+                                    *left = asm.load(*left);
+                                },
+                                // Instruction output whose live range spans beyond this instruction
+                                (Opnd::InsnOut { idx, .. }, _) => {
+                                    if live_ranges[idx] > index {
+                                        *left = asm.load(*left);
+                                    }
+                                },
+                                // We have to load memory operands to avoid corrupting them
+                                (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                                    *left = asm.load(*left);
+                                },
+                                _ => {}
+                            };
 
-                    *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
-                    asm.push_insn(insn);
+                            *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
+                            asm.push_insn(insn);
+                        }
+                    }
                 },
                 Insn::Cmp { left, right } => {
                     // Replace `cmp REG, 0` (4 bytes) with `test REG, REG` (3 bytes)
@@ -954,5 +966,60 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
 
         assert_eq!(format!("{:x}", cb), "488b43084885c0b814000000b900000000480f45c14889c0");
+    }
+
+    #[test]
+    fn test_merge_add_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.add(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983c540");
+    }
+
+    #[test]
+    fn test_merge_sub_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.sub(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983ed40");
+    }
+
+    #[test]
+    fn test_merge_and_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.and(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983e540");
+    }
+
+    #[test]
+    fn test_merge_or_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.or(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983cd40");
+    }
+
+    #[test]
+    fn test_merge_xor_mov() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let sp = asm.xor(CFP, Opnd::UImm(0x40));
+        asm.mov(CFP, sp); // should be merged to add
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4983f540");
     }
 }

@@ -6,6 +6,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
+BUILTIN_ATTRS = %w[leaf]
 
 def string_literal(lit, str = [])
   while lit
@@ -25,11 +26,32 @@ def string_literal(lit, str = [])
   end
 end
 
+# e.g. [:symbol_literal, [:symbol, [:@ident, "inline", [19, 21]]]]
+def symbol_literal(lit)
+  symbol_literal, symbol_lit = lit
+  raise "#{lit.inspect} was not :symbol_literal" if symbol_literal != :symbol_literal
+  symbol, ident_lit = symbol_lit
+  raise "#{symbol_lit.inspect} was not :symbol" if symbol != :symbol
+  ident, symbol_name, = ident_lit
+  raise "#{ident.inspect} was not :@ident" if ident != :@ident
+  symbol_name
+end
+
 def inline_text argc, arg1
   raise "argc (#{argc}) of inline! should be 1" unless argc == 1
   arg1 = string_literal(arg1)
   raise "1st argument should be string literal" unless arg1
   arg1.join("").rstrip
+end
+
+def inline_attrs(args)
+  raise "args was empty" if args.empty?
+  args.each do |arg|
+    attr = symbol_literal(arg)
+    unless BUILTIN_ATTRS.include?(attr)
+      raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
+    end
+  end
 end
 
 def make_cfunc_name inlines, name, lineno
@@ -138,10 +160,8 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         if /(.+)[\!\?]\z/ =~ func_name
           case $1
           when 'attr'
-            text = inline_text(argc, args.first)
-            if text != 'inline'
-              raise "Only 'inline' is allowed to be annotated (but got: '#{text}')"
-            end
+            # Compile-time validation only. compile.c will parse them.
+            inline_attrs(args)
             break
           when 'cstmt'
             text = inline_text argc, args.first
@@ -245,7 +265,8 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
   f = StringIO.new
   f.puts '{'
   lineno += 1
-  locals.reverse_each.with_index{|param, i|
+  # locals is nil outside methods
+  locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
     lineno += 1

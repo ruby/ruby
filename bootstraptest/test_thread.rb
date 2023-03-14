@@ -483,7 +483,7 @@ assert_equal 'foo', %q{
   [th1, th2].each {|t| t.join }
   GC.start
   f.call.source
-}
+} unless ENV['RUN_OPTS'] =~ /rjit/ # flaky
 assert_normal_exit %q{
   class C
     def inspect

@@ -67,15 +67,15 @@ struct rjit_options rb_rjit_opts;
 
 // true if RJIT is enabled.
 bool rb_rjit_enabled = false;
+// true if --rjit-stats (used before rb_rjit_opts is set)
 bool rb_rjit_stats_enabled = false;
+// true if --rjit-trace-exits (used before rb_rjit_opts is set)
+bool rb_rjit_trace_exits_enabled = false;
 // true if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
 // and `rb_rjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
 bool rb_rjit_call_p = false;
 // A flag to communicate that rb_rjit_call_p should be disabled while it's temporarily false.
 static bool rjit_cancel_p = false;
-
-// JIT buffer
-uint8_t *rb_rjit_mem_block = NULL;
 
 // `rb_ec_ractor_hooks(ec)->events` is moved to this variable during compilation.
 rb_event_flag_t rb_rjit_global_events = 0;
@@ -96,8 +96,15 @@ static VALUE rb_cRJITCfpPtr = 0;
 // RubyVM::RJIT::Hooks
 static VALUE rb_mRJITHooks = 0;
 
+// Frames for --rjit-trace-exits
+VALUE rb_rjit_raw_samples = 0;
+// Line numbers for --rjit-trace-exits
+VALUE rb_rjit_line_samples = 0;
+
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 30
+// Size of executable memory block in MiB.
+#define DEFAULT_EXEC_MEM_SIZE 64
 
 #define opt_match_noarg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --rjit-" name " is ignored"), 1) : 1)
@@ -114,8 +121,14 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
     else if (opt_match_noarg(s, l, "stats")) {
         rjit_opt->stats = true;
     }
+    else if (opt_match_noarg(s, l, "trace-exits")) {
+        rjit_opt->trace_exits = true;
+    }
     else if (opt_match_arg(s, l, "call-threshold")) {
         rjit_opt->call_threshold = atoi(s + 1);
+    }
+    else if (opt_match_arg(s, l, "exec-mem-size")) {
+        rjit_opt->exec_mem_size = atoi(s + 1);
     }
     // --rjit=pause is an undocumented feature for experiments
     else if (opt_match_noarg(s, l, "pause")) {
@@ -134,7 +147,9 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
 #if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #endif
+    M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
 #ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
@@ -142,105 +157,6 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
     {0}
 };
 #undef M
-
-#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
-{
-    // Compute the pointer modulo the given alignment boundary
-    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
-
-    // If the pointer is already aligned, stop
-    if (rem == 0)
-        return ptr;
-
-    // Pad the pointer by the necessary amount to align it
-    uint32_t pad = multiple - rem;
-
-    return ptr + pad;
-}
-#endif
-
-// Address space reservation. Memory pages are mapped on an as needed basis.
-// See the Rust mm module for details.
-static uint8_t *
-rjit_reserve_addr_space(uint32_t mem_size)
-{
-#ifndef _WIN32
-    uint8_t *mem_block;
-
-    // On Linux
-    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
-        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
-        // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
-
-        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
-        // to improve odds of being in range for 32-bit relative call instructions.
-        do {
-            mem_block = mmap(
-                req_addr,
-                mem_size,
-                PROT_NONE,
-                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
-                -1,
-                0
-            );
-
-            // If we succeeded, stop
-            if (mem_block != MAP_FAILED) {
-                break;
-            }
-
-            // +4MB
-            req_addr += 4 * 1024 * 1024;
-        } while (req_addr < probe_region_end);
-
-    // On MacOS and other platforms
-    #else
-        // Try to map a chunk of memory as executable
-        mem_block = mmap(
-            (void *)rjit_reserve_addr_space,
-            mem_size,
-            PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-    #endif
-
-    // Fallback
-    if (mem_block == MAP_FAILED) {
-        // Try again without the address hint (e.g., valgrind)
-        mem_block = mmap(
-            NULL,
-            mem_size,
-            PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-    }
-
-    // Check that the memory mapping was successful
-    if (mem_block == MAP_FAILED) {
-        perror("ruby: yjit: mmap:");
-        if(errno == ENOMEM) {
-            // No crash report if it's only insufficient memory
-            exit(EXIT_FAILURE);
-        }
-        rb_bug("mmap failed");
-    }
-
-    return mem_block;
-#else
-    // Windows not supported for now
-    return NULL;
-#endif
-}
 
 #if RJIT_STATS
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
@@ -410,6 +326,8 @@ rb_rjit_mark(void)
     rb_gc_mark(rb_cRJITIseqPtr);
     rb_gc_mark(rb_cRJITCfpPtr);
     rb_gc_mark(rb_mRJITHooks);
+    rb_gc_mark(rb_rjit_raw_samples);
+    rb_gc_mark(rb_rjit_line_samples);
 
     RUBY_MARK_LEAVE("rjit");
 }
@@ -469,9 +387,17 @@ void
 rb_rjit_init(const struct rjit_options *opts)
 {
     VM_ASSERT(rb_rjit_enabled);
-    rb_rjit_opts = *opts;
 
-    rb_rjit_mem_block = rjit_reserve_addr_space(RJIT_CODE_SIZE);
+    // Normalize options
+    rb_rjit_opts = *opts;
+    if (rb_rjit_opts.exec_mem_size == 0)
+        rb_rjit_opts.exec_mem_size = DEFAULT_EXEC_MEM_SIZE;
+    if (rb_rjit_opts.call_threshold == 0)
+        rb_rjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
+#ifndef HAVE_LIBCAPSTONE
+    if (rb_rjit_opts.dump_disasm)
+        rb_warn("libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
+#endif
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
@@ -482,33 +408,36 @@ rb_rjit_init(const struct rjit_options *opts)
     }
     rb_mRJITC = rb_const_get(rb_mRJIT, rb_intern("C"));
     VALUE rb_cRJITCompiler = rb_const_get(rb_mRJIT, rb_intern("Compiler"));
-    rb_RJITCompiler = rb_funcall(rb_cRJITCompiler, rb_intern("new"), 2,
-                                 SIZET2NUM((size_t)rb_rjit_mem_block), UINT2NUM(RJIT_CODE_SIZE));
+    rb_RJITCompiler = rb_funcall(rb_cRJITCompiler, rb_intern("new"), 0);
     rb_cRJITIseqPtr = rb_funcall(rb_mRJITC, rb_intern("rb_iseq_t"), 0);
     rb_cRJITCfpPtr = rb_funcall(rb_mRJITC, rb_intern("rb_control_frame_t"), 0);
     rb_mRJITHooks = rb_const_get(rb_mRJIT, rb_intern("Hooks"));
+    if (rb_rjit_opts.trace_exits) {
+        rb_rjit_raw_samples = rb_ary_new();
+        rb_rjit_line_samples = rb_ary_new();
+    }
 
-    rb_rjit_call_p = true;
+    // Enable RJIT and stats from here
+    rb_rjit_call_p = !rb_rjit_opts.pause;
     rjit_stats_p = rb_rjit_opts.stats;
-
-    // Normalize options
-    if (rb_rjit_opts.call_threshold == 0)
-        rb_rjit_opts.call_threshold = DEFAULT_CALL_THRESHOLD;
-#ifndef HAVE_LIBCAPSTONE
-    if (rb_rjit_opts.dump_disasm)
-        rb_warn("libcapstone has not been linked. Ignoring --rjit-dump-disasm.");
-#endif
 }
 
 //
 // Primitive for rjit.rb
 //
 
-// Same as `RubyVM::RJIT::C.enabled?`, but this is used before rjit_init.
+// Same as `rb_rjit_opts.stats`, but this is used before rb_rjit_opts is set.
 static VALUE
 rjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self)
 {
     return RBOOL(rb_rjit_stats_enabled);
+}
+
+// Same as `rb_rjit_opts.trace_exits`, but this is used before rb_rjit_opts is set.
+static VALUE
+rjit_trace_exits_enabled_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(rb_rjit_trace_exits_enabled);
 }
 
 // Disable anything that could impact stats. It ends up disabling JIT calls as well.

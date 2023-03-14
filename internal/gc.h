@@ -243,6 +243,9 @@ void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_is_ptr_to_obj(void *ptr);
+VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
+VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
