@@ -2246,7 +2246,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2328,7 +2328,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2343,7 +2343,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # MJIT calls extra Ruby methods
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -3633,4 +3633,26 @@ assert_normal_exit %q{
   end
 
   entry
+}
+
+# Test that splat and rest combined
+# properly dupe the array
+assert_equal "[]", %q{
+  def foo(*rest)
+    rest << 1
+  end
+
+  def test(splat)
+    foo(*splat)
+  end
+
+  EMPTY = []
+  custom = Object.new
+  def custom.to_a
+    EMPTY
+  end
+
+  test(custom)
+  test(custom)
+  EMPTY
 }

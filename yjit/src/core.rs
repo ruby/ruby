@@ -141,6 +141,7 @@ impl Type {
             Type::HeapSymbol => true,
             Type::TString => true,
             Type::CString => true,
+            Type::BlockParamProxy => true,
             _ => false,
         }
     }
@@ -150,6 +151,15 @@ impl Type {
         match self {
             Type::TArray => true,
             Type::CArray => true,
+            _ => false,
+        }
+    }
+
+    /// Check if it's a T_STRING object (both TString and CString are T_STRING)
+    pub fn is_string(&self) -> bool {
+        match self {
+            Type::TString => true,
+            Type::CString => true,
             _ => false,
         }
     }
@@ -258,10 +268,10 @@ impl Type {
 
     /// Upgrade this type into a more specific compatible type
     /// The new type must be compatible and at least as specific as the previously known type.
-    fn upgrade(&mut self, src: Self) {
-        // Here we're checking that src is more specific than self
-        assert!(src.diff(*self) != TypeDiff::Incompatible);
-        *self = src;
+    fn upgrade(&mut self, new_type: Self) {
+        // We can only upgrade to a type that is more specific
+        assert!(new_type.diff(*self) != TypeDiff::Incompatible);
+        *self = new_type;
     }
 }
 

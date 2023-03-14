@@ -13,7 +13,7 @@
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include <stdio.h>
 
@@ -132,10 +132,10 @@ Init_version(void)
     rb_provide("ruby2_keywords.rb");
 }
 
-#if USE_MJIT
-#define MJIT_OPTS_ON opt->mjit.on
+#if USE_RJIT
+#define RJIT_OPTS_ON opt->rjit.on
 #else
-#define MJIT_OPTS_ON 0
+#define RJIT_OPTS_ON 0
 #endif
 
 #if USE_YJIT
@@ -149,7 +149,7 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     if (snprintf(ruby_dynamic_description_buffer, sizeof(ruby_dynamic_description_buffer), "%s%s%s%s%s%s%s",
             ruby_description_pre,
-            MJIT_OPTS_ON ? " +MJIT" : "",
+            RJIT_OPTS_ON ? " +RJIT" : "",
             YJIT_OPTS_ON ? " +YJIT" : "",
 #if USE_MMTK
             rb_mmtk_enabled_p() ? " +MMTk(" : "",

@@ -148,10 +148,8 @@ static inline VALUE RCLASS_SUPER(VALUE klass);
 static inline VALUE RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_class_inherited(VALUE, VALUE);
 VALUE rb_keyword_error_new(const char *, VALUE);
-MJIT_SYMBOL_EXPORT_END
 
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)

@@ -2103,9 +2103,12 @@ rb_float_denominator(VALUE self)
 
 /*
  * call-seq:
- *    nil.to_r  ->  (0/1)
+ *   to_r  ->  (0/1)
  *
- * Returns zero as a rational.
+ * Returns zero as a Rational:
+ *
+ *   nil.to_r # => (0/1)
+ *
  */
 static VALUE
 nilclass_to_r(VALUE self)
@@ -2115,10 +2118,14 @@ nilclass_to_r(VALUE self)
 
 /*
  * call-seq:
- *    nil.rationalize([eps])  ->  (0/1)
+ *   rationalize(eps = nil)  ->  (0/1)
  *
- * Returns zero as a rational.  The optional argument +eps+ is always
- * ignored.
+ * Returns zero as a Rational:
+ *
+ *   nil.rationalize # => (0/1)
+ *
+ * Argument +eps+ is ignored.
+ *
  */
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)

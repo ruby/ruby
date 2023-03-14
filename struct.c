@@ -1605,7 +1605,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *     distance.unit #=> "km"
  *
  *  Constructed object also has a reasonable definitions of #==
- *  operator, #to_h hash conversion, and #deconstruct/#deconstruct_keys
+ *  operator, #to_h hash conversion, and #deconstruct / #deconstruct_keys
  *  to be used in pattern matching.
  *
  *  ::define method accepts an optional block and evaluates it in

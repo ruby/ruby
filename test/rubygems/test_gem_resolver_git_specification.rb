@@ -84,7 +84,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
       system @git, "commit", "--quiet", "-m", "Add extension files"
     end
 
-    source = Gem::Source::Git.new name, repository, "master", true
+    source = Gem::Source::Git.new name, repository, nil, true
 
     spec = source.specs.first
 

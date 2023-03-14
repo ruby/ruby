@@ -130,11 +130,7 @@ class TestOpen3 < Test::Unit::TestCase
           i.close
           STDERR.reopen(old)
           assert_equal("zo", o.read)
-          if defined?(JITSupport)
-            assert_equal("ze", JITSupport.remove_mjit_logs(r.read))
-          else
-            assert_equal("ze", r.read)
-          end
+          assert_equal("ze", r.read)
         }
       }
     }

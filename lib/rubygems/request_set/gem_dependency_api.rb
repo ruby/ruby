@@ -435,7 +435,6 @@ Gem dependencies file #{@path} requires #{name} more than once.
     reference ||= ref
     reference ||= branch
     reference ||= tag
-    reference ||= "master"
 
     if ref && branch
       warn <<-WARNING

@@ -34,7 +34,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -70,7 +70,7 @@ static VALUE rb_cFiberPool;
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
 
-#define jit_cont_enabled (mjit_enabled || rb_yjit_enabled_p())
+#define jit_cont_enabled (rb_rjit_enabled || rb_yjit_enabled_p())
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -1255,6 +1255,8 @@ jit_cont_new(rb_execution_context_t *ec)
 static void
 jit_cont_free(struct rb_jit_cont *cont)
 {
+    if (!cont) return;
+
     rb_native_mutex_lock(&jit_cont_lock);
     if (cont == first_jit_cont) {
         first_jit_cont = cont->next;
@@ -2547,7 +2549,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // When rb_threadptr_root_fiber_setup is called for the first time, mjit_enabled and
+    // When rb_threadptr_root_fiber_setup is called for the first time, rb_rjit_enabled and
     // rb_yjit_enabled_p() are still false. So this does nothing and rb_jit_cont_init() that is
     // called later will take care of it. However, you still have to call cont_init_jit_cont()
     // here for other Ractors, which are not initialized by rb_jit_cont_init().

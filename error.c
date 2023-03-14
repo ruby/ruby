@@ -188,7 +188,7 @@ rb_warning_category_update(unsigned int mask, unsigned int bits)
     warning_disabled_categories |= mask & ~bits;
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_warning_category_enabled_p(rb_warning_category_t category)
 {
     return !(warning_disabled_categories & (1U << category));
@@ -874,7 +874,7 @@ rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
     report_bug_valist(RSTRING_PTR(file), line, fmt, NULL, args);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_assert_failure(const char *file, int line, const char *name, const char *expr)
 {
     FILE *out = stderr;
@@ -1589,7 +1589,7 @@ exc_set_backtrace(VALUE exc, VALUE bt)
     return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_exc_set_backtrace(VALUE exc, VALUE bt)
 {
     return exc_set_backtrace(exc, bt);

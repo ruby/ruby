@@ -12,7 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "internal/gc.h"
-#include "mjit.h"
+#include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -275,7 +275,7 @@ static int ubf_threads_empty(void);
 
 /*
  * sigwait_th is the thread which owns sigwait_fd and sleeps on it
- * (using ppoll).  MJIT worker can be sigwait_th==0, so we initialize
+ * (using ppoll).  RJIT worker can be sigwait_th==0, so we initialize
  * it to THREAD_INVALID at startup and fork time.  It is the ONLY thread
  * allowed to read from sigwait_fd, otherwise starvation can occur.
  */
@@ -348,7 +348,6 @@ do_gvl_timer(struct rb_thread_sched *sched, rb_thread_t *th)
     sched->timer_err = native_cond_timedwait(&th->nt->cond.readyq, &sched->lock, &abs);
 
     ubf_wakeup_all_threads();
-    ruby_sigchld_handler(vm);
 
     if (UNLIKELY(rb_signal_buff_size())) {
         if (th == vm->ractor.main_thread) {
@@ -2359,7 +2358,6 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         THREAD_BLOCKING_END(th);
 
         rb_sigwait_fd_put(th, sigwait_fd);
-        rb_sigwait_fd_migrate(th->vm);
     }
     else if (th == th->vm->ractor.main_thread) { /* always able to handle signals */
         native_ppoll_sleep(th, rel);

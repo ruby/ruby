@@ -197,8 +197,10 @@ jobs:
 #         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
 #         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
-          - { name: MJIT_FORCE_ENABLE,              env: { cppflags: '-DMJIT_FORCE_ENABLE' } }
-          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
+          - { name: enable-yjit,                    env: { append_configure: '--enable-yjit --disable-rjit' }, rust: true }
+          - { name: enable-rjit,                    env: { append_configure: '--enable-rjit --disable-yjit' } }
+          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' }, rust: true }
+          - { name: RJIT_FORCE_ENABLE,              env: { cppflags: '-DRJIT_FORCE_ENABLE' } }
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
@@ -222,6 +224,9 @@ jobs:
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
+      - name: Install Rust
+        if: ${{ matrix.entry.rust }}
+        run: sudo apt-get update && sudo apt install -y rustc
       - name: autogen
         run: |
           if [ ! -f ./autogen.sh ]; then

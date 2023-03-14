@@ -12,7 +12,7 @@ class TestGemSourceVendor < Gem::TestCase
   def test_spaceship
     vendor    = Gem::Source::Vendor.new "vendor/foo"
     remote    = Gem::Source.new @gem_repo
-    git       = Gem::Source::Git.new "a", "a", "master"
+    git       = Gem::Source::Git.new "a", "a", nil
     installed = Gem::Source::Installed.new
 
     assert_equal(0, vendor.<=>(vendor),    "vendor <=> vendor")
