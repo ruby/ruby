@@ -198,7 +198,8 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     return out;
 }
 
-/// Macro useful for raw string literals
+/// Assert that CodeBlock has the code specified with hex. In addition, if tested with
+/// `cargo test --all-features`, it also checks it generates the specified disasm.
 #[cfg(test)]
 macro_rules! assert_disasm {
     ($cb:expr, $hex:expr, $disasm:expr) => {
