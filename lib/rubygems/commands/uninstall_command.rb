@@ -125,6 +125,9 @@ that is a dependency of an existing gem.  You can use the
   def execute
     check_version
 
+    # Consider only gem specifications installed at `--install-dir`
+    Gem::Specification.dirs = options[:install_dir] if options[:install_dir]
+
     if options[:all] && !options[:args].empty?
       uninstall_specific
     elsif options[:all]

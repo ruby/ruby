@@ -375,6 +375,26 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_includes e.message, "a is not installed in GEM_HOME"
   end
 
+  def test_execute_outside_gem_home_when_install_dir_given
+    gemhome2 = "#{@gemhome}2"
+
+    a_4, = util_gem "a", 4
+    install_gem a_4 , :install_dir => gemhome2
+
+    assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
+
+    Gem::Specification.dirs = [@gemhome]
+
+    @cmd.options[:install_dir] = gemhome2
+    @cmd.options[:args] = ["a:4"]
+
+    @cmd.execute
+
+    Gem::Specification.dirs = [gemhome2]
+
+    refute_includes Gem::Specification.all_names.sort, "a-4"
+  end
+
   def test_handle_options
     @cmd.handle_options %w[]
 
