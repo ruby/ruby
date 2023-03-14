@@ -145,6 +145,7 @@ static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
+void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -257,6 +258,7 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
 }
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
+void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void
 ubf_sigwait(void *ignore)
@@ -1367,6 +1369,18 @@ rb_thread_sleep_deadly(void)
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
+void
+rb_thread_sleep_interruptible(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    enum rb_thread_status prev_status = th->status;
+
+    th->status = THREAD_STOPPED;
+    native_sleep(th, 0);
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    th->status = prev_status;
+}
+
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
@@ -2304,7 +2318,9 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
             if (sigwait_fd >= 0) {
                 (void)consume_communication_pipe(sigwait_fd);
+                ruby_sigchld_handler(th->vm);
                 rb_sigwait_fd_put(th, sigwait_fd);
+                rb_sigwait_fd_migrate(th->vm);
             }
             th->status = THREAD_RUNNABLE;
             while ((sig = rb_get_next_signal()) != 0) {
@@ -4054,6 +4070,7 @@ select_set_free(VALUE p)
 
     if (set->sigwait_fd >= 0) {
         rb_sigwait_fd_put(set->th, set->sigwait_fd);
+        rb_sigwait_fd_migrate(set->th->vm);
     }
 
     rb_fd_term(&set->orig_rset);
@@ -4269,6 +4286,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
                 int fd1 = sigwait_signals_fd(result, fds[1].revents, fds[1].fd);
                 (void)check_signals_nogvl(wfd.th, fd1);
                 rb_sigwait_fd_put(wfd.th, fds[1].fd);
+                rb_sigwait_fd_migrate(wfd.th->vm);
             }
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
         } while (wait_retryable(&result, lerrno, to, end));
@@ -4488,6 +4506,7 @@ check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
     rb_vm_t *vm = GET_VM(); /* th may be 0 */
     int ret = sigwait_fd >= 0 ? consume_communication_pipe(sigwait_fd) : FALSE;
     ubf_wakeup_all_threads();
+    ruby_sigchld_handler(vm);
     if (rb_signal_buff_size()) {
         if (th == vm->ractor.main_thread) {
             /* no need to lock + wakeup if already in main thread */
@@ -4588,6 +4607,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_ractor_atfork(vm, th);
 
     /* may be held by RJIT threads in parent */
+    rb_native_mutex_initialize(&vm->waitpid_lock);
     rb_native_mutex_initialize(&vm->workqueue_lock);
 
     /* may be held by any thread in parent */
@@ -5254,6 +5274,7 @@ Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
+    rb_native_mutex_initialize(&th->vm->waitpid_lock);
     rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->interrupt_lock);
 }

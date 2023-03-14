@@ -145,6 +145,9 @@ extern int ruby_assert_critical_section_entered;
 #  define SIGCHLD_LOSSY (0)
 #endif
 
+/* define to 0 to test old code path */
+#define WAITPID_USE_SIGCHLD (RUBY_SIGCHLD || SIGCHLD_LOSSY)
+
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK
 void *rb_allocate_sigaltstack(void);
@@ -649,6 +652,9 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
+    rb_nativethread_lock_t waitpid_lock;
+    struct ccan_list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
+    struct ccan_list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
     struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
@@ -1756,7 +1762,9 @@ static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->waiting_fds);
+    ccan_list_head_init(&vm->waiting_pids);
     ccan_list_head_init(&vm->workqueue);
+    ccan_list_head_init(&vm->waiting_grps);
     ccan_list_head_init(&vm->ractor.set);
 }
 

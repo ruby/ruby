@@ -753,6 +753,7 @@ timer_thread_func(void *dummy)
     while (WaitForSingleObject(timer_thread.lock,
                                TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
         vm->clock++;
+        ruby_sigchld_handler(vm); /* probably no-op */
         rb_threadptr_check_signal(vm->ractor.main_thread);
     }
     RUBY_DEBUG_LOG("end");
