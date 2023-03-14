@@ -4665,7 +4665,7 @@ rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
      * Prevent a race with RJIT where the compiler process where
      * can hold an FD of ours in between vfork + execve
      */
-    if (!eargp->waitpid_state && rjit_enabled) {
+    if (!eargp->waitpid_state && rb_rjit_enabled) {
         eargp->waitpid_state = WAITPID_LOCK_ONLY;
     }
 
