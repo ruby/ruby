@@ -171,6 +171,9 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     // Disassemble the instructions
     let code_size = end_addr - start_addr;
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
+    // Stabilize output for cargo test
+    #[cfg(test)]
+    let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
     // Colorize outlined code in blue
@@ -193,6 +196,74 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     }
 
     return out;
+}
+
+/// Assert that CodeBlock has the code specified with hex. In addition, if tested with
+/// `cargo test --all-features`, it also checks it generates the specified disasm.
+#[cfg(test)]
+macro_rules! assert_disasm {
+    ($cb:expr, $hex:expr, $disasm:expr) => {
+        assert_eq!(format!("{:x}", $cb), $hex);
+        #[cfg(feature = "disasm")]
+        {
+            let disasm = disasm_addr_range(
+                &$cb,
+                $cb.get_ptr(0).raw_ptr() as usize,
+                $cb.get_write_ptr().raw_ptr() as usize,
+            );
+            assert_eq!(unindent(&disasm, false), unindent(&$disasm, true));
+        }
+    };
+}
+#[cfg(test)]
+pub(crate) use assert_disasm;
+
+/// Remove the minimum indent from every line, skipping the first line if `skip_first`.
+#[cfg(all(feature = "disasm", test))]
+pub fn unindent(string: &str, trim_lines: bool) -> String {
+    fn split_lines(string: &str) -> Vec<String> {
+        let mut result: Vec<String> = vec![];
+        let mut buf: Vec<u8> = vec![];
+        for byte in string.as_bytes().iter() {
+            buf.push(*byte);
+            if *byte == b'\n' {
+                result.push(String::from_utf8(buf).unwrap());
+                buf = vec![];
+            }
+        }
+        if !buf.is_empty() {
+            result.push(String::from_utf8(buf).unwrap());
+        }
+        result
+    }
+
+    // Break up a string into multiple lines
+    let mut lines = split_lines(string);
+    if trim_lines { // raw string literals come with extra lines
+        lines.remove(0);
+        lines.remove(lines.len() - 1);
+    }
+
+    // Count the minimum number of spaces
+    let spaces = lines.iter().filter_map(|line| {
+        for (i, ch) in line.as_bytes().iter().enumerate() {
+            if *ch != b' ' {
+                return Some(i);
+            }
+        }
+        None
+    }).min().unwrap_or(0);
+
+    // Join lines, removing spaces
+    let mut unindented: Vec<u8> = vec![];
+    for line in lines.iter() {
+        if line.len() > spaces {
+            unindented.extend_from_slice(&line.as_bytes()[spaces..]);
+        } else {
+            unindented.extend_from_slice(&line.as_bytes());
+        }
+    }
+    String::from_utf8(unindented).unwrap()
 }
 
 /// Primitive called in yjit.rb
