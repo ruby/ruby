@@ -286,6 +286,7 @@ fn main() {
         .allowlist_var("VM_ENV_DATA_INDEX_FLAGS")
         .allowlist_var("VM_ENV_DATA_SIZE")
         .allowlist_function("rb_iseq_path")
+        .allowlist_type("rb_builtin_attr")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -296,8 +297,8 @@ fn main() {
         .allowlist_function("rb_yjit_mark_executable")
         .allowlist_function("rb_yjit_mark_unused")
         .allowlist_function("rb_yjit_get_page_size")
-        .allowlist_function("rb_leaf_invokebuiltin_iseq_p")
-        .allowlist_function("rb_leaf_builtin_function")
+        .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_cfp_get_iseq")
         .allowlist_function("rb_yjit_multi_ractor_p")

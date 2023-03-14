@@ -8236,6 +8236,9 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
         }
+        else if (strcmp(RSTRING_PTR(string), "no_gc") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_NO_GC;
+        }
         else {
             goto unknown_arg;
         }
