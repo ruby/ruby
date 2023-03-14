@@ -3714,6 +3714,9 @@ fn gen_throw(
     jit_save_pc(jit, asm);
     gen_save_sp(asm, ctx);
 
+    // rb_vm_throw verifies it's a valid throw, sets ec->tag->state, and returns throw
+    // data, which is throwobj or a vm_throw_data wrapping it. When ec->tag->state is
+    // set, JIT code callers will handle the throw with vm_exec_handle_exception.
     extern "C" {
         fn rb_vm_throw(ec: EcPtr, reg_cfp: CfpPtr, throw_state: u32, throwobj: VALUE) -> VALUE;
     }
