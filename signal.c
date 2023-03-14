@@ -508,6 +508,9 @@ static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;
 } signal_buff;
+#if RUBY_SIGCHLD
+volatile unsigned int ruby_nocldwait;
+#endif
 
 #define sighandler_t ruby_sighandler_t
 
@@ -605,6 +608,27 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     switch (signum) {
+#if RUBY_SIGCHLD
+      case RUBY_SIGCHLD:
+        if (handler == SIG_IGN) {
+            ruby_nocldwait = 1;
+# ifdef USE_SIGALTSTACK
+            if (sigact.sa_flags & SA_SIGINFO) {
+                sigact.sa_sigaction = (ruby_sigaction_t*)sighandler;
+            }
+            else {
+                sigact.sa_handler = sighandler;
+            }
+# else
+            sigact.sa_handler = handler;
+            sigact.sa_flags = 0;
+# endif
+        }
+        else {
+            ruby_nocldwait = 0;
+        }
+        break;
+#endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
       case SIGSEGV:
 #ifdef SIGBUS
@@ -683,14 +707,35 @@ signal_enque(int sig)
     ATOMIC_INC(signal_buff.size);
 }
 
+#if RUBY_SIGCHLD
+static rb_atomic_t sigchld_hit;
+/* destructive getter than simple predicate */
+# define GET_SIGCHLD_HIT() ATOMIC_EXCHANGE(sigchld_hit, 0)
+#else
+# define GET_SIGCHLD_HIT() 0
+#endif
+
 static void
 sighandler(int sig)
 {
     int old_errnum = errno;
 
-    signal_enque(sig);
-    rb_thread_wakeup_timer_thread(sig);
+    /* the VM always needs to handle SIGCHLD for rb_waitpid */
+    if (sig == RUBY_SIGCHLD) {
+#if RUBY_SIGCHLD
+        rb_vm_t *vm = GET_VM();
+        ATOMIC_EXCHANGE(sigchld_hit, 1);
 
+        /* avoid spurious wakeup in main thread if and only if nobody uses trap(:CHLD) */
+        if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
+            signal_enque(sig);
+        }
+#endif
+    }
+    else {
+        signal_enque(sig);
+    }
+    rb_thread_wakeup_timer_thread(sig);
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
@@ -1040,6 +1085,16 @@ rb_vm_trap_exit(rb_vm_t *vm)
     }
 }
 
+void ruby_waitpid_all(rb_vm_t *); /* process.c */
+
+void
+ruby_sigchld_handler(rb_vm_t *vm)
+{
+    if (SIGCHLD_LOSSY || GET_SIGCHLD_HIT()) {
+        ruby_waitpid_all(vm);
+    }
+}
+
 /* returns true if a trap handler was run, false otherwise */
 int
 rb_signal_exec(rb_thread_t *th, int sig)
@@ -1107,6 +1162,9 @@ default_handler(int sig)
 #ifdef SIGUSR2
       case SIGUSR2:
 #endif
+#if RUBY_SIGCHLD
+      case RUBY_SIGCHLD:
+#endif
         func = sighandler;
         break;
 #ifdef SIGBUS
@@ -1172,6 +1230,9 @@ trap_handler(VALUE *cmd, int sig)
                 break;
               case 14:
                 if (memcmp(cptr, "SYSTEM_DEFAULT", 14) == 0) {
+                    if (sig == RUBY_SIGCHLD) {
+                        goto sig_dfl;
+                    }
                     func = SIG_DFL;
                     *cmd = 0;
                 }
@@ -1562,5 +1623,33 @@ fake_grantfd(int masterfd)
 int
 rb_grantpt(int masterfd)
 {
-    return grantpt(masterfd);
+    if (RUBY_SIGCHLD) {
+        rb_vm_t *vm = GET_VM();
+        int ret, e;
+
+        /*
+         * Prevent waitpid calls from Ruby by taking waitpid_lock.
+         * Pedantically, grantpt(3) is undefined if a non-default
+         * SIGCHLD handler is defined, but preventing conflicting
+         * waitpid calls ought to be sufficient.
+         *
+         * We could install the default sighandler temporarily, but that
+         * could cause SIGCHLD to be missed by other threads.  Blocking
+         * SIGCHLD won't work here, either, unless we stop and restart
+         * timer-thread (as only timer-thread sees SIGCHLD), but that
+         * seems like overkill.
+         */
+        rb_nativethread_lock_lock(&vm->waitpid_lock);
+        {
+            ret = grantpt(masterfd); /* may spawn `pt_chown' and wait on it */
+            if (ret < 0) e = errno;
+        }
+        rb_nativethread_lock_unlock(&vm->waitpid_lock);
+
+        if (ret < 0) errno = e;
+        return ret;
+    }
+    else {
+        return grantpt(masterfd);
+    }
 }

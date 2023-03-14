@@ -348,6 +348,7 @@ do_gvl_timer(struct rb_thread_sched *sched, rb_thread_t *th)
     sched->timer_err = native_cond_timedwait(&th->nt->cond.readyq, &sched->lock, &abs);
 
     ubf_wakeup_all_threads();
+    ruby_sigchld_handler(vm);
 
     if (UNLIKELY(rb_signal_buff_size())) {
         if (th == vm->ractor.main_thread) {
@@ -2358,6 +2359,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         THREAD_BLOCKING_END(th);
 
         rb_sigwait_fd_put(th, sigwait_fd);
+        rb_sigwait_fd_migrate(th->vm);
     }
     else if (th == th->vm->ractor.main_thread) { /* always able to handle signals */
         native_ppoll_sleep(th, rel);
