@@ -4,6 +4,12 @@ require_relative "helper"
 require "open3"
 
 class TestProjectSanity < Gem::TestCase
+  def setup
+  end
+
+  def teardown
+  end
+
   def test_manifest_is_up_to_date
     pend unless File.exist?("#{root}/Rakefile")
 
