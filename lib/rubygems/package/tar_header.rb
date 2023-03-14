@@ -208,7 +208,7 @@ class Gem::Package::TarHeader
   private
 
   def calculate_checksum(header)
-    header.unpack("C*").inject {|a, b| a + b }
+    header.bytes.sum
   end
 
   def header(checksum = @checksum)
