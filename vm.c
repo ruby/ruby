@@ -3884,9 +3884,6 @@ Init_VM(void)
 #if OPT_INLINE_METHOD_CACHE
     rb_ary_push(opts, rb_str_new2("inline method cache"));
 #endif
-#if OPT_BLOCKINLINING
-    rb_ary_push(opts, rb_str_new2("block inlining"));
-#endif
 
     /* ::RubyVM::INSTRUCTION_NAMES
      * A list of bytecode instruction names in MRI.
