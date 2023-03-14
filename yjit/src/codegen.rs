@@ -61,7 +61,7 @@ pub struct JITState {
 
     // Execution context when compilation started
     // This allows us to peek at run-time values
-    ec: Option<EcPtr>,
+    ec: EcPtr,
 
     // Whether we need to record the code address at
     // the end of this bytecode instruction for global invalidation
@@ -75,7 +75,7 @@ pub struct JITState {
 }
 
 impl JITState {
-    pub fn new(blockref: &BlockRef) -> Self {
+    pub fn new(blockref: &BlockRef, ec: EcPtr) -> Self {
         JITState {
             block: blockref.clone(),
             iseq: ptr::null(), // TODO: initialize this from the blockid
@@ -83,7 +83,7 @@ impl JITState {
             opcode: 0,
             pc: ptr::null_mut::<VALUE>(),
             side_exit_for_pc: None,
-            ec: None,
+            ec: ec,
             record_boundary_patch_point: false,
             outgoing: Vec::new(),
             cme_dependencies: Vec::new(),
@@ -125,7 +125,7 @@ impl JITState {
     // Check if we are compiling the instruction at the stub PC
     // Meaning we are compiling the instruction that is next to execute
     pub fn at_current_insn(&self) -> bool {
-        let ec_pc: *mut VALUE = unsafe { get_cfp_pc(get_ec_cfp(self.ec.unwrap())) };
+        let ec_pc: *mut VALUE = unsafe { get_cfp_pc(self.get_cfp()) };
         ec_pc == self.pc
     }
 
@@ -140,14 +140,14 @@ impl JITState {
         // hitting a stub, cfp->sp needs to be up to date in case
         // codegen functions trigger GC. See :stub-sp-flush:.
         return unsafe {
-            let sp: *mut VALUE = get_cfp_sp(get_ec_cfp(self.ec.unwrap()));
+            let sp: *mut VALUE = get_cfp_sp(self.get_cfp());
 
             *(sp.offset(-1 - n))
         };
     }
 
     fn peek_at_self(&self) -> VALUE {
-        unsafe { get_cfp_self(get_ec_cfp(self.ec.unwrap())) }
+        unsafe { get_cfp_self(self.get_cfp()) }
     }
 
     fn peek_at_local(&self, n: i32) -> VALUE {
@@ -159,7 +159,7 @@ impl JITState {
         assert!(n < local_table_size.try_into().unwrap());
 
         unsafe {
-            let ep = get_cfp_ep(get_ec_cfp(self.ec.unwrap()));
+            let ep = get_cfp_ep(self.get_cfp());
             let n_isize: isize = n.try_into().unwrap();
             let offs: isize = -(VM_ENV_DATA_SIZE as isize) - local_table_size + n_isize + 1;
             *ep.offset(offs)
@@ -170,9 +170,13 @@ impl JITState {
         assert!(self.at_current_insn());
 
         unsafe {
-            let ep = get_cfp_ep_level(get_ec_cfp(self.ec.unwrap()), level);
+            let ep = get_cfp_ep_level(self.get_cfp(), level);
             *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize)
         }
+    }
+
+    fn get_cfp(&self) -> *mut rb_control_frame_struct {
+        unsafe { get_ec_cfp(self.ec) }
     }
 
     // Push an outgoing branch ref
@@ -731,9 +735,8 @@ pub fn gen_single_block(
     let blockref = Block::new(blockid, &ctx, cb.get_write_ptr());
 
     // Initialize a JIT state object
-    let mut jit = JITState::new(&blockref);
+    let mut jit = JITState::new(&blockref, ec);
     jit.iseq = blockid.iseq;
-    jit.ec = Some(ec);
 
     // Create a backend assembler instance
     let mut asm = Assembler::new();
@@ -4574,7 +4577,7 @@ fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenF
 fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
     // Defer to C implementation in yjit.c
     unsafe {
-        rb_c_method_tracing_currently_enabled(jit.ec.unwrap() as *mut rb_execution_context_struct)
+        rb_c_method_tracing_currently_enabled(jit.ec as *mut rb_execution_context_struct)
     }
 }
 
@@ -6682,7 +6685,7 @@ fn gen_invokeblock(
     let flags = unsafe { vm_ci_flag(ci) };
 
     // Get block_handler
-    let cfp = unsafe { get_ec_cfp(jit.ec.unwrap()) };
+    let cfp = jit.get_cfp();
     let lep = unsafe { rb_vm_ep_local_ep(get_cfp_ep(cfp)) };
     let comptime_handler = unsafe { *lep.offset(VM_ENV_DATA_INDEX_SPECVAL.try_into().unwrap()) };
 
@@ -6825,7 +6828,7 @@ fn gen_invokesuper(
         return EndBlock;
     }
 
-    let me = unsafe { rb_vm_frame_method_entry(get_ec_cfp(jit.ec.unwrap())) };
+    let me = unsafe { rb_vm_frame_method_entry(jit.get_cfp()) };
     if me.is_null() {
         return CantCompile;
     }
@@ -8076,7 +8079,7 @@ mod tests {
         let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
 
         return (
-            JITState::new(&block),
+            JITState::new(&block, ptr::null()),
             Context::default(),
             Assembler::new(),
             cb,
