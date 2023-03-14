@@ -52,7 +52,7 @@ int ruby_assert_critical_section_entered = 0;
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
-VALUE vm_exec(rb_execution_context_t *, bool);
+VALUE vm_exec(rb_execution_context_t *);
 
 extern const char *const rb_debug_counter_names[];
 
@@ -1381,7 +1381,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
                   ec->cfp->sp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size,
                   ISEQ_BODY(iseq)->stack_max);
-    return vm_exec(ec, true);
+    return vm_exec(ec);
 }
 
 static VALUE
@@ -1402,7 +1402,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                   ISEQ_BODY(iseq)->stack_max);
 
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec, true);
+    ret = vm_exec(ec);
 
     return ret;
 }
@@ -2268,9 +2268,6 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     VALUE *ep;                       // ep
     void *code;                      //
   };
-
-  If jit_exec is already called before calling vm_exec, `jit_enable_p` should
-  be FALSE to avoid calling `jit_exec` twice.
  */
 
 static inline VALUE
@@ -2286,7 +2283,6 @@ struct rb_vm_exec_context {
     VALUE initial;
     VALUE result;
     enum ruby_tag_type state;
-    bool jit_enable_p;
 };
 
 static void
@@ -2315,7 +2311,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (!ctx->jit_enable_p || UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
+    if (UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
         ctx->result = vm_exec_core(ctx->ec, ctx->initial);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
@@ -2330,12 +2326,11 @@ vm_exec_bottom_rescue(void *context)
 }
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
+vm_exec(rb_execution_context_t *ec)
 {
     struct rb_vm_exec_context ctx = {
         .ec = ec,
         .initial = 0, .result = Qundef,
-        .jit_enable_p = jit_enable_p,
     };
     struct rb_wasm_try_catch try_catch;
 
@@ -2357,7 +2352,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 #else
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
+vm_exec(rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
@@ -2367,7 +2362,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (!jit_enable_p || UNDEF_P(result = jit_exec(ec))) {
+        if (UNDEF_P(result = jit_exec(ec))) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */
@@ -2616,7 +2611,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    val = vm_exec(ec, true);
+    val = vm_exec(ec);
     return val;
 }
 
@@ -2627,7 +2622,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     VALUE val;
 
     vm_set_main_stack(ec, iseq);
-    val = vm_exec(ec, true);
+    val = vm_exec(ec);
     return val;
 }
 
