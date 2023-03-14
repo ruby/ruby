@@ -6960,11 +6960,9 @@ fn gen_leave(
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
-    let ocb_asm = Assembler::new();
 
     // Check for interrupts
     gen_check_ints(asm, counted_exit!(ocb, side_exit, leave_se_interrupt));
-    ocb_asm.compile(ocb.unwrap());
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
