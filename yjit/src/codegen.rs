@@ -83,7 +83,7 @@ impl JITState {
             opcode: 0,
             pc: ptr::null_mut::<VALUE>(),
             side_exit_for_pc: None,
-            ec: ec,
+            ec,
             record_boundary_patch_point: false,
             outgoing: Vec::new(),
             cme_dependencies: Vec::new(),
@@ -8079,7 +8079,7 @@ mod tests {
         let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
 
         return (
-            JITState::new(&block, ptr::null()),
+            JITState::new(&block, ptr::null()), // No execution context in tests. No peeking!
             Context::default(),
             Assembler::new(),
             cb,
