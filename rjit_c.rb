@@ -48,8 +48,8 @@ module RubyVM::RJIT # :nodoc: all
 
     # @param from [Integer] - From address
     # @param to [Integer]   - To address
-    def dump_disasm(from, to)
-      Primitive.dump_disasm(from, to)
+    def dump_disasm(from, to, test: false)
+      Primitive.dump_disasm(from, to, test)
     end
 
     # Convert a Ruby object to a VALUE in Integer

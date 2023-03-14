@@ -420,7 +420,7 @@ static size_t rjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
 
 // Return an array of [address, mnemonic, op_str]
 static VALUE
-dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
+dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to, VALUE test)
 {
     VALUE result = rb_ary_new();
 #ifdef HAVE_LIBCAPSTONE
@@ -434,7 +434,8 @@ dump_disasm(rb_execution_context_t *ec, VALUE self, VALUE from, VALUE to)
 
     // Call cs_disasm and convert results to a Ruby array
     cs_insn *insns;
-    size_t count = cs_disasm(handle, (const uint8_t *)from_addr, to_addr - from_addr, from_addr, 0, &insns);
+    size_t base_addr = RTEST(test) ? 0 : from_addr; // On tests, start from 0 for output stability.
+    size_t count = cs_disasm(handle, (const uint8_t *)from_addr, to_addr - from_addr, base_addr, 0, &insns);
     for (size_t i = 0; i < count; i++) {
         VALUE vals = rb_ary_new_from_args(3, LONG2NUM(insns[i].address), rb_str_new2(insns[i].mnemonic), rb_str_new2(insns[i].op_str));
         rb_ary_push(result, vals);
