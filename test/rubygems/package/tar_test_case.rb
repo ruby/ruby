@@ -67,7 +67,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def calc_checksum(header)
-    sum = header.unpack("C*").inject {|s,a| s + a }
+    sum = header.bytes.sum
     SP(Z(to_oct(sum, 6)))
   end
 
