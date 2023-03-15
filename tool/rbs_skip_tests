@@ -13,7 +13,7 @@
 #
 #   $(test-case-name) ` ` $(optional comment)    # Skipping single test case
 #   $(test-class-name) ` ` $(optional comment)   # Skipping a test class
-# 
+#
 
 test_replicate(EncodingTest) the method was removed in 3.3
 
