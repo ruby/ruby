@@ -1441,6 +1441,13 @@ true_and(VALUE obj, VALUE obj2)
  *    true | false      # => true
  *    true | nil        # => true
  *
+ *  Argument +object+ is evaluated.
+ *  This is different from +true+ with the short-circuit operator,
+ *  whose operand is evaluated only if necessary:
+ *
+ *    true | raise # => Raises RuntimeError.
+ *    true || raise # => true
+ *
  */
 
 static VALUE
