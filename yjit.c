@@ -1100,6 +1100,14 @@ object_shape_count(rb_execution_context_t *ec, VALUE self)
     return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
 }
 
+// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
+// The GC takes the lock before calling us, and this asserts that it indeed happens.
+void
+rb_yjit_assert_holding_vm_lock(void)
+{
+    ASSERT_vm_locking();
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);

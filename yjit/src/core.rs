@@ -863,9 +863,15 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // Nothing to mark.
         return;
     } else {
-        // SAFETY: It looks like the GC takes the VM lock while marking
-        // so we should be satisfying aliasing rules here.
-        unsafe { &*(payload as *const IseqPayload) }
+        // SAFETY: The GC takes the VM lock while marking, which
+        // we assert, so we should be synchronized and data race free.
+        //
+        // For aliasing, having the VM lock hopefully also implies that no one
+        // else has an overlapping &mut IseqPayload.
+        unsafe {
+            rb_yjit_assert_holding_vm_lock();
+            &*(payload as *const IseqPayload)
+        }
     };
 
     // For marking VALUEs written into the inline code block.
@@ -915,9 +921,15 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
         // Nothing to update.
         return;
     } else {
-        // SAFETY: It looks like the GC takes the VM lock while updating references
-        // so we should be satisfying aliasing rules here.
-        unsafe { &*(payload as *const IseqPayload) }
+        // SAFETY: The GC takes the VM lock while marking, which
+        // we assert, so we should be synchronized and data race free.
+        //
+        // For aliasing, having the VM lock hopefully also implies that no one
+        // else has an overlapping &mut IseqPayload.
+        unsafe {
+            rb_yjit_assert_holding_vm_lock();
+            &*(payload as *const IseqPayload)
+        }
     };
 
     // Evict other threads from generated code since we are about to patch them.
