@@ -72,6 +72,8 @@ typedef struct MMTk_RubyUpcalls {
     void (*call_obj_free)(MMTk_ObjectReference object);
     void (*update_global_weak_tables_early)(void);
     void (*update_global_weak_tables)(void);
+    void *(*get_original_givtbl)(MMTk_ObjectReference object);
+    void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
@@ -170,5 +172,7 @@ struct MMTk_RawVecOfObjRef mmtk_get_all_obj_free_candidates(void);
 void mmtk_free_raw_vec_of_obj_ref(struct MMTk_RawVecOfObjRef raw_vec);
 
 void mmtk_register_ppp(MMTk_ObjectReference object);
+
+void *mmtk_get_givtbl(MMTk_ObjectReference object);
 
 #endif /* MMTK_H */

@@ -8,6 +8,7 @@
 #include "internal/gc.h"
 #include "internal/mmtk.h"
 #include "internal/thread.h"
+#include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "ractor_core.h"
 #include "vm_core.h"
@@ -880,6 +881,26 @@ rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worke
     RUBY_DEBUG_LOG("[Worker: %p] Finished scanning thread for thread: %p, ec: %p", worker, thread, ec);
 }
 
+static void*
+rb_mmtk_get_original_givtbl(MMTk_ObjectReference object) {
+    VALUE obj = (VALUE)object;
+    if (FL_TEST(obj, FL_EXIVAR)) {
+        struct gen_ivtbl *ivtbl;
+        if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+            return ivtbl;
+        } else {
+            return NULL;
+        }
+    } else {
+        return NULL;
+    }
+}
+
+static void
+rb_mmtk_move_givtbl(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref) {
+    rb_mv_generic_ivar((VALUE)old_objref, (VALUE)new_objref);
+}
+
 MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -898,6 +919,8 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_call_obj_free,
     rb_mmtk_update_global_weak_tables_early,
     rb_mmtk_update_global_weak_tables,
+    rb_mmtk_get_original_givtbl,
+    rb_mmtk_move_givtbl,
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -141,7 +141,6 @@ monitor.o: $(hdrdir)/ruby/internal/memory.h
 monitor.o: $(hdrdir)/ruby/internal/method.h
 monitor.o: $(hdrdir)/ruby/internal/module.h
 monitor.o: $(hdrdir)/ruby/internal/newobj.h
-monitor.o: $(hdrdir)/ruby/internal/rgengc.h
 monitor.o: $(hdrdir)/ruby/internal/scan_args.h
 monitor.o: $(hdrdir)/ruby/internal/special_consts.h
 monitor.o: $(hdrdir)/ruby/internal/static_assert.h

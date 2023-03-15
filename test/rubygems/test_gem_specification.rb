@@ -3663,6 +3663,31 @@ end
     refute @a1.missing_extensions?
   end
 
+  def test_missing_extensions_eh_local_gemspec
+    pend "extensions don't quite work on jruby" if Gem.java_platform?
+
+    spec = new_default_spec "default", 1
+    spec.extensions << "extconf.rb"
+
+    ext_spec
+    @ext.name = spec.name
+    FileUtils.mkdir_p File.join(@ext.gem_dir, "lib")
+
+    # ext_spec used empty extconf.rb, so we need to create dummy extension for rake-compiler case.
+    # Ex. lib/gemname.so
+    FileUtils.touch File.join(@ext.gem_dir, "lib", "#{@ext.name}.#{RbConfig::CONFIG['DLEXT']}")
+
+    refute @ext.missing_extensions?
+
+    # Try to another case of extconf.rb
+    # Ex. lib/gemname/parser.so
+    FileUtils.rm File.join(@ext.gem_dir, "lib", "#{@ext.name}.#{RbConfig::CONFIG['DLEXT']}")
+    FileUtils.mkdir_p File.join(@ext.gem_dir, "lib", @ext.name)
+    FileUtils.touch File.join(@ext.gem_dir, "lib", @ext.name, "parser.#{RbConfig::CONFIG['DLEXT']}")
+
+    refute @ext.missing_extensions?
+  end
+
   def test_find_all_by_full_name
     pl = Gem::Platform.new "i386-linux"
 
@@ -3724,6 +3749,23 @@ end
     end
 
     assert Gem::Specification.find_by_name "b", ">1"
+  end
+
+  def test_find_by_full_name
+    pl = Gem::Platform.new "x86_64-linux"
+
+    a = util_spec "a", "1"
+    install_specs a
+
+    a_pl = util_spec("a", "1") {|s| s.platform = pl }
+    install_specs a_pl
+
+    assert_equal a, Gem::Specification.find_by_full_name("a-1")
+    assert_equal a_pl, Gem::Specification.find_by_full_name("a-1-x86_64-linux")
+
+    assert_nil Gem::Specification.find_by_full_name("a-2")
+    assert_nil Gem::Specification.find_by_full_name("b-1")
+    assert_nil Gem::Specification.find_by_full_name("a-1-arm64-linux")
   end
 
   def test_find_by_path

@@ -29,7 +29,7 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "yjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
@@ -43,11 +43,7 @@
 
 #include "builtin.h"
 
-#ifndef MJIT_HEADER
 #include "probes.h"
-#else
-#include "probes.dmyh"
-#endif
 #include "probes_helper.h"
 
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
@@ -56,15 +52,6 @@ int ruby_assert_critical_section_entered = 0;
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
-/* :FIXME: This #ifdef is because we build pch in case of mswin and
- * not in case of other situations.  That distinction might change in
- * a future.  We would better make it detectable in something better
- * than just _MSC_VER. */
-#ifdef _MSC_VER
-RUBY_FUNC_EXPORTED
-#else
-MJIT_FUNC_EXPORTED
-#endif
 VALUE vm_exec(rb_execution_context_t *, bool);
 
 extern const char *const rb_debug_counter_names[];
@@ -381,35 +368,9 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
-#if USE_MJIT || USE_YJIT
-# ifdef MJIT_HEADER
-NOINLINE(static COLDFUNC VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
-# else
-static inline VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
-# endif
-static VALUE
-mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
-{
-    uintptr_t mjit_state = (uintptr_t)(body->jit_func);
-    ASSUME(MJIT_FUNC_STATE_P(mjit_state));
-    switch ((enum rb_mjit_func_state)mjit_state) {
-      case MJIT_FUNC_NOT_COMPILED:
-        if (body->total_calls == mjit_opts.call_threshold) {
-            rb_mjit_add_iseq_to_process(iseq);
-            if (UNLIKELY(mjit_opts.wait && !MJIT_FUNC_STATE_P(body->jit_func))) {
-                return body->jit_func(ec, ec->cfp);
-            }
-        }
-        break;
-      case MJIT_FUNC_COMPILING:
-      case MJIT_FUNC_FAILED:
-        break;
-    }
-    return Qundef;
-}
-
+#if USE_RJIT || USE_YJIT
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
-// If it is not, add ISEQ to the compilation queue and return Qundef for MJIT.
+// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
 // YJIT compiles on the thread running the iseq.
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
@@ -418,7 +379,7 @@ jit_exec(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     bool yjit_enabled = rb_yjit_enabled_p();
-    if (yjit_enabled || mjit_call_p) {
+    if (yjit_enabled || rb_rjit_call_p) {
         body->total_calls++;
     }
     else {
@@ -441,25 +402,32 @@ jit_exec(rb_execution_context_t *ec)
             return Qundef;
         }
     }
-    else if (UNLIKELY(MJIT_FUNC_STATE_P(func = body->jit_func))) {
-        return mjit_check_iseq(ec, iseq, body);
+    else { // rb_rjit_call_p
+        if (body->total_calls == rb_rjit_call_threshold()) {
+            rb_rjit_compile(iseq);
+        }
+        if ((func = body->jit_func) == 0) {
+            return Qundef;
+        }
     }
 
     // Call the JIT code
     return func(ec, ec->cfp); // SystemV x64 calling convention: ec -> RDI, cfp -> RSI
 }
+#else
+static inline VALUE
+jit_exec(rb_execution_context_t *ec)
+{
+    return Qundef;
+}
 #endif
 
 #include "vm_insnhelper.c"
 
-#ifndef MJIT_HEADER
-
 #include "vm_exec.c"
 
 #include "vm_method.c"
-#endif /* #ifndef MJIT_HEADER */
 #include "vm_eval.c"
-#ifndef MJIT_HEADER
 
 #define PROCDEBUG 0
 
@@ -529,7 +497,7 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
                 struct ruby_dtrace_method_hook_args *args)
 {
@@ -706,7 +674,7 @@ rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_
     return 0;
 }
 
-MJIT_FUNC_EXPORTED rb_control_frame_t *
+rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
@@ -717,8 +685,6 @@ rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control
     }
     return 0;
 }
-
-#endif /* #ifndef MJIT_HEADER */
 
 static rb_control_frame_t *
 vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
@@ -742,7 +708,7 @@ vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_
     return 0;
 }
 
-MJIT_STATIC void
+void
 rb_vm_pop_cfunc_frame(void)
 {
     rb_execution_context_t *ec = GET_EC();
@@ -753,8 +719,6 @@ rb_vm_pop_cfunc_frame(void)
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
-
-#ifndef MJIT_HEADER
 
 void
 rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp)
@@ -1288,7 +1252,7 @@ rb_proc_ractor_make_shareable(VALUE self)
     return self;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
@@ -1607,14 +1571,14 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, passed_block_handler, proc->is_lambda, NULL);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
                      int argc, const VALUE *argv, int kw_splat, VALUE block_handler, const rb_callable_method_entry_t *me)
 {
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, kw_splat, block_handler, TRUE, me);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
                   int argc, const VALUE *argv, int kw_splat, VALUE passed_block_handler)
 {
@@ -1772,7 +1736,7 @@ rb_source_location(int *pline)
     }
 }
 
-MJIT_FUNC_EXPORTED const char *
+const char *
 rb_source_location_cstr(int *pline)
 {
     VALUE path = rb_source_location(pline);
@@ -1868,7 +1832,7 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
     return exc;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 {
     VALUE exc = make_localjump_error(mesg, value, reason);
@@ -2019,7 +1983,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
-                rb_mjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
+                rb_rjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
             }
         }
@@ -2866,7 +2830,7 @@ rb_vm_mark(void *ptr)
             }
         }
 
-        mjit_mark();
+        rb_rjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -2929,7 +2893,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (objspace) {
             rb_objspace_free(objspace);
         }
-        rb_native_mutex_destroy(&vm->waitpid_lock);
         rb_native_mutex_destroy(&vm->workqueue_lock);
         /* after freeing objspace, you *can't* use ruby_xfree() */
         ruby_mimfree(vm);
@@ -2939,7 +2902,6 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
-size_t rb_vm_memsize_waiting_list(struct ccan_list_head *waiting_list); // process.c
 size_t rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds); // thread.c
 size_t rb_vm_memsize_postponed_job_buffer(void); // vm_trace.c
 size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
@@ -2996,8 +2958,6 @@ vm_memsize(const void *ptr)
 
     return (
         sizeof(rb_vm_t) +
-        rb_vm_memsize_waiting_list(&vm->waiting_pids) +
-        rb_vm_memsize_waiting_list(&vm->waiting_grps) +
         rb_vm_memsize_waiting_fds(&vm->waiting_fds) +
         rb_st_memsize(vm->loaded_features_index) +
         rb_st_memsize(vm->loading_table) +
@@ -4468,18 +4428,16 @@ vm_collect_usage_register(int reg, int isset)
 }
 #endif
 
-MJIT_FUNC_EXPORTED const struct rb_callcache *
+const struct rb_callcache *
 rb_vm_empty_cc(void)
 {
     return &vm_empty_cc;
 }
 
-MJIT_FUNC_EXPORTED const struct rb_callcache *
+const struct rb_callcache *
 rb_vm_empty_cc_for_super(void)
 {
     return &vm_empty_cc_for_super;
 }
-
-#endif /* #ifndef MJIT_HEADER */
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

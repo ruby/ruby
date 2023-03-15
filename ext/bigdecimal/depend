@@ -142,7 +142,6 @@ bigdecimal.o: $(hdrdir)/ruby/internal/memory.h
 bigdecimal.o: $(hdrdir)/ruby/internal/method.h
 bigdecimal.o: $(hdrdir)/ruby/internal/module.h
 bigdecimal.o: $(hdrdir)/ruby/internal/newobj.h
-bigdecimal.o: $(hdrdir)/ruby/internal/rgengc.h
 bigdecimal.o: $(hdrdir)/ruby/internal/scan_args.h
 bigdecimal.o: $(hdrdir)/ruby/internal/special_consts.h
 bigdecimal.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -308,7 +307,6 @@ missing.o: $(hdrdir)/ruby/internal/memory.h
 missing.o: $(hdrdir)/ruby/internal/method.h
 missing.o: $(hdrdir)/ruby/internal/module.h
 missing.o: $(hdrdir)/ruby/internal/newobj.h
-missing.o: $(hdrdir)/ruby/internal/rgengc.h
 missing.o: $(hdrdir)/ruby/internal/scan_args.h
 missing.o: $(hdrdir)/ruby/internal/special_consts.h
 missing.o: $(hdrdir)/ruby/internal/static_assert.h

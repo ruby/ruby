@@ -129,7 +129,7 @@ vm_lock_leave(rb_vm_t *vm, unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
@@ -141,7 +141,7 @@ rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
@@ -153,14 +153,14 @@ rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS)
     }
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_enter_body_cr(rb_ractor_t *cr, unsigned int *lev APPEND_LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
     vm_lock_enter(cr, vm, vm_locked(vm), false, lev APPEND_LOCATION_PARAMS);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS)
 {
     vm_lock_leave(GET_VM(), lev APPEND_LOCATION_PARAMS);

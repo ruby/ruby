@@ -142,7 +142,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/memory.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/method.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/module.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/newobj.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/rgengc.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/scan_args.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/special_consts.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/static_assert.h

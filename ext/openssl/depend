@@ -156,7 +156,6 @@ ossl.o: $(hdrdir)/ruby/internal/memory.h
 ossl.o: $(hdrdir)/ruby/internal/method.h
 ossl.o: $(hdrdir)/ruby/internal/module.h
 ossl.o: $(hdrdir)/ruby/internal/newobj.h
-ossl.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -350,7 +349,6 @@ ossl_asn1.o: $(hdrdir)/ruby/internal/memory.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/method.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/module.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_asn1.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_asn1.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -544,7 +542,6 @@ ossl_bio.o: $(hdrdir)/ruby/internal/memory.h
 ossl_bio.o: $(hdrdir)/ruby/internal/method.h
 ossl_bio.o: $(hdrdir)/ruby/internal/module.h
 ossl_bio.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_bio.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_bio.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_bio.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_bio.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -738,7 +735,6 @@ ossl_bn.o: $(hdrdir)/ruby/internal/memory.h
 ossl_bn.o: $(hdrdir)/ruby/internal/method.h
 ossl_bn.o: $(hdrdir)/ruby/internal/module.h
 ossl_bn.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_bn.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_bn.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_bn.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_bn.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -933,7 +929,6 @@ ossl_cipher.o: $(hdrdir)/ruby/internal/memory.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/method.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/module.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_cipher.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_cipher.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1127,7 +1122,6 @@ ossl_config.o: $(hdrdir)/ruby/internal/memory.h
 ossl_config.o: $(hdrdir)/ruby/internal/method.h
 ossl_config.o: $(hdrdir)/ruby/internal/module.h
 ossl_config.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_config.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_config.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_config.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_config.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1321,7 +1315,6 @@ ossl_digest.o: $(hdrdir)/ruby/internal/memory.h
 ossl_digest.o: $(hdrdir)/ruby/internal/method.h
 ossl_digest.o: $(hdrdir)/ruby/internal/module.h
 ossl_digest.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_digest.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_digest.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_digest.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_digest.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1515,7 +1508,6 @@ ossl_engine.o: $(hdrdir)/ruby/internal/memory.h
 ossl_engine.o: $(hdrdir)/ruby/internal/method.h
 ossl_engine.o: $(hdrdir)/ruby/internal/module.h
 ossl_engine.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_engine.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_engine.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_engine.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_engine.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1709,7 +1701,6 @@ ossl_hmac.o: $(hdrdir)/ruby/internal/memory.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/method.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/module.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_hmac.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_hmac.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1903,7 +1894,6 @@ ossl_kdf.o: $(hdrdir)/ruby/internal/memory.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/method.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/module.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_kdf.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_kdf.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2097,7 +2087,6 @@ ossl_ns_spki.o: $(hdrdir)/ruby/internal/memory.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/method.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/module.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_ns_spki.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ns_spki.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2291,7 +2280,6 @@ ossl_ocsp.o: $(hdrdir)/ruby/internal/memory.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/method.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/module.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_ocsp.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ocsp.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2485,7 +2473,6 @@ ossl_pkcs12.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkcs12.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkcs12.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2679,7 +2666,6 @@ ossl_pkcs7.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkcs7.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkcs7.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2873,7 +2859,6 @@ ossl_pkey.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkey.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -3067,7 +3052,6 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkey_dh.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -3261,7 +3245,6 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -3455,7 +3438,6 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkey_ec.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -3649,7 +3631,6 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/memory.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/method.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/module.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -3843,7 +3824,6 @@ ossl_rand.o: $(hdrdir)/ruby/internal/memory.h
 ossl_rand.o: $(hdrdir)/ruby/internal/method.h
 ossl_rand.o: $(hdrdir)/ruby/internal/module.h
 ossl_rand.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_rand.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_rand.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_rand.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_rand.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -4037,7 +4017,6 @@ ossl_ssl.o: $(hdrdir)/ruby/internal/memory.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/method.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/module.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_ssl.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ssl.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -4231,7 +4210,6 @@ ossl_ssl_session.o: $(hdrdir)/ruby/internal/memory.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/method.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/module.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_ssl_session.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ssl_session.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -4425,7 +4403,6 @@ ossl_ts.o: $(hdrdir)/ruby/internal/memory.h
 ossl_ts.o: $(hdrdir)/ruby/internal/method.h
 ossl_ts.o: $(hdrdir)/ruby/internal/module.h
 ossl_ts.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_ts.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_ts.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_ts.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_ts.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -4619,7 +4596,6 @@ ossl_x509.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -4813,7 +4789,6 @@ ossl_x509attr.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509attr.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509attr.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5007,7 +4982,6 @@ ossl_x509cert.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509cert.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509cert.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5201,7 +5175,6 @@ ossl_x509crl.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509crl.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509crl.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5395,7 +5368,6 @@ ossl_x509ext.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509ext.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509ext.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5589,7 +5561,6 @@ ossl_x509name.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509name.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509name.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5783,7 +5754,6 @@ ossl_x509req.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509req.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509req.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -5977,7 +5947,6 @@ ossl_x509revoked.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509revoked.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509revoked.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -6171,7 +6140,6 @@ ossl_x509store.o: $(hdrdir)/ruby/internal/memory.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/method.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/module.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/newobj.h
-ossl_x509store.o: $(hdrdir)/ruby/internal/rgengc.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/scan_args.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/special_consts.h
 ossl_x509store.o: $(hdrdir)/ruby/internal/static_assert.h

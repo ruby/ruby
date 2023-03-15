@@ -12,6 +12,8 @@ require_relative "stub_specification"
 require_relative "platform"
 require_relative "util/list"
 
+require "rbconfig"
+
 ##
 # The Specification class contains the information for a gem.  Typically
 # defined in a .gemspec file or a Rakefile, and looks like this:
@@ -1022,6 +1024,12 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Find the best specification matching a +full_name+.
+  def self.find_by_full_name(full_name)
+    stubs.find {|s| s.full_name == full_name }&.to_spec
+  end
+
+  ##
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path(path)
@@ -1606,6 +1614,8 @@ class Gem::Specification < Gem::BasicSpecification
   def build_extensions # :nodoc:
     return if extensions.empty?
     return if default_gem?
+    # we need to fresh build when same name and version of default gems
+    return if self.class.find_by_full_name(full_name)&.default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
     return if !File.exist?(File.join(base_dir, "extensions"))
@@ -1700,6 +1710,8 @@ class Gem::Specification < Gem::BasicSpecification
         false
       end
     end
+  rescue ArgumentError => e
+    raise e, "#{name} #{version}: #{e.message}"
   end
 
   # The date this gem was created.
@@ -2171,6 +2183,16 @@ class Gem::Specification < Gem::BasicSpecification
     return false if extensions.empty?
     return false if default_gem?
     return false if File.exist? gem_build_complete_path
+
+    # When we use this methods with local gemspec, we don't handle
+    # build status of extension correctly. So We need to find extension
+    # files in require_paths.
+    # TODO: Gem::Specification couldn't access extension name from extconf.rb
+    #       so we find them with heuristic way. We should improve it.
+    return false if (full_require_paths - [extension_dir]).any? do |path|
+      File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG['DLEXT']}")) ||
+      !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG['DLEXT']}")).empty?
+    end
 
     true
   end

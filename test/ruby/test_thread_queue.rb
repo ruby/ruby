@@ -8,13 +8,13 @@ class TestThreadQueue < Test::Unit::TestCase
   SizedQueue = Thread::SizedQueue
 
   def test_queue_initialized
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, /\bQueue.* not initialized/) {
       Queue.allocate.push(nil)
     }
   end
 
   def test_sized_queue_initialized
-    assert_raise(TypeError) {
+    assert_raise_with_message(TypeError, /\bSizedQueue.* not initialized/) {
       SizedQueue.allocate.push(nil)
     }
   end

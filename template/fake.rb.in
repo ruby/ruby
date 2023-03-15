@@ -43,8 +43,8 @@ class Object
   <%=n%> = <%=v.inspect%>
 % }
   options = []
-  if RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled?
-    options << ' +MJIT'
+  if RubyVM.const_defined?(:RJIT) && RubyVM::RJIT.enabled?
+    options << ' +RJIT'
   elsif RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
     options << ' +YJIT'
   end

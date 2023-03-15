@@ -16,6 +16,11 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/irb"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["documentation_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/releases"
+
   spec.files         = [
     ".document",
     "Gemfile",

@@ -967,7 +967,7 @@ EXCLUDE_PATTERNS      += encdb.h
 EXCLUDE_PATTERNS      += extconf.h
 EXCLUDE_PATTERNS      += insns.def
 EXCLUDE_PATTERNS      += lib
-EXCLUDE_PATTERNS      += rb_mjit_header.h
+EXCLUDE_PATTERNS      += rb_rjit_header.h
 EXCLUDE_PATTERNS      += spec
 EXCLUDE_PATTERNS      += test
 EXCLUDE_PATTERNS      += tmp
@@ -2249,10 +2249,10 @@ PREDEFINED            += DEPRECATED(_)=_
 PREDEFINED            += DEPRECATED_BY(__,_)=_
 PREDEFINED            += ENUM_OVER_INT=1
 PREDEFINED            += ERRORFUNC(__,_)=_
-PREDEFINED            += MJIT_FUNC_EXPORTED=
-PREDEFINED            += MJIT_STATIC=extern
-PREDEFINED            += MJIT_SYMBOL_EXPORT_BEGIN=
-PREDEFINED            += MJIT_SYMBOL_EXPORT_END=
+PREDEFINED            += RJIT_FUNC_EXPORTED=
+PREDEFINED            += RJIT_STATIC=extern
+PREDEFINED            += RJIT_SYMBOL_EXPORT_BEGIN=
+PREDEFINED            += RJIT_SYMBOL_EXPORT_END=
 PREDEFINED            += NOINLINE(_)=_
 PREDEFINED            += NORETURN(_)=_
 PREDEFINED            += PACKED_STRUCT_UNALIGNED(_)=_

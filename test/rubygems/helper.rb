@@ -563,14 +563,13 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir directory do
       unless File.exist? ".git"
         system @git, "init", "--quiet"
-        system @git, "checkout", "-b", "master", "--quiet"
         system @git, "config", "user.name",  "RubyGems Tests"
         system @git, "config", "user.email", "rubygems@example"
       end
 
       system @git, "add", gemspec
       system @git, "commit", "-a", "-m", "a non-empty commit message", "--quiet"
-      head = Gem::Util.popen(@git, "rev-parse", "master").strip
+      head = Gem::Util.popen(@git, "rev-parse", "HEAD").strip
     end
 
     return name, git_spec.version, directory, head

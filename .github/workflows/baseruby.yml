@@ -31,10 +31,7 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - ruby-2.2
-#         - ruby-2.3
-#         - ruby-2.4
-#         - ruby-2.5
+          - ruby-2.5
 #         - ruby-2.6
 #         - ruby-2.7
           - ruby-3.0
@@ -47,7 +44,7 @@ jobs:
         with:
           path: .downloaded-cache
           key: downloaded-cache
-      - uses: ruby/setup-ruby@92aece5fc9c784ab66851c1e702b1bd5885a51f2 # v1.139.0
+      - uses: ruby/setup-ruby@9669f3ee51dc3f4eda8447ab696b3ab19a90d14b # v1.144.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none

@@ -141,7 +141,6 @@ bad_version.o: $(hdrdir)/ruby/internal/memory.h
 bad_version.o: $(hdrdir)/ruby/internal/method.h
 bad_version.o: $(hdrdir)/ruby/internal/module.h
 bad_version.o: $(hdrdir)/ruby/internal/newobj.h
-bad_version.o: $(hdrdir)/ruby/internal/rgengc.h
 bad_version.o: $(hdrdir)/ruby/internal/scan_args.h
 bad_version.o: $(hdrdir)/ruby/internal/special_consts.h
 bad_version.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -461,7 +459,6 @@ loop.o: $(hdrdir)/ruby/internal/memory.h
 loop.o: $(hdrdir)/ruby/internal/method.h
 loop.o: $(hdrdir)/ruby/internal/module.h
 loop.o: $(hdrdir)/ruby/internal/newobj.h
-loop.o: $(hdrdir)/ruby/internal/rgengc.h
 loop.o: $(hdrdir)/ruby/internal/scan_args.h
 loop.o: $(hdrdir)/ruby/internal/special_consts.h
 loop.o: $(hdrdir)/ruby/internal/static_assert.h

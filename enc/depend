@@ -333,7 +333,6 @@ enc/ascii.$(OBJEXT): internal/memory.h
 enc/ascii.$(OBJEXT): internal/method.h
 enc/ascii.$(OBJEXT): internal/module.h
 enc/ascii.$(OBJEXT): internal/newobj.h
-enc/ascii.$(OBJEXT): internal/rgengc.h
 enc/ascii.$(OBJEXT): internal/scan_args.h
 enc/ascii.$(OBJEXT): internal/special_consts.h
 enc/ascii.$(OBJEXT): internal/static_assert.h
@@ -495,7 +494,6 @@ enc/big5.$(OBJEXT): internal/memory.h
 enc/big5.$(OBJEXT): internal/method.h
 enc/big5.$(OBJEXT): internal/module.h
 enc/big5.$(OBJEXT): internal/newobj.h
-enc/big5.$(OBJEXT): internal/rgengc.h
 enc/big5.$(OBJEXT): internal/scan_args.h
 enc/big5.$(OBJEXT): internal/special_consts.h
 enc/big5.$(OBJEXT): internal/static_assert.h
@@ -667,7 +665,6 @@ enc/cesu_8.$(OBJEXT): internal/memory.h
 enc/cesu_8.$(OBJEXT): internal/method.h
 enc/cesu_8.$(OBJEXT): internal/module.h
 enc/cesu_8.$(OBJEXT): internal/newobj.h
-enc/cesu_8.$(OBJEXT): internal/rgengc.h
 enc/cesu_8.$(OBJEXT): internal/scan_args.h
 enc/cesu_8.$(OBJEXT): internal/special_consts.h
 enc/cesu_8.$(OBJEXT): internal/static_assert.h
@@ -829,7 +826,6 @@ enc/cp949.$(OBJEXT): internal/memory.h
 enc/cp949.$(OBJEXT): internal/method.h
 enc/cp949.$(OBJEXT): internal/module.h
 enc/cp949.$(OBJEXT): internal/newobj.h
-enc/cp949.$(OBJEXT): internal/rgengc.h
 enc/cp949.$(OBJEXT): internal/scan_args.h
 enc/cp949.$(OBJEXT): internal/special_consts.h
 enc/cp949.$(OBJEXT): internal/static_assert.h
@@ -990,7 +986,6 @@ enc/emacs_mule.$(OBJEXT): internal/memory.h
 enc/emacs_mule.$(OBJEXT): internal/method.h
 enc/emacs_mule.$(OBJEXT): internal/module.h
 enc/emacs_mule.$(OBJEXT): internal/newobj.h
-enc/emacs_mule.$(OBJEXT): internal/rgengc.h
 enc/emacs_mule.$(OBJEXT): internal/scan_args.h
 enc/emacs_mule.$(OBJEXT): internal/special_consts.h
 enc/emacs_mule.$(OBJEXT): internal/static_assert.h
@@ -1161,7 +1156,6 @@ enc/encdb.$(OBJEXT): internal/memory.h
 enc/encdb.$(OBJEXT): internal/method.h
 enc/encdb.$(OBJEXT): internal/module.h
 enc/encdb.$(OBJEXT): internal/newobj.h
-enc/encdb.$(OBJEXT): internal/rgengc.h
 enc/encdb.$(OBJEXT): internal/scan_args.h
 enc/encdb.$(OBJEXT): internal/special_consts.h
 enc/encdb.$(OBJEXT): internal/static_assert.h
@@ -1325,7 +1319,6 @@ enc/euc_jp.$(OBJEXT): internal/memory.h
 enc/euc_jp.$(OBJEXT): internal/method.h
 enc/euc_jp.$(OBJEXT): internal/module.h
 enc/euc_jp.$(OBJEXT): internal/newobj.h
-enc/euc_jp.$(OBJEXT): internal/rgengc.h
 enc/euc_jp.$(OBJEXT): internal/scan_args.h
 enc/euc_jp.$(OBJEXT): internal/special_consts.h
 enc/euc_jp.$(OBJEXT): internal/static_assert.h
@@ -1486,7 +1479,6 @@ enc/euc_kr.$(OBJEXT): internal/memory.h
 enc/euc_kr.$(OBJEXT): internal/method.h
 enc/euc_kr.$(OBJEXT): internal/module.h
 enc/euc_kr.$(OBJEXT): internal/newobj.h
-enc/euc_kr.$(OBJEXT): internal/rgengc.h
 enc/euc_kr.$(OBJEXT): internal/scan_args.h
 enc/euc_kr.$(OBJEXT): internal/special_consts.h
 enc/euc_kr.$(OBJEXT): internal/static_assert.h
@@ -1647,7 +1639,6 @@ enc/euc_tw.$(OBJEXT): internal/memory.h
 enc/euc_tw.$(OBJEXT): internal/method.h
 enc/euc_tw.$(OBJEXT): internal/module.h
 enc/euc_tw.$(OBJEXT): internal/newobj.h
-enc/euc_tw.$(OBJEXT): internal/rgengc.h
 enc/euc_tw.$(OBJEXT): internal/scan_args.h
 enc/euc_tw.$(OBJEXT): internal/special_consts.h
 enc/euc_tw.$(OBJEXT): internal/static_assert.h
@@ -1808,7 +1799,6 @@ enc/gb18030.$(OBJEXT): internal/memory.h
 enc/gb18030.$(OBJEXT): internal/method.h
 enc/gb18030.$(OBJEXT): internal/module.h
 enc/gb18030.$(OBJEXT): internal/newobj.h
-enc/gb18030.$(OBJEXT): internal/rgengc.h
 enc/gb18030.$(OBJEXT): internal/scan_args.h
 enc/gb18030.$(OBJEXT): internal/special_consts.h
 enc/gb18030.$(OBJEXT): internal/static_assert.h
@@ -1969,7 +1959,6 @@ enc/gb2312.$(OBJEXT): internal/memory.h
 enc/gb2312.$(OBJEXT): internal/method.h
 enc/gb2312.$(OBJEXT): internal/module.h
 enc/gb2312.$(OBJEXT): internal/newobj.h
-enc/gb2312.$(OBJEXT): internal/rgengc.h
 enc/gb2312.$(OBJEXT): internal/scan_args.h
 enc/gb2312.$(OBJEXT): internal/special_consts.h
 enc/gb2312.$(OBJEXT): internal/static_assert.h
@@ -2130,7 +2119,6 @@ enc/gbk.$(OBJEXT): internal/memory.h
 enc/gbk.$(OBJEXT): internal/method.h
 enc/gbk.$(OBJEXT): internal/module.h
 enc/gbk.$(OBJEXT): internal/newobj.h
-enc/gbk.$(OBJEXT): internal/rgengc.h
 enc/gbk.$(OBJEXT): internal/scan_args.h
 enc/gbk.$(OBJEXT): internal/special_consts.h
 enc/gbk.$(OBJEXT): internal/static_assert.h
@@ -2292,7 +2280,6 @@ enc/iso_8859_1.$(OBJEXT): internal/memory.h
 enc/iso_8859_1.$(OBJEXT): internal/method.h
 enc/iso_8859_1.$(OBJEXT): internal/module.h
 enc/iso_8859_1.$(OBJEXT): internal/newobj.h
-enc/iso_8859_1.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_1.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_1.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_1.$(OBJEXT): internal/static_assert.h
@@ -2454,7 +2441,6 @@ enc/iso_8859_10.$(OBJEXT): internal/memory.h
 enc/iso_8859_10.$(OBJEXT): internal/method.h
 enc/iso_8859_10.$(OBJEXT): internal/module.h
 enc/iso_8859_10.$(OBJEXT): internal/newobj.h
-enc/iso_8859_10.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_10.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_10.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_10.$(OBJEXT): internal/static_assert.h
@@ -2615,7 +2601,6 @@ enc/iso_8859_11.$(OBJEXT): internal/memory.h
 enc/iso_8859_11.$(OBJEXT): internal/method.h
 enc/iso_8859_11.$(OBJEXT): internal/module.h
 enc/iso_8859_11.$(OBJEXT): internal/newobj.h
-enc/iso_8859_11.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_11.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_11.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_11.$(OBJEXT): internal/static_assert.h
@@ -2777,7 +2762,6 @@ enc/iso_8859_13.$(OBJEXT): internal/memory.h
 enc/iso_8859_13.$(OBJEXT): internal/method.h
 enc/iso_8859_13.$(OBJEXT): internal/module.h
 enc/iso_8859_13.$(OBJEXT): internal/newobj.h
-enc/iso_8859_13.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_13.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_13.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_13.$(OBJEXT): internal/static_assert.h
@@ -2939,7 +2923,6 @@ enc/iso_8859_14.$(OBJEXT): internal/memory.h
 enc/iso_8859_14.$(OBJEXT): internal/method.h
 enc/iso_8859_14.$(OBJEXT): internal/module.h
 enc/iso_8859_14.$(OBJEXT): internal/newobj.h
-enc/iso_8859_14.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_14.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_14.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_14.$(OBJEXT): internal/static_assert.h
@@ -3101,7 +3084,6 @@ enc/iso_8859_15.$(OBJEXT): internal/memory.h
 enc/iso_8859_15.$(OBJEXT): internal/method.h
 enc/iso_8859_15.$(OBJEXT): internal/module.h
 enc/iso_8859_15.$(OBJEXT): internal/newobj.h
-enc/iso_8859_15.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_15.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_15.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_15.$(OBJEXT): internal/static_assert.h
@@ -3263,7 +3245,6 @@ enc/iso_8859_16.$(OBJEXT): internal/memory.h
 enc/iso_8859_16.$(OBJEXT): internal/method.h
 enc/iso_8859_16.$(OBJEXT): internal/module.h
 enc/iso_8859_16.$(OBJEXT): internal/newobj.h
-enc/iso_8859_16.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_16.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_16.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_16.$(OBJEXT): internal/static_assert.h
@@ -3425,7 +3406,6 @@ enc/iso_8859_2.$(OBJEXT): internal/memory.h
 enc/iso_8859_2.$(OBJEXT): internal/method.h
 enc/iso_8859_2.$(OBJEXT): internal/module.h
 enc/iso_8859_2.$(OBJEXT): internal/newobj.h
-enc/iso_8859_2.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_2.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_2.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_2.$(OBJEXT): internal/static_assert.h
@@ -3587,7 +3567,6 @@ enc/iso_8859_3.$(OBJEXT): internal/memory.h
 enc/iso_8859_3.$(OBJEXT): internal/method.h
 enc/iso_8859_3.$(OBJEXT): internal/module.h
 enc/iso_8859_3.$(OBJEXT): internal/newobj.h
-enc/iso_8859_3.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_3.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_3.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_3.$(OBJEXT): internal/static_assert.h
@@ -3749,7 +3728,6 @@ enc/iso_8859_4.$(OBJEXT): internal/memory.h
 enc/iso_8859_4.$(OBJEXT): internal/method.h
 enc/iso_8859_4.$(OBJEXT): internal/module.h
 enc/iso_8859_4.$(OBJEXT): internal/newobj.h
-enc/iso_8859_4.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_4.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_4.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_4.$(OBJEXT): internal/static_assert.h
@@ -3910,7 +3888,6 @@ enc/iso_8859_5.$(OBJEXT): internal/memory.h
 enc/iso_8859_5.$(OBJEXT): internal/method.h
 enc/iso_8859_5.$(OBJEXT): internal/module.h
 enc/iso_8859_5.$(OBJEXT): internal/newobj.h
-enc/iso_8859_5.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_5.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_5.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_5.$(OBJEXT): internal/static_assert.h
@@ -4071,7 +4048,6 @@ enc/iso_8859_6.$(OBJEXT): internal/memory.h
 enc/iso_8859_6.$(OBJEXT): internal/method.h
 enc/iso_8859_6.$(OBJEXT): internal/module.h
 enc/iso_8859_6.$(OBJEXT): internal/newobj.h
-enc/iso_8859_6.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_6.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_6.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_6.$(OBJEXT): internal/static_assert.h
@@ -4232,7 +4208,6 @@ enc/iso_8859_7.$(OBJEXT): internal/memory.h
 enc/iso_8859_7.$(OBJEXT): internal/method.h
 enc/iso_8859_7.$(OBJEXT): internal/module.h
 enc/iso_8859_7.$(OBJEXT): internal/newobj.h
-enc/iso_8859_7.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_7.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_7.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_7.$(OBJEXT): internal/static_assert.h
@@ -4393,7 +4368,6 @@ enc/iso_8859_8.$(OBJEXT): internal/memory.h
 enc/iso_8859_8.$(OBJEXT): internal/method.h
 enc/iso_8859_8.$(OBJEXT): internal/module.h
 enc/iso_8859_8.$(OBJEXT): internal/newobj.h
-enc/iso_8859_8.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_8.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_8.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_8.$(OBJEXT): internal/static_assert.h
@@ -4555,7 +4529,6 @@ enc/iso_8859_9.$(OBJEXT): internal/memory.h
 enc/iso_8859_9.$(OBJEXT): internal/method.h
 enc/iso_8859_9.$(OBJEXT): internal/module.h
 enc/iso_8859_9.$(OBJEXT): internal/newobj.h
-enc/iso_8859_9.$(OBJEXT): internal/rgengc.h
 enc/iso_8859_9.$(OBJEXT): internal/scan_args.h
 enc/iso_8859_9.$(OBJEXT): internal/special_consts.h
 enc/iso_8859_9.$(OBJEXT): internal/static_assert.h
@@ -4716,7 +4689,6 @@ enc/koi8_r.$(OBJEXT): internal/memory.h
 enc/koi8_r.$(OBJEXT): internal/method.h
 enc/koi8_r.$(OBJEXT): internal/module.h
 enc/koi8_r.$(OBJEXT): internal/newobj.h
-enc/koi8_r.$(OBJEXT): internal/rgengc.h
 enc/koi8_r.$(OBJEXT): internal/scan_args.h
 enc/koi8_r.$(OBJEXT): internal/special_consts.h
 enc/koi8_r.$(OBJEXT): internal/static_assert.h
@@ -4877,7 +4849,6 @@ enc/koi8_u.$(OBJEXT): internal/memory.h
 enc/koi8_u.$(OBJEXT): internal/method.h
 enc/koi8_u.$(OBJEXT): internal/module.h
 enc/koi8_u.$(OBJEXT): internal/newobj.h
-enc/koi8_u.$(OBJEXT): internal/rgengc.h
 enc/koi8_u.$(OBJEXT): internal/scan_args.h
 enc/koi8_u.$(OBJEXT): internal/special_consts.h
 enc/koi8_u.$(OBJEXT): internal/static_assert.h
@@ -5041,7 +5012,6 @@ enc/shift_jis.$(OBJEXT): internal/memory.h
 enc/shift_jis.$(OBJEXT): internal/method.h
 enc/shift_jis.$(OBJEXT): internal/module.h
 enc/shift_jis.$(OBJEXT): internal/newobj.h
-enc/shift_jis.$(OBJEXT): internal/rgengc.h
 enc/shift_jis.$(OBJEXT): internal/scan_args.h
 enc/shift_jis.$(OBJEXT): internal/special_consts.h
 enc/shift_jis.$(OBJEXT): internal/static_assert.h
@@ -5201,7 +5171,6 @@ enc/trans/big5.$(OBJEXT): internal/memory.h
 enc/trans/big5.$(OBJEXT): internal/method.h
 enc/trans/big5.$(OBJEXT): internal/module.h
 enc/trans/big5.$(OBJEXT): internal/newobj.h
-enc/trans/big5.$(OBJEXT): internal/rgengc.h
 enc/trans/big5.$(OBJEXT): internal/scan_args.h
 enc/trans/big5.$(OBJEXT): internal/special_consts.h
 enc/trans/big5.$(OBJEXT): internal/static_assert.h
@@ -5360,7 +5329,6 @@ enc/trans/cesu_8.$(OBJEXT): internal/memory.h
 enc/trans/cesu_8.$(OBJEXT): internal/method.h
 enc/trans/cesu_8.$(OBJEXT): internal/module.h
 enc/trans/cesu_8.$(OBJEXT): internal/newobj.h
-enc/trans/cesu_8.$(OBJEXT): internal/rgengc.h
 enc/trans/cesu_8.$(OBJEXT): internal/scan_args.h
 enc/trans/cesu_8.$(OBJEXT): internal/special_consts.h
 enc/trans/cesu_8.$(OBJEXT): internal/static_assert.h
@@ -5519,7 +5487,6 @@ enc/trans/chinese.$(OBJEXT): internal/memory.h
 enc/trans/chinese.$(OBJEXT): internal/method.h
 enc/trans/chinese.$(OBJEXT): internal/module.h
 enc/trans/chinese.$(OBJEXT): internal/newobj.h
-enc/trans/chinese.$(OBJEXT): internal/rgengc.h
 enc/trans/chinese.$(OBJEXT): internal/scan_args.h
 enc/trans/chinese.$(OBJEXT): internal/special_consts.h
 enc/trans/chinese.$(OBJEXT): internal/static_assert.h
@@ -5678,7 +5645,6 @@ enc/trans/ebcdic.$(OBJEXT): internal/memory.h
 enc/trans/ebcdic.$(OBJEXT): internal/method.h
 enc/trans/ebcdic.$(OBJEXT): internal/module.h
 enc/trans/ebcdic.$(OBJEXT): internal/newobj.h
-enc/trans/ebcdic.$(OBJEXT): internal/rgengc.h
 enc/trans/ebcdic.$(OBJEXT): internal/scan_args.h
 enc/trans/ebcdic.$(OBJEXT): internal/special_consts.h
 enc/trans/ebcdic.$(OBJEXT): internal/static_assert.h
@@ -5837,7 +5803,6 @@ enc/trans/emoji.$(OBJEXT): internal/memory.h
 enc/trans/emoji.$(OBJEXT): internal/method.h
 enc/trans/emoji.$(OBJEXT): internal/module.h
 enc/trans/emoji.$(OBJEXT): internal/newobj.h
-enc/trans/emoji.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji.$(OBJEXT): internal/static_assert.h
@@ -5996,7 +5961,6 @@ enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/memory.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/method.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/module.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_iso2022_kddi.$(OBJEXT): internal/static_assert.h
@@ -6155,7 +6119,6 @@ enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_docomo.$(OBJEXT): internal/static_assert.h
@@ -6314,7 +6277,6 @@ enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_kddi.$(OBJEXT): internal/static_assert.h
@@ -6473,7 +6435,6 @@ enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/memory.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/method.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/module.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/newobj.h
-enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/rgengc.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/scan_args.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/special_consts.h
 enc/trans/emoji_sjis_softbank.$(OBJEXT): internal/static_assert.h
@@ -6632,7 +6593,6 @@ enc/trans/escape.$(OBJEXT): internal/memory.h
 enc/trans/escape.$(OBJEXT): internal/method.h
 enc/trans/escape.$(OBJEXT): internal/module.h
 enc/trans/escape.$(OBJEXT): internal/newobj.h
-enc/trans/escape.$(OBJEXT): internal/rgengc.h
 enc/trans/escape.$(OBJEXT): internal/scan_args.h
 enc/trans/escape.$(OBJEXT): internal/special_consts.h
 enc/trans/escape.$(OBJEXT): internal/static_assert.h
@@ -6791,7 +6751,6 @@ enc/trans/gb18030.$(OBJEXT): internal/memory.h
 enc/trans/gb18030.$(OBJEXT): internal/method.h
 enc/trans/gb18030.$(OBJEXT): internal/module.h
 enc/trans/gb18030.$(OBJEXT): internal/newobj.h
-enc/trans/gb18030.$(OBJEXT): internal/rgengc.h
 enc/trans/gb18030.$(OBJEXT): internal/scan_args.h
 enc/trans/gb18030.$(OBJEXT): internal/special_consts.h
 enc/trans/gb18030.$(OBJEXT): internal/static_assert.h
@@ -6950,7 +6909,6 @@ enc/trans/gbk.$(OBJEXT): internal/memory.h
 enc/trans/gbk.$(OBJEXT): internal/method.h
 enc/trans/gbk.$(OBJEXT): internal/module.h
 enc/trans/gbk.$(OBJEXT): internal/newobj.h
-enc/trans/gbk.$(OBJEXT): internal/rgengc.h
 enc/trans/gbk.$(OBJEXT): internal/scan_args.h
 enc/trans/gbk.$(OBJEXT): internal/special_consts.h
 enc/trans/gbk.$(OBJEXT): internal/static_assert.h
@@ -7109,7 +7067,6 @@ enc/trans/iso2022.$(OBJEXT): internal/memory.h
 enc/trans/iso2022.$(OBJEXT): internal/method.h
 enc/trans/iso2022.$(OBJEXT): internal/module.h
 enc/trans/iso2022.$(OBJEXT): internal/newobj.h
-enc/trans/iso2022.$(OBJEXT): internal/rgengc.h
 enc/trans/iso2022.$(OBJEXT): internal/scan_args.h
 enc/trans/iso2022.$(OBJEXT): internal/special_consts.h
 enc/trans/iso2022.$(OBJEXT): internal/static_assert.h
@@ -7268,7 +7225,6 @@ enc/trans/japanese.$(OBJEXT): internal/memory.h
 enc/trans/japanese.$(OBJEXT): internal/method.h
 enc/trans/japanese.$(OBJEXT): internal/module.h
 enc/trans/japanese.$(OBJEXT): internal/newobj.h
-enc/trans/japanese.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese.$(OBJEXT): internal/static_assert.h
@@ -7427,7 +7383,6 @@ enc/trans/japanese_euc.$(OBJEXT): internal/memory.h
 enc/trans/japanese_euc.$(OBJEXT): internal/method.h
 enc/trans/japanese_euc.$(OBJEXT): internal/module.h
 enc/trans/japanese_euc.$(OBJEXT): internal/newobj.h
-enc/trans/japanese_euc.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese_euc.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese_euc.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese_euc.$(OBJEXT): internal/static_assert.h
@@ -7586,7 +7541,6 @@ enc/trans/japanese_sjis.$(OBJEXT): internal/memory.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/method.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/module.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/newobj.h
-enc/trans/japanese_sjis.$(OBJEXT): internal/rgengc.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/scan_args.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/special_consts.h
 enc/trans/japanese_sjis.$(OBJEXT): internal/static_assert.h
@@ -7745,7 +7699,6 @@ enc/trans/korean.$(OBJEXT): internal/memory.h
 enc/trans/korean.$(OBJEXT): internal/method.h
 enc/trans/korean.$(OBJEXT): internal/module.h
 enc/trans/korean.$(OBJEXT): internal/newobj.h
-enc/trans/korean.$(OBJEXT): internal/rgengc.h
 enc/trans/korean.$(OBJEXT): internal/scan_args.h
 enc/trans/korean.$(OBJEXT): internal/special_consts.h
 enc/trans/korean.$(OBJEXT): internal/static_assert.h
@@ -7903,7 +7856,6 @@ enc/trans/newline.$(OBJEXT): internal/memory.h
 enc/trans/newline.$(OBJEXT): internal/method.h
 enc/trans/newline.$(OBJEXT): internal/module.h
 enc/trans/newline.$(OBJEXT): internal/newobj.h
-enc/trans/newline.$(OBJEXT): internal/rgengc.h
 enc/trans/newline.$(OBJEXT): internal/scan_args.h
 enc/trans/newline.$(OBJEXT): internal/special_consts.h
 enc/trans/newline.$(OBJEXT): internal/static_assert.h
@@ -8062,7 +8014,6 @@ enc/trans/single_byte.$(OBJEXT): internal/memory.h
 enc/trans/single_byte.$(OBJEXT): internal/method.h
 enc/trans/single_byte.$(OBJEXT): internal/module.h
 enc/trans/single_byte.$(OBJEXT): internal/newobj.h
-enc/trans/single_byte.$(OBJEXT): internal/rgengc.h
 enc/trans/single_byte.$(OBJEXT): internal/scan_args.h
 enc/trans/single_byte.$(OBJEXT): internal/special_consts.h
 enc/trans/single_byte.$(OBJEXT): internal/static_assert.h
@@ -8221,7 +8172,6 @@ enc/trans/transdb.$(OBJEXT): internal/memory.h
 enc/trans/transdb.$(OBJEXT): internal/method.h
 enc/trans/transdb.$(OBJEXT): internal/module.h
 enc/trans/transdb.$(OBJEXT): internal/newobj.h
-enc/trans/transdb.$(OBJEXT): internal/rgengc.h
 enc/trans/transdb.$(OBJEXT): internal/scan_args.h
 enc/trans/transdb.$(OBJEXT): internal/special_consts.h
 enc/trans/transdb.$(OBJEXT): internal/static_assert.h
@@ -8381,7 +8331,6 @@ enc/trans/utf8_mac.$(OBJEXT): internal/memory.h
 enc/trans/utf8_mac.$(OBJEXT): internal/method.h
 enc/trans/utf8_mac.$(OBJEXT): internal/module.h
 enc/trans/utf8_mac.$(OBJEXT): internal/newobj.h
-enc/trans/utf8_mac.$(OBJEXT): internal/rgengc.h
 enc/trans/utf8_mac.$(OBJEXT): internal/scan_args.h
 enc/trans/utf8_mac.$(OBJEXT): internal/special_consts.h
 enc/trans/utf8_mac.$(OBJEXT): internal/static_assert.h
@@ -8540,7 +8489,6 @@ enc/trans/utf_16_32.$(OBJEXT): internal/memory.h
 enc/trans/utf_16_32.$(OBJEXT): internal/method.h
 enc/trans/utf_16_32.$(OBJEXT): internal/module.h
 enc/trans/utf_16_32.$(OBJEXT): internal/newobj.h
-enc/trans/utf_16_32.$(OBJEXT): internal/rgengc.h
 enc/trans/utf_16_32.$(OBJEXT): internal/scan_args.h
 enc/trans/utf_16_32.$(OBJEXT): internal/special_consts.h
 enc/trans/utf_16_32.$(OBJEXT): internal/static_assert.h
@@ -8702,7 +8650,6 @@ enc/unicode.$(OBJEXT): internal/memory.h
 enc/unicode.$(OBJEXT): internal/method.h
 enc/unicode.$(OBJEXT): internal/module.h
 enc/unicode.$(OBJEXT): internal/newobj.h
-enc/unicode.$(OBJEXT): internal/rgengc.h
 enc/unicode.$(OBJEXT): internal/scan_args.h
 enc/unicode.$(OBJEXT): internal/special_consts.h
 enc/unicode.$(OBJEXT): internal/static_assert.h
@@ -8873,7 +8820,6 @@ enc/us_ascii.$(OBJEXT): internal/memory.h
 enc/us_ascii.$(OBJEXT): internal/method.h
 enc/us_ascii.$(OBJEXT): internal/module.h
 enc/us_ascii.$(OBJEXT): internal/newobj.h
-enc/us_ascii.$(OBJEXT): internal/rgengc.h
 enc/us_ascii.$(OBJEXT): internal/scan_args.h
 enc/us_ascii.$(OBJEXT): internal/special_consts.h
 enc/us_ascii.$(OBJEXT): internal/static_assert.h
@@ -9036,7 +8982,6 @@ enc/utf_16be.$(OBJEXT): internal/memory.h
 enc/utf_16be.$(OBJEXT): internal/method.h
 enc/utf_16be.$(OBJEXT): internal/module.h
 enc/utf_16be.$(OBJEXT): internal/newobj.h
-enc/utf_16be.$(OBJEXT): internal/rgengc.h
 enc/utf_16be.$(OBJEXT): internal/scan_args.h
 enc/utf_16be.$(OBJEXT): internal/special_consts.h
 enc/utf_16be.$(OBJEXT): internal/static_assert.h
@@ -9198,7 +9143,6 @@ enc/utf_16le.$(OBJEXT): internal/memory.h
 enc/utf_16le.$(OBJEXT): internal/method.h
 enc/utf_16le.$(OBJEXT): internal/module.h
 enc/utf_16le.$(OBJEXT): internal/newobj.h
-enc/utf_16le.$(OBJEXT): internal/rgengc.h
 enc/utf_16le.$(OBJEXT): internal/scan_args.h
 enc/utf_16le.$(OBJEXT): internal/special_consts.h
 enc/utf_16le.$(OBJEXT): internal/static_assert.h
@@ -9360,7 +9304,6 @@ enc/utf_32be.$(OBJEXT): internal/memory.h
 enc/utf_32be.$(OBJEXT): internal/method.h
 enc/utf_32be.$(OBJEXT): internal/module.h
 enc/utf_32be.$(OBJEXT): internal/newobj.h
-enc/utf_32be.$(OBJEXT): internal/rgengc.h
 enc/utf_32be.$(OBJEXT): internal/scan_args.h
 enc/utf_32be.$(OBJEXT): internal/special_consts.h
 enc/utf_32be.$(OBJEXT): internal/static_assert.h
@@ -9522,7 +9465,6 @@ enc/utf_32le.$(OBJEXT): internal/memory.h
 enc/utf_32le.$(OBJEXT): internal/method.h
 enc/utf_32le.$(OBJEXT): internal/module.h
 enc/utf_32le.$(OBJEXT): internal/newobj.h
-enc/utf_32le.$(OBJEXT): internal/rgengc.h
 enc/utf_32le.$(OBJEXT): internal/scan_args.h
 enc/utf_32le.$(OBJEXT): internal/special_consts.h
 enc/utf_32le.$(OBJEXT): internal/static_assert.h
@@ -9693,7 +9635,6 @@ enc/utf_8.$(OBJEXT): internal/memory.h
 enc/utf_8.$(OBJEXT): internal/method.h
 enc/utf_8.$(OBJEXT): internal/module.h
 enc/utf_8.$(OBJEXT): internal/newobj.h
-enc/utf_8.$(OBJEXT): internal/rgengc.h
 enc/utf_8.$(OBJEXT): internal/scan_args.h
 enc/utf_8.$(OBJEXT): internal/special_consts.h
 enc/utf_8.$(OBJEXT): internal/static_assert.h
@@ -9856,7 +9797,6 @@ enc/windows_1250.$(OBJEXT): internal/memory.h
 enc/windows_1250.$(OBJEXT): internal/method.h
 enc/windows_1250.$(OBJEXT): internal/module.h
 enc/windows_1250.$(OBJEXT): internal/newobj.h
-enc/windows_1250.$(OBJEXT): internal/rgengc.h
 enc/windows_1250.$(OBJEXT): internal/scan_args.h
 enc/windows_1250.$(OBJEXT): internal/special_consts.h
 enc/windows_1250.$(OBJEXT): internal/static_assert.h
@@ -10017,7 +9957,6 @@ enc/windows_1251.$(OBJEXT): internal/memory.h
 enc/windows_1251.$(OBJEXT): internal/method.h
 enc/windows_1251.$(OBJEXT): internal/module.h
 enc/windows_1251.$(OBJEXT): internal/newobj.h
-enc/windows_1251.$(OBJEXT): internal/rgengc.h
 enc/windows_1251.$(OBJEXT): internal/scan_args.h
 enc/windows_1251.$(OBJEXT): internal/special_consts.h
 enc/windows_1251.$(OBJEXT): internal/static_assert.h
@@ -10179,7 +10118,6 @@ enc/windows_1252.$(OBJEXT): internal/memory.h
 enc/windows_1252.$(OBJEXT): internal/method.h
 enc/windows_1252.$(OBJEXT): internal/module.h
 enc/windows_1252.$(OBJEXT): internal/newobj.h
-enc/windows_1252.$(OBJEXT): internal/rgengc.h
 enc/windows_1252.$(OBJEXT): internal/scan_args.h
 enc/windows_1252.$(OBJEXT): internal/special_consts.h
 enc/windows_1252.$(OBJEXT): internal/static_assert.h
@@ -10340,7 +10278,6 @@ enc/windows_1253.$(OBJEXT): internal/memory.h
 enc/windows_1253.$(OBJEXT): internal/method.h
 enc/windows_1253.$(OBJEXT): internal/module.h
 enc/windows_1253.$(OBJEXT): internal/newobj.h
-enc/windows_1253.$(OBJEXT): internal/rgengc.h
 enc/windows_1253.$(OBJEXT): internal/scan_args.h
 enc/windows_1253.$(OBJEXT): internal/special_consts.h
 enc/windows_1253.$(OBJEXT): internal/static_assert.h
@@ -10502,7 +10439,6 @@ enc/windows_1254.$(OBJEXT): internal/memory.h
 enc/windows_1254.$(OBJEXT): internal/method.h
 enc/windows_1254.$(OBJEXT): internal/module.h
 enc/windows_1254.$(OBJEXT): internal/newobj.h
-enc/windows_1254.$(OBJEXT): internal/rgengc.h
 enc/windows_1254.$(OBJEXT): internal/scan_args.h
 enc/windows_1254.$(OBJEXT): internal/special_consts.h
 enc/windows_1254.$(OBJEXT): internal/static_assert.h
@@ -10664,7 +10600,6 @@ enc/windows_1257.$(OBJEXT): internal/memory.h
 enc/windows_1257.$(OBJEXT): internal/method.h
 enc/windows_1257.$(OBJEXT): internal/module.h
 enc/windows_1257.$(OBJEXT): internal/newobj.h
-enc/windows_1257.$(OBJEXT): internal/rgengc.h
 enc/windows_1257.$(OBJEXT): internal/scan_args.h
 enc/windows_1257.$(OBJEXT): internal/special_consts.h
 enc/windows_1257.$(OBJEXT): internal/static_assert.h
@@ -10828,7 +10763,6 @@ enc/windows_31j.$(OBJEXT): internal/memory.h
 enc/windows_31j.$(OBJEXT): internal/method.h
 enc/windows_31j.$(OBJEXT): internal/module.h
 enc/windows_31j.$(OBJEXT): internal/newobj.h
-enc/windows_31j.$(OBJEXT): internal/rgengc.h
 enc/windows_31j.$(OBJEXT): internal/scan_args.h
 enc/windows_31j.$(OBJEXT): internal/special_consts.h
 enc/windows_31j.$(OBJEXT): internal/static_assert.h

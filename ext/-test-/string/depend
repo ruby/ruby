@@ -153,7 +153,6 @@ capacity.o: $(hdrdir)/ruby/internal/memory.h
 capacity.o: $(hdrdir)/ruby/internal/method.h
 capacity.o: $(hdrdir)/ruby/internal/module.h
 capacity.o: $(hdrdir)/ruby/internal/newobj.h
-capacity.o: $(hdrdir)/ruby/internal/rgengc.h
 capacity.o: $(hdrdir)/ruby/internal/scan_args.h
 capacity.o: $(hdrdir)/ruby/internal/special_consts.h
 capacity.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -326,7 +325,6 @@ coderange.o: $(hdrdir)/ruby/internal/memory.h
 coderange.o: $(hdrdir)/ruby/internal/method.h
 coderange.o: $(hdrdir)/ruby/internal/module.h
 coderange.o: $(hdrdir)/ruby/internal/newobj.h
-coderange.o: $(hdrdir)/ruby/internal/rgengc.h
 coderange.o: $(hdrdir)/ruby/internal/scan_args.h
 coderange.o: $(hdrdir)/ruby/internal/special_consts.h
 coderange.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -498,7 +496,6 @@ cstr.o: $(hdrdir)/ruby/internal/memory.h
 cstr.o: $(hdrdir)/ruby/internal/method.h
 cstr.o: $(hdrdir)/ruby/internal/module.h
 cstr.o: $(hdrdir)/ruby/internal/newobj.h
-cstr.o: $(hdrdir)/ruby/internal/rgengc.h
 cstr.o: $(hdrdir)/ruby/internal/scan_args.h
 cstr.o: $(hdrdir)/ruby/internal/special_consts.h
 cstr.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -663,7 +660,6 @@ ellipsize.o: $(hdrdir)/ruby/internal/memory.h
 ellipsize.o: $(hdrdir)/ruby/internal/method.h
 ellipsize.o: $(hdrdir)/ruby/internal/module.h
 ellipsize.o: $(hdrdir)/ruby/internal/newobj.h
-ellipsize.o: $(hdrdir)/ruby/internal/rgengc.h
 ellipsize.o: $(hdrdir)/ruby/internal/scan_args.h
 ellipsize.o: $(hdrdir)/ruby/internal/special_consts.h
 ellipsize.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -833,7 +829,6 @@ enc_associate.o: $(hdrdir)/ruby/internal/memory.h
 enc_associate.o: $(hdrdir)/ruby/internal/method.h
 enc_associate.o: $(hdrdir)/ruby/internal/module.h
 enc_associate.o: $(hdrdir)/ruby/internal/newobj.h
-enc_associate.o: $(hdrdir)/ruby/internal/rgengc.h
 enc_associate.o: $(hdrdir)/ruby/internal/scan_args.h
 enc_associate.o: $(hdrdir)/ruby/internal/special_consts.h
 enc_associate.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1005,7 +1000,6 @@ enc_dummy.o: $(hdrdir)/ruby/internal/memory.h
 enc_dummy.o: $(hdrdir)/ruby/internal/method.h
 enc_dummy.o: $(hdrdir)/ruby/internal/module.h
 enc_dummy.o: $(hdrdir)/ruby/internal/newobj.h
-enc_dummy.o: $(hdrdir)/ruby/internal/rgengc.h
 enc_dummy.o: $(hdrdir)/ruby/internal/scan_args.h
 enc_dummy.o: $(hdrdir)/ruby/internal/special_consts.h
 enc_dummy.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1176,7 +1170,6 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/internal/memory.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/method.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/module.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/newobj.h
-enc_str_buf_cat.o: $(hdrdir)/ruby/internal/rgengc.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/scan_args.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/special_consts.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1348,7 +1341,6 @@ fstring.o: $(hdrdir)/ruby/internal/memory.h
 fstring.o: $(hdrdir)/ruby/internal/method.h
 fstring.o: $(hdrdir)/ruby/internal/module.h
 fstring.o: $(hdrdir)/ruby/internal/newobj.h
-fstring.o: $(hdrdir)/ruby/internal/rgengc.h
 fstring.o: $(hdrdir)/ruby/internal/scan_args.h
 fstring.o: $(hdrdir)/ruby/internal/special_consts.h
 fstring.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1510,7 +1502,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1670,7 +1661,6 @@ modify.o: $(hdrdir)/ruby/internal/memory.h
 modify.o: $(hdrdir)/ruby/internal/method.h
 modify.o: $(hdrdir)/ruby/internal/module.h
 modify.o: $(hdrdir)/ruby/internal/newobj.h
-modify.o: $(hdrdir)/ruby/internal/rgengc.h
 modify.o: $(hdrdir)/ruby/internal/scan_args.h
 modify.o: $(hdrdir)/ruby/internal/special_consts.h
 modify.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -1840,7 +1830,6 @@ new.o: $(hdrdir)/ruby/internal/memory.h
 new.o: $(hdrdir)/ruby/internal/method.h
 new.o: $(hdrdir)/ruby/internal/module.h
 new.o: $(hdrdir)/ruby/internal/newobj.h
-new.o: $(hdrdir)/ruby/internal/rgengc.h
 new.o: $(hdrdir)/ruby/internal/scan_args.h
 new.o: $(hdrdir)/ruby/internal/special_consts.h
 new.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2002,7 +1991,6 @@ nofree.o: $(hdrdir)/ruby/internal/memory.h
 nofree.o: $(hdrdir)/ruby/internal/method.h
 nofree.o: $(hdrdir)/ruby/internal/module.h
 nofree.o: $(hdrdir)/ruby/internal/newobj.h
-nofree.o: $(hdrdir)/ruby/internal/rgengc.h
 nofree.o: $(hdrdir)/ruby/internal/scan_args.h
 nofree.o: $(hdrdir)/ruby/internal/special_consts.h
 nofree.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2171,7 +2159,6 @@ normalize.o: $(hdrdir)/ruby/internal/memory.h
 normalize.o: $(hdrdir)/ruby/internal/method.h
 normalize.o: $(hdrdir)/ruby/internal/module.h
 normalize.o: $(hdrdir)/ruby/internal/newobj.h
-normalize.o: $(hdrdir)/ruby/internal/rgengc.h
 normalize.o: $(hdrdir)/ruby/internal/scan_args.h
 normalize.o: $(hdrdir)/ruby/internal/special_consts.h
 normalize.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2344,7 +2331,6 @@ qsort.o: $(hdrdir)/ruby/internal/memory.h
 qsort.o: $(hdrdir)/ruby/internal/method.h
 qsort.o: $(hdrdir)/ruby/internal/module.h
 qsort.o: $(hdrdir)/ruby/internal/newobj.h
-qsort.o: $(hdrdir)/ruby/internal/rgengc.h
 qsort.o: $(hdrdir)/ruby/internal/scan_args.h
 qsort.o: $(hdrdir)/ruby/internal/special_consts.h
 qsort.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2507,7 +2493,6 @@ rb_interned_str.o: $(hdrdir)/ruby/internal/memory.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/method.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/module.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/newobj.h
-rb_interned_str.o: $(hdrdir)/ruby/internal/rgengc.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/scan_args.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/special_consts.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2667,7 +2652,6 @@ rb_str_dup.o: $(hdrdir)/ruby/internal/memory.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/method.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/module.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/newobj.h
-rb_str_dup.o: $(hdrdir)/ruby/internal/rgengc.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/scan_args.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/special_consts.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -2827,7 +2811,6 @@ set_len.o: $(hdrdir)/ruby/internal/memory.h
 set_len.o: $(hdrdir)/ruby/internal/method.h
 set_len.o: $(hdrdir)/ruby/internal/module.h
 set_len.o: $(hdrdir)/ruby/internal/newobj.h
-set_len.o: $(hdrdir)/ruby/internal/rgengc.h
 set_len.o: $(hdrdir)/ruby/internal/scan_args.h
 set_len.o: $(hdrdir)/ruby/internal/special_consts.h
 set_len.o: $(hdrdir)/ruby/internal/static_assert.h

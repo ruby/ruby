@@ -151,7 +151,6 @@ readline.o: $(hdrdir)/ruby/internal/memory.h
 readline.o: $(hdrdir)/ruby/internal/method.h
 readline.o: $(hdrdir)/ruby/internal/module.h
 readline.o: $(hdrdir)/ruby/internal/newobj.h
-readline.o: $(hdrdir)/ruby/internal/rgengc.h
 readline.o: $(hdrdir)/ruby/internal/scan_args.h
 readline.o: $(hdrdir)/ruby/internal/special_consts.h
 readline.o: $(hdrdir)/ruby/internal/static_assert.h

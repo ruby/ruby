@@ -142,7 +142,6 @@ empty.o: $(hdrdir)/ruby/internal/memory.h
 empty.o: $(hdrdir)/ruby/internal/method.h
 empty.o: $(hdrdir)/ruby/internal/module.h
 empty.o: $(hdrdir)/ruby/internal/newobj.h
-empty.o: $(hdrdir)/ruby/internal/rgengc.h
 empty.o: $(hdrdir)/ruby/internal/scan_args.h
 empty.o: $(hdrdir)/ruby/internal/special_consts.h
 empty.o: $(hdrdir)/ruby/internal/static_assert.h

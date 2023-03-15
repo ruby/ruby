@@ -145,7 +145,6 @@ md5.o: $(hdrdir)/ruby/internal/memory.h
 md5.o: $(hdrdir)/ruby/internal/method.h
 md5.o: $(hdrdir)/ruby/internal/module.h
 md5.o: $(hdrdir)/ruby/internal/newobj.h
-md5.o: $(hdrdir)/ruby/internal/rgengc.h
 md5.o: $(hdrdir)/ruby/internal/scan_args.h
 md5.o: $(hdrdir)/ruby/internal/special_consts.h
 md5.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -307,7 +306,6 @@ md5init.o: $(hdrdir)/ruby/internal/memory.h
 md5init.o: $(hdrdir)/ruby/internal/method.h
 md5init.o: $(hdrdir)/ruby/internal/module.h
 md5init.o: $(hdrdir)/ruby/internal/newobj.h
-md5init.o: $(hdrdir)/ruby/internal/rgengc.h
 md5init.o: $(hdrdir)/ruby/internal/scan_args.h
 md5init.o: $(hdrdir)/ruby/internal/special_consts.h
 md5init.o: $(hdrdir)/ruby/internal/static_assert.h

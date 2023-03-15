@@ -669,7 +669,7 @@ end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   add_assertion testsrc, -> as do
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
+    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # for --jit-wait
       timeout_seconds *= 3
     end
 

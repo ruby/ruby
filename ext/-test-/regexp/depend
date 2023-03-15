@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -302,7 +301,6 @@ parse_depth_limit.o: $(hdrdir)/ruby/internal/memory.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/method.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/module.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/newobj.h
-parse_depth_limit.o: $(hdrdir)/ruby/internal/rgengc.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/scan_args.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/special_consts.h
 parse_depth_limit.o: $(hdrdir)/ruby/internal/static_assert.h

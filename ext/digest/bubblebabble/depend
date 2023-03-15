@@ -142,7 +142,6 @@ bubblebabble.o: $(hdrdir)/ruby/internal/memory.h
 bubblebabble.o: $(hdrdir)/ruby/internal/method.h
 bubblebabble.o: $(hdrdir)/ruby/internal/module.h
 bubblebabble.o: $(hdrdir)/ruby/internal/newobj.h
-bubblebabble.o: $(hdrdir)/ruby/internal/rgengc.h
 bubblebabble.o: $(hdrdir)/ruby/internal/scan_args.h
 bubblebabble.o: $(hdrdir)/ruby/internal/special_consts.h
 bubblebabble.o: $(hdrdir)/ruby/internal/static_assert.h

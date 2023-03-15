@@ -141,7 +141,6 @@ class2name.o: $(hdrdir)/ruby/internal/memory.h
 class2name.o: $(hdrdir)/ruby/internal/method.h
 class2name.o: $(hdrdir)/ruby/internal/module.h
 class2name.o: $(hdrdir)/ruby/internal/newobj.h
-class2name.o: $(hdrdir)/ruby/internal/rgengc.h
 class2name.o: $(hdrdir)/ruby/internal/scan_args.h
 class2name.o: $(hdrdir)/ruby/internal/special_consts.h
 class2name.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -301,7 +300,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h

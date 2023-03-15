@@ -34,7 +34,7 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -164,7 +164,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq && ISEQ_BODY(iseq)) {
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
-        mjit_free_iseq(iseq); /* Notify MJIT */
+        rb_rjit_free_iseq(iseq); /* Notify RJIT */
 #if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
 #endif
@@ -243,7 +243,15 @@ rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
+#if USE_MMTK
+                // Note: with an evacuating GC (such as Immix),
+                // class_value may point to a moved object now.
+                if (!rb_mmtk_enabled_p()) {
+#endif
                 RUBY_ASSERT(!RB_TYPE_P(icvarc->entry->class_value, T_NONE));
+#if USE_MMTK
+                }
+#endif
 
                 rb_gc_mark_and_move(&icvarc->entry->class_value);
             }
@@ -376,16 +384,16 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
 
         if (reference_updating) {
-#if USE_MJIT
-            mjit_update_references(iseq);
+#if USE_RJIT
+            rb_rjit_iseq_update_references(body);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_update_references(body->yjit_payload);
 #endif
         }
         else {
-#if USE_MJIT
-            mjit_mark_cc_entries(body);
+#if USE_RJIT
+            rb_rjit_iseq_mark(body->rjit_blocks);
 #endif
 #if USE_YJIT
             rb_yjit_iseq_mark(body->yjit_payload);
@@ -1928,7 +1936,7 @@ rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
 }
 #endif
 
-MJIT_FUNC_EXPORTED rb_event_flag_t
+rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
     const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);

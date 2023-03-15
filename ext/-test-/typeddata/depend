@@ -142,7 +142,6 @@ typeddata.o: $(hdrdir)/ruby/internal/memory.h
 typeddata.o: $(hdrdir)/ruby/internal/method.h
 typeddata.o: $(hdrdir)/ruby/internal/module.h
 typeddata.o: $(hdrdir)/ruby/internal/newobj.h
-typeddata.o: $(hdrdir)/ruby/internal/rgengc.h
 typeddata.o: $(hdrdir)/ruby/internal/scan_args.h
 typeddata.o: $(hdrdir)/ruby/internal/special_consts.h
 typeddata.o: $(hdrdir)/ruby/internal/static_assert.h

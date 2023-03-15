@@ -142,7 +142,6 @@ recursion.o: $(hdrdir)/ruby/internal/memory.h
 recursion.o: $(hdrdir)/ruby/internal/method.h
 recursion.o: $(hdrdir)/ruby/internal/module.h
 recursion.o: $(hdrdir)/ruby/internal/newobj.h
-recursion.o: $(hdrdir)/ruby/internal/rgengc.h
 recursion.o: $(hdrdir)/ruby/internal/scan_args.h
 recursion.o: $(hdrdir)/ruby/internal/special_consts.h
 recursion.o: $(hdrdir)/ruby/internal/static_assert.h

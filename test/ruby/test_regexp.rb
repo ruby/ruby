@@ -40,19 +40,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("a".gsub(/a\Z/, ""), "")
   end
 
-  def test_yoshidam_net_20041111_1
-    s = "[\xC2\xA0-\xC3\xBE]"
-    r = assert_deprecated_warning(/3\.3/) {Regexp.new(s, nil, "u")}
-    assert_match(r, "\xC3\xBE")
-  end
-
-  def test_yoshidam_net_20041111_2
-    assert_raise(RegexpError) do
-      s = "[\xFF-\xFF]".force_encoding("utf-8")
-      assert_warning(/3\.3/) {Regexp.new(s, nil, "u")}
-    end
-  end
-
   def test_ruby_dev_31309
     assert_equal('Ruby', 'Ruby'.sub(/[^a-z]/i, '-'))
   end
@@ -713,25 +700,11 @@ class TestRegexp < Test::Unit::TestCase
       assert_equal(//n, Regexp.new("", Regexp::NOENCODING, timeout: 1))
 
       assert_equal(arg_encoding_none, Regexp.new("", Regexp::NOENCODING).options)
-    end
 
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n", timeout: 1).encoding)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(//n, Regexp.new("", nil, "n"))
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(arg_encoding_none, Regexp.new("", nil, "n").options)
-    end
-    assert_deprecated_warning(/3\.3/) do
-      assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
+      assert_nil(Regexp.new("").timeout)
+      assert_equal(1.0, Regexp.new("", timeout: 1.0).timeout)
+      assert_nil(Regexp.compile("").timeout)
+      assert_equal(1.0, Regexp.compile("", timeout: 1.0).timeout)
     end
 
     assert_raise(RegexpError) { Regexp.new(")(") }
@@ -1782,6 +1755,21 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("10:0:0".match(pattern)[0], "10:0:0")
   end
 
+  def test_bug_19467
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+
+      assert_nil(/\A.*a.*z\z/ =~ "a" * 1000000 + "y")
+    end;
+  end
+
+  def test_bug_19476 # [Bug #19476]
+    assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
+    assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
@@ -1791,5 +1779,12 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
     assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
+  end
+
+  def test_linear_performance
+    pre = ->(n) {[Regexp.new("a?" * n + "a" * n), "a" * n]}
+    assert_linear_performance(factor: 29, first: 10, max: 1, pre: pre) do |re, s|
+      re =~ s
+    end
   end
 end

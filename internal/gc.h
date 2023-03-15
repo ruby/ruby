@@ -129,8 +129,6 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj);
 
-
-struct rb_thread_struct;
 size_t rb_size_pool_slot_size(unsigned char pool_id);
 
 struct rb_execution_context_struct; /* in vm_core.h */
@@ -245,6 +243,9 @@ void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
 size_t rb_gc_obj_slot_size(VALUE obj);
 bool rb_gc_size_allocatable_p(size_t size);
 int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_is_ptr_to_obj(void *ptr);
+VALUE rb_gc_id2ref_obj_tbl(VALUE objid);
+VALUE rb_define_finalizer_no_check(VALUE obj, VALUE block);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
@@ -299,11 +300,9 @@ void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, siz
 void ruby_sized_xfree(void *x, size_t size);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
-MJIT_SYMBOL_EXPORT_END
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 
