@@ -1096,7 +1096,7 @@ Also, a list:
     end
 
     @RUBY_VERSION        = RUBY_VERSION
-    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
+    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL
     @RUBY_REVISION       = RUBY_REVISION       if defined?(RUBY_REVISION)
     @RUBY_DESCRIPTION    = RUBY_DESCRIPTION
     @RUBY_ENGINE         = RUBY_ENGINE
@@ -1116,8 +1116,7 @@ Also, a list:
     util_clear_RUBY_VERSION
 
     Object.const_set :RUBY_VERSION,        @RUBY_VERSION
-    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL  if
-      defined?(@RUBY_PATCHLEVEL)
+    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL
     Object.const_set :RUBY_REVISION,       @RUBY_REVISION    if
       defined?(@RUBY_REVISION)
     Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION
