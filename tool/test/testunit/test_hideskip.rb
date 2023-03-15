@@ -13,7 +13,7 @@ class TestHideSkip < Test::Unit::TestCase
   private
 
   def hideskip(*args)
-    IO.popen([*@options[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
+    IO.popen([*@__runner_options__[:ruby], "#{File.dirname(__FILE__)}/test4test_hideskip.rb",
                        "--verbose", *args], err: [:child, :out]) {|f|
       f.read
     }
