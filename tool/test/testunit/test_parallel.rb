@@ -12,8 +12,8 @@ module TestParallel
     def setup
       i, @worker_in = IO.pipe
       @worker_out, o = IO.pipe
-      @worker_pid = spawn(*@options[:ruby], PARALLEL_RB,
-                          "--ruby", @options[:ruby].join(" "),
+      @worker_pid = spawn(*@__runner_options__[:ruby], PARALLEL_RB,
+                          "--ruby", @__runner_options__[:ruby].join(" "),
                           "-j", "t1", "-v", out: o, in: i)
       [i,o].each(&:close)
     end
@@ -145,8 +145,8 @@ module TestParallel
   class TestParallel < Test::Unit::TestCase
     def spawn_runner(*opt_args, jobs: "t1")
       @test_out, o = IO.pipe
-      @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "--ruby", @options[:ruby].join(" "),
+      @test_pid = spawn(*@__runner_options__[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @__runner_options__[:ruby].join(" "),
                         "-j", jobs, *opt_args, out: o, err: o)
       o.close
     end
