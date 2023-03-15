@@ -9945,12 +9945,21 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 #undef I
     }
 
+#if USE_MMTK
+    // This function is only called from `objspace_dump.c`.
+    // In MMTk, these bitmaps are not prepared.  Accessing them will result in crash.
+    // Actually those flags are not exposed to mutators when using MMTk.
+    if (!rb_mmtk_enabled_p() && flags != NULL) {
+#endif
     if (RVALUE_WB_UNPROTECTED(obj) == 0 && n<max)                   flags[n++] = ID_wb_protected;
     if (RVALUE_OLD_P(obj) && n<max)                                 flags[n++] = ID_old;
     if (RVALUE_UNCOLLECTIBLE(obj) && n<max)                         flags[n++] = ID_uncollectible;
     if (MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj) && n<max) flags[n++] = ID_marking;
     if (MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), obj) && n<max)    flags[n++] = ID_marked;
     if (MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj) && n<max)  flags[n++] = ID_pinned;
+#if USE_MMTK
+    }
+#endif
     return n;
 }
 
