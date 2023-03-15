@@ -143,6 +143,7 @@ pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
 pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
 pub use rb_get_cfp_self as get_cfp_self;

@@ -582,34 +582,28 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u16) {
+pub fn gen_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
+    let entryref = make_entry_ref(iseq);
+    let stub_addr = match gen_entry_stub(&entryref, ocb) {
+        Some(addr) => addr,
+        None => return,
+    };
+
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
     let expected_pc_opnd = Opnd::const_ptr(expected_pc as *const u8);
 
+    asm.comment("guard expected PC");
     asm.cmp(pc_opnd, expected_pc_opnd);
 
-    let pc_match = asm.new_label("pc_match");
-    asm.je(pc_match);
-
-    // We're not starting at the first PC, so we need to exit.
-    gen_counter_incr!(asm, leave_start_pc_non_zero);
-
-    asm.cpop_into(SP);
-    asm.cpop_into(EC);
-    asm.cpop_into(CFP);
-
-    asm.frame_teardown();
-
-    asm.cret(Qundef.into());
-
-    // PC should match the expected insn_idx
-    asm.write_label(pc_match);
+    asm.mark_entry_start(&entryref);
+    asm.jne(stub_addr.into());
+    asm.mark_entry_end(&entryref);
 }
 
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
-pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u16) -> Option<CodePtr> {
+pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) -> Option<CodePtr> {
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
@@ -646,12 +640,12 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u16) -> O
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll take a side exit.
     if unsafe { get_iseq_flags_has_opt(iseq) } {
-        gen_pc_guard(&mut asm, iseq, insn_idx);
+        gen_entry_guard(&mut asm, ocb, iseq, insn_idx);
     }
 
     asm.compile(cb);
 
-    if cb.has_dropped_bytes() {
+    if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
         None
     } else {
         // Mark code pages for code GC
@@ -7839,6 +7833,9 @@ pub struct CodegenGlobals {
     // For servicing branch stubs
     branch_stub_hit_trampoline: CodePtr,
 
+    // For servicing entry stubs
+    entry_stub_hit_trampoline: CodePtr,
+
     // Code for full logic of returning from C method and exiting to the interpreter
     outline_full_cfunc_return_pos: CodePtr,
 
@@ -7924,6 +7921,7 @@ impl CodegenGlobals {
         let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         let branch_stub_hit_trampoline = gen_branch_stub_hit_trampoline(&mut ocb);
+        let entry_stub_hit_trampoline = gen_entry_stub_hit_trampoline(&mut ocb);
 
         // Generate full exit code for C func
         let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
@@ -7942,6 +7940,7 @@ impl CodegenGlobals {
             stub_exit_code: stub_exit_code,
             outline_full_cfunc_return_pos: cfunc_exit_code,
             branch_stub_hit_trampoline,
+            entry_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
             method_codegen_table: HashMap::new(),
             ocb_pages,
@@ -8078,6 +8077,10 @@ impl CodegenGlobals {
 
     pub fn get_branch_stub_hit_trampoline() -> CodePtr {
         CodegenGlobals::get_instance().branch_stub_hit_trampoline
+    }
+
+    pub fn get_entry_stub_hit_trampoline() -> CodePtr {
+        CodegenGlobals::get_instance().entry_stub_hit_trampoline
     }
 
     pub fn look_up_codegen_method(method_serial: usize) -> Option<MethodGenFn> {

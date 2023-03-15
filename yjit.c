@@ -765,6 +765,12 @@ rb_get_ec_cfp(const rb_execution_context_t *ec)
     return ec->cfp;
 }
 
+const rb_iseq_t *
+rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
+{
+    return cfp->iseq;
+}
+
 VALUE *
 rb_get_cfp_pc(struct rb_control_frame_struct *cfp)
 {
