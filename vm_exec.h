@@ -174,6 +174,14 @@ default:                        \
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
 
+#define TRY_JIT_EXEC(ec, val) do { \
+    if (!UNDEF_P(val)) break; \
+    jit_func_t jit_compiled_func = jit_compile(ec); \
+    if (!jit_compiled_func) break; \
+    val = jit_compiled_func((ec), (ec)->cfp); \
+    if ((ec)->tag->state) THROW_EXCEPTION(val); \
+} while (0)
+
 #define SCREG(r) (reg_##r)
 
 #define VM_DEBUG_STACKOVERFLOW 0
