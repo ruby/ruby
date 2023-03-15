@@ -1126,6 +1126,7 @@ impl Assembler
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::disasm::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
         (Assembler::new(), CodeBlock::new_dummy(1024))
@@ -1474,6 +1475,11 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
 
         asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_disasm!(cb, "0b0001ca4b0000f8", "
+            0x0: eor x11, x0, x1
+            0x4: stur x11, [x2]
+        ");
     }
 
     #[test]

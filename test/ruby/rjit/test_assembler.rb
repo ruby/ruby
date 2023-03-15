@@ -166,7 +166,7 @@ module RubyVM::RJIT
       asm.jmp([:rax, 8])   # JMP r/m64 (Mod 01: [reg]+disp8)
       asm.jmp(:rax)        # JMP r/m64 (Mod 11: reg)
       assert_compile(asm, <<~EOS)
-        0x0: jmp 0x2
+        0x0: jmp 2
         0x2: jmp 0xff
         0x7: jmp qword ptr [rax + 8]
         0xa: jmp rax
@@ -338,23 +338,12 @@ module RubyVM::RJIT
       end_addr = @cb.write_addr
 
       io = StringIO.new
-      @cb.dump_disasm(start_addr, end_addr, io:, color: false)
+      @cb.dump_disasm(start_addr, end_addr, io:, color: false, test: true)
       io.seek(0)
       disasm = io.read
 
       disasm.gsub!(/^  /, '')
       disasm.sub!(/\n\z/, '')
-      disasm.gsub!(/0x(\h{12})/) do
-        offset = $1.to_i(16) - start_addr
-        if offset.negative?
-          "-0x#{offset.to_s(16)}"
-        else
-          "0x#{offset.to_s(16)}"
-        end
-      end
-      (start_addr...end_addr).each do |addr|
-        disasm.gsub!("0x#{addr.to_s(16)}", "0x#{(addr - start_addr).to_s(16)}")
-      end
       disasm
     end
   end

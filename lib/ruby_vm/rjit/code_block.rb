@@ -58,8 +58,8 @@ module RubyVM::RJIT
       (@mem_block...(@mem_block + @mem_size)).include?(addr)
     end
 
-    def dump_disasm(from, to, io: STDOUT, color: true)
-      C.dump_disasm(from, to).each do |address, mnemonic, op_str|
+    def dump_disasm(from, to, io: STDOUT, color: true, test: false)
+      C.dump_disasm(from, to, test:).each do |address, mnemonic, op_str|
         @comments.fetch(address, []).each do |comment|
           io.puts colorize("  # #{comment}", bold: true, color:)
         end

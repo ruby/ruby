@@ -738,17 +738,16 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      def assert_linear_performance(factor: 10_000, first: factor, max: 2, pre: ->(n) {n})
+      def assert_linear_performance(factor: 10_000, first: factor, max: 2, rehearsal: first, pre: ->(n) {n})
         n = first
         arg = pre.call(n)
-        tmax = (0..factor).map do
+        tmax = (0..rehearsal).map do
           st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           yield arg
           (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
         end.max
 
-        1.upto(max) do |i|
-          i += 1 if first >= factor
+        (first >= factor ? 2 : 1).upto(max) do |i|
           n = i * factor
           t = tmax * factor
           arg = pre.call(n)

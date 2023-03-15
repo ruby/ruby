@@ -367,8 +367,10 @@ enum rb_iseq_type {
 
 // Attributes specified by Primitive.attr!
 enum rb_builtin_attr {
-    // If true, this ISeq does not call methods.
+    // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
+    // The iseq does not allocate objects.
+    BUILTIN_ATTR_NO_GC = 0x02,
 };
 
 struct rb_iseq_constant_body {

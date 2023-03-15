@@ -662,6 +662,9 @@ pub struct iseq_inline_iv_cache_entry {
 pub struct iseq_inline_cvar_cache_entry {
     pub entry: *mut rb_cvar_class_tbl_entry,
 }
+pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
+pub const BUILTIN_ATTR_NO_GC: rb_builtin_attr = 2;
+pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword {
@@ -1276,8 +1279,8 @@ extern "C" {
         kw_splat: ::std::os::raw::c_int,
         block_handler: VALUE,
     ) -> VALUE;
-    pub fn rb_leaf_invokebuiltin_iseq_p(iseq: *const rb_iseq_t) -> bool;
-    pub fn rb_leaf_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
+    pub fn rb_yjit_iseq_builtin_attrs(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+    pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
     pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
     pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
@@ -1330,4 +1333,5 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_yjit_assert_holding_vm_lock();
 }

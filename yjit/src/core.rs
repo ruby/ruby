@@ -402,7 +402,7 @@ pub struct BlockId {
     pub iseq: IseqPtr,
 
     /// Index in the iseq where the block starts
-    pub idx: u32,
+    pub idx: u16,
 }
 
 /// Branch code shape enumeration
@@ -621,7 +621,7 @@ pub struct Block {
     blockid: BlockId,
 
     // Index one past the last instruction for this block in the iseq
-    end_idx: u32,
+    end_idx: u16,
 
     // Context at the start of the block
     // This should never be mutated
@@ -866,9 +866,15 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // Nothing to mark.
         return;
     } else {
-        // SAFETY: It looks like the GC takes the VM lock while marking
-        // so we should be satisfying aliasing rules here.
-        unsafe { &*(payload as *const IseqPayload) }
+        // SAFETY: The GC takes the VM lock while marking, which
+        // we assert, so we should be synchronized and data race free.
+        //
+        // For aliasing, having the VM lock hopefully also implies that no one
+        // else has an overlapping &mut IseqPayload.
+        unsafe {
+            rb_yjit_assert_holding_vm_lock();
+            &*(payload as *const IseqPayload)
+        }
     };
 
     // For marking VALUEs written into the inline code block.
@@ -918,9 +924,15 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
         // Nothing to update.
         return;
     } else {
-        // SAFETY: It looks like the GC takes the VM lock while updating references
-        // so we should be satisfying aliasing rules here.
-        unsafe { &*(payload as *const IseqPayload) }
+        // SAFETY: The GC takes the VM lock while marking, which
+        // we assert, so we should be synchronized and data race free.
+        //
+        // For aliasing, having the VM lock hopefully also implies that no one
+        // else has an overlapping &mut IseqPayload.
+        unsafe {
+            rb_yjit_assert_holding_vm_lock();
+            &*(payload as *const IseqPayload)
+        }
     };
 
     // Evict other threads from generated code since we are about to patch them.
@@ -1202,7 +1214,7 @@ impl Block {
         self.blockid
     }
 
-    pub fn get_end_idx(&self) -> u32 {
+    pub fn get_end_idx(&self) -> u16 {
         self.end_idx
     }
 
@@ -1242,7 +1254,7 @@ impl Block {
 
     /// Set the index of the last instruction in the block
     /// This can be done only once for a block
-    pub fn set_end_idx(&mut self, end_idx: u32) {
+    pub fn set_end_idx(&mut self, end_idx: u16) {
         assert!(self.end_idx == 0);
         self.end_idx = end_idx;
     }
@@ -1665,7 +1677,7 @@ impl BlockId {
     #[cfg(debug_assertions)]
     #[allow(dead_code)]
     pub fn dump_src_loc(&self) {
-        unsafe { rb_yjit_dump_iseq_loc(self.iseq, self.idx) }
+        unsafe { rb_yjit_dump_iseq_loc(self.iseq, self.idx as u32) }
     }
 }
 
@@ -1790,7 +1802,7 @@ fn gen_block_series_body(
 /// NOTE: this function assumes that the VM lock has been taken
 pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
     // Compute the current instruction index based on the current PC
-    let insn_idx: u32 = unsafe {
+    let insn_idx: u16 = unsafe {
         let pc_zero = rb_iseq_pc_at_idx(iseq, 0);
         let ec_pc = get_cfp_pc(get_ec_cfp(ec));
         ec_pc.offset_from(pc_zero).try_into().ok()?
@@ -1971,7 +1983,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let original_interp_sp = get_cfp_sp(cfp);
 
         let running_iseq = rb_cfp_get_iseq(cfp);
-        let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx);
+        let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target_blockid.idx.into());
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
 
         assert_eq!(running_iseq, target_blockid.iseq as _, "each stub expects a particular iseq");
@@ -2382,7 +2394,7 @@ pub fn free_block(blockref: &BlockRef) {
 pub fn verify_blockid(blockid: BlockId) {
     unsafe {
         assert!(rb_IMEMO_TYPE_P(blockid.iseq.into(), imemo_iseq) != 0);
-        assert!(blockid.idx < get_iseq_encoded_size(blockid.iseq));
+        assert!(u32::from(blockid.idx) < get_iseq_encoded_size(blockid.iseq));
     }
 }
 

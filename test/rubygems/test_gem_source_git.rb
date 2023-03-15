@@ -8,7 +8,7 @@ class TestGemSourceGit < Gem::TestCase
 
     @name, @version, @repository, @head = git_gem
 
-    @hash = Digest::SHA1.hexdigest @repository
+    @hash = OpenSSL::Digest::SHA1.hexdigest @repository
 
     @source = Gem::Source::Git.new @name, @repository, nil, false
   end

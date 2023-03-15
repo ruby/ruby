@@ -52,7 +52,7 @@ int ruby_assert_critical_section_entered = 0;
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
-VALUE vm_exec(rb_execution_context_t *, bool);
+VALUE vm_exec(rb_execution_context_t *);
 
 extern const char *const rb_debug_counter_names[];
 
@@ -369,11 +369,9 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
 
 #if USE_RJIT || USE_YJIT
-// Try to execute the current iseq in ec.  Use JIT code if it is ready.
-// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
-// YJIT compiles on the thread running the iseq.
-static inline VALUE
-jit_exec(rb_execution_context_t *ec)
+// Try to compile the current ISeq in ec. Return 0 if not compiled.
+static inline jit_func_t
+jit_compile(rb_execution_context_t *ec)
 {
     // Increment the ISEQ's call counter
     const rb_iseq_t *iseq = ec->cfp->iseq;
@@ -383,43 +381,42 @@ jit_exec(rb_execution_context_t *ec)
         body->total_calls++;
     }
     else {
-        return Qundef;
+        return 0;
     }
 
     // Trigger JIT compilation as needed
-    jit_func_t func;
     if (yjit_enabled) {
         if (body->total_calls == rb_yjit_call_threshold())  {
-            // If we couldn't generate any code for this iseq, then return
-            // Qundef so the interpreter will handle the call.
-            if (!rb_yjit_compile_iseq(iseq, ec)) {
-                return Qundef;
-            }
-        }
-        // YJIT tried compiling this function once before and couldn't do
-        // it, so return Qundef so the interpreter handles it.
-        if ((func = body->jit_func) == 0) {
-            return Qundef;
+            rb_yjit_compile_iseq(iseq, ec);
         }
     }
     else { // rb_rjit_call_p
         if (body->total_calls == rb_rjit_call_threshold()) {
             rb_rjit_compile(iseq);
         }
-        if ((func = body->jit_func) == 0) {
-            return Qundef;
-        }
     }
 
-    // Call the JIT code
-    return func(ec, ec->cfp); // SystemV x64 calling convention: ec -> RDI, cfp -> RSI
+    return body->jit_func;
 }
-#else
+
+// Try to execute the current iseq in ec.  Use JIT code if it is ready.
+// If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
+// YJIT compiles on the thread running the iseq.
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
 {
-    return Qundef;
+    jit_func_t func = jit_compile(ec);
+    if (func) {
+        // Call the JIT code
+        return func(ec, ec->cfp);
+    }
+    else {
+        return Qundef;
+    }
 }
+#else
+static inline jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
+static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
 #endif
 
 #include "vm_insnhelper.c"
@@ -1384,7 +1381,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
                   ec->cfp->sp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size,
                   ISEQ_BODY(iseq)->stack_max);
-    return vm_exec(ec, true);
+    return vm_exec(ec);
 }
 
 static VALUE
@@ -1405,7 +1402,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                   ISEQ_BODY(iseq)->stack_max);
 
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec, true);
+    ret = vm_exec(ec);
 
     return ret;
 }
@@ -2271,9 +2268,6 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     VALUE *ep;                       // ep
     void *code;                      //
   };
-
-  If jit_exec is already called before calling vm_exec, `jit_enable_p` should
-  be FALSE to avoid calling `jit_exec` twice.
  */
 
 static inline VALUE
@@ -2289,7 +2283,6 @@ struct rb_vm_exec_context {
     VALUE initial;
     VALUE result;
     enum ruby_tag_type state;
-    bool jit_enable_p;
 };
 
 static void
@@ -2318,7 +2311,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (!ctx->jit_enable_p || UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
+    if (UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
         ctx->result = vm_exec_core(ctx->ec, ctx->initial);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
@@ -2333,12 +2326,11 @@ vm_exec_bottom_rescue(void *context)
 }
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
+vm_exec(rb_execution_context_t *ec)
 {
     struct rb_vm_exec_context ctx = {
         .ec = ec,
         .initial = 0, .result = Qundef,
-        .jit_enable_p = jit_enable_p,
     };
     struct rb_wasm_try_catch try_catch;
 
@@ -2360,7 +2352,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 #else
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
+vm_exec(rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
@@ -2370,7 +2362,7 @@ vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (!jit_enable_p || UNDEF_P(result = jit_exec(ec))) {
+        if (UNDEF_P(result = jit_exec(ec))) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */
@@ -2619,7 +2611,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    val = vm_exec(ec, true);
+    val = vm_exec(ec);
     return val;
 }
 
@@ -2630,7 +2622,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     VALUE val;
 
     vm_set_main_stack(ec, iseq);
-    val = vm_exec(ec, true);
+    val = vm_exec(ec);
     return val;
 }
 
@@ -3883,9 +3875,6 @@ Init_VM(void)
 #endif
 #if OPT_INLINE_METHOD_CACHE
     rb_ary_push(opts, rb_str_new2("inline method cache"));
-#endif
-#if OPT_BLOCKINLINING
-    rb_ary_push(opts, rb_str_new2("block inlining"));
 #endif
 
     /* ::RubyVM::INSTRUCTION_NAMES

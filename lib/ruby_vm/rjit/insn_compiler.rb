@@ -1254,8 +1254,8 @@ module RubyVM::RJIT
       # Get call info
       cd = C.rb_call_data.new(jit.operand(0))
       ci = cd.ci
-      argc = C.vm_ci_argc(ci)
-      flags = C.vm_ci_flag(ci)
+      _argc = C.vm_ci_argc(ci)
+      _flags = C.vm_ci_flag(ci)
 
       # Get block_handler
       cfp = jit.cfp

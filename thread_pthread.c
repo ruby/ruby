@@ -2282,7 +2282,7 @@ ubf_ppoll_sleep(void *ignore)
 #define THREAD_BLOCKING_YIELD(th) do { \
     const rb_thread_t *next; \
     struct rb_thread_sched *sched = TH_SCHED(th); \
-    RB_GC_SAVE_MACHINE_CONTEXT(th); \
+    RB_VM_SAVE_MACHINE_CONTEXT(th); \
     rb_native_mutex_lock(&sched->lock); \
     next = thread_sched_to_waiting_common(sched); \
     rb_native_mutex_unlock(&sched->lock); \

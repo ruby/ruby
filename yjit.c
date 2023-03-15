@@ -724,28 +724,33 @@ rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 
+unsigned int
+rb_yjit_iseq_builtin_attrs(const rb_iseq_t *iseq)
+{
+    return iseq->body->builtin_attrs;
+}
 
-// If true, the iseq is leaf and it can be replaced by a single C call.
-bool
-rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
+// If true, the iseq has only opt_invokebuiltin_delegate_leave and leave insns.
+static bool
+invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
     unsigned int invokebuiltin_len = insn_len(BIN(opt_invokebuiltin_delegate_leave));
     unsigned int leave_len = insn_len(BIN(leave));
-
-    return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
+    return iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
         rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
-        (iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF) != 0
-    );
+        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave);
 }
 
-// Return an rb_builtin_function if the iseq contains only that leaf builtin function.
+// Return an rb_builtin_function if the iseq contains only that builtin function.
 const struct rb_builtin_function *
-rb_leaf_builtin_function(const rb_iseq_t *iseq)
+rb_yjit_builtin_function(const rb_iseq_t *iseq)
 {
-    if (!rb_leaf_invokebuiltin_iseq_p(iseq))
+    if (invokebuiltin_delegate_leave_p(iseq)) {
+        return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+    }
+    else {
         return NULL;
-    return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+    }
 }
 
 VALUE
@@ -1093,6 +1098,14 @@ object_shape_count(rb_execution_context_t *ec, VALUE self)
 {
     // next_shape_id starts from 0, so it's the same as the count
     return ULONG2NUM((unsigned long)GET_VM()->next_shape_id);
+}
+
+// Assert that we have the VM lock. Relevant mostly for multi ractor situations.
+// The GC takes the lock before calling us, and this asserts that it indeed happens.
+void
+rb_yjit_assert_holding_vm_lock(void)
+{
+    ASSERT_vm_locking();
 }
 
 // Primitives used by yjit.rb

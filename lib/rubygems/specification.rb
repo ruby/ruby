@@ -2184,16 +2184,6 @@ class Gem::Specification < Gem::BasicSpecification
     return false if default_gem?
     return false if File.exist? gem_build_complete_path
 
-    # When we use this methods with local gemspec, we don't handle
-    # build status of extension correctly. So We need to find extension
-    # files in require_paths.
-    # TODO: Gem::Specification couldn't access extension name from extconf.rb
-    #       so we find them with heuristic way. We should improve it.
-    return false if (full_require_paths - [extension_dir]).any? do |path|
-      File.exist?(File.join(path, "#{name}.#{RbConfig::CONFIG['DLEXT']}")) ||
-      !Dir.glob(File.join(path, name, "*.#{RbConfig::CONFIG['DLEXT']}")).empty?
-    end
-
     true
   end
 

@@ -1558,7 +1558,10 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
-        self.push_insn(Insn::LoadInto { dest, opnd });
+        match (dest, opnd) {
+            (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
+            _ => self.push_insn(Insn::LoadInto { dest, opnd }),
+        }
     }
 
     #[must_use]

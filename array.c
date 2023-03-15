@@ -8181,6 +8181,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
     n = 0;
     r = Qundef;
+
+    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+        i = 0;
+        goto init_is_a_value;
+    }
+
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (block_given)
@@ -8265,6 +8271,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     }
 
     goto has_some_value;
+    init_is_a_value:
     for (; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (block_given)
