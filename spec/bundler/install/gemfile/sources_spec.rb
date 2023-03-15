@@ -1074,7 +1074,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       it "refuses to install the existing lockfile and prints an error", :bundler => "3" do
         bundle "config set --local deployment true"
 
-        bundle "install", :artifice => "compact_index", :raise_on_error =>false
+        bundle "install", :artifice => "compact_index", :raise_on_error => false
 
         expect(lockfile).to eq(aggregate_gem_section_lockfile)
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
