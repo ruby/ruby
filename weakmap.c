@@ -163,8 +163,8 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
         return ST_DELETE;
     }
     if (j < i) {
-        SIZED_REALLOC_N(ptr, VALUE, j + 1, i);
-        ptr[0] = j;
+        SIZED_REALLOC_N(ptr, VALUE, j, i);
+        ptr[0] = j - 1;
         *value = (st_data_t)ptr;
     }
     return ST_CONTINUE;
