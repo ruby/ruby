@@ -353,7 +353,7 @@ impl Assembler
             }
         }
 
-        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names), self.spilled_temps);
+        let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names), self.initial_temps);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 

@@ -855,6 +855,9 @@ impl fmt::Debug for Insn {
     }
 }
 
+/// Maximum number of temp slots that could be on a register
+const MAX_TEMP_REGS: usize = 8;
+
 /// Object into which we assemble instructions to be
 /// optimized and lowered
 pub struct Assembler
@@ -865,11 +868,15 @@ pub struct Assembler
     /// Index of the last insn using the output of this insn
     pub(super) live_ranges: Vec<usize>,
 
+    /// Parallel vec with insns
+    /// Bitmap of spilled stack slot indexes of this insn
+    pub(super) spilled_temps: Vec<[bool; MAX_TEMP_REGS]>,
+
+    /// Bitmap of spilled stack slot indexes before the first insn
+    pub(super) initial_temps: [bool; MAX_TEMP_REGS],
+
     /// Names of labels
     pub(super) label_names: Vec<String>,
-
-    /// True if each stack slot of the corresponding index is spilled
-    pub(super) spilled_temps: [bool; 8],
 }
 
 impl Assembler
@@ -886,12 +893,13 @@ impl Assembler
         Self::new_with_label_names(Vec::default(), spilled_temps)
     }
 
-    pub fn new_with_label_names(label_names: Vec<String>, spilled_temps: [bool; 8]) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, initial_temps: [bool; 8]) -> Self {
         Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
+            spilled_temps: Vec::default(),
+            initial_temps,
             label_names,
-            spilled_temps,
         }
     }
 
@@ -925,8 +933,46 @@ impl Assembler
             }
         }
 
+        // Start from the previous stack temp allocation state
+        let mut spilled_temps = if let Some(last_spills) = self.spilled_temps.last() {
+            last_spills.clone()
+        } else {
+            self.initial_temps.clone()
+        };
+
+        // Update the register allocation state of stack temps. We need to do this here to pass
+        // the allocation state to Contexts and side exits before reaching `asm.compile()`.
+        let regs = Self::get_temp_regs();
+        match insn {
+            Insn::SpillTemps { stack_size, .. } => {
+                for stack_idx in 0..usize::min(stack_size as usize, MAX_TEMP_REGS) {
+                    spilled_temps[stack_idx] = true;
+                }
+            }
+            _ => {
+                let mut opnd_iter = insn.opnd_iter();
+                while let Some(opnd) = opnd_iter.next() {
+                    if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
+                        let stack_idx = (stack_size as i32 - idx - 1) as usize;
+                        if stack_idx < MAX_TEMP_REGS && !spilled_temps[stack_idx] && regs.len() > 0 {
+                            // Spill if other registers share the same reg_idx
+                            let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                            let mut other_idx = stack_idx as isize - regs.len() as isize;
+                            while other_idx >= 0 {
+                                if !spilled_temps[other_idx as usize] {
+                                    spilled_temps[other_idx as usize] = true;
+                                }
+                                other_idx -= regs.len() as isize;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
+        self.spilled_temps.push(spilled_temps);
     }
 
     /// Create a new label instance that we can jump to
@@ -942,27 +988,24 @@ impl Assembler
     /// Allocate registers or memory operands for Stack operands
     pub fn alloc_temp_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
-        assert!(regs.len() <= self.spilled_temps.len());
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
+        assert!(regs.len() <= self.initial_temps.len());
+        let spilled_temps = take(&mut self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.initial_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
+            let prev_spilled = if index == 0 { asm.initial_temps } else { spilled_temps[index - 1] };
+            let next_spilled = spilled_temps[index];
+
             match insn {
                 Insn::SpillTemps { stack_size, sp_offset, spilled_size } => {
-                    // Propagate spilled_temps from inline code to outlined code
-                    for stack_idx in 0..usize::min(spilled_size as usize, asm.spilled_temps.len()) {
-                        asm.spilled_temps[stack_idx] = true;
-                    }
-
-                    // Using u8::max to spill only registers that have not been spilled
-                    for stack_idx in 0..usize::min(stack_size as usize, asm.spilled_temps.len()) {
+                    for stack_idx in (spilled_size as usize)..usize::min(stack_size as usize, MAX_TEMP_REGS) {
                         // Spill if a register is allocated to the index
-                        if !asm.spilled_temps[stack_idx] && regs.len() > 0 {
+                        if !prev_spilled[stack_idx] && next_spilled[stack_idx] && regs.len() > 0 {
                             let offset = sp_offset - (stack_size as i8) + (stack_idx as i8);
                             let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
                             asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
                             incr_counter!(temp_spills);
-                            asm.spilled_temps[stack_idx] = true;
                         }
                     }
                 }
@@ -972,16 +1015,15 @@ impl Assembler
                         *opnd = iterator.map_opnd(*opnd);
                         if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
                             let stack_idx = (stack_size as i32 - idx - 1) as usize;
-                            *opnd = if stack_idx < asm.spilled_temps.len() && !asm.spilled_temps[stack_idx] && regs.len() > 0 {
+                            *opnd = if stack_idx < MAX_TEMP_REGS && !next_spilled[stack_idx] && regs.len() > 0 {
                                 let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
                                 // Spill if other registers share the same reg_idx
                                 let mut other_idx = stack_idx as isize - regs.len() as isize;
                                 while other_idx >= 0 {
-                                    if !asm.spilled_temps[other_idx as usize] {
+                                    if !prev_spilled[other_idx as usize] {
                                         let offset = sp_offset - (stack_size as i8) + (other_idx as i8);
                                         asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
                                         incr_counter!(temp_spills);
-                                        asm.spilled_temps[other_idx as usize] = true;
                                     }
                                     other_idx -= regs.len() as isize;
                                 }
@@ -1072,7 +1114,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.initial_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
