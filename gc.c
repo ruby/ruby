@@ -1253,6 +1253,7 @@ NORETURN(static void *gc_vraise(void *ptr));
 NORETURN(static void gc_raise(VALUE exc, const char *fmt, ...));
 NORETURN(static void negative_size_allocation_error(const char *));
 
+static void init_mark_stack(mark_stack_t *stack);
 
 static int ready_to_gc(rb_objspace_t *objspace);
 
@@ -1293,7 +1294,6 @@ static void gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_pin(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
-static void init_mark_stack(mark_stack_t *stack);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
@@ -1331,7 +1331,6 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 
 #if USE_MMTK
-
 #define TYPED_UPDATE_IF_MOVED(_objspace, _type, _thing) do { \
     if (rb_mmtk_enabled_p()) { \
         *(_type *)&(_thing) = (_type)rb_mmtk_maybe_forward((VALUE)(_thing)); \
@@ -3658,8 +3657,6 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data_ptr)
             VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
 #if USE_MMTK
             }
-#endif
-#if USE_MMTK
 #endif
 
             gc_mark(data->objspace, (VALUE)ccs->entries[i].ci);
