@@ -17,7 +17,7 @@ wmap_replace_ref(st_data_t *key, st_data_t *value, st_data_t _argp, int existing
 {
     *key = rb_gc_location((VALUE)*key);
 
-    VALUE *values = (VALUE *)value;
+    VALUE *values = (VALUE *)*value;
     VALUE size = values[0];
 
     for (VALUE index = 1; index <= size; index++) {

@@ -183,5 +183,15 @@ class TestWeakMap < Test::Unit::TestCase
       GC.compact
       @wm[i] = obj
     end
+
+    assert_separately(%w(--disable-gems), <<-'end;')
+      wm = ObjectSpace::WeakMap.new
+      obj = Object.new
+      100.times do
+        wm[Object.new] = obj
+        GC.start
+      end
+      GC.compact
+    end;
   end
 end
