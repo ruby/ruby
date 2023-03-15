@@ -337,10 +337,10 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
   def validate_array_attribute(field)
     val = @specification.send(field)
     klass = case field
-    when :dependencies then
-      Gem::Dependency
-    else
-      String
+            when :dependencies then
+              Gem::Dependency
+            else
+              String
     end
 
     unless Array === val && val.all? {|x| x.kind_of?(klass) }

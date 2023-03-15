@@ -35,9 +35,9 @@ module Gem::InstallUpdateOptions
                "List the documentation types you wish to",
                "generate.  For example: rdoc,ri") do |value, options|
       options[:document] = case value
-      when nil   then %w[ri]
-      when false then []
-      else            value
+                           when nil   then %w[ri]
+                           when false then []
+                           else value
       end
     end
 

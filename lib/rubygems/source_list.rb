@@ -49,10 +49,10 @@ class Gem::SourceList
 
   def <<(obj)
     src = case obj
-    when Gem::Source
-      obj
-    else
-      Gem::Source.new(obj)
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
     end
 
     @sources << src unless @sources.include?(src)
