@@ -1333,4 +1333,5 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_yjit_assert_holding_vm_lock();
 }
