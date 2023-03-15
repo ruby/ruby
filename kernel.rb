@@ -16,7 +16,7 @@ module Kernel
   #++
   #
   def class
-    Primitive.attr! :leaf, :no_gc
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_obj_class(self)'
   end
 
