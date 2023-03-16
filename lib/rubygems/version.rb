@@ -302,7 +302,7 @@ class Gem::Version
 
   def prerelease?
     unless instance_variable_defined? :@prerelease
-      @prerelease = !!(@version =~ /[a-zA-Z]/)
+      @prerelease = !(@version =~ /[a-zA-Z]/).nil?
     end
     @prerelease
   end
