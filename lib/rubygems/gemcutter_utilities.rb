@@ -116,7 +116,7 @@ module Gem::GemcutterUtilities
   end
 
   def mfa_unauthorized?(response)
-    response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
+    response.is_a?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
   end
 
   def update_scope(scope)
@@ -319,6 +319,6 @@ module Gem::GemcutterUtilities
   end
 
   def api_key_forbidden?(response)
-    response.kind_of?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
+    response.is_a?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
   end
 end

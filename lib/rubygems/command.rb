@@ -93,7 +93,7 @@ class Gem::Command
   # array or a string to be split on white space.
 
   def self.add_specific_extra_args(cmd,args)
-    args = args.split(/\s+/) if args.kind_of? String
+    args = args.split(/\s+/) if args.is_a? String
     specific_extra_args_hash[cmd] = args
   end
 

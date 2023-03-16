@@ -356,7 +356,7 @@ class Gem::RequestSet::GemDependencyAPI
   #   Use the given tag for git:, gist: and github: dependencies.
 
   def gem(name, *requirements)
-    options = requirements.pop if requirements.last.kind_of?(Hash)
+    options = requirements.pop if requirements.last.is_a?(Hash)
     options ||= {}
 
     options[:git] = @current_repository if @current_repository
