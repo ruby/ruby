@@ -172,6 +172,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 end
 
 class Gem::InstallError < Gem::Exception; end
+
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
   attr_accessor :suggestion
   def message
