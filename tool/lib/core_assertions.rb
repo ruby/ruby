@@ -738,28 +738,23 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
-      # Array, Range, Enumerator::ArithmeticSequence and other
-      # Enumerable-s, and each elements should be size factors.
-      #
-      # :yield: each elements of +seq+.
-      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
-        first = seq.first
-        *arg = pre.call(first)
-        tmax = (0..(rehearsal || first)).map do
+      def assert_linear_performance(factor: 10_000, first: factor, max: 2, rehearsal: first, pre: ->(n) {n})
+        n = first
+        arg = pre.call(n)
+        tmax = (0..rehearsal).map do
           st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          yield(*arg)
+          yield arg
           (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
         end.max
 
-        seq.each do |i|
-          next if i == first
-          t = tmax * i / first
-          *arg = pre.call(i)
-          message = "[#{i}]: in #{t}s"
+        (first >= factor ? 2 : 1).upto(max) do |i|
+          n = i * factor
+          t = tmax * factor
+          arg = pre.call(n)
+          message = "[#{i}]: #{n} in #{t}s"
           Timeout.timeout(t, nil, message) do
             st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            yield(*arg)
+            yield arg
             assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
           end
         end
