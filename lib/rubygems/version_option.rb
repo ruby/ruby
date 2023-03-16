@@ -24,8 +24,7 @@ module Gem::VersionOption
     end
 
     add_option("--platform PLATFORM", Gem::Platform,
-               "Specify the platform of gem to #{task}", *wrap) do
-                 |value, options|
+               "Specify the platform of gem to #{task}", *wrap) do |value, options|
       unless options[:added_platform]
         Gem.platforms = [Gem::Platform::RUBY]
         options[:added_platform] = true
@@ -55,8 +54,7 @@ module Gem::VersionOption
     end
 
     add_option("-v", "--version VERSION", Gem::Requirement,
-               "Specify version of gem to #{task}", *wrap) do
-                 |value, options|
+               "Specify version of gem to #{task}", *wrap) do |value, options|
       # Allow handling for multiple --version operators
       if options[:version] && !options[:version].none?
         options[:version].concat([value])

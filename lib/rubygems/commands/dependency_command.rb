@@ -17,8 +17,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
     add_prerelease_option
 
     add_option("-R", "--[no-]reverse-dependencies",
-               "Include reverse dependencies in the output") do
-      |value, options|
+               "Include reverse dependencies in the output") do |value, options|
       options[:reverse_dependencies] = value
     end
 

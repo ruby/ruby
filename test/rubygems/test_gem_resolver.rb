@@ -207,8 +207,8 @@ class TestGemResolver < Gem::TestCase
       s.add_development_dependency "b"
     end
 
-    b_spec = util_spec "b", 1 do
-      |s| s.add_development_dependency "c"
+    b_spec = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
     c_spec = util_spec "c", 1
