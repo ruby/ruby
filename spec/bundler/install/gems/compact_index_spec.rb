@@ -930,7 +930,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has either corrupted API or lockfile dependencies")
     expect(err).to include(<<-E.strip)
 Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API or the lockfile (#{deps.map(&:to_s).join(", ")}).
-Either installing with `--full-index` or running `bundle update rails` should fix the problem.
+Running `bundle update rails` should fix the problem.
     E
   end
 
