@@ -136,9 +136,9 @@ module Gem::InstallUpdateOptions
     add_option(:"Install/Update", "-g", "--file [FILE]",
                "Read from a gem dependencies API file and",
                "install the listed gems") do |v,_o|
-      v = Gem::GEM_DEP_FILES.find do |file|
+      v ||= Gem::GEM_DEP_FILES.find do |file|
         File.exist? file
-      end unless v
+      end
 
       unless v
         message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ", "})"
