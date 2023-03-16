@@ -799,6 +799,33 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
     return ptr;
 }
 
+/*
+ * call-seq:
+ *    Fiddle::Pointer.read(address, len)     => string
+ *
+ * Or read the memory at address +address+ with length +len+ and return a
+ * string with that memory
+ */
+
+static VALUE
+rb_fiddle_ptr_read_mem(VALUE klass, VALUE address, VALUE len)
+{
+    return rb_str_new((char *)NUM2PTR(address), NUM2ULONG(len));
+}
+
+/*
+ * call-seq:
+ *    Fiddle::Pointer.write(address, str)
+ *
+ * Write bytes in +str+ to the location pointed to by +address+.
+ */
+static VALUE
+rb_fiddle_ptr_write_mem(VALUE klass, VALUE addr, VALUE str)
+{
+    memcpy(NUM2PTR(addr), StringValuePtr(str), RSTRING_LEN(str));
+    return str;
+}
+
 void
 Init_fiddle_pointer(void)
 {
@@ -815,6 +842,8 @@ Init_fiddle_pointer(void)
     rb_define_singleton_method(rb_cPointer, "malloc", rb_fiddle_ptr_s_malloc, -1);
     rb_define_singleton_method(rb_cPointer, "to_ptr", rb_fiddle_ptr_s_to_ptr, 1);
     rb_define_singleton_method(rb_cPointer, "[]", rb_fiddle_ptr_s_to_ptr, 1);
+    rb_define_singleton_method(rb_cPointer, "read", rb_fiddle_ptr_read_mem, 2);
+    rb_define_singleton_method(rb_cPointer, "write", rb_fiddle_ptr_write_mem, 2);
     rb_define_method(rb_cPointer, "initialize", rb_fiddle_ptr_initialize, -1);
     rb_define_method(rb_cPointer, "free=", rb_fiddle_ptr_free_set, 1);
     rb_define_method(rb_cPointer, "free",  rb_fiddle_ptr_free_get, 0);
