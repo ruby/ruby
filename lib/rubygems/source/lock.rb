@@ -24,8 +24,6 @@ class Gem::Source::Lock < Gem::Source
       @wrapped <=> other.wrapped
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 

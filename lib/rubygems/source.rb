@@ -56,8 +56,6 @@ class Gem::Source
       return 1 unless @uri.to_s == other.uri.to_s
 
       0
-    else
-      nil
     end
   end
 

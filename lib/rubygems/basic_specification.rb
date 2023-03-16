@@ -180,8 +180,6 @@ class Gem::BasicSpecification
             end
           end ? fullpath : nil
         end
-    else
-      nil
     end
   end
 
