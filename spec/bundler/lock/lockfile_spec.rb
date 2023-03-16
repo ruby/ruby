@@ -1218,7 +1218,7 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(err).to include("Downloading rack_middleware-1.0 revealed dependencies not in the API or the lockfile (#{Gem::Dependency.new("rack", "= 0.9.1")}).").
-      and include("Either installing with `--full-index` or running `bundle update rack_middleware` should fix the problem.")
+      and include("Running `bundle update rack_middleware` should fix the problem.")
   end
 
   it "regenerates a lockfile with no specs" do
