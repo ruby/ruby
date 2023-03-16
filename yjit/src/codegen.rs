@@ -18,6 +18,7 @@ use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::{c_int};
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -583,16 +584,17 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-pub fn chain_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
-    let entryref = new_entry();
-    let stub_addr = match gen_call_entry_stub_hit(entryref.as_ptr() as usize, ocb) {
+pub fn chain_entry_guard(
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    iseq: IseqPtr,
+    insn_idx: u16,
+) -> Option<PendingEntryRef> {
+    let entry = new_pending_entry();
+    let stub_addr = match gen_call_entry_stub_hit(entry.uninit_entry.as_ptr() as usize, ocb) {
         Some(addr) => addr,
-        None => return,
+        None => return None,
     };
-
-    // Add to the list of entries for the ISEQ
-    let iseq_payload = get_or_create_iseq_payload(iseq);
-    iseq_payload.entries.push(entryref);
 
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -601,9 +603,10 @@ pub fn chain_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPt
     asm.comment("guard expected PC");
     asm.cmp(pc_opnd, expected_pc_opnd);
 
-    asm.mark_entry_start(&entryref);
+    asm.mark_entry_start(&entry);
     asm.jne(stub_addr.into());
-    asm.mark_entry_end(&entryref);
+    asm.mark_entry_end(&entry);
+    return Some(entry);
 }
 
 /// Compile an interpreter entry block to be inserted into an iseq
@@ -645,19 +648,27 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPt
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll jump to an entry stub and generate
     // another PC check and entry there.
-    if unsafe { get_iseq_flags_has_opt(iseq) } {
-        chain_entry_guard(&mut asm, ocb, iseq, insn_idx);
-    }
+    let pending_entry = if unsafe { get_iseq_flags_has_opt(iseq) } {
+        Some(chain_entry_guard(&mut asm, ocb, iseq, insn_idx)?)
+    } else {
+        None
+    };
 
     asm.compile(cb);
 
-    if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
+    if cb.has_dropped_bytes() {
         None
     } else {
         // Mark code pages for code GC
         let iseq_payload = get_or_create_iseq_payload(iseq);
         for page in cb.addrs_to_pages(code_ptr, cb.get_write_ptr()) {
             iseq_payload.pages.insert(page);
+        }
+        // Write an entry to the heap and push it to the ISEQ
+        if let Some(pending_entry) = pending_entry {
+            let pending_entry = Rc::try_unwrap(pending_entry)
+                .ok().expect("PendingEntry should be unique");
+            iseq_payload.entries.push(pending_entry.into_entry());
         }
         Some(code_ptr)
     }
@@ -7883,7 +7894,6 @@ impl CodegenGlobals {
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
             use std::cell::RefCell;
-            use std::rc::Rc;
 
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
