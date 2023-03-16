@@ -308,23 +308,24 @@ module RubyVM::YJIT
     end
 
     def print_sorted_exit_counts(stats, prefix:, how_many: 20, left_pad: 4) # :nodoc:
-      exits = []
-      stats.each do |k, v|
-        if k.start_with?(prefix)
-          exits.push [k.to_s.delete_prefix(prefix), v]
-        end
-      end
-
-      exits = exits.select { |_name, count| count > 0 }.sort_by { |_name, count| -count }.first(how_many)
       total_exits = total_exit_count(stats)
 
       if total_exits > 0
+        exits = []
+        stats.each do |k, v|
+          if k.start_with?(prefix)
+            exits.push [k.to_s.delete_prefix(prefix), v]
+          end
+        end
+
+        exits = exits.select { |_name, count| count > 0 }.max_by(how_many) { |_name, count| count }
+
         top_n_total = exits.sum { |name, count| count }
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
         $stderr.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
-        longest_insn_name_len = exits.map { |name, count| name.length }.max
+        longest_insn_name_len = exits.max_by { |name, count| name.length }.first.length
         exits.each do |name, count|
           padding = longest_insn_name_len + left_pad
           padded_name = "%#{padding}s" % name
