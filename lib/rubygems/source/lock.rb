@@ -30,7 +30,7 @@ class Gem::Source::Lock < Gem::Source
   end
 
   def ==(other) # :nodoc:
-    0 == (self <=> other)
+    (self <=> other) == 0
   end
 
   def hash # :nodoc:

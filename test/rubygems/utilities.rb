@@ -39,7 +39,7 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path && "file" == path.scheme
+    return Gem.read_binary path.path if URI === path && path.scheme == "file"
 
     if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,

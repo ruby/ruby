@@ -1521,7 +1521,7 @@ Also, a list:
   # <tt>test/rubygems/</tt>.
 
   def self.cert_path(cert_name)
-    if 32 == (Time.at(2**32) rescue 32)
+    if (Time.at(2**32) rescue 32) == 32
       cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file

@@ -454,7 +454,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # distinction as extensions cannot be shared between the two.
 
   def self.extension_api_version # :nodoc:
-    if "no" == RbConfig::CONFIG["ENABLE_SHARED"]
+    if RbConfig::CONFIG["ENABLE_SHARED"] == "no"
       "#{ruby_api_version}-static"
     else
       ruby_api_version
@@ -731,7 +731,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     if prefix != File.expand_path(RbConfig::CONFIG["sitelibdir"]) &&
        prefix != File.expand_path(RbConfig::CONFIG["libdir"]) &&
-       "lib" == File.basename(RUBYGEMS_DIR)
+       File.basename(RUBYGEMS_DIR) == "lib"
       prefix
     end
   end
