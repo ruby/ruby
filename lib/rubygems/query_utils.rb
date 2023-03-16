@@ -119,7 +119,7 @@ module Gem::QueryUtils
     end
   end
 
-  #Guts of original execute
+  # Guts of original execute
   def show_gems(name)
     show_local_gems(name)  if local?
     show_remote_gems(name) if remote?

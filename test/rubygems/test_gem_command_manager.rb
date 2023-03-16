@@ -178,7 +178,7 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to install command test
   def test_process_args_install
-    #capture all install options
+    # capture all install options
     use_ui @ui do
       check_options = nil
       @command_manager["install"].when_invoked do |options|
@@ -186,7 +186,7 @@ class TestGemCommandManager < Gem::TestCase
         true
       end
 
-      #check defaults
+      # check defaults
       @command_manager.process_args %w[install]
       assert_equal %w[ri], check_options[:document].sort
       assert_equal false, check_options[:force]
@@ -196,7 +196,7 @@ class TestGemCommandManager < Gem::TestCase
       assert_nil   check_options[:install_dir]
       assert_nil   check_options[:bin_dir]
 
-      #check settings
+      # check settings
       check_options = nil
       @command_manager.process_args %w[
         install --force --local --document=ri,rdoc --install-dir .
@@ -210,17 +210,17 @@ class TestGemCommandManager < Gem::TestCase
       assert_equal Dir.pwd, check_options[:install_dir]
       assert_equal Dir.pwd, check_options[:bin_dir]
 
-      #check remote domain
+      # check remote domain
       check_options = nil
       @command_manager.process_args %w[install --remote]
       assert_equal :remote, check_options[:domain]
 
-      #check both domain
+      # check both domain
       check_options = nil
       @command_manager.process_args %w[install --both]
       assert_equal :both, check_options[:domain]
 
-      #check both domain
+      # check both domain
       check_options = nil
       @command_manager.process_args %w[install --both]
       assert_equal :both, check_options[:domain]
@@ -229,18 +229,18 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to uninstall command test
   def test_process_args_uninstall
-    #capture all uninstall options
+    # capture all uninstall options
     check_options = nil
     @command_manager["uninstall"].when_invoked do |options|
       check_options = options
       true
     end
 
-    #check defaults
+    # check defaults
     @command_manager.process_args %w[uninstall]
     assert_equal Gem::Requirement.default, check_options[:version]
 
-    #check settings
+    # check settings
     check_options = nil
     @command_manager.process_args %w[uninstall foobar --version 3.0]
     assert_equal "foobar", check_options[:args].first
@@ -249,18 +249,18 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to check command test
   def test_process_args_check
-    #capture all check options
+    # capture all check options
     check_options = nil
     @command_manager["check"].when_invoked do |options|
       check_options = options
       true
     end
 
-    #check defaults
+    # check defaults
     @command_manager.process_args %w[check]
     assert_equal true, check_options[:alien]
 
-    #check settings
+    # check settings
     check_options = nil
     @command_manager.process_args %w[check foobar --alien]
     assert_equal true, check_options[:alien]
@@ -268,18 +268,18 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to build command test
   def test_process_args_build
-    #capture all build options
+    # capture all build options
     check_options = nil
     @command_manager["build"].when_invoked do |options|
       check_options = options
       true
     end
 
-    #check defaults
+    # check defaults
     @command_manager.process_args %w[build]
-    #NOTE: Currently no defaults
+    # NOTE: Currently no defaults
 
-    #check settings
+    # check settings
     check_options = nil
     @command_manager.process_args %w[build foobar.rb]
     assert_equal "foobar.rb", check_options[:args].first
@@ -287,14 +287,14 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to query command test
   def test_process_args_query
-    #capture all query options
+    # capture all query options
     check_options = nil
     @command_manager["query"].when_invoked do |options|
       check_options = options
       true
     end
 
-    #check defaults
+    # check defaults
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query]
     end
@@ -302,7 +302,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal :local, check_options[:domain]
     assert_equal false, check_options[:details]
 
-    #check settings
+    # check settings
     check_options = nil
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query --name foobar --local --details]
@@ -311,14 +311,14 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal :local, check_options[:domain]
     assert_equal true, check_options[:details]
 
-    #remote domain
+    # remote domain
     check_options = nil
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query --remote]
     end
     assert_equal :remote, check_options[:domain]
 
-    #both (local/remote) domains
+    # both (local/remote) domains
     check_options = nil
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query --both]
@@ -328,18 +328,18 @@ class TestGemCommandManager < Gem::TestCase
 
   # HACK move to update command test
   def test_process_args_update
-    #capture all update options
+    # capture all update options
     check_options = nil
     @command_manager["update"].when_invoked do |options|
       check_options = options
       true
     end
 
-    #check defaults
+    # check defaults
     @command_manager.process_args %w[update]
     assert_includes check_options[:document], "ri"
 
-    #check settings
+    # check settings
     check_options = nil
     @command_manager.process_args %w[update --force --document=ri --install-dir .]
     assert_includes check_options[:document], "ri"

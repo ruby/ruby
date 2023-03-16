@@ -1,4 +1,4 @@
-#) frozen_string_literal: true
+# ) frozen_string_literal: true
 require_relative "parser"
 
 class Gem::RequestSet::Lockfile::Tokenizer
