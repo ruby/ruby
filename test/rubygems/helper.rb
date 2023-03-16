@@ -472,7 +472,7 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     Gem::Specification.unresolved_deps.clear
-    Gem::refresh
+    Gem.refresh
 
     @orig_hooks.each do |name, hooks|
       Gem.send(name).replace hooks
