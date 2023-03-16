@@ -79,7 +79,7 @@ module Gem
 
   def self.find_home
     Dir.home.dup
-  rescue
+  rescue StandardError
     if Gem.win_platform?
       File.expand_path File.join(ENV["HOMEDRIVE"] || ENV["SystemDrive"], "/")
     else
@@ -185,7 +185,7 @@ module Gem
   def self.default_exec_format
     exec_format = begin
                     RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s")
-                  rescue
+                  rescue StandardError
                     "%s"
                   end
 

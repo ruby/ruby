@@ -157,7 +157,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @cmd.execute
 
     assert_equal false, File.exist?(formatted_executable)
-  rescue
+  rescue StandardError
     Gem::Installer.exec_format = nil
   end
 

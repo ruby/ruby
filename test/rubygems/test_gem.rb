@@ -664,7 +664,7 @@ class TestGem < Gem::TestCase
     gemdir = File.join @tempdir, "a/b/c/gemdir"
     begin
       FileUtils.rm_rf File.join(@tempdir, "a")
-    rescue
+    rescue StandardError
       nil
     end
     refute File.exist?(File.join(@tempdir, "a")),
@@ -681,7 +681,7 @@ class TestGem < Gem::TestCase
       gemdir = File.join @tempdir, "egd"
       begin
         FileUtils.rm_r gemdir
-      rescue
+      rescue StandardError
         nil
       end
       refute File.exist?(gemdir), "manually remove #{gemdir}, tests are broken"
@@ -702,7 +702,7 @@ class TestGem < Gem::TestCase
 
       begin
         FileUtils.rm_r parent
-      rescue
+      rescue StandardError
         nil
       end
       refute File.exist?(parent), "manually remove #{parent}, tests are broken"
@@ -1510,7 +1510,7 @@ class TestGem < Gem::TestCase
     with_plugin("load") { Gem.load_env_plugins }
     begin
       assert_equal :loaded, TEST_PLUGIN_LOAD
-    rescue
+    rescue StandardError
       nil
     end
 
@@ -1520,7 +1520,7 @@ class TestGem < Gem::TestCase
     with_plugin("standarderror") { Gem.load_env_plugins }
     begin
       assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
-    rescue
+    rescue StandardError
       nil
     end
 
@@ -1530,7 +1530,7 @@ class TestGem < Gem::TestCase
     with_plugin("exception") { Gem.load_env_plugins }
     begin
       assert_equal :loaded, TEST_PLUGIN_EXCEPTION
-    rescue
+    rescue StandardError
       nil
     end
   end

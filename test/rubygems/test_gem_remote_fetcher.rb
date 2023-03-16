@@ -363,7 +363,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       FileUtils.chmod 0555, @a1.cache_dir
       begin
         FileUtils.mkdir_p File.join(Gem.user_dir, "cache")
-      rescue
+      rescue StandardError
         nil
       end
       FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")

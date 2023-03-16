@@ -345,7 +345,7 @@ class Gem::TestCase < Test::Unit::TestCase
     $LOAD_PATH.map! do |s|
       expand_path = begin
                       File.realpath(s)
-                    rescue
+                    rescue StandardError
                       File.expand_path(s)
                     end
       if expand_path != s
@@ -1527,7 +1527,7 @@ Also, a list:
   def self.cert_path(cert_name)
     if begin
          Time.at(2**32)
-       rescue
+       rescue StandardError
          32
        end == 32
       cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"

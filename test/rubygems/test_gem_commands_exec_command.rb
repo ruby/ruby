@@ -732,7 +732,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
       begin
         invoke "gem", "uninstall", "--verbose", "-x", "a"
-      rescue
+      rescue StandardError
         nil
       end
       refute_includes @ui.output, "running gem exec with"

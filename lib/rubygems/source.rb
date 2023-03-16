@@ -137,7 +137,7 @@ class Gem::Source
       spec = Gem.read_binary local_spec
       spec = begin
                Marshal.load(spec)
-             rescue
+             rescue StandardError
                nil
              end
       return spec if spec
