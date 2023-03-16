@@ -222,7 +222,7 @@ class Gem::SystemExitException < SystemExit
   ##
   # The exit code for the process
 
-  alias exit_code status
+  alias_method :exit_code, :status
 
   ##
   # Creates a new SystemExitException with the given +exit_code+

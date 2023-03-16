@@ -204,7 +204,7 @@ class Gem::Dependency
     requirement.satisfied_by? version
   end
 
-  alias === =~
+  alias_method :===, :=~
 
   ##
   # :call-seq:

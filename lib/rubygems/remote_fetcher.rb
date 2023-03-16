@@ -233,7 +233,7 @@ class Gem::RemoteFetcher
     end
   end
 
-  alias :fetch_https :fetch_http
+  alias_method :fetch_https, :fetch_http
 
   ##
   # Downloads +uri+ and returns it as a String.

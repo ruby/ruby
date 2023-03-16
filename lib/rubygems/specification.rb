@@ -735,7 +735,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   attr_accessor :activated
 
-  alias :activated? :activated
+  alias_method :activated?, :activated
 
   ##
   # Autorequire was used by old RubyGems to automatically require a file.
@@ -1546,7 +1546,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   private :add_dependency_with_type
 
-  alias add_dependency add_runtime_dependency
+  alias_method :add_dependency, :add_runtime_dependency
 
   ##
   # Adds this spec's require paths to LOAD_PATH, in the proper location.
@@ -1991,7 +1991,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
   rubygems_deprecate :has_rdoc=
 
-  alias :has_rdoc? :has_rdoc # :nodoc:
+  alias_method :has_rdoc?, :has_rdoc # :nodoc:
   rubygems_deprecate :has_rdoc?
 
   ##
@@ -2002,7 +2002,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   # :stopdoc:
-  alias has_test_suite? has_unit_tests?
+  alias_method :has_test_suite?, :has_unit_tests?
   # :startdoc:
 
   def hash # :nodoc:

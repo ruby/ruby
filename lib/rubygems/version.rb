@@ -165,7 +165,7 @@ class Gem::Version
     @version.dup
   end
 
-  alias to_s version
+  alias_method :to_s, :version
 
   ##
   # True if the +version+ string matches RubyGems' requirements.

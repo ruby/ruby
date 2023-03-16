@@ -541,7 +541,7 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
-        alias old_try_activate try_activate
+        alias_method :old_try_activate, :try_activate
         def try_activate(*); raise "raised from try_activate"; end
       end
     end
@@ -553,7 +553,7 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
-        alias try_activate old_try_activate
+        alias_method :try_activate, :old_try_activate
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit

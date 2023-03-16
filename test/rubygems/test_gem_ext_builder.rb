@@ -153,7 +153,7 @@ install:
 
   def test_build_extensions_install_ext_only
     class << Gem
-      alias orig_install_extension_in_lib install_extension_in_lib
+      alias_method :orig_install_extension_in_lib, :install_extension_in_lib
 
       remove_method :install_extension_in_lib
 
@@ -199,7 +199,7 @@ install:
     class << Gem
       remove_method :install_extension_in_lib
 
-      alias install_extension_in_lib orig_install_extension_in_lib
+      alias_method :install_extension_in_lib, :orig_install_extension_in_lib
     end
   end
 
