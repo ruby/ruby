@@ -140,7 +140,7 @@ class Gem::CommandManager
   # Return a sorted list of all command names as strings.
 
   def command_names
-    @commands.keys.collect {|key| key.to_s }.sort
+    @commands.keys.collect(&:to_s).sort
   end
 
   ##

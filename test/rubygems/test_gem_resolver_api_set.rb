@@ -149,7 +149,7 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set.prefetch [a_dep, b_dep]
 
-    assert_equal %w[a-1], set.find_all(a_dep).map {|s| s.full_name }
+    assert_equal %w[a-1], set.find_all(a_dep).map(&:full_name)
     assert_empty          set.find_all(b_dep)
   end
 

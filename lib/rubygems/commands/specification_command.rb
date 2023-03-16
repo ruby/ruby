@@ -137,7 +137,7 @@ Specific fields in the specification can be extracted in YAML format:
     end
 
     unless options[:all]
-      specs = [specs.max_by {|s| s.version }]
+      specs = [specs.max_by(&:version)]
     end
 
     specs.each do |s|

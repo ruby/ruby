@@ -184,7 +184,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def inspect # :nodoc:
-    always_install = @always_install.map {|s| s.full_name }
+    always_install = @always_install.map(&:full_name)
 
     "#<%s domain: %s specs: %p always install: %p>" % [
       self.class, @domain, @specs.keys, always_install

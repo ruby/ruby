@@ -52,7 +52,7 @@ class Gem::Doctor
   # Specs installed in this gem repository
 
   def installed_specs # :nodoc:
-    @installed_specs ||= Gem::Specification.map {|s| s.full_name }
+    @installed_specs ||= Gem::Specification.map(&:full_name)
   end
 
   ##

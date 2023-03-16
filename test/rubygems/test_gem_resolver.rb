@@ -25,10 +25,10 @@ class TestGemResolver < Gem::TestCase
   def assert_resolves_to(expected, resolver)
     actual = resolver.resolve
 
-    exp = expected.sort_by {|s| s.full_name }
-    act = actual.map {|a| a.spec.spec }.sort_by {|s| s.full_name }
+    exp = expected.sort_by(&:full_name)
+    act = actual.map {|a| a.spec.spec }.sort_by(&:full_name)
 
-    msg = "Set of gems was not the same: #{exp.map {|x| x.full_name }.inspect} != #{act.map {|x| x.full_name }.inspect}"
+    msg = "Set of gems was not the same: #{exp.map(&:full_name).inspect} != #{act.map(&:full_name).inspect}"
 
     assert_equal exp, act, msg
   rescue Gem::DependencyResolutionError => e
@@ -104,7 +104,7 @@ class TestGemResolver < Gem::TestCase
 
     res.requests a1, act, reqs
 
-    assert_equal ["b (= 2)"], reqs.map {|req| req.to_s }
+    assert_equal ["b (= 2)"], reqs.map(&:to_s)
   end
 
   def test_requests_development
@@ -126,7 +126,7 @@ class TestGemResolver < Gem::TestCase
 
     res.requests spec, act, reqs
 
-    assert_equal ["b (= 2)"], reqs.map {|req| req.to_s }
+    assert_equal ["b (= 2)"], reqs.map(&:to_s)
 
     assert spec.instance_variable_defined? :@called
   end

@@ -19,9 +19,7 @@ require_relative "user_interaction"
 class Gem::Command
   include Gem::UserInteraction
 
-  Gem::OptionParser.accept Symbol do |value|
-    value.to_sym
-  end
+  Gem::OptionParser.accept Symbol, &:to_sym
 
   ##
   # The name of the command.

@@ -119,7 +119,7 @@ command to remove old versions.
     updated = update_gems gems_to_update
 
     installed_names = highest_installed_gems.keys
-    updated_names = updated.map {|spec| spec.name }
+    updated_names = updated.map(&:name)
     not_updated_names = options[:args].uniq - updated_names
     not_installed_names = not_updated_names - installed_names
     up_to_date_names = not_updated_names - not_installed_names

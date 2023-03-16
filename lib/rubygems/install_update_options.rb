@@ -154,7 +154,7 @@ module Gem::InstallUpdateOptions
                "Omit the named groups (comma separated)",
                "when installing from a gem dependencies",
                "file") do |v,_o|
-      options[:without_groups].concat v.map {|without| without.intern }
+      options[:without_groups].concat v.map(&:intern)
     end
 
     add_option(:"Install/Update", "--default",

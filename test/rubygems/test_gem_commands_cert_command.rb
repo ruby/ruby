@@ -731,12 +731,12 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     ]
 
     assert_equal [PUBLIC_CERT.to_pem, ALTERNATE_CERT.to_pem],
-                 @cmd.options[:add].map {|cert| cert.to_pem }
+                 @cmd.options[:add].map(&:to_pem)
 
     assert_equal %w[nobody example], @cmd.options[:remove]
 
     assert_equal %w[nobody@example other@example],
-                 @cmd.options[:build].map {|name| name.to_s }
+                 @cmd.options[:build].map(&:to_s)
 
     assert_equal ["", "example"], @cmd.options[:list]
   end

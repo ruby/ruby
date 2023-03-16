@@ -325,7 +325,7 @@ class Gem::Dependency
   def to_spec
     matches = self.to_specs.compact
 
-    active = matches.find {|spec| spec.activated? }
+    active = matches.find(&:activated?)
     return active if active
 
     unless prerelease?

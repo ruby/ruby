@@ -154,7 +154,7 @@ command help for an example.
 
     specs = dependency.matching_specs
 
-    selected = specs.max_by {|s| s.version }
+    selected = specs.max_by(&:version)
 
     return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
       selected

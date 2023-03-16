@@ -493,7 +493,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       groups = @gda.send :gem_group, "a", :group => :b, :groups => [:c, :d]
     end
 
-    assert_equal [:a, :b, :c, :d], groups.sort_by {|group| group.to_s }
+    assert_equal [:a, :b, :c, :d], groups.sort_by(&:to_s)
   end
 
   def test_gemspec
