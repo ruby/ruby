@@ -706,7 +706,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
-    ENV["no_proxy"] = URI::parse(@server_uri).host
+    ENV["no_proxy"] = URI.parse(@server_uri).host
     fetcher = Gem::RemoteFetcher.new nil, nil, { "X-Captain" => "murphy" }
     @fetcher = fetcher
     assert_equal "murphy", fetcher.fetch_path(@server_uri)
@@ -928,7 +928,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_single_host
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = URI::parse(@server_uri).host
+      ENV["no_proxy"] = URI.parse(@server_uri).host
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -938,7 +938,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_list
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = "fakeurl.com, #{URI::parse(@server_uri).host}"
+      ENV["no_proxy"] = "fakeurl.com, #{URI.parse(@server_uri).host}"
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
