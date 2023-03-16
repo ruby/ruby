@@ -327,7 +327,7 @@ class TestGemRequest < Gem::TestCase
 
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
+    Object.send :remove_const, :RUBY_REVISION
     Object.send :const_set,    :RUBY_REVISION, 6
 
     ua = make_request(@uri, nil, nil, nil).user_agent
@@ -343,7 +343,7 @@ class TestGemRequest < Gem::TestCase
 
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
+    Object.send :remove_const, :RUBY_REVISION
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
@@ -498,7 +498,7 @@ ERROR:  Certificate  is an invalid CA certificate
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_RUBY_PATCHLEVEL
 
-    Object.send :remove_const, :RUBY_REVISION if defined?(RUBY_REVISION)
+    Object.send :remove_const, :RUBY_REVISION
     Object.send :const_set,    :RUBY_REVISION, @orig_RUBY_REVISION if
       defined?(@orig_RUBY_REVISION)
   end
@@ -506,7 +506,7 @@ ERROR:  Certificate  is an invalid CA certificate
   def util_save_version
     @orig_RUBY_ENGINE     = RUBY_ENGINE
     @orig_RUBY_PATCHLEVEL = RUBY_PATCHLEVEL
-    @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
+    @orig_RUBY_REVISION   = RUBY_REVISION
   end
 
   def util_stub_net_http(hash)

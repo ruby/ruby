@@ -282,7 +282,7 @@ class Gem::Request
     ua << " Ruby/#{ruby_version} (#{RUBY_RELEASE_DATE}"
     if RUBY_PATCHLEVEL >= 0
       ua << " patchlevel #{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_REVISION)
+    else
       ua << " revision #{RUBY_REVISION}"
     end
     ua << ")"
