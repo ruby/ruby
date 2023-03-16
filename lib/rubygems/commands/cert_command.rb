@@ -135,7 +135,7 @@ class Gem::Commands::CertCommand < Gem::Command
   end
 
   def build(email)
-    if !valid_email?(email)
+    unless valid_email?(email)
       raise Gem::CommandLineError, "Invalid email address #{email}"
     end
 

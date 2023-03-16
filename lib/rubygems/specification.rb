@@ -1616,8 +1616,8 @@ class Gem::Specification < Gem::BasicSpecification
     # we need to fresh build when same name and version of default gems
     return if self.class.find_by_full_name(full_name)&.default_gem?
     return if File.exist? gem_build_complete_path
-    return if !File.writable?(base_dir)
-    return if !File.exist?(File.join(base_dir, "extensions"))
+    return unless File.writable?(base_dir)
+    return unless File.exist?(File.join(base_dir, "extensions"))
 
     begin
       # We need to require things in $LOAD_PATH without looking for the

@@ -84,7 +84,7 @@ module Gem::QueryUtils
       installed = !installed unless options[:installed]
 
       say(installed)
-      exit_code = 1 if !installed
+      exit_code = 1 unless installed
     end
 
     exit_code
