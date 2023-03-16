@@ -804,7 +804,8 @@ dependencies: []
       end
 
       full_path.taint
-      loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
+      loader = Thread.new { $SAFE = 1
+ Gem::Specification.load full_path }
       spec = loader.value
 
       @a2.files.clear
@@ -2510,10 +2511,21 @@ end
     end
   end
 
-  def x(s); s.gsub(/xxx/, ""); end
-  def w; x "WARxxxNING"; end
-  def t; x "TOxxxDO"; end
-  def f; x "FxxxIXME"; end
+  def x(s)
+    s.gsub(/xxx/, "")
+  end
+
+  def w
+    x "WARxxxNING"
+  end
+
+  def t
+    x "TOxxxDO"
+  end
+
+  def f
+    x "FxxxIXME"
+  end
 
   def test_validate_authors
     util_setup_validate

@@ -811,7 +811,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name() "metadata.gz" end
+    def entry.full_name()
+      "metadata.gz"
+    end
 
     package = Gem::Package.new "nonexistent.gem"
 
@@ -1051,10 +1053,21 @@ class TestGemPackage < Gem::Package::TarTestCase
         # write bogus data.tar.gz to foil signature
         bogus_data = Gem::Util.gzip "hello"
         fake_signer = Class.new do
-          def digest_name; "SHA512"; end
-          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
-          def key; "key"; end
-          def sign(*); "fake_sig"; end
+          def digest_name
+            "SHA512"
+          end
+
+          def digest_algorithm
+            OpenSSL::Digest(:SHA512).new
+          end
+
+          def key
+            "key"
+          end
+
+          def sign(*)
+            "fake_sig"
+          end
         end
         gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
           io.write bogus_data
@@ -1098,7 +1111,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name() raise ArgumentError, "whatever" end
+    def entry.full_name()
+      raise ArgumentError, "whatever"
+    end
 
     package = Gem::Package.new @gem
 
@@ -1125,11 +1140,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $good_name = vm
 
       entry = Object.new
-      def entry.full_name() $good_name end
+      def entry.full_name()
+        $good_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 
@@ -1142,11 +1161,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name() $bad_name end
+      def entry.full_name()
+        $bad_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 

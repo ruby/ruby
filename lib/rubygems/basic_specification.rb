@@ -323,11 +323,15 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
-  def this; self; end
+  def this
+    self
+  end
 
   private
 
-  def have_extensions?; !extensions.empty?; end
+  def have_extensions?
+    !extensions.empty?
+  end
 
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
