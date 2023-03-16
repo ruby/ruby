@@ -17,7 +17,7 @@ longer using.
   end
 
   def usage # :nodoc:
-    "#{program_name}"
+    program_name.to_s
   end
 
   def execute

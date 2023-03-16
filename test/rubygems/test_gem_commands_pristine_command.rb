@@ -595,7 +595,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     FileUtils.rm gem_exec
     FileUtils.rm gem_bindir
 
-    @cmd.handle_options ["--all", "--only-executables", "--bindir", "#{gem_bindir}"]
+    @cmd.handle_options ["--all", "--only-executables", "--bindir", gem_bindir.to_s]
 
     use_ui @ui do
       @cmd.execute

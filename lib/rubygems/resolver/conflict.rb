@@ -131,7 +131,7 @@ class Gem::Resolver::Conflict
 
         current = current.parent
       when Gem::Resolver::DependencyRequest then
-        path << "#{current.dependency}"
+        path << current.dependency.to_s
 
         current = current.requester
       else

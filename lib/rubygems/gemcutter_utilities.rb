@@ -269,7 +269,7 @@ module Gem::GemcutterUtilities
     else
       say "Please select scopes you want to enable for the API key (y/n)"
       API_SCOPES.each do |scope|
-        selected = ask_yes_no("#{scope}", false)
+        selected = ask_yes_no(scope.to_s, false)
         scope_params[scope] = true if selected
       end
       say "\n"
