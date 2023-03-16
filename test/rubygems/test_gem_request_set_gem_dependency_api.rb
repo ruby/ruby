@@ -48,7 +48,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       s.add_runtime_dependency "bar", ">= 1.6.0", "< 1.6.4"
     end
     @gda.gemspec
-    assert_equal %w[ foo bar ].sort, @set.dependencies.map(&:name).sort
+    assert_equal %w[foo bar].sort, @set.dependencies.map(&:name).sort
     bar = @set.dependencies.find {|d| d.name == "bar" }
     assert_equal [["<", Gem::Version.create("1.6.4")],
                   [">=", Gem::Version.create("1.6.0")]], bar.requirement.requirements.sort
