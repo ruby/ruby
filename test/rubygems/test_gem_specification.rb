@@ -2992,7 +2992,7 @@ Please report a bug if this causes problems.
 
   def set_orig(cls)
     s_cls = cls.singleton_class
-    s_cls.send :alias_method, :orig_unresolved_deps , :unresolved_deps
+    s_cls.send :alias_method, :orig_unresolved_deps, :unresolved_deps
     s_cls.send :alias_method, :orig_find_all_by_name, :find_all_by_name
   end
 
