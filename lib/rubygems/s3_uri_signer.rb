@@ -10,7 +10,7 @@ class Gem::S3URISigner
     end
 
     def to_s # :nodoc:
-      (super).to_s
+      super.to_s
     end
   end
 
@@ -20,7 +20,7 @@ class Gem::S3URISigner
     end
 
     def to_s # :nodoc:
-      (super).to_s
+      super.to_s
     end
   end
 
