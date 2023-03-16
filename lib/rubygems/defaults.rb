@@ -183,7 +183,11 @@ module Gem
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    exec_format = RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s") rescue "%s"
+    exec_format = begin
+                    RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s")
+                  rescue
+                    "%s"
+                  end
 
     unless exec_format.include?("%s")
       raise Gem::Exception,

@@ -174,10 +174,18 @@ class Gem::Security::Signer
     old_cert = @cert_chain.last
 
     disk_cert_path = File.join(Gem.default_cert_path)
-    disk_cert = File.read(disk_cert_path) rescue nil
+    disk_cert = begin
+                  File.read(disk_cert_path)
+                rescue
+                  nil
+                end
 
     disk_key_path = File.join(Gem.default_key_path)
-    disk_key = OpenSSL::PKey.read(File.read(disk_key_path), @passphrase) rescue nil
+    disk_key = begin
+                 OpenSSL::PKey.read(File.read(disk_key_path), @passphrase)
+               rescue
+                 nil
+               end
 
     return unless disk_key
 

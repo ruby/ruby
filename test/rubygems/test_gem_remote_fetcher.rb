@@ -361,7 +361,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       local_path = File.join @tempdir, @a1.file_name
       inst = nil
       FileUtils.chmod 0555, @a1.cache_dir
-      FileUtils.mkdir_p File.join(Gem.user_dir, "cache") rescue nil
+      begin
+        FileUtils.mkdir_p File.join(Gem.user_dir, "cache")
+      rescue
+        nil
+      end
       FileUtils.chmod 0555, File.join(Gem.user_dir, "cache")
 
       Dir.chdir @tempdir do

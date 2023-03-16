@@ -40,7 +40,11 @@ class Gem::Commands::CheckCommand < Gem::Command
   def check_gems
     say "Checking gems..."
     say
-    gems = get_all_gem_names rescue []
+    gems = begin
+             get_all_gem_names
+           rescue
+             []
+           end
 
     Gem::Validator.new.alien(gems).sort.each do |key, val|
       unless val.empty?

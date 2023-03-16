@@ -135,7 +135,11 @@ class Gem::Source
 
     if File.exist? local_spec
       spec = Gem.read_binary local_spec
-      spec = Marshal.load(spec) rescue nil
+      spec = begin
+               Marshal.load(spec)
+             rescue
+               nil
+             end
       return spec if spec
     end
 

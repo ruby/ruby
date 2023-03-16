@@ -343,7 +343,11 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
-      expand_path = File.realpath(s) rescue File.expand_path(s)
+      expand_path = begin
+                      File.realpath(s)
+                    rescue
+                      File.expand_path(s)
+                    end
       if expand_path != s
         expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
@@ -1521,7 +1525,11 @@ Also, a list:
   # <tt>test/rubygems/</tt>.
 
   def self.cert_path(cert_name)
-    if (Time.at(2**32) rescue 32) == 32
+    if begin
+         Time.at(2**32)
+       rescue
+         32
+       end == 32
       cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file
