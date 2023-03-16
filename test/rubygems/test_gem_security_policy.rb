@@ -452,7 +452,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name()
+      "metadata.gz"
+    end
 
     digests = package.digest s
     metadata_gz_digest = digests[Gem::Security::DIGEST_NAME]["metadata.gz"]
@@ -475,7 +477,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name()
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"
@@ -504,7 +508,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name()
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"

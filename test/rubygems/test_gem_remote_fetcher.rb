@@ -656,7 +656,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         res
       else
         res = Net::HTTPOK.new nil, 200, nil
-        def res.body() "real_path" end
+        def res.body()
+          "real_path"
+        end
         res
       end
     end
@@ -719,7 +721,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
       res = Net::HTTPOK.new nil, 200, nil
-      def res.body() "success" end
+      def res.body()
+        "success"
+      end
       res
     end
 

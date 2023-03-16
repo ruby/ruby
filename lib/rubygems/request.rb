@@ -35,8 +35,13 @@ class Gem::Request
     @connection_pool = pool
   end
 
-  def proxy_uri; @connection_pool.proxy_uri; end
-  def cert_files; @connection_pool.cert_files; end
+  def proxy_uri
+    @connection_pool.proxy_uri
+  end
+
+  def cert_files
+    @connection_pool.cert_files
+  end
 
   def self.get_cert_files
     pattern = File.expand_path("./ssl_certs/*/*.pem", __dir__)

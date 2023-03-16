@@ -521,7 +521,10 @@ ERROR:  Certificate  is an invalid CA certificate
   class Conn
     attr_accessor :payload
 
-    def new(*args); self; end
+    def new(*args)
+      self
+    end
+
     def use_ssl=(bool); end
     def verify_callback=(setting); end
     def verify_mode=(setting); end

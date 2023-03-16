@@ -542,7 +542,9 @@ class TestGemRequire < Gem::TestCase
     silence_warnings do
       class << ::Gem
         alias_method :old_try_activate, :try_activate
-        def try_activate(*); raise "raised from try_activate"; end
+        def try_activate(*)
+          raise "raised from try_activate"
+        end
       end
     end
 
