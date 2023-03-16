@@ -320,7 +320,7 @@ class Gem::RemoteFetcher
   end
 
   def https?(uri)
-    uri.scheme.downcase == "https"
+    uri.scheme.casecmp("https").zero?
   end
 
   def close_all

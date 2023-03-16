@@ -45,7 +45,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def https?(uri)
-    uri.scheme.downcase == "https"
+    uri.scheme.casecmp("https").zero?
   end
 
   def no_proxy?(host, env_no_proxy)
