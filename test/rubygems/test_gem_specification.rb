@@ -691,7 +691,7 @@ end
       version
     ]
 
-    actual_value = Gem::Specification.attribute_names.map {|a| a.to_s }.sort
+    actual_value = Gem::Specification.attribute_names.map(&:to_s).sort
 
     assert_equal expected_value, actual_value
   end
@@ -964,13 +964,13 @@ dependencies: []
     install_specs @a1
 
     assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    assert_includes Gem::Specification.stubs.map(&:full_name), "a-1"
 
     uninstall_gem @a1
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, "a-1"
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    refute_includes Gem::Specification.stubs.map(&:full_name), "a-1"
   end
 
   def test_self_remove_spec_removed
@@ -985,7 +985,7 @@ dependencies: []
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, "a-1"
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    refute_includes Gem::Specification.stubs.map(&:full_name), "a-1"
   end
 
   def test_self_stubs_for_lazy_loading
@@ -997,14 +997,14 @@ dependencies: []
     save_gemspec("a-1", "1", dir_standard_specs) {|s| s.name = "a" }
     save_gemspec("b-1", "1", dir_standard_specs) {|s| s.name = "b" }
 
-    assert_equal ["a-1"], Gem::Specification.stubs_for("a").map {|s| s.full_name }
+    assert_equal ["a-1"], Gem::Specification.stubs_for("a").map(&:full_name)
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
-    assert_equal ["b-1"], Gem::Specification.stubs_for("b").map {|s| s.full_name }
+    assert_equal ["b-1"], Gem::Specification.stubs_for("b").map(&:full_name)
     assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
     assert_equal(
-      Gem::Specification.stubs_for("a").map {|s| s.object_id },
-      Gem::Specification.stubs_for("a").map {|s| s.object_id }
+      Gem::Specification.stubs_for("a").map(&:object_id),
+      Gem::Specification.stubs_for("a").map(&:object_id)
     )
 
     Gem.loaded_specs.delete "a"
@@ -1017,7 +1017,7 @@ dependencies: []
 
     save_gemspec("b-1", "1", File.join(Gem.dir, "specifications")) {|s| s.name = "b" }
 
-    assert_equal [], Gem::Specification.stubs_for("b").map {|s| s.full_name }
+    assert_equal [], Gem::Specification.stubs_for("b").map(&:full_name)
   end
 
   def test_self_stubs_for_mult_platforms
@@ -1254,7 +1254,7 @@ dependencies: []
       awesome.add_dependency :gem_name
     end
 
-    assert_equal %w[true gem_name], gem.dependencies.map {|dep| dep.name }
+    assert_equal %w[true gem_name], gem.dependencies.map(&:name)
   end
 
   def test_add_dependency_from_existing_dependency
@@ -1324,9 +1324,7 @@ dependencies: []
 
     assert_empty @ext.build_args
 
-    File.open @ext.build_info_file, "w" do |io|
-      io.puts
-    end
+    File.open @ext.build_info_file, "w", &:puts
 
     assert_empty @ext.build_args
 
@@ -2188,7 +2186,7 @@ dependencies: []
 
     expected = %w[rake jabber4r pqa]
 
-    assert_equal expected, @c1.runtime_dependencies.map {|d| d.name }
+    assert_equal expected, @c1.runtime_dependencies.map(&:name)
   end
 
   def test_spaceship_name

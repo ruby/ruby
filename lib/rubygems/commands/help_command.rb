@@ -323,7 +323,7 @@ platform.
 
     margin_width = 4
 
-    desc_width = @command_manager.command_names.map {|n| n.size }.max + 4
+    desc_width = @command_manager.command_names.map(&:size).max + 4
 
     summary_width = 80 - margin_width - desc_width
     wrap_indent = " " * (margin_width + desc_width)

@@ -336,9 +336,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_download_install_dir
-    a1_data = File.open @a1_gem, "rb" do |fp|
-      fp.read
-    end
+    a1_data = File.open @a1_gem, "rb", &:read
 
     fetcher = util_fuck_with_fetcher a1_data
 

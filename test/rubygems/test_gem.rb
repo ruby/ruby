@@ -97,7 +97,7 @@ class TestGem < Gem::TestCase
 
     installed = Gem.install "a", "= 1", :install_dir => gemhome2
 
-    assert_equal %w[a-1], installed.map {|spec| spec.full_name }
+    assert_equal %w[a-1], installed.map(&:full_name)
 
     assert_path_exist File.join(gemhome2, "gems", "a-1")
   end
@@ -116,7 +116,7 @@ class TestGem < Gem::TestCase
       rescue StandardError
         Gem.install "a", "= 1", :install_dir => gemhome2
       end
-    assert_equal %w[a-1], installed.map {|spec| spec.full_name }
+    assert_equal %w[a-1], installed.map(&:full_name)
   end
 
   def test_self_install_permissions
@@ -1377,7 +1377,7 @@ class TestGem < Gem::TestCase
       r.gem "b", "= 1"
     end
 
-    activated = Gem::Specification.map {|x| x.full_name }
+    activated = Gem::Specification.map(&:full_name)
 
     assert_equal %w[a-1 b-1 c-2], activated.sort
   end

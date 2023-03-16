@@ -174,7 +174,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  @@attributes = @@default_value.keys.sort_by {|s| s.to_s }
+  @@attributes = @@default_value.keys.sort_by(&:to_s)
   @@array_attributes = @@default_value.reject {|_k,v| v != [] }.keys
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition do |k|
     @@default_value[k].nil?
@@ -857,7 +857,7 @@ class Gem::Specification < Gem::BasicSpecification
     installed_stubs = installed_stubs(Gem::Specification.dirs, pattern)
     installed_stubs.select! {|s| Gem::Platform.match_spec? s } if match_platform
     stubs = installed_stubs + default_stubs(pattern)
-    stubs = stubs.uniq {|stub| stub.full_name }
+    stubs = stubs.uniq(&:full_name)
     _resort!(stubs)
     stubs
   end
@@ -1084,7 +1084,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.unresolved_specs
-    unresolved_deps.values.map {|dep| dep.to_specs }.flatten
+    unresolved_deps.values.map(&:to_specs).flatten
   end
   private_class_method :unresolved_specs
 
@@ -1143,7 +1143,7 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name] = spec
     end
 
-    result.map(&:last).flatten.sort_by {|tup| tup.name }
+    result.map(&:last).flatten.sort_by(&:name)
   end
 
   ##
@@ -1269,7 +1269,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.reset
     @@dirs = nil
-    Gem.pre_reset_hooks.each {|hook| hook.call }
+    Gem.pre_reset_hooks.each(&:call)
     clear_specs
     clear_load_cache
     unresolved = unresolved_deps
@@ -1288,7 +1288,7 @@ class Gem::Specification < Gem::BasicSpecification
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
-    Gem.post_reset_hooks.each {|hook| hook.call }
+    Gem.post_reset_hooks.each(&:call)
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -1600,7 +1600,7 @@ class Gem::Specification < Gem::BasicSpecification
   def build_args
     if File.exist? build_info_file
       build_info = File.readlines build_info_file
-      build_info = build_info.map {|x| x.strip }
+      build_info = build_info.map(&:strip)
       build_info.delete ""
       build_info
     else
@@ -1824,7 +1824,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns all specs that matches this spec's runtime dependencies.
 
   def dependent_specs
-    runtime_dependencies.map {|dep| dep.to_specs }.flatten
+    runtime_dependencies.map(&:to_specs).flatten
   end
 
   ##

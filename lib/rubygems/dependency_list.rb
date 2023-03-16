@@ -104,7 +104,7 @@ class Gem::DependencyList
   end
 
   def inspect # :nodoc:
-    "%s %p>" % [super[0..-2], map {|s| s.full_name }]
+    "%s %p>" % [super[0..-2], map(&:full_name)]
   end
 
   ##

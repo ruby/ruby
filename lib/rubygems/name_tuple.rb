@@ -31,7 +31,7 @@ class Gem::NameTuple
   # [name, version, platform] tuples.
 
   def self.to_basic(list)
-    list.map {|t| t.to_a }
+    list.map(&:to_a)
   end
 
   ##

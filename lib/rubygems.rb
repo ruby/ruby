@@ -747,13 +747,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+") do |io|
-      io.read
-    end
+    open_file(path, "rb+", &:read)
   rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb") do |io|
-      io.read
-    end
+    open_file(path, "rb", &:read)
   end
 
   ##

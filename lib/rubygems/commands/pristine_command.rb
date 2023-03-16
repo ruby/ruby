@@ -113,9 +113,7 @@ extensions will be restored.
         spec.extensions && !spec.extensions.empty?
       end
     elsif options[:only_missing_extensions]
-      Gem::Specification.select do |spec|
-        spec.missing_extensions?
-      end
+      Gem::Specification.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
         Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse

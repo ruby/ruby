@@ -324,7 +324,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 2, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal ["a-2", "b-2"], names
 
@@ -343,7 +343,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b, c])
     assert_equal 3, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-1.b b-1.b c-1.1.b], names
   end
@@ -410,12 +410,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 1, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-1], names
 
     assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map {|set| set.class }
+                 rs.sets.map(&:class)
   end
 
   def test_resolve_ignore_dependencies
@@ -429,7 +429,7 @@ ruby "0"
     res = rs.resolve StaticSet.new([a, b])
     assert_equal 1, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal %w[a-2], names
   end
@@ -474,12 +474,12 @@ ruby "0"
     res = rs.resolve
     assert_equal 2, res.size
 
-    names = res.map {|s| s.full_name }.sort
+    names = res.map(&:full_name).sort
 
     assert_equal ["a-1", "b-2"], names
 
     assert_equal [@DR::BestSet, @DR::GitSet, @DR::VendorSet, @DR::SourceSet],
-                 rs.sets.map {|set| set.class }
+                 rs.sets.map(&:class)
   end
 
   def test_sorted_requests
@@ -492,7 +492,7 @@ ruby "0"
 
     rs.resolve StaticSet.new([a, b, c])
 
-    names = rs.sorted_requests.map {|s| s.full_name }
+    names = rs.sorted_requests.map(&:full_name)
     assert_equal %w[c-2 b-2 a-2], names
   end
 
@@ -521,14 +521,14 @@ ruby "0"
       installers << installer
     end
 
-    assert_equal %w[b-1 a-1], reqs.map {|req| req.full_name }
+    assert_equal %w[b-1 a-1], reqs.map(&:full_name)
     assert_equal %w[b-1 a-1],
                  installers.map {|installer| installer.spec.full_name }
 
     assert_path_exist File.join @gemhome, "specifications", "a-1.gemspec"
     assert_path_exist File.join @gemhome, "specifications", "b-1.gemspec"
 
-    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map(&:full_name)
 
     assert done_installing_ran
   end
@@ -551,7 +551,7 @@ ruby "0"
     assert_path_exist File.join @tempdir, "specifications", "a-1.gemspec"
     assert_path_exist File.join @tempdir, "specifications", "b-1.gemspec"
 
-    assert_equal %w[b-1 a-1], installed.map {|s| s.full_name }
+    assert_equal %w[b-1 a-1], installed.map(&:full_name)
   end
 
   def test_install_into_development_shallow
@@ -583,7 +583,7 @@ ruby "0"
       assert_equal @tempdir, ENV["GEM_HOME"]
     end
 
-    assert_equal %w[a-1 b-1], installed.map {|s| s.full_name }.sort
+    assert_equal %w[a-1 b-1], installed.map(&:full_name).sort
   end
 
   def test_sorted_requests_development_shallow
@@ -608,7 +608,7 @@ ruby "0"
 
     rs.resolve StaticSet.new [a_spec, b_spec, c_spec]
 
-    assert_equal %w[b-1 a-1], rs.sorted_requests.map {|req| req.full_name }
+    assert_equal %w[b-1 a-1], rs.sorted_requests.map(&:full_name)
   end
 
   def test_tsort_each_child_development
@@ -637,7 +637,7 @@ ruby "0"
 
     deps = rs.enum_for(:tsort_each_child, a_req).to_a
 
-    assert_equal %w[b], deps.map {|dep| dep.name }
+    assert_equal %w[b], deps.map(&:name)
   end
 
   def test_tsort_each_child_development_shallow

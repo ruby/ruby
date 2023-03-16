@@ -242,7 +242,7 @@ module Gem::QueryUtils
 
     list =
       if platforms.empty? || options[:details]
-        name_tuples.map {|n| n.version }.uniq
+        name_tuples.map(&:version).uniq
       else
         platforms.sort.reverse.map do |version, pls|
           out = version.to_s

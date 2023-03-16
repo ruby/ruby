@@ -112,9 +112,7 @@ module Kernel
       if found_specs.empty?
         found_specs = Gem::Specification.find_in_unresolved_tree path
 
-        found_specs.each do |found_spec|
-          found_spec.activate
-        end
+        found_specs.each(&:activate)
 
       # We found +path+ directly in an unresolved gem. Now we figure out, of
       # the possible found specs, which one we should activate.

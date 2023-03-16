@@ -22,9 +22,7 @@ class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
   include TestGemCommandsQueryCommandSetup
 
   def test_execute
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r]
 
@@ -45,9 +43,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_all
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --all]
 
@@ -68,9 +64,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_all_prerelease
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --all --prerelease]
 
@@ -310,9 +304,7 @@ pl (1)
   end
 
   def test_execute_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :local
 
@@ -333,9 +325,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_local_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[]
 
@@ -355,9 +345,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_local_quiet
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :local
     Gem.configuration.verbose = false
@@ -376,9 +364,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_no_versions
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r --no-versions]
 
@@ -399,9 +385,7 @@ pl
   end
 
   def test_execute_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-r]
 
@@ -439,9 +423,7 @@ a (3.a)
   end
 
   def test_execute_prerelease_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-l --prerelease]
 
@@ -461,9 +443,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_no_prerelease_local
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[-l --no-prerelease]
 
@@ -483,9 +463,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_remote
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :remote
 
@@ -506,9 +484,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_remote_notty
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[]
 
@@ -528,9 +504,7 @@ pl (1 i386-linux)
   end
 
   def test_execute_remote_quiet
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.options[:domain] = :remote
     Gem.configuration.verbose = false
@@ -569,9 +543,7 @@ pl (1 i386-linux)
 
   # Test for multiple args handling!
   def test_execute_multiple_args
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    spec_fetcher(&:legacy_platform)
 
     @cmd.handle_options %w[a pl]
 

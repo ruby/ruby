@@ -69,7 +69,7 @@ class Gem::AvailableSet
   end
 
   def all_specs
-    @set.map {|t| t.spec }
+    @set.map(&:spec)
   end
 
   def match_platform!

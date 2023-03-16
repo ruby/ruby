@@ -1051,16 +1051,14 @@ Also, a list:
     unless Gem::RemoteFetcher === @fetcher
       v = Gem.marshal_version
 
-      specs = all.map {|spec| spec.name_tuple }
+      specs = all.map(&:name_tuple)
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
-      latest_specs = latest.map do |spec|
-        spec.name_tuple
-      end
+      latest_specs = latest.map(&:name_tuple)
 
       l_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic latest_specs
 
-      prerelease_specs = prerelease.map {|spec| spec.name_tuple }
+      prerelease_specs = prerelease.map(&:name_tuple)
       p_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic prerelease_specs
 
       @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
