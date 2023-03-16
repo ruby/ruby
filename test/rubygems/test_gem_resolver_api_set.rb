@@ -29,7 +29,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set = @DR::APISet.new @dep_uri
 
     assert_equal URI("#{@gem_repo}info/"), set.dep_uri
-    assert_equal URI("#{@gem_repo}"), set.uri
+    assert_equal URI(@gem_repo.to_s), set.uri
   end
 
   def test_find_all

@@ -510,7 +510,7 @@ module Gem::Security
                    extensions = EXTENSIONS)
     raise Gem::Security::Exception,
           "incorrect signing key for re-signing " +
-          "#{expired_certificate.subject}" unless
+          expired_certificate.subject.to_s unless
       expired_certificate.check_private_key(private_key)
 
     unless expired_certificate.subject.to_s ==
