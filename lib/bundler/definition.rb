@@ -726,6 +726,8 @@ module Bundler
           dep.source = sources.get(dep.source)
         end
 
+        next if unlocking?
+
         unless locked_dep = @locked_deps[dep.name]
           changes = true
           next
@@ -899,6 +901,7 @@ module Bundler
                 Bundler.local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+                @dependency_changes ||
                 !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
 
       remove_platform(Gem::Platform::RUBY)
