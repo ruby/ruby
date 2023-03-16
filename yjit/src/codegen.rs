@@ -583,11 +583,15 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
 pub fn gen_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
-    let entryref = new_entry(iseq);
+    let entryref = new_entry();
     let stub_addr = match gen_call_entry_stub_hit(entryref.as_ptr() as usize, ocb) {
         Some(addr) => addr,
         None => return,
     };
+
+    // Add to the list of entries for the ISEQ
+    let iseq_payload = get_or_create_iseq_payload(iseq);
+    iseq_payload.entries.push(entryref);
 
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };

@@ -1879,18 +1879,12 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
 }
 
 /// Create a new entry reference for an ISEQ
-pub fn new_entry(iseq: IseqPtr) -> EntryRef {
+pub fn new_entry() -> EntryRef {
     let entry = Entry {
         start_addr: Cell::new(None),
         end_addr: Cell::new(None),
     };
-
-    // Add to the list of entries for the ISEQ
-    let entryref = NonNull::new(Box::into_raw(Box::new(entry))).unwrap();
-    let iseq_payload = get_or_create_iseq_payload(iseq);
-    iseq_payload.entries.push(entryref);
-
-    return entryref;
+    return NonNull::new(Box::into_raw(Box::new(entry))).unwrap();
 }
 
 c_callable! {
