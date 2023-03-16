@@ -141,7 +141,7 @@ module Gem::InstallUpdateOptions
       end unless v
 
       unless v
-        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
+        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ", "})"
 
         raise Gem::OptionParser::InvalidArgument,
                 "cannot find gem dependencies file #{message}"

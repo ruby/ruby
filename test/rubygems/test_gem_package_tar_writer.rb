@@ -268,10 +268,10 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def test_split_name
     assert_equal ["b" * 100, "a" * 155],
-                 @tar_writer.split_name("#{'a' * 155}/#{'b' * 100}")
+                 @tar_writer.split_name("#{"a" * 155}/#{"b" * 100}")
 
-    assert_equal ["#{'qwer/' * 19}bla", "a" * 151],
-                 @tar_writer.split_name("#{'a' * 151}/#{'qwer/' * 19}bla")
+    assert_equal ["#{"qwer/" * 19}bla", "a" * 151],
+                 @tar_writer.split_name("#{"a" * 151}/#{"qwer/" * 19}bla")
     names = [
       ([""] + ["123456789"] * 9 + ["1234567890"]).join("/"),  # 101 bytes (several pieces)
       (["123456789"] * 9 + ["1234567890"] + [""]).join("/"),  # 101 bytes (several pieces)

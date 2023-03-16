@@ -227,7 +227,7 @@ class Gem::Command
 
     if args.size > 1
       raise Gem::CommandLineError,
-            "Too many gem names (#{args.join(', ')}); please specify only one"
+            "Too many gem names (#{args.join(", ")}); please specify only one"
     end
 
     args.first

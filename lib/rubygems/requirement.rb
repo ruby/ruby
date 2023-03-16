@@ -163,7 +163,7 @@ class Gem::Requirement
       "#{op} #{version}"
     end.uniq
 
-    " (#{list.join ', '})"
+    " (#{list.join ", "})"
   end
 
   ##

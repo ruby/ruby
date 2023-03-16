@@ -32,7 +32,7 @@ class Gem::Doctor
     Gem::REPOSITORY_SUBDIRECTORIES.sort -
     REPOSITORY_EXTENSION_MAP.map {|(k,_)| k }.sort
 
-  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ', '}" unless
+  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ", "}" unless
     missing.empty?
 
   ##

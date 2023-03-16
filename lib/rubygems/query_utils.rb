@@ -263,7 +263,7 @@ module Gem::QueryUtils
         end
       end
 
-    entry << " (#{list.join ', '})"
+    entry << " (#{list.join ", "})"
   end
 
   def make_entry(entry_tuples, platforms)
@@ -282,7 +282,7 @@ module Gem::QueryUtils
   end
 
   def spec_authors(entry, spec)
-    authors = "Author#{spec.authors.length > 1 ? 's' : ''}: ".dup
+    authors = "Author#{spec.authors.length > 1 ? "s" : ""}: ".dup
     authors << spec.authors.join(", ")
     entry << format_text(authors, 68, 4)
   end
@@ -296,7 +296,7 @@ module Gem::QueryUtils
   def spec_license(entry, spec)
     return if spec.license.nil? || spec.license.empty?
 
-    licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: ".dup
+    licenses = "License#{spec.licenses.length > 1 ? "s" : ""}: ".dup
     licenses << spec.licenses.join(", ")
     entry << "\n" << format_text(licenses, 68, 4)
   end
@@ -327,7 +327,7 @@ module Gem::QueryUtils
 
     if platforms.length == 1
       title = platforms.values.length == 1 ? "Platform" : "Platforms"
-      entry << "    #{title}: #{platforms.values.sort.join(', ')}\n"
+      entry << "    #{title}: #{platforms.values.sort.join(", ")}\n"
     else
       entry << "    Platforms:\n"
 

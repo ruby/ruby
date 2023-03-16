@@ -201,7 +201,7 @@ class Gem::Uninstaller
 
     remove = if @force_executables.nil?
       ask_yes_no("Remove executables:\n" +
-                 "\t#{executables.join ', '}\n\n" +
+                 "\t#{executables.join ", "}\n\n" +
                  "in addition to the gem?",
                  true)
     else

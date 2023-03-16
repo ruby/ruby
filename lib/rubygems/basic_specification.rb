@@ -290,7 +290,7 @@ class Gem::BasicSpecification
   def lib_dirs_glob
     dirs = if self.raw_require_paths
       if self.raw_require_paths.size > 1
-        "{#{self.raw_require_paths.join(',')}}"
+        "{#{self.raw_require_paths.join(",")}}"
       else
         self.raw_require_paths.first
       end

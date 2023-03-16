@@ -692,7 +692,7 @@ EOM
     end
 
     if (duplicates = @files.group_by {|f| f }.select {|_k,v| v.size > 1 }.map(&:first)) && duplicates.any?
-      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(', ')})"
+      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(", ")})"
     end
   end
 

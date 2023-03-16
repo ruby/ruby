@@ -126,7 +126,7 @@ module Kernel
 
         if names.size > 1
           RUBYGEMS_ACTIVATION_MONITOR.exit
-          raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ', '}"
+          raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ", "}"
         end
 
         # Ok, now find a gem that has no conflicts, starting
