@@ -272,6 +272,10 @@ module RubyVM::YJIT
       $stderr.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       $stderr.puts "defer_count:           " + format_number(13, stats[:defer_count])
       $stderr.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
+
+      $stderr.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
+      $stderr.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
+
       $stderr.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
       $stderr.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
       $stderr.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
