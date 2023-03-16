@@ -1450,7 +1450,7 @@ dependencies: []
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
-    unless ($DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?)
+    unless $DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?
       FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end
