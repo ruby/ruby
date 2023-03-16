@@ -171,7 +171,7 @@ class Gem::Request
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return (_scheme == "https" || _scheme == "http") ?
+      return _scheme == "https" || _scheme == "http" ?
         :no_proxy : get_proxy_from_env("http")
     end
 
