@@ -32,7 +32,7 @@ class Gem::S3URISigner
 
   ##
   # Signs S3 URI using query-params according to the reference: https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
-  def sign(expiration = 86400)
+  def sign(expiration = 86_400)
     s3_config = fetch_s3_config
 
     current_time = Time.now.utc

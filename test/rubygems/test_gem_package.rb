@@ -643,8 +643,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_symlink "link", destination_user_dir, 16877
-      tar.add_symlink "link/dir", ".", 16877
+      tar.add_symlink "link", destination_user_dir, 16_877
+      tar.add_symlink "link/dir", ".", 16_877
     end
 
     expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]

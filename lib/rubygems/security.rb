@@ -359,7 +359,7 @@ module Gem::Security
   ##
   # One day in seconds
 
-  ONE_DAY = 86400
+  ONE_DAY = 86_400
 
   ##
   # One year in seconds
