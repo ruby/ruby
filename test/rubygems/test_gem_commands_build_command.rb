@@ -699,7 +699,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     output = @ui.output.split "\n"
     assert_equal "INFO:  Your certificate has expired, trying to re-sign it...", output.shift
-    assert_equal "INFO:  Your cert: #{tmp_expired_cert_file } has been auto re-signed with the key: #{tmp_private_key_file}", output.shift
+    assert_equal "INFO:  Your cert: #{tmp_expired_cert_file} has been auto re-signed with the key: #{tmp_private_key_file}", output.shift
     assert_match(/INFO:  Your expired cert will be located at: .+\Wgem-public_cert\.pem\.expired\.[0-9]+/, output.shift)
   end
 
