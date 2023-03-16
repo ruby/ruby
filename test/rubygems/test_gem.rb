@@ -662,7 +662,11 @@ class TestGem < Gem::TestCase
 
   def test_self_ensure_gem_directories_missing_parents
     gemdir = File.join @tempdir, "a/b/c/gemdir"
-    FileUtils.rm_rf File.join(@tempdir, "a") rescue nil
+    begin
+      FileUtils.rm_rf File.join(@tempdir, "a")
+    rescue
+      nil
+    end
     refute File.exist?(File.join(@tempdir, "a")),
            "manually remove #{File.join @tempdir, "a"}, tests are broken"
     Gem.use_paths gemdir
@@ -675,7 +679,11 @@ class TestGem < Gem::TestCase
   unless win_platform? || Process.uid.zero? # only for FS that support write protection
     def test_self_ensure_gem_directories_write_protected
       gemdir = File.join @tempdir, "egd"
-      FileUtils.rm_r gemdir rescue nil
+      begin
+        FileUtils.rm_r gemdir
+      rescue
+        nil
+      end
       refute File.exist?(gemdir), "manually remove #{gemdir}, tests are broken"
       FileUtils.mkdir_p gemdir
       FileUtils.chmod 0400, gemdir
@@ -692,7 +700,11 @@ class TestGem < Gem::TestCase
       parent = File.join(@tempdir, "egd")
       gemdir = "#{parent}/a/b/c"
 
-      FileUtils.rm_r parent rescue nil
+      begin
+        FileUtils.rm_r parent
+      rescue
+        nil
+      end
       refute File.exist?(parent), "manually remove #{parent}, tests are broken"
       FileUtils.mkdir_p parent
       FileUtils.chmod 0400, parent
@@ -1496,19 +1508,31 @@ class TestGem < Gem::TestCase
 
   def test_load_env_plugins
     with_plugin("load") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_LOAD rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_LOAD
+    rescue
+      nil
+    end
 
     util_remove_interrupt_command
 
     # Should attempt to cause a StandardError
     with_plugin("standarderror") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_STANDARDERROR rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
+    rescue
+      nil
+    end
 
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
     with_plugin("exception") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_EXCEPTION rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_EXCEPTION
+    rescue
+      nil
+    end
   end
 
   def test_gem_path_ordering

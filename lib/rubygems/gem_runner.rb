@@ -32,7 +32,11 @@ class Gem::GemRunner
 
     do_configuration args
 
-    Gem.load_env_plugins rescue nil
+    begin
+      Gem.load_env_plugins
+    rescue
+      nil
+    end
     Gem.load_plugins
 
     cmd = @command_manager_class.instance
