@@ -20,7 +20,7 @@ INSN_ENTRY(<%= insn.name %>)
 <%= render_c_expr konst -%>
 % end
 %
-% insn.opes.each_with_index do |ope, i|
+% insn.operands.each_with_index do |ope, i|
     <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
 % end
 #   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
@@ -41,7 +41,7 @@ INSN_ENTRY(<%= insn.name %>)
 % end
 <%= insn.handle_canary "SETUP_CANARY(leaf)" -%>
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
-% insn.opes.each_with_index do |ope, i|
+% insn.operands.each_with_index do |ope, i|
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), <%= i %>, <%= ope[:name] %>);
 % end
 % unless body.empty?
