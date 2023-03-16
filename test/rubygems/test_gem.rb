@@ -1631,14 +1631,14 @@ class TestGem < Gem::TestCase
   def test_operating_system_defaults
     operating_system_defaults = Gem.operating_system_defaults
 
-    assert operating_system_defaults != nil
+    assert !operating_system_defaults.nil?
     assert operating_system_defaults.is_a? Hash
   end
 
   def test_platform_defaults
     platform_defaults = Gem.platform_defaults
 
-    assert platform_defaults != nil
+    assert !platform_defaults.nil?
     assert platform_defaults.is_a? Hash
   end
 
