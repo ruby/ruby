@@ -42,13 +42,13 @@ class TestKernel < Gem::TestCase
   def test_gem_redundant
     assert gem("a", "= 1"), "Should load"
     refute gem("a", "= 1"), "Should not load"
-    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
+    assert_equal 1, $:.count {|p| p.include?("a-1/lib") }
   end
 
   def test_gem_overlapping
     assert gem("a", "= 1"), "Should load"
     refute gem("a", ">= 1"), "Should not load"
-    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
+    assert_equal 1, $:.count {|p| p.include?("a-1/lib") }
   end
 
   def test_gem_prerelease
