@@ -990,7 +990,7 @@ TEXT
         bindir="${0%/*}"
       EOS
 
-      script << %Q(exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n)
+      script << %(exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n)
 
       <<~EOS
         #!/bin/sh

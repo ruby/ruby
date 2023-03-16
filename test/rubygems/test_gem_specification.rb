@@ -804,8 +804,7 @@ dependencies: []
       end
 
       full_path.taint
-      loader = Thread.new { $SAFE = 1
- Gem::Specification.load full_path }
+      loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
       spec = loader.value
 
       @a2.files.clear
