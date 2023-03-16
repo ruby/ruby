@@ -452,7 +452,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name()
+    def s.full_name
       "metadata.gz"
     end
 
@@ -477,7 +477,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name()
+    def s.full_name
       "metadata.gz"
     end
 
@@ -508,7 +508,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name()
+    def s.full_name
       "metadata.gz"
     end
 

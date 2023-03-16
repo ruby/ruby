@@ -29,7 +29,7 @@ class Gem::MockGemUi < Gem::StreamUI
   module TTY
     attr_accessor :tty
 
-    def tty?()
+    def tty?
       @tty = true unless defined?(@tty)
       @tty
     end

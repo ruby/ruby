@@ -811,7 +811,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name()
+    def entry.full_name
       "metadata.gz"
     end
 
@@ -1111,7 +1111,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name()
+    def entry.full_name
       raise ArgumentError, "whatever"
     end
 
@@ -1140,7 +1140,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       $good_name = vm
 
       entry = Object.new
-      def entry.full_name()
+      def entry.full_name
         $good_name
       end
 
@@ -1161,7 +1161,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name()
+      def entry.full_name
         $bad_name
       end
 
