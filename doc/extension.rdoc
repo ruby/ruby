@@ -771,6 +771,62 @@ Arguments klass and data_type work like their counterparts in
 TypedData_Wrap_Struct().  A pointer to the allocated structure will
 be assigned to sval, which should be a pointer of the type specified.
 
+==== Declaratively marking/compacting struct references
+
+In the case where your struct refers to Ruby objects that are simple values,
+not wrapped in conditional logic or complex data structures an alternative
+approach to marking and reference updating is provided, by declaring offset
+references to the VALUES in your struct.
+
+Doing this allows the Ruby GC to support marking these references and GC
+compaction without the need to define the `dmark` and `dcompact` callbacks.
+
+You must define a static list of VALUE pointers to the offsets within your
+struct where the references are located, and set the "data" member to point to
+this reference list. The reference list must end with `END_REFS`
+
+Some Macros have been provided to make edge referencing easier:
+
+* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the `ruby_data_type_t` to indicate that references are being declared as edges.
+
+* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define `ref_list_name` as a list of references
+
+* <code>RUBY_REFERENCES_END</code> - Mark the end of the references list. This will take care of terminating the list correctly
+
+* <code>RUBY_REF_EDGE\(struct, member\)</code> - Declare `member` as a VALUE edge from `struct`. Use this after `RUBY_REFERENCES_START`
+
+* +REFS_LIST_PTR+ - Coerce the reference list into a format that can be
+  accepted by the existing `dmark` interface.
+
+The example below is from `Dir` (defined in `dir.c`)
+
+  // The struct being wrapped. Notice this contains 3 members of which the second
+  // is a VALUE reference to another ruby object.
+  struct dir_data {
+      DIR *dir;
+      const VALUE path;
+      rb_encoding *enc;
+  }
+
+  // Define a reference list `dir_refs` containing a single entry to `path`, and
+  // terminating with RUBY_REF_END
+  RUBY_REFERENCES_START(dir_refs)
+      REF_EDGE(dir_data, path),
+  RUBY_REFERENCES_END
+
+  // Override the "dmark" field with the defined reference list now that we
+  // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the 
+  // flags field
+  static const rb_data_type_t dir_data_type = {
+      "dir",
+      {REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
+      0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+  };
+
+Declaring simple references declaratively in this manner allows the GC to both
+mark, and move the underlying object, and automatically update the reference to
+it during compaction.
+
 ==== Ruby object to C struct
 
 To retrieve the C pointer from the T_DATA object, use the macro
