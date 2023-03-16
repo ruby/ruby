@@ -1700,6 +1700,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(packaging, strict); end
 
     util_build_gem spec
@@ -1720,6 +1721,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(*args); end
 
     util_build_gem spec
@@ -1741,6 +1743,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(*args); end
     spec.require_paths = ["malicious\n``"]
 
@@ -1764,6 +1767,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(*args); end
     spec.extensions = ["malicious\n``"]
 
@@ -1785,6 +1789,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(*args); end
     spec.specification_version = "malicious\n``"
 
@@ -1806,6 +1811,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
+
     def spec.validate(*args); end
     spec.add_dependency "b\nfoo", "> 5"
 
