@@ -88,7 +88,7 @@ data you will need to change them immediately and yank your gem.
 
   def get_version_from_requirements(requirements)
     requirements.requirements.first[1].version
-  rescue
+  rescue StandardError
     nil
   end
 

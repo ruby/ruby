@@ -98,7 +98,7 @@ permission to.
         action = method == :delete ? "Removing" : "Adding"
 
         with_response response, "#{action} #{owner}"
-      rescue
+      rescue StandardError
         # ignore
       end
     end

@@ -126,7 +126,7 @@ class Gem::RemoteFetcher
     require "fileutils"
     begin
       FileUtils.mkdir_p cache_dir
-    rescue
+    rescue StandardError
       nil
     end unless File.exist? cache_dir
 
@@ -286,7 +286,7 @@ class Gem::RemoteFetcher
   def cache_update_path(uri, path = nil, update = true)
     mtime = begin
               path && File.stat(path).mtime
-            rescue
+            rescue StandardError
               nil
             end
 

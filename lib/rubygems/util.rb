@@ -85,7 +85,7 @@ module Gem::Util
     loop do
       begin
         Dir.chdir here, &block
-      rescue
+      rescue StandardError
         Errno::EACCES
       end
 

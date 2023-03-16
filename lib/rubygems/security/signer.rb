@@ -176,14 +176,14 @@ class Gem::Security::Signer
     disk_cert_path = File.join(Gem.default_cert_path)
     disk_cert = begin
                   File.read(disk_cert_path)
-                rescue
+                rescue StandardError
                   nil
                 end
 
     disk_key_path = File.join(Gem.default_key_path)
     disk_key = begin
                  OpenSSL::PKey.read(File.read(disk_key_path), @passphrase)
-               rescue
+               rescue StandardError
                  nil
                end
 

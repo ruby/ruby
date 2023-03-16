@@ -74,7 +74,7 @@ class Gem::Ext::Builder
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env)
       output, status = begin
                          Open3.capture2e(build_env, *command, :chdir => dir)
-                       rescue => error
+                       rescue StandardError => error
                          raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
                        end
       if verbose
@@ -174,7 +174,7 @@ EOF
       verbose { results.join("\n") }
 
       write_gem_make_out results.join "\n"
-    rescue => e
+    rescue StandardError => e
       results << e.message
       build_error(results.join("\n"), $@)
     end

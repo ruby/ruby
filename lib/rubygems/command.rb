@@ -432,7 +432,7 @@ class Gem::Command
     begin
       parser.parse!(args.dup)
       return true
-    rescue
+    rescue StandardError
       return false
     end
   end

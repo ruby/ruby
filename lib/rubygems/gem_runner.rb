@@ -34,7 +34,7 @@ class Gem::GemRunner
 
     begin
       Gem.load_env_plugins
-    rescue
+    rescue StandardError
       nil
     end
     Gem.load_plugins

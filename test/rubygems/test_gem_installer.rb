@@ -1567,7 +1567,7 @@ gem 'other', version
         installer.install
       end
       assert_path_exist so
-    rescue
+    rescue StandardError
       puts "-" * 78
       puts File.read File.join(@gemhome, "gems", "a-2", "Makefile")
       puts "-" * 78
