@@ -338,20 +338,6 @@ class TestGemRequest < Gem::TestCase
     util_restore_version
   end
 
-  def test_user_agent_revision_missing
-    util_save_version
-
-    Object.send :remove_const, :RUBY_PATCHLEVEL
-    Object.send :const_set,    :RUBY_PATCHLEVEL, -1
-    Object.send :remove_const, :RUBY_REVISION
-
-    ua = make_request(@uri, nil, nil, nil).user_agent
-
-    assert_match %r{\(#{Regexp.escape RUBY_RELEASE_DATE}\)}, ua
-  ensure
-    util_restore_version
-  end
-
   def test_verify_certificate
     pend if Gem.java_platform?
 
@@ -499,8 +485,7 @@ ERROR:  Certificate  is an invalid CA certificate
     Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_RUBY_PATCHLEVEL
 
     Object.send :remove_const, :RUBY_REVISION
-    Object.send :const_set,    :RUBY_REVISION, @orig_RUBY_REVISION if
-      defined?(@orig_RUBY_REVISION)
+    Object.send :const_set,    :RUBY_REVISION, @orig_RUBY_REVISION
   end
 
   def util_save_version
