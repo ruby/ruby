@@ -361,7 +361,6 @@ gem 'other', version
     end
 
     assert_equal "", @ui.error
-
   ensure
     ENV["PATH"] = old_path
   end

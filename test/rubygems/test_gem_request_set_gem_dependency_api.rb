@@ -362,7 +362,6 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
       assert_empty @set.dependencies
     end
-
   ensure
     Gem.win_platform = win_platform
   end

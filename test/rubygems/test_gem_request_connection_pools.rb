@@ -127,7 +127,6 @@ class TestGemRequestConnectionPool < Gem::TestCase
     net_http_args = pools.send :net_http_args, URI("http://example"), @proxy
 
     assert_equal ["example", 80, nil, nil], net_http_args
-
   ensure
     ENV["no_proxy"] = orig_no_proxy
   end

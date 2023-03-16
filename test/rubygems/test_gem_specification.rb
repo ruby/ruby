@@ -810,7 +810,6 @@ dependencies: []
       @a2.files.clear
 
       assert_equal @a2, spec
-
     ensure
       $SAFE = 0
     end

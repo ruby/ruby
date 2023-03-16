@@ -48,7 +48,6 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_match %r{- /bin$},           @ui.output
 
     assert_empty @ui.error
-
   ensure
     Gem.sources.replace orig_sources
     ENV["PATH"] = orig_path
@@ -125,7 +124,6 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
 
     assert_equal "http://gems.example.com\n", @ui.output
     assert_equal "", @ui.error
-
   ensure
     Gem.sources.replace orig_sources
   end
