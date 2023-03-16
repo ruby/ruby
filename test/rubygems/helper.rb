@@ -978,15 +978,15 @@ Also, a list:
       util_build_gem @a2_pre
     end
 
-    write_file File.join(*%W[gems #{@a1.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a3a.original_name}     lib code.rb])
+    write_file File.join(*%W[gems #{@a1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a3a.original_name} lib code.rb])
     write_file File.join(*%W[gems #{@a_evil9.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@b2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@c1_2.original_name}    lib code.rb])
-    write_file File.join(*%W[gems #{@pl1.original_name}     lib code.rb])
-    write_file File.join(*%W[gems #{@x.original_name}       lib code.rb])
-    write_file File.join(*%W[gems #{@dep_x.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@b2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@x.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@dep_x.original_name} lib code.rb])
 
     [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1, @x, @dep_x].each do |spec|
       util_build_gem spec
