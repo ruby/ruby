@@ -83,7 +83,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
+              "env": "RJIT / bindgen",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref_name }}"

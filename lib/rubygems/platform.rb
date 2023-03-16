@@ -79,8 +79,8 @@ class Gem::Platform
       cpu = arch.shift
 
       @cpu = case cpu
-      when /i\d86/ then "x86"
-      else cpu
+             when /i\d86/ then "x86"
+             else cpu
       end
 
       if arch.length == 2 && arch.last =~ /^\d+(\.\d+)?$/ # for command-line
@@ -92,29 +92,29 @@ class Gem::Platform
       @cpu, os = nil, cpu if os.nil? # legacy jruby
 
       @os, @version = case os
-      when /aix(\d+)?/ then             [ "aix",       $1  ]
-      when /cygwin/ then                [ "cygwin",    nil ]
-      when /darwin(\d+)?/ then          [ "darwin",    $1  ]
-      when /^macruby$/ then             [ "macruby",   nil ]
-      when /freebsd(\d+)?/ then         [ "freebsd",   $1  ]
-      when /^java$/, /^jruby$/ then     [ "java",      nil ]
-      when /^java([\d.]*)/ then         [ "java",      $1  ]
-      when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]
-      when /^dotnet$/ then              [ "dotnet",    nil ]
-      when /^dotnet([\d.]*)/ then       [ "dotnet",    $1  ]
-      when /linux-?(\w+)?/ then         [ "linux",     $1  ]
-      when /mingw32/ then               [ "mingw32",   nil ]
-      when /mingw-?(\w+)?/ then         [ "mingw",     $1  ]
-      when /(mswin\d+)(\_(\d+))?/ then
-        os, version = $1, $3
-        @cpu = "x86" if @cpu.nil? && os =~ /32$/
-        [os, version]
-      when /netbsdelf/ then             [ "netbsdelf", nil ]
-      when /openbsd(\d+\.\d+)?/ then    [ "openbsd",   $1  ]
-      when /solaris(\d+\.\d+)?/ then    [ "solaris",   $1  ]
-      # test
-      when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
-      else                              [ "unknown",   nil ]
+                      when /aix(\d+)?/ then             [ "aix",       $1  ]
+                      when /cygwin/ then                [ "cygwin",    nil ]
+                      when /darwin(\d+)?/ then          [ "darwin",    $1  ]
+                      when /^macruby$/ then             [ "macruby",   nil ]
+                      when /freebsd(\d+)?/ then         [ "freebsd",   $1  ]
+                      when /^java$/, /^jruby$/ then     [ "java",      nil ]
+                      when /^java([\d.]*)/ then         [ "java",      $1  ]
+                      when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]
+                      when /^dotnet$/ then              [ "dotnet",    nil ]
+                      when /^dotnet([\d.]*)/ then       [ "dotnet",    $1  ]
+                      when /linux-?(\w+)?/ then         [ "linux",     $1  ]
+                      when /mingw32/ then               [ "mingw32",   nil ]
+                      when /mingw-?(\w+)?/ then         [ "mingw",     $1  ]
+                      when /(mswin\d+)(\_(\d+))?/ then
+                        os, version = $1, $3
+                        @cpu = "x86" if @cpu.nil? && os =~ /32$/
+                        [os, version]
+                      when /netbsdelf/ then             [ "netbsdelf", nil ]
+                      when /openbsd(\d+\.\d+)?/ then    [ "openbsd",   $1  ]
+                      when /solaris(\d+\.\d+)?/ then    [ "solaris",   $1  ]
+                      # test
+                      when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
+                      else [ "unknown", nil ]
       end
     when Gem::Platform then
       @cpu = arch.cpu
@@ -209,18 +209,18 @@ class Gem::Platform
     when String then
       # This data is from http://gems.rubyforge.org/gems/yaml on 19 Aug 2007
       other = case other
-      when /^i686-darwin(\d)/     then ["x86",       "darwin",  $1    ]
-      when /^i\d86-linux/         then ["x86",       "linux",   nil   ]
-      when "java", "jruby"        then [nil,         "java",    nil   ]
-      when /^dalvik(\d+)?$/       then [nil,         "dalvik",  $1    ]
-      when /dotnet(\-(\d+\.\d+))?/ then ["universal","dotnet",  $2    ]
-      when /mswin32(\_(\d+))?/    then ["x86",       "mswin32", $2    ]
-      when /mswin64(\_(\d+))?/    then ["x64",       "mswin64", $2    ]
-      when "powerpc-darwin"       then ["powerpc",   "darwin",  nil   ]
-      when /powerpc-darwin(\d)/   then ["powerpc",   "darwin",  $1    ]
-      when /sparc-solaris2.8/     then ["sparc",     "solaris", "2.8" ]
-      when /universal-darwin(\d)/ then ["universal", "darwin",  $1    ]
-      else                             other
+              when /^i686-darwin(\d)/     then ["x86",       "darwin",  $1    ]
+              when /^i\d86-linux/         then ["x86",       "linux",   nil   ]
+              when "java", "jruby"        then [nil,         "java",    nil   ]
+              when /^dalvik(\d+)?$/       then [nil,         "dalvik",  $1    ]
+              when /dotnet(\-(\d+\.\d+))?/ then ["universal","dotnet",  $2    ]
+              when /mswin32(\_(\d+))?/    then ["x86",       "mswin32", $2    ]
+              when /mswin64(\_(\d+))?/    then ["x64",       "mswin64", $2    ]
+              when "powerpc-darwin"       then ["powerpc",   "darwin",  nil   ]
+              when /powerpc-darwin(\d)/   then ["powerpc",   "darwin",  $1    ]
+              when /sparc-solaris2.8/     then ["sparc",     "solaris", "2.8" ]
+              when /universal-darwin(\d)/ then ["universal", "darwin",  $1    ]
+              else other
       end
 
       other = Gem::Platform.new other

@@ -108,6 +108,8 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 
 /*
  * call-seq:
+ *   true === other -> true or false
+ *   false === other -> true or false
  *   nil === other -> true or false
  *
  * Returns +true+ or +false+.
@@ -1373,21 +1375,35 @@ nil_match(VALUE obj1, VALUE obj2)
     return Qnil;
 }
 
-/***********************************************************************
+/*
  *  Document-class: TrueClass
  *
- *  The global value <code>true</code> is the only instance of class
- *  TrueClass and represents a logically true value in
- *  boolean expressions. The class provides operators allowing
- *  <code>true</code> to be used in logical expressions.
+ * The class of the singleton object +true+.
+ *
+ * Several of its methods act as operators:
+ *
+ * - #&
+ * - #|
+ * - #===
+ * - #^
+ *
+ * One other method:
+ *
+ * - #to_s and its alias #inspect.
+ *
  */
 
 
 /*
  * call-seq:
- *   true.to_s   ->  "true"
+ *   true.to_s -> 'true'
  *
- * The string representation of <code>true</code> is "true".
+ * Returns string <tt>'true'</tt>:
+ *
+ *   true.to_s # => "true"
+ *
+ * TrueClass#inspect is an alias for TrueClass#to_s.
+ *
  */
 
 VALUE
@@ -1399,10 +1415,14 @@ rb_true_to_s(VALUE obj)
 
 /*
  *  call-seq:
- *     true & obj    -> true or false
+ *    true & object -> true or false
  *
- *  And---Returns <code>false</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
+ *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ *
+ *  true & Object.new # => true
+ *  true & false      # => false
+ *  true & nil        # => false
+ *
  */
 
 static VALUE
@@ -1413,18 +1433,21 @@ true_and(VALUE obj, VALUE obj2)
 
 /*
  *  call-seq:
- *     true | obj   -> true
+ *    true | object -> true
  *
- *  Or---Returns <code>true</code>. As <i>obj</i> is an argument to
- *  a method call, it is always evaluated; there is no short-circuit
- *  evaluation in this case.
+ *  Returns +true+:
  *
- *     true |  puts("or")
- *     true || puts("logical or")
+ *    true | Object.new # => true
+ *    true | false      # => true
+ *    true | nil        # => true
  *
- *  <em>produces:</em>
+ *  Argument +object+ is evaluated.
+ *  This is different from +true+ with the short-circuit operator,
+ *  whose operand is evaluated only if necessary:
  *
- *     or
+ *    true | raise # => Raises RuntimeError.
+ *    true || raise # => true
+ *
  */
 
 static VALUE
@@ -1436,11 +1459,14 @@ true_or(VALUE obj, VALUE obj2)
 
 /*
  *  call-seq:
- *     true ^ obj   -> !obj
+ *    true ^ object -> !object
  *
- *  Exclusive Or---Returns <code>true</code> if <i>obj</i> is
- *  <code>nil</code> or <code>false</code>, <code>false</code>
- *  otherwise.
+ *  Returns +true+ if +object+ is +false+ or +nil+, +false+ otherwise:
+ *
+ *    true ^ Object.new # => false
+ *    true ^ false      # => true
+ *    true ^ nil        # => true
+ *
  */
 
 static VALUE

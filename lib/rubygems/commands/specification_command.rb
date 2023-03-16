@@ -140,9 +140,9 @@ Specific fields in the specification can be extracted in YAML format:
       s = s.send field if field
 
       say case options[:format]
-      when :ruby then s.to_ruby
-      when :marshal then Marshal.dump s
-      else s.to_yaml
+          when :ruby then s.to_ruby
+          when :marshal then Marshal.dump s
+          else s.to_yaml
       end
 
       say "\n"
