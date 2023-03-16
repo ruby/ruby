@@ -2252,7 +2252,7 @@ class Gem::Specification < Gem::BasicSpecification
 
       attributes.each do |attr_name|
         current_value = send attr_name
-        current_value = current_value.sort if %i[files test_files].include? attr_name
+        current_value = current_value.sort if [:files, :test_files].include? attr_name
         if current_value != default_value(attr_name) ||
            self.class.required_attribute?(attr_name)
 
