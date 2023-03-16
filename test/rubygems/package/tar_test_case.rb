@@ -68,7 +68,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
   end
 
   def calc_checksum(header)
-    sum = header.bytes.sum
+    sum = header.sum(0)
     SP(Z(to_oct(sum, 6)))
   end
 
