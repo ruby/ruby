@@ -83,7 +83,7 @@ class TestGemRequirement < Gem::TestCase
       Gem::Requirement.parse(Gem::Version.new("2"))
   end
 
-  unless (Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug"))
+  unless Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug")
     def test_parse_deduplication
       assert_same "~>", Gem::Requirement.parse("~> 1").first
     end
