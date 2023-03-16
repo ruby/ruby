@@ -4299,7 +4299,28 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
         CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
         break;
       default:
-        CHECK(COMPILE(ret, "branch condition", cond));
+        {
+            DECL_ANCHOR(cond_seq);
+            INIT_ANCHOR(cond_seq);
+
+            CHECK(COMPILE(cond_seq, "branch condition", cond));
+
+            if (LIST_INSN_SIZE_ONE(cond_seq)) {
+                INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
+                if (insn->insn_id == BIN(putobject)) {
+                    if (RTEST(insn->operands[0])) {
+                        ADD_INSNL(ret, cond, jump, then_label);
+                        // maybe unreachable
+                        return COMPILE_OK;
+                    }
+                    else {
+                        ADD_INSNL(ret, cond, jump, else_label);
+                        return COMPILE_OK;
+                    }
+                }
+            }
+            ADD_SEQ(ret, cond_seq);
+        }
         break;
     }
 
@@ -6029,53 +6050,21 @@ optimizable_range_item_p(const NODE *n)
 static int
 compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
 {
-    struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     const NODE *const node_body = type == NODE_IF ? node->nd_body : node->nd_else;
     const NODE *const node_else = type == NODE_IF ? node->nd_else : node->nd_body;
 
     const int line = nd_line(node);
     const NODE *line_node = node;
     DECL_ANCHOR(cond_seq);
-    DECL_ANCHOR(then_seq);
-    DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
     VALUE branches = Qfalse;
-    int ci_size;
-    VALUE catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
-    long catch_table_size = NIL_P(catch_table) ? 0 : RARRAY_LEN(catch_table);
 
     INIT_ANCHOR(cond_seq);
-    INIT_ANCHOR(then_seq);
-    INIT_ANCHOR(else_seq);
     then_label = NEW_LABEL(line);
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    compile_branch_condition(iseq, cond_seq, node->nd_cond,
-                             then_label, else_label);
-
-    ci_size = body->ci_size;
-    CHECK(COMPILE_(then_seq, "then", node_body, popped));
-    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
-    if (!then_label->refcnt) {
-        body->ci_size = ci_size;
-        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
-    }
-    else {
-        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
-    }
-
-    ci_size = body->ci_size;
-    CHECK(COMPILE_(else_seq, "else", node_else, popped));
-    catch_table = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
-    if (!else_label->refcnt) {
-        body->ci_size = ci_size;
-        if (!NIL_P(catch_table)) rb_ary_set_len(catch_table, catch_table_size);
-    }
-    else {
-        if (!NIL_P(catch_table)) catch_table_size = RARRAY_LEN(catch_table);
-    }
-
+    compile_branch_condition(iseq, cond_seq, node->nd_cond, then_label, else_label);
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
@@ -6084,6 +6073,11 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 
     if (then_label->refcnt) {
         ADD_LABEL(ret, then_label);
+
+        DECL_ANCHOR(then_seq);
+        INIT_ANCHOR(then_seq);
+        CHECK(COMPILE_(then_seq, "then", node_body, popped));
+
         if (else_label->refcnt) {
             add_trace_branch_coverage(
                 iseq,
@@ -6103,6 +6097,11 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 
     if (else_label->refcnt) {
         ADD_LABEL(ret, else_label);
+
+        DECL_ANCHOR(else_seq);
+        INIT_ANCHOR(else_seq);
+        CHECK(COMPILE_(else_seq, "else", node_else, popped));
+
         if (then_label->refcnt) {
             add_trace_branch_coverage(
                 iseq,
