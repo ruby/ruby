@@ -50,7 +50,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     header = Gem::Package::TarHeader.from io
     entry = Gem::Package::TarReader::Entry.open header, io
     refute entry.closed?
-    assert_equal ?a, entry.getc
+    assert_equal "a", entry.getc
     assert_nil entry.close
     assert entry.closed?
   ensure
@@ -118,7 +118,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_getc
-    assert_equal ?a, @entry.getc
+    assert_equal "a", @entry.getc
   end
 
   def test_directory_eh
