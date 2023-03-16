@@ -1915,7 +1915,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
     let mut asm = Assembler::new();
-    gen_entry_guard(&mut asm, ocb, iseq, insn_idx);
+    chain_entry_guard(&mut asm, ocb, iseq, insn_idx);
     asm.compile(cb);
 
     // Try to find an existing compiled version of this block

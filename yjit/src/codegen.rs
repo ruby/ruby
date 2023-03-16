@@ -578,11 +578,12 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 }
 
 // Generate a runtime guard that ensures the PC is at the expected
-// instruction index in the iseq, otherwise takes a side-exit.
+// instruction index in the iseq, otherwise takes an entry stub
+// that generates another check and entry.
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-pub fn gen_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
+pub fn chain_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
     let entryref = new_entry();
     let stub_addr = match gen_call_entry_stub_hit(entryref.as_ptr() as usize, ocb) {
         Some(addr) => addr,
@@ -642,9 +643,10 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPt
     // different location depending on the optional parameters.  If an iseq
     // has optional parameters, we'll add a runtime check that the PC we've
     // compiled for is the same PC that the interpreter wants us to run with.
-    // If they don't match, then we'll take a side exit.
+    // If they don't match, then we'll jump to an entry stub and generate
+    // another PC check and entry there.
     if unsafe { get_iseq_flags_has_opt(iseq) } {
-        gen_entry_guard(&mut asm, ocb, iseq, insn_idx);
+        chain_entry_guard(&mut asm, ocb, iseq, insn_idx);
     }
 
     asm.compile(cb);
