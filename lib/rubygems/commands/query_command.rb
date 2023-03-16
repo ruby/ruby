@@ -17,8 +17,7 @@ class Gem::Commands::QueryCommand < Gem::Command
     alert_warning message unless Gem::Deprecate.skip
   end
 
-  def initialize(name = "query",
-                 summary = "Query gem information in local or remote repositories")
+  def initialize(name = "query", summary = "Query gem information in local or remote repositories")
     super name, summary,
          :domain => :local, :details => false, :versions => true,
          :installed => nil, :version => Gem::Requirement.default

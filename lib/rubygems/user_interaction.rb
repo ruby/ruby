@@ -424,8 +424,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -467,8 +466,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0

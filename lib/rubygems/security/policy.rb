@@ -205,8 +205,7 @@ class Gem::Security::Policy
   #
   # If +key+ is given it is used to validate the signing certificate.
 
-  def verify(chain, key = nil, digests = {}, signatures = {},
-             full_name = "(unknown)")
+  def verify(chain, key = nil, digests = {}, signatures = {}, full_name = "(unknown)")
     if signatures.empty?
       if @only_signed
         raise Gem::Security::Exception,

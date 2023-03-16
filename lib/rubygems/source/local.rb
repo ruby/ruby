@@ -73,8 +73,7 @@ class Gem::Source::Local < Gem::Source
     end
   end
 
-  def find_gem(gem_name, version = Gem::Requirement.default, # :nodoc:
-               prerelease = false)
+  def find_gem(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
     load_specs :complete
 
     found = []
