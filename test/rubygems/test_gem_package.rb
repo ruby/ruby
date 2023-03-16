@@ -286,8 +286,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -329,8 +329,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -392,8 +392,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -429,8 +429,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
