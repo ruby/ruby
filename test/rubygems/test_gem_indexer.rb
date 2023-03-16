@@ -9,7 +9,7 @@ class TestGemIndexer < Gem::TestCase
     util_make_gems
 
     @d2_0 = util_spec "d", "2.0" do |s|
-      s.date = Gem::Specification::TODAY - 86400 * 3
+      s.date = Gem::Specification::TODAY - 86_400 * 3
     end
     util_build_gem @d2_0
 

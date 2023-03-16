@@ -267,7 +267,7 @@ class Gem::Package
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         File.open file, "rb" do |src_io|
-          dst_io.write src_io.read 16384 until src_io.eof?
+          dst_io.write src_io.read 16_384 until src_io.eof?
         end
       end
     end
@@ -362,7 +362,7 @@ EOM
     algorithms.each do |algorithm|
       digester = Gem::Security.create_digest(algorithm)
 
-      digester << entry.read(16384) until entry.eof?
+      digester << entry.read(16_384) until entry.eof?
 
       entry.rewind
 
@@ -701,7 +701,7 @@ EOM
 
   def verify_gz(entry) # :nodoc:
     Zlib::GzipReader.wrap entry do |gzio|
-      gzio.read 16384 until gzio.eof? # gzip checksum verification
+      gzio.read 16_384 until gzio.eof? # gzip checksum verification
     end
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)

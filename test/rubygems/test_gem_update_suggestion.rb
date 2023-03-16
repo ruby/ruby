@@ -66,9 +66,9 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update
     with_eglible_environment(cmd: @cmd) do
-      Time.stub :now, 123456789 do
+      Time.stub :now, 123_456_789 do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, 123456789
+        assert_equal Gem.configuration.last_update_check, 123_456_789
 
         # test last check is written to config file
         assert File.read(Gem.configuration.state_file_name).match("123456789")

@@ -934,7 +934,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @a1 = quick_gem "a", "1" do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
-      s.date = Gem::Specification::TODAY - 86400
+      s.date = Gem::Specification::TODAY - 86_400
       s.homepage = "http://a.example.com"
       s.email = %w[example@example.com example2@example.com]
       s.authors = %w[Example Example2]
