@@ -70,7 +70,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
   def check_typo_squatting(source)
     if source.typo_squatting?("rubygems.org")
       question = <<-QUESTION.chomp
-#{source.uri.to_s} is too similar to https://rubygems.org
+#{source.uri} is too similar to https://rubygems.org
 
 Do you want to add this source?
       QUESTION
