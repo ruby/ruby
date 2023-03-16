@@ -159,7 +159,7 @@ class Gem::RequestSet
     end
 
     # Create N threads in a pool, have them download all the gems
-    threads = Gem.configuration.concurrent_downloads.times.map do
+    threads = Array.new(Gem.configuration.concurrent_downloads) do
       # When a thread pops this item, it knows to stop running. The symbol
       # is queued here so that there will be one symbol per thread.
       download_queue << :stop
