@@ -7,11 +7,8 @@ module Bundler
     include Enumerable
     include TSort
 
-    attr_reader :incomplete_specs
-
-    def initialize(specs, incomplete_specs = [])
+    def initialize(specs)
       @specs = specs
-      @incomplete_specs = incomplete_specs
     end
 
     def for(dependencies, check = false, platforms = [nil])
@@ -45,7 +42,7 @@ module Bundler
         end
 
         if incomplete && check
-          @incomplete_specs += lookup[name].any? ? lookup[name] : [LazySpecification.new(name, nil, nil)]
+          specs << IncompleteSpecification.new(name, lookup[name])
         end
       end
 
@@ -84,7 +81,7 @@ module Bundler
     def materialize(deps)
       materialized = self.for(deps, true)
 
-      SpecSet.new(materialized, incomplete_specs)
+      SpecSet.new(materialized)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
@@ -103,15 +100,17 @@ module Bundler
     def incomplete_ruby_specs?(deps)
       return false if @specs.empty?
 
-      @incomplete_specs = []
+      materialized = self.for(deps, true, [Gem::Platform::RUBY])
 
-      self.for(deps, true, [Gem::Platform::RUBY])
-
-      @incomplete_specs.any?
+      SpecSet.new(materialized).incomplete_specs.any?
     end
 
     def missing_specs
       @specs.select {|s| s.is_a?(LazySpecification) }
+    end
+
+    def incomplete_specs
+      @specs.select {|s| s.is_a?(IncompleteSpecification) }
     end
 
     def merge(set)
