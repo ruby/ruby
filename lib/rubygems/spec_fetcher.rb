@@ -154,13 +154,11 @@ class Gem::SpecFetcher
 
     specs = []
     tuples.each do |tup, source|
-      begin
-        spec = source.fetch_spec(tup)
-      rescue Gem::RemoteFetcher::FetchError => e
-        errors << Gem::SourceFetchProblem.new(source, e)
-      else
-        specs << [spec, source]
-      end
+      spec = source.fetch_spec(tup)
+    rescue Gem::RemoteFetcher::FetchError => e
+      errors << Gem::SourceFetchProblem.new(source, e)
+    else
+      specs << [spec, source]
     end
 
     return [specs, errors]
@@ -214,34 +212,32 @@ class Gem::SpecFetcher
     list = {}
 
     @sources.each_source do |source|
-      begin
-        names = case type
-                when :latest
-                  tuples_for source, :latest
-                when :released
-                  tuples_for source, :released
-                when :complete
-                  names =
-                    tuples_for(source, :prerelease, true) +
-                    tuples_for(source, :released)
+      names = case type
+              when :latest
+                tuples_for source, :latest
+              when :released
+                tuples_for source, :released
+              when :complete
+                names =
+                  tuples_for(source, :prerelease, true) +
+                  tuples_for(source, :released)
 
-                  names.sort
-                when :abs_latest
-                  names =
-                    tuples_for(source, :prerelease, true) +
-                    tuples_for(source, :latest)
+                names.sort
+              when :abs_latest
+                names =
+                  tuples_for(source, :prerelease, true) +
+                  tuples_for(source, :latest)
 
-                  names.sort
-                when :prerelease
-                  tuples_for(source, :prerelease)
-                else
-                  raise Gem::Exception, "Unknown type - :#{type}"
-        end
-      rescue Gem::RemoteFetcher::FetchError => e
-        errors << Gem::SourceFetchProblem.new(source, e)
-      else
-        list[source] = names
+                names.sort
+              when :prerelease
+                tuples_for(source, :prerelease)
+              else
+                raise Gem::Exception, "Unknown type - :#{type}"
       end
+    rescue Gem::RemoteFetcher::FetchError => e
+      errors << Gem::SourceFetchProblem.new(source, e)
+    else
+      list[source] = names
     end
 
     [list, errors]

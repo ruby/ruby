@@ -91,12 +91,10 @@ class TestGemRequire < Gem::TestCase
 
   def create_sync_thread
     Thread.new do
-      begin
-        yield
-      ensure
-        FILE_ENTERED_LATCH.release
-        FILE_EXIT_LATCH.await
-      end
+      yield
+    ensure
+      FILE_ENTERED_LATCH.release
+      FILE_EXIT_LATCH.await
     end
   end
 

@@ -109,15 +109,13 @@ class Gem::Validator
           end
 
           good.each do |entry, data|
-            begin
-              next unless data # HACK: `gem check -a mkrf`
+            next unless data # HACK: `gem check -a mkrf`
 
-              source = File.join gem_directory, entry["path"]
+            source = File.join gem_directory, entry["path"]
 
-              File.open source, Gem.binary_mode do |f|
-                unless f.read == data
-                  errors[gem_name][entry["path"]] = "Modified from original"
-                end
+            File.open source, Gem.binary_mode do |f|
+              unless f.read == data
+                errors[gem_name][entry["path"]] = "Modified from original"
               end
             end
           end

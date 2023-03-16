@@ -93,14 +93,12 @@ permission to.
 
   def manage_owners(method, name, owners)
     owners.each do |owner|
-      begin
-        response = send_owner_request(method, name, owner)
-        action = method == :delete ? "Removing" : "Adding"
+      response = send_owner_request(method, name, owner)
+      action = method == :delete ? "Removing" : "Adding"
 
-        with_response response, "#{action} #{owner}"
-      rescue StandardError
-        # ignore
-      end
+      with_response response, "#{action} #{owner}"
+    rescue StandardError
+      # ignore
     end
   end
 

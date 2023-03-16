@@ -58,10 +58,8 @@ class Gem::Resolver::ActivationRequest
     if @spec.respond_to? :sources
       exception = nil
       path = @spec.sources.find do |source|
-        begin
-          source.download full_spec, path
-        rescue exception
-        end
+        source.download full_spec, path
+      rescue exception
       end
       return path      if path
       raise  exception if exception
