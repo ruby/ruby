@@ -6,7 +6,6 @@ require_relative "version_option"
 require_relative "text"
 
 module Gem::QueryUtils
-
   include Gem::Text
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
@@ -347,5 +346,4 @@ module Gem::QueryUtils
     summary = truncate_text(spec.summary, "the summary for #{spec.full_name}")
     entry << "\n\n" << format_text(summary, 68, 4)
   end
-
 end

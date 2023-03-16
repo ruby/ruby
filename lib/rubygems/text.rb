@@ -4,7 +4,6 @@
 # A collection of text-wrangling methods
 
 module Gem::Text
-
   ##
   # Remove any non-printable characters and make the text suitable for
   # printing.

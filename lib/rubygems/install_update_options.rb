@@ -195,5 +195,4 @@ module Gem::InstallUpdateOptions
   def install_update_defaults_str
     "--document=ri"
   end
-
 end

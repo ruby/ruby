@@ -11,7 +11,6 @@ require_relative "../rubygems"
 # Mixin methods for --version and --platform Gem::Command options.
 
 module Gem::VersionOption
-
   ##
   # Add the --platform option to the option parser.
 

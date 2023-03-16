@@ -12,7 +12,6 @@ require_relative "../rubygems"
 # Mixin methods for local and remote Gem::Command options.
 
 module Gem::LocalRemoteOptions
-
   ##
   # Allows Gem::OptionParser to handle HTTP URIs.
 
@@ -144,5 +143,4 @@ module Gem::LocalRemoteOptions
   def remote?
     options[:domain] == :remote || options[:domain] == :both
   end
-
 end

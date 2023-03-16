@@ -325,7 +325,6 @@ require_relative "openssl"
 # http://pablotron.org/
 
 module Gem::Security
-
   ##
   # Gem::Security default exception type
 
@@ -608,7 +607,6 @@ module Gem::Security
   end
 
   reset
-
 end
 
 if Gem::HAVE_OPENSSL
