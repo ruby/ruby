@@ -1034,7 +1034,7 @@ dependencies: []
     v   = "1.1.1"
     platforms = ["x86-mingw32", "x64-mingw32"]
 
-    #create specs
+    # create specs
     platforms.each do |plat|
       spec = Gem::Specification.new(gem, v) {|s| s.platform = plat }
       File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), "w" do |io|

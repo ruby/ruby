@@ -9,7 +9,7 @@ require_relative "version"
 # together in RubyGems.
 
 class Gem::Requirement
-  OPS = { #:nodoc:
+  OPS = { # :nodoc:
     "=" => lambda {|v, r| v == r },
     "!=" => lambda {|v, r| v != r },
     ">" => lambda {|v, r| v >  r },
@@ -119,7 +119,7 @@ class Gem::Requirement
   # An array of requirement pairs. The first element of the pair is
   # the op, and the second is the Gem::Version.
 
-  attr_reader :requirements #:nodoc:
+  attr_reader :requirements # :nodoc:
 
   ##
   # Constructs a requirement from +requirements+. Requirements can be

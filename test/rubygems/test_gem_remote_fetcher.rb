@@ -1080,7 +1080,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   class NilLog < WEBrick::Log
-    def log(level, data) #Do nothing
+    def log(level, data) # Do nothing
     end
   end
 
