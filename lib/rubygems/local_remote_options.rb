@@ -65,8 +65,7 @@ module Gem::LocalRemoteOptions
   def add_bulk_threshold_option
     add_option(:"Local/Remote", "-B", "--bulk-threshold COUNT",
                "Threshold for switching to bulk",
-               "synchronization (default #{Gem.configuration.bulk_threshold})") do
-      |value, _options|
+               "synchronization (default #{Gem.configuration.bulk_threshold})") do |value, _options|
       Gem.configuration.bulk_threshold = value.to_i
     end
   end
