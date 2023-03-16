@@ -415,7 +415,7 @@ jit_exec(rb_execution_context_t *ec)
     }
 }
 #else
-static inline jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
+static inline rb_jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
 static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
 #endif
 
