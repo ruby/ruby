@@ -352,7 +352,7 @@ if you believe they were disclosed to a third party.
 
     begin
       content = Gem::SafeYAML.load(File.read(filename))
-      unless content.kind_of? Hash
+      unless content.is_a? Hash
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       end

@@ -103,7 +103,7 @@ module Gem::Deprecate
       old = "_deprecated_#{name}"
       alias_method old, name
       define_method name do |*args, &block|
-        klass = self.kind_of? Module
+        klass = self.is_a? Module
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
                 repl == :none ? " with no replacement" : "; use #{repl} instead",
@@ -128,7 +128,7 @@ module Gem::Deprecate
       old = "_deprecated_#{name}"
       alias_method old, name
       define_method name do |*args, &block|
-        klass = self.kind_of? Module
+        klass = self.is_a? Module
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [ "NOTE: #{target}#{name} is deprecated",
                 replacement == :none ? " with no replacement" : "; use #{replacement} instead",

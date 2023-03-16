@@ -36,7 +36,7 @@ module Kernel
     skip_list = (ENV["GEM_SKIP"] || "").split(/:/)
     raise Gem::LoadError, "skipping #{gem_name}" if skip_list.include? gem_name
 
-    if gem_name.kind_of? Gem::Dependency
+    if gem_name.is_a? Gem::Dependency
       unless Gem::Deprecate.skip
         warn "#{Gem.location_of_caller.join ":"}:Warning: Kernel.gem no longer "\
           "accepts a Gem::Dependency object, please pass the name "\

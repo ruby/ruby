@@ -26,7 +26,7 @@ class Gem::AvailableSet
       s = o.set
     when Array
       s = o.map do |sp,so|
-        if !sp.kind_of?(Gem::Specification) || !so.kind_of?(Gem::Source)
+        if !sp.is_a?(Gem::Specification) || !so.is_a?(Gem::Source)
           raise TypeError, "Array must be in [[spec, source], ...] form"
         end
 
