@@ -20,8 +20,6 @@ class Gem::Source::Installed < Gem::Source
       0
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 

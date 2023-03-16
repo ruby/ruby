@@ -270,8 +270,7 @@ class Gem::StreamUI
                when /^y/i then true
                when /^n/i then false
                when /^$/  then default
-               else nil
-      end
+               end
     end
 
     return result
