@@ -563,6 +563,7 @@ generator = BindingGenerator.new(
     rb_shape
     rb_shape_t
     rb_thread_struct
+    rb_jit_func_t
     rjit_options
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection

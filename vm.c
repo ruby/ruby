@@ -370,7 +370,7 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 #if USE_RJIT || USE_YJIT
 // Try to compile the current ISeq in ec. Return 0 if not compiled.
-static inline jit_func_t
+static inline rb_jit_func_t
 jit_compile(rb_execution_context_t *ec)
 {
     // Increment the ISEQ's call counter
@@ -405,7 +405,7 @@ jit_compile(rb_execution_context_t *ec)
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
 {
-    jit_func_t func = jit_compile(ec);
+    rb_jit_func_t func = jit_compile(ec);
     if (func) {
         // Call the JIT code
         return func(ec, ec->cfp);
@@ -415,7 +415,7 @@ jit_exec(rb_execution_context_t *ec)
     }
 }
 #else
-static inline jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
+static inline rb_jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
 static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
 #endif
 
