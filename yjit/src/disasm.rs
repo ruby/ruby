@@ -37,18 +37,23 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 
         // This will truncate disassembly of methods with 10k+ bytecodes.
         // That's a good thing - this prints to console.
-        let out_string = disasm_iseq_insn_range(iseq, 0, 9999);
+        let out_string = with_vm_lock(src_loc!(), || disasm_iseq_insn_range(iseq, 0, 9999));
 
         return rust_str_to_ruby(&out_string);
     }
 }
 
+/// Only call while holding the VM lock.
 #[cfg(feature = "disasm")]
 pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> String {
     let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
-    let mut block_list = get_or_create_iseq_block_list(iseq);
+    let block_list = get_or_create_iseq_block_list(iseq);
+    let mut block_list: Vec<&Block> = block_list.into_iter().map(|blockref| {
+        // SAFETY: We have the VM lock here and all the blocks on iseqs are valid.
+        unsafe { blockref.as_ref() }
+    }).collect();
 
     // Get a list of codeblocks relevant to this iseq
     let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
@@ -58,8 +63,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
         use std::cmp::Ordering;
 
         // Get the start addresses for each block
-        let addr_a = a.borrow().get_start_addr().raw_ptr();
-        let addr_b = b.borrow().get_start_addr().raw_ptr();
+        let addr_a = a.get_start_addr().raw_ptr();
+        let addr_b = b.get_start_addr().raw_ptr();
 
         if addr_a < addr_b {
             Ordering::Less
@@ -73,20 +78,19 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
     // Compute total code size in bytes for all blocks in the function
     let mut total_code_size = 0;
     for blockref in &block_list {
-        total_code_size += blockref.borrow().code_size();
+        total_code_size += blockref.code_size();
     }
 
     writeln!(out, "NUM BLOCK VERSIONS: {}", block_list.len()).unwrap();
     writeln!(out,  "TOTAL INLINE CODE SIZE: {} bytes", total_code_size).unwrap();
 
     // For each block, sorted by increasing start address
-    for block_idx in 0..block_list.len() {
-        let block = block_list[block_idx].borrow();
+    for (block_idx, block) in block_list.iter().enumerate() {
         let blockid = block.get_blockid();
         if blockid.idx >= start_idx && blockid.idx < end_idx {
             let end_idx = block.get_end_idx();
             let start_addr = block.get_start_addr();
-            let end_addr = block.get_end_addr().unwrap();
+            let end_addr = block.get_end_addr();
             let code_size = block.code_size();
 
             // Write some info about the current block
@@ -110,7 +114,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
                 // Compute the size of the gap between this block and the next
-                let next_block = block_list[block_idx + 1].borrow();
+                let next_block = block_list[block_idx + 1];
                 let next_start_addr = next_block.get_start_addr();
                 let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
 
@@ -318,7 +322,9 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u16)> {
 
     // For each block associated with this iseq
     for blockref in &block_list {
-        let block = blockref.borrow();
+        // SAFETY: Called as part of a Ruby method, which ensures the graph is
+        // well connected for the given iseq.
+        let block = unsafe { blockref.as_ref() };
         let start_idx = block.get_blockid().idx;
         let end_idx = block.get_end_idx();
         assert!(u32::from(end_idx) <= unsafe { get_iseq_encoded_size(iseq) });
