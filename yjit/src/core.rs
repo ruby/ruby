@@ -862,6 +862,12 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     // Increment the freed iseq count
     incr_counter!(freed_iseq_count);
 
+    // Free all entries
+    for entryref in payload.entries.iter() {
+        let entry = unsafe { Box::from_raw(entryref.as_ptr()) };
+        mem::drop(entry);
+    }
+
     // Free all blocks in the payload
     for versions in &payload.version_map {
         for block in versions {
