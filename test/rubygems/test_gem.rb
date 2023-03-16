@@ -1552,8 +1552,8 @@ class TestGem < Gem::TestCase
     assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
 
     tests = [
-      [:dir0, [ Gem.dir, Gem.user_dir], m0],
-      [:dir1, [ Gem.user_dir, Gem.dir], m1],
+      [:dir0, [Gem.dir, Gem.user_dir], m0],
+      [:dir1, [Gem.user_dir, Gem.dir], m1],
     ]
 
     tests.each do |_name, _paths, expected|
@@ -1604,7 +1604,7 @@ class TestGem < Gem::TestCase
     install_gem m, :install_dir => Gem.dir
     install_gem m, :install_dir => Gem.user_dir
 
-    Gem.use_paths Gem.dir, [ Gem.dir, Gem.user_dir]
+    Gem.use_paths Gem.dir, [Gem.dir, Gem.user_dir]
 
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),

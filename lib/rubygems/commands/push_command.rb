@@ -74,7 +74,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
     @host ||= push_host
 
     # Always include @host, even if it's nil
-    args += [ @host, push_host ]
+    args += [@host, push_host]
 
     say "Pushing gem to #{@host || Gem.host}..."
 
