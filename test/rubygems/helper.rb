@@ -120,9 +120,11 @@ class Gem::TestCase < Test::Unit::TestCase
       begin
         require "tempfile"
 
-        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+        captured_stdout = Tempfile.new("out")
+        captured_stderr = Tempfile.new("err")
 
-        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
+        orig_stdout = $stdout.dup
+        orig_stderr = $stderr.dup
         $stdout.reopen captured_stdout
         $stderr.reopen captured_stderr
 
@@ -1307,7 +1309,8 @@ Also, a list:
   end
 
   def silence_warnings
-    old_verbose, $VERBOSE = $VERBOSE, false
+    old_verbose = $VERBOSE
+    $VERBOSE = false
     yield
   ensure
     $VERBOSE = old_verbose

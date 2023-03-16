@@ -106,8 +106,8 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_configure_connection_for_https_ssl_ca_cert
-    ssl_ca_cert, Gem.configuration.ssl_ca_cert =
-      Gem.configuration.ssl_ca_cert, CA_CERT_FILE
+    ssl_ca_cert = Gem.configuration.ssl_ca_cert
+    Gem.configuration.ssl_ca_cert = CA_CERT_FILE
 
     connection = Net::HTTP.new "localhost", 443
 

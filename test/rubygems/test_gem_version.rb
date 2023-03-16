@@ -268,7 +268,8 @@ class TestGemVersion < Gem::TestCase
   # Assert that two versions are eql?. Checks both directions.
 
   def assert_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     assert first.eql?(second), "#{first} is eql? #{second}"
     assert second.eql?(first), "#{second} is eql? #{first}"
   end
@@ -289,7 +290,8 @@ class TestGemVersion < Gem::TestCase
   # directions.
 
   def refute_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     refute first.eql?(second), "#{first} is NOT eql? #{second}"
     refute second.eql?(first), "#{second} is NOT eql? #{first}"
   end

@@ -59,7 +59,8 @@ class Gem::Ext::Builder
     verbose = Gem.configuration.really_verbose
 
     begin
-      rubygems_gemdeps, ENV["RUBYGEMS_GEMDEPS"] = ENV["RUBYGEMS_GEMDEPS"], nil
+      rubygems_gemdeps = ENV["RUBYGEMS_GEMDEPS"]
+      ENV["RUBYGEMS_GEMDEPS"] = nil
       if verbose
         puts("current directory: #{dir}")
         p(command)

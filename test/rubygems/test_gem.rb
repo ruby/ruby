@@ -1029,7 +1029,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_api_version
-    orig_ruby_version, RbConfig::CONFIG["ruby_version"] = RbConfig::CONFIG["ruby_version"], "1.2.3"
+    orig_ruby_version = RbConfig::CONFIG["ruby_version"]
+    RbConfig::CONFIG["ruby_version"] = "1.2.3"
 
     Gem.instance_variable_set :@ruby_api_version, nil
 

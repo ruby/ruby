@@ -55,7 +55,9 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_self_extra_args
-    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    separator = $;
     extra_args = Gem::Command.extra_args
 
     Gem::Command.extra_args = %w[--all]
