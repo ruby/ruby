@@ -2348,7 +2348,7 @@ class Gem::Specification < Gem::BasicSpecification
     when Array              then "[" + obj.map {|x| ruby_code x }.join(", ") + "]"
     when Hash               then
       seg = obj.keys.sort.map {|k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
-      "{ #{seg.join(', ')} }"
+      "{ #{seg.join(", ")} }"
     when Gem::Version       then obj.to_s.dump
     when DateLike           then obj.strftime("%Y-%m-%d").dump
     when Time               then obj.strftime("%Y-%m-%d").dump

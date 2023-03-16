@@ -1977,7 +1977,7 @@ gem 'other', version
 
     bin_env = get_bin_env
 
-    assert_equal("#!#{bin_env} #{RbConfig::CONFIG['ruby_install_name']}",
+    assert_equal("#!#{bin_env} #{RbConfig::CONFIG["ruby_install_name"]}",
                  shebang)
   end
 

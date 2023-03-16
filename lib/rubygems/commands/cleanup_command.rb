@@ -89,7 +89,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     verbose do
       skipped = @default_gems.map {|spec| spec.full_name }
 
-      "Skipped default gems: #{skipped.join ', '}"
+      "Skipped default gems: #{skipped.join ", "}"
     end
   end
 

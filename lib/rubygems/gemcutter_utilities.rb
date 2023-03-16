@@ -211,7 +211,7 @@ module Gem::GemcutterUtilities
         say clean_text(response.body)
       end
     when Net::HTTPPermanentRedirect, Net::HTTPRedirection then
-      message = "The request has redirected permanently to #{response['location']}. Please check your defined push host URL."
+      message = "The request has redirected permanently to #{response["location"]}. Please check your defined push host URL."
       message = "#{error_prefix}: #{message}" if error_prefix
 
       say clean_text(message)

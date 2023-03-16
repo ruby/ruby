@@ -127,10 +127,10 @@ command to remove old versions.
     if updated.empty?
       say "Nothing to update"
     else
-      say "Gems updated: #{updated_names.join(' ')}"
+      say "Gems updated: #{updated_names.join(" ")}"
     end
-    say "Gems already up-to-date: #{up_to_date_names.join(' ')}" unless up_to_date_names.empty?
-    say "Gems not currently installed: #{not_installed_names.join(' ')}" unless not_installed_names.empty?
+    say "Gems already up-to-date: #{up_to_date_names.join(" ")}" unless up_to_date_names.empty?
+    say "Gems not currently installed: #{not_installed_names.join(" ")}" unless not_installed_names.empty?
   end
 
   def fetch_remote_gems(spec) # :nodoc:

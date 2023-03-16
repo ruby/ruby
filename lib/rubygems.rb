@@ -903,7 +903,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Glob pattern for require-able path suffixes.
 
   def self.suffix_pattern
-    @suffix_pattern ||= "{#{suffixes.join(',')}}"
+    @suffix_pattern ||= "{#{suffixes.join(",")}}"
   end
 
   ##

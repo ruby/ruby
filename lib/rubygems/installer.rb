@@ -807,7 +807,7 @@ TEXT
     rb_topdir = RbConfig::TOPDIR || File.dirname(rb_config["bindir"])
 
     # get ruby executable file name from RbConfig
-    ruby_exe = "#{rb_config['RUBY_INSTALL_NAME']}#{rb_config['EXEEXT']}"
+    ruby_exe = "#{rb_config["RUBY_INSTALL_NAME"]}#{rb_config["EXEEXT"]}"
     ruby_exe = "ruby.exe" if ruby_exe.empty?
 
     if File.exist?(File.join bindir, ruby_exe)

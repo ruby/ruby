@@ -208,7 +208,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('user:pass')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("user:pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
@@ -225,7 +225,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('user:{DEScede}pass')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("user:{DEScede}pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
@@ -242,7 +242,7 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('{DEScede}pass:x-oauth-basic')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("{DEScede}pass:x-oauth-basic")}".strip, auth_header
     assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
   end
 

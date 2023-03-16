@@ -664,7 +664,7 @@ class TestGem < Gem::TestCase
     gemdir = File.join @tempdir, "a/b/c/gemdir"
     FileUtils.rm_rf File.join(@tempdir, "a") rescue nil
     refute File.exist?(File.join(@tempdir, "a")),
-           "manually remove #{File.join @tempdir, 'a'}, tests are broken"
+           "manually remove #{File.join @tempdir, "a"}, tests are broken"
     Gem.use_paths gemdir
 
     Gem.ensure_gem_subdirectories gemdir
