@@ -810,7 +810,7 @@ TEXT
     ruby_exe = "#{rb_config["RUBY_INSTALL_NAME"]}#{rb_config["EXEEXT"]}"
     ruby_exe = "ruby.exe" if ruby_exe.empty?
 
-    if File.exist?(File.join bindir, ruby_exe)
+    if File.exist?(File.join(bindir, ruby_exe))
       # stub & ruby.exe within same folder.  Portable
       <<-TEXT
 @ECHO OFF

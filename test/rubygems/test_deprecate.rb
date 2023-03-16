@@ -28,7 +28,7 @@ class TestDeprecate < Gem::TestCase
     assert_equal true, Gem::Deprecate.skip
 
     Gem::Deprecate.skip = nil
-    assert([true,false].include? Gem::Deprecate.skip)
+    assert([true,false].include?(Gem::Deprecate.skip))
   end
 
   def test_skip
