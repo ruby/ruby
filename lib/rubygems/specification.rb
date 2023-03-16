@@ -1136,7 +1136,9 @@ class Gem::Specification < Gem::BasicSpecification
     result = {}
 
     specs.reverse_each do |spec|
-      next if spec.version.prerelease? unless prerelease
+      unless prerelease
+        next if spec.version.prerelease?
+      end
 
       result[spec.name] = spec
     end
