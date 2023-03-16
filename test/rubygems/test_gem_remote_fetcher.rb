@@ -971,9 +971,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_ssl_client_cert_auth_connection
-    ssl_server = start_ssl_server({
-      :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
+    ssl_server = start_ssl_server(
+      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+    )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     temp_client_cert = File.join(__dir__, "client.pem")
@@ -986,9 +986,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_do_not_allow_invalid_client_cert_auth_connection
-    ssl_server = start_ssl_server({
-      :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
+    ssl_server = start_ssl_server(
+      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+    )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
     temp_client_cert = File.join(__dir__, "invalid_client.pem")
