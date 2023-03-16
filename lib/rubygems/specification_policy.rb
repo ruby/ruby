@@ -193,7 +193,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        !version.prerelease? && (op == ">" || op == ">=")
+        !version.prerelease? && [">", ">="].include?(op)
       end
 
       if open_ended
@@ -203,7 +203,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
         base = segments.first 2
 
-        recommendation = if (op == ">" || op == ">=") && segments == [0]
+        recommendation = if [">", ">="].include?(op) && segments == [0]
           "  use a bounded requirement, such as '~> x.y'"
         else
           bugfix = if op == ">"

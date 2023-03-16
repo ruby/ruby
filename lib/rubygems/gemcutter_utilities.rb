@@ -297,7 +297,7 @@ module Gem::GemcutterUtilities
   def get_mfa_params(profile)
     mfa_level = profile["mfa"]
     params = {}
-    if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"
+    if ["ui_only", "ui_and_gem_signin"].include?(mfa_level)
       selected = ask_yes_no("Would you like to enable MFA for this key? (strongly recommended)")
       params["mfa"] = true if selected
     end

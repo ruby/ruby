@@ -103,7 +103,7 @@ class Gem::Doctor
     directory = File.join(@gem_repository, sub_directory)
 
     Dir.entries(directory).sort.each do |ent|
-      next if ent == "." || ent == ".."
+      next if [".", ".."].include?(ent)
 
       child = File.join(directory, ent)
       next unless File.exist?(child)
