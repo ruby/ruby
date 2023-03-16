@@ -735,8 +735,10 @@ enum gc_mode {
 };
 
 typedef struct rb_objspace {
-    // TODO: clean up this structure and remove everything that we don't need anymore
-    // (or at least hide it behind a compiler flag)
+    // NOTE: Some fields are not used when using MMTk.
+    // However, since whether MMTk is used is determined at launch time via the
+    // `--mmtk` command line flag, we need to keep all fields so that the
+    // original CRuby GC still works.
     struct {
         size_t limit;
         size_t increase;
@@ -1554,6 +1556,12 @@ RVALUE_FLAGS_AGE(VALUE flags)
 static int
 check_rvalue_consistency_force(const VALUE obj, int terminate)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
+    }
+#endif
+
     int err = 0;
     rb_objspace_t *objspace = &rb_objspace;
 
@@ -1564,9 +1572,6 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             err++;
         }
         else if (!is_pointer_to_heap(objspace, (void *)obj)) {
-#if USE_MMTK
-            if (!rb_mmtk_enabled_p()) {
-#endif
             /* check if it is in tomb_pages */
             struct heap_page *page = NULL;
             for (int i = 0; i < SIZE_POOL_COUNT; i++) {
@@ -1581,9 +1586,6 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                     }
                 }
             }
-#if USE_MMTK
-    }
-#endif
             bp();
             fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
             err++;
@@ -1591,31 +1593,16 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             ;
         }
         else {
-            int wb_unprotected_bit;
-            int uncollectible_bit;
-            int mark_bit;
-            int marking_bit;
-            int remembered_bit;
-            int age;
-
-#if USE_MMTK
-            const bool mmtk_enabled_local = rb_mmtk_enabled_p(); // Allows control-flow sensitive analysis of wb_unprotected_bit etc
-            if (!mmtk_enabled_local) {
-#endif
-                // TODO remove these
-                wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
-                uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
-                mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
-                marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
-                age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+            const int wb_unprotected_bit = RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
+            const int uncollectible_bit = RVALUE_UNCOLLECTIBLE_BITMAP(obj) != 0;
+            const int mark_bit = RVALUE_MARK_BITMAP(obj) != 0;
+            const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
+            const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
                 if (GET_HEAP_PAGE(obj)->flags.in_tomb) {
                     fprintf(stderr, "check_rvalue_consistency: %s is in tomb page.\n", obj_info(obj));
                     err++;
                 }
-#if USE_MMTK
-            }
-#endif
             if (BUILTIN_TYPE(obj) == T_NONE) {
                 fprintf(stderr, "check_rvalue_consistency: %s is T_NONE.\n", obj_info(obj));
                 err++;
@@ -1627,9 +1614,6 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
 
             obj_memsize_of((VALUE)obj, FALSE);
 
-#if USE_MMTK
-            if (!mmtk_enabled_local) {
-#endif
             /* check generation
              *
              * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
@@ -1670,9 +1654,6 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
                     err++;
                 }
             }
-#if USE_MMTK
-            }
-#endif
         }
     }
     RB_VM_LOCK_LEAVE_NO_BARRIER();
@@ -5384,7 +5365,6 @@ rb_obj_id(VALUE obj)
      *  40 if 64-bit
      */
 
-    // TODO I need to make this work?
     return rb_find_object_id(obj, cached_object_id);
 }
 
@@ -7591,7 +7571,6 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     objspace->marked_slots++;
 }
 
-
 NOINLINE(static void gc_mark_ptr(rb_objspace_t *objspace, VALUE obj));
 static void reachable_objects_from_callback(VALUE obj);
 
@@ -8703,7 +8682,7 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 {
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        return;
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
     }
 #endif
     struct verify_internal_consistency_struct data = {0};
@@ -8789,6 +8768,14 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 static void
 gc_verify_internal_consistency(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // The gc_verify_internal_consistency function does the verification with intimate
+        // knowledge about the GC implementation in vanilla CRuby, and doesn't work with MMTk.
+        // When using MMTk, the same kind of consistency check should be done with sanity GC.
+        return;
+    }
+#endif
     RB_VM_LOCK_ENTER();
     {
         rb_vm_barrier(); // stop other ractors
@@ -9811,7 +9798,8 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 #if USE_MMTK
     // This function is only called from `objspace_dump.c`.
     // In MMTk, these bitmaps are not prepared.  Accessing them will result in crash.
-    // Actually those flags are not exposed to mutators when using MMTk.
+    // MMTk has its own metadata, such as marking bits and pinning bits,
+    // but those metadata are specific to GC algorithms not exposed to mutators.
     if (!rb_mmtk_enabled_p() && flags != NULL) {
 #endif
     if (RVALUE_WB_UNPROTECTED(obj) == 0 && n<max)                   flags[n++] = ID_wb_protected;
