@@ -62,7 +62,9 @@ class Gem::Validator
     errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|
-      next unless gems.include? spec.name unless gems.empty?
+      unless gems.empty?
+        next unless gems.include? spec.name
+      end
       next if spec.default_gem?
 
       gem_name      = spec.file_name

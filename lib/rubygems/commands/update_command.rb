@@ -185,7 +185,9 @@ command to remove old versions.
         system Gem.ruby, "--disable-gems", "setup.rb", *args
       end
 
-      say "RubyGems system software updated" if installed unless options[:silent]
+      unless options[:silent]
+        say "RubyGems system software updated" if installed
+      end
     end
   end
 
