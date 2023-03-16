@@ -937,8 +937,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val && !val.empty?
                      ".#{val}"
-                   end,
-                  ].compact.uniq
+                   end].compact.uniq
   end
 
   ##
