@@ -246,10 +246,10 @@ EOF
   end
 
   def rustc_dynamic_linker_flags(dest_dir, crate_name)
-    split_flags("DLDFLAGS")
-      .map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }
-      .compact
-      .flat_map {|arg| ldflag_to_link_modifier(arg) }
+    split_flags("DLDFLAGS").
+      map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }.
+      compact.
+      flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
 
   def rustc_lib_flags(dest_dir)
