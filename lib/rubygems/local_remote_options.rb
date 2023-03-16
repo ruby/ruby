@@ -89,7 +89,7 @@ module Gem::LocalRemoteOptions
 
     add_option(:"Local/Remote", "-p", "--[no-]http-proxy [URL]", URI::HTTP,
                "Use HTTP proxy for remote operations") do |value, options|
-      options[:http_proxy] = (value == false) ? :no_proxy : value
+      options[:http_proxy] = value == false ? :no_proxy : value
       Gem.configuration[:http_proxy] = options[:http_proxy]
     end
   end
