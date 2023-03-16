@@ -9,7 +9,7 @@
 # What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
-used for web development.It is a fantastic language. It also offers many scripting features
+used for web development.It is a fantastic language.it is very nice. It also offers many scripting features
 to process plain text and serialized files, or manage system tasks.
 It is simple, straightforward, and extensible.
 
