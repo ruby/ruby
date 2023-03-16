@@ -657,14 +657,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         @requested = true
         res = Net::HTTPMovedPermanently.new nil, 301, nil
         res.add_field "Location", url
-        res
       else
         res = Net::HTTPOK.new nil, 200, nil
         def res.body
           "real_path"
         end
-        res
       end
+      res
     end
 
     data = fetcher.fetch_http URI.parse(url)
