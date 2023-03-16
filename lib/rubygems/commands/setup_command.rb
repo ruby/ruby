@@ -54,9 +54,9 @@ class Gem::Commands::SetupCommand < Gem::Command
                "List the documentation types you wish to",
                "generate.  For example: rdoc,ri" do |value, options|
       options[:document] = case value
-      when nil   then %w[rdoc ri]
-      when false then []
-      else            value
+                           when nil   then %w[rdoc ri]
+                           when false then []
+                           else value
       end
     end
 

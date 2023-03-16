@@ -163,14 +163,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   @@default_value.each do |k,v|
     INITIALIZE_CODE_FOR_DEFAULTS[k] = case v
-    when [], {}, true, false, nil, Numeric, Symbol
-      v.inspect
-    when String
-      v.dump
-    when Numeric
-      "default_value(:#{k})"
-    else
-      "default_value(:#{k}).dup"
+                                      when [], {}, true, false, nil, Numeric, Symbol
+                                        v.inspect
+                                      when String
+                                        v.dump
+                                      when Numeric
+                                        "default_value(:#{k})"
+                                      else
+                                        "default_value(:#{k}).dup"
     end
   end
 
@@ -1747,17 +1747,17 @@ class Gem::Specification < Gem::BasicSpecification
     # This is the cleanest, most-readable, faster-than-using-Date
     # way to do it.
     @date = case date
-    when String then
-      if DateTimeFormat =~ date
-        Time.utc($1.to_i, $2.to_i, $3.to_i)
-      else
-        raise(Gem::InvalidSpecificationException,
-              "invalid date format in specification: #{date.inspect}")
-      end
-    when Time, DateLike then
-      Time.utc(date.year, date.month, date.day)
-    else
-      TODAY
+            when String then
+              if DateTimeFormat =~ date
+                Time.utc($1.to_i, $2.to_i, $3.to_i)
+              else
+                raise(Gem::InvalidSpecificationException,
+                      "invalid date format in specification: #{date.inspect}")
+              end
+            when Time, DateLike then
+              Time.utc(date.year, date.month, date.day)
+            else
+              TODAY
     end
   end
 
@@ -1864,12 +1864,12 @@ class Gem::Specification < Gem::BasicSpecification
     coder.add "name", @name
     coder.add "version", @version
     platform = case @original_platform
-    when nil, "" then
-      "ruby"
-    when String then
-      @original_platform
-    else
-      @original_platform.to_s
+               when nil, "" then
+                 "ruby"
+               when String then
+                 @original_platform
+               else
+                 @original_platform.to_s
     end
     coder.add "platform", platform
 
@@ -2708,8 +2708,8 @@ class Gem::Specification < Gem::BasicSpecification
       default = self.default_value attribute
 
       value = case default
-      when Time, Numeric, Symbol, true, false, nil then default
-      else default.dup
+              when Time, Numeric, Symbol, true, false, nil then default
+              else default.dup
       end
 
       instance_variable_set "@#{attribute}", value
