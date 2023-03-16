@@ -144,15 +144,15 @@ class Gem::BasicSpecification
 
   def full_require_paths
     @full_require_paths ||=
-    begin
-      full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path.tap(&Gem::UNTAINT)
+      begin
+        full_paths = raw_require_paths.map do |path|
+          File.join full_gem_path, path.tap(&Gem::UNTAINT)
+        end
+
+        full_paths << extension_dir if have_extensions?
+
+        full_paths
       end
-
-      full_paths << extension_dir if have_extensions?
-
-      full_paths
-    end
   end
 
   ##
@@ -171,15 +171,15 @@ class Gem::BasicSpecification
     if activated?
       @paths_map ||= {}
       @paths_map[path] ||=
-      begin
-        fullpath = nil
-        suffixes = Gem.suffixes
-        suffixes.find do |suf|
-          full_require_paths.find do |dir|
-            File.file?(fullpath = "#{dir}/#{path}#{suf}")
-          end
-        end ? fullpath : nil
-      end
+        begin
+          fullpath = nil
+          suffixes = Gem.suffixes
+          suffixes.find do |suf|
+            full_require_paths.find do |dir|
+              File.file?(fullpath = "#{dir}/#{path}#{suf}")
+            end
+          end ? fullpath : nil
+        end
     else
       nil
     end
