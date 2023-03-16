@@ -66,8 +66,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     FileUtils.rm_rf tmp_dest if tmp_dest
   end
 
-  private
-
   def self.get_relative_path(path, base)
     path[0..base.length - 1] = "." if path.start_with?(base)
     path
