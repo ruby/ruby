@@ -111,7 +111,9 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
+        # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        # For previous versions which implemented MJIT
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
         require_relative 'memory_status'
@@ -701,7 +703,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              err.full_message(highlight: false, order: :top)
+              (err.respond_to?(:full_message) ? err.full_message(highlight: false, order: :top) : err.message)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
@@ -735,6 +737,28 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions_foreach assert_all_assertions_foreach
+
+      def assert_linear_performance(factor: 10_000, first: factor, max: 2, rehearsal: first, pre: ->(n) {n})
+        n = first
+        arg = pre.call(n)
+        tmax = (0..rehearsal).map do
+          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          yield arg
+          (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+        end.max
+
+        (first >= factor ? 2 : 1).upto(max) do |i|
+          n = i * factor
+          t = tmax * factor
+          arg = pre.call(n)
+          message = "[#{i}]: #{n} in #{t}s"
+          Timeout.timeout(t, nil, message) do
+            st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            yield arg
+            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
+          end
+        end
+      end
 
       def diff(exp, act)
         require 'pp'

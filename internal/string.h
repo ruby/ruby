@@ -67,7 +67,6 @@ bool rb_str_reembeddable_p(VALUE);
 void rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_fstring_new(const char *ptr, long len);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
@@ -78,7 +77,6 @@ VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE 
 
 struct rb_execution_context_struct;
 VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str);
-MJIT_SYMBOL_EXPORT_END
 
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
 #define rb_fstring_literal(str) rb_fstring_lit(str)

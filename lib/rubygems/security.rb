@@ -461,16 +461,8 @@ module Gem::Security
   # Creates a new digest instance using the specified +algorithm+. The default
   # is SHA256.
 
-  if defined?(OpenSSL::Digest)
-    def self.create_digest(algorithm = DIGEST_NAME)
-      OpenSSL::Digest.new(algorithm)
-    end
-  else
-    require "digest"
-
-    def self.create_digest(algorithm = DIGEST_NAME)
-      Digest.const_get(algorithm).new
-    end
+  def self.create_digest(algorithm = DIGEST_NAME)
+    OpenSSL::Digest.new(algorithm)
   end
 
   ##

@@ -70,7 +70,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_digest
-    digest_algorithms = Digest::SHA1.new, Digest::SHA512.new
+    digest_algorithms = OpenSSL::Digest::SHA1.new, OpenSSL::Digest::SHA512.new
 
     Time.stub :now, Time.at(1458518157) do
       digests = @tar_writer.add_file_digest "x", 0644, digest_algorithms do |io|
@@ -93,7 +93,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
   def test_add_file_digest_multiple
-    digest_algorithms = [Digest::SHA1.new, Digest::SHA512.new]
+    digest_algorithms = [OpenSSL::Digest::SHA1.new, OpenSSL::Digest::SHA512.new]
 
     Time.stub :now, Time.at(1458518157) do
       digests = @tar_writer.add_file_digest "x", 0644, digest_algorithms do |io|

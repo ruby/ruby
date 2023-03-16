@@ -18,7 +18,7 @@
 #include "variable.h"
 #include "transient_heap.h"
 #include "yjit.h"
-#include "mjit.h"
+#include "rjit.h"
 
 VALUE rb_cRactor;
 static VALUE rb_cRactorSelector;
@@ -39,7 +39,7 @@ static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    // GET_EC is NULL in an MJIT worker
+    // GET_EC is NULL in an RJIT worker
     if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
         rb_bug("recursive ractor locking");
     }
@@ -50,7 +50,7 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    // GET_EC is NULL in an MJIT worker
+    // GET_EC is NULL in an RJIT worker
     if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
         rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
@@ -67,7 +67,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an MJIT worker
+    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an RJIT worker
         r->sync.locked_by = rb_ractor_self(GET_RACTOR());
     }
 #endif
@@ -301,7 +301,7 @@ RACTOR_PTR(VALUE self)
 static rb_atomic_t ractor_last_id;
 
 #if RACTOR_CHECK_MODE > 0
-MJIT_FUNC_EXPORTED uint32_t
+uint32_t
 rb_ractor_current_id(void)
 {
     if (GET_THREAD()->ractor == NULL) {
@@ -2008,7 +2008,7 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->debug = cr->debug;
 
     rb_yjit_before_ractor_spawn();
-    rb_mjit_before_ractor_spawn();
+    rb_rjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);
@@ -2097,7 +2097,7 @@ rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *r, VALUE args
     }
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_main_p_(void)
 {
     VM_ASSERT(rb_multi_ractor_p());
@@ -2976,7 +2976,7 @@ shareable_p_enter(VALUE obj)
     return traverse_stop; // fail
 }
 
-MJIT_FUNC_EXPORTED bool
+bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
     if (rb_obj_traverse(obj,
@@ -3127,7 +3127,7 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     int *pcnt = (int *)ptr;
 
     if (!rb_ractor_shareable_p(obj)) {
-        *pcnt++;
+        ++*pcnt;
     }
 }
 

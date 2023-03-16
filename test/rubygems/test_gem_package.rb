@@ -1187,29 +1187,4 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal %w[lib/code.rb], package.contents
   end
-
-  def util_tar
-    tar_io = StringIO.new
-
-    Gem::Package::TarWriter.new tar_io do |tar|
-      yield tar
-    end
-
-    tar_io.rewind
-
-    tar_io
-  end
-
-  def util_tar_gz(&block)
-    tar_io = util_tar(&block)
-
-    tgz_io = StringIO.new
-
-    # can't wrap TarWriter because it seeks
-    Zlib::GzipWriter.wrap tgz_io do |io|
-      io.write tar_io.string
-    end
-
-    StringIO.new tgz_io.string
-  end
 end

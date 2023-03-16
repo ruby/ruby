@@ -41,6 +41,15 @@ require "standard/rake"
 <% if config[:ext] -%>
 <% default_task_names.unshift(:compile) -%>
 <% default_task_names.unshift(:clobber) unless config[:ext] == 'rust' -%>
+<% if config[:ext] == 'rust' -%>
+require "rb_sys/extensiontask"
+
+task build: :compile
+
+RbSys::ExtensionTask.new(<%= config[:name].inspect %>) do |ext|
+  ext.lib_dir = "lib/<%= config[:namespaced_path] %>"
+end
+<% else -%>
 require "rake/extensiontask"
 
 task build: :compile
@@ -48,6 +57,7 @@ task build: :compile
 Rake::ExtensionTask.new("<%= config[:underscored_name] %>") do |ext|
   ext.lib_dir = "lib/<%= config[:namespaced_path] %>"
 end
+<% end -%>
 
 <% end -%>
 <% if default_task_names.size == 1 -%>

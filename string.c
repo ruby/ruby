@@ -543,7 +543,7 @@ rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encod
  * shared string which refers a static string literal.  `ptr` must
  * point a constant string.
  */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_fstring_new(const char *ptr, long len)
 {
     struct RString fake_str;
@@ -1703,7 +1703,7 @@ rb_obj_as_string(VALUE obj)
     return rb_obj_as_string_result(str, obj);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_obj_as_string_result(VALUE str, VALUE obj)
 {
     if (!RB_TYPE_P(str, T_STRING))
@@ -2251,7 +2251,7 @@ rb_str_plus(VALUE str1, VALUE str2)
 }
 
 /* A variant of rb_str_plus that does not raise but return Qundef instead. */
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_str_opt_plus(VALUE str1, VALUE str2)
 {
     assert(RBASIC_CLASS(str1) == rb_cString);
@@ -3351,7 +3351,7 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_str_concat_literals(size_t num, const VALUE *strary)
 {
     VALUE str;
@@ -3692,7 +3692,7 @@ rb_str_equal(VALUE str1, VALUE str2)
  *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
@@ -6072,7 +6072,7 @@ rb_str_chr(VALUE str)
  *
  *  Related: String#setbyte.
  */
-static VALUE
+VALUE
 rb_str_getbyte(VALUE str, VALUE index)
 {
     long pos = NUM2LONG(index);
@@ -11516,7 +11516,7 @@ rb_str_quote_unprintable(VALUE str)
     return str;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_id_quote_unprintable(ID id)
 {
     VALUE str = rb_id2str(id);
@@ -11581,7 +11581,7 @@ rb_sym_to_s(VALUE sym)
     return str_new_shared(rb_cString, rb_sym2str(sym));
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc)
 {
     VALUE obj;

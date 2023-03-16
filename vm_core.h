@@ -145,9 +145,6 @@ extern int ruby_assert_critical_section_entered;
 #  define SIGCHLD_LOSSY (0)
 #endif
 
-/* define to 0 to test old code path */
-#define WAITPID_USE_SIGCHLD (RUBY_SIGCHLD || SIGCHLD_LOSSY)
-
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK
 void *rb_allocate_sigaltstack(void);
@@ -346,7 +343,7 @@ pathobj_realpath(VALUE pathobj)
 }
 
 /* Forward declarations */
-struct rb_mjit_unit;
+struct rb_rjit_unit;
 
 typedef uintptr_t iseq_bits_t;
 
@@ -366,6 +363,14 @@ enum rb_iseq_type {
     ISEQ_TYPE_EVAL,
     ISEQ_TYPE_MAIN,
     ISEQ_TYPE_PLAIN
+};
+
+// Attributes specified by Primitive.attr!
+enum rb_builtin_attr {
+    // The iseq does not call methods.
+    BUILTIN_ATTR_LEAF = 0x01,
+    // The iseq does not allocate objects.
+    BUILTIN_ATTR_NO_GC = 0x02,
 };
 
 struct rb_iseq_constant_body {
@@ -487,12 +492,7 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
-    // If true, this ISeq is leaf *and* backtraces are not used, for example,
-    // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
-    // Note that GC allocations might use backtraces due to
-    // ObjectSpace#trace_object_allocations.
-    // For more details, see: https://bugs.ruby-lang.org/issues/16956
-    bool builtin_inline_p;
+    unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     union {
         iseq_bits_t * list; /* Find references for GC */
@@ -503,16 +503,16 @@ struct rb_iseq_constant_body {
 
     const rb_iseq_t *mandatory_only_iseq;
 
-#if USE_MJIT || USE_YJIT
+#if USE_RJIT || USE_YJIT
     // Function pointer for JIT code
     VALUE (*jit_func)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
     // Number of total calls with jit_exec()
     long unsigned total_calls;
 #endif
 
-#if USE_MJIT
-    // MJIT stores some data on each iseq.
-    struct rb_mjit_unit *mjit_unit;
+#if USE_RJIT
+    // RJIT stores some data on each iseq.
+    VALUE rjit_blocks;
 #endif
 
 #if USE_YJIT
@@ -520,6 +520,8 @@ struct rb_iseq_constant_body {
     void *yjit_payload;
 #endif
 };
+
+typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
@@ -649,9 +651,6 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
-    rb_nativethread_lock_t waitpid_lock;
-    struct ccan_list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
-    struct ccan_list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
     struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
@@ -1748,7 +1747,7 @@ void rb_vm_inc_const_missing_count(void);
 VALUE rb_vm_call_kw(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc,
                  const VALUE *argv, const rb_callable_method_entry_t *me, int kw_splat);
 void rb_vm_pop_frame_no_int(rb_execution_context_t *ec);
-MJIT_STATIC void rb_vm_pop_frame(rb_execution_context_t *ec);
+void rb_vm_pop_frame(rb_execution_context_t *ec);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
@@ -1759,9 +1758,7 @@ static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->waiting_fds);
-    ccan_list_head_init(&vm->waiting_pids);
     ccan_list_head_init(&vm->workqueue);
-    ccan_list_head_init(&vm->waiting_grps);
     ccan_list_head_init(&vm->ractor.set);
 }
 
@@ -1776,7 +1773,7 @@ rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
-MJIT_STATIC VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
+VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler);
 
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
@@ -1787,7 +1784,7 @@ void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
 
 void rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
 
-MJIT_STATIC const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
+const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
@@ -1810,15 +1807,12 @@ rb_execution_context_t *rb_vm_main_ractor_ec(rb_vm_t *vm); // ractor.c
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN struct rb_ractor_struct *ruby_single_main_ractor; // ractor.c
 RUBY_EXTERN rb_vm_t *ruby_current_vm_ptr;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_flags;
 RUBY_EXTERN rb_event_flag_t ruby_vm_event_enabled_global_flags;
 RUBY_EXTERN unsigned int    ruby_vm_event_local_num;
-
-MJIT_SYMBOL_EXPORT_END
 
 #define GET_VM()     rb_current_vm()
 #define GET_RACTOR() rb_current_ractor()

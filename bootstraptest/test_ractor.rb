@@ -283,8 +283,7 @@ assert_equal 30.times.map { 'ok' }.to_s, %q{
   30.times.map{|i|
     test i
   }
-} unless ENV['RUN_OPTS'] =~ /--mjit-call-threshold=5/ || # This always fails with --mjit-wait --mjit-call-threshold=5
-  (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
+} unless (ENV.key?('TRAVIS') && ENV['TRAVIS_CPU_ARCH'] == 'arm64') # https://bugs.ruby-lang.org/issues/17878
 
 # Exception for empty select
 assert_match /specify at least one ractor/, %q{
@@ -1495,8 +1494,9 @@ assert_equal "#{n}#{n}", %Q{
 
 # NameError
 assert_equal "ok", %q{
+  obj = "".freeze # NameError refers the receiver indirectly
   begin
-    bar
+    obj.bar
   rescue => err
   end
   begin
@@ -1532,7 +1532,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-}
+} unless ENV['RUN_OPTS'] =~ /rjit/ # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end

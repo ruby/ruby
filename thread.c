@@ -89,7 +89,7 @@
 #include "internal/time.h"
 #include "internal/warnings.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "ruby/debug.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -100,7 +100,7 @@
 #include "vm_debug.h"
 #include "vm_sync.h"
 
-#if USE_MJIT && defined(HAVE_SYS_WAIT_H)
+#if USE_RJIT && defined(HAVE_SYS_WAIT_H)
 #include <sys/wait.h>
 #endif
 
@@ -145,7 +145,6 @@ static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
-void rb_sigwait_fd_migrate(rb_vm_t *); /* process.c */
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -174,7 +173,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
-  RB_GC_SAVE_MACHINE_CONTEXT(th); \
+  RB_VM_SAVE_MACHINE_CONTEXT(th); \
   thread_sched_to_waiting(sched);
 
 #define THREAD_BLOCKING_END(th) \
@@ -258,7 +257,6 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
 }
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
-void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
 static void
 ubf_sigwait(void *ignore)
@@ -428,7 +426,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
         rb_mutex_t *mutex = th->keeping_mutexes;
         th->keeping_mutexes = mutex->next_mutex;
 
-        /* rb_warn("mutex #<%p> remains to be locked by terminated thread", (void *)mutexes); */
+        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
 
         const char *error_message = rb_mutex_unlock_th(mutex, th, mutex->fiber);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
@@ -635,7 +633,6 @@ thread_do_start(rb_thread_t *th)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
-#define thread_sched_to_dead thread_sched_to_waiting
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
@@ -1370,18 +1367,6 @@ rb_thread_sleep_deadly(void)
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
-void
-rb_thread_sleep_interruptible(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    enum rb_thread_status prev_status = th->status;
-
-    th->status = THREAD_STOPPED;
-    native_sleep(th, 0);
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    th->status = prev_status;
-}
-
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
@@ -1454,7 +1439,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
         if (th->running_time_us >= limits_us) {
             RUBY_DEBUG_LOG("switch %s", "start");
 
-            RB_GC_SAVE_MACHINE_CONTEXT(th);
+            RB_VM_SAVE_MACHINE_CONTEXT(th);
             thread_sched_yield(TH_SCHED(th), th);
             rb_ractor_thread_switch(th->ractor, th);
 
@@ -1489,7 +1474,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 
         RUBY_DEBUG_LOG("");
 
-        RB_GC_SAVE_MACHINE_CONTEXT(th);
+        RB_VM_SAVE_MACHINE_CONTEXT(th);
         thread_sched_to_waiting(TH_SCHED(th));
         return TRUE;
     }
@@ -2281,13 +2266,7 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-#if USE_MJIT
-// process.c
-extern bool mjit_waitpid_finished;
-extern int mjit_waitpid_status;
-#endif
-
-MJIT_FUNC_EXPORTED int
+int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
@@ -2325,9 +2304,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
             if (sigwait_fd >= 0) {
                 (void)consume_communication_pipe(sigwait_fd);
-                ruby_sigchld_handler(th->vm);
                 rb_sigwait_fd_put(th, sigwait_fd);
-                rb_sigwait_fd_migrate(th->vm);
             }
             th->status = THREAD_RUNNABLE;
             while ((sig = rb_get_next_signal()) != 0) {
@@ -2335,15 +2312,6 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             }
             th->status = prev_status;
         }
-
-#if USE_MJIT
-        // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
-        // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
-        if (mjit_waitpid_finished && th == th->vm->ractor.main_thread) {
-            mjit_waitpid_finished = false;
-            mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
-        }
-#endif
 
         /* exception from another thread */
         if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
@@ -4086,7 +4054,6 @@ select_set_free(VALUE p)
 
     if (set->sigwait_fd >= 0) {
         rb_sigwait_fd_put(set->th, set->sigwait_fd);
-        rb_sigwait_fd_migrate(set->th->vm);
     }
 
     rb_fd_term(&set->orig_rset);
@@ -4302,7 +4269,6 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
                 int fd1 = sigwait_signals_fd(result, fds[1].revents, fds[1].fd);
                 (void)check_signals_nogvl(wfd.th, fd1);
                 rb_sigwait_fd_put(wfd.th, fds[1].fd);
-                rb_sigwait_fd_migrate(wfd.th->vm);
             }
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
         } while (wait_retryable(&result, lerrno, to, end));
@@ -4522,7 +4488,6 @@ check_signals_nogvl(rb_thread_t *th, int sigwait_fd)
     rb_vm_t *vm = GET_VM(); /* th may be 0 */
     int ret = sigwait_fd >= 0 ? consume_communication_pipe(sigwait_fd) : FALSE;
     ubf_wakeup_all_threads();
-    ruby_sigchld_handler(vm);
     if (rb_signal_buff_size()) {
         if (th == vm->ractor.main_thread) {
             /* no need to lock + wakeup if already in main thread */
@@ -4622,8 +4587,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     rb_ractor_atfork(vm, th);
 
-    /* may be held by MJIT threads in parent */
-    rb_native_mutex_initialize(&vm->waitpid_lock);
+    /* may be held by RJIT threads in parent */
     rb_native_mutex_initialize(&vm->workqueue_lock);
 
     /* may be held by any thread in parent */
@@ -4658,9 +4622,6 @@ rb_thread_atfork(void)
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
-
-    /* For child, starting MJIT worker thread in this place which is safer than immediately after `after_fork_ruby`. */
-    mjit_child_after_fork();
 }
 
 static void
@@ -5293,7 +5254,6 @@ Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_native_mutex_initialize(&th->vm->waitpid_lock);
     rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->interrupt_lock);
 }

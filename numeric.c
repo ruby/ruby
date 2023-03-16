@@ -1152,7 +1152,7 @@ flo_coerce(VALUE x, VALUE y)
     return rb_assoc_new(rb_Float(y), x);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_uminus(VALUE flt)
 {
     return DBL2NUM(-RFLOAT_VALUE(flt));
@@ -1265,7 +1265,7 @@ double_div_double(double x, double y)
     }
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_flo_div_flo(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);
@@ -1375,7 +1375,7 @@ flodivmod(double x, double y, double *divp, double *modp)
  * An error will be raised if y == 0.
  */
 
-MJIT_FUNC_EXPORTED double
+double
 ruby_float_mod(double x, double y)
 {
     double mod;
@@ -1610,7 +1610,7 @@ num_equal(VALUE x, VALUE y)
  *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
@@ -1728,7 +1728,7 @@ flo_cmp(VALUE x, VALUE y)
     return rb_dbl_cmp(a, b);
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_float_cmp(VALUE x, VALUE y)
 {
     return NUM2INT(ensure_cmp(flo_cmp(x, y), x, y));
@@ -1922,7 +1922,7 @@ flo_le(VALUE x, VALUE y)
  *  Related: Float#== (performs type conversions).
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_eql(VALUE x, VALUE y)
 {
     if (RB_FLOAT_TYPE_P(y)) {
@@ -1938,7 +1938,7 @@ rb_float_eql(VALUE x, VALUE y)
 
 #define flo_eql rb_float_eql
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_abs(VALUE flt)
 {
     double val = fabs(RFLOAT_VALUE(flt));
@@ -3891,7 +3891,7 @@ rb_fix2str(VALUE x, int base)
 
 static VALUE rb_fix_to_s_static[10];
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_fix_to_s(VALUE x)
 {
     long i = FIX2LONG(x);
@@ -3919,7 +3919,7 @@ rb_fix_to_s(VALUE x)
  *  Raises an exception if +base+ is out of range.
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
@@ -5174,7 +5174,7 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
@@ -5398,7 +5398,7 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_int_size(VALUE num)
 {
     if (FIXNUM_P(num)) {

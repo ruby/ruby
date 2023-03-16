@@ -14,9 +14,6 @@ NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 static VALUE method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
-#if !defined(_MSC_VER) || !defined(MJIT_HEADER)
-MJIT_FUNC_EXPORTED
-#endif
 const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 
 struct args_info {
@@ -453,6 +450,18 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
            RHASH_EMPTY_P(keyword_hash);
 }
 
+static VALUE
+check_kwrestarg(VALUE keyword_hash, unsigned int *kw_flag)
+{
+    if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT)) {
+        *kw_flag |= VM_CALL_KW_SPLAT_MUT;
+        return rb_hash_dup(keyword_hash);
+    }
+    else {
+        return keyword_hash;
+    }
+}
+
 static int
 setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * const iseq,
                          struct rb_calling_info *const calling,
@@ -531,12 +540,14 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             keyword_hash = Qnil;
         }
         else if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.ruby2_keywords)) {
-            flag_keyword_hash = keyword_hash;
-            rb_ary_push(args->rest, keyword_hash);
+            converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
+            flag_keyword_hash = converted_keyword_hash;
+            rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
         }
         else if (!ISEQ_BODY(iseq)->param.flags.has_kwrest && !ISEQ_BODY(iseq)->param.flags.has_kw) {
-            rb_ary_push(args->rest, keyword_hash);
+            converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
+            rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
         }
 

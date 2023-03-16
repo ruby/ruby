@@ -424,7 +424,7 @@ vm_cc_invalidated_p(const struct rb_callcache *cc)
     }
 }
 
-// For MJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
+// For RJIT. cc_cme is supposed to have inlined `vm_cc_cme(cc)`.
 static inline bool
 vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *cc_cme, VALUE klass)
 {

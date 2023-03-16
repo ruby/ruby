@@ -34,8 +34,7 @@
 # include <stdlib.h>            /* for _byteswap_uint64 */
 #endif
 
-#if defined(HAVE_X86INTRIN_H) && ! defined(MJIT_HEADER)
-# /* Rule out MJIT_HEADER, which does not interface well with <immintrin.h> */
+#if defined(HAVE_X86INTRIN_H)
 # include <x86intrin.h>         /* for _lzcnt_u64 */
 #elif MSC_VERSION_SINCE(1310)
 # include <intrin.h>            /* for the following intrinsics */
@@ -235,7 +234,7 @@ nlz_int32(uint32_t x)
      * safety. */
     return (unsigned int)__lzcnt(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+#elif defined(__x86_64__) && defined(__LZCNT__)
     return (unsigned int)_lzcnt_u32(x);
 
 #elif MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
@@ -264,7 +263,7 @@ nlz_int64(uint64_t x)
 #if defined(_MSC_VER) && defined(__AVX2__)
     return (unsigned int)__lzcnt64(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+#elif defined(__x86_64__) && defined(__LZCNT__)
     return (unsigned int)_lzcnt_u64(x);
 
 #elif defined(_WIN64) && MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
@@ -450,7 +449,7 @@ rb_popcount_intptr(uintptr_t x)
 static inline int
 ntz_int32(uint32_t x)
 {
-#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+#if defined(__x86_64__) && defined(__BMI__)
     return (unsigned)_tzcnt_u32(x);
 
 #elif MSC_VERSION_SINCE(1400)
@@ -472,7 +471,7 @@ ntz_int32(uint32_t x)
 static inline int
 ntz_int64(uint64_t x)
 {
-#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+#if defined(__x86_64__) && defined(__BMI__)
     return (unsigned)_tzcnt_u64(x);
 
 #elif defined(_WIN64) && MSC_VERSION_SINCE(1400)

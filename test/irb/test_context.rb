@@ -129,7 +129,6 @@ module TestIRB
       failed: [
         [false, "BasicObject.new", /#<NoMethodError: undefined method `to_s' for/],
         [:p, "class Foo; undef inspect ;end; Foo.new", /#<NoMethodError: undefined method `inspect' for/],
-        [true, "BasicObject.new", /#<NoMethodError: undefined method `is_a\?' for/],
         [:yaml, "BasicObject.new", /#<NoMethodError: undefined method `inspect' for/],
         [:marshal, "[Object.new, Class.new]", /#<TypeError: can't dump anonymous class #<Class:/]
       ]
@@ -148,6 +147,19 @@ module TestIRB
           $VERBOSE = verbose
         end
       end
+    end
+
+    def test_object_inspection_handles_basic_object
+      verbose, $VERBOSE = $VERBOSE, nil
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new(["BasicObject.new"]))
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_not_match(/NoMethodError/, out)
+      assert_match(/#<BasicObject:.*>/, out)
+    ensure
+      $VERBOSE = verbose
     end
 
     def test_object_inspection_falls_back_to_kernel_inspect_when_errored

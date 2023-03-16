@@ -44,7 +44,7 @@ rb_shape_each_shape(each_shape_callback callback, void *data)
     }
 }
 
-rb_shape_t*
+RUBY_FUNC_EXPORTED rb_shape_t*
 rb_shape_get_shape_by_id(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
@@ -71,7 +71,7 @@ rb_rclass_shape_id(VALUE obj)
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
 
-shape_id_t
+RUBY_FUNC_EXPORTED shape_id_t
 rb_shape_get_shape_id(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
@@ -172,7 +172,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
     return res;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_shape_frozen_shape_p(rb_shape_t* shape)
 {
     return SHAPE_FROZEN == (enum shape_type)shape->type;
@@ -424,7 +424,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent)
     return rb_shape_alloc_with_size_pool_index(edge_name, parent, parent->size_pool_index);
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
 {
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
@@ -514,7 +514,7 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
     return midway_shape;
 }
 
-bool
+RUBY_FUNC_EXPORTED bool
 rb_shape_obj_too_complex(VALUE obj)
 {
     return rb_shape_get_shape_id(obj) == OBJ_TOO_COMPLEX_SHAPE_ID;

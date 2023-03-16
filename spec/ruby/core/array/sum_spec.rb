@@ -10,6 +10,10 @@ describe "Array#sum" do
     [1, 2, 3].sum { |i| i * 10 }.should == 60
   end
 
+  it "doesn't apply the block init" do
+    [1, 2, 3].sum(1) { |i| i * 10 }.should == 61
+  end
+
   # https://bugs.ruby-lang.org/issues/12217
   # https://github.com/ruby/ruby/blob/master/doc/ChangeLog/ChangeLog-2.4.0#L6208-L6214
   it "uses Kahan's compensated summation algorithm for precise sum of float numbers" do
@@ -68,6 +72,15 @@ describe "Array#sum" do
     b = mock("b")
     a.should_receive(:+).with(b).and_return(42)
     [b].sum(a).should == 42
+  end
+
+  ruby_bug '#19530', ''...'3.3' do
+    it "calls + on the init value" do
+      a = mock("a")
+      b = mock("b")
+      a.should_receive(:+).with(42).and_return(b)
+      [42].sum(a).should == b
+    end
   end
 end
 

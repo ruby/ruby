@@ -12,6 +12,8 @@ require_relative "stub_specification"
 require_relative "platform"
 require_relative "util/list"
 
+require "rbconfig"
+
 ##
 # The Specification class contains the information for a gem.  Typically
 # defined in a .gemspec file or a Rakefile, and looks like this:

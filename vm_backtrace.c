@@ -684,7 +684,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     return btobj;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
@@ -735,7 +735,7 @@ rb_backtrace_to_str_ary(VALUE self)
     return bt->strary;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;
