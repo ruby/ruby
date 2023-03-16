@@ -331,7 +331,7 @@ module Gem::QueryUtils
     else
       entry << "    Platforms:\n"
 
-      sorted_platforms = platforms.sort_by {|version,| version }
+      sorted_platforms = platforms.sort
 
       sorted_platforms.each do |version, pls|
         label = "        #{version}: "
