@@ -614,8 +614,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     build_args = %w[--a --b="c"]
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(
-        :build_args => build_args)
+      inst = Gem::DependencyInstaller.new(:build_args => build_args)
       inst.install "a"
     end
 

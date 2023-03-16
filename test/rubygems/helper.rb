@@ -259,15 +259,13 @@ class Gem::TestCase < Test::Unit::TestCase
         "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
           ("%s %s" % [make_command, target]).rstrip,
           output,
-        ]
-      )
+        ])
     else
       msg = build_message(msg,
         'Expected make command "%s", but was "%s"' % [
           ("%s %s" % [make_command, target]).rstrip,
           output,
-        ]
-      )
+        ])
     end
 
     assert scan_make_command_lines(output).any? {|line|
