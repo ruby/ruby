@@ -1126,7 +1126,7 @@ Also, a list:
     Object.send :remove_const, :RUBY_VERSION
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :remove_const, :RUBY_REVISION       if defined?(RUBY_REVISION)
-    Object.send :remove_const, :RUBY_DESCRIPTION    if defined?(RUBY_DESCRIPTION)
+    Object.send :remove_const, :RUBY_DESCRIPTION
     Object.send :remove_const, :RUBY_ENGINE
     Object.send :remove_const, :RUBY_ENGINE_VERSION if defined?(RUBY_ENGINE_VERSION)
   end
