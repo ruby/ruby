@@ -477,7 +477,7 @@ class Gem::Command
   private
 
   def option_is_deprecated?(option)
-    @deprecated_options[command].has_key?(option)
+    @deprecated_options[command].key?(option)
   end
 
   def add_parser_description # :nodoc:
