@@ -6,7 +6,6 @@ require_relative "text"
 # Utility methods for using the RubyGems API.
 
 module Gem::GemcutterUtilities
-
   ERROR_CODE = 1
   API_SCOPES = %i[index_rubygems push_rubygem yank_rubygem add_owner remove_owner access_webhooks show_dashboard].freeze
 

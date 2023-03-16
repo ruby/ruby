@@ -25,7 +25,6 @@ require "benchmark" # stdlib
 require "rubygems/mock_gem_ui"
 
 module Gem
-
   ##
   # Allows setting the gem path searcher.
 

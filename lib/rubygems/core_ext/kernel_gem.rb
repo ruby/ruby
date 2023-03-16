@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 module Kernel
-
   ##
   # Use Kernel#gem to activate a specific version of +gem_name+.
   #
@@ -66,5 +65,4 @@ module Kernel
   end
 
   private :gem
-
 end

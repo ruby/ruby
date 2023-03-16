@@ -69,7 +69,6 @@
 #     end
 
 module Gem::Deprecate
-
   def self.skip # :nodoc:
     @skip ||= false
   end
@@ -160,5 +159,4 @@ module Gem::Deprecate
   end
 
   module_function :rubygems_deprecate, :rubygems_deprecate_command, :skip_during
-
 end

@@ -38,5 +38,4 @@ module Gem
       ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
     end
   end
-
 end

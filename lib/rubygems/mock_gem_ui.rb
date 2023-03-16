@@ -27,7 +27,6 @@ class Gem::MockGemUi < Gem::StreamUI
   class SystemExitException < RuntimeError; end
 
   module TTY
-
     attr_accessor :tty
 
     def tty?()

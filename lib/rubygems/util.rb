@@ -5,7 +5,6 @@ require_relative "deprecate"
 # This module contains various utility methods as module methods.
 
 module Gem::Util
-
   ##
   # Zlib::GzipReader wrapper that unzips +data+.
 
@@ -111,5 +110,4 @@ module Gem::Util
       path
     end
   end
-
 end

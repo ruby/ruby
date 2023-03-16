@@ -8,7 +8,6 @@
 require "monitor"
 
 module Kernel
-
   RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
   # Make sure we have a reference to Ruby's original Kernel#require
@@ -164,5 +163,4 @@ module Kernel
   end
 
   private :require
-
 end

@@ -13,7 +13,6 @@ require_relative "text"
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
-
   include Gem::Text
 
   ##
@@ -68,7 +67,6 @@ module Gem::DefaultUserInteraction
   def use_ui(new_ui, &block)
     Gem::DefaultUserInteraction.use_ui(new_ui, &block)
   end
-
 end
 
 ##
@@ -91,7 +89,6 @@ end
 #   end
 
 module Gem::UserInteraction
-
   include Gem::DefaultUserInteraction
 
   ##
