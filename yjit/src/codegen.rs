@@ -583,8 +583,8 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
 pub fn gen_entry_guard(asm: &mut Assembler, ocb: &mut OutlinedCb, iseq: IseqPtr, insn_idx: u16) {
-    let entryref = make_entry_ref(iseq);
-    let stub_addr = match gen_entry_stub(&entryref, ocb) {
+    let entryref = new_entry(iseq);
+    let stub_addr = match gen_call_entry_stub_hit(entryref.as_ptr() as usize, ocb) {
         Some(addr) => addr,
         None => return,
     };

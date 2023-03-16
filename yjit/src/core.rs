@@ -13,6 +13,7 @@ use std::cell::*;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
+use std::ptr::NonNull;
 use std::rc::{Rc};
 use YARVOpnd::*;
 use TempMapping::*;
@@ -609,8 +610,8 @@ impl Branch {
 // Store info about code used on YJIT entry
 pub struct Entry {
     // Positions where the generated code starts and ends
-    start_addr: Option<CodePtr>,
-    end_addr: Option<CodePtr>, // exclusive
+    start_addr: Cell<Option<CodePtr>>,
+    end_addr: Cell<Option<CodePtr>>, // exclusive
 }
 
 // In case a block is invalidated, this helps to remove all pointers to the block.
@@ -667,7 +668,7 @@ pub struct BlockRef(Rc<RefCell<Block>>);
 pub type BranchRef = Rc<RefCell<Branch>>;
 
 /// Reference-counted pointer to an entry that can be borrowed mutably
-pub type EntryRef = Rc<RefCell<Entry>>;
+pub type EntryRef = NonNull<Entry>;
 
 /// List of block versions for a given blockid
 type VersionList = Vec<BlockRef>;
@@ -1854,7 +1855,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
 // Change the entry's jump target from an entry stub to a next entry
 pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: CodePtr) {
-    let old_end_addr = entryref.borrow().end_addr;
+    let old_end_addr = unsafe { entryref.as_ref() }.end_addr.get();
 
     let mut asm = Assembler::new();
     asm.comment("regenerate_entry");
@@ -1867,34 +1868,34 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
     // Move write_pos to rewrite the entry
     let old_write_pos = cb.get_write_pos();
     let old_dropped_bytes = cb.has_dropped_bytes();
-    cb.set_write_ptr(entryref.borrow().start_addr.unwrap());
+    cb.set_write_ptr(unsafe { entryref.as_ref() }.start_addr.get().unwrap());
     cb.set_dropped_bytes(false);
     asm.compile(cb);
 
     // Rewind write_pos to the original one
-    assert_eq!(old_end_addr, entryref.borrow().end_addr);
+    assert_eq!(old_end_addr, unsafe { entryref.as_ref() }.end_addr.get());
     cb.set_pos(old_write_pos);
     cb.set_dropped_bytes(old_dropped_bytes);
 }
 
 /// Create a new entry reference for an ISEQ
-pub fn make_entry_ref(iseq: IseqPtr) -> EntryRef {
+pub fn new_entry(iseq: IseqPtr) -> EntryRef {
     let entry = Entry {
-        start_addr: None,
-        end_addr: None,
+        start_addr: Cell::new(None),
+        end_addr: Cell::new(None),
     };
 
     // Add to the list of entries for the ISEQ
-    let entryref = Rc::new(RefCell::new(entry));
+    let entryref = NonNull::new(Box::into_raw(Box::new(entry))).unwrap();
     let iseq_payload = get_or_create_iseq_payload(iseq);
-    iseq_payload.entries.push(entryref.clone());
+    iseq_payload.entries.push(entryref);
 
     return entryref;
 }
 
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_entry_stub].
+    /// See [gen_call_entry_stub_hit].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_vm_lock(src_loc!(), || {
             entry_stub_hit_body(entry_ptr, ec)
@@ -1950,7 +1951,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
 
     // Regenerate the previous entry
     assert!(!entry_ptr.is_null());
-    let entryref = unsafe { EntryRef::from_raw(entry_ptr as *const RefCell<Entry>) };
+    let entryref = NonNull::<Entry>::new(entry_ptr as *mut Entry).expect("Entry should not be null");
     regenerate_entry(cb, &entryref, next_entry);
 
     cb.mark_all_executable();
@@ -1962,16 +1963,14 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
 }
 
 /// Generate a stub that calls entry_stub_hit
-pub fn gen_entry_stub(entryref: &EntryRef, ocb: &mut OutlinedCb) -> Option<CodePtr> {
+pub fn gen_call_entry_stub_hit(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
     let stub_addr = ocb.get_write_ptr();
-
-    let entry_ptr: *const RefCell<Entry> = EntryRef::into_raw(entryref.clone());
 
     let mut asm = Assembler::new();
     asm.comment("entry stub hit");
 
-    asm.mov(C_ARG_OPNDS[0], Opnd::const_ptr(entry_ptr as *const u8));
+    asm.mov(C_ARG_OPNDS[0], entry_address.into());
 
     // Jump to trampoline to call entry_stub_hit()
     // Not really a side exit, just don't need a padded jump here.
@@ -1986,7 +1985,7 @@ pub fn gen_entry_stub(entryref: &EntryRef, ocb: &mut OutlinedCb) -> Option<CodeP
     }
 }
 
-/// A trampoline used by gen_entry_stub. entry_stub_hit may issue Code GC, so
+/// A trampoline used by gen_call_entry_stub_hit. entry_stub_hit may issue Code GC, so
 /// it's useful for Code GC to call entry_stub_hit from a globally shared code.
 pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
@@ -2359,8 +2358,8 @@ impl Assembler
         let entryref = entryref.clone();
 
         self.pos_marker(move |code_ptr| {
-            let mut entry = entryref.borrow_mut();
-            entry.start_addr = Some(code_ptr);
+            let entry = unsafe { entryref.as_ref() };
+            entry.start_addr.set(Some(code_ptr));
         });
     }
 
@@ -2371,8 +2370,8 @@ impl Assembler
         let entryref = entryref.clone();
 
         self.pos_marker(move |code_ptr| {
-            let mut entry = entryref.borrow_mut();
-            entry.end_addr = Some(code_ptr);
+            let entry = unsafe { entryref.as_ref() };
+            entry.end_addr.set(Some(code_ptr));
         });
     }
 
