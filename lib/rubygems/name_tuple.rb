@@ -86,7 +86,7 @@ class Gem::NameTuple
     "#<Gem::NameTuple #{@name}, #{@version}, #{@platform}>"
   end
 
-  alias to_s inspect # :nodoc:
+  alias_method :to_s, :inspect # :nodoc:
 
   def <=>(other)
     [@name, @version, Gem::Platform.sort_priority(@platform)] <=>

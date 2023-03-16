@@ -13,7 +13,7 @@ module Kernel
   # Make sure we have a reference to Ruby's original Kernel#require
   unless defined?(gem_original_require)
     # :stopdoc:
-    alias gem_original_require require
+    alias_method :gem_original_require, :require
     private :gem_original_require
     # :startdoc:
   end

@@ -244,8 +244,8 @@ class Gem::Requirement
     requirements.all? {|op, rv| OPS[op].call version, rv }
   end
 
-  alias :=== :satisfied_by?
-  alias :=~ :satisfied_by?
+  alias_method :===, :satisfied_by?
+  alias_method :=~, :satisfied_by?
 
   ##
   # True if the requirement will not always match the latest version.

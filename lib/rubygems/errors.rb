@@ -174,6 +174,6 @@ module Gem
     ##
     # The "exception" alias allows you to call raise on a SourceFetchProblem.
 
-    alias exception error
+    alias_method :exception, :error
   end
 end

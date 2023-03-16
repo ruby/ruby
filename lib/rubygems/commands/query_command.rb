@@ -9,7 +9,7 @@ class Gem::Commands::QueryCommand < Gem::Command
 
   include Gem::QueryUtils
 
-  alias warning_without_suggested_alternatives deprecation_warning
+  alias_method :warning_without_suggested_alternatives, :deprecation_warning
   def deprecation_warning
     warning_without_suggested_alternatives
 

@@ -1704,7 +1704,7 @@ dependencies: []
       RbConfig::CONFIG["ENABLE_SHARED"], "no"
 
     class << Gem
-      alias orig_default_ext_dir_for default_ext_dir_for
+      alias_method :orig_default_ext_dir_for, :default_ext_dir_for
 
       remove_method :default_ext_dir_for
 
@@ -1726,7 +1726,7 @@ dependencies: []
     class << Gem
       remove_method :default_ext_dir_for
 
-      alias default_ext_dir_for orig_default_ext_dir_for
+      alias_method :default_ext_dir_for, :orig_default_ext_dir_for
     end
   end
 

@@ -48,7 +48,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   def next_token
     @tokens.shift
   end
-  alias :shift :next_token
+  alias_method :shift, :next_token
 
   def peek
     @tokens.first || EOF

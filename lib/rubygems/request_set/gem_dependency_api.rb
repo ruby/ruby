@@ -767,7 +767,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # Block form for restricting gems to a particular set of platforms.  See
   # #platform.
 
-  alias :platforms :platform
+  alias_method :platforms, :platform
 
   ##
   # :category: Gem Dependencies DSL

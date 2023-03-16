@@ -141,7 +141,7 @@ class Gem::Platform
     self.class === other && to_a == other.to_a
   end
 
-  alias :eql? :==
+  alias_method :eql?, :==
 
   def hash # :nodoc:
     to_a.hash
