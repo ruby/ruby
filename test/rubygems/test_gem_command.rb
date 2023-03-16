@@ -68,7 +68,6 @@ class TestGemCommand < Gem::TestCase
 
     Gem::Command.extra_args = "--awesome=true --verbose"
     assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
-
   ensure
     Gem::Command.extra_args = extra_args
     $; = separator

@@ -223,7 +223,6 @@ class Gem::Request
       end
 
       verbose "#{response.code} #{response.message}"
-
     rescue Net::HTTPBadResponse
       verbose "bad response"
 

@@ -592,7 +592,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_repository = repository
 
     yield
-
   ensure
     @current_repository = nil
   end
@@ -684,7 +683,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_groups = groups
 
     yield
-
   ensure
     @current_groups = nil
   end
@@ -759,7 +757,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_platforms = platforms
 
     yield
-
   ensure
     @current_platforms = nil
   end

@@ -218,7 +218,6 @@ end
     RbConfig::CONFIG["configure_args"] = args if args
 
     yield
-
   ensure
     if configure_args
       RbConfig::CONFIG["configure_args"] = configure_args

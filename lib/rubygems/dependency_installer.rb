@@ -178,7 +178,6 @@ class Gem::DependencyInstaller
         end
 
         set << specs
-
       rescue Gem::RemoteFetcher::FetchError => e
         # FIX if there is a problem talking to the network, we either need to always tell
         # the user (no really_verbose) or fail hard, not silently tell them that we just
