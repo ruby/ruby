@@ -5382,11 +5382,6 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
-        return CantCompile;
-    }
-
     if iseq_has_rest && unsafe { get_iseq_flags_has_block(iseq) } {
         gen_counter_incr!(asm, send_iseq_has_rest_and_block);
         return CantCompile;
