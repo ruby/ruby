@@ -104,14 +104,14 @@ class Gem::AvailableSet
 
   def to_request_set(development = :none)
     request_set = Gem::RequestSet.new
-    request_set.development = :all == development
+    request_set.development = development == :all
 
     each_spec do |spec|
       request_set.always_install << spec
 
       request_set.gem spec.name, spec.version
       request_set.import spec.development_dependencies if
-        :shallow == development
+        development == :shallow
     end
 
     request_set

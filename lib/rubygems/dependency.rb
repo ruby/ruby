@@ -45,7 +45,7 @@ class Gem::Dependency
     end
 
     type         = Symbol === requirements.last ? requirements.pop : :runtime
-    requirements = requirements.first if 1 == requirements.length # unpack
+    requirements = requirements.first if requirements.length == 1 # unpack
 
     unless TYPES.include? type
       raise ArgumentError, "Valid types are #{TYPES.inspect}, " +

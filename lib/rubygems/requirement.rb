@@ -155,7 +155,7 @@ class Gem::Requirement
   # Formats this requirement for use in a Gem::RequestSet::Lockfile.
 
   def for_lockfile # :nodoc:
-    return if [DefaultRequirement] == @requirements
+    return if @requirements == [DefaultRequirement]
 
     list = requirements.sort_by do |_, version|
       version

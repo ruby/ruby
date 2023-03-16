@@ -71,7 +71,7 @@ class Gem::Source
   # Returns a Set that can fetch specifications from this source.
 
   def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if "file" == uri.scheme
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
 
     fetch_uri = if uri.host == "rubygems.org"
       index_uri = uri.dup

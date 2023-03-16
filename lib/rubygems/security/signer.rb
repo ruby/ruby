@@ -105,7 +105,7 @@ class Gem::Security::Signer
   # this value is preferred, otherwise the subject is used.
 
   def extract_name(cert) # :nodoc:
-    subject_alt_name = cert.extensions.find {|e| "subjectAltName" == e.oid }
+    subject_alt_name = cert.extensions.find {|e| e.oid == "subjectAltName" }
 
     if subject_alt_name
       /\Aemail:/ =~ subject_alt_name.value # rubocop:disable Performance/StartWith
