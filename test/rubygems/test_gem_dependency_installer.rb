@@ -561,7 +561,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     done_installing_called = false
 
-    Gem.done_installing do |dep_installer, specs|
+    Gem.done_installing do |dep_installer, _specs|
       done_installing_called = true
       assert_empty dep_installer.document
     end

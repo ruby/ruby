@@ -113,7 +113,7 @@ class Gem::Source::Local < Gem::Source
   def download(spec, cache_dir = nil) # :nodoc:
     load_specs :complete
 
-    @specs.each do |name, data|
+    @specs.each do |_name, data|
       return data[0] if data[1].spec == spec
     end
 

@@ -39,17 +39,17 @@ module Gem::LocalRemoteOptions
 
   def add_local_remote_options
     add_option(:"Local/Remote", "-l", "--local",
-               "Restrict operations to the LOCAL domain") do |value, options|
+               "Restrict operations to the LOCAL domain") do |_value, options|
       options[:domain] = :local
     end
 
     add_option(:"Local/Remote", "-r", "--remote",
-      "Restrict operations to the REMOTE domain") do |value, options|
+      "Restrict operations to the REMOTE domain") do |_value, options|
       options[:domain] = :remote
     end
 
     add_option(:"Local/Remote", "-b", "--both",
-               "Allow LOCAL and REMOTE operations") do |value, options|
+               "Allow LOCAL and REMOTE operations") do |_value, options|
       options[:domain] = :both
     end
 
@@ -67,7 +67,7 @@ module Gem::LocalRemoteOptions
     add_option(:"Local/Remote", "-B", "--bulk-threshold COUNT",
                "Threshold for switching to bulk",
                "synchronization (default #{Gem.configuration.bulk_threshold})") do
-      |value, options|
+      |value, _options|
       Gem.configuration.bulk_threshold = value.to_i
     end
   end
@@ -77,7 +77,7 @@ module Gem::LocalRemoteOptions
 
   def add_clear_sources_option
     add_option(:"Local/Remote", "--clear-sources",
-               "Clear the gem sources") do |value, options|
+               "Clear the gem sources") do |_value, options|
       Gem.sources = nil
       options[:sources_cleared] = true
     end
@@ -119,7 +119,7 @@ module Gem::LocalRemoteOptions
 
   def add_update_sources_option
     add_option(:Deprecated, "-u", "--[no-]update-sources",
-               "Update local source cache") do |value, options|
+               "Update local source cache") do |value, _options|
       Gem.configuration.update_sources = value
     end
   end

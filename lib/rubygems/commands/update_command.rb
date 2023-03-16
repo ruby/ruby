@@ -300,7 +300,7 @@ command to remove old versions.
   def which_to_update(highest_installed_gems, gem_names)
     result = []
 
-    highest_installed_gems.each do |l_name, l_spec|
+    highest_installed_gems.each do |_l_name, l_spec|
       next if !gem_names.empty? &&
               gem_names.none? {|name| name == l_spec.name }
 

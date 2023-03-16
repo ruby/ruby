@@ -1142,7 +1142,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :SSLVerifyClient => nil,
       :SSLCertName => nil,
     }.merge(config))
-    server.mount_proc("/yaml") do |req, res|
+    server.mount_proc("/yaml") do |_req, res|
       res.body = "--- true\n"
     end
     server.mount_proc("/insecure_redirect") do |req, res|
@@ -1179,7 +1179,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       :Logger => null_logger,
       :AccessLog => null_logger
     )
-    s.mount_proc("/kill") {|req, res| s.shutdown }
+    s.mount_proc("/kill") {|_req, _res| s.shutdown }
     s.mount_proc("/yaml") do |req, res|
       if req["X-Captain"]
         res.body = req["X-Captain"]
@@ -1193,7 +1193,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         res["Content-Type"] = "text/html"
       end
     end
-    s.mount_proc("/yaml.Z") do |req, res|
+    s.mount_proc("/yaml.Z") do |_req, res|
       if @enable_zip
         res.body = Zlib::Deflate.deflate(data)
         res["Content-Type"] = "text/plain"

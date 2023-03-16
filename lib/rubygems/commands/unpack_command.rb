@@ -28,7 +28,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
       options[:target] = value
     end
 
-    add_option("--spec", "unpack the gem specification") do |value, options|
+    add_option("--spec", "unpack the gem specification") do |_value, options|
       options[:spec] = true
     end
 

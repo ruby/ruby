@@ -146,7 +146,7 @@ class Gem::AvailableSet
   end
 
   def remove_installed!(dep)
-    @set.reject! do |t|
+    @set.reject! do |_t|
       # already locally installed
       Gem::Specification.any? do |installed_spec|
         dep.name == installed_spec.name &&

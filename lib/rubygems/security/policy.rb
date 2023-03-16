@@ -225,7 +225,7 @@ class Gem::Security::Policy
     trust_dir = opt[:trust_dir]
     time      = Time.now
 
-    _, signer_digests = digests.find do |algorithm, file_digests|
+    _, signer_digests = digests.find do |_algorithm, file_digests|
       file_digests.values.first.name == Gem::Security::DIGEST_NAME
     end
 

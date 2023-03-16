@@ -2930,7 +2930,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       { b: Gem::Dependency.new("x","1") }
     end
 
-    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       []
     end
 
@@ -2957,7 +2957,7 @@ Please report a bug if this causes problems.
       { b: Gem::Dependency.new("x","1") }
     end
 
-    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       [
         specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") },
         specification.new {|s| s.name = "z", s.version = Gem::Version.new("2") },

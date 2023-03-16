@@ -248,7 +248,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_head
     uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
-    response = util_stub_net_http(:body => "", :code => 200) do |conn|
+    response = util_stub_net_http(:body => "", :code => 200) do |_conn|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
     end

@@ -341,7 +341,7 @@ class Gem::Uninstaller
       s.name == spec.name && s.full_name != spec.full_name
     end
 
-    spec.dependent_gems(@check_dev).each do |dep_spec, dep, satlist|
+    spec.dependent_gems(@check_dev).each do |dep_spec, dep, _satlist|
       unless siblings.any? {|s| s.satisfies_requirement? dep }
         msg << "#{dep_spec.name}-#{dep_spec.version} depends on #{dep}"
       end

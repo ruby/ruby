@@ -11,12 +11,12 @@ class Gem::Commands::CleanupCommand < Gem::Command
           :check_dev => true
 
     add_option("-n", "-d", "--dry-run",
-               "Do not uninstall gems") do |value, options|
+               "Do not uninstall gems") do |_value, options|
       options[:dryrun] = true
     end
 
     add_option(:Deprecated, "--dryrun",
-               "Do not uninstall gems") do |value, options|
+               "Do not uninstall gems") do |_value, options|
       options[:dryrun] = true
     end
     deprecate_option("--dryrun", extra_msg: "Use --dry-run instead")

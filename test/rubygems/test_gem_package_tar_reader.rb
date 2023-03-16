@@ -77,7 +77,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io = TempIO.new tar
 
     Gem::Package::TarReader.new io do |tar_reader|
-      tar_reader.seek "nonexistent" do |entry|
+      tar_reader.seek "nonexistent" do |_entry|
         flunk "entry missing but entry-found block was run"
       end
 
