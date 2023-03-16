@@ -813,12 +813,7 @@ send
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, false);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
-
-    jit_func_t func;
-    if (val == Qundef && (func = jit_compile(ec))) {
-        val = func(ec, ec->cfp);
-        if (ec->tag->state) THROW_EXCEPTION(val);
-    }
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -838,12 +833,7 @@ opt_send_without_block
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_method);
-
-    jit_func_t func;
-    if (val == Qundef && (func = jit_compile(ec))) {
-        val = func(ec, ec->cfp);
-        if (ec->tag->state) THROW_EXCEPTION(val);
-    }
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -946,12 +936,7 @@ invokesuper
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
-
-    jit_func_t func;
-    if (val == Qundef && (func = jit_compile(ec))) {
-        val = func(ec, ec->cfp);
-        if (ec->tag->state) THROW_EXCEPTION(val);
-    }
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -971,12 +956,7 @@ invokeblock
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
     val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_invokeblock);
-
-    jit_func_t func;
-    if (val == Qundef && (func = jit_compile(ec))) {
-        val = func(ec, ec->cfp);
-        if (ec->tag->state) THROW_EXCEPTION(val);
-    }
+    JIT_EXEC(ec, val);
 
     if (val == Qundef) {
         RESTORE_REGS();
