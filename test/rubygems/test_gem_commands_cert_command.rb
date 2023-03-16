@@ -46,7 +46,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
 
     matches = @cmd.certificates_matching ""
 
-    # HACK OpenSSL::X509::Certificate#== is Object#==, so do this the hard way
+    # HACK: OpenSSL::X509::Certificate#== is Object#==, so do this the hard way
     match = matches.next
     assert_equal ALTERNATE_CERT.to_pem, match.first.to_pem
     assert_equal @trust_dir.cert_path(ALTERNATE_CERT), match.last

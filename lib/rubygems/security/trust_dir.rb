@@ -49,7 +49,7 @@ class Gem::Security::TrustDir
 
         yield certificate, certificate_file
       rescue OpenSSL::X509::CertificateError
-        next # HACK warn
+        next # HACK: warn
       end
     end
   end

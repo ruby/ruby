@@ -241,7 +241,7 @@ class Gem::Request
       verbose "fatal error"
 
       raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
-    # HACK work around EOFError bug in Net::HTTP
+    # HACK: work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
     rescue EOFError, Timeout::Error,

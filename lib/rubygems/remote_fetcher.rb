@@ -169,7 +169,7 @@ class Gem::RemoteFetcher
       end
 
       verbose "Using local gem #{local_gem_path}"
-    when nil then # TODO test for local overriding cache
+    when nil then # TODO: test for local overriding cache
       source_path = if Gem.win_platform? && source_uri.scheme &&
                        !source_uri.path.include?(":")
         "#{source_uri.scheme}:#{source_uri.path}"

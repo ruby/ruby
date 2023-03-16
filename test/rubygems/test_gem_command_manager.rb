@@ -176,7 +176,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_match(/invalid option: --bad-arg/i, @ui.error)
   end
 
-  # HACK move to install command test
+  # HACK: move to install command test
   def test_process_args_install
     # capture all install options
     use_ui @ui do
@@ -227,7 +227,7 @@ class TestGemCommandManager < Gem::TestCase
     end
   end
 
-  # HACK move to uninstall command test
+  # HACK: move to uninstall command test
   def test_process_args_uninstall
     # capture all uninstall options
     check_options = nil
@@ -247,7 +247,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal Gem::Requirement.new("3.0"), check_options[:version]
   end
 
-  # HACK move to check command test
+  # HACK: move to check command test
   def test_process_args_check
     # capture all check options
     check_options = nil
@@ -266,7 +266,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal true, check_options[:alien]
   end
 
-  # HACK move to build command test
+  # HACK: move to build command test
   def test_process_args_build
     # capture all build options
     check_options = nil
@@ -285,7 +285,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal "foobar.rb", check_options[:args].first
   end
 
-  # HACK move to query command test
+  # HACK: move to query command test
   def test_process_args_query
     # capture all query options
     check_options = nil
@@ -326,7 +326,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_equal :both, check_options[:domain]
   end
 
-  # HACK move to update command test
+  # HACK: move to update command test
   def test_process_args_update
     # capture all update options
     check_options = nil

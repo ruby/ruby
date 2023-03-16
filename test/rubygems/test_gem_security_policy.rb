@@ -33,7 +33,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
 
     @digest = OpenSSL::Digest.new Gem::Security::DIGEST_NAME
-    @trust_dir = Gem::Security.trust_dir.dir # HACK use the object
+    @trust_dir = Gem::Security.trust_dir.dir # HACK: use the object
 
     @no        = Gem::Security::NoSecurity
     @almost_no = Gem::Security::AlmostNoSecurity

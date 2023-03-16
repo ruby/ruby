@@ -1045,7 +1045,7 @@ Also, a list:
       spec_fetcher.prerelease_specs[@uri] << spec.name_tuple
     end
 
-    # HACK for test_download_to_cache
+    # HACK: for test_download_to_cache
     unless Gem::RemoteFetcher === @fetcher
       v = Gem.marshal_version
 

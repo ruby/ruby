@@ -268,7 +268,7 @@ Gem::Platform::CURRENT.  This will correctly mark the gem with your ruby's
 platform.
   EOF
 
-  # NOTE when updating also update Gem::Command::HELP
+  # NOTE: when updating also update Gem::Command::HELP
 
   SUBCOMMANDS = [
     ["commands",         :show_commands],

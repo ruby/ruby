@@ -201,7 +201,7 @@ class Gem::ConfigFile
       @hash = @hash.merge environment_config
     end
 
-    # HACK these override command-line args, which is bad
+    # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
