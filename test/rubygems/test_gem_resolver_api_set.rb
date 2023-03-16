@@ -39,7 +39,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name => "a",
         :number => "1",
         :platform => "ruby",
-        :dependencies => []} ,
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}a"] = "---\n1  "
@@ -62,11 +62,11 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name => "a",
         :number => "1",
         :platform => "ruby",
-        :dependencies => []} ,
+        :dependencies => [] },
       { :name => "a",
         :number => "2.a",
         :platform => "ruby",
-        :dependencies => []} ,
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}a"] = "---\n1\n2.a"
@@ -91,7 +91,7 @@ class TestGemResolverAPISet < Gem::TestCase
       { :name => "a",
         :number => "1",
         :platform => "ruby",
-        :dependencies => []} ,
+        :dependencies => [] },
     ]
 
     @fetcher.data["#{@dep_uri}a"] = "---\n1  "

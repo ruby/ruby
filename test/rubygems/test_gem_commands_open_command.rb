@@ -91,7 +91,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
       end
     end
 
-    assert_match %r{'foo' is a default gem and can't be opened\.} , @ui.output
+    assert_match %r{'foo' is a default gem and can't be opened\.}, @ui.output
     assert_equal "", @ui.error
   end
 end
