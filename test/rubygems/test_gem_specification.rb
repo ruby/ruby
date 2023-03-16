@@ -1973,8 +1973,8 @@ dependencies: []
     test_cases = {
       "i386-mswin32" => ["x86", "mswin32", "60"],
       "i386-mswin32_80" => ["x86", "mswin32", "80"],
-      "i386-mingw32" => ["x86", "mingw32", nil ],
-      "x86-darwin8" => ["x86", "darwin", "8" ],
+      "i386-mingw32" => ["x86", "mingw32", nil],
+      "x86-darwin8" => ["x86", "darwin", "8"],
     }
 
     test_cases.each do |arch, expected|

@@ -286,7 +286,7 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_illformed_requirements
-    [ ">>> 1.3.5", "> blah" ].each do |rq|
+    [">>> 1.3.5", "> blah"].each do |rq|
       assert_raise Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
         Gem::Requirement.new rq
       end
