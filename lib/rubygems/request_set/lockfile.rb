@@ -86,7 +86,7 @@ class Gem::RequestSet::Lockfile
   def add_DEPENDENCIES(out) # :nodoc:
     out << "DEPENDENCIES"
 
-    out.concat @dependencies.sort_by {|name,| name }.map {|name, requirement|
+    out.concat @dependencies.sort.map {|name, requirement|
       "  #{name}#{requirement.for_lockfile}"
     }
 
