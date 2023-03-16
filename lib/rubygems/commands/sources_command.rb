@@ -98,16 +98,16 @@ Do you want to add this insecure source?
     path = Gem.spec_cache_dir
     FileUtils.rm_rf path
 
-    unless File.exist? path
-      say "*** Removed specs cache ***"
-    else
-      unless File.writable? path
-        say "*** Unable to remove source cache (write protected) ***"
-      else
+    if File.exist? path
+      if File.writable? path
         say "*** Unable to remove source cache ***"
+      else
+        say "*** Unable to remove source cache (write protected) ***"
       end
 
       terminate_interaction 1
+    else
+      say "*** Removed specs cache ***"
     end
   end
 
@@ -193,13 +193,13 @@ To remove a source use the --remove argument:
   end
 
   def remove_source(source_uri) # :nodoc:
-    unless Gem.sources.include? source_uri
-      say "source #{source_uri} not present in cache"
-    else
+    if Gem.sources.include? source_uri
       Gem.sources.delete source_uri
       Gem.configuration.write
 
       say "#{source_uri} removed from sources"
+    else
+      say "source #{source_uri} not present in cache"
     end
   end
 

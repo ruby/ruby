@@ -47,14 +47,14 @@ class Gem::Commands::CheckCommand < Gem::Command
            end
 
     Gem::Validator.new.alien(gems).sort.each do |key, val|
-      unless val.empty?
+      if val.empty?
+        say "#{key} is error-free" if Gem.configuration.verbose
+      else
         say "#{key} has #{val.size} problems"
         val.each do |error_entry|
           say "  #{error_entry.path}:"
           say "    #{error_entry.problem}"
         end
-      else
-        say "#{key} is error-free" if Gem.configuration.verbose
       end
       say
     end

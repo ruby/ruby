@@ -26,16 +26,16 @@ module Gem
     rubylibdir
   ].freeze
 
-  unless defined?(ConfigMap)
+  if defined?(ConfigMap)
+    RbConfigPriorities.each do |key|
+      ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
+    end
+  else
     ##
     # Configuration settings from ::RbConfig
     ConfigMap = Hash.new do |cm, key|
       cm[key] = RbConfig::CONFIG[key.to_s]
     end
     deprecate_constant(:ConfigMap)
-  else
-    RbConfigPriorities.each do |key|
-      ConfigMap[key.to_sym] = RbConfig::CONFIG[key]
-    end
   end
 end
