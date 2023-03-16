@@ -65,7 +65,7 @@ class Gem::DependencyInstaller
   # :build_args:: See Gem::Installer::new
 
   def initialize(options = {})
-    @only_install_dir = !!options[:install_dir]
+    @only_install_dir = !options[:install_dir].nil?
     @install_dir = options[:install_dir] || Gem.dir
     @build_root = options[:build_root]
 

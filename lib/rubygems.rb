@@ -983,7 +983,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.win_platform?
     if @@win_platform.nil?
       ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !!WIN_PATTERNS.find {|r| ruby_platform =~ r }
+      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
     end
 
     @@win_platform
