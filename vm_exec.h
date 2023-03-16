@@ -174,6 +174,15 @@ default:                        \
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
 #endif
 
+#define JIT_EXEC(ec, val) do { \
+    jit_func_t func; \
+    if (val == Qundef && (func = jit_compile(ec))) { \
+        rb_jit_exec_t ret = func(ec, ec->cfp); \
+        val = ret.result; \
+        if (ret.tag_set) THROW_EXCEPTION(val); \
+    } \
+} while (0)
+
 #define SCREG(r) (reg_##r)
 
 #define VM_DEBUG_STACKOVERFLOW 0

@@ -331,7 +331,7 @@ pub enum Insn {
     CCall { opnds: Vec<Opnd>, fptr: *const u8, out: Opnd },
 
     // C function return
-    CRet(Opnd),
+    CRet(Opnd, Opnd),
 
     /// Conditionally select if equal
     CSelE { truthy: Opnd, falsy: Opnd, out: Opnd },
@@ -489,7 +489,7 @@ impl Insn {
             Insn::CPush(_) => "CPush",
             Insn::CPushAll => "CPushAll",
             Insn::CCall { .. } => "CCall",
-            Insn::CRet(_) => "CRet",
+            Insn::CRet(_, _) => "CRet",
             Insn::CSelE { .. } => "CSelE",
             Insn::CSelG { .. } => "CSelG",
             Insn::CSelGE { .. } => "CSelGE",
@@ -662,7 +662,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
             Insn::JmpOpnd(opnd) |
             Insn::Lea { opnd, .. } |
             Insn::LiveReg { opnd, .. } |
@@ -680,6 +679,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
             Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CRet(opnd0, opnd1) |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
@@ -759,7 +759,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
             Insn::JmpOpnd(opnd) |
             Insn::Lea { opnd, .. } |
             Insn::LiveReg { opnd, .. } |
@@ -777,6 +776,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Add { left: opnd0, right: opnd1, .. } |
             Insn::And { left: opnd0, right: opnd1, .. } |
             Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CRet(opnd0, opnd1) |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
@@ -1354,8 +1354,8 @@ impl Assembler {
         self.push_insn(Insn::CPushAll);
     }
 
-    pub fn cret(&mut self, opnd: Opnd) {
-        self.push_insn(Insn::CRet(opnd));
+    pub fn cret(&mut self, opnd1: Opnd, opnd2: Opnd) {
+        self.push_insn(Insn::CRet(opnd1, opnd2));
     }
 
     #[must_use]

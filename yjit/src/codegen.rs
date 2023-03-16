@@ -402,7 +402,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.frame_teardown();
 
-    asm.cret(Qundef.into());
+    asm.cret(Qundef.into(), Qfalse.into());
 
     asm.compile(ocb);
 
@@ -456,7 +456,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
 
     asm.frame_teardown();
 
-    asm.cret(Qundef.into());
+    asm.cret(Qundef.into(), Qfalse.into());
 }
 
 /// Generate an exit to the interpreter in the outlined code block
@@ -542,7 +542,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.frame_teardown();
 
-    asm.cret(Qundef.into());
+    asm.cret(Qundef.into(), Qfalse.into());
 
     asm.compile(ocb);
 
@@ -570,7 +570,7 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.frame_teardown();
 
-    asm.cret(ret_opnd);
+    asm.cret(ret_opnd, Qfalse.into());
 
     asm.compile(ocb);
 
@@ -601,7 +601,7 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u16) {
 
     asm.frame_teardown();
 
-    asm.cret(Qundef.into());
+    asm.cret(Qundef.into(), Qfalse.into());
 
     // PC should match the expected insn_idx
     asm.write_label(pc_match);
@@ -3734,7 +3734,7 @@ fn gen_throw(
 
     asm.frame_teardown();
 
-    asm.cret(val);
+    asm.cret(val, Qtrue.into());
     EndBlock
 }
 

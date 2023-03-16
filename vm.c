@@ -402,7 +402,7 @@ jit_compile(rb_execution_context_t *ec)
 // Try to execute the current iseq in ec.  Use JIT code if it is ready.
 // If it is not, add ISEQ to the compilation queue and return Qundef for RJIT.
 // YJIT compiles on the thread running the iseq.
-static inline VALUE
+static inline rb_jit_exec_t
 jit_exec(rb_execution_context_t *ec)
 {
     jit_func_t func = jit_compile(ec);
@@ -411,12 +411,12 @@ jit_exec(rb_execution_context_t *ec)
         return func(ec, ec->cfp);
     }
     else {
-        return Qundef;
+        return (rb_jit_exec_t) { .result = Qundef, .tag_set = Qfalse };
     }
 }
 #else
 static inline jit_func_t jit_compile(rb_execution_context_t *ec) { return 0; }
-static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; }
+static inline rb_jit_exec_t jit_exec(rb_execution_context_t *ec) { return (rb_jit_exec_t) { .result = Qundef, .tag_set = Qfalse }; }
 #endif
 
 #include "vm_insnhelper.c"
@@ -2311,7 +2311,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (UNDEF_P(ctx->result = jit_exec(ctx->ec))) {
+    if (UNDEF_P(ctx->result = jit_exec(ctx->ec).result)) {
         ctx->result = vm_exec_core(ctx->ec, ctx->initial);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
@@ -2362,7 +2362,7 @@ vm_exec(rb_execution_context_t *ec)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (UNDEF_P(result = jit_exec(ec))) {
+        if (UNDEF_P(result = jit_exec(ec).result)) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */

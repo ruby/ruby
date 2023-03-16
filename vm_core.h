@@ -373,6 +373,16 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_NO_GC = 0x02,
 };
 
+// jit_exec's ABI to return multiple values
+//   x86_64: RAX=result, RDX=tag_set
+//   arm64:  X0=result, X1=tag_set
+typedef struct {
+    VALUE result; // Qundef (return to interpreter) or non-Qundef (JIT's return value)
+    VALUE tag_set; // Qfalse (ec->tag->state is TAG_NONE) or Qtrue (ec->tag->state is not TAG_NONE)
+} rb_jit_exec_t;
+
+typedef rb_jit_exec_t (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+
 struct rb_iseq_constant_body {
     enum rb_iseq_type type;
 
@@ -505,7 +515,7 @@ struct rb_iseq_constant_body {
 
 #if USE_RJIT || USE_YJIT
     // Function pointer for JIT code
-    VALUE (*jit_func)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
+    jit_func_t jit_func;
     // Number of total calls with jit_exec()
     long unsigned total_calls;
 #endif
@@ -520,8 +530,6 @@ struct rb_iseq_constant_body {
     void *yjit_payload;
 #endif
 };
-
-typedef VALUE (*jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
