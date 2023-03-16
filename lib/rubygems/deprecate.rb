@@ -103,7 +103,7 @@ module Gem::Deprecate
       old = "_deprecated_#{name}"
       alias_method old, name
       define_method name do |*args, &block|
-        klass = self.is_a? Module
+        klass = is_a? Module
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [
           "NOTE: #{target}#{name} is deprecated",
@@ -129,7 +129,7 @@ module Gem::Deprecate
       old = "_deprecated_#{name}"
       alias_method old, name
       define_method name do |*args, &block|
-        klass = self.is_a? Module
+        klass = is_a? Module
         target = klass ? "#{self}." : "#{self.class}#"
         msg = [
           "NOTE: #{target}#{name} is deprecated",
@@ -153,7 +153,7 @@ module Gem::Deprecate
 
       define_method "deprecation_warning" do
         msg = [
-          "#{self.command} command is deprecated",
+          "#{command} command is deprecated",
           ". It will be removed in Rubygems #{version}.\n",
         ]
 

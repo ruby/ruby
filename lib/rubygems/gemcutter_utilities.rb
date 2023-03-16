@@ -120,7 +120,7 @@ module Gem::GemcutterUtilities
   end
 
   def update_scope(scope)
-    sign_in_host        = self.host
+    sign_in_host        = host
     pretty_host         = pretty_host(sign_in_host)
     update_scope_params = { scope => true }
 
@@ -146,7 +146,7 @@ module Gem::GemcutterUtilities
   # key.
 
   def sign_in(sign_in_host = nil, scope: nil)
-    sign_in_host ||= self.host
+    sign_in_host ||= host
     return if api_key
 
     pretty_host = pretty_host(sign_in_host)
@@ -279,7 +279,7 @@ module Gem::GemcutterUtilities
   end
 
   def default_host?
-    self.host == Gem::DEFAULT_HOST
+    host == Gem::DEFAULT_HOST
   end
 
   def get_user_profile(email, password)

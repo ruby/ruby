@@ -52,7 +52,7 @@ class Gem::RemoteFetcher
   # Cached RemoteFetcher instance.
 
   def self.fetcher
-    @fetcher ||= self.new Gem.configuration[:http_proxy]
+    @fetcher ||= new Gem.configuration[:http_proxy]
   end
 
   attr_accessor :headers
@@ -147,7 +147,7 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
-          self.cache_update_path remote_gem_path, local_gem_path
+          cache_update_path remote_gem_path, local_gem_path
         rescue FetchError
           raise if spec.original_platform == spec.platform
 
@@ -157,7 +157,7 @@ class Gem::RemoteFetcher
 
           remote_gem_path = source_uri + "gems/#{alternate_name}"
 
-          self.cache_update_path remote_gem_path, local_gem_path
+          cache_update_path remote_gem_path, local_gem_path
         end
       end
     when "file" then

@@ -269,7 +269,7 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    glob = File.join(self.lib_dirs_glob, glob)
+    glob = File.join(lib_dirs_glob, glob)
 
     Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
@@ -286,17 +286,17 @@ class Gem::BasicSpecification
   # for this spec.
 
   def lib_dirs_glob
-    dirs = if self.raw_require_paths
-      if self.raw_require_paths.size > 1
-        "{#{self.raw_require_paths.join(",")}}"
+    dirs = if raw_require_paths
+      if raw_require_paths.size > 1
+        "{#{raw_require_paths.join(",")}}"
       else
-        self.raw_require_paths.first
+        raw_require_paths.first
       end
     else
       "lib" # default value for require_paths for bundler/inline
     end
 
-    "#{self.full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
+    "#{full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
   end
 
   ##
