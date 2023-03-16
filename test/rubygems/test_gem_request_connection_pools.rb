@@ -120,7 +120,8 @@ class TestGemRequestConnectionPool < Gem::TestCase
   end
 
   def test_net_http_args_no_proxy
-    orig_no_proxy, ENV["no_proxy"] = ENV["no_proxy"], "example"
+    orig_no_proxy = ENV["no_proxy"]
+    ENV["no_proxy"] = "example"
 
     pools = Gem::Request::ConnectionPools.new nil, []
 

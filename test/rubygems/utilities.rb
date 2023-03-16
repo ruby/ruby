@@ -329,7 +329,8 @@ class Gem::TestCase::SpecFetcherSetup
     Gem::Specification.reset
 
     begin
-      gem_repo, @test.gem_repo = @test.gem_repo, @repository
+      gem_repo = @test.gem_repo
+      @test.gem_repo = @repository
       @test.uri = URI @repository
 
       @test.util_setup_spec_fetcher(*@downloaded)

@@ -81,7 +81,8 @@ module Gem::Deprecate
   # Temporarily turn off warnings. Intended for tests only.
 
   def skip_during
-    Gem::Deprecate.skip, original = true, Gem::Deprecate.skip
+    original = Gem::Deprecate.skip
+    Gem::Deprecate.skip = true
     yield
   ensure
     Gem::Deprecate.skip = original

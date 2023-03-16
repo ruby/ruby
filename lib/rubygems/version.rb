@@ -366,7 +366,8 @@ class Gem::Version
     i = 0
 
     while i <= limit
-      lhs, rhs = lhsegments[i] || 0, rhsegments[i] || 0
+      lhs = lhsegments[i] || 0
+      rhs = rhsegments[i] || 0
       i += 1
 
       next      if lhs == rhs

@@ -205,7 +205,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     tar.rewind
 
-    files, symlinks = [], []
+    files = []
+    symlinks = []
 
     Gem::Package::TarReader.new tar do |tar_io|
       tar_io.each_entry do |entry|

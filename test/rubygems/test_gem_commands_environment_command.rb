@@ -11,7 +11,8 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
 
   def test_execute
     orig_sources = Gem.sources.dup
-    orig_path, ENV["PATH"] = ENV["PATH"], %w[/usr/local/bin /usr/bin /bin].join(File::PATH_SEPARATOR)
+    orig_path = ENV["PATH"]
+    ENV["PATH"] = %w[/usr/local/bin /usr/bin /bin].join(File::PATH_SEPARATOR)
     Gem.sources.replace %w[http://gems.example.com]
     Gem.configuration["gemcutter_key"] = "blah"
 

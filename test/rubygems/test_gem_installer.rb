@@ -203,8 +203,8 @@ gem 'other', version
       bin_dir = bin_dir.downcase
     end
 
-    orig_PATH, ENV["PATH"] =
-      ENV["PATH"], [ENV["PATH"], bin_dir].join(File::PATH_SEPARATOR)
+    orig_PATH = ENV["PATH"]
+    ENV["PATH"] = [ENV["PATH"], bin_dir].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
       installer.check_that_user_bin_dir_is_in_path
@@ -228,8 +228,8 @@ gem 'other', version
   def test_check_that_user_bin_dir_is_in_path_tilde
     pend "Tilde is PATH is not supported under MS Windows" if win_platform?
 
-    orig_PATH, ENV["PATH"] =
-      ENV["PATH"], [ENV["PATH"], "~/bin"].join(File::PATH_SEPARATOR)
+    orig_PATH = ENV["PATH"]
+    ENV["PATH"] = [ENV["PATH"], "~/bin"].join(File::PATH_SEPARATOR)
 
     installer = setup_base_installer
     installer.bin_dir.replace File.join @userhome, "bin"

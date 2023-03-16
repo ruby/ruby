@@ -89,7 +89,10 @@ class Gem::Platform
       end
 
       os, = arch
-      @cpu, os = nil, cpu if os.nil? # legacy jruby
+      if os.nil?
+        @cpu = nil
+        os = cpu
+      end # legacy jruby
 
       @os, @version = case os
                       when /aix(\d+)?/ then             [ "aix",       $1  ]
@@ -106,7 +109,8 @@ class Gem::Platform
                       when /mingw32/ then               [ "mingw32",   nil ]
                       when /mingw-?(\w+)?/ then         [ "mingw",     $1  ]
                       when /(mswin\d+)(\_(\d+))?/ then
-                        os, version = $1, $3
+                        os = $1
+                        version = $3
                         @cpu = "x86" if @cpu.nil? && os =~ /32$/
                         [os, version]
                       when /netbsdelf/ then             [ "netbsdelf", nil ]
