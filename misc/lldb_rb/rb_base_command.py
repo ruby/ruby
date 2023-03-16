@@ -1,7 +1,9 @@
 import lldb
 from pydoc import locate
+from lldb_rb.constants import *
+from lldb_rb.utils import *
 
-class RbBaseCommand:
+class RbBaseCommand(LLDBInterface):
     @classmethod
     def register_lldb_command(cls, debugger, module_name):
         # Add any commands contained in this module to LLDB
@@ -53,16 +55,3 @@ class RbBaseCommand:
     def get_long_help(self):
         return self.__class__.help_string
 
-    def build_environment(self, debugger):
-        self.target = debugger.GetSelectedTarget()
-        self.process = self.target.GetProcess()
-        self.thread = self.process.GetSelectedThread()
-        self.frame = self.thread.GetSelectedFrame()
-
-    def _append_command_output(self, debugger, command, result):
-        output1 = result.GetOutput()
-        debugger.GetCommandInterpreter().HandleCommand(command, result)
-        output2 = result.GetOutput()
-        result.Clear()
-        result.write(output1)
-        result.write(output2)
