@@ -1124,7 +1124,7 @@ Also, a list:
 
   def util_clear_RUBY_VERSION
     Object.send :remove_const, :RUBY_VERSION
-    Object.send :remove_const, :RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
+    Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :remove_const, :RUBY_REVISION       if defined?(RUBY_REVISION)
     Object.send :remove_const, :RUBY_DESCRIPTION    if defined?(RUBY_DESCRIPTION)
     Object.send :remove_const, :RUBY_ENGINE
