@@ -189,8 +189,8 @@ class Gem::ConfigFile
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
 
-    environment_config = (ENV["GEMRC"] || "")
-      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+    environment_config = (ENV["GEMRC"] || "").
+      split(File::PATH_SEPARATOR).inject({}) do |result, file|
         result.merge load_file file
       end
 
