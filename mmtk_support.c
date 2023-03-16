@@ -321,6 +321,42 @@ rb_mmtk_maybe_forward(VALUE value)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// PPP support
+////////////////////////////////////////////////////////////////////////////////
+
+static bool
+rb_mmtk_is_ppp(VALUE obj) {
+    RUBY_ASSERT(!rb_special_const_p(obj));
+
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_DATA:
+        return true;
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_tmpbuf:
+          case imemo_ast:
+          case imemo_ifunc:
+          case imemo_memo:
+          case imemo_parser_strterm:
+            return true;
+          default:
+            return false;
+        }
+      default:
+        return false;
+    }
+}
+
+void
+rb_mmtk_maybe_register_ppp(VALUE obj) {
+    RUBY_ASSERT(!rb_special_const_p(obj));
+
+    if (rb_mmtk_is_ppp(obj)) {
+        mmtk_register_ppp((MMTk_ObjectReference)obj);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Finalization and exiting
 ////////////////////////////////////////////////////////////////////////////////
 

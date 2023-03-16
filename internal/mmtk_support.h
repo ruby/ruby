@@ -29,6 +29,9 @@ void rb_mmtk_mark_and_move(VALUE *field);
 bool rb_mmtk_object_moved_p(VALUE obj);
 VALUE rb_mmtk_maybe_forward(VALUE object);
 
+// PPP support
+void rb_mmtk_maybe_register_ppp(VALUE obj);
+
 // Finalization and exiting
 int rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data);
 void rb_mmtk_call_obj_free_on_exit(void);

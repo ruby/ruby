@@ -2654,38 +2654,6 @@ maybe_register_finalizable(VALUE obj) {
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 }
-
-static inline bool
-rb_mmtk_is_ppp(VALUE obj) {
-    RUBY_ASSERT(!rb_special_const_p(obj));
-
-    switch (RB_BUILTIN_TYPE(obj)) {
-      case T_DATA:
-        return true;
-      case T_IMEMO:
-        switch (imemo_type(obj)) {
-          case imemo_tmpbuf:
-          case imemo_ast:
-          case imemo_ifunc:
-          case imemo_memo:
-          case imemo_parser_strterm:
-            return true;
-          default:
-            return false;
-        }
-      default:
-        return false;
-    }
-}
-
-static inline void
-maybe_register_ppp(VALUE obj) {
-    RUBY_ASSERT(!rb_special_const_p(obj));
-
-    if (rb_mmtk_is_ppp(obj)) {
-        mmtk_register_ppp((MMTk_ObjectReference)obj);
-    }
-}
 #endif
 
 static inline VALUE
@@ -2704,7 +2672,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         maybe_register_finalizable(obj);
-        maybe_register_ppp(obj);
+        rb_mmtk_maybe_register_ppp(obj);
     }
 #endif
 
