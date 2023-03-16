@@ -18,12 +18,12 @@ class Gem::DependencyInstaller
   DEFAULT_OPTIONS = { # :nodoc:
     :env_shebang => false,
     :document => %w[ri],
-    :domain => :both, # HACK dup
+    :domain => :both, # HACK: dup
     :force => false,
-    :format_executable => false, # HACK dup
+    :format_executable => false, # HACK: dup
     :ignore_dependencies => false,
     :prerelease => false,
-    :security_policy => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
+    :security_policy => nil, # HACK: NoSecurity requires OpenSSL. AlmostNo? Low?
     :wrappers => true,
     :build_args => nil,
     :build_docs_in_background => false,

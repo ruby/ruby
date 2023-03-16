@@ -232,7 +232,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       assert_equal 2, e.exit_code
     end
 
-    # HACK no repository was checked
+    # HACK: no repository was checked
     assert_match(/ould not find a valid gem 'no_such_gem'/, @ui.error)
   end
 
@@ -251,7 +251,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       assert_equal 2, e.exit_code
     end
 
-    # HACK no repository was checked
+    # HACK: no repository was checked
     assert_match(/ould not find a valid gem 'no_such_gem'/, @ui.error)
   end
 

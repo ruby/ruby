@@ -36,7 +36,7 @@ class Gem::Platform
   end
 
   def self.match_gem?(platform, gem_name)
-    # Note: this method might be redefined by Ruby implementations to
+    # NOTE: this method might be redefined by Ruby implementations to
     # customize behavior per RUBY_ENGINE, gem_name or other criteria.
     match_platforms?(platform, Gem.platforms)
   end
