@@ -25,11 +25,8 @@ module Bundler
 
       def to_specs(force_ruby_platform)
         @specs.map do |s|
-          lazy_spec = LazySpecification.new(name, version, s.platform, source)
+          lazy_spec = LazySpecification.from_spec(s)
           lazy_spec.force_ruby_platform = force_ruby_platform
-          lazy_spec.dependencies = s.dependencies
-          lazy_spec.required_ruby_version = s.required_ruby_version
-          lazy_spec.required_rubygems_version = s.required_rubygems_version
           lazy_spec
         end
       end
