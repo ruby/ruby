@@ -466,13 +466,6 @@ struct dir_data {
 };
 
 static void
-dir_mark(void *ptr)
-{
-    struct dir_data *dir = ptr;
-    rb_gc_mark(dir->path);
-}
-
-static void
 dir_free(void *ptr)
 {
     struct dir_data *dir = ptr;
@@ -487,10 +480,14 @@ dir_memsize(const void *ptr)
     return sizeof(struct dir_data);
 }
 
+RUBY_REFERENCES_START(dir_refs)
+    REF_EDGE(dir_data, path),
+RUBY_REFERENCES_END
+
 static const rb_data_type_t dir_data_type = {
     "dir",
-    {dir_mark, dir_free, dir_memsize,},
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    {REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
+    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
 };
 
 static VALUE dir_close(VALUE);
