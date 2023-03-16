@@ -1272,57 +1272,71 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "auto-heals when the lockfile is missing dependent specs" do
-    build_repo4 do
-      build_gem "minitest-bisect", "1.6.0" do |s|
-        s.add_dependency "path_expander", "~> 1.1"
+  shared_examples_for "a lockfile missing dependent specs" do
+    it "auto-heals" do
+      build_repo4 do
+        build_gem "minitest-bisect", "1.6.0" do |s|
+          s.add_dependency "path_expander", "~> 1.1"
+        end
+
+        build_gem "path_expander", "1.1.1"
       end
 
-      build_gem "path_expander", "1.1.1"
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "minitest-bisect"
+      G
+
+      # Corrupt lockfile (completely missing path_expander)
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            minitest-bisect (1.6.0)
+
+        PLATFORMS
+          #{platforms}
+
+        DEPENDENCIES
+          minitest-bisect
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", :gem_repo => gem_repo4
+      bundle :install
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            minitest-bisect (1.6.0)
+              path_expander (~> 1.1)
+            path_expander (1.1.1)
+
+        PLATFORMS
+          #{platforms}
+
+        DEPENDENCIES
+          minitest-bisect
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
+  end
 
-    gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
-      gem "minitest-bisect"
-    G
+  context "with just specific platform" do
+    let(:platforms) { lockfile_platforms }
 
-    # Corrupt lockfile (completely missing path_expander)
-    lockfile <<~L
-      GEM
-        remote: #{file_uri_for(gem_repo4)}/
-        specs:
-          minitest-bisect (1.6.0)
+    it_behaves_like "a lockfile missing dependent specs"
+  end
 
-      PLATFORMS
-        #{lockfile_platforms}
+  context "with both ruby and specific platform" do
+    let(:platforms) { lockfile_platforms("ruby") }
 
-      DEPENDENCIES
-        minitest-bisect
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", :gem_repo => gem_repo4
-    bundle :install
-
-    expect(lockfile).to eq <<~L
-      GEM
-        remote: #{file_uri_for(gem_repo4)}/
-        specs:
-          minitest-bisect (1.6.0)
-            path_expander (~> 1.1)
-          path_expander (1.1.1)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        minitest-bisect
-
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
+    it_behaves_like "a lockfile missing dependent specs"
   end
 
   it "auto-heals when the lockfile is missing specs" do
