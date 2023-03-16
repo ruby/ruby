@@ -58,7 +58,7 @@ class Gem::Package
       if source
         @path = source.path
 
-        message = message + " in #{path}" if path
+        message += " in #{path}" if path
       end
 
       super message
