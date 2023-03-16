@@ -205,12 +205,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.fetcher
     fetcher.instance_variable_set :@test_data, data
 
-    unless blow
-      def fetcher.fetch_path(arg, *rest)
-        @test_arg = arg
-        @test_data
-      end
-    else
+    if blow
       def fetcher.fetch_path(arg, *rest)
         # OMG I'm such an ass
         class << self; remove_method :fetch_path; end
@@ -220,6 +215,11 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         end
 
         raise Gem::RemoteFetcher::FetchError.new("haha!", "")
+      end
+    else
+      def fetcher.fetch_path(arg, *rest)
+        @test_arg = arg
+        @test_data
       end
     end
 
@@ -653,15 +653,15 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
-      unless defined? @requested
-        @requested = true
-        res = Net::HTTPMovedPermanently.new nil, 301, nil
-        res.add_field "Location", url
-      else
+      if defined? @requested
         res = Net::HTTPOK.new nil, 200, nil
         def res.body
           "real_path"
         end
+      else
+        @requested = true
+        res = Net::HTTPMovedPermanently.new nil, 301, nil
+        res.add_field "Location", url
       end
       res
     end
