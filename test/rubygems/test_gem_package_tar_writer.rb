@@ -282,7 +282,7 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     ]
     names.each do |name|
       newname, prefix = @tar_writer.split_name(name)
-      assert(!(newname.empty?), "split_name() returned empty name")
+      assert(!newname.empty?, "split_name() returned empty name")
       assert(newname.bytesize <= 100, "split_name() returned name longer than 100 bytes: '#{newname}' for '#{name}'")
       assert(prefix.bytesize <= 155, "split_name() returned prefix longer than 155 bytes: '#{prefix}' for '#{name}'")
       newname = [prefix, newname].join("/") unless prefix.empty?

@@ -26,7 +26,7 @@ class Gem::Ext::Builder
     RbConfig::CONFIG["configure_args"] =~ /with-make-prog\=(\w+)/
     make_program_name = ENV["MAKE"] || ENV["make"] || $1
     unless make_program_name
-      make_program_name = (RUBY_PLATFORM.include?("mswin")) ? "nmake" : "make"
+      make_program_name = RUBY_PLATFORM.include?("mswin") ? "nmake" : "make"
     end
     make_program = Shellwords.split(make_program_name)
 
