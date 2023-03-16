@@ -3571,9 +3571,12 @@ fn gen_branchif(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_truthy() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
 
@@ -3622,9 +3625,12 @@ fn gen_branchunless(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_truthy() {
         let target = if result { next_block } else { jump_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         // Test if any bit (outside of the Qnil bit) is on
         // See RB_TEST()
@@ -3676,9 +3682,12 @@ fn gen_branchnil(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_nil() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         // Test if the value is Qnil
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
@@ -5364,11 +5373,6 @@ fn gen_send_iseq(
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     if iseq_has_rest && captured_opnd.is_some() {
         gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
-        return CantCompile;
-    }
-
-    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
         return CantCompile;
     }
 

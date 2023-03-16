@@ -323,6 +323,9 @@ make_counters! {
     block_next_count,
     defer_count,
     defer_empty_count,
+    branch_insn_count,
+    branch_known_count,
+
     freed_iseq_count,
 
     exit_from_branch_stub,
