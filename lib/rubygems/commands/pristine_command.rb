@@ -137,7 +137,7 @@ extensions will be restored.
         next
       end
 
-      if options.has_key? :skip
+      if options.key? :skip
         if options[:skip].include? spec.name
           say "Skipped #{spec.full_name}, it was given through options"
           next
