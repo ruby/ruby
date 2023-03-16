@@ -17,7 +17,7 @@ module Gem::QueryUtils
       options[:installed] = value
     end
 
-    add_option("-I", "Equivalent to --no-installed") do |value, options|
+    add_option("-I", "Equivalent to --no-installed") do |_value, options|
       options[:installed] = false
     end
 
@@ -197,7 +197,7 @@ module Gem::QueryUtils
   end
 
   def output_versions(output, versions)
-    versions.each do |gem_name, matching_tuples|
+    versions.each do |_gem_name, matching_tuples|
       matching_tuples = matching_tuples.sort_by {|n,_| n.version }.reverse
 
       platforms = Hash.new {|h,version| h[version] = [] }

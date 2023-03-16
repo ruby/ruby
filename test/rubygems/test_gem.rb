@@ -1740,7 +1740,7 @@ class TestGem < Gem::TestCase
     #
     # FIXME what does this solve precisely? -ebh
     #
-    @additional.each do |dir|
+    @additional.each do |_dir|
       Gem.ensure_gem_subdirectories @gemhome
     end
   end

@@ -193,10 +193,10 @@ class Gem::SpecFetcher
     matches = if matches.empty? && type != :prerelease
       suggest_gems_from_name gem_name, :prerelease
     else
-      matches.uniq.sort_by {|name, dist| dist }
+      matches.uniq.sort_by {|_name, dist| dist }
     end
 
-    matches.map {|name, dist| name }.uniq.first(num_results)
+    matches.map {|name, _dist| name }.uniq.first(num_results)
   end
 
   ##

@@ -1025,7 +1025,7 @@ gem 'other', version
     @gem = setup_base_gem
 
     # build old version that has a bin file
-    installer = util_setup_gem do |spec|
+    installer = util_setup_gem do |_spec|
       File.open File.join("bin", "executable"), "w" do |f|
         f.puts "require 'code'"
       end

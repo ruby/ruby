@@ -79,7 +79,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
 
     add_option("--vendor",
                "Uninstall gem from the vendor directory.",
-               "Only for use by gem repackagers.") do |value, options|
+               "Only for use by gem repackagers.") do |_value, options|
       unless Gem.vendor_dir
         raise Gem::OptionParser::InvalidOption.new "your platform is not supported"
       end

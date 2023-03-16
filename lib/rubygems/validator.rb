@@ -87,7 +87,7 @@ class Gem::Validator
 
         good, gone, unreadable = nil, nil, nil, nil
 
-        File.open gem_path, Gem.binary_mode do |file|
+        File.open gem_path, Gem.binary_mode do |_file|
           package = Gem::Package.new gem_path
 
           good, gone = package.contents.partition do |file_name|

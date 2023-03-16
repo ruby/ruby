@@ -20,19 +20,19 @@ class Gem::Commands::SpecificationCommand < Gem::Command
     add_prerelease_option
 
     add_option("--all", "Output specifications for all versions of",
-               "the gem") do |value, options|
+               "the gem") do |_value, options|
       options[:all] = true
     end
 
-    add_option("--ruby", "Output ruby format") do |value, options|
+    add_option("--ruby", "Output ruby format") do |_value, options|
       options[:format] = :ruby
     end
 
-    add_option("--yaml", "Output YAML format") do |value, options|
+    add_option("--yaml", "Output YAML format") do |_value, options|
       options[:format] = :yaml
     end
 
-    add_option("--marshal", "Output Marshal format") do |value, options|
+    add_option("--marshal", "Output Marshal format") do |_value, options|
       options[:format] = :marshal
     end
 

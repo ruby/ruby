@@ -425,7 +425,7 @@ class TestGemRequire < Gem::TestCase
 
     times_called = 0
 
-    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+    Kernel.stub(:gem, ->(_name, _requirement) { times_called += 1 }) do
       refute_require "default/gem"
     end
 

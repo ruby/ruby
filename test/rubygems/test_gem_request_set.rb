@@ -45,7 +45,7 @@ class TestGemRequestSet < Gem::TestCase
 
     done_installing_ran = false
 
-    Gem.done_installing do |installer, specs|
+    Gem.done_installing do |_installer, _specs|
       done_installing_ran = true
     end
 
@@ -56,7 +56,7 @@ class TestGemRequestSet < Gem::TestCase
       io.puts 'gem "a"'
       io.flush
 
-      result = rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      result = rs.install_from_gemdeps :gemdeps => io.path do |req, _installer|
         installed << req.full_name
       end
 
@@ -114,7 +114,7 @@ Gems to install:
       :install_dir => "#{@gemhome}2",
     }
 
-    rs.install_from_gemdeps options do |req, installer|
+    rs.install_from_gemdeps options do |req, _installer|
       installed << req.full_name
     end
 
@@ -172,7 +172,7 @@ DEPENDENCIES
       io.puts 'gem "b"'
     end
 
-    rs.install_from_gemdeps :gemdeps => "gem.deps.rb" do |req, installer|
+    rs.install_from_gemdeps :gemdeps => "gem.deps.rb" do |req, _installer|
       installed << req.full_name
     end
 
@@ -226,7 +226,7 @@ end
       io.puts("gemspec")
     end
 
-    rs.install_from_gemdeps :gemdeps => "Gemfile" do |req, installer|
+    rs.install_from_gemdeps :gemdeps => "Gemfile" do |req, _installer|
       installed << req.full_name
     end
 
@@ -251,7 +251,7 @@ ruby "0"
 
       io.flush
 
-      rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      rs.install_from_gemdeps :gemdeps => io.path do |req, _installer|
         installed << req.full_name
       end
     end

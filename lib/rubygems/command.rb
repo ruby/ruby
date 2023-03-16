@@ -583,12 +583,12 @@ class Gem::Command
   # Add the options common to all commands.
 
   add_common_option("-h", "--help",
-                    "Get help on this command") do |value, options|
+                    "Get help on this command") do |_value, options|
     options[:help] = true
   end
 
   add_common_option("-V", "--[no-]verbose",
-                    "Set the verbose level of output") do |value, options|
+                    "Set the verbose level of output") do |value, _options|
     # Set us to "really verbose" so the progress meter works
     if Gem.configuration.verbose && value
       Gem.configuration.verbose = 1
@@ -597,12 +597,12 @@ class Gem::Command
     end
   end
 
-  add_common_option("-q", "--quiet", "Silence command progress meter") do |value, options|
+  add_common_option("-q", "--quiet", "Silence command progress meter") do |_value, _options|
     Gem.configuration.verbose = false
   end
 
   add_common_option("--silent",
-                    "Silence RubyGems output") do |value, options|
+                    "Silence RubyGems output") do |_value, options|
     options[:silent] = true
   end
 

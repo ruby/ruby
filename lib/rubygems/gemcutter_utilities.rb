@@ -137,7 +137,7 @@ module Gem::GemcutterUtilities
       request.body = URI.encode_www_form({ :api_key => api_key }.merge(update_scope_params))
     end
 
-    with_response response do |resp|
+    with_response response do |_resp|
       say "Added #{scope} scope to the existing API key"
     end
   end
