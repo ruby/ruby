@@ -313,7 +313,7 @@ class Gem::Command
     options[:build_args] = build_args
 
     if options[:silent]
-      old_ui = self.ui
+      old_ui = ui
       self.ui = ui = Gem::SilentUI.new
     end
 

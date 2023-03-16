@@ -1136,7 +1136,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # This is used throughout RubyGems for enabling reproducible builds.
 
   def self.source_date_epoch
-    Time.at(self.source_date_epoch_string.to_i).utc.freeze
+    Time.at(source_date_epoch_string.to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class

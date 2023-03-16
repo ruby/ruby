@@ -74,10 +74,10 @@ class Gem::Dependency
   def inspect # :nodoc:
     if prerelease?
       "<%s type=%p name=%p requirements=%p prerelease=ok>" %
-        [self.class, self.type, self.name, requirement.to_s]
+        [self.class, type, name, requirement.to_s]
     else
       "<%s type=%p name=%p requirements=%p>" %
-        [self.class, self.type, self.name, requirement.to_s]
+        [self.class, type, name, requirement.to_s]
     end
   end
 
@@ -168,16 +168,16 @@ class Gem::Dependency
 
   def ==(other) # :nodoc:
     Gem::Dependency === other &&
-      self.name        == other.name &&
-      self.type        == other.type &&
-      self.requirement == other.requirement
+      name        == other.name &&
+      type        == other.type &&
+      requirement == other.requirement
   end
 
   ##
   # Dependencies are ordered by name.
 
   def <=>(other)
-    self.name <=> other.name
+    name <=> other.name
   end
 
   ##
@@ -262,7 +262,7 @@ class Gem::Dependency
     end
 
     default = Gem::Requirement.default
-    self_req = self.requirement
+    self_req = requirement
     other_req = other.requirement
 
     return self.class.new name, self_req  if other_req == default
@@ -323,7 +323,7 @@ class Gem::Dependency
   end
 
   def to_spec
-    matches = self.to_specs.compact
+    matches = to_specs.compact
 
     active = matches.find(&:activated?)
     return active if active
