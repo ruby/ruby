@@ -21,6 +21,16 @@ require_relative '../leakchecker'
 require_relative '../test/unit/testcase'
 require 'optparse'
 
+unless ENV["RUBY_TEST_PID"]
+  ENV["RUBY_TEST_PID"] = Process.pid.to_s
+  # Otherwise this library sets lots of methods and constants onto Object
+  # that we don't want during tests. In subprocesses it's okay because
+  # they are short-lived (ex: assert_separately)
+  module MakeMakefile
+    MKMF_NO_INCLUDE_GLOBAL = true
+  end
+end
+
 # See Test::Unit
 module Test
 

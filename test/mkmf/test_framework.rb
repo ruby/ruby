@@ -1,6 +1,8 @@
 # frozen_string_literal: false
 require_relative 'base'
 
+using MakeMakefile::STRING_REFINEMENT
+
 class TestMkmfHaveFramework < TestMkmf
   def create_framework(fw, hdrname = "#{fw}.h")
     Dir.mktmpdir("frameworks") do |dir|

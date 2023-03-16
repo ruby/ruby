@@ -7,15 +7,15 @@ class TestMkmfFlags < TestMkmf
     warnflags = $warnflags
     makefile = mkmf do
       $extmk = false
-      self.class::CONFIG['warnflags'] = %w"-Wextra
+      CONFIG['warnflags'] = %w"-Wextra
       -Wno-unused-parameter -Wno-parentheses -Wno-long-long
       -Wno-missing-field-initializers -Werror=pointer-arith
       -Werror=write-strings -Werror=declaration-after-statement
       -Werror=shorten-64-to-32
       -Werror-implicit-function-declaration
       ".join(' ')
-      self.class::CONFIG['GCC'] = 'yes'
-      init_mkmf(self.class::CONFIG)
+      CONFIG['GCC'] = 'yes'
+      init_mkmf(CONFIG)
       configuration '.'
     end
     generated_flags = makefile.grep(/warnflags/).first[/^warnflags = (.*)$/, 1].split

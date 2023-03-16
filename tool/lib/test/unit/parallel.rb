@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 $LOAD_PATH.unshift "#{__dir__}/../.."
+ENV.delete("RUBY_TEST_PID")
 require_relative '../../test/unit'
 
 require_relative '../../profile_test_all' if ENV.key?('RUBY_TEST_ALL_PROFILE')

@@ -7,7 +7,7 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-class String # :nodoc:
+string_methods = proc {
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -30,13 +30,36 @@ class String # :nodoc:
   def sans_arguments
     self[/\A[^()]+/]
   end
-end
+}
 
-class Array # :nodoc:
+array_methods = proc {
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
+}
+
+include_global = !(defined?(MakeMakefile::MKMF_NO_INCLUDE_GLOBAL) &&
+                   MakeMakefile::MKMF_NO_INCLUDE_GLOBAL)
+
+module MakeMakefile; end
+
+if include_global
+  String.class_eval(&string_methods)
+  Array.class_eval(&array_methods)
+else
+  MakeMakefile::STRING_REFINEMENT = Module.new {
+    refine String do
+      class_eval(&string_methods)
+    end
+  }
+  using MakeMakefile::STRING_REFINEMENT
+  MakeMakefile::ARRAY_REFINEMENT = Module.new {
+    refine Array do
+      class_eval(&array_methods)
+    end
+  }
+  using MakeMakefile::ARRAY_REFINEMENT
 end
 
 ##
@@ -2882,11 +2905,13 @@ realclean: distclean
 end
 
 # MakeMakefile::Global = #
-m = Module.new {
+MakeMakefile::GLOBAL_MODULE = Module.new {
   include(MakeMakefile)
   private(*MakeMakefile.public_instance_methods(false))
 }
-include m
+if include_global
+  include MakeMakefile::GLOBAL_MODULE
+end
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}
