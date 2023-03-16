@@ -36,7 +36,7 @@ class TestBundlerGem < Gem::TestCase
           s.files << discover_path
         end
 
-        write_file(File.join "gems", spec.full_name, discover_path) do |fp|
+        write_file(File.join("gems", spec.full_name, discover_path)) do |fp|
           fp.puts "# #{spec.full_name}"
         end
 
@@ -44,11 +44,11 @@ class TestBundlerGem < Gem::TestCase
       end
       Gem.refresh
 
-      write_file(File.join Dir.pwd, "Gemfile") do |fp|
+      write_file(File.join(Dir.pwd, "Gemfile")) do |fp|
         fp.puts "source 'https://rubygems.org'"
         fp.puts "gem '#{foo1.name}', '#{foo1.version}'"
       end
-      Gem.use_gemdeps(File.join Dir.pwd, "Gemfile")
+      Gem.use_gemdeps(File.join(Dir.pwd, "Gemfile"))
 
       expected = [
         File.expand_path("test/rubygems/sff/discover.rb", PROJECT_DIR),

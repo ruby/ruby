@@ -532,8 +532,8 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # platform matches the current platform.
 
   def gem_platforms(name, options) # :nodoc:
-    platform_names = Array(options.delete :platform)
-    platform_names.concat Array(options.delete :platforms)
+    platform_names = Array(options.delete(:platform))
+    platform_names.concat Array(options.delete(:platforms))
     platform_names.concat @current_platforms if @current_platforms
 
     return true if platform_names.empty?
