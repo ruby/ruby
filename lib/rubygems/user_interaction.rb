@@ -281,7 +281,7 @@ class Gem::StreamUI
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question + "  ")
     @outs.flush
@@ -295,7 +295,7 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question, "  ")
     @outs.flush

@@ -44,12 +44,12 @@ class Gem::Source
          Gem::Source::Vendor then
       -1
     when Gem::Source then
-      if !@uri
+      unless @uri
         return 0 unless other.uri
         return 1
       end
 
-      return -1 if !other.uri
+      return -1 unless other.uri
 
       # Returning 1 here ensures that when sorting a list of sources, the
       # original ordering of sources supplied by the user is preserved.
