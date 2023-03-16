@@ -45,7 +45,8 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
     @all[name].each do |uri, n|
       if req.match? n, @prerelease
         res << Gem::Resolver::IndexSpecification.new(
-          self, n.name, n.version, uri, n.platform)
+          self, n.name, n.version, uri, n.platform
+        )
       end
     end
 

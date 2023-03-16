@@ -27,7 +27,8 @@ class TestGemResolverVendorSpecification < Gem::TestCase
     i_set  = Gem::Resolver::IndexSet.new
     source = Gem::Source.new @gem_repo
     i_spec = Gem::Resolver::IndexSpecification.new(
-      i_set, "a", v(1), source, Gem::Platform::RUBY)
+      i_set, "a", v(1), source, Gem::Platform::RUBY
+    )
 
     refute_equal v_spec_a, i_spec
   end

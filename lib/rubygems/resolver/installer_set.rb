@@ -160,7 +160,8 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
         if local_spec = @local_source.find_gem(name, dep.requirement)
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
-            @local_source, local_spec.platform)
+            @local_source, local_spec.platform
+          )
         end
       rescue Gem::Package::FormatError
         # ignore
