@@ -164,7 +164,7 @@ class TestGemSource < Gem::TestCase
     latest_specs << Gem::NameTuple.new("fixed", Gem::Version.new("1.0.0"), "ruby")
     # Setup valid data on the 'remote'
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
-          util_gzip(Marshal.dump(latest_specs))
+      util_gzip(Marshal.dump(latest_specs))
 
     cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
 
