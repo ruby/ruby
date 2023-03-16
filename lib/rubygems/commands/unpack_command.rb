@@ -95,12 +95,10 @@ command help for an example.
 
         FileUtils.mkdir_p @options[:target] if @options[:target]
 
-        destination = begin
-          if @options[:target]
-            File.join @options[:target], spec_file
-          else
-            spec_file
-          end
+        destination = if @options[:target]
+          File.join @options[:target], spec_file
+        else
+          spec_file
         end
 
         File.open destination, "w" do |io|

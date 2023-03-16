@@ -162,13 +162,11 @@ class Gem::DependencyInstaller
 
         specs = []
         tuples.each do |tup, source|
-          begin
-            spec = source.fetch_spec(tup)
-          rescue Gem::RemoteFetcher::FetchError => e
-            errors << Gem::SourceFetchProblem.new(source, e)
-          else
-            specs << [spec, source]
-          end
+          spec = source.fetch_spec(tup)
+        rescue Gem::RemoteFetcher::FetchError => e
+          errors << Gem::SourceFetchProblem.new(source, e)
+        else
+          specs << [spec, source]
         end
 
         if @errors
@@ -294,11 +292,9 @@ class Gem::DependencyInstaller
         version = src.spec.version if version == Gem::Requirement.default
       elsif dep_or_name =~ /\.gem$/
         Dir[dep_or_name].each do |name|
-          begin
-            src = Gem::Source::SpecificFile.new name
-            installer_set.add_local dep_or_name, src.spec, src
-          rescue Gem::Package::FormatError
-          end
+          src = Gem::Source::SpecificFile.new name
+          installer_set.add_local dep_or_name, src.spec, src
+        rescue Gem::Package::FormatError
         end
         # else This is a dependency. InstallerSet handles this case
       end

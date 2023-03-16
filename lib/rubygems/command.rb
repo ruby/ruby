@@ -429,12 +429,10 @@ class Gem::Command
   # True if the command handles the given argument list.
 
   def handles?(args)
-    begin
-      parser.parse!(args.dup)
-      return true
-    rescue StandardError
-      return false
-    end
+    parser.parse!(args.dup)
+    return true
+  rescue StandardError
+    return false
   end
 
   ##

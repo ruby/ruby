@@ -38,36 +38,34 @@ class Gem::Source::Local < Gem::Source
       @specs = {}
 
       Dir["*.gem"].each do |file|
-        begin
-          pkg = Gem::Package.new(file)
-        rescue SystemCallError, Gem::Package::FormatError
-          # ignore
-        else
-          tup = pkg.spec.name_tuple
-          @specs[tup] = [File.expand_path(file), pkg]
+        pkg = Gem::Package.new(file)
+      rescue SystemCallError, Gem::Package::FormatError
+        # ignore
+      else
+        tup = pkg.spec.name_tuple
+        @specs[tup] = [File.expand_path(file), pkg]
 
-          case type
-          when :released
-            unless pkg.spec.version.prerelease?
-              names << pkg.spec.name_tuple
-            end
-          when :prerelease
-            if pkg.spec.version.prerelease?
-              names << pkg.spec.name_tuple
-            end
-          when :latest
-            tup = pkg.spec.name_tuple
-
-            cur = names.find {|x| x.name == tup.name }
-            if !cur
-              names << tup
-            elsif cur.version < tup.version
-              names.delete cur
-              names << tup
-            end
-          else
+        case type
+        when :released
+          unless pkg.spec.version.prerelease?
             names << pkg.spec.name_tuple
           end
+        when :prerelease
+          if pkg.spec.version.prerelease?
+            names << pkg.spec.name_tuple
+          end
+        when :latest
+          tup = pkg.spec.name_tuple
+
+          cur = names.find {|x| x.name == tup.name }
+          if !cur
+            names << tup
+          elsif cur.version < tup.version
+            names.delete cur
+            names << tup
+          end
+        else
+          names << pkg.spec.name_tuple
         end
       end
 
