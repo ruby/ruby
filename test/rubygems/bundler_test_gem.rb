@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require_relative "helper"
 
 class TestBundlerGem < Gem::TestCase
@@ -376,7 +377,7 @@ You may need to `bundle install` to install missing gems
   private
 
   def add_bundler_full_name(names)
-    names << "bundler-#{Bundler::VERSION}".freeze
+    names << "bundler-#{Bundler::VERSION}"
     names.sort!
     names
   end
