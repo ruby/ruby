@@ -22,10 +22,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     destdir = ENV["DESTDIR"]
 
     begin
-      require "shellwords"
-      cmd = Gem.ruby.shellsplit
-      cmd.push(*rubygems_load_path)
-      cmd << File.basename(extension)
+      cmd = ruby << File.basename(extension)
       cmd.push(*args)
 
       run(cmd, results, class_name, extension_dir) do |s, r|
