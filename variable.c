@@ -66,7 +66,10 @@ static st_table *generic_iv_tbl_;
 struct ivar_update {
     struct gen_ivtbl *ivtbl;
     uint32_t iv_index;
-    rb_shape_t* shape;
+    uint32_t max_index;
+#if !SHAPE_IN_BASIC_FLAGS
+    rb_shape_t *shape;
+#endif
 };
 
 void
@@ -1018,7 +1021,7 @@ generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
         }
     }
     FL_SET((VALUE)*k, FL_EXIVAR);
-    ivtbl = gen_ivtbl_resize(ivtbl, ivup->shape->next_iv_index);
+    ivtbl = gen_ivtbl_resize(ivtbl, ivup->max_index);
     // Reinsert in to the hash table because ivtbl might be a newly resized chunk of memory
     *v = (st_data_t)ivtbl;
     ivup->ivtbl = ivtbl;
@@ -1281,7 +1284,10 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
         RUBY_ASSERT(index == (shape->next_iv_index - 1));
     }
 
+    ivup.max_index = shape->next_iv_index;
+#if !SHAPE_IN_BASIC_FLAGS
     ivup.shape = shape;
+#endif
 
     RB_VM_LOCK_ENTER();
     {
@@ -1382,15 +1388,22 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
 }
 
 struct gen_ivtbl *
-rb_ensure_generic_iv_list_size(VALUE obj, uint32_t newsize)
+rb_ensure_generic_iv_list_size(VALUE obj, rb_shape_t *shape, uint32_t newsize)
 {
     struct gen_ivtbl * ivtbl = 0;
 
     RB_VM_LOCK_ENTER();
     {
         if (UNLIKELY(!gen_ivtbl_get_unlocked(obj, 0, &ivtbl) || newsize > ivtbl->numiv)) {
-            ivtbl = gen_ivtbl_resize(ivtbl, newsize);
-            st_insert(generic_ivtbl_no_ractor_check(obj), (st_data_t)obj, (st_data_t)ivtbl);
+            struct ivar_update ivup = {
+                .iv_index = newsize - 1,
+                .max_index = newsize,
+#if !SHAPE_IN_BASIC_FLAGS
+                .shape = shape
+#endif
+            };
+            st_update(generic_ivtbl_no_ractor_check(obj), (st_data_t)obj, generic_ivar_update, (st_data_t)&ivup);
+            ivtbl = ivup.ivtbl;
             FL_SET_RAW(obj, FL_EXIVAR);
         }
     }

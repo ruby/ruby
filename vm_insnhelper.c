@@ -1403,11 +1403,11 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         shape_id_t source_shape_id = dest_shape->parent_id;
 
         if (shape_id == source_shape_id && dest_shape->edge_name == id && dest_shape->type == SHAPE_IVAR) {
-        ivtbl = rb_ensure_generic_iv_list_size(obj, index + 1);
+            ivtbl = rb_ensure_generic_iv_list_size(obj, dest_shape, index + 1);
 #if SHAPE_IN_BASIC_FLAGS
-        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+            RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
 #else
-        ivtbl->shape_id = dest_shape_id;
+            RUBY_ASSERT(ivtbl->shape_id == dest_shape_id);
 #endif
         }
         else {
