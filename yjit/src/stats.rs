@@ -253,11 +253,10 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_splat_fewer,
     send_iseq_has_rest_and_send,
-    send_iseq_has_rest_and_block,
     send_iseq_has_rest_and_kw,
     send_iseq_has_rest_and_optional,
+    send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
 
