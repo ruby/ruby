@@ -9,7 +9,7 @@ require_relative "version"
 # together in RubyGems.
 
 class Gem::Requirement
-  OPS = { #:nodoc:
+  OPS = { # :nodoc:
     "=" => lambda {|v, r| v == r },
     "!=" => lambda {|v, r| v != r },
     ">" => lambda {|v, r| v >  r },
@@ -119,7 +119,7 @@ class Gem::Requirement
   # An array of requirement pairs. The first element of the pair is
   # the op, and the second is the Gem::Version.
 
-  attr_reader :requirements #:nodoc:
+  attr_reader :requirements # :nodoc:
 
   ##
   # Constructs a requirement from +requirements+. Requirements can be
@@ -155,7 +155,7 @@ class Gem::Requirement
   # Formats this requirement for use in a Gem::RequestSet::Lockfile.
 
   def for_lockfile # :nodoc:
-    return if [DefaultRequirement] == @requirements
+    return if @requirements == [DefaultRequirement]
 
     list = requirements.sort_by do |_, version|
       version
@@ -163,7 +163,7 @@ class Gem::Requirement
       "#{op} #{version}"
     end.uniq
 
-    " (#{list.join ', '})"
+    " (#{list.join ", "})"
   end
 
   ##
@@ -244,8 +244,8 @@ class Gem::Requirement
     requirements.all? {|op, rv| OPS[op].call version, rv }
   end
 
-  alias :=== :satisfied_by?
-  alias :=~ :satisfied_by?
+  alias_method :===, :satisfied_by?
+  alias_method :=~, :satisfied_by?
 
   ##
   # True if the requirement will not always match the latest version.

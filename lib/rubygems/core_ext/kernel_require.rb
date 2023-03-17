@@ -8,13 +8,12 @@
 require "monitor"
 
 module Kernel
-
   RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
   # Make sure we have a reference to Ruby's original Kernel#require
   unless defined?(gem_original_require)
     # :stopdoc:
-    alias gem_original_require require
+    alias_method :gem_original_require, :require
     private :gem_original_require
     # :startdoc:
   end
@@ -37,9 +36,6 @@ module Kernel
     return gem_original_require(path) unless Gem.discover_gems_on_require
 
     begin
-      if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
-        monitor_owned = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?
-      end
       RUBYGEMS_ACTIVATION_MONITOR.enter
 
       path = path.to_path if path.respond_to? :to_path
@@ -116,9 +112,7 @@ module Kernel
       if found_specs.empty?
         found_specs = Gem::Specification.find_in_unresolved_tree path
 
-        found_specs.each do |found_spec|
-          found_spec.activate
-        end
+        found_specs.each(&:activate)
 
       # We found +path+ directly in an unresolved gem. Now we figure out, of
       # the possible found specs, which one we should activate.
@@ -130,7 +124,7 @@ module Kernel
 
         if names.size > 1
           RUBYGEMS_ACTIVATION_MONITOR.exit
-          raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ', '}"
+          raise Gem::LoadError, "#{path} found in multiple gems: #{names.join ", "}"
         end
 
         # Ok, now find a gem that has no conflicts, starting
@@ -163,16 +157,8 @@ module Kernel
       end
 
       raise load_error
-    ensure
-      if RUBYGEMS_ACTIVATION_MONITOR.respond_to?(:mon_owned?)
-        if monitor_owned != (ow = RUBYGEMS_ACTIVATION_MONITOR.mon_owned?)
-          STDERR.puts [$$, Thread.current, $!, $!.backtrace].inspect if $!
-          raise "CRITICAL: RUBYGEMS_ACTIVATION_MONITOR.owned?: before #{monitor_owned} -> after #{ow}"
-        end
-      end
     end
   end
 
   private :require
-
 end

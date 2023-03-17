@@ -151,7 +151,7 @@ class Gem::Package::TarReader::Entry
     @header.size
   end
 
-  alias length size
+  alias_method :length, :size
 
   ##
   # Reads +len+ bytes from the tar file entry, or the rest of the entry if

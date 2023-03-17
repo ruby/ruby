@@ -83,7 +83,7 @@ class TestGemRequirement < Gem::TestCase
       Gem::Requirement.parse(Gem::Version.new("2"))
   end
 
-  if !(Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug"))
+  unless Gem.java_platform? && ENV["JRUBY_OPTS"].to_s.include?("--debug")
     def test_parse_deduplication
       assert_same "~>", Gem::Requirement.parse("~> 1").first
     end
@@ -286,7 +286,7 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_illformed_requirements
-    [ ">>> 1.3.5", "> blah" ].each do |rq|
+    [">>> 1.3.5", "> blah"].each do |rq|
       assert_raise Gem::Requirement::BadRequirementError, "req [#{rq}] should fail" do
         Gem::Requirement.new rq
       end

@@ -46,7 +46,7 @@ class TestGemCommandsCertCommand < Gem::TestCase
 
     matches = @cmd.certificates_matching ""
 
-    # HACK OpenSSL::X509::Certificate#== is Object#==, so do this the hard way
+    # HACK: OpenSSL::X509::Certificate#== is Object#==, so do this the hard way
     match = matches.next
     assert_equal ALTERNATE_CERT.to_pem, match.first.to_pem
     assert_equal @trust_dir.cert_path(ALTERNATE_CERT), match.last
@@ -128,9 +128,9 @@ Added '/CN=alternate/DC=example'
                  output.shift
     assert_equal "Please repeat the passphrase for your Private Key:  ",
                  output.shift
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
-    assert_equal "Private Key: #{File.join @tempdir, 'gem-private_key.pem'}",
+    assert_equal "Private Key: #{File.join @tempdir, "gem-private_key.pem"}",
                  output.shift
 
     assert_equal "Don't forget to move the key file to somewhere private!",
@@ -160,9 +160,9 @@ Added '/CN=alternate/DC=example'
                  output.shift
     assert_equal "Please repeat the passphrase for your Private Key:  ",
                  output.shift
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
-    assert_equal "Private Key: #{File.join @tempdir, 'gem-private_key.pem'}",
+    assert_equal "Private Key: #{File.join @tempdir, "gem-private_key.pem"}",
                  output.shift
 
     assert_equal "Don't forget to move the key file to somewhere private!",
@@ -220,9 +220,9 @@ Added '/CN=alternate/DC=example'
                  output.shift
     assert_equal "Please repeat the passphrase for your Private Key:  ",
                  output.shift
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
-    assert_equal "Private Key: #{File.join @tempdir, 'gem-private_key.pem'}",
+    assert_equal "Private Key: #{File.join @tempdir, "gem-private_key.pem"}",
                  output.shift
 
     assert_equal "Don't forget to move the key file to somewhere private!",
@@ -283,7 +283,7 @@ Added '/CN=alternate/DC=example'
 
     output = @ui.output.split "\n"
 
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
 
     assert_empty output
@@ -305,7 +305,7 @@ Added '/CN=alternate/DC=example'
 
     output = @ui.output.split "\n"
 
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
 
     assert_empty output
@@ -326,7 +326,7 @@ Added '/CN=alternate/DC=example'
 
     output = @ui.output.split "\n"
 
-    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
                  output.shift
 
     assert_empty output
@@ -731,12 +731,12 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     ]
 
     assert_equal [PUBLIC_CERT.to_pem, ALTERNATE_CERT.to_pem],
-                 @cmd.options[:add].map {|cert| cert.to_pem }
+                 @cmd.options[:add].map(&:to_pem)
 
     assert_equal %w[nobody example], @cmd.options[:remove]
 
     assert_equal %w[nobody@example other@example],
-                 @cmd.options[:build].map {|name| name.to_s }
+                 @cmd.options[:build].map(&:to_s)
 
     assert_equal ["", "example"], @cmd.options[:list]
   end

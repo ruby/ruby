@@ -459,7 +459,7 @@ RSpec.describe "bundle install with platform conditionals" do
           tzinfo (2.0.4)
 
       PLATFORMS
-        #{specific_local_platform}
+        #{local_platform}
 
       DEPENDENCIES
         activesupport

@@ -133,7 +133,7 @@ prefix and suffix.  If ruby was installed as `ruby18`, gem will be
 installed as `gem18`.
 
 By default, this RubyGems will install gem as:
-  #{Gem.default_exec_format % 'gem'}
+  #{Gem.default_exec_format % "gem"}
     EOF
   end
 

@@ -57,11 +57,11 @@ module TestIRB
     end
 
     def without_rdoc(&block)
-      ::Kernel.send(:alias_method, :old_require, :require)
+      ::Kernel.send(:alias_method, :irb_original_require, :require)
 
       ::Kernel.define_method(:require) do |name|
         raise LoadError, "cannot load such file -- rdoc (test)" if name.match?("rdoc") || name.match?(/^rdoc\/.*/)
-        ::Kernel.send(:old_require, name)
+        ::Kernel.send(:irb_original_require, name)
       end
 
       yield
@@ -70,7 +70,10 @@ module TestIRB
         require_relative "../lib/envutil"
       rescue LoadError # ruby/ruby defines EnvUtil differently
       end
-      EnvUtil.suppress_warning { ::Kernel.send(:alias_method, :require, :old_require) }
+      EnvUtil.suppress_warning {
+        ::Kernel.send(:alias_method, :require, :irb_original_require)
+        ::Kernel.undef_method :irb_original_require
+      }
     end
   end
 end

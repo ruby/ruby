@@ -59,7 +59,7 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
 
       return eglible
     end
-  rescue # don't block install command on any problem
+  rescue StandardError # don't block install command on any problem
     false
   end
 

@@ -337,8 +337,7 @@ module Bundler
       end
 
       def normalize_uri(uri)
-        uri = uri.to_s
-        uri = "#{uri}/" unless %r{/$}.match?(uri)
+        uri = URINormalizer.normalize_suffix(uri.to_s)
         require_relative "../vendored_uri"
         uri = Bundler::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \

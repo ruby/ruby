@@ -43,7 +43,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   end
 
   def errors
-    @errors + @sets.map {|set| set.errors }.flatten
+    @errors + @sets.map(&:errors).flatten
   end
 
   ##

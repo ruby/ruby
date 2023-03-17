@@ -49,7 +49,7 @@ module Gem::InstallUpdateOptions
 
     add_option(:"Install/Update", "--vendor",
                "Install gem into the vendor directory.",
-               "Only for use by gem repackagers.") do |value, options|
+               "Only for use by gem repackagers.") do |_value, options|
       unless Gem.vendor_dir
         raise Gem::OptionParser::InvalidOption.new "your platform is not supported"
       end
@@ -59,7 +59,7 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", "-N", "--no-document",
-               "Disable documentation generation") do |value, options|
+               "Disable documentation generation") do |_value, options|
       options[:document] = []
     end
 
@@ -103,21 +103,21 @@ module Gem::InstallUpdateOptions
 
     add_option(:"Install/Update", "--development",
                 "Install additional development",
-                "dependencies") do |value, options|
+                "dependencies") do |_value, options|
       options[:development] = true
       options[:dev_shallow] = true
     end
 
     add_option(:"Install/Update", "--development-all",
                 "Install development dependencies for all",
-                "gems (including dev deps themselves)") do |value, options|
+                "gems (including dev deps themselves)") do |_value, options|
       options[:development] = true
       options[:dev_shallow] = false
     end
 
     add_option(:"Install/Update", "--conservative",
                 "Don't attempt to upgrade gems already",
-                "meeting version requirement") do |value, options|
+                "meeting version requirement") do |_value, options|
       options[:conservative] = true
       options[:minimal_deps] = true
     end
@@ -135,13 +135,13 @@ module Gem::InstallUpdateOptions
 
     add_option(:"Install/Update", "-g", "--file [FILE]",
                "Read from a gem dependencies API file and",
-               "install the listed gems") do |v,o|
-      v = Gem::GEM_DEP_FILES.find do |file|
+               "install the listed gems") do |v,_o|
+      v ||= Gem::GEM_DEP_FILES.find do |file|
         File.exist? file
-      end unless v
+      end
 
       unless v
-        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
+        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ", "})"
 
         raise Gem::OptionParser::InvalidArgument,
                 "cannot find gem dependencies file #{message}"
@@ -153,29 +153,29 @@ module Gem::InstallUpdateOptions
     add_option(:"Install/Update", "--without GROUPS", Array,
                "Omit the named groups (comma separated)",
                "when installing from a gem dependencies",
-               "file") do |v,o|
-      options[:without_groups].concat v.map {|without| without.intern }
+               "file") do |v,_o|
+      options[:without_groups].concat v.map(&:intern)
     end
 
     add_option(:"Install/Update", "--default",
                "Add the gem's full specification to",
-               "specifications/default and extract only its bin") do |v,o|
+               "specifications/default and extract only its bin") do |v,_o|
       options[:install_as_default] = v
     end
 
     add_option(:"Install/Update", "--explain",
                "Rather than install the gems, indicate which would",
-               "be installed") do |v,o|
+               "be installed") do |v,_o|
       options[:explain] = v
     end
 
     add_option(:"Install/Update", "--[no-]lock",
-               "Create a lock file (when used with -g/--file)") do |v,o|
+               "Create a lock file (when used with -g/--file)") do |v,_o|
       options[:lock] = v
     end
 
     add_option(:"Install/Update", "--[no-]suggestions",
-               "Suggest alternates when gems are not found") do |v,o|
+               "Suggest alternates when gems are not found") do |v,_o|
       options[:suggest_alternate] = v
     end
   end
@@ -195,5 +195,4 @@ module Gem::InstallUpdateOptions
   def install_update_defaults_str
     "--document=ri"
   end
-
 end

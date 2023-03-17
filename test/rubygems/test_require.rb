@@ -91,12 +91,10 @@ class TestGemRequire < Gem::TestCase
 
   def create_sync_thread
     Thread.new do
-      begin
-        yield
-      ensure
-        FILE_ENTERED_LATCH.release
-        FILE_EXIT_LATCH.await
-      end
+      yield
+    ensure
+      FILE_ENTERED_LATCH.release
+      FILE_EXIT_LATCH.await
     end
   end
 
@@ -383,8 +381,8 @@ class TestGemRequire < Gem::TestCase
 
     # Remove an old default gem version directly from disk as if someone ran
     # gem cleanup.
-    FileUtils.rm_rf(File.join @gemhome, "#{b1.full_name}")
-    FileUtils.rm_rf(File.join @gemhome, "specifications", "default", "#{b1.full_name}.gemspec")
+    FileUtils.rm_rf(File.join(@gemhome, b1.full_name.to_s))
+    FileUtils.rm_rf(File.join(@gemhome, "specifications", "default", "#{b1.full_name}.gemspec"))
 
     # Require gems that have not been removed.
     assert_require "a/b"
@@ -425,7 +423,7 @@ class TestGemRequire < Gem::TestCase
 
     times_called = 0
 
-    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+    Kernel.stub(:gem, ->(_name, _requirement) { times_called += 1 }) do
       refute_require "default/gem"
     end
 
@@ -541,8 +539,10 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
-        alias old_try_activate try_activate
-        def try_activate(*); raise "raised from try_activate"; end
+        alias_method :old_try_activate, :try_activate
+        def try_activate(*)
+          raise "raised from try_activate"
+        end
       end
     end
 
@@ -553,7 +553,7 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
-        alias try_activate old_try_activate
+        alias_method :try_activate, :old_try_activate
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit

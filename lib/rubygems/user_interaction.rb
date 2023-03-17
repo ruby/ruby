@@ -13,7 +13,6 @@ require_relative "text"
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
-
   include Gem::Text
 
   ##
@@ -68,7 +67,6 @@ module Gem::DefaultUserInteraction
   def use_ui(new_ui, &block)
     Gem::DefaultUserInteraction.use_ui(new_ui, &block)
   end
-
 end
 
 ##
@@ -91,7 +89,6 @@ end
 #   end
 
 module Gem::UserInteraction
-
   include Gem::DefaultUserInteraction
 
   ##
@@ -273,7 +270,6 @@ class Gem::StreamUI
                when /^y/i then true
                when /^n/i then false
                when /^$/  then default
-               else nil
       end
     end
 
@@ -284,7 +280,7 @@ class Gem::StreamUI
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question + "  ")
     @outs.flush
@@ -298,7 +294,7 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question, "  ")
     @outs.flush
@@ -428,8 +424,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -471,8 +466,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0

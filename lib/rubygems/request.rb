@@ -35,8 +35,13 @@ class Gem::Request
     @connection_pool = pool
   end
 
-  def proxy_uri; @connection_pool.proxy_uri; end
-  def cert_files; @connection_pool.cert_files; end
+  def proxy_uri
+    @connection_pool.proxy_uri
+  end
+
+  def cert_files
+    @connection_pool.cert_files
+  end
 
   def self.get_cert_files
     pattern = File.expand_path("./ssl_certs/*/*.pem", __dir__)
@@ -166,7 +171,7 @@ class Gem::Request
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return (_scheme == "https" || _scheme == "http") ?
+      return ["https", "http"].include?(_scheme) ?
         :no_proxy : get_proxy_from_env("http")
     end
 
@@ -223,7 +228,6 @@ class Gem::Request
       end
 
       verbose "#{response.code} #{response.message}"
-
     rescue Net::HTTPBadResponse
       verbose "bad response"
 
@@ -237,7 +241,7 @@ class Gem::Request
       verbose "fatal error"
 
       raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
-    # HACK work around EOFError bug in Net::HTTP
+    # HACK: work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
     rescue EOFError, Timeout::Error,

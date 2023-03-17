@@ -4,7 +4,6 @@
 # Helper methods for both Gem::Installer and Gem::Uninstaller
 
 module Gem::InstallerUninstallerUtils
-
   def regenerate_plugins_for(spec, plugins_dir)
     plugins = spec.plugins
     return if plugins.empty?
@@ -25,5 +24,4 @@ module Gem::InstallerUninstallerUtils
   def remove_plugins_for(spec, plugins_dir)
     FileUtils.rm_f Gem::Util.glob_files_in_dir("#{spec.name}#{Gem.plugin_suffix_pattern}", plugins_dir)
   end
-
 end

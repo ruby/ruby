@@ -15,7 +15,7 @@ class TestGemCommand < Gem::TestCase
     @common_options = Gem::Command.common_options.dup
     Gem::Command.common_options.clear
     Gem::Command.common_options << [
-      ["-x", "--exe", "Execute"], lambda do |*a|
+      ["-x", "--exe", "Execute"], lambda do |*_a|
         @xopt = true
       end
     ]
@@ -55,7 +55,9 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_self_extra_args
-    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    separator = $;
     extra_args = Gem::Command.extra_args
 
     Gem::Command.extra_args = %w[--all]
@@ -68,7 +70,6 @@ class TestGemCommand < Gem::TestCase
 
     Gem::Command.extra_args = "--awesome=true --verbose"
     assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
-
   ensure
     Gem::Command.extra_args = extra_args
     $; = separator
@@ -151,7 +152,7 @@ class TestGemCommand < Gem::TestCase
     done = false
 
     use_ui @ui do
-      @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+      @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
         options[:help] = true
         done = true
       end
@@ -174,7 +175,7 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_invoke_with_options
-    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
       options[:help] = true
     end
 
@@ -202,13 +203,13 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_option_recognition
-    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
       options[:help] = true
     end
-    @cmd.add_option("-f", "--file FILE", "File option") do |value, options|
+    @cmd.add_option("-f", "--file FILE", "File option") do |_value, options|
       options[:help] = true
     end
-    @cmd.add_option("--silent", "Silence RubyGems output") do |value, options|
+    @cmd.add_option("--silent", "Silence RubyGems output") do |_value, options|
       options[:silent] = true
     end
     assert @cmd.handles?(["-x"])
@@ -236,7 +237,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -265,7 +266,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -294,7 +295,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -323,7 +324,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 

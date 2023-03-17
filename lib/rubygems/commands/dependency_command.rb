@@ -17,8 +17,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
     add_prerelease_option
 
     add_option("-R", "--[no-]reverse-dependencies",
-               "Include reverse dependencies in the output") do
-      |value, options|
+               "Include reverse dependencies in the output") do |value, options|
       options[:reverse_dependencies] = value
     end
 
@@ -91,7 +90,7 @@ use with other commands.
   def display_pipe(specs) # :nodoc:
     specs.each do |spec|
       unless spec.dependencies.empty?
-        spec.dependencies.sort_by {|dep| dep.name }.each do |dep|
+        spec.dependencies.sort_by(&:name).each do |dep|
           say "#{dep.name} --version '#{dep.requirement}'"
         end
       end
@@ -153,7 +152,7 @@ use with other commands.
     response = String.new
     response << "  " * level + "Gem #{spec.full_name}\n"
     unless spec.dependencies.empty?
-      spec.dependencies.sort_by {|dep| dep.name }.each do |dep|
+      spec.dependencies.sort_by(&:name).each do |dep|
         response << "  " * level + "  #{dep}\n"
       end
     end

@@ -28,9 +28,12 @@ class TestUpdateSuggestion < Gem::TestCase
     reset_last_update_check: true,
     cmd:
   )
-    original_config, Gem.configuration[:prevent_update_suggestion] = Gem.configuration[:prevent_update_suggestion], nil
-    original_env, ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"], nil
-    original_disable, Gem.disable_system_update_message = Gem.disable_system_update_message, nil
+    original_config = Gem.configuration[:prevent_update_suggestion]
+    Gem.configuration[:prevent_update_suggestion] = nil
+    original_env = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"]
+    ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = nil
+    original_disable = Gem.disable_system_update_message
+    Gem.disable_system_update_message = nil
     Gem.configuration.last_update_check = 0 if reset_last_update_check
 
     Gem.ui.stub :tty?, tty do
@@ -63,9 +66,9 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update
     with_eglible_environment(cmd: @cmd) do
-      Time.stub :now, 123456789 do
+      Time.stub :now, 123_456_789 do
         assert @cmd.eglible_for_update?
-        assert_equal Gem.configuration.last_update_check, 123456789
+        assert_equal Gem.configuration.last_update_check, 123_456_789
 
         # test last check is written to config file
         assert File.read(Gem.configuration.state_file_name).match("123456789")
@@ -142,23 +145,21 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update_prevent_config
     with_eglible_environment(cmd: @cmd) do
-      begin
-        original_config, Gem.configuration[:prevent_update_suggestion] = Gem.configuration[:prevent_update_suggestion], true
-        refute @cmd.eglible_for_update?
-      ensure
-        Gem.configuration[:prevent_update_suggestion] = original_config
-      end
+      original_config = Gem.configuration[:prevent_update_suggestion]
+      Gem.configuration[:prevent_update_suggestion] = true
+      refute @cmd.eglible_for_update?
+    ensure
+      Gem.configuration[:prevent_update_suggestion] = original_config
     end
   end
 
   def test_eglible_for_update_prevent_env
     with_eglible_environment(cmd: @cmd) do
-      begin
-        original_env, ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"], "yes"
-        refute @cmd.eglible_for_update?
-      ensure
-        ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = original_env
-      end
+      original_env = ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"]
+      ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "yes"
+      refute @cmd.eglible_for_update?
+    ensure
+      ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = original_env
     end
   end
 
@@ -176,12 +177,11 @@ class TestUpdateSuggestion < Gem::TestCase
 
   def test_eglible_for_update_disabled_update
     with_eglible_environment(cmd: @cmd) do
-      begin
-        original_disable, Gem.disable_system_update_message = Gem.disable_system_update_message, "disabled"
-        refute @cmd.eglible_for_update?
-      ensure
-        Gem.disable_system_update_message = original_disable
-      end
+      original_disable = Gem.disable_system_update_message
+      Gem.disable_system_update_message = "disabled"
+      refute @cmd.eglible_for_update?
+    ensure
+      Gem.disable_system_update_message = original_disable
     end
   end
 

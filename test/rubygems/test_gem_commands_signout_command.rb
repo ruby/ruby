@@ -12,7 +12,7 @@ class TestGemCommandsSignoutCommand < Gem::TestCase
 
   def test_execute_when_user_is_signed_in
     FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
-    FileUtils::touch Gem.configuration.credentials_path
+    FileUtils.touch Gem.configuration.credentials_path
 
     @sign_out_ui = Gem::MockGemUi.new
     use_ui(@sign_out_ui) { @cmd.execute }

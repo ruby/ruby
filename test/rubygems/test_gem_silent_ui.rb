@@ -115,7 +115,7 @@ class TestGemSilentUI < Gem::TestCase
   end
 
   def test_new_without_dev_null
-    File.stub(:open, ->(path, mode) { raise Errno::ENOTCAPABLE if path == IO::NULL }) do
+    File.stub(:open, ->(path, _mode) { raise Errno::ENOTCAPABLE if path == IO::NULL }) do
       Gem::SilentUI.new
     end
   end

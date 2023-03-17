@@ -9861,9 +9861,9 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
              * prevent the objects from being collected.  This check prevents
              * objects that are keys in the finalizer table from being moved
              * without directly pinning them. */
-            if (st_is_member(finalizer_table, obj)) {
-                return FALSE;
-            }
+            GC_ASSERT(st_is_member(finalizer_table, obj));
+
+            return FALSE;
         }
         GC_ASSERT(RVALUE_MARKED(obj));
         GC_ASSERT(!RVALUE_PINNED(obj));

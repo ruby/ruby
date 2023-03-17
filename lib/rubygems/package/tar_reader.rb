@@ -62,7 +62,7 @@ class Gem::Package::TarReader
     end
   end
 
-  alias each_entry each
+  alias_method :each_entry, :each
 
   ##
   # NOTE: Do not call #rewind during #each
