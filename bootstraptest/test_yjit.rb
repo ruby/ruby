@@ -3666,7 +3666,6 @@ assert_equal '[1, 2, 3]', %q{
 # Rest with block
 # Simplified code from railsbench
 assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
-
   def match(path, *rest, &block)
     [path, rest, block]
   end
