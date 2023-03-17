@@ -96,7 +96,11 @@ module Spec
     end
 
     def lockfile_platforms(*extra)
-      [local_platform, *extra].map(&:to_s).sort.join("\n  ")
+      formatted_lockfile_platforms(local_platform, *extra)
+    end
+
+    def formatted_lockfile_platforms(*platforms)
+      platforms.map(&:to_s).sort.join("\n  ")
     end
   end
 end

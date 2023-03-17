@@ -1262,7 +1262,7 @@ RSpec.describe "the lockfile format" do
           indirect_dependency (1.2.3)
 
       PLATFORMS
-        #{lockfile_platforms}
+        #{formatted_lockfile_platforms(*["ruby", generic_local_platform].uniq)}
 
       DEPENDENCIES
         direct_dependency
