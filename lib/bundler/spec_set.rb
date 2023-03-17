@@ -52,6 +52,44 @@ module Bundler
       specs.uniq
     end
 
+    def complete_platforms!(platforms)
+      return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
+
+      new_platforms = @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq.select do |platform|
+        next if platforms.include?(platform)
+        next unless GemHelpers.generic(platform) == Gem::Platform::RUBY
+
+        new_specs = []
+
+        valid_platform = lookup.all? do |_, specs|
+          spec = specs.first
+          matching_specs = spec.source.specs.search([spec.name, spec.version])
+          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).first
+
+          if platform_spec
+            new_specs << LazySpecification.from_spec(platform_spec)
+            true
+          else
+            false
+          end
+        end
+        next unless valid_platform
+
+        @specs.concat(new_specs.uniq)
+      end
+      return platforms if new_platforms.empty?
+
+      platforms.concat(new_platforms)
+
+      less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && platform === Bundler.local_platform }
+      platforms.delete(Bundler.local_platform) if less_specific_platform
+
+      @sorted = nil
+      @lookup = nil
+
+      platforms
+    end
+
     def [](key)
       key = key.name if key.respond_to?(:name)
       lookup[key].reverse

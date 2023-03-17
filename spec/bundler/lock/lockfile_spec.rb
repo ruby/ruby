@@ -1212,7 +1212,7 @@ RSpec.describe "the lockfile format" do
           rack (1.0.0)
 
       PLATFORMS
-        #{lockfile_platforms("java")}
+        #{lockfile_platforms("java", local_platform, :defaults => [])}
 
       DEPENDENCIES
         rack

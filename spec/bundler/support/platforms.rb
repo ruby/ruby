@@ -105,7 +105,7 @@ module Spec
     end
 
     def default_locked_platforms
-      [local_platform]
+      [local_platform, generic_local_platform]
     end
   end
 end

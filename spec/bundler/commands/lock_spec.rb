@@ -733,7 +733,7 @@ RSpec.describe "bundle lock" do
       gem "libv8"
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin")) { bundle "lock" }
+    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock" }
 
     expect(lockfile).to eq <<~G
       GEM
@@ -743,7 +743,8 @@ RSpec.describe "bundle lock" do
           libv8 (8.4.255.0-x86_64-darwin-20)
 
       PLATFORMS
-        x86_64-darwin
+        x86_64-darwin-19
+        x86_64-darwin-20
 
       DEPENDENCIES
         libv8
@@ -1237,7 +1238,7 @@ RSpec.describe "bundle lock" do
             activemodel (>= 6.0.4)
 
       PLATFORMS
-        #{lockfile_platforms}
+        #{local_platform}
 
       DEPENDENCIES
         activeadmin (= 2.13.1)
@@ -1273,7 +1274,7 @@ RSpec.describe "bundle lock" do
             version solving has failed.
     ERR
 
-    lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
+    lockfile lockfile.gsub(/PLATFORMS\n  #{local_platform}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
 
     bundle "lock", :raise_on_error => false
 
@@ -1438,7 +1439,7 @@ RSpec.describe "bundle lock" do
             nokogiri (1.14.2)
 
         PLATFORMS
-          x86_64-linux
+          #{lockfile_platforms}
 
         DEPENDENCIES
           foo!
