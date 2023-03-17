@@ -368,6 +368,7 @@ fn main() {
         .allowlist_function("rb_insn_len")
         .allowlist_function("rb_yarv_class_of")
         .allowlist_function("rb_get_ec_cfp")
+        .allowlist_function("rb_get_cfp_iseq")
         .allowlist_function("rb_get_cfp_pc")
         .allowlist_function("rb_get_cfp_sp")
         .allowlist_function("rb_get_cfp_self")
