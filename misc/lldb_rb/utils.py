@@ -86,7 +86,7 @@ class RbInspector(LLDBInterface):
             rval.dump_bits(self.result)
 
             flaginfo = ""
-            if rval.promoted_p(): 
+            if rval.promoted_p():
                 flaginfo += "[PROMOTED] "
             if rval.frozen_p():
                 flaginfo += "[FROZEN] "
@@ -101,8 +101,8 @@ class RbInspector(LLDBInterface):
                 self.result.write('T_OBJECT: %s' % flaginfo)
                 self._append_command_output("print *(struct RObject*)%0#x" % val.GetValueAsUnsigned())
 
-            elif (rval.is_type("RUBY_T_CLASS") or 
-                  rval.is_type("RUBY_T_MODULE") or 
+            elif (rval.is_type("RUBY_T_CLASS") or
+                  rval.is_type("RUBY_T_MODULE") or
                   rval.is_type("RUBY_T_ICLASS")):
                 self.result.write('T_%s: %s' % (rval.type_name.split('_')[-1], flaginfo))
                 tRClass = self.target.FindFirstType("struct RClass")
@@ -110,7 +110,7 @@ class RbInspector(LLDBInterface):
                 self._append_command_output("print *(struct RClass*)%0#x" % val.GetValueAsUnsigned())
                 if not val.Cast(tRClass).GetChildMemberWithName("ptr").IsValid():
                     self._append_command_output(
-                        "print *(struct rb_classext_struct*)%0#x" % 
+                        "print *(struct rb_classext_struct*)%0#x" %
                         (val.GetValueAsUnsigned() + tRClass.GetByteSize())
                     )
 
@@ -186,17 +186,17 @@ class RbInspector(LLDBInterface):
 
                 if rval.flags & self.ruby_globals["RUBY_FL_USER2"]:
                     print("T_BIGNUM: sign=%s len=%d (embed)" % (sign, len), file=self.result)
-                    self._append_command_output("print ((struct RBignum *) %0#x)->as.ary" 
+                    self._append_command_output("print ((struct RBignum *) %0#x)->as.ary"
                                                 % val.GetValueAsUnsigned())
                 else:
                     print("T_BIGNUM: sign=%s len=%d" % (sign, len), file=self.result)
                     print(val.Dereference(), file=self.result)
                     self._append_command_output(
-                            "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % 
+                            "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" %
                             (len, val.GetValueAsUnsigned()))
 
             elif rval.is_type("RUBY_T_FLOAT"):
-                self._append_command_output("print ((struct RFloat *)%d)->float_value" 
+                self._append_command_output("print ((struct RFloat *)%d)->float_value"
                                             % val.GetValueAsUnsigned())
 
             elif rval.is_type("RUBY_T_RATIONAL"):
@@ -234,7 +234,7 @@ class RbInspector(LLDBInterface):
                 flag = val.GetValueForExpressionPath("->typed_flag")
 
                 if flag.GetValueAsUnsigned() == 1:
-                    print("T_DATA: %s" % 
+                    print("T_DATA: %s" %
                           val.GetValueForExpressionPath("->type->wrap_struct_name"),
                           file=self.result)
                     self._append_command_output(

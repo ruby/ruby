@@ -117,8 +117,8 @@ class RbObject(LLDBInterface):
 
     def ary_len(self):
         if self.flags & self.flUser1:
-            len = ((self.flags & 
-              (self.flUser3 | self.flUser4 | self.flUser5 | self.flUser6 | 
+            len = ((self.flags &
+              (self.flUser3 | self.flUser4 | self.flUser5 | self.flUser6 |
                self.flUser7 | self.flUser8 | self.flUser9)
               ) >> (self.flUshift + 3))
         else:
@@ -128,7 +128,7 @@ class RbObject(LLDBInterface):
 
     def bignum_len(self):
         if self.flags & flUser2:
-            len = ((self.flags & 
+            len = ((self.flags &
               (self.flUser3 | self.flUser4 | self.flUser5)
               ) >> (self.flUshift + 3))
         else:
