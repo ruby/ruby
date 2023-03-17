@@ -2519,7 +2519,7 @@ impl Assembler
         });
     }
 
-    /// Mark the end position of a patchable entry in the machine code
+    /// Mark the end position of a patchable entry point in the machine code
     pub fn mark_entry_end(&mut self, entryref: &PendingEntryRef) {
         // We need to create our own entry rc object
         // so that we can move the closure below
