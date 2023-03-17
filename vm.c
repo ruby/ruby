@@ -4022,13 +4022,13 @@ Init_vm_objects(void)
 #endif
 
 #ifdef HAVE_MMAP
-    vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t), rb_eRuntimeError),
+    vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (vm->shape_list == MAP_FAILED) {
         vm->shape_list = 0;
     }
 #else
-    vm->shape_list = xcalloc(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t));
+    vm->shape_list = xcalloc(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t));
 #endif
 
     if (!vm->shape_list) {
