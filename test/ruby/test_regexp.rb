@@ -1783,7 +1783,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_linear_performance
     pre = ->(n) {[Regexp.new("a?" * n + "a" * n), "a" * n]}
-    assert_linear_performance(factor: 29, first: 10, max: 1, pre: pre) do |re, s|
+    assert_linear_performance([10, 29], pre: pre) do |re, s|
       re =~ s
     end
   end

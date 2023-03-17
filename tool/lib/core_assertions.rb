@@ -738,23 +738,34 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      def assert_linear_performance(factor: 10_000, first: factor, max: 2, rehearsal: first, pre: ->(n) {n})
-        n = first
-        arg = pre.call(n)
-        tmax = (0..rehearsal).map do
+      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
+      # Array, Range, Enumerator::ArithmeticSequence and other
+      # Enumerable-s, and each elements should be size factors.
+      #
+      # :yield: each elements of +seq+.
+      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        first = seq.first
+        *arg = pre.call(first)
+        times = (0..(rehearsal || (2 * first))).filter_map do
           st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          yield arg
-          (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
-        end.max
+          yield(*arg)
+          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+          assert_operator 0, :<=, t
+          t.nonzero?
+        end
+        times.compact!
+        tmin, tmax = times.minmax
+        tmax *= tmax / tmin
+        tmax = 10**Math.log10(tmax).ceil
 
-        (first >= factor ? 2 : 1).upto(max) do |i|
-          n = i * factor
-          t = tmax * factor
-          arg = pre.call(n)
-          message = "[#{i}]: #{n} in #{t}s"
+        seq.each do |i|
+          next if i == first
+          t = (tmax * i).to_f
+          *arg = pre.call(i)
+          message = "[#{i}]: in #{t}s"
           Timeout.timeout(t, nil, message) do
             st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            yield arg
+            yield(*arg)
             assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
           end
         end
