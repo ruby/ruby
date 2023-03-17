@@ -16,7 +16,7 @@ use std::cell::Cell;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::mem::{self, size_of};
+use std::mem;
 use std::os::raw::{c_int};
 use std::ptr;
 use std::rc::Rc;
@@ -1551,7 +1551,7 @@ fn gen_expandarray(
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
     let heap_ptr_opnd = Opnd::mem(
-        (8 * size_of::<usize>()) as u8,
+        usize::BITS as u8,
         asm.load(array_opnd),
         RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
     );
@@ -4381,7 +4381,7 @@ fn jit_rb_str_empty_p(
 
     asm.comment("get string length");
     let str_len_opnd = Opnd::mem(
-        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        std::os::raw::c_long::BITS as u8,
         asm.load(recv_opnd),
         RUBY_OFFSET_RSTRING_AS_HEAP_LEN as i32,
     );
@@ -5148,7 +5148,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         _ => asm.load(array_opnd),
     };
     let array_len_opnd = Opnd::mem(
-        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        std::os::raw::c_long::BITS as u8,
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
@@ -5164,7 +5164,7 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
     let heap_ptr_opnd = Opnd::mem(
-        (8 * size_of::<usize>()) as u8,
+        usize::BITS as u8,
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
     );
@@ -5196,7 +5196,7 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, ctx: &mut Context, asm: &
     let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
     asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
     let heap_ptr_opnd = Opnd::mem(
-        (8 * size_of::<usize>()) as u8,
+        usize::BITS as u8,
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
     );
@@ -5246,7 +5246,7 @@ fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, o
     let array_reg = asm.load(array_opnd);
 
     let array_len_opnd = Opnd::mem(
-        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        std::os::raw::c_long::BITS as u8,
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
@@ -5283,7 +5283,7 @@ fn push_splat_args(required_args: u32, ctx: &mut Context, asm: &mut Assembler, o
         let flags_opnd = Opnd::mem(VALUE_BITS, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
         asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
         let heap_ptr_opnd = Opnd::mem(
-            (8 * size_of::<usize>()) as u8,
+            usize::BITS as u8,
             array_reg,
             RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
         );
