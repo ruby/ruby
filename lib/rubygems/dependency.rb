@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 

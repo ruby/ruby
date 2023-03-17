@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gem
   DEFAULT_HOST = "https://rubygems.org"
 

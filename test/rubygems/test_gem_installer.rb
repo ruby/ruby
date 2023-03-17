@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 
 class TestGemInstaller < Gem::InstallerTestCase

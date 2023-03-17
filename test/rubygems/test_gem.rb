@@ -1,4 +1,5 @@
 # coding: US-ASCII
+
 require_relative "helper"
 require "rubygems"
 require "rubygems/command"

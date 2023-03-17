@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # BasicSpecification is an abstract class which implements some common code
 # used by both Specification and StubSpecification.
