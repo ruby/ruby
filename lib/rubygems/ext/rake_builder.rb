@@ -18,20 +18,8 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
       require "shellwords"
       rake = rake.shellsplit
     else
-      # This is only needed when running rubygems test without a proper installation.
-      # Prepending it in a normal installation can cause problem with order of $LOAD_PATH.
-      # Therefore only add rubygems_load_path if it is not present in the default $LOAD_PATH.
-      rubygems_load_path = File.expand_path("../..", __dir__)
-      load_path =
-        case rubygems_load_path
-        when RbConfig::CONFIG["sitelibdir"], RbConfig::CONFIG["vendorlibdir"], RbConfig::CONFIG["rubylibdir"]
-          []
-        else
-          ["-I#{rubygems_load_path}"]
-        end
-
       begin
-        rake = [Gem.ruby, *load_path, "-rrubygems", Gem.bin_path("rake", "rake")]
+        rake = [Gem.ruby, *rubygems_load_path, "-rrubygems", Gem.bin_path("rake", "rake")]
       rescue Gem::Exception
         rake = [Gem.default_exec_format % "rake"]
       end

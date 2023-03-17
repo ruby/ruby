@@ -21,22 +21,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
     destdir = ENV["DESTDIR"]
 
-    # This is only needed when running rubygems test without a proper installation.
-    # Prepending it in a normal installation can cause problem with order of $LOAD_PATH.
-    # Therefore only add rubygems_load_path if it is not present in the default $LOAD_PATH.
-    rubygems_load_path = File.expand_path("../..", __dir__)
-    load_path =
-      case rubygems_load_path
-      when RbConfig::CONFIG["sitelibdir"], RbConfig::CONFIG["vendorlibdir"], RbConfig::CONFIG["rubylibdir"]
-        []
-      else
-        ["-I#{rubygems_load_path}"]
-      end
-
     begin
       require "shellwords"
       cmd = Gem.ruby.shellsplit
-      cmd.push(*load_path)
+      cmd.push(*rubygems_load_path)
       cmd << File.basename(extension)
       cmd.push(*args)
 
