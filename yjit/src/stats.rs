@@ -351,6 +351,10 @@ make_counters! {
 
     iseq_stack_too_large,
     iseq_too_long,
+
+    temp_reg_opnds,
+    temp_mem_opnds,
+    temp_spills,
 }
 
 //===========================================================================

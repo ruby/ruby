@@ -8,6 +8,7 @@ use std::convert::From;
 use std::io::Write;
 use std::mem::take;
 use crate::cruby::{VALUE, SIZEOF_VALUE_I32};
+use crate::stats::incr_counter;
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
 use crate::core::{Context, Type, TempMapping};
@@ -73,7 +74,7 @@ pub enum Opnd
     InsnOut{ idx: usize, num_bits: u8 },
 
     // Pointer to a slot on the VM stack
-    Stack { idx: i32, sp_offset: i8, num_bits: u8 },
+    Stack { idx: i32, stack_size: u8, sp_offset: i8, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -162,7 +163,7 @@ impl Opnd
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
-            Opnd::Stack { idx, sp_offset, .. } => Some(Opnd::Stack { idx, sp_offset, num_bits }),
+            Opnd::Stack { idx, stack_size, sp_offset, .. } => Some(Opnd::Stack { idx, stack_size, sp_offset, num_bits }),
             _ => None,
         }
     }
@@ -443,6 +444,10 @@ pub enum Insn {
     /// Shift a value right by a certain amount (signed).
     RShift { opnd: Opnd, shift: Opnd, out: Opnd },
 
+    /// Make sure `size_size` temps are spilled to the VM stack. Assume
+    /// `temps_spilled` temps have already been spilled.
+    SpillTemps { stack_size: u8, sp_offset: i8, spilled_size: u8 },
+
     // Low-level instruction to store a value to memory.
     Store { dest: Opnd, src: Opnd },
 
@@ -524,6 +529,7 @@ impl Insn {
             Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
+            Insn::SpillTemps { .. } => "SpillTemps",
             Insn::Store { .. } => "Store",
             Insn::Sub { .. } => "Sub",
             Insn::Test { .. } => "Test",
@@ -659,7 +665,8 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) => None,
+            Insn::PosMarker(_) |
+            Insn::SpillTemps { .. } => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -756,7 +763,8 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
             Insn::PadInvalPatch |
-            Insn::PosMarker(_) => None,
+            Insn::PosMarker(_) |
+            Insn::SpillTemps { .. } => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
             Insn::CRet(opnd) |
@@ -847,6 +855,9 @@ impl fmt::Debug for Insn {
     }
 }
 
+/// Maximum number of temp slots that could be on a register
+const MAX_TEMP_REGS: usize = 8;
+
 /// Object into which we assemble instructions to be
 /// optimized and lowered
 pub struct Assembler
@@ -857,6 +868,13 @@ pub struct Assembler
     /// Index of the last insn using the output of this insn
     pub(super) live_ranges: Vec<usize>,
 
+    /// Parallel vec with insns
+    /// Bitmap of spilled stack slot indexes of this insn
+    pub(super) spilled_temps: Vec<[bool; MAX_TEMP_REGS]>,
+
+    /// Bitmap of spilled stack slot indexes before the first insn
+    pub(super) initial_temps: [bool; MAX_TEMP_REGS],
+
     /// Names of labels
     pub(super) label_names: Vec<String>,
 }
@@ -864,14 +882,24 @@ pub struct Assembler
 impl Assembler
 {
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default())
+        Self::new_with_spilled_size(0)
     }
 
-    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
+    pub fn new_with_spilled_size(spilled_size: u8) -> Self {
+        let mut spilled_temps = [false; 8];
+        for i in 0..usize::min(spilled_size as usize, spilled_temps.len()) {
+            spilled_temps[i] = true;
+        }
+        Self::new_with_label_names(Vec::default(), spilled_temps)
+    }
+
+    pub fn new_with_label_names(label_names: Vec<String>, initial_temps: [bool; 8]) -> Self {
         Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
-            label_names
+            spilled_temps: Vec::default(),
+            initial_temps,
+            label_names,
         }
     }
 
@@ -905,8 +933,46 @@ impl Assembler
             }
         }
 
+        // Start from the previous stack temp allocation state
+        let mut spilled_temps = if let Some(last_spills) = self.spilled_temps.last() {
+            last_spills.clone()
+        } else {
+            self.initial_temps.clone()
+        };
+
+        // Update the register allocation state of stack temps. We need to do this here to pass
+        // the allocation state to Contexts and side exits before reaching `asm.compile()`.
+        let regs = Self::get_temp_regs();
+        match insn {
+            Insn::SpillTemps { stack_size, .. } => {
+                for stack_idx in 0..usize::min(stack_size as usize, MAX_TEMP_REGS) {
+                    spilled_temps[stack_idx] = true;
+                }
+            }
+            _ => {
+                let mut opnd_iter = insn.opnd_iter();
+                while let Some(opnd) = opnd_iter.next() {
+                    if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
+                        let stack_idx = (stack_size as i32 - idx - 1) as usize;
+                        if stack_idx < MAX_TEMP_REGS && !spilled_temps[stack_idx] && regs.len() > 0 {
+                            // Spill if other registers share the same reg_idx
+                            let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                            let mut other_idx = stack_idx as isize - regs.len() as isize;
+                            while other_idx >= 0 {
+                                if !spilled_temps[other_idx as usize] {
+                                    spilled_temps[other_idx as usize] = true;
+                                }
+                                other_idx -= regs.len() as isize;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
+        self.spilled_temps.push(spilled_temps);
     }
 
     /// Create a new label instance that we can jump to
@@ -919,20 +985,61 @@ impl Assembler
         Target::Label(label_idx)
     }
 
-    /// Convert Stack operands to memory operands
-    pub fn lower_stack(mut self) -> Assembler
+    /// Allocate registers or memory operands for Stack operands
+    pub fn alloc_temp_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        assert!(regs.len() <= self.initial_temps.len());
+        let spilled_temps = take(&mut self.spilled_temps);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.initial_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
-            let mut opnd_iter = insn.opnd_iter_mut();
-            while let Some(opnd) = opnd_iter.next() {
-                if let Opnd::Stack { idx, sp_offset, num_bits } = *opnd {
-                    *opnd = Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32);
+            let prev_spilled = if index == 0 { asm.initial_temps } else { spilled_temps[index - 1] };
+            let next_spilled = spilled_temps[index];
+
+            match insn {
+                Insn::SpillTemps { stack_size, sp_offset, spilled_size } => {
+                    for stack_idx in (spilled_size as usize)..usize::min(stack_size as usize, MAX_TEMP_REGS) {
+                        // Spill if a register is allocated to the index
+                        if !prev_spilled[stack_idx] && next_spilled[stack_idx] && regs.len() > 0 {
+                            let offset = sp_offset - (stack_size as i8) + (stack_idx as i8);
+                            let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                            asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
+                            incr_counter!(temp_spills);
+                        }
+                    }
+                }
+                _ => {
+                    let mut opnd_iter = insn.opnd_iter_mut();
+                    while let Some(opnd) = opnd_iter.next() {
+                        *opnd = iterator.map_opnd(*opnd);
+                        if let Opnd::Stack { idx, stack_size, sp_offset, num_bits } = *opnd {
+                            let stack_idx = (stack_size as i32 - idx - 1) as usize;
+                            *opnd = if stack_idx < MAX_TEMP_REGS && !next_spilled[stack_idx] && regs.len() > 0 {
+                                let reg_idx = stack_idx % regs.len(); // Share a register across indexes with the same modulo
+                                // Spill if other registers share the same reg_idx
+                                let mut other_idx = stack_idx as isize - regs.len() as isize;
+                                while other_idx >= 0 {
+                                    if !prev_spilled[other_idx as usize] {
+                                        let offset = sp_offset - (stack_size as i8) + (other_idx as i8);
+                                        asm.mov(Opnd::mem(64, SP, (offset as i32) * SIZEOF_VALUE_I32), Opnd::Reg(regs[reg_idx]));
+                                        incr_counter!(temp_spills);
+                                    }
+                                    other_idx -= regs.len() as isize;
+                                }
+
+                                incr_counter!(temp_reg_opnds);
+                                Opnd::Reg(regs[reg_idx]).with_num_bits(num_bits).unwrap()
+                            } else {
+                                incr_counter!(temp_mem_opnds);
+                                Opnd::mem(num_bits, SP, (sp_offset as i32 - idx - 1) * SIZEOF_VALUE_I32)
+                            };
+                        }
+                    }
+                    asm.push_insn(insn);
                 }
             }
-            asm.push_insn(insn);
+            iterator.map_insn_index(&mut asm);
         }
 
         asm
@@ -941,7 +1048,7 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
+    pub(super) fn alloc_out_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
         //dbg!(&self);
 
@@ -1007,7 +1114,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), self.initial_temps);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -1145,8 +1252,9 @@ impl Assembler
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
 
-        let alloc_regs = Self::get_alloc_regs();
-        let gc_offsets = self.compile_with_regs(cb, alloc_regs);
+        let out_regs = Self::get_out_regs();
+        let temp_regs = Self::get_temp_regs();
+        let gc_offsets = self.compile_with_regs(cb, out_regs, temp_regs);
 
         #[cfg(feature = "disasm")]
         if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
@@ -1160,9 +1268,10 @@ impl Assembler
     /// Compile with a limited number of registers. Used only for unit tests.
     pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> Vec<u32>
     {
-        let mut alloc_regs = Self::get_alloc_regs();
-        let alloc_regs = alloc_regs.drain(0..num_regs).collect();
-        self.compile_with_regs(cb, alloc_regs)
+        let mut out_regs = Self::get_out_regs();
+        let out_regs = out_regs.drain(0..num_regs).collect();
+        let temp_regs = Self::get_temp_regs();
+        self.compile_with_regs(cb, out_regs, temp_regs)
     }
 
     /// Consume the assembler by creating a new draining iterator.
@@ -1540,6 +1649,18 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::RShift { opnd, shift, out });
         out
+    }
+
+    /// Spill all in-use temp registers that have not been spilled yet
+    pub fn spill_temps(&mut self, ctx: &mut Context) {
+        self.comment("spill_temps");
+        self.push_insn(Insn::SpillTemps {
+            stack_size: ctx.get_stack_size(),
+            sp_offset: ctx.get_sp_offset(),
+            spilled_size: ctx.spilled_size,
+        });
+        // Each Assembler keeps increasing spilled_size
+        ctx.spilled_size = u8::max(ctx.spilled_size, ctx.get_stack_size());
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {

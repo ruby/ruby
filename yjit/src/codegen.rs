@@ -257,6 +257,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 /// Note: this will change the current value of REG_SP,
 ///       which could invalidate memory operands
 fn gen_save_sp(asm: &mut Assembler, ctx: &mut Context) {
+    asm.spill_temps(ctx);
     if ctx.get_sp_offset() != 0 {
         asm.comment("save SP to CFP");
         let stack_pointer = ctx.sp_opnd(0);
@@ -458,7 +459,10 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
 fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
     let mut cb = ocb.unwrap();
     let exit_code = cb.get_write_ptr();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
+
+    // Spill before returning to the interpreter
+    asm.spill_temps(&mut ctx.clone());
 
     gen_exit(exit_pc, ctx, &mut asm);
 
@@ -685,6 +689,7 @@ fn jump_to_next_insn(
     // chain_depth > 0 from the same instruction.
     let mut reset_depth = current_context.clone();
     reset_depth.reset_chain_depth();
+    asm.spill_temps(&mut reset_depth);
 
     let jump_block = BlockId {
         iseq: jit.iseq,
@@ -734,8 +739,11 @@ pub fn gen_single_block(
     jit.iseq = blockid.iseq;
     jit.ec = Some(ec);
 
+    // At each block boundary, it's safe to decrease spilled_size to stack_size
+    ctx.spilled_size = u8::min(ctx.spilled_size, ctx.get_stack_size());
+
     // Create a backend assembler instance
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -808,6 +816,9 @@ pub fn gen_single_block(
             if get_option!(dump_insns) {
                 println!("can't compile {}", insn_name(opcode));
             }
+
+            // Spill before returning to the interpreter
+            asm.spill_temps(&mut ctx);
 
             let mut block = jit.block.borrow_mut();
 
@@ -3554,6 +3565,7 @@ fn gen_branchif(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    asm.spill_temps(ctx);
     if let Some(result) = val_type.known_truthy() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
@@ -3605,6 +3617,7 @@ fn gen_branchunless(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    asm.spill_temps(ctx);
     if let Some(result) = val_type.known_truthy() {
         let target = if result { next_block } else { jump_block };
         gen_direct_jump(jit, ctx, target, asm);
@@ -3659,6 +3672,7 @@ fn gen_branchnil(
     let val_type = ctx.get_opnd_type(StackOpnd(0));
     let val_opnd = ctx.stack_pop(1);
 
+    asm.spill_temps(ctx);
     if let Some(result) = val_type.known_nil() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
@@ -4978,6 +4992,9 @@ fn gen_send_cfunc(
     // Copy SP because REG_SP will get overwritten
     let sp = asm.lea(ctx.sp_opnd(0));
 
+    // Arguments must be spilled before popped from ctx
+    asm.spill_temps(ctx);
+
     // Pop the C function arguments from the stack (in the caller)
     ctx.stack_pop((argc + 1).try_into().unwrap());
 
@@ -5637,6 +5654,7 @@ fn gen_send_iseq(
             let stack_ret = ctx.stack_push(Type::Unknown);
             asm.mov(stack_ret, Qnil.into());
         }
+        asm.spill_temps(ctx);
     }
 
     // This is a .send call and we need to adjust the stack
@@ -5785,7 +5803,9 @@ fn gen_send_iseq(
         // pushed onto the stack that represents the parameters that weren't
         // explicitly given a value and have a non-constant default.
         let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-        asm.mov(ctx.stack_opnd(-1), unspec_opnd.into());
+        asm.mov(ctx.stack_push(Type::Unknown), unspec_opnd.into());
+        asm.spill_temps(ctx);
+        ctx.stack_pop(1);
     }
 
     // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
@@ -5815,6 +5835,7 @@ fn gen_send_iseq(
             asm.mov(stack_opnd, Opnd::mem(64, array_opnd, SIZEOF_VALUE_I32 * i));
         }
         argc = lead_num;
+        asm.spill_temps(ctx);
     }
 
 
@@ -5890,6 +5911,7 @@ fn gen_send_iseq(
             let stack_ret = ctx.stack_push(Type::CArray);
             asm.mov(stack_ret, new_ary);
         }
+        asm.spill_temps(ctx);
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
@@ -5977,6 +5999,7 @@ fn gen_send_iseq(
     let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
     return_ctx.stack_push(Type::Unknown);
+    return_ctx.spilled_size = return_ctx.get_stack_size();
     return_ctx.set_sp_offset(1);
     return_ctx.reset_chain_depth();
 

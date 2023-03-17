@@ -364,6 +364,9 @@ pub struct Context {
     // This represents how far the JIT's SP is from the "real" SP
     sp_offset: i8,
 
+    // The number of stack temps spilled to the stack
+    pub spilled_size: u8,
+
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
 
@@ -1095,6 +1098,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         let mut generic_ctx = Context::default();
         generic_ctx.stack_size = ctx.stack_size;
         generic_ctx.sp_offset = ctx.sp_offset;
+        generic_ctx.spilled_size = ctx.spilled_size;
 
         debug_assert_ne!(
             TypeDiff::Incompatible,
@@ -1382,7 +1386,7 @@ impl Context {
 
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
-        Opnd::Stack { idx, sp_offset: self.sp_offset, num_bits: 64 }
+        Opnd::Stack { idx, stack_size: self.stack_size, sp_offset: self.sp_offset, num_bits: 64 }
     }
 
     /// Get the type of an instruction operand
@@ -1578,6 +1582,10 @@ impl Context {
         }
 
         if dst.sp_offset != src.sp_offset {
+            return TypeDiff::Incompatible;
+        }
+
+        if dst.spilled_size != src.spilled_size {
             return TypeDiff::Incompatible;
         }
 
@@ -2276,6 +2284,7 @@ pub fn defer_compilation(
     }
 
     let mut next_ctx = cur_ctx.clone();
+    asm.spill_temps(&mut next_ctx);
 
     if next_ctx.chain_depth == u8::MAX {
         panic!("max block version chain depth reached!");

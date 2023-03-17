@@ -22,6 +22,9 @@ pub struct Options {
     // 1 means always create generic versions
     pub max_versions: usize,
 
+    // The number of registers allocated for stack temps
+    pub temp_regs: usize,
+
     // Capture and print out stats
     pub gen_stats: bool,
 
@@ -54,6 +57,7 @@ pub static mut OPTIONS: Options = Options {
     greedy_versioning: false,
     no_type_prop: false,
     max_versions: 4,
+    temp_regs: 0,
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
@@ -134,6 +138,13 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("max-versions", _) => match opt_val.parse() {
             Ok(n) => unsafe { OPTIONS.max_versions = n },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("temp-regs", _) => match opt_val.parse() {
+            Ok(n) => unsafe { OPTIONS.temp_regs = n },
             Err(_) => {
                 return None;
             }

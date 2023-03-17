@@ -36,11 +36,11 @@ fn test_alloc_regs() {
     let _ = asm.add(out3, Opnd::UImm(6));
 
     // Here we're going to allocate the registers.
-    let result = asm.alloc_regs(Assembler::get_alloc_regs());
+    let result = asm.alloc_out_regs(Assembler::get_out_regs());
 
     // Now we're going to verify that the out field has been appropriately
     // updated for each of the instructions that needs it.
-    let regs = Assembler::get_alloc_regs();
+    let regs = Assembler::get_out_regs();
     let reg0 = regs[0];
     let reg1 = regs[1];
 
@@ -72,7 +72,7 @@ fn setup_asm() -> (Assembler, CodeBlock) {
 fn test_compile()
 {
     let (mut asm, mut cb) = setup_asm();
-    let regs = Assembler::get_alloc_regs();
+    let regs = Assembler::get_out_regs();
 
     let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
     let out2 = asm.add(out, Opnd::UImm(2));
@@ -199,7 +199,7 @@ fn test_alloc_ccall_regs() {
     let out2 = asm.ccall(0 as *const u8, vec![out1]);
     asm.mov(EC, out2);
     let mut cb = CodeBlock::new_dummy(1024);
-    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs());
+    asm.compile_with_regs(&mut cb, Assembler::get_out_regs(), vec![]);
 }
 
 #[test]
@@ -324,7 +324,7 @@ fn test_lookback_iterator() {
 #[test]
 fn test_cmp_8_bit() {
     let (mut asm, mut cb) = setup_asm();
-    let reg = Assembler::get_alloc_regs()[0];
+    let reg = Assembler::get_out_regs()[0];
     asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
 
     asm.compile_with_num_regs(&mut cb, 1);
