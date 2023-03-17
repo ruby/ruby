@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Make sure syntax_suggest default gem is not loaded first
+RUBYOPT="${RUBYOPT-} --disable=syntax_suggest"
+RUBYOPT="$RUBYOPT" bundle exec rspec "$@"
