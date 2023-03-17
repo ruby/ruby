@@ -143,6 +143,7 @@ pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
 pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
 pub use rb_get_cfp_self as get_cfp_self;
@@ -242,6 +243,12 @@ pub struct VALUE(pub usize);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+// Given an ISEQ pointer, convert PC to insn_idx
+pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
+    let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    unsafe { pc.offset_from(pc_zero) }.try_into().ok()
+}
 
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
