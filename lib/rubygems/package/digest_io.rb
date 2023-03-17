@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # IO wrapper that creates digests of contents written to the IO it wraps.
 

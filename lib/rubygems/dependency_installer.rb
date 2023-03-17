@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../rubygems"
 require_relative "dependency_list"
 require_relative "package"

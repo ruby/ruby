@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Provides 3 methods for declaring when something is going away.
 #

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require_relative "test_gem_update_suggestion"
 require "rubygems/commands/install_command"

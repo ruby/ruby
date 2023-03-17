@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "remote_fetcher"
 require_relative "user_interaction"
 require_relative "errors"
