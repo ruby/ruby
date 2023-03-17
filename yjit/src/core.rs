@@ -2508,7 +2508,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
 
 impl Assembler
 {
-    /// Mark the start position of a patchable entry in the machine code
+    /// Mark the start position of a patchable entry point in the machine code
     pub fn mark_entry_start(&mut self, entryref: &PendingEntryRef) {
         // We need to create our own entry rc object
         // so that we can move the closure below
