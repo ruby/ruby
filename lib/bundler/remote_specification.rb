@@ -29,12 +29,8 @@ module Bundler
       @platform = _remote_specification.platform
     end
 
-    def identifier
-      @__identifier ||= [name, version, @platform.to_s]
-    end
-
     def full_name
-      if @platform == Gem::Platform::RUBY
+      @full_name ||= if @platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{@platform}"

@@ -20,7 +20,7 @@ module Bundler
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY
+      @full_name ||= if platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{platform}"
@@ -28,15 +28,15 @@ module Bundler
     end
 
     def ==(other)
-      identifier == other.identifier
+      full_name == other.full_name
     end
 
     def eql?(other)
-      identifier.eql?(other.identifier)
+      full_name.eql?(other.full_name)
     end
 
     def hash
-      identifier.hash
+      full_name.hash
     end
 
     ##
@@ -127,10 +127,6 @@ module Bundler
       else
         "#{name} (#{version}-#{platform})"
       end
-    end
-
-    def identifier
-      @__identifier ||= [name, version, platform.to_s]
     end
 
     def git_version
