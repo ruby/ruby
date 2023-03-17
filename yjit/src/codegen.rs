@@ -632,10 +632,7 @@ pub fn chain_entry_guard(
     insn_idx: u16,
 ) -> Option<PendingEntryRef> {
     let entry = new_pending_entry();
-    let stub_addr = match gen_call_entry_stub_hit(entry.uninit_entry.as_ptr() as usize, ocb) {
-        Some(addr) => addr,
-        None => return None,
-    };
+    let stub_addr = gen_call_entry_stub_hit(entry.uninit_entry.as_ptr() as usize, ocb)?;
 
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
