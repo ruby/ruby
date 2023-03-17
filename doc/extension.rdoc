@@ -815,7 +815,7 @@ The example below is from `Dir` (defined in `dir.c`)
   RUBY_REFERENCES_END
 
   // Override the "dmark" field with the defined reference list now that we
-  // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the 
+  // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the
   // flags field
   static const rb_data_type_t dir_data_type = {
       "dir",
