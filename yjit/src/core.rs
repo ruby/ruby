@@ -644,35 +644,6 @@ impl Branch {
     }
 }
 
-// Store info about code used on YJIT entry
-pub struct Entry {
-    // Positions where the generated code starts and ends
-    start_addr: CodePtr,
-    end_addr: CodePtr, // exclusive
-}
-
-/// A [Branch] for a [Block] that is under construction.
-pub struct PendingEntry {
-    pub uninit_entry: Box<MaybeUninit<Entry>>,
-    start_addr: Cell<Option<CodePtr>>,
-    end_addr: Cell<Option<CodePtr>>, // exclusive
-}
-
-impl PendingEntry {
-    // Construct the entry in the heap
-    pub fn into_entry(mut self) -> EntryRef {
-        // Make the entry
-        let entry = Entry {
-            start_addr: self.start_addr.get().unwrap(),
-            end_addr: self.end_addr.get().unwrap(),
-        };
-        // Move it to the designated place on the heap and unwrap MaybeUninit.
-        self.uninit_entry.write(entry);
-        let raw_entry: *mut MaybeUninit<Entry> = Box::into_raw(self.uninit_entry);
-        NonNull::new(raw_entry as *mut Entry).expect("no null from Box")
-    }
-}
-
 impl std::fmt::Debug for Branch {
     // Can't derive this because `targets: !Copy` due to Cell.
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -770,6 +741,35 @@ impl PendingBranch {
     }
 }
 
+// Store info about code used on YJIT entry
+pub struct Entry {
+    // Positions where the generated code starts and ends
+    start_addr: CodePtr,
+    end_addr: CodePtr, // exclusive
+}
+
+/// A [Branch] for a [Block] that is under construction.
+pub struct PendingEntry {
+    pub uninit_entry: Box<MaybeUninit<Entry>>,
+    start_addr: Cell<Option<CodePtr>>,
+    end_addr: Cell<Option<CodePtr>>, // exclusive
+}
+
+impl PendingEntry {
+    // Construct the entry in the heap
+    pub fn into_entry(mut self) -> EntryRef {
+        // Make the entry
+        let entry = Entry {
+            start_addr: self.start_addr.get().unwrap(),
+            end_addr: self.end_addr.get().unwrap(),
+        };
+        // Move it to the designated place on the heap and unwrap MaybeUninit.
+        self.uninit_entry.write(entry);
+        let raw_entry: *mut MaybeUninit<Entry> = Box::into_raw(self.uninit_entry);
+        NonNull::new(raw_entry as *mut Entry).expect("no null from Box")
+    }
+}
+
 // In case a block is invalidated, this helps to remove all pointers to the block.
 pub type CmePtr = *const rb_callable_method_entry_t;
 
@@ -844,9 +844,6 @@ pub type BranchRef = NonNull<Branch>;
 
 /// Pointer to an entry that is already added to an ISEQ
 pub type EntryRef = NonNull<Entry>;
-
-/// Reference-counted pointer to a pending entry that can be mutated
-pub type PendingEntryRef = Rc<PendingEntry>;
 
 /// List of block versions for a given blockid
 type VersionList = Vec<BlockRef>;
@@ -2078,6 +2075,8 @@ pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: Cod
     cb.set_dropped_bytes(old_dropped_bytes);
 }
 
+pub type PendingEntryRef = Rc<PendingEntry>;
+
 /// Create a new entry reference for an ISEQ
 pub fn new_pending_entry() -> PendingEntryRef {
     let entry = PendingEntry {
@@ -2126,7 +2125,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
             let mut asm = Assembler::new();
-            asm.jmp(blockref.borrow().start_addr.into());
+            asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
             asm.compile(cb);
             blockref
         }
@@ -2154,8 +2153,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     ocb.unwrap().mark_all_executable();
 
     // Let the stub jump to the block
-    let block = blockref.borrow();
-    Some(block.start_addr.raw_ptr())
+    Some(unsafe { blockref.as_ref() }.start_addr.raw_ptr())
 }
 
 /// Generate a stub that calls entry_stub_hit
