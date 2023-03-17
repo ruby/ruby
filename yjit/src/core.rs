@@ -688,7 +688,7 @@ impl PendingBranch {
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
         let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
-        let stub_addr = gen_call_branch_stub_hit(ocb, branch_struct_addr, target_idx);
+        let stub_addr = gen_branch_stub(ocb, branch_struct_addr, target_idx);
 
         if let Some(stub_addr) = stub_addr {
             // Fill the branch target with a stub
@@ -2115,7 +2115,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
     let mut asm = Assembler::new();
-    let pending_entry = chain_entry_guard(&mut asm, ocb, iseq, insn_idx)?;
+    let pending_entry = gen_chain_entry_guard(&mut asm, ocb, iseq, insn_idx)?;
     asm.compile(cb);
 
     // Try to find an existing compiled version of this block
@@ -2157,7 +2157,7 @@ fn entry_stub_hit_body(entry_ptr: *const c_void, ec: EcPtr) -> Option<*const u8>
 }
 
 /// Generate a stub that calls entry_stub_hit
-pub fn gen_call_entry_stub_hit(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
+pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
     let stub_addr = ocb.get_write_ptr();
 
@@ -2179,7 +2179,7 @@ pub fn gen_call_entry_stub_hit(entry_address: usize, ocb: &mut OutlinedCb) -> Op
     }
 }
 
-/// A trampoline used by gen_call_entry_stub_hit. entry_stub_hit may issue Code GC, so
+/// A trampoline used by gen_entry_stub. entry_stub_hit may issue Code GC, so
 /// it's useful for Code GC to call entry_stub_hit from a globally shared code.
 pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
@@ -2272,7 +2272,7 @@ fn new_pending_branch(jit: &mut JITState, gen_fn: BranchGenFn) -> PendingBranchR
 
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_call_branch_stub_hit].
+    /// See [gen_branch_stub].
     fn branch_stub_hit(
         branch_ptr: *const c_void,
         target_idx: u32,
@@ -2441,7 +2441,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
 /// Generate a "stub", a piece of code that calls the compiler back when run.
 /// A piece of code that redeems for more code; a thunk for code.
-fn gen_call_branch_stub_hit(
+fn gen_branch_stub(
     ocb: &mut OutlinedCb,
     branch_struct_address: usize,
     target_idx: u32,
@@ -2864,7 +2864,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Create a stub for this branch target
-        let stub_addr = gen_call_branch_stub_hit(ocb, branchref.as_ptr() as usize, target_idx as u32);
+        let stub_addr = gen_branch_stub(ocb, branchref.as_ptr() as usize, target_idx as u32);
 
         // In case we were unable to generate a stub (e.g. OOM). Use the block's
         // exit instead of a stub for the block. It's important that we

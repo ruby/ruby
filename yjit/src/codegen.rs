@@ -625,14 +625,14 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-pub fn chain_entry_guard(
+pub fn gen_chain_entry_guard(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     iseq: IseqPtr,
     insn_idx: u16,
 ) -> Option<PendingEntryRef> {
     let entry = new_pending_entry();
-    let stub_addr = gen_call_entry_stub_hit(entry.uninit_entry.as_ptr() as usize, ocb)?;
+    let stub_addr = gen_entry_stub(entry.uninit_entry.as_ptr() as usize, ocb)?;
 
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -687,7 +687,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, ocb: &mut OutlinedCb, iseq: IseqPt
     // If they don't match, then we'll jump to an entry stub and generate
     // another PC check and entry there.
     let pending_entry = if unsafe { get_iseq_flags_has_opt(iseq) } {
-        Some(chain_entry_guard(&mut asm, ocb, iseq, insn_idx)?)
+        Some(gen_chain_entry_guard(&mut asm, ocb, iseq, insn_idx)?)
     } else {
         None
     };
