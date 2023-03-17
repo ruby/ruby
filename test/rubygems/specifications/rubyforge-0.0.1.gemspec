@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name              = "rubyforge"
   s.version           = "0.0.1"

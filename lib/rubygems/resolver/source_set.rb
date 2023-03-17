@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The SourceSet chooses the best available method to query a remote index.
 #
