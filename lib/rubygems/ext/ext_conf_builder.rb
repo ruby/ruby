@@ -43,7 +43,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      if Gem.configuration.install_extension_in_lib && lib_dir
+      if Gem.install_extension_in_lib && lib_dir
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]
         entries = entries.map {|entry| File.join full_tmp_dest, entry }

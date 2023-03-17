@@ -47,6 +47,7 @@ class Gem::ConfigFile
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
   DEFAULT_IPV4_FALLBACK_ENABLED = false
+  # TODO: Use false as default value for this option in RubyGems 4.0
   DEFAULT_INSTALL_EXTENSION_IN_LIB = true
 
   ##

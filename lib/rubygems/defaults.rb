@@ -248,6 +248,13 @@ module Gem
   end
 
   ##
+  # Install extensions into lib as well as into the extension directory.
+
+  def self.install_extension_in_lib # :nodoc:
+    Gem.configuration.install_extension_in_lib
+  end
+
+  ##
   # Directory where vendor gems are installed.
 
   def self.vendor_dir # :nodoc:
