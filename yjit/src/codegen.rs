@@ -2673,7 +2673,7 @@ fn gen_fixnum_cmp(
         let bool_opnd = cmov_op(asm, Qtrue.into(), Qfalse.into());
 
         // Push the output on the stack
-        let dst = ctx.stack_push(Type::Unknown);
+        let dst = ctx.stack_push(Type::UnknownImm);
         asm.mov(dst, bool_opnd);
 
         KeepCompiling
@@ -3297,7 +3297,8 @@ fn gen_opt_mod(
         let ret = asm.ccall(rb_fix_mod_fix as *const u8, vec![arg0, arg1]);
 
         // Push the return value onto the stack
-        let stack_ret = ctx.stack_push(Type::Unknown);
+        // When the two arguments are fixnums, the modulo output is always a fixnum
+        let stack_ret = ctx.stack_push(Type::Fixnum);
         asm.mov(stack_ret, ret);
 
         KeepCompiling
@@ -5909,7 +5910,6 @@ fn gen_send_iseq(
         }
         argc = lead_num;
     }
-
 
     if iseq_has_rest {
 
