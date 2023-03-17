@@ -642,6 +642,16 @@ impl Branch {
         }
         count
     }
+
+    fn assert_layout(&self) {
+        let shape = self.gen_fn.get_shape();
+        assert!(
+            !(shape == BranchShape::Default && 0 == self.code_size()),
+            "zero-size branches are incorrect when code for neither targets are adjacent"
+            // One needs to issue some instruction to steer to the branch target
+            // when falling through isn't an option.
+        );
+    }
 }
 
 impl std::fmt::Debug for Branch {
@@ -736,6 +746,8 @@ impl PendingBranch {
                 unsafe { out_block.as_ref() }.incoming.push(branchref);
             }
         }
+
+        branch.assert_layout();
 
         branchref
     }
@@ -2064,6 +2076,8 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
         // The branch sits at the end of cb and consumed some memory.
         // Keep cb.write_pos.
     }
+
+    branch.assert_layout();
 }
 
 pub type PendingBranchRef = Rc<PendingBranch>;
