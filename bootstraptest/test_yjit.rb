@@ -3654,3 +3654,11 @@ assert_equal "[]", %q{
   test(custom)
   EMPTY
 }
+
+# Rest with send
+assert_equal '[1, 2, 3]', %q{
+  def bar(x, *rest)
+    rest.insert(0, x)
+  end
+  send(:bar, 1, 2, 3)
+}

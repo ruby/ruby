@@ -12,6 +12,7 @@ use crate::utils::*;
 use CodegenStatus::*;
 use YARVOpnd::*;
 
+use std::cell::Cell;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -38,63 +39,89 @@ type InsnGenFn = fn(
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus;
 
-/// Code generation state
-/// This struct only lives while code is being generated
+/// Ephemeral code generation state.
+/// Represents a [core::Block] while we build it.
 pub struct JITState {
-    // Block version being compiled
-    block: BlockRef,
-
-    // Instruction sequence this is associated with
+    /// Instruction sequence for the compiling block
     iseq: IseqPtr,
 
-    // Index of the current instruction being compiled
-    insn_idx: u16,
+    /// The iseq index of the first instruction in the block
+    starting_insn_idx: IseqIdx,
 
-    // Opcode for the instruction being compiled
+    /// The [Context] entering into the first instruction of the block
+    starting_ctx: Context,
+
+    /// The placement for the machine code of the [Block]
+    output_ptr: CodePtr,
+
+    /// Index of the current instruction being compiled
+    insn_idx: IseqIdx,
+
+    /// Opcode for the instruction being compiled
     opcode: usize,
 
-    // PC of the instruction being compiled
+    /// PC of the instruction being compiled
     pc: *mut VALUE,
 
-    // Side exit to the instruction being compiled. See :side-exit:.
+    /// Side exit to the instruction being compiled. See :side-exit:.
     side_exit_for_pc: Option<CodePtr>,
 
-    // Execution context when compilation started
-    // This allows us to peek at run-time values
+    /// Execution context when compilation started
+    /// This allows us to peek at run-time values
     ec: EcPtr,
 
-    // Whether we need to record the code address at
-    // the end of this bytecode instruction for global invalidation
-    record_boundary_patch_point: bool,
+    /// The outgoing branches the block will have
+    pub pending_outgoing: Vec<PendingBranchRef>,
 
-    // The block's outgoing branches
-    outgoing: Vec<BranchRef>,
+    // --- Fields for block invalidation and invariants tracking below:
+    // Public mostly so into_block defined in the sibling module core
+    // can partially move out of Self.
 
-    // The block's CME dependencies
-    cme_dependencies: Vec<CmePtr>,
+    /// Whether we need to record the code address at
+    /// the end of this bytecode instruction for global invalidation
+    pub record_boundary_patch_point: bool,
+
+    /// Code for immediately exiting upon entry to the block.
+    /// Required for invalidation.
+    pub block_entry_exit: Option<CodePtr>,
+
+    /// A list of callable method entries that must be valid for the block to be valid.
+    pub method_lookup_assumptions: Vec<CmePtr>,
+
+    /// A list of basic operators that not be redefined for the block to be valid.
+    pub bop_assumptions: Vec<(RedefinitionFlag, ruby_basic_operators)>,
+
+    /// A list of constant expression path segments that must have
+    /// not been written to for the block to be valid.
+    pub stable_constant_names_assumption: Option<*const ID>,
+
+    /// When true, the block is valid only when there is a total of one ractor running
+    pub block_assumes_single_ractor: bool,
 }
 
 impl JITState {
-    pub fn new(blockref: &BlockRef, ec: EcPtr) -> Self {
+    pub fn new(blockid: BlockId, starting_ctx: Context, output_ptr: CodePtr, ec: EcPtr) -> Self {
         JITState {
-            block: blockref.clone(),
-            iseq: ptr::null(), // TODO: initialize this from the blockid
+            iseq: blockid.iseq,
+            starting_insn_idx: blockid.idx,
+            starting_ctx,
+            output_ptr,
             insn_idx: 0,
             opcode: 0,
             pc: ptr::null_mut::<VALUE>(),
             side_exit_for_pc: None,
+            pending_outgoing: vec![],
             ec,
             record_boundary_patch_point: false,
-            outgoing: Vec::new(),
-            cme_dependencies: Vec::new(),
+            block_entry_exit: None,
+            method_lookup_assumptions: vec![],
+            bop_assumptions: vec![],
+            stable_constant_names_assumption: None,
+            block_assumes_single_ractor: false,
         }
     }
 
-    pub fn get_block(&self) -> BlockRef {
-        self.block.clone()
-    }
-
-    pub fn get_insn_idx(&self) -> u16 {
+    pub fn get_insn_idx(&self) -> IseqIdx {
         self.insn_idx
     }
 
@@ -108,6 +135,18 @@ impl JITState {
 
     pub fn get_pc(self: &JITState) -> *mut VALUE {
         self.pc
+    }
+
+    pub fn get_starting_insn_idx(&self) -> IseqIdx {
+        self.starting_insn_idx
+    }
+
+    pub fn get_block_entry_exit(&self) -> Option<CodePtr> {
+        self.block_entry_exit
+    }
+
+    pub fn get_starting_ctx(&self) -> Context {
+        self.starting_ctx.clone()
     }
 
     pub fn get_arg(&self, arg_idx: isize) -> VALUE {
@@ -175,18 +214,22 @@ impl JITState {
         }
     }
 
+    pub fn assume_method_lookup_stable(&mut self, ocb: &mut OutlinedCb, cme: CmePtr) {
+        jit_ensure_block_entry_exit(self, ocb);
+        self.method_lookup_assumptions.push(cme);
+    }
+
     fn get_cfp(&self) -> *mut rb_control_frame_struct {
         unsafe { get_ec_cfp(self.ec) }
     }
 
-    // Push an outgoing branch ref
-    pub fn push_outgoing(&mut self, branch: BranchRef) {
-        self.outgoing.push(branch);
+    pub fn assume_stable_constant_names(&mut self, ocb: &mut OutlinedCb, id: *const ID) {
+        jit_ensure_block_entry_exit(self, ocb);
+        self.stable_constant_names_assumption = Some(id);
     }
 
-    // Push a CME dependency
-    pub fn push_cme_dependency(&mut self, cme: CmePtr) {
-        self.cme_dependencies.push(cme);
+    pub fn queue_outgoing_branch(&mut self, branch: PendingBranchRef) {
+        self.pending_outgoing.push(branch)
     }
 }
 
@@ -502,22 +545,20 @@ fn get_side_exit(jit: &mut JITState, ocb: &mut OutlinedCb, ctx: &Context) -> Tar
 // Ensure that there is an exit for the start of the block being compiled.
 // Block invalidation uses this exit.
 pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
-    let blockref = jit.block.clone();
-    let mut block = blockref.borrow_mut();
-    let block_ctx = block.get_ctx();
-    let blockid = block.get_blockid();
-
-    if block.entry_exit.is_some() {
+    if jit.block_entry_exit.is_some() {
         return;
     }
 
+    let block_starting_context = &jit.get_starting_ctx();
+
     // If we're compiling the first instruction in the block.
-    if jit.insn_idx == blockid.idx {
+    if jit.insn_idx == jit.starting_insn_idx {
         // Generate the exit with the cache in jitstate.
-        block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx).unwrap_code_ptr());
+        let entry_exit = get_side_exit(jit, ocb, block_starting_context).unwrap_code_ptr();
+        jit.block_entry_exit = Some(entry_exit);
     } else {
-        let block_entry_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx.into()) };
-        block.entry_exit = Some(gen_outlined_exit(block_entry_pc, &block_ctx, ocb));
+        let block_entry_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, jit.starting_insn_idx.into()) };
+        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, block_starting_context, ocb));
     }
 }
 
@@ -730,18 +771,18 @@ pub fn gen_single_block(
     verify_blockid(blockid);
     assert!(!(blockid.idx == 0 && ctx.get_stack_size() > 0));
 
+    // Save machine code placement of the block. `cb` might page switch when we
+    // generate code in `ocb`.
+    let block_start_addr = cb.get_write_ptr();
+
     // Instruction sequence to compile
     let iseq = blockid.iseq;
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let iseq_size: u16 = iseq_size.try_into().unwrap();
     let mut insn_idx: u16 = blockid.idx;
-    let starting_insn_idx = insn_idx;
-
-    // Allocate the new block
-    let blockref = Block::new(blockid, &ctx, cb.get_write_ptr());
 
     // Initialize a JIT state object
-    let mut jit = JITState::new(&blockref, ec);
+    let mut jit = JITState::new(blockid, ctx.clone(), cb.get_write_ptr(), ec);
     jit.iseq = blockid.iseq;
 
     // At each block boundary, it's safe to decrease spilled_size to stack_size
@@ -770,7 +811,7 @@ pub fn gen_single_block(
         // We need opt_getconstant_path to be in a block all on its own. Cut the block short
         // if we run into it. This is necessary because we want to invalidate based on the
         // instruction's index.
-        if opcode == YARVINSN_opt_getconstant_path.as_usize() && insn_idx > starting_insn_idx {
+        if opcode == YARVINSN_opt_getconstant_path.as_usize() && insn_idx > jit.starting_insn_idx {
             jump_to_next_insn(&mut jit, &ctx, &mut asm, ocb);
             break;
         }
@@ -825,17 +866,15 @@ pub fn gen_single_block(
             // Spill before returning to the interpreter
             asm.spill_temps(&mut ctx);
 
-            let mut block = jit.block.borrow_mut();
-
             // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
             // the exit this generates would be wrong. We could save a copy of the entry context
             // and assert that ctx is the same here.
             gen_exit(jit.pc, &ctx, &mut asm);
 
-            // If this is the first instruction in the block, then we can use
-            // the exit for block->entry_exit.
-            if insn_idx == block.get_blockid().idx {
-                block.entry_exit = Some(block.get_start_addr());
+            // If this is the first instruction in the block, then
+            // the entry address is the address for block_entry_exit
+            if insn_idx == jit.starting_insn_idx {
+                jit.block_entry_exit = Some(jit.output_ptr);
             }
 
             break;
@@ -853,45 +892,28 @@ pub fn gen_single_block(
             break;
         }
     }
-
-    // Finish filling out the block
-    {
-        let mut block = jit.block.borrow_mut();
-        if block.entry_exit.is_some() {
-            asm.pad_inval_patch();
-        }
-
-        // Compile code into the code block
-        let gc_offsets = asm.compile(cb);
-
-        // Add the GC offsets to the block
-        block.set_gc_obj_offsets(gc_offsets);
-
-        // Set CME dependencies to the block
-        block.set_cme_dependencies(jit.cme_dependencies);
-
-        // Set outgoing branches to the block
-        block.set_outgoing(jit.outgoing);
-
-        // Mark the end position of the block
-        block.set_end_addr(cb.get_write_ptr());
-
-        // Store the index of the last instruction in the block
-        block.set_end_idx(insn_idx);
-    }
+    let end_insn_idx = insn_idx;
 
     // We currently can't handle cases where the request is for a block that
-    // doesn't go to the next instruction.
+    // doesn't go to the next instruction in the same iseq.
     assert!(!jit.record_boundary_patch_point);
+
+    // Pad the block if it has the potential to be invalidated
+    if jit.block_entry_exit.is_some() {
+        asm.pad_inval_patch();
+    }
+
+    // Compile code into the code block
+    let gc_offsets = asm.compile(cb);
+    let end_addr = cb.get_write_ptr();
 
     // If code for the block doesn't fit, fail
     if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
-        free_block(&blockref);
         return Err(());
     }
 
     // Block compiled successfully
-    Ok(blockref)
+    Ok(jit.into_block(end_insn_idx, block_start_addr, end_addr, gc_offsets))
 }
 
 fn gen_nop(
@@ -3589,9 +3611,12 @@ fn gen_branchif(
     let val_opnd = ctx.stack_pop(1);
 
     asm.spill_temps(ctx);
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_truthy() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
 
@@ -3604,7 +3629,7 @@ fn gen_branchif(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::BranchIf(BranchShape::Default),
+            BranchGenFn::BranchIf(Cell::new(BranchShape::Default)),
         );
     }
 
@@ -3641,9 +3666,12 @@ fn gen_branchunless(
     let val_opnd = ctx.stack_pop(1);
 
     asm.spill_temps(ctx);
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_truthy() {
         let target = if result { next_block } else { jump_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         // Test if any bit (outside of the Qnil bit) is on
         // See RB_TEST()
@@ -3659,7 +3687,7 @@ fn gen_branchunless(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::BranchUnless(BranchShape::Default),
+            BranchGenFn::BranchUnless(Cell::new(BranchShape::Default)),
         );
     }
 
@@ -3696,9 +3724,12 @@ fn gen_branchnil(
     let val_opnd = ctx.stack_pop(1);
 
     asm.spill_temps(ctx);
+    incr_counter!(branch_insn_count);
+
     if let Some(result) = val_type.known_nil() {
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
+        incr_counter!(branch_known_count);
     } else {
         // Test if the value is Qnil
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
@@ -3711,7 +3742,7 @@ fn gen_branchnil(
             ctx,
             Some(next_block),
             Some(ctx),
-            BranchGenFn::BranchNil(BranchShape::Default),
+            BranchGenFn::BranchNil(Cell::new(BranchShape::Default)),
         );
     }
 
@@ -4538,7 +4569,7 @@ fn jit_obj_respond_to(
     // Invalidate this block if method lookup changes for the method being queried. This works
     // both for the case where a method does or does not exist, as for the latter we asked for a
     // "negative CME" earlier.
-    assume_method_lookup_stable(jit, ocb, target_cme);
+    jit.assume_method_lookup_stable(ocb, target_cme);
 
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -5387,11 +5418,6 @@ fn gen_send_iseq(
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     if iseq_has_rest && captured_opnd.is_some() {
         gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
-        return CantCompile;
-    }
-
-    if iseq_has_rest && flags & VM_CALL_OPT_SEND != 0 {
-        gen_counter_incr!(asm, send_iseq_has_rest_and_send);
         return CantCompile;
     }
 
@@ -6327,7 +6353,7 @@ fn gen_send_general(
 
     // Register block for invalidation
     //assert!(cme->called_id == mid);
-    assume_method_lookup_stable(jit, ocb, cme);
+    jit.assume_method_lookup_stable(ocb, cme);
 
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     loop {
@@ -6497,7 +6523,7 @@ fn gen_send_general(
 
                         flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
-                        assume_method_lookup_stable(jit, ocb, cme);
+                        jit.assume_method_lookup_stable(ocb, cme);
 
                         let (known_class, type_mismatch_exit) = {
                             if compile_time_name.string_p() {
@@ -6992,8 +7018,8 @@ fn gen_invokesuper(
 
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
-    assume_method_lookup_stable(jit, ocb, me);
-    assume_method_lookup_stable(jit, ocb, cme);
+    jit.assume_method_lookup_stable(ocb, me);
+    jit.assume_method_lookup_stable(ocb, cme);
 
     // Method calls may corrupt types
     ctx.clear_local_types();
@@ -7447,14 +7473,13 @@ fn gen_opt_getconstant_path(
         asm.store(stack_top, ic_entry_val);
     } else {
         // Optimize for single ractor mode.
-        // FIXME: This leaks when st_insert raises NoMemoryError
         if !assume_single_ractor_mode(jit, ocb) {
             return CantCompile;
         }
 
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
-        assume_stable_constant_names(jit, ocb, idlist);
+        jit.assume_stable_constant_names(ocb, idlist);
 
         jit_putobject(jit, ctx, asm, unsafe { (*ice).value });
     }
@@ -8131,15 +8156,15 @@ mod tests {
     use super::*;
 
     fn setup_codegen() -> (JITState, Context, Assembler, CodeBlock, OutlinedCb) {
-        let blockid = BlockId {
-            iseq: ptr::null(),
-            idx: 0,
-        };
         let cb = CodeBlock::new_dummy(256 * 1024);
-        let block = Block::new(blockid, &Context::default(), cb.get_write_ptr());
 
         return (
-            JITState::new(&block, ptr::null()), // No execution context in tests. No peeking!
+            JITState::new(
+                BlockId { iseq: std::ptr::null(), idx: 0 },
+                Context::default(),
+                cb.get_write_ptr(),
+                ptr::null(), // No execution context in tests. No peeking!
+            ),
             Context::default(),
             Assembler::new(),
             cb,

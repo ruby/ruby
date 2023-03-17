@@ -62,7 +62,9 @@ class Gem::Validator
     errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|
-      next unless gems.include? spec.name unless gems.empty?
+      unless gems.empty?
+        next unless gems.include? spec.name
+      end
       next if spec.default_gem?
 
       gem_name      = spec.file_name
@@ -87,7 +89,7 @@ class Gem::Validator
 
         good, gone, unreadable = nil, nil, nil, nil
 
-        File.open gem_path, Gem.binary_mode do |file|
+        File.open gem_path, Gem.binary_mode do |_file|
           package = Gem::Package.new gem_path
 
           good, gone = package.contents.partition do |file_name|
@@ -107,15 +109,13 @@ class Gem::Validator
           end
 
           good.each do |entry, data|
-            begin
-              next unless data # HACK `gem check -a mkrf`
+            next unless data # HACK: `gem check -a mkrf`
 
-              source = File.join gem_directory, entry["path"]
+            source = File.join gem_directory, entry["path"]
 
-              File.open source, Gem.binary_mode do |f|
-                unless f.read == data
-                  errors[gem_name][entry["path"]] = "Modified from original"
-                end
+            File.open source, Gem.binary_mode do |f|
+              unless f.read == data
+                errors[gem_name][entry["path"]] = "Modified from original"
               end
             end
           end

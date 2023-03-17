@@ -61,7 +61,7 @@ data you will need to change them immediately and yank your gem.
   end
 
   def yank_gem(version, platform)
-    say "Yanking gem from #{self.host}..."
+    say "Yanking gem from #{host}..."
     args = [:delete, version, platform, "api/v1/gems/yank"]
     response = yank_api_request(*args)
 
@@ -88,7 +88,7 @@ data you will need to change them immediately and yank your gem.
 
   def get_version_from_requirements(requirements)
     requirements.requirements.first[1].version
-  rescue
+  rescue StandardError
     nil
   end
 

@@ -32,7 +32,7 @@ class Gem::Doctor
     Gem::REPOSITORY_SUBDIRECTORIES.sort -
     REPOSITORY_EXTENSION_MAP.map {|(k,_)| k }.sort
 
-  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ', '}" unless
+  raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ", "}" unless
     missing.empty?
 
   ##
@@ -52,7 +52,7 @@ class Gem::Doctor
   # Specs installed in this gem repository
 
   def installed_specs # :nodoc:
-    @installed_specs ||= Gem::Specification.map {|s| s.full_name }
+    @installed_specs ||= Gem::Specification.map(&:full_name)
   end
 
   ##
@@ -103,7 +103,7 @@ class Gem::Doctor
     directory = File.join(@gem_repository, sub_directory)
 
     Dir.entries(directory).sort.each do |ent|
-      next if ent == "." || ent == ".."
+      next if [".", ".."].include?(ent)
 
       child = File.join(directory, ent)
       next unless File.exist?(child)
@@ -111,8 +111,8 @@ class Gem::Doctor
       basename = File.basename(child, extension)
       next if installed_specs.include? basename
       next if /^rubygems-\d/ =~ basename
-      next if "specifications" == sub_directory && "default" == basename
-      next if "plugins" == sub_directory && Gem.plugin_suffix_regexp =~ (basename)
+      next if sub_directory == "specifications" && basename == "default"
+      next if sub_directory == "plugins" && Gem.plugin_suffix_regexp =~ (basename)
 
       type = File.directory?(child) ? "directory" : "file"
 

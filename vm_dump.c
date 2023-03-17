@@ -1083,6 +1083,14 @@ rb_vm_bugreport(const void *ctx)
         SDR();
         rb_backtrace_print_as_bugreport();
         fputs("\n", stderr);
+        // If we get here, hopefully things are intact enough that
+        // we can read these two numbers. It is an estimate because
+        // we are reading without synchronization.
+        fprintf(stderr, "-- Threading information "
+                "---------------------------------------------------\n");
+        fprintf(stderr, "Total ractor count: %u\n", vm->ractor.cnt);
+        fprintf(stderr, "Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
+        fputs("\n", stderr);
     }
 
     rb_dump_machine_register(ctx);

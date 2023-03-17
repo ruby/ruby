@@ -97,7 +97,7 @@ class TestGem < Gem::TestCase
 
     installed = Gem.install "a", "= 1", :install_dir => gemhome2
 
-    assert_equal %w[a-1], installed.map {|spec| spec.full_name }
+    assert_equal %w[a-1], installed.map(&:full_name)
 
     assert_path_exist File.join(gemhome2, "gems", "a-1")
   end
@@ -116,7 +116,7 @@ class TestGem < Gem::TestCase
       rescue StandardError
         Gem.install "a", "= 1", :install_dir => gemhome2
       end
-    assert_equal %w[a-1], installed.map {|spec| spec.full_name }
+    assert_equal %w[a-1], installed.map(&:full_name)
   end
 
   def test_self_install_permissions
@@ -662,9 +662,13 @@ class TestGem < Gem::TestCase
 
   def test_self_ensure_gem_directories_missing_parents
     gemdir = File.join @tempdir, "a/b/c/gemdir"
-    FileUtils.rm_rf File.join(@tempdir, "a") rescue nil
+    begin
+      FileUtils.rm_rf File.join(@tempdir, "a")
+    rescue StandardError
+      nil
+    end
     refute File.exist?(File.join(@tempdir, "a")),
-           "manually remove #{File.join @tempdir, 'a'}, tests are broken"
+           "manually remove #{File.join @tempdir, "a"}, tests are broken"
     Gem.use_paths gemdir
 
     Gem.ensure_gem_subdirectories gemdir
@@ -675,7 +679,11 @@ class TestGem < Gem::TestCase
   unless win_platform? || Process.uid.zero? # only for FS that support write protection
     def test_self_ensure_gem_directories_write_protected
       gemdir = File.join @tempdir, "egd"
-      FileUtils.rm_r gemdir rescue nil
+      begin
+        FileUtils.rm_r gemdir
+      rescue StandardError
+        nil
+      end
       refute File.exist?(gemdir), "manually remove #{gemdir}, tests are broken"
       FileUtils.mkdir_p gemdir
       FileUtils.chmod 0400, gemdir
@@ -692,7 +700,11 @@ class TestGem < Gem::TestCase
       parent = File.join(@tempdir, "egd")
       gemdir = "#{parent}/a/b/c"
 
-      FileUtils.rm_r parent rescue nil
+      begin
+        FileUtils.rm_r parent
+      rescue StandardError
+        nil
+      end
       refute File.exist?(parent), "manually remove #{parent}, tests are broken"
       FileUtils.mkdir_p parent
       FileUtils.chmod 0400, parent
@@ -734,7 +746,7 @@ class TestGem < Gem::TestCase
         s.files << discover_path
       end
 
-      write_file(File.join "gems", spec.full_name, discover_path) do |fp|
+      write_file(File.join("gems", spec.full_name, discover_path)) do |fp|
         fp.puts "# #{spec.full_name}"
       end
 
@@ -766,7 +778,7 @@ class TestGem < Gem::TestCase
         s.files << discover_path
       end
 
-      write_file(File.join "gems", spec.full_name, discover_path) do |fp|
+      write_file(File.join("gems", spec.full_name, discover_path)) do |fp|
         fp.puts "# #{spec.full_name}"
       end
 
@@ -1029,7 +1041,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_api_version
-    orig_ruby_version, RbConfig::CONFIG["ruby_version"] = RbConfig::CONFIG["ruby_version"], "1.2.3"
+    orig_ruby_version = RbConfig::CONFIG["ruby_version"]
+    RbConfig::CONFIG["ruby_version"] = "1.2.3"
 
     Gem.instance_variable_set :@ruby_api_version, nil
 
@@ -1052,7 +1065,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_version_with_non_mri_implementations
-    util_set_RUBY_VERSION "2.5.0", 0, 60928, "jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]"
+    util_set_RUBY_VERSION "2.5.0", 0, 60_928, "jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]"
 
     assert_equal Gem::Version.new("2.5.0"), Gem.ruby_version
   ensure
@@ -1060,7 +1073,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_version_with_svn_prerelease
-    util_set_RUBY_VERSION "2.6.0", -1, 63539, "ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]"
+    util_set_RUBY_VERSION "2.6.0", -1, 63_539, "ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]"
 
     assert_equal Gem::Version.new("2.6.0.preview2"), Gem.ruby_version
   ensure
@@ -1076,7 +1089,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_version_with_non_mri_implementations_with_mri_prerelase_compatibility
-    util_set_RUBY_VERSION "2.6.0", -1, 63539, "weirdjruby 9.2.0.0 (2.6.0preview2) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]", "weirdjruby", "9.2.0.0"
+    util_set_RUBY_VERSION "2.6.0", -1, 63_539, "weirdjruby 9.2.0.0 (2.6.0preview2) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]", "weirdjruby", "9.2.0.0"
 
     assert_equal Gem::Version.new("2.6.0.preview2"), Gem.ruby_version
   ensure
@@ -1084,7 +1097,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_version_with_svn_trunk
-    util_set_RUBY_VERSION "1.9.2", -1, 23493, "ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]"
+    util_set_RUBY_VERSION "1.9.2", -1, 23_493, "ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]"
 
     assert_equal Gem::Version.new("1.9.2.dev"), Gem.ruby_version
   ensure
@@ -1312,7 +1325,7 @@ class TestGem < Gem::TestCase
 
   def test_setting_paths_does_not_mutate_parameter_object
     Gem.paths = { "GEM_HOME" => Gem.paths.home,
-                  "GEM_PATH" => "foo" }.freeze
+                  "GEM_PATH" => "foo" } .freeze
     assert_equal ["foo", Gem.paths.home], Gem.paths.path
   end
 
@@ -1364,7 +1377,7 @@ class TestGem < Gem::TestCase
       r.gem "b", "= 1"
     end
 
-    activated = Gem::Specification.map {|x| x.full_name }
+    activated = Gem::Specification.map(&:full_name)
 
     assert_equal %w[a-1 b-1 c-2], activated.sort
   end
@@ -1495,19 +1508,31 @@ class TestGem < Gem::TestCase
 
   def test_load_env_plugins
     with_plugin("load") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_LOAD rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_LOAD
+    rescue StandardError
+      nil
+    end
 
     util_remove_interrupt_command
 
     # Should attempt to cause a StandardError
     with_plugin("standarderror") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_STANDARDERROR rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_STANDARDERROR
+    rescue StandardError
+      nil
+    end
 
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
     with_plugin("exception") { Gem.load_env_plugins }
-    assert_equal :loaded, TEST_PLUGIN_EXCEPTION rescue nil
+    begin
+      assert_equal :loaded, TEST_PLUGIN_EXCEPTION
+    rescue StandardError
+      nil
+    end
   end
 
   def test_gem_path_ordering
@@ -1527,8 +1552,8 @@ class TestGem < Gem::TestCase
     assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
 
     tests = [
-      [:dir0, [ Gem.dir, Gem.user_dir], m0],
-      [:dir1, [ Gem.user_dir, Gem.dir], m1],
+      [:dir0, [Gem.dir, Gem.user_dir], m0],
+      [:dir1, [Gem.user_dir, Gem.dir], m1],
     ]
 
     tests.each do |_name, _paths, expected|
@@ -1579,7 +1604,7 @@ class TestGem < Gem::TestCase
     install_gem m, :install_dir => Gem.dir
     install_gem m, :install_dir => Gem.user_dir
 
-    Gem.use_paths Gem.dir, [ Gem.dir, Gem.user_dir]
+    Gem.use_paths Gem.dir, [Gem.dir, Gem.user_dir]
 
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),
@@ -1630,14 +1655,14 @@ class TestGem < Gem::TestCase
   def test_operating_system_defaults
     operating_system_defaults = Gem.operating_system_defaults
 
-    assert operating_system_defaults != nil
+    assert !operating_system_defaults.nil?
     assert operating_system_defaults.is_a? Hash
   end
 
   def test_platform_defaults
     platform_defaults = Gem.platform_defaults
 
-    assert platform_defaults != nil
+    assert !platform_defaults.nil?
     assert platform_defaults.is_a? Hash
   end
 
@@ -1740,7 +1765,7 @@ class TestGem < Gem::TestCase
     #
     # FIXME what does this solve precisely? -ebh
     #
-    @additional.each do |dir|
+    @additional.each do |_dir|
       Gem.ensure_gem_subdirectories @gemhome
     end
   end

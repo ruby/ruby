@@ -24,13 +24,11 @@ class Gem::Source::Lock < Gem::Source
       @wrapped <=> other.wrapped
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 
   def ==(other) # :nodoc:
-    0 == (self <=> other)
+    (self <=> other) == 0
   end
 
   def hash # :nodoc:

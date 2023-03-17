@@ -58,7 +58,7 @@ class Gem::Package
       if source
         @path = source.path
 
-        message = message + " in #{path}" if path
+        message += " in #{path}" if path
       end
 
       super message
@@ -267,7 +267,7 @@ class Gem::Package
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         File.open file, "rb" do |src_io|
-          dst_io.write src_io.read 16384 until src_io.eof?
+          dst_io.write src_io.read 16_384 until src_io.eof?
         end
       end
     end
@@ -362,7 +362,7 @@ EOM
     algorithms.each do |algorithm|
       digester = Gem::Security.create_digest(algorithm)
 
-      digester << entry.read(16384) until entry.eof?
+      digester << entry.read(16_384) until entry.eof?
 
       entry.rewind
 
@@ -571,10 +571,10 @@ EOM
         )
 
       @spec.signing_key = nil
-      @spec.cert_chain = @signer.cert_chain.map {|cert| cert.to_s }
+      @spec.cert_chain = @signer.cert_chain.map(&:to_s)
     else
       @signer = Gem::Security::Signer.new nil, nil, passphrase
-      @spec.cert_chain = @signer.cert_chain.map {|cert| cert.to_pem } if
+      @spec.cert_chain = @signer.cert_chain.map(&:to_pem) if
         @signer.cert_chain
     end
   end
@@ -669,7 +669,7 @@ EOM
     when "data.tar.gz" then
       verify_gz entry
     end
-  rescue
+  rescue StandardError
     warn "Exception while verifying #{@gem.path}"
     raise
   end
@@ -688,11 +688,11 @@ EOM
 
     unless @files.include? "data.tar.gz"
       raise Gem::Package::FormatError.new \
-              "package content (data.tar.gz) is missing", @gem
+        "package content (data.tar.gz) is missing", @gem
     end
 
-    if (duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first)) && duplicates.any?
-      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(', ')})"
+    if (duplicates = @files.group_by {|f| f }.select {|_k,v| v.size > 1 }.map(&:first)) && duplicates.any?
+      raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(", ")})"
     end
   end
 
@@ -701,7 +701,7 @@ EOM
 
   def verify_gz(entry) # :nodoc:
     Zlib::GzipReader.wrap entry do |gzio|
-      gzio.read 16384 until gzio.eof? # gzip checksum verification
+      gzio.read 16_384 until gzio.eof? # gzip checksum verification
     end
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)

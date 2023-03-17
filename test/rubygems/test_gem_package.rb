@@ -205,7 +205,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     tar.rewind
 
-    files, symlinks = [], []
+    files = []
+    symlinks = []
 
     Gem::Package::TarReader.new tar do |tar_io|
       tar_io.each_entry do |entry|
@@ -286,8 +287,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -329,8 +330,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal [PUBLIC_CERT.to_pem], reader.spec.cert_chain
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -392,8 +393,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -429,8 +430,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     assert_equal spec, reader.spec
 
-    assert_equal %w[metadata.gz       metadata.gz.sig
-                    data.tar.gz       data.tar.gz.sig
+    assert_equal %w[metadata.gz metadata.gz.sig
+                    data.tar.gz data.tar.gz.sig
                     checksums.yaml.gz checksums.yaml.gz.sig],
                  reader.files
 
@@ -642,8 +643,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_symlink "link", destination_user_dir, 16877
-      tar.add_symlink "link/dir", ".", 16877
+      tar.add_symlink "link", destination_user_dir, 16_877
+      tar.add_symlink "link/dir", ".", 16_877
     end
 
     expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
@@ -810,7 +811,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name() "metadata.gz" end
+    def entry.full_name
+      "metadata.gz"
+    end
 
     package = Gem::Package.new "nonexistent.gem"
 
@@ -1050,10 +1053,21 @@ class TestGemPackage < Gem::Package::TarTestCase
         # write bogus data.tar.gz to foil signature
         bogus_data = Gem::Util.gzip "hello"
         fake_signer = Class.new do
-          def digest_name; "SHA512"; end
-          def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
-          def key; "key"; end
-          def sign(*); "fake_sig"; end
+          def digest_name
+            "SHA512"
+          end
+
+          def digest_algorithm
+            OpenSSL::Digest(:SHA512).new
+          end
+
+          def key
+            "key"
+          end
+
+          def sign(*)
+            "fake_sig"
+          end
         end
         gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
           io.write bogus_data
@@ -1097,7 +1111,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name() raise ArgumentError, "whatever" end
+    def entry.full_name
+      raise ArgumentError, "whatever"
+    end
 
     package = Gem::Package.new @gem
 
@@ -1124,11 +1140,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $good_name = vm
 
       entry = Object.new
-      def entry.full_name() $good_name end
+      def entry.full_name
+        $good_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 
@@ -1141,11 +1161,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       $bad_name = vm
 
       entry = Object.new
-      def entry.full_name() $bad_name end
+      def entry.full_name
+        $bad_name
+      end
 
       package = Gem::Package.new(@gem)
       package.instance_variable_set(:@files, [])
-      def package.load_spec(entry) $spec_loaded = true end
+      def package.load_spec(entry)
+        $spec_loaded = true
+      end
 
       package.verify_entry(entry)
 

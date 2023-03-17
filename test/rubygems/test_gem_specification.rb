@@ -691,7 +691,7 @@ end
       version
     ]
 
-    actual_value = Gem::Specification.attribute_names.map {|a| a.to_s }.sort
+    actual_value = Gem::Specification.attribute_names.map(&:to_s).sort
 
     assert_equal expected_value, actual_value
   end
@@ -804,13 +804,15 @@ dependencies: []
       end
 
       full_path.taint
-      loader = Thread.new { $SAFE = 1; Gem::Specification.load full_path }
+      loader = Thread.new do
+        $SAFE = 1
+        Gem::Specification.load full_path
+      end
       spec = loader.value
 
       @a2.files.clear
 
       assert_equal @a2, spec
-
     ensure
       $SAFE = 0
     end
@@ -962,13 +964,13 @@ dependencies: []
     install_specs @a1
 
     assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    assert_includes Gem::Specification.stubs.map(&:full_name), "a-1"
 
     uninstall_gem @a1
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, "a-1"
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    refute_includes Gem::Specification.stubs.map(&:full_name), "a-1"
   end
 
   def test_self_remove_spec_removed
@@ -983,7 +985,7 @@ dependencies: []
     Gem::Specification.reset
 
     refute_includes Gem::Specification.all_names, "a-1"
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
+    refute_includes Gem::Specification.stubs.map(&:full_name), "a-1"
   end
 
   def test_self_stubs_for_lazy_loading
@@ -995,14 +997,14 @@ dependencies: []
     save_gemspec("a-1", "1", dir_standard_specs) {|s| s.name = "a" }
     save_gemspec("b-1", "1", dir_standard_specs) {|s| s.name = "b" }
 
-    assert_equal ["a-1"], Gem::Specification.stubs_for("a").map {|s| s.full_name }
+    assert_equal ["a-1"], Gem::Specification.stubs_for("a").map(&:full_name)
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
-    assert_equal ["b-1"], Gem::Specification.stubs_for("b").map {|s| s.full_name }
+    assert_equal ["b-1"], Gem::Specification.stubs_for("b").map(&:full_name)
     assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
     assert_equal(
-      Gem::Specification.stubs_for("a").map {|s| s.object_id },
-      Gem::Specification.stubs_for("a").map {|s| s.object_id }
+      Gem::Specification.stubs_for("a").map(&:object_id),
+      Gem::Specification.stubs_for("a").map(&:object_id)
     )
 
     Gem.loaded_specs.delete "a"
@@ -1015,7 +1017,7 @@ dependencies: []
 
     save_gemspec("b-1", "1", File.join(Gem.dir, "specifications")) {|s| s.name = "b" }
 
-    assert_equal [], Gem::Specification.stubs_for("b").map {|s| s.full_name }
+    assert_equal [], Gem::Specification.stubs_for("b").map(&:full_name)
   end
 
   def test_self_stubs_for_mult_platforms
@@ -1034,7 +1036,7 @@ dependencies: []
     v   = "1.1.1"
     platforms = ["x86-mingw32", "x64-mingw32"]
 
-    #create specs
+    # create specs
     platforms.each do |plat|
       spec = Gem::Specification.new(gem, v) {|s| s.platform = plat }
       File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), "w" do |io|
@@ -1199,7 +1201,7 @@ dependencies: []
       s.version = "1"
     end
 
-    spec.instance_variable_set :@licenses, (class << (Object.new);self;end)
+    spec.instance_variable_set :@licenses, (class << Object.new;self;end)
     spec.loaded_from = "/path/to/file"
 
     e = assert_raise Gem::FormatException do
@@ -1252,7 +1254,7 @@ dependencies: []
       awesome.add_dependency :gem_name
     end
 
-    assert_equal %w[true gem_name], gem.dependencies.map {|dep| dep.name }
+    assert_equal %w[true gem_name], gem.dependencies.map(&:name)
   end
 
   def test_add_dependency_from_existing_dependency
@@ -1322,9 +1324,7 @@ dependencies: []
 
     assert_empty @ext.build_args
 
-    File.open @ext.build_info_file, "w" do |io|
-      io.puts
-    end
+    File.open @ext.build_info_file, "w", &:puts
 
     assert_empty @ext.build_args
 
@@ -1450,7 +1450,7 @@ dependencies: []
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
-    unless ($DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?)
+    unless $DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?
       FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -1684,8 +1684,8 @@ dependencies: []
   end
 
   def test_extension_dir
-    enable_shared, RbConfig::CONFIG["ENABLE_SHARED"] =
-      RbConfig::CONFIG["ENABLE_SHARED"], "no"
+    enable_shared = RbConfig::CONFIG["ENABLE_SHARED"]
+    RbConfig::CONFIG["ENABLE_SHARED"] = "no"
 
     ext_spec
 
@@ -1701,11 +1701,11 @@ dependencies: []
   end
 
   def test_extension_dir_override
-    enable_shared, RbConfig::CONFIG["ENABLE_SHARED"] =
-      RbConfig::CONFIG["ENABLE_SHARED"], "no"
+    enable_shared = RbConfig::CONFIG["ENABLE_SHARED"]
+    RbConfig::CONFIG["ENABLE_SHARED"] = "no"
 
     class << Gem
-      alias orig_default_ext_dir_for default_ext_dir_for
+      alias_method :orig_default_ext_dir_for, :default_ext_dir_for
 
       remove_method :default_ext_dir_for
 
@@ -1727,7 +1727,7 @@ dependencies: []
     class << Gem
       remove_method :default_ext_dir_for
 
-      alias default_ext_dir_for orig_default_ext_dir_for
+      alias_method :default_ext_dir_for, :orig_default_ext_dir_for
     end
   end
 
@@ -1971,8 +1971,8 @@ dependencies: []
     test_cases = {
       "i386-mswin32" => ["x86", "mswin32", "60"],
       "i386-mswin32_80" => ["x86", "mswin32", "80"],
-      "i386-mingw32" => ["x86", "mingw32", nil ],
-      "x86-darwin8" => ["x86", "darwin", "8" ],
+      "i386-mingw32" => ["x86", "mingw32", nil],
+      "x86-darwin8" => ["x86", "darwin", "8"],
     }
 
     test_cases.each do |arch, expected|
@@ -2186,7 +2186,7 @@ dependencies: []
 
     expected = %w[rake jabber4r pqa]
 
-    assert_equal expected, @c1.runtime_dependencies.map {|d| d.name }
+    assert_equal expected, @c1.runtime_dependencies.map(&:name)
   end
 
   def test_spaceship_name
@@ -2511,10 +2511,21 @@ end
     end
   end
 
-  def x(s); s.gsub(/xxx/, ""); end
-  def w; x "WARxxxNING"; end
-  def t; x "TOxxxDO"; end
-  def f; x "FxxxIXME"; end
+  def x(s)
+    s.gsub(/xxx/, "")
+  end
+
+  def w
+    x "WARxxxNING"
+  end
+
+  def t
+    x "TOxxxDO"
+  end
+
+  def f
+    x "FxxxIXME"
+  end
 
   def test_validate_authors
     util_setup_validate
@@ -2930,7 +2941,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       { b: Gem::Dependency.new("x","1") }
     end
 
-    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       []
     end
 
@@ -2957,7 +2968,7 @@ Please report a bug if this causes problems.
       { b: Gem::Dependency.new("x","1") }
     end
 
-    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       [
         specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") },
         specification.new {|s| s.name = "z", s.version = Gem::Version.new("2") },
@@ -2992,7 +3003,7 @@ Please report a bug if this causes problems.
 
   def set_orig(cls)
     s_cls = cls.singleton_class
-    s_cls.send :alias_method, :orig_unresolved_deps , :unresolved_deps
+    s_cls.send :alias_method, :orig_unresolved_deps, :unresolved_deps
     s_cls.send :alias_method, :orig_find_all_by_name, :find_all_by_name
   end
 
@@ -3454,7 +3465,7 @@ Did you mean 'Ruby'?
       capture_output do
         Gem::Specification.load(specfile.path)
       end
-    rescue => e
+    rescue StandardError => e
       name_rexp = Regexp.new(Regexp.escape(specfile.path))
       assert e.backtrace.grep(name_rexp).any?
     end

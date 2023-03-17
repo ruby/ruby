@@ -75,7 +75,8 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
   def prefetch_now # :nodoc:
-    needed, @to_fetch = @to_fetch, []
+    needed = @to_fetch
+    @to_fetch = []
 
     needed.sort.each do |name|
       versions(name)

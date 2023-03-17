@@ -86,7 +86,7 @@ class Gem::RequestSet::Lockfile
   def add_DEPENDENCIES(out) # :nodoc:
     out << "DEPENDENCIES"
 
-    out.concat @dependencies.sort_by {|name,| name }.map {|name, requirement|
+    out.concat @dependencies.sort.map {|name, requirement|
       "  #{name}#{requirement.for_lockfile}"
     }
 
@@ -105,7 +105,7 @@ class Gem::RequestSet::Lockfile
       out << "  remote: #{group}"
       out << "  specs:"
 
-      requests.sort_by {|request| request.name }.each do |request|
+      requests.sort_by(&:name).each do |request|
         next if request.spec.name == "bundler"
         platform = "-#{request.spec.platform}" unless
           Gem::Platform::RUBY == request.spec.platform
@@ -137,10 +137,10 @@ class Gem::RequestSet::Lockfile
       out << "  revision: #{revision}"
       out << "  specs:"
 
-      requests.sort_by {|request| request.name }.each do |request|
+      requests.sort_by(&:name).each do |request|
         out << "    #{request.name} (#{request.version})"
 
-        dependencies = request.spec.dependencies.sort_by {|dep| dep.name }
+        dependencies = request.spec.dependencies.sort_by(&:name)
         dependencies.each do |dep|
           out << "      #{dep.name}#{dep.requirement.for_lockfile}"
         end
@@ -184,7 +184,7 @@ class Gem::RequestSet::Lockfile
 
     platforms = requests.map {|request| request.spec.platform }.uniq
 
-    platforms = platforms.sort_by {|platform| platform.to_s }
+    platforms = platforms.sort_by(&:to_s)
 
     platforms.each do |platform|
       out << "  #{platform}"

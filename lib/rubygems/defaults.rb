@@ -79,7 +79,7 @@ module Gem
 
   def self.find_home
     Dir.home.dup
-  rescue
+  rescue StandardError
     if Gem.win_platform?
       File.expand_path File.join(ENV["HOMEDRIVE"] || ENV["SystemDrive"], "/")
     else
@@ -183,7 +183,11 @@ module Gem
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    exec_format = RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s") rescue "%s"
+    exec_format = begin
+                    RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s")
+                  rescue StandardError
+                    "%s"
+                  end
 
     unless exec_format.include?("%s")
       raise Gem::Exception,

@@ -43,7 +43,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      # TODO remove in RubyGems 4
+      # TODO: remove in RubyGems 4
       if Gem.install_extension_in_lib && lib_dir
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]
@@ -65,8 +65,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end
-
-  private
 
   def self.get_relative_path(path, base)
     path[0..base.length - 1] = "." if path.start_with?(base)

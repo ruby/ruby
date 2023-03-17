@@ -192,6 +192,12 @@ RSpec.context "when using gem before installing" do
     expect(err).to_not include("Your bundle is locked to rack (0.9.1) from")
     expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
     expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
+
+    # Check error message is still correct when multiple platforms are locked
+    lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
+
+    bundle :list, :raise_on_error => false
+    expect(err).to include("Could not find rack-0.9.1 in locally installed gems")
   end
 
   it "does not suggest the author has yanked the gem when using more than one gem, but shows all gems that couldn't be found in the source" do

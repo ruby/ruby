@@ -32,7 +32,11 @@ class Gem::GemRunner
 
     do_configuration args
 
-    Gem.load_env_plugins rescue nil
+    begin
+      Gem.load_env_plugins
+    rescue StandardError
+      nil
+    end
     Gem.load_plugins
 
     cmd = @command_manager_class.instance
@@ -40,10 +44,10 @@ class Gem::GemRunner
     cmd.command_names.each do |command_name|
       config_args = Gem.configuration[command_name]
       config_args = case config_args
-      when String
-        config_args.split " "
-      else
-        Array(config_args)
+                    when String
+                      config_args.split " "
+                    else
+                      Array(config_args)
       end
       Gem::Command.add_specific_extra_args command_name, config_args
     end

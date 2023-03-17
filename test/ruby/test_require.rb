@@ -210,6 +210,7 @@ class TestRequire < Test::Unit::TestCase
       assert_not_nil(bt = e.backtrace, "no backtrace")
       assert_not_empty(bt.find_all {|b| b.start_with? __FILE__}, proc {bt.inspect})
     end
+  ensure
     $LOADED_FEATURES.replace loaded_features
   end
 

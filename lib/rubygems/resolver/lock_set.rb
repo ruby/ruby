@@ -74,7 +74,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
       q.text "specs:"
 
       q.breakable
-      q.pp @specs.map {|spec| spec.full_name }
+      q.pp @specs.map(&:full_name)
     end
   end
 end

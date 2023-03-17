@@ -40,17 +40,21 @@ class Gem::Commands::CheckCommand < Gem::Command
   def check_gems
     say "Checking gems..."
     say
-    gems = get_all_gem_names rescue []
+    gems = begin
+             get_all_gem_names
+           rescue StandardError
+             []
+           end
 
     Gem::Validator.new.alien(gems).sort.each do |key, val|
-      unless val.empty?
+      if val.empty?
+        say "#{key} is error-free" if Gem.configuration.verbose
+      else
         say "#{key} has #{val.size} problems"
         val.each do |error_entry|
           say "  #{error_entry.path}:"
           say "    #{error_entry.problem}"
         end
-      else
-        say "#{key} is error-free" if Gem.configuration.verbose
       end
       say
     end

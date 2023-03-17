@@ -54,9 +54,9 @@ class Gem::Commands::SetupCommand < Gem::Command
                "List the documentation types you wish to",
                "generate.  For example: rdoc,ri" do |value, options|
       options[:document] = case value
-      when nil   then %w[rdoc ri]
-      when false then []
-      else            value
+                           when nil   then %w[rdoc ri]
+                           when false then []
+                           else value
       end
     end
 
@@ -133,7 +133,7 @@ prefix and suffix.  If ruby was installed as `ruby18`, gem will be
 installed as `gem18`.
 
 By default, this RubyGems will install gem as:
-  #{Gem.default_exec_format % 'gem'}
+  #{Gem.default_exec_format % "gem"}
     EOF
   end
 

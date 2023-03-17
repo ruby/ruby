@@ -67,7 +67,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_DEPENDENCIES # :nodoc:
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
 
       requirements = []
@@ -110,7 +110,7 @@ class Gem::RequestSet::Lockfile::Parser
   def parse_GEM # :nodoc:
     sources = []
 
-    while [:entry, "remote"] == peek.first(2) do
+    while peek.first(2) == [:entry, "remote"] do
       get :entry, "remote"
       data = get(:text).value
       skip :newline
@@ -127,7 +127,7 @@ class Gem::RequestSet::Lockfile::Parser
     set = Gem::Resolver::LockSet.new sources
     last_specs = nil
 
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -199,7 +199,7 @@ class Gem::RequestSet::Lockfile::Parser
 
     last_spec = nil
 
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -246,7 +246,7 @@ class Gem::RequestSet::Lockfile::Parser
     set = Gem::Resolver::VendorSet.new
     last_spec = nil
 
-    while !@tokens.empty? && :text == peek.first do
+    while !@tokens.empty? && peek.first == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -281,7 +281,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_PLATFORMS # :nodoc:
-    while !@tokens.empty? && :text == peek.first do
+    while !@tokens.empty? && peek.first == :text do
       name = get(:text).value
 
       @platforms << name

@@ -755,6 +755,9 @@ class TestRubyOptions < Test::Unit::TestCase
         )?
       )x,
       %r(
+        (?:--\sThreading(?:.+\n)*\n)?
+      )x,
+      %r(
         (?:--\sMachine(?:.+\n)*\n)?
       )x,
       %r(

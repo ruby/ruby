@@ -324,6 +324,9 @@ make_counters! {
     block_next_count,
     defer_count,
     defer_empty_count,
+    branch_insn_count,
+    branch_known_count,
+
     freed_iseq_count,
 
     exit_from_branch_stub,
@@ -535,11 +538,11 @@ fn get_live_context_count() -> usize {
     for_each_iseq_payload(|iseq_payload| {
         for blocks in iseq_payload.version_map.iter() {
             for block in blocks.iter() {
-                count += block.borrow().get_ctx_count();
+                count += unsafe { block.as_ref() }.get_ctx_count();
             }
         }
         for block in iseq_payload.dead_blocks.iter() {
-            count += block.borrow().get_ctx_count();
+            count += unsafe { block.as_ref() }.get_ctx_count();
         }
     });
     count

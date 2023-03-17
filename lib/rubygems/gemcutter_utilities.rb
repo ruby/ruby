@@ -6,9 +6,8 @@ require_relative "text"
 # Utility methods for using the RubyGems API.
 
 module Gem::GemcutterUtilities
-
   ERROR_CODE = 1
-  API_SCOPES = %i[index_rubygems push_rubygem yank_rubygem add_owner remove_owner access_webhooks show_dashboard].freeze
+  API_SCOPES = [:index_rubygems, :push_rubygem, :yank_rubygem, :add_owner, :remove_owner, :access_webhooks, :show_dashboard].freeze
 
   include Gem::Text
 
@@ -117,11 +116,11 @@ module Gem::GemcutterUtilities
   end
 
   def mfa_unauthorized?(response)
-    response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
+    response.is_a?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
   end
 
   def update_scope(scope)
-    sign_in_host        = self.host
+    sign_in_host        = host
     pretty_host         = pretty_host(sign_in_host)
     update_scope_params = { scope => true }
 
@@ -137,7 +136,7 @@ module Gem::GemcutterUtilities
       request.body = URI.encode_www_form({ :api_key => api_key }.merge(update_scope_params))
     end
 
-    with_response response do |resp|
+    with_response response do |_resp|
       say "Added #{scope} scope to the existing API key"
     end
   end
@@ -147,7 +146,7 @@ module Gem::GemcutterUtilities
   # key.
 
   def sign_in(sign_in_host = nil, scope: nil)
-    sign_in_host ||= self.host
+    sign_in_host ||= host
     return if api_key
 
     pretty_host = pretty_host(sign_in_host)
@@ -212,7 +211,7 @@ module Gem::GemcutterUtilities
         say clean_text(response.body)
       end
     when Net::HTTPPermanentRedirect, Net::HTTPRedirection then
-      message = "The request has redirected permanently to #{response['location']}. Please check your defined push host URL."
+      message = "The request has redirected permanently to #{response["location"]}. Please check your defined push host URL."
       message = "#{error_prefix}: #{message}" if error_prefix
 
       say clean_text(message)
@@ -270,7 +269,7 @@ module Gem::GemcutterUtilities
     else
       say "Please select scopes you want to enable for the API key (y/n)"
       API_SCOPES.each do |scope|
-        selected = ask_yes_no("#{scope}", false)
+        selected = ask_yes_no(scope.to_s, false)
         scope_params[scope] = true if selected
       end
       say "\n"
@@ -280,7 +279,7 @@ module Gem::GemcutterUtilities
   end
 
   def default_host?
-    self.host == Gem::DEFAULT_HOST
+    host == Gem::DEFAULT_HOST
   end
 
   def get_user_profile(email, password)
@@ -298,7 +297,7 @@ module Gem::GemcutterUtilities
   def get_mfa_params(profile)
     mfa_level = profile["mfa"]
     params = {}
-    if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"
+    if ["ui_only", "ui_and_gem_signin"].include?(mfa_level)
       selected = ask_yes_no("Would you like to enable MFA for this key? (strongly recommended)")
       params["mfa"] = true if selected
     end
@@ -320,6 +319,6 @@ module Gem::GemcutterUtilities
   end
 
   def api_key_forbidden?(response)
-    response.kind_of?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
+    response.is_a?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
   end
 end

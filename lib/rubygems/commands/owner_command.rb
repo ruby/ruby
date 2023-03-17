@@ -78,7 +78,7 @@ permission to.
 
       say "Owners for gem: #{name}"
       owners.each do |owner|
-        say "- #{owner['email'] || owner['handle'] || owner['id']}"
+        say "- #{owner["email"] || owner["handle"] || owner["id"]}"
       end
     end
   end
@@ -93,14 +93,12 @@ permission to.
 
   def manage_owners(method, name, owners)
     owners.each do |owner|
-      begin
-        response = send_owner_request(method, name, owner)
-        action = method == :delete ? "Removing" : "Adding"
+      response = send_owner_request(method, name, owner)
+      action = method == :delete ? "Removing" : "Adding"
 
-        with_response response, "#{action} #{owner}"
-      rescue
-        # ignore
-      end
+      with_response response, "#{action} #{owner}"
+    rescue StandardError
+      # ignore
     end
   end
 

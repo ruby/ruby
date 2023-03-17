@@ -27,7 +27,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec?
-    make_spec = -> platform do
+    make_spec = ->(platform) do
       util_spec "mygem-for-platform-match_spec", "1" do |s|
         s.platform = platform
       end
@@ -40,7 +40,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec_with_match_gem_override
-    make_spec = -> name, platform do
+    make_spec = ->(name, platform) do
       util_spec name, "1" do |s|
         s.platform = platform
       end

@@ -25,7 +25,6 @@ require "benchmark" # stdlib
 require "rubygems/mock_gem_ui"
 
 module Gem
-
   ##
   # Allows setting the gem path searcher.
 
@@ -118,30 +117,30 @@ class Gem::TestCase < Test::Unit::TestCase
   # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
   def capture_subprocess_io
     _synchronize do
-      begin
-        require "tempfile"
+      require "tempfile"
 
-        captured_stdout, captured_stderr = Tempfile.new("out"), Tempfile.new("err")
+      captured_stdout = Tempfile.new("out")
+      captured_stderr = Tempfile.new("err")
 
-        orig_stdout, orig_stderr = $stdout.dup, $stderr.dup
-        $stdout.reopen captured_stdout
-        $stderr.reopen captured_stderr
+      orig_stdout = $stdout.dup
+      orig_stderr = $stderr.dup
+      $stdout.reopen captured_stdout
+      $stderr.reopen captured_stderr
 
-        yield
+      yield
 
-        $stdout.rewind
-        $stderr.rewind
+      $stdout.rewind
+      $stderr.rewind
 
-        return captured_stdout.read, captured_stderr.read
-      ensure
-        $stdout.reopen orig_stdout
-        $stderr.reopen orig_stderr
+      return captured_stdout.read, captured_stderr.read
+    ensure
+      $stdout.reopen orig_stdout
+      $stderr.reopen orig_stderr
 
-        orig_stdout.close
-        orig_stderr.close
-        captured_stdout.close!
-        captured_stderr.close!
-      end
+      orig_stdout.close
+      orig_stderr.close
+      captured_stdout.close!
+      captured_stderr.close!
     end
   end
 
@@ -260,15 +259,13 @@ class Gem::TestCase < Test::Unit::TestCase
         "Expected output containing make command \"%s\", but was \n\nBEGIN_OF_OUTPUT\n%sEND_OF_OUTPUT" % [
           ("%s %s" % [make_command, target]).rstrip,
           output,
-        ]
-      )
+        ])
     else
       msg = build_message(msg,
         'Expected make command "%s", but was "%s"' % [
           ("%s %s" % [make_command, target]).rstrip,
           output,
-        ]
-      )
+        ])
     end
 
     assert scan_make_command_lines(output).any? {|line|
@@ -337,14 +334,18 @@ class Gem::TestCase < Test::Unit::TestCase
       ruby
     end
 
-    @git = ENV["GIT"] || "git#{RbConfig::CONFIG['EXEEXT']}"
+    @git = ENV["GIT"] || "git#{RbConfig::CONFIG["EXEEXT"]}"
 
     Gem.ensure_gem_subdirectories @gemhome
     Gem.ensure_default_gem_subdirectories @gemhome
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
     $LOAD_PATH.map! do |s|
-      expand_path = File.realpath(s) rescue File.expand_path(s)
+      expand_path = begin
+                      File.realpath(s)
+                    rescue StandardError
+                      File.expand_path(s)
+                    end
       if expand_path != s
         expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
@@ -473,7 +474,7 @@ class Gem::TestCase < Test::Unit::TestCase
     end
 
     Gem::Specification.unresolved_deps.clear
-    Gem::refresh
+    Gem.refresh
 
     @orig_hooks.each do |name, hooks|
       Gem.send(name).replace hooks
@@ -935,7 +936,7 @@ class Gem::TestCase < Test::Unit::TestCase
     @a1 = quick_gem "a", "1" do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
-      s.date = Gem::Specification::TODAY - 86400
+      s.date = Gem::Specification::TODAY - 86_400
       s.homepage = "http://a.example.com"
       s.email = %w[example@example.com example2@example.com]
       s.authors = %w[Example Example2]
@@ -978,15 +979,15 @@ Also, a list:
       util_build_gem @a2_pre
     end
 
-    write_file File.join(*%W[gems #{@a1.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@a3a.original_name}     lib code.rb])
+    write_file File.join(*%W[gems #{@a1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@a3a.original_name} lib code.rb])
     write_file File.join(*%W[gems #{@a_evil9.original_name} lib code.rb])
-    write_file File.join(*%W[gems #{@b2.original_name}      lib code.rb])
-    write_file File.join(*%W[gems #{@c1_2.original_name}    lib code.rb])
-    write_file File.join(*%W[gems #{@pl1.original_name}     lib code.rb])
-    write_file File.join(*%W[gems #{@x.original_name}       lib code.rb])
-    write_file File.join(*%W[gems #{@dep_x.original_name}   lib code.rb])
+    write_file File.join(*%W[gems #{@b2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@x.original_name} lib code.rb])
+    write_file File.join(*%W[gems #{@dep_x.original_name} lib code.rb])
 
     [@a1, @a2, @a3a, @a_evil9, @b2, @c1_2, @pl1, @x, @dep_x].each do |spec|
       util_build_gem spec
@@ -1046,20 +1047,18 @@ Also, a list:
       spec_fetcher.prerelease_specs[@uri] << spec.name_tuple
     end
 
-    # HACK for test_download_to_cache
+    # HACK: for test_download_to_cache
     unless Gem::RemoteFetcher === @fetcher
       v = Gem.marshal_version
 
-      specs = all.map {|spec| spec.name_tuple }
+      specs = all.map(&:name_tuple)
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
-      latest_specs = latest.map do |spec|
-        spec.name_tuple
-      end
+      latest_specs = latest.map(&:name_tuple)
 
       l_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic latest_specs
 
-      prerelease_specs = prerelease.map {|spec| spec.name_tuple }
+      prerelease_specs = prerelease.map(&:name_tuple)
       p_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic prerelease_specs
 
       @fetcher.data["#{@gem_repo}specs.#{v}.gz"]            = s_zip
@@ -1096,8 +1095,8 @@ Also, a list:
     end
 
     @RUBY_VERSION        = RUBY_VERSION
-    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
-    @RUBY_REVISION       = RUBY_REVISION       if defined?(RUBY_REVISION)
+    @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL
+    @RUBY_REVISION       = RUBY_REVISION if defined?(RUBY_REVISION)
     @RUBY_DESCRIPTION    = RUBY_DESCRIPTION
     @RUBY_ENGINE         = RUBY_ENGINE
     @RUBY_ENGINE_VERSION = RUBY_ENGINE_VERSION if defined?(RUBY_ENGINE_VERSION)
@@ -1116,14 +1115,11 @@ Also, a list:
     util_clear_RUBY_VERSION
 
     Object.const_set :RUBY_VERSION,        @RUBY_VERSION
-    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL  if
-      defined?(@RUBY_PATCHLEVEL)
-    Object.const_set :RUBY_REVISION,       @RUBY_REVISION    if
-      defined?(@RUBY_REVISION)
+    Object.const_set :RUBY_PATCHLEVEL,     @RUBY_PATCHLEVEL
+    Object.const_set :RUBY_REVISION,       @RUBY_REVISION if defined?(@RUBY_REVISION)
     Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION
     Object.const_set :RUBY_ENGINE,         @RUBY_ENGINE
-    Object.const_set :RUBY_ENGINE_VERSION, @RUBY_ENGINE_VERSION if
-      defined?(@RUBY_ENGINE_VERSION)
+    Object.const_set :RUBY_ENGINE_VERSION, @RUBY_ENGINE_VERSION if defined?(@RUBY_ENGINE_VERSION)
   end
 
   def util_clear_RUBY_VERSION
@@ -1262,7 +1258,7 @@ Also, a list:
     ruby = ENV["RUBY"]
     return ruby if ruby
     ruby = "ruby"
-    rubyexe = "#{ruby}#{RbConfig::CONFIG['EXEEXT']}"
+    rubyexe = "#{ruby}#{RbConfig::CONFIG["EXEEXT"]}"
 
     3.times do
       if File.exist?(ruby) && File.executable?(ruby) && !File.directory?(ruby)
@@ -1313,7 +1309,8 @@ Also, a list:
   end
 
   def silence_warnings
-    old_verbose, $VERBOSE = $VERBOSE, false
+    old_verbose = $VERBOSE
+    $VERBOSE = false
     yield
   ensure
     $VERBOSE = old_verbose
@@ -1337,8 +1334,8 @@ Also, a list:
     end
   end
 
-  @@good_rake = "#{rubybin} #{escape_path(__dir__, 'good_rake.rb')}"
-  @@bad_rake = "#{rubybin} #{escape_path(__dir__, 'bad_rake.rb')}"
+  @@good_rake = "#{rubybin} #{escape_path(__dir__, "good_rake.rb")}"
+  @@bad_rake = "#{rubybin} #{escape_path(__dir__, "bad_rake.rb")}"
 
   ##
   # Construct a new Gem::Dependency.
@@ -1524,7 +1521,11 @@ Also, a list:
   # <tt>test/rubygems/</tt>.
 
   def self.cert_path(cert_name)
-    if 32 == (Time.at(2**32) rescue 32)
+    if begin
+         Time.at(2**32)
+       rescue StandardError
+         32
+       end == 32
       cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
 
       return cert_file if File.exist? cert_file

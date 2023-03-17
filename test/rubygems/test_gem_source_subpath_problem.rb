@@ -43,7 +43,7 @@ class TestGemSourceSubpathProblem < Gem::TestCase
       Gem::NameTuple.new(@b2.name, @b2.version, "ruby"),
     ]))
 
-    released = @source.load_specs(:latest).map {|spec| spec.full_name }
+    released = @source.load_specs(:latest).map(&:full_name)
     assert_equal %W[a-1 b-2], released
   end
 end

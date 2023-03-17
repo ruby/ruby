@@ -251,7 +251,7 @@ class TestGemSourceGit < Gem::TestCase
       specs = source.specs
     end
 
-    assert_equal %w[a-1 b-1], specs.map {|spec| spec.full_name }
+    assert_equal %w[a-1 b-1], specs.map(&:full_name)
 
     a_spec = specs.shift
 

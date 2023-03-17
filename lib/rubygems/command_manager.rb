@@ -140,7 +140,7 @@ class Gem::CommandManager
   # Return a sorted list of all command names as strings.
 
   def command_names
-    @commands.keys.collect {|key| key.to_s }.sort
+    @commands.keys.collect(&:to_s).sort
   end
 
   ##
@@ -200,7 +200,7 @@ class Gem::CommandManager
 
     if possibilities.size > 1
       raise Gem::CommandLineError,
-            "Ambiguous command #{cmd_name} matches [#{possibilities.join(', ')}]"
+            "Ambiguous command #{cmd_name} matches [#{possibilities.join(", ")}]"
     elsif possibilities.empty?
       raise Gem::UnknownCommandError.new(cmd_name)
     end

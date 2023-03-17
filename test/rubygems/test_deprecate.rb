@@ -28,7 +28,7 @@ class TestDeprecate < Gem::TestCase
     assert_equal true, Gem::Deprecate.skip
 
     Gem::Deprecate.skip = nil
-    assert([true,false].include? Gem::Deprecate.skip)
+    assert([true,false].include?(Gem::Deprecate.skip))
   end
 
   def test_skip
@@ -45,6 +45,7 @@ class TestDeprecate < Gem::TestCase
     def foo
       @message = "foo"
     end
+
     def bar
       @message = "bar"
     end
@@ -53,6 +54,7 @@ class TestDeprecate < Gem::TestCase
     def foo_arg(msg)
       @message = "foo" + msg
     end
+
     def bar_arg(msg)
       @message = "bar" + msg
     end
@@ -61,6 +63,7 @@ class TestDeprecate < Gem::TestCase
     def foo_kwarg(message:)
       @message = "foo" + message
     end
+
     def bar_kwarg(message:)
       @message = "bar" + message
     end
@@ -73,6 +76,7 @@ class TestDeprecate < Gem::TestCase
     def foo
       @message = "foo"
     end
+
     def bar
       @message = "bar"
     end
@@ -81,6 +85,7 @@ class TestDeprecate < Gem::TestCase
     def foo_arg(msg)
       @message = "foo" + msg
     end
+
     def bar_arg(msg)
       @message = "bar" + msg
     end
@@ -89,6 +94,7 @@ class TestDeprecate < Gem::TestCase
     def foo_kwarg(message:)
       @message = "foo" + message
     end
+
     def bar_kwarg(message:)
       @message = "bar" + message
     end

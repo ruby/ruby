@@ -70,8 +70,6 @@ class Gem::Source::Git < Gem::Source
       -1
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 

@@ -28,7 +28,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def close_all
-    @pools.each_value {|pool| pool.close_all }
+    @pools.each_value(&:close_all)
   end
 
   private
@@ -45,7 +45,7 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def https?(uri)
-    uri.scheme.downcase == "https"
+    uri.scheme.casecmp("https").zero?
   end
 
   def no_proxy?(host, env_no_proxy)

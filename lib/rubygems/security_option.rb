@@ -28,7 +28,7 @@ module Gem::SecurityOption
       policy = Gem::Security::Policies[value]
       unless policy
         valid = Gem::Security::Policies.keys.sort
-        raise Gem::OptionParser::InvalidArgument, "#{value} (#{valid.join ', '} are valid)"
+        raise Gem::OptionParser::InvalidArgument, "#{value} (#{valid.join ", "} are valid)"
       end
       policy
     end

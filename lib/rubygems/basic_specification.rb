@@ -144,15 +144,15 @@ class Gem::BasicSpecification
 
   def full_require_paths
     @full_require_paths ||=
-    begin
-      full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path.tap(&Gem::UNTAINT)
+      begin
+        full_paths = raw_require_paths.map do |path|
+          File.join full_gem_path, path.tap(&Gem::UNTAINT)
+        end
+
+        full_paths << extension_dir if have_extensions?
+
+        full_paths
       end
-
-      full_paths << extension_dir if have_extensions?
-
-      full_paths
-    end
   end
 
   ##
@@ -171,17 +171,15 @@ class Gem::BasicSpecification
     if activated?
       @paths_map ||= {}
       @paths_map[path] ||=
-      begin
-        fullpath = nil
-        suffixes = Gem.suffixes
-        suffixes.find do |suf|
-          full_require_paths.find do |dir|
-            File.file?(fullpath = "#{dir}/#{path}#{suf}")
-          end
-        end ? fullpath : nil
-      end
-    else
-      nil
+        begin
+          fullpath = nil
+          suffixes = Gem.suffixes
+          suffixes.find do |suf|
+            full_require_paths.find do |dir|
+              File.file?(fullpath = "#{dir}/#{path}#{suf}")
+            end
+          end ? fullpath : nil
+        end
     end
   end
 
@@ -271,7 +269,7 @@ class Gem::BasicSpecification
   # Return all files in this gem that match for +glob+.
 
   def matches_for_glob(glob) # TODO: rename?
-    glob = File.join(self.lib_dirs_glob, glob)
+    glob = File.join(lib_dirs_glob, glob)
 
     Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
   end
@@ -288,17 +286,17 @@ class Gem::BasicSpecification
   # for this spec.
 
   def lib_dirs_glob
-    dirs = if self.raw_require_paths
-      if self.raw_require_paths.size > 1
-        "{#{self.raw_require_paths.join(',')}}"
+    dirs = if raw_require_paths
+      if raw_require_paths.size > 1
+        "{#{raw_require_paths.join(",")}}"
       else
-        self.raw_require_paths.first
+        raw_require_paths.first
       end
     else
       "lib" # default value for require_paths for bundler/inline
     end
 
-    "#{self.full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
+    "#{full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
   end
 
   ##
@@ -323,11 +321,15 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
-  def this; self; end
+  def this
+    self
+  end
 
   private
 
-  def have_extensions?; !extensions.empty?; end
+  def have_extensions?
+    !extensions.empty?
+  end
 
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|

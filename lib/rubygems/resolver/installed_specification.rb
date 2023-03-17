@@ -24,7 +24,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   def installable_platform?
     # BACKCOMPAT If the file is coming out of a specified file, then we
     # ignore the platform. This code can be removed in RG 3.0.
-    return true if @source.kind_of? Gem::Source::SpecificFile
+    return true if @source.is_a? Gem::Source::SpecificFile
 
     super
   end

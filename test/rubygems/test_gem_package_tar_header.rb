@@ -10,9 +10,9 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
       :name => "x",
       :mode => 0644,
       :uid => 1000,
-      :gid => 10000,
+      :gid => 10_000,
       :size => 100,
-      :mtime => 12345,
+      :mtime => 12_345,
       :typeflag => "0",
       :linkname => "link",
       :uname => "user",
@@ -39,12 +39,12 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     assert_equal "",      @tar_header.checksum, "checksum"
     assert_equal 1,       @tar_header.devmajor, "devmajor"
     assert_equal 2,       @tar_header.devminor, "devminor"
-    assert_equal 10000,   @tar_header.gid,      "gid"
+    assert_equal 10_000, @tar_header.gid, "gid"
     assert_equal "group", @tar_header.gname,    "gname"
     assert_equal "link",  @tar_header.linkname, "linkname"
     assert_equal "ustar", @tar_header.magic,    "magic"
     assert_equal 0644,    @tar_header.mode,     "mode"
-    assert_equal 12345,   @tar_header.mtime,    "mtime"
+    assert_equal 12_345, @tar_header.mtime, "mtime"
     assert_equal "x",     @tar_header.name,     "name"
     assert_equal "y",     @tar_header.prefix,   "prefix"
     assert_equal 100,     @tar_header.size,     "size"
@@ -195,13 +195,13 @@ tjmather\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 
     tar_header = Gem::Package::TarHeader.from stream
 
-    assert_equal 1991400094, tar_header.uid
-    assert_equal 1991400094, tar_header.gid
+    assert_equal 1_991_400_094, tar_header.uid
+    assert_equal 1_991_400_094, tar_header.gid
 
     assert_equal "GeoIP2-City_20190528/", tar_header.name
     assert_equal 0755, tar_header.mode
     assert_equal 0, tar_header.size
-    assert_equal 1559064640, tar_header.mtime
+    assert_equal 1_559_064_640, tar_header.mtime
     assert_equal 6932, tar_header.checksum
   end
 

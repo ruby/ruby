@@ -9,7 +9,7 @@ class TestGemIndexer < Gem::TestCase
     util_make_gems
 
     @d2_0 = util_spec "d", "2.0" do |s|
-      s.date = Gem::Specification::TODAY - 86400 * 3
+      s.date = Gem::Specification::TODAY - 86_400 * 3
     end
     util_build_gem @d2_0
 
@@ -160,8 +160,8 @@ class TestGemIndexer < Gem::TestCase
     assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
     assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
 
-    refute_indexed quickdir, "#{File.basename(@c1_2.spec_file)}"
-    refute_indexed marshal_quickdir, "#{File.basename(@c1_2.spec_file)}"
+    refute_indexed quickdir, File.basename(@c1_2.spec_file).to_s
+    refute_indexed marshal_quickdir, File.basename(@c1_2.spec_file).to_s
 
     assert_indexed @indexerdir, "specs.#{@marshal_version}"
     assert_indexed @indexerdir, "specs.#{@marshal_version}.gz"

@@ -84,10 +84,10 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def activated?
     @activated ||=
-    begin
-      loaded = Gem.loaded_specs[name]
-      loaded && loaded.version == version
-    end
+      begin
+        loaded = Gem.loaded_specs[name]
+        loaded && loaded.version == version
+      end
   end
 
   def default_gem?
@@ -111,20 +111,18 @@ class Gem::StubSpecification < Gem::BasicSpecification
         saved_lineno = $.
 
         Gem.open_file loaded_from, OPEN_MODE do |file|
-          begin
-            file.readline # discard encoding line
-            stubline = file.readline.chomp
-            if stubline.start_with?(PREFIX)
-              extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
-                $'.split "\0"
-              else
-                StubLine::NO_EXTENSIONS
-              end
-
-              @data = StubLine.new stubline, extensions
+          file.readline # discard encoding line
+          stubline = file.readline.chomp
+          if stubline.start_with?(PREFIX)
+            extensions = if /\A#{PREFIX}/ =~ file.readline.chomp
+              $'.split "\0"
+            else
+              StubLine::NO_EXTENSIONS
             end
-          rescue EOFError
+
+            @data = StubLine.new stubline, extensions
           end
+        rescue EOFError
         end
       ensure
         $. = saved_lineno

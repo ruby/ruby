@@ -962,7 +962,7 @@ module RubyVM::RJIT # :nodoc: all
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mark_bits)")],
       outer_variables: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), outer_variables)")],
       mandatory_only_iseq: [CType::Pointer.new { self.rb_iseq_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mandatory_only_iseq)")],
-      jit_func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
+      jit_func: [self.rb_jit_func_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
       total_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)")],
       rjit_blocks: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), rjit_blocks)"), true],
     )
@@ -1005,6 +1005,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_iseq_t
     @rb_iseq_t ||= self.rb_iseq_struct
+  end
+
+  def C.rb_jit_func_t
+    @rb_jit_func_t ||= CType::Immediate.parse("void *")
   end
 
   def C.rb_method_attr_t

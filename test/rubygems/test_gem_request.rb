@@ -106,8 +106,8 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_configure_connection_for_https_ssl_ca_cert
-    ssl_ca_cert, Gem.configuration.ssl_ca_cert =
-      Gem.configuration.ssl_ca_cert, CA_CERT_FILE
+    ssl_ca_cert = Gem.configuration.ssl_ca_cert
+    Gem.configuration.ssl_ca_cert = CA_CERT_FILE
 
     connection = Net::HTTP.new "localhost", 443
 
@@ -185,7 +185,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_fetch
-    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
+    uri = Gem::Uri.new(URI.parse("#{@gem_repo}/specs.#{Gem.marshal_version}"))
     response = util_stub_net_http(:body => :junk, :code => 200) do
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
 
@@ -198,7 +198,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_basic_auth
     Gem.configuration.verbose = :really
-    uri = Gem::Uri.new(URI.parse "https://user:pass@example.rubygems/specs.#{Gem.marshal_version}")
+    uri = Gem::Uri.new(URI.parse("https://user:pass@example.rubygems/specs.#{Gem.marshal_version}"))
     conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
       use_ui @ui do
         @request = make_request(uri, Net::HTTP::Get, nil, nil)
@@ -208,13 +208,13 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('user:pass')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("user:pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_basic_auth_encoded
     Gem.configuration.verbose = :really
-    uri = Gem::Uri.new(URI.parse "https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}")
+    uri = Gem::Uri.new(URI.parse("https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}"))
 
     conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
       use_ui @ui do
@@ -225,13 +225,13 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('user:{DEScede}pass')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("user:{DEScede}pass")}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_basic_oauth_encoded
     Gem.configuration.verbose = :really
-    uri = Gem::Uri.new(URI.parse "https://%7BDEScede%7Dpass:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}")
+    uri = Gem::Uri.new(URI.parse("https://%7BDEScede%7Dpass:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"))
 
     conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
       use_ui @ui do
@@ -242,13 +242,13 @@ class TestGemRequest < Gem::TestCase
     end
 
     auth_header = conn.payload["Authorization"]
-    assert_equal "Basic #{Base64.encode64('{DEScede}pass:x-oauth-basic')}".strip, auth_header
+    assert_equal "Basic #{Base64.encode64("{DEScede}pass:x-oauth-basic")}".strip, auth_header
     assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_head
-    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
-    response = util_stub_net_http(:body => "", :code => 200) do |conn|
+    uri = Gem::Uri.new(URI.parse("#{@gem_repo}/specs.#{Gem.marshal_version}"))
+    response = util_stub_net_http(:body => "", :code => 200) do |_conn|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
     end
@@ -258,7 +258,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_fetch_unmodified
-    uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
+    uri = Gem::Uri.new(URI.parse("#{@gem_repo}/specs.#{Gem.marshal_version}"))
     t = Time.utc(2013, 1, 2, 3, 4, 5)
     conn, response = util_stub_net_http(:body => "", :code => 304) do |c|
       @request = make_request(uri, Net::HTTP::Get, t, nil)
@@ -521,7 +521,10 @@ ERROR:  Certificate  is an invalid CA certificate
   class Conn
     attr_accessor :payload
 
-    def new(*args); self; end
+    def new(*args)
+      self
+    end
+
     def use_ssl=(bool); end
     def verify_callback=(setting); end
     def verify_mode=(setting); end
