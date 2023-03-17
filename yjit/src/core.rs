@@ -384,7 +384,7 @@ pub struct Context {
     sp_offset: i8,
 
     // The number of stack temps spilled to the stack
-    pub spilled_size: u8,
+    spilled_temps: [bool; MAX_TEMP_REGS],
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
     chain_depth: u8,
@@ -1324,7 +1324,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         let mut generic_ctx = Context::default();
         generic_ctx.stack_size = ctx.stack_size;
         generic_ctx.sp_offset = ctx.sp_offset;
-        generic_ctx.spilled_size = ctx.spilled_size;
+        generic_ctx.spilled_temps = ctx.spilled_temps;
 
         debug_assert_ne!(
             TypeDiff::Incompatible,
@@ -1504,6 +1504,22 @@ impl Block {
 }
 
 impl Context {
+    pub fn get_spilled_temps(&self) -> [bool; MAX_TEMP_REGS] {
+        self.spilled_temps
+    }
+
+    pub fn set_spilled_temps(&mut self, spilled_temps: [bool; MAX_TEMP_REGS]) {
+        self.spilled_temps = spilled_temps;
+    }
+
+    pub fn spill_temps(&mut self, spilled_size: u8) {
+        let mut spilled_temps = [false; 8];
+        for stack_idx in 0..usize::min(spilled_size as usize, MAX_TEMP_REGS) {
+            spilled_temps[stack_idx] = true;
+        }
+        self.spilled_temps = spilled_temps;
+    }
+
     pub fn get_stack_size(&self) -> u8 {
         self.stack_size
     }
@@ -1820,7 +1836,7 @@ impl Context {
             return TypeDiff::Incompatible;
         }
 
-        if dst.spilled_size != src.spilled_size {
+        if dst.spilled_temps != src.spilled_temps {
             return TypeDiff::Incompatible;
         }
 

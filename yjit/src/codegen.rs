@@ -508,7 +508,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
 fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
     let mut cb = ocb.unwrap();
     let exit_code = cb.get_write_ptr();
-    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
+    let mut asm = Assembler::new_with_spilled_temps(ctx.get_spilled_temps());
 
     // Spill before returning to the interpreter
     asm.spill_temps(&mut ctx.clone());
@@ -794,10 +794,10 @@ pub fn gen_single_block(
     jit.iseq = blockid.iseq;
 
     // At each block boundary, it's safe to decrease spilled_size to stack_size
-    ctx.spilled_size = u8::min(ctx.spilled_size, ctx.get_stack_size());
+    ctx.spill_temps(ctx.get_stack_size());
 
     // Create a backend assembler instance
-    let mut asm = Assembler::new_with_spilled_size(ctx.spilled_size);
+    let mut asm = Assembler::new_with_spilled_temps(ctx.get_spilled_temps());
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -859,6 +859,10 @@ pub fn gen_single_block(
                 println!("compiling {}", insn_name(opcode));
                 print_str(&mut asm, &format!("executing {}", insn_name(opcode)));
             }
+
+            // Copy spilled_temps from Assembler to Context before generating
+            // a side exit in gen_fn
+            ctx.set_spilled_temps(asm.get_spilled_temps());
 
             // Call the code generation function
             status = gen_fn(&mut jit, &mut ctx, &mut asm, ocb);
@@ -6111,7 +6115,7 @@ fn gen_send_iseq(
     let mut return_ctx = ctx.clone();
     return_ctx.stack_pop(sp_offset.try_into().unwrap());
     return_ctx.stack_push(Type::Unknown);
-    return_ctx.spilled_size = return_ctx.get_stack_size();
+    return_ctx.spill_temps(return_ctx.get_stack_size());
     return_ctx.set_sp_offset(1);
     return_ctx.reset_chain_depth();
 
