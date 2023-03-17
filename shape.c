@@ -145,6 +145,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
 
                 new_shape->type = (uint8_t)shape_type;
                 new_shape->capacity = shape->capacity;
+                new_shape->edges = NULL;
 
                 switch (shape_type) {
                   case SHAPE_IVAR:
