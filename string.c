@@ -2460,6 +2460,7 @@ rb_str_modify_expand(VALUE str, long expand)
     else if (expand > 0) {
         RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
+    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
