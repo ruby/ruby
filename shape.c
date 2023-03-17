@@ -451,6 +451,7 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
 
     switch ((enum shape_type)dest_shape->type) {
       case SHAPE_IVAR:
+      case SHAPE_FROZEN:
         if (!next_shape->edges) {
             return NULL;
         }
@@ -464,7 +465,6 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
         }
         break;
       case SHAPE_ROOT:
-      case SHAPE_FROZEN:
       case SHAPE_CAPACITY_CHANGE:
       case SHAPE_INITIAL_CAPACITY:
       case SHAPE_T_OBJECT:
