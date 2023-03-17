@@ -3722,7 +3722,7 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
  *  - Other type:
  *
  *    - Raises an exception if keyword argument +exception+ is +true+.
- *    - Returns +nil+ if keyword argument +exception+ is +true+.
+ *    - Returns +nil+ if keyword argument +exception+ is +false+.
  *
  *  Raises an exception if +value+ evaluates to a Float
  *  and +digits+ is larger than Float::DIG + 1.
