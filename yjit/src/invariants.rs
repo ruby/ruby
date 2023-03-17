@@ -5,7 +5,6 @@ use crate::asm::OutlinedCb;
 use crate::codegen::*;
 use crate::core::*;
 use crate::cruby::*;
-use crate::options::*;
 use crate::stats::*;
 use crate::utils::IntoUsize;
 use crate::yjit::yjit_enabled_p;
@@ -273,32 +272,11 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
     }
 
     with_vm_lock(src_loc!(), || {
-        if get_option!(global_constant_state) {
-            // If the global-constant-state option is set, then we're going to
-            // invalidate every block that depends on any constant.
-
-            Invariants::get_instance()
-                .constant_state_blocks
-                .keys()
-                .for_each(|id| {
-                    if let Some(blocks) =
-                        Invariants::get_instance().constant_state_blocks.remove(&id)
-                    {
-                        for block in &blocks {
-                            invalidate_block_version(block);
-                            incr_counter!(invalidate_constant_state_bump);
-                        }
-                    }
-                });
-        } else {
-            // If the global-constant-state option is not set, then we're only going
-            // to invalidate the blocks that are associated with the given ID.
-
-            if let Some(blocks) = Invariants::get_instance().constant_state_blocks.remove(&id) {
-                for block in &blocks {
-                    invalidate_block_version(block);
-                    incr_counter!(invalidate_constant_state_bump);
-                }
+        // Invalidate the blocks that are associated with the given ID.
+        if let Some(blocks) = Invariants::get_instance().constant_state_blocks.remove(&id) {
+            for block in &blocks {
+                invalidate_block_version(block);
+                incr_counter!(invalidate_constant_state_bump);
             }
         }
     });
