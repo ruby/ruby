@@ -681,6 +681,16 @@ FOO
       eval "x = <<""FOO\r\n1\r\nFOO"
     end
     assert_equal("1\n", x)
+
+    assert_nothing_raised do
+      x = eval "<<' FOO'\n""[Bug #19539]\n"" FOO\n"
+    end
+    assert_equal("[Bug #19539]\n", x)
+
+    assert_nothing_raised do
+      x = eval "<<-' FOO'\n""[Bug #19539]\n"" FOO\n"
+    end
+    assert_equal("[Bug #19539]\n", x)
   end
 
   def test_magic_comment

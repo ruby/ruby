@@ -8200,19 +8200,19 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 static int
 whole_match_p(struct parser_params *p, const char *eos, long len, int indent)
 {
-    const char *ptr = p->lex.pbeg;
-    long n;
+    const char *beg = p->lex.pbeg;
+    const char *ptr = p->lex.pend;
 
+    if (ptr - beg < len) return FALSE;
+    if (ptr > beg && ptr[-1] == '\n') {
+        if (--ptr > beg && ptr[-1] == '\r') --ptr;
+        if (ptr - beg < len) return FALSE;
+    }
+    if (strncmp(eos, ptr -= len, len)) return FALSE;
     if (indent) {
-        while (*ptr && ISSPACE(*ptr)) ptr++;
+        while (beg < ptr && ISSPACE(*beg)) beg++;
     }
-    n = p->lex.pend - (ptr + len);
-    if (n < 0) return FALSE;
-    if (n > 0 && ptr[len] != '\n') {
-        if (ptr[len] != '\r') return FALSE;
-        if (n <= 1 || ptr[len+1] != '\n') return FALSE;
-    }
-    return strncmp(eos, ptr, len) == 0;
+    return beg == ptr;
 }
 
 static int
