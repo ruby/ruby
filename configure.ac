@@ -3872,8 +3872,8 @@ AS_CASE(["$RJIT_SUPPORT"],
 
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Enable RJIT_STATS (vm_insns_count of --rjit-stats)
-        AC_DEFINE(RUBY_DEBUG, 1)
+        # Enable extra stats (vm_insns_count, ratio_in_rjit)
+        AC_DEFINE(RJIT_STATS, 1)
     ])
 
     AC_DEFINE(USE_RJIT, 1)
