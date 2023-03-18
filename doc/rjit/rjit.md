@@ -22,7 +22,8 @@ You may still manually pass `--enable-rjit` to try RJIT on unsupported platforms
 
 ### --enable-rjit=dev
 
-`--enable-rjit=dev` makes the interpreter slower, but enables `ruby --rjit-stats` to work.
+`--enable-rjit=dev` makes the interpreter slower, but enables `vm_insns_count` and `ratio_in_rjit`
+in `ruby --rjit-stats` to work.
 
 ## make
 ### rjit-bindgen
@@ -35,7 +36,7 @@ macOS seems to have libclang by default. On Ubuntu, you can install it with `apt
 ## ruby
 ### --rjit-stats
 
-This prints RJIT stats at exit. Available with `--enable-rjit=dev` on configure.
+This prints RJIT stats at exit. Some stats are available only with `--enable-rjit=dev` on configure.
 
 ### --rjit-dump-disasm
 

@@ -145,8 +145,8 @@ rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
-#if RJIT_STATS
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+#if RJIT_STATS
     M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #endif
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
@@ -158,9 +158,9 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 };
 #undef M
 
-#if RJIT_STATS
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
+#if RJIT_STATS
 void
 rb_rjit_collect_vm_usage_insn(int insn)
 {

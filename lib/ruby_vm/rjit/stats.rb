@@ -22,6 +22,8 @@ module RubyVM::RJIT
       retired_in_rjit = stats[:rjit_insns_count] - stats[:side_exit_count]
       stats[:total_insns_count] = retired_in_rjit + stats[:vm_insns_count]
       stats[:ratio_in_rjit] = 100.0 * retired_in_rjit / stats[:total_insns_count]
+    else
+      stats.delete(:vm_insns_count)
     end
 
     stats

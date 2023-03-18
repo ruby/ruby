@@ -406,10 +406,8 @@ rjit_exit_traces(void)
 #define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
 #define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
 
-#if RJIT_STATS
 // Insn side exit counters
 static size_t rjit_insn_exits[VM_INSTRUCTION_SIZE] = { 0 };
-#endif // YJIT_STATS
 
 // macOS: brew install capstone
 // Ubuntu/Debian: apt-get install libcapstone-dev

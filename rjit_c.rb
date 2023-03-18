@@ -18,13 +18,7 @@ module RubyVM::RJIT # :nodoc: all
     end
 
     def rjit_insn_exits
-      addr = Primitive.cstmt! %{
-        #if RJIT_STATS
-          return SIZET2NUM((size_t)rjit_insn_exits);
-        #else
-          return SIZET2NUM(0);
-        #endif
-      }
+      addr = Primitive.cexpr! 'SIZET2NUM((size_t)rjit_insn_exits)'
       CType::Immediate.parse("size_t").new(addr)
     end
 
@@ -36,13 +30,7 @@ module RubyVM::RJIT # :nodoc: all
     end
 
     def rb_rjit_counters
-      addr = Primitive.cstmt! %{
-        #if RJIT_STATS
-          return SIZET2NUM((size_t)&rb_rjit_counters);
-        #else
-          return SIZET2NUM(0);
-        #endif
-      }
+      addr = Primitive.cexpr! 'SIZET2NUM((size_t)&rb_rjit_counters)'
       rb_rjit_runtime_counters.new(addr)
     end
 

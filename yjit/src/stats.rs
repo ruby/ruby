@@ -253,11 +253,10 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
-    send_iseq_has_rest_and_splat_fewer,
     send_iseq_has_rest_and_send,
-    send_iseq_has_rest_and_block,
     send_iseq_has_rest_and_kw,
     send_iseq_has_rest_and_optional,
+    send_iseq_has_rest_and_splat_not_equal,
     send_is_a_class_mismatch,
     send_instance_of_class_mismatch,
 
@@ -283,7 +282,6 @@ make_counters! {
 
     leave_se_interrupt,
     leave_interp_return,
-    leave_start_pc_non_zero,
 
     getivar_se_self_not_heap,
     getivar_idx_out_of_range,
@@ -534,11 +532,11 @@ fn get_live_context_count() -> usize {
     for_each_iseq_payload(|iseq_payload| {
         for blocks in iseq_payload.version_map.iter() {
             for block in blocks.iter() {
-                count += block.borrow().get_ctx_count();
+                count += unsafe { block.as_ref() }.get_ctx_count();
             }
         }
         for block in iseq_payload.dead_blocks.iter() {
-            count += block.borrow().get_ctx_count();
+            count += unsafe { block.as_ref() }.get_ctx_count();
         }
     });
     count

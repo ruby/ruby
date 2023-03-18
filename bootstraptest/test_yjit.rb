@@ -3662,3 +3662,24 @@ assert_equal '[1, 2, 3]', %q{
   end
   send(:bar, 1, 2, 3)
 }
+
+# Rest with block
+# Simplified code from railsbench
+assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
+  def match(path, *rest, &block)
+    [path, rest, block]
+  end
+
+  def map_method(method, args, &block)
+    options = args.last
+    args.pop
+    options[:via] = method
+    match(*args, options, &block)
+  end
+
+  def post(*args, &block)
+    map_method(:post, args, &block)
+  end
+
+  post "/a" => "b", as: :c
+}
