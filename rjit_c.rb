@@ -403,6 +403,7 @@ module RubyVM::RJIT # :nodoc: all
   C::VM_METHOD_TYPE_REFINED = Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_REFINED) }
   C::VM_METHOD_TYPE_UNDEF = Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_UNDEF) }
   C::VM_METHOD_TYPE_ZSUPER = Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ZSUPER) }
+  C::VM_SPECIAL_OBJECT_VMCORE = Primitive.cexpr! %q{ SIZET2NUM(VM_SPECIAL_OBJECT_VMCORE) }
 
   def C.block_type_iseq
     Primitive.cexpr! %q{ SIZET2NUM(block_type_iseq) }
@@ -438,6 +439,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_cTrueClass
     Primitive.cexpr! %q{ SIZET2NUM(rb_cTrueClass) }
+  end
+
+  def C.rb_mRubyVMFrozenCore
+    Primitive.cexpr! %q{ SIZET2NUM(rb_mRubyVMFrozenCore) }
   end
 
   def C.rb_rjit_global_events

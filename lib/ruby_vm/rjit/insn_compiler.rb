@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 75/102
+      # 76/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -40,7 +40,7 @@ module RubyVM::RJIT
       when :putnil then putnil(jit, ctx, asm)
       when :putself then putself(jit, ctx, asm)
       when :putobject then putobject(jit, ctx, asm)
-      # putspecialobject
+      when :putspecialobject then putspecialobject(jit, ctx, asm)
       when :putstring then putstring(jit, ctx, asm)
       when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
@@ -621,7 +621,22 @@ module RubyVM::RJIT
       KeepCompiling
     end
 
-    # putspecialobject
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def putspecialobject(jit, ctx, asm)
+      object_type = jit.operand(0)
+      if object_type == C::VM_SPECIAL_OBJECT_VMCORE
+        stack_top = ctx.stack_push
+        asm.mov(:rax, C.rb_mRubyVMFrozenCore)
+        asm.mov(stack_top, :rax)
+        KeepCompiling
+      else
+        # TODO: implement for VM_SPECIAL_OBJECT_CBASE and
+        # VM_SPECIAL_OBJECT_CONST_BASE
+        CantCompile
+      end
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -2623,39 +2638,41 @@ module RubyVM::RJIT
       # Only memory operand is supported for now
       assert_equal(true, obj_opnd.is_a?(Array))
 
-      if known_klass == NilClass
+      # Touching this as Ruby could crash for FrozenCore
+      known_klass = C.to_value(known_klass)
+      if known_klass == C.rb_cNilClass
         asm.comment('guard object is nil')
         asm.cmp(obj_opnd, Qnil)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == TrueClass
+      elsif known_klass == C.rb_cTrueClass
         asm.comment('guard object is true')
         asm.cmp(obj_opnd, Qtrue)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == FalseClass
+      elsif known_klass == C.rb_cFalseClass
         asm.comment('guard object is false')
         asm.cmp(obj_opnd, Qfalse)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == Integer && fixnum?(comptime_obj)
+      elsif known_klass == C.rb_cInteger && fixnum?(comptime_obj)
         asm.comment('guard object is fixnum')
         asm.test(obj_opnd, C::RUBY_FIXNUM_FLAG)
         jit_chain_guard(:jz, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == Symbol && static_symbol?(comptime_obj)
+      elsif known_klass == C.rb_cSymbol && static_symbol?(comptime_obj)
         # We will guard STATIC vs DYNAMIC as though they were separate classes
         # DYNAMIC symbols can be handled by the general else case below
         asm.comment('guard object is static symbol')
         assert_equal(8, C::RUBY_SPECIAL_SHIFT)
         asm.cmp(BytePtr[*obj_opnd], C::RUBY_SYMBOL_FLAG)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif known_klass == Float && flonum?(comptime_obj)
+      elsif known_klass == C.rb_cFloat && flonum?(comptime_obj)
         # We will guard flonum vs heap float as though they were separate classes
         asm.comment('guard object is flonum')
         asm.mov(:rax, obj_opnd)
         asm.and(:rax, C::RUBY_FLONUM_MASK)
         asm.cmp(:rax, C::RUBY_FLONUM_FLAG)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
-      elsif C::FL_TEST(known_klass, C::RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
+      elsif C.FL_TEST(known_klass, C::RUBY_FL_SINGLETON) && comptime_obj == C.rb_class_attached_object(known_klass)
         asm.comment('guard known object with singleton class')
-        asm.mov(:rax, C.to_value(comptime_obj))
+        asm.mov(:rax, to_value(comptime_obj))
         asm.cmp(obj_opnd, :rax)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       else
@@ -2674,7 +2691,7 @@ module RubyVM::RJIT
         # Bail if receiver class is different from known_klass
         klass_opnd = [obj_opnd, C.RBasic.offsetof(:klass)]
         asm.comment("guard known class #{known_klass}")
-        asm.mov(:rcx, to_value(known_klass))
+        asm.mov(:rcx, known_klass)
         asm.cmp(klass_opnd, :rcx)
         jit_chain_guard(:jne, jit, ctx, asm, side_exit, limit:)
       end

@@ -460,6 +460,7 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_REFINED
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
+      VM_SPECIAL_OBJECT_VMCORE
     ],
   },
   values: {
@@ -474,6 +475,7 @@ generator = BindingGenerator.new(
       rb_cSymbol
       rb_cTrueClass
       rb_rjit_global_events
+      rb_mRubyVMFrozenCore
     ],
   },
   funcs: %w[
