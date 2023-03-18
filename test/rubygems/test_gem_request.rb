@@ -478,8 +478,7 @@ ERROR:  Certificate  is an invalid CA certificate
 
   def util_restore_version
     Object.send :remove_const, :RUBY_ENGINE
-    Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE if
-      defined?(@orig_RUBY_ENGINE)
+    Object.send :const_set,    :RUBY_ENGINE, @orig_RUBY_ENGINE
 
     Object.send :remove_const, :RUBY_PATCHLEVEL
     Object.send :const_set,    :RUBY_PATCHLEVEL, @orig_RUBY_PATCHLEVEL
