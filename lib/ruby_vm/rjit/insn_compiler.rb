@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 74/102
+      # 75/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -82,7 +82,7 @@ module RubyVM::RJIT
       when :invokesuper then invokesuper(jit, ctx, asm)
       when :invokeblock then invokeblock(jit, ctx, asm)
       when :leave then leave(jit, ctx, asm)
-      # throw
+      when :throw then throw(jit, ctx, asm)
       when :jump then jump(jit, ctx, asm)
       when :branchif then branchif(jit, ctx, asm)
       when :branchunless then branchunless(jit, ctx, asm)
@@ -1308,7 +1308,37 @@ module RubyVM::RJIT
       EndBlock
     end
 
-    # throw
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def throw(jit, ctx, asm)
+      throw_state = jit.operand(0)
+      asm.mov(:rcx, ctx.stack_pop(1)) # throwobj
+
+      # THROW_DATA_NEW allocates. Save SP for GC and PC for allocation tracing as
+      # well as handling the catch table. However, not using jit_prepare_routine_call
+      # since we don't need a patch point for this implementation.
+      jit_save_pc(jit, asm) # clobbers rax
+      jit_save_sp(ctx, asm)
+
+      # rb_vm_throw verifies it's a valid throw, sets ec->tag->state, and returns throw
+      # data, which is throwobj or a vm_throw_data wrapping it. When ec->tag->state is
+      # set, JIT code callers will handle the throw with vm_exec_handle_exception.
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], CFP)
+      asm.mov(C_ARGS[2], throw_state)
+      # asm.mov(C_ARGS[3], :rcx) # same reg
+      asm.call(C.rb_vm_throw)
+
+      asm.comment('exit from throw')
+      asm.pop(SP)
+      asm.pop(EC)
+      asm.pop(CFP)
+
+      # return C_RET as C_RET
+      asm.ret
+      EndBlock
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -2810,10 +2840,10 @@ module RubyVM::RJIT
     def jit_prepare_routine_call(jit, ctx, asm)
       jit.record_boundary_patch_point = true
       jit_save_pc(jit, asm)
-      jit_save_sp(jit, ctx, asm)
+      jit_save_sp(ctx, asm)
     end
 
-    # Note: This clobbers :rax
+    # NOTE: This clobbers :rax
     # @param jit [RubyVM::RJIT::JITState]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_save_pc(jit, asm, comment: 'save PC to CFP')
@@ -2823,10 +2853,9 @@ module RubyVM::RJIT
       asm.mov([CFP, C.rb_control_frame_t.offsetof(:pc)], :rax)
     end
 
-    # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_save_sp(jit, ctx, asm)
+    def jit_save_sp(ctx, asm)
       if ctx.sp_offset != 0
         asm.comment('save SP to CFP')
         asm.lea(SP, ctx.sp_opnd)

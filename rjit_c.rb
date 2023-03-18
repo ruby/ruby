@@ -580,6 +580,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_splat_array) }
   end
 
+  def C.rb_vm_throw
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_throw) }
+  end
+
   def C.rjit_full_cfunc_return
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_full_cfunc_return) }
   end

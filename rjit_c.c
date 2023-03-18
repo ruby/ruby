@@ -494,6 +494,7 @@ extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cf
 extern bool rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep);
 extern rb_event_flag_t rb_rjit_global_events;
 extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC ic);
+extern VALUE rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj);
 
 #include "rjit_c.rbinc"
 
