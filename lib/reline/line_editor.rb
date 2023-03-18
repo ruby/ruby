@@ -972,6 +972,7 @@ class Reline::LineEditor
       prev_line_prompt = @prompt_proc ? prompt_list[@line_index - 1] : prompt
       prev_line_prompt_width = @prompt_proc ? calculate_width(prev_line_prompt, true) : prompt_width
       prev_line = modify_lines(lines)[@line_index - 1]
+      move_cursor_up(@started_from)
       render_partial(prev_line_prompt, prev_line_prompt_width, prev_line, @first_line_started_from + @started_from, with_control: false)
       scroll_down(1)
       render_partial(prompt, prompt_width, @line, @first_line_started_from + @started_from + 1, with_control: false)

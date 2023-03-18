@@ -281,6 +281,23 @@ begin
       EOC
     end
 
+    def test_multiline_add_new_line_and_autowrap
+      start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def aaaaaaaaaa")
+      write("\n")
+      write("  bbbbbbbbbbbb")
+      write("\n")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def aaaaaaaa
+        aa
+        prompt>   bbbbbbbbbb
+        bb
+        prompt>
+      EOC
+    end
+
     def test_clear
       start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("3\C-l")
