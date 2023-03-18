@@ -518,6 +518,12 @@ generator = BindingGenerator.new(
     rjit_record_exit_stack
     rb_ivar_defined
     rb_vm_throw
+    rb_backref_get
+    rb_reg_last_match
+    rb_reg_match_pre
+    rb_reg_match_post
+    rb_reg_match_last
+    rb_reg_nth_match
   ],
   types: %w[
     CALL_DATA

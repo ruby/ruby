@@ -465,6 +465,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_store) }
   end
 
+  def C.rb_backref_get
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_backref_get) }
+  end
+
   def C.rb_ec_ary_new_from_values
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ec_ary_new_from_values) }
   end
@@ -535,6 +539,26 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_obj_is_kind_of
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_obj_is_kind_of) }
+  end
+
+  def C.rb_reg_last_match
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_last_match) }
+  end
+
+  def C.rb_reg_match_last
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_match_last) }
+  end
+
+  def C.rb_reg_match_post
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_match_post) }
+  end
+
+  def C.rb_reg_match_pre
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_match_pre) }
+  end
+
+  def C.rb_reg_nth_match
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_nth_match) }
   end
 
   def C.rb_str_concat_literals

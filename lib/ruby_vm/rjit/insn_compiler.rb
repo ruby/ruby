@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 76/102
+      # 77/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -26,7 +26,7 @@ module RubyVM::RJIT
       when :getblockparam then getblockparam(jit, ctx, asm)
       # setblockparam
       when :getblockparamproxy then getblockparamproxy(jit, ctx, asm)
-      # getspecial
+      when :getspecial then getspecial(jit, ctx, asm)
       # setspecial
       when :getinstancevariable then getinstancevariable(jit, ctx, asm)
       when :setinstancevariable then setinstancevariable(jit, ctx, asm)
@@ -301,7 +301,72 @@ module RubyVM::RJIT
       EndBlock
     end
 
-    # getspecial
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def getspecial(jit, ctx, asm)
+      # This takes two arguments, key and type
+      # key is only used when type == 0
+      # A non-zero type determines which type of backref to fetch
+      #rb_num_t key = jit.jit_get_arg(0);
+      rtype = jit.operand(1)
+
+      if rtype == 0
+        # not yet implemented
+        return CantCompile;
+      elsif rtype & 0x01 != 0
+        # Fetch a "special" backref based on a char encoded by shifting by 1
+
+        # Can raise if matchdata uninitialized
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        # call rb_backref_get()
+        asm.comment('rb_backref_get')
+        asm.call(C.rb_backref_get)
+
+        asm.mov(C_ARGS[0], C_RET) # backref
+        case [rtype >> 1].pack('c')
+        in ?&
+          asm.comment("rb_reg_last_match")
+          asm.call(C.rb_reg_last_match)
+        in ?`
+          asm.comment("rb_reg_match_pre")
+          asm.call(C.rb_reg_match_pre)
+        in ?'
+          asm.comment("rb_reg_match_post")
+          asm.call(C.rb_reg_match_post)
+        in ?+
+          asm.comment("rb_reg_match_last")
+          asm.call(C.rb_reg_match_last)
+        end
+
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        KeepCompiling
+      else
+        # Fetch the N-th match from the last backref based on type shifted by 1
+
+        # Can raise if matchdata uninitialized
+        jit_prepare_routine_call(jit, ctx, asm)
+
+        # call rb_backref_get()
+        asm.comment('rb_backref_get')
+        asm.call(C.rb_backref_get)
+
+        # rb_reg_nth_match((int)(type >> 1), backref);
+        asm.comment('rb_reg_nth_match')
+        asm.mov(C_ARGS[0], rtype >> 1)
+        asm.mov(C_ARGS[1], C_RET) # backref
+        asm.call(C.rb_reg_nth_match)
+
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        KeepCompiling
+      end
+    end
+
     # setspecial
 
     # @param jit [RubyVM::RJIT::JITState]
