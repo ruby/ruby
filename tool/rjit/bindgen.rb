@@ -385,6 +385,7 @@ generator = BindingGenerator.new(
       BOP_AND
       BOP_AREF
       BOP_EQ
+      BOP_EQQ
       BOP_FREEZE
       BOP_GE
       BOP_GT

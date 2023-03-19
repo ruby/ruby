@@ -1746,9 +1746,51 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def opt_case_dispatch(jit, ctx, asm)
-      # Just go to === branches for now
-      ctx.stack_pop
-      KeepCompiling
+      # Normally this instruction would lookup the key in a hash and jump to an
+      # offset based on that.
+      # Instead we can take the fallback case and continue with the next
+      # instruction.
+      # We'd hope that our jitted code will be sufficiently fast without the
+      # hash lookup, at least for small hashes, but it's worth revisiting this
+      # assumption in the future.
+      unless jit.at_current_insn?
+        defer_compilation(jit, ctx, asm)
+        return EndBlock
+      end
+      starting_context = ctx.dup
+
+      case_hash = jit.operand(0, ruby: true)
+      else_offset = jit.operand(1)
+
+      # Try to reorder case/else branches so that ones that are actually used come first.
+      # Supporting only Fixnum for now so that the implementation can be an equality check.
+      key_opnd = ctx.stack_pop(1)
+      comptime_key = jit.peek_at_stack(0)
+
+      # Check that all cases are fixnums to avoid having to register BOP assumptions on
+      # all the types that case hashes support. This spends compile time to save memory.
+      if fixnum?(comptime_key) && comptime_key <= 2**32 && C.rb_hash_keys(case_hash).all? { |key| fixnum?(key) }
+        unless Invariants.assume_bop_not_redefined(jit, C::INTEGER_REDEFINED_OP_FLAG, C::BOP_EQQ)
+          return CantCompile
+        end
+
+        # Check if the key is the same value
+        asm.cmp(key_opnd, comptime_key)
+        side_exit = side_exit(jit, starting_context)
+        jit_chain_guard(:jne, jit, starting_context, asm, side_exit)
+
+        # Get the offset for the compile-time key
+        offset = C.rb_hash_stlike_lookup(case_hash, comptime_key)
+        # NOTE: If we hit the else branch with various values, it could negatively impact the performance.
+        jump_offset = offset || else_offset
+
+        # Jump to the offset of case or else
+        target_pc = jit.pc + (jit.insn.len + jump_offset) * C.VALUE.size
+        jit_direct_jump(jit.iseq, target_pc, ctx, asm)
+        EndBlock
+      else
+        KeepCompiling # continue with === branches
+      end
     end
 
     # @param jit [RubyVM::RJIT::JITState]
