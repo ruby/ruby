@@ -57,7 +57,7 @@ jobs:
           ${arch:+cross}build-essential${arch/:/-} \
           libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
           zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
-          bison autoconf ruby
+          bison autoconf ruby libcapstone-dev
           sudo apt-get install -q -y pkg-config${arch} || :
       - name: git config
         run: |
