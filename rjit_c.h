@@ -40,6 +40,7 @@ RJIT_RUNTIME_COUNTERS(
     send_stackoverflow,
     send_arity,
     send_c_tracing,
+    send_is_a_class_mismatch,
 
     send_blockarg_not_nil_or_proxy,
     send_blockiseq,

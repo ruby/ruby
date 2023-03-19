@@ -1376,7 +1376,7 @@ module RubyVM::RJIT
       recv = ctx.stack_opnd(0)
       comptime_recv = jit.peek_at_stack(0)
 
-      if C::RB_TYPE_P(comptime_recv, C::RUBY_T_STRING)
+      if C.RB_TYPE_P(comptime_recv, C::RUBY_T_STRING)
         side_exit = side_exit(jit, ctx)
 
         jit_guard_known_klass(jit, ctx, asm, C.rb_class_of(comptime_recv), recv, comptime_recv, side_exit)
@@ -2464,6 +2464,53 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_kernel_is_a(jit, ctx, asm, argc, known_recv_class)
+      if argc != 1
+        return false
+      end
+
+      # If this is a super call we might not know the class
+      if known_recv_class.nil?
+        return false
+      end
+
+      # Important note: The output code will simply `return true/false`.
+      # Correctness follows from:
+      #  - `known_recv_class` implies there is a guard scheduled before here
+      #    for a particular `CLASS_OF(lhs)`.
+      #  - We guard that rhs is identical to the compile-time sample
+      #  - In general, for any two Class instances A, B, `A < B` does not change at runtime.
+      #    Class#superclass is stable.
+
+      sample_rhs = jit.peek_at_stack(0)
+      sample_lhs = jit.peek_at_stack(1)
+
+      # We are not allowing module here because the module hierachy can change at runtime.
+      if C.RB_TYPE_P(sample_rhs, C::RUBY_T_CLASS)
+        return false
+      end
+      sample_is_a = C.obj_is_kind_of(sample_lhs, sample_rhs)
+
+      side_exit = side_exit(jit, ctx)
+      asm.comment('Kernel#is_a?')
+      asm.mov(:rax, to_value(sample_rhs))
+      asm.cmp(ctx.stack_opnd(0), :rax)
+      asm.jne(counted_exit(side_exit, :send_is_a_class_mismatch))
+
+      ctx.stack_pop(2)
+
+      stack_ret = ctx.stack_push
+      if sample_is_a
+        asm.mov(stack_ret, Qtrue)
+      else
+        asm.mov(stack_ret, Qfalse)
+      end
+      return true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('rb_obj_not')
@@ -2710,8 +2757,8 @@ module RubyVM::RJIT
 
       register_cfunc_method(NilClass, :nil?, :jit_rb_true)
       register_cfunc_method(Kernel, :nil?, :jit_rb_false)
-      #register_cfunc_method(Kernel, :is_a?, :jit_rb_kernel_is_a)
-      #register_cfunc_method(Kernel, :kind_of?, :jit_rb_kernel_is_a)
+      register_cfunc_method(Kernel, :is_a?, :jit_rb_kernel_is_a)
+      register_cfunc_method(Kernel, :kind_of?, :jit_rb_kernel_is_a)
       #register_cfunc_method(Kernel, :instance_of?, :jit_rb_kernel_instance_of)
 
       register_cfunc_method(BasicObject, :==, :jit_rb_obj_equal)
@@ -4274,7 +4321,7 @@ module RubyVM::RJIT
 
     def dynamic_symbol?(obj)
       return false if C::SPECIAL_CONST_P(obj)
-      C::RB_TYPE_P(obj, C::RUBY_T_SYMBOL)
+      C.RB_TYPE_P(obj, C::RUBY_T_SYMBOL)
     end
 
     def shape_too_complex?(obj)

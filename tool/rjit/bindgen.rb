@@ -424,6 +424,7 @@ generator = BindingGenerator.new(
       RUBY_SPECIAL_SHIFT
       RUBY_SYMBOL_FLAG
       RUBY_T_ARRAY
+      RUBY_T_CLASS
       RUBY_T_ICLASS
       RUBY_T_MASK
       RUBY_T_MODULE

@@ -306,6 +306,10 @@ module RubyVM::RJIT # :nodoc: all
         return result;
       }
     end
+
+    def obj_is_kind_of(obj, c)
+      Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
+    end
   end
 
   #
@@ -371,6 +375,7 @@ module RubyVM::RJIT # :nodoc: all
   C::RUBY_SPECIAL_SHIFT = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SPECIAL_SHIFT) }
   C::RUBY_SYMBOL_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SYMBOL_FLAG) }
   C::RUBY_T_ARRAY = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ARRAY) }
+  C::RUBY_T_CLASS = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_CLASS) }
   C::RUBY_T_ICLASS = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ICLASS) }
   C::RUBY_T_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MASK) }
   C::RUBY_T_MODULE = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MODULE) }
@@ -1214,6 +1219,7 @@ module RubyVM::RJIT # :nodoc: all
       send_stackoverflow: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_stackoverflow)")],
       send_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_arity)")],
       send_c_tracing: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_c_tracing)")],
+      send_is_a_class_mismatch: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_is_a_class_mismatch)")],
       send_blockarg_not_nil_or_proxy: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_blockarg_not_nil_or_proxy)")],
       send_blockiseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_blockiseq)")],
       send_block_handler: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_block_handler)")],
