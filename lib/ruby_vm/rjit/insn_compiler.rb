@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 78/102
+      # 79/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -35,7 +35,7 @@ module RubyVM::RJIT
       when :opt_getconstant_path then opt_getconstant_path(jit, ctx, asm)
       when :getconstant then getconstant(jit, ctx, asm)
       # setconstant
-      # getglobal
+      when :getglobal then getglobal(jit, ctx, asm)
       # setglobal
       when :putnil then putnil(jit, ctx, asm)
       when :putself then putself(jit, ctx, asm)
@@ -649,7 +649,25 @@ module RubyVM::RJIT
     end
 
     # setconstant
-    # getglobal
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def getglobal(jit, ctx, asm)
+      gid = jit.operand(0)
+
+      # Save the PC and SP because we might make a Ruby call for warning
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], gid)
+      asm.call(C.rb_gvar_get)
+
+      top = ctx.stack_push
+      asm.mov(top, C_RET)
+
+      KeepCompiling
+    end
+
     # setglobal
 
     # @param jit [RubyVM::RJIT::JITState]

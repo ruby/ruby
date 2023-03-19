@@ -505,6 +505,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_get_symbol_id) }
   end
 
+  def C.rb_gvar_get
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_gvar_get) }
+  end
+
   def C.rb_hash_aref
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_hash_aref) }
   end

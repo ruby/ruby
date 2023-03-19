@@ -536,6 +536,7 @@ generator = BindingGenerator.new(
     rb_reg_match_post
     rb_reg_match_last
     rb_reg_nth_match
+    rb_gvar_get
   ],
   types: %w[
     CALL_DATA
