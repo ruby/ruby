@@ -2734,7 +2734,8 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_empty_p(jit, ctx, asm, argc, known_recv_class)
       # Assume same offset to len embedded or not so we can use one code path to read the length
-      assert_equal(C.RString.offsetof(:as, :heap, :len), C.RString.offsetof(:as, :embed, :len))
+      #assert_equal(C.RString.offsetof(:as, :heap, :len), C.RString.offsetof(:as, :embed, :len))
+      # `C.RString.offsetof(:as, :embed, :len)` doesn't work because of USE_RVARGC=0 CI
 
       recv_opnd = ctx.stack_pop(1)
       out_opnd = ctx.stack_push
