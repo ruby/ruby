@@ -2908,6 +2908,25 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_ary_empty_p(jit, ctx, asm, argc, _known_recv_class)
+      array_reg = :rax
+      asm.mov(array_reg, ctx.stack_pop(1))
+      len_opnd = jit_array_len(asm, array_reg, :rcx)
+
+      asm.test(:rcx, :rcx)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmovz(:rax, :rcx)
+
+      out_opnd = ctx.stack_push
+      asm.mov(out_opnd, :rax)
+
+      return true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_ary_push(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_ary_push')
@@ -2978,7 +2997,7 @@ module RubyVM::RJIT
       register_cfunc_method(String, :+@, :jit_rb_str_uplus)
 
       # rb_ary_empty_p() method in array.c
-      #register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
+      register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
 
       #register_cfunc_method(Kernel, :respond_to?, :jit_obj_respond_to)
       #register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
