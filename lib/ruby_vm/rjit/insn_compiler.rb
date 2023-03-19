@@ -2855,6 +2855,41 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_str_uplus(jit, ctx, asm, argc, _known_recv_class)
+      if argc != 0
+        return false
+      end
+
+      # We allocate when we dup the string
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.comment('Unary plus on string')
+      asm.mov(:rax, ctx.stack_pop(1)) # recv_opnd
+      asm.mov(:rcx, [:rax, C.RBasic.offsetof(:flags)]) # flags_opnd
+      asm.test(:rcx, C::RUBY_FL_FREEZE)
+
+      ret_label = asm.new_label('stack_ret')
+
+      # String#+@ can only exist on T_STRING
+      stack_ret = ctx.stack_push
+
+      # If the string isn't frozen, we just return it.
+      asm.mov(stack_ret, :rax) # recv_opnd
+      asm.jz(ret_label)
+
+      # Str is frozen - duplicate it
+      asm.mov(C_ARGS[0], :rax) # recv_opnd
+      asm.call(C.rb_str_dup)
+      asm.mov(stack_ret, C_RET)
+
+      asm.write_label(ret_label)
+
+      true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_getbyte(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_str_getbyte')
@@ -2940,7 +2975,7 @@ module RubyVM::RJIT
       register_cfunc_method(String, :to_str, :jit_rb_str_to_s)
       register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)
       register_cfunc_method(String, :<<, :jit_rb_str_concat)
-      #register_cfunc_method(String, :+@, :jit_rb_str_uplus)
+      register_cfunc_method(String, :+@, :jit_rb_str_uplus)
 
       # rb_ary_empty_p() method in array.c
       #register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)

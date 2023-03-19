@@ -371,6 +371,7 @@ module RubyVM::RJIT # :nodoc: all
   C::RUBY_FIXNUM_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FIXNUM_FLAG) }
   C::RUBY_FLONUM_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_FLAG) }
   C::RUBY_FLONUM_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FLONUM_MASK) }
+  C::RUBY_FL_FREEZE = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FL_FREEZE) }
   C::RUBY_FL_SINGLETON = Primitive.cexpr! %q{ SIZET2NUM(RUBY_FL_SINGLETON) }
   C::RUBY_IMMEDIATE_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_IMMEDIATE_MASK) }
   C::RUBY_SPECIAL_SHIFT = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SPECIAL_SHIFT) }
@@ -614,6 +615,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_str_concat_literals
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_concat_literals) }
+  end
+
+  def C.rb_str_dup
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_dup) }
   end
 
   def C.rb_str_eql_internal
