@@ -556,6 +556,7 @@ generator = BindingGenerator.new(
     RBasic
     RObject
     RStruct
+    RString
     attr_index_t
     iseq_inline_constant_cache
     iseq_inline_constant_cache_entry

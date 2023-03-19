@@ -2732,6 +2732,29 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_str_empty_p(jit, ctx, asm, argc, known_recv_class)
+      # Assume same offset to len embedded or not so we can use one code path to read the length
+      assert_equal(C.RString.offsetof(:as, :heap, :len), C.RString.offsetof(:as, :embed, :len))
+
+      recv_opnd = ctx.stack_pop(1)
+      out_opnd = ctx.stack_push
+
+      asm.comment('get string length')
+      asm.mov(:rax, recv_opnd)
+      str_len_opnd = [:rax, C.RString.offsetof(:as, :heap, :len)]
+
+      asm.cmp(str_len_opnd, 0)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmove(:rax, :rcx)
+      asm.mov(out_opnd, :rax)
+
+      return true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_to_s(jit, ctx, asm, argc, known_recv_class)
       return false if argc != 0
       if known_recv_class == String
@@ -2826,7 +2849,7 @@ module RubyVM::RJIT
       register_cfunc_method(Integer, :===, :jit_rb_int_equal)
 
       # rb_str_to_s() methods in string.c
-      #register_cfunc_method(String, :empty?, :jit_rb_str_empty_p)
+      register_cfunc_method(String, :empty?, :jit_rb_str_empty_p)
       register_cfunc_method(String, :to_s, :jit_rb_str_to_s)
       register_cfunc_method(String, :to_str, :jit_rb_str_to_s)
       #register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)

@@ -748,6 +748,31 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.RString
+    @RString ||= CType::Struct.new(
+      "RString", Primitive.cexpr!("SIZEOF(struct RString)"),
+      basic: [self.RBasic, Primitive.cexpr!("OFFSETOF((*((struct RString *)NULL)), basic)")],
+      as: [CType::Union.new(
+        "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as)"),
+        heap: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.heap)"),
+          len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.heap, len)")],
+          ptr: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.heap, ptr)")],
+          aux: [CType::Union.new(
+            "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.heap.aux)"),
+            capa: CType::Immediate.parse("long"),
+            shared: self.VALUE,
+          ), Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.heap, aux)")],
+        ),
+        embed: CType::Struct.new(
+          "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.embed)"),
+          len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, len)")],
+          ary: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
+        ),
+      ), Primitive.cexpr!("OFFSETOF((*((struct RString *)NULL)), as)")],
+    )
+  end
+
   def C.RStruct
     @RStruct ||= CType::Struct.new(
       "RStruct", Primitive.cexpr!("SIZEOF(struct RStruct)"),
