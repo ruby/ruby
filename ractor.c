@@ -887,7 +887,7 @@ static VALUE ractor_move(VALUE obj); // in this file
 static VALUE ractor_copy(VALUE obj); // in this file
 
 static void
-ractor_basket_prepare_contents(VALUE obj, VALUE move, VALUE *pobj, enum rb_ractor_basket_type *ptype)
+ractor_basket_prepare_contents(VALUE obj, VALUE move, volatile VALUE *pobj, enum rb_ractor_basket_type *ptype)
 {
     VALUE v;
     enum rb_ractor_basket_type type;
@@ -1248,7 +1248,7 @@ ractor_deq_take_basket(rb_ractor_t *cr, struct rb_ractor_queue *rs, struct rb_ra
 }
 
 static bool
-ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts, VALUE obj, VALUE move, bool exc, bool is_will)
+ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_queue *ts, volatile VALUE obj, VALUE move, bool exc, bool is_will)
 {
     ASSERT_ractor_unlocking(cr);
 
