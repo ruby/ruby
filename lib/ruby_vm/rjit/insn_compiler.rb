@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 77/102
+      # 78/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -66,7 +66,7 @@ module RubyVM::RJIT
       when :defined then defined(jit, ctx, asm)
       when :definedivar then definedivar(jit, ctx, asm)
       # checkmatch
-      # checkkeyword
+      when :checkkeyword then checkkeyword(jit, ctx, asm)
       # checktype
       # defineclass
       # definemethod
@@ -1154,7 +1154,43 @@ module RubyVM::RJIT
     end
 
     # checkmatch
-    # checkkeyword
+
+    def checkkeyword(jit, ctx, asm)
+      # When a keyword is unspecified past index 32, a hash will be used
+      # instead. This can only happen in iseqs taking more than 32 keywords.
+      if jit.iseq.body.param.keyword.num >= 32
+        return CantCompile
+      end
+
+      # The EP offset to the undefined bits local
+      bits_offset = jit.operand(0)
+
+      # The index of the keyword we want to check
+      index = jit.operand(1, signed: true)
+
+      # Load environment pointer EP
+      ep_reg = :rax
+      jit_get_ep(asm, 0, reg: ep_reg)
+
+      # VALUE kw_bits = *(ep - bits)
+      bits_opnd = [ep_reg, C.VALUE.size * -bits_offset]
+
+      # unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
+      # if ((b & (0x01 << idx))) {
+      #
+      # We can skip the FIX2ULONG conversion by shifting the bit we test
+      bit_test = 0x01 << (index + 1)
+      asm.test(bits_opnd, bit_test)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmovz(:rax, :rcx)
+
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
     # checktype
     # defineclass
     # definemethod

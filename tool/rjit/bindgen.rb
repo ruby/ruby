@@ -156,8 +156,8 @@ class BindingGenerator
       println
     end
 
-    # TODO: Support nested declarations
-    nodes_index = nodes.group_by(&:spelling).transform_values do |values|
+    # Build a hash table for type lookup by name
+    nodes_index = flatten_nodes(nodes).group_by(&:spelling).transform_values do |values|
       # Try to search a declaration with definitions
       node_with_children = values.find { |v| !v.children.empty? }
       next node_with_children if node_with_children
@@ -169,7 +169,7 @@ class BindingGenerator
     # Define types
     @types.each do |type|
       unless definition = generate_node(nodes_index[type])
-        raise "Failed to generate type: #{type}"
+        raise "Failed to find or generate type: #{type}"
       end
       println "  def C.#{type}"
       println "@#{type} ||= #{definition}".gsub(/^/, "    ").chomp
@@ -200,6 +200,18 @@ class BindingGenerator
   end
 
   private
+
+  # Make an array that includes all top-level and nested nodes
+  def flatten_nodes(nodes)
+    result = []
+    nodes.each do |node|
+      unless node.children.empty?
+        result.concat(flatten_nodes(node.children))
+      end
+    end
+    result.concat(nodes) # prioritize top-level nodes
+    result
+  end
 
   # Return code before BINDGEN_BEG and code after BINDGEN_END
   def split_ambles(src_path)
@@ -573,6 +585,7 @@ generator = BindingGenerator.new(
     rb_shape_t
     rb_thread_struct
     rb_jit_func_t
+    rb_iseq_param_keyword
     rjit_options
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection

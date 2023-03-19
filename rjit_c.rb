@@ -1001,6 +1001,18 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_iseq_param_keyword
+    @rb_iseq_param_keyword ||= CType::Struct.new(
+      "rb_iseq_param_keyword", Primitive.cexpr!("SIZEOF(struct rb_iseq_param_keyword)"),
+      num: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), num)")],
+      required_num: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), required_num)")],
+      bits_start: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), bits_start)")],
+      rest_start: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), rest_start)")],
+      table: [CType::Pointer.new { self.ID }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), table)")],
+      default_values: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_param_keyword *)NULL)), default_values)")],
+    )
+  end
+
   def C.rb_iseq_struct
     @rb_iseq_struct ||= CType::Struct.new(
       "rb_iseq_struct", Primitive.cexpr!("SIZEOF(struct rb_iseq_struct)"),
@@ -1352,10 +1364,6 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_iseq_type
     CType::Stub.new(:rb_iseq_type)
-  end
-
-  def C.rb_iseq_param_keyword
-    CType::Stub.new(:rb_iseq_param_keyword)
   end
 
   def C.iseq_insn_info
