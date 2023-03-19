@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 81/102
+      # 82/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -45,7 +45,7 @@ module RubyVM::RJIT
       when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
       when :toregexp then toregexp(jit, ctx, asm)
-      # intern
+      when :intern then intern(jit, ctx, asm)
       when :newarray then newarray(jit, ctx, asm)
       # newarraykwsplat
       when :duparray then duparray(jit, ctx, asm)
@@ -827,7 +827,23 @@ module RubyVM::RJIT
       KeepCompiling
     end
 
-    # intern
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def intern(jit, ctx, asm)
+      # Save the PC and SP because we might allocate
+      jit_prepare_routine_call(jit, ctx, asm);
+
+      str = ctx.stack_pop(1)
+      asm.mov(C_ARGS[0], str)
+      asm.call(C.rb_str_intern)
+
+      # Push the return value
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]

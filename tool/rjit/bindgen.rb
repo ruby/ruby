@@ -541,6 +541,7 @@ generator = BindingGenerator.new(
     rb_ary_tmp_new_from_values
     rb_reg_new_ary
     rb_ary_clear
+    rb_str_intern
   ],
   types: %w[
     CALL_DATA
