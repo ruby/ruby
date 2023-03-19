@@ -497,6 +497,7 @@ extern void rb_vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, V
 extern VALUE rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj);
 extern VALUE rb_reg_new_ary(VALUE ary, int opt);
 extern void rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic);
+extern VALUE rb_str_bytesize(VALUE str);
 
 #include "rjit_c.rbinc"
 

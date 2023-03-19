@@ -607,6 +607,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_nth_match) }
   end
 
+  def C.rb_str_bytesize
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_bytesize) }
+  end
+
   def C.rb_str_concat_literals
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_concat_literals) }
   end

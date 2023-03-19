@@ -2186,7 +2186,7 @@ rb_str_length(VALUE str)
  *
  */
 
-static VALUE
+VALUE
 rb_str_bytesize(VALUE str)
 {
     return LONG2NUM(RSTRING_LEN(str));

@@ -442,13 +442,6 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_vm_insn_addr2opcode((const void *)at_pc);
 }
 
-// used by jit_rb_str_bytesize in codegen.rs
-VALUE
-rb_str_bytesize(VALUE str)
-{
-    return LONG2NUM(RSTRING_LEN(str));
-}
-
 unsigned long
 rb_RSTRING_LEN(VALUE str)
 {

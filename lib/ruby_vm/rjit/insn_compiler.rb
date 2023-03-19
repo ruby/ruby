@@ -2769,6 +2769,22 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_str_bytesize(jit, ctx, asm, argc, known_recv_class)
+      asm.comment('String#bytesize')
+
+      recv = ctx.stack_pop(1)
+      asm.mov(C_ARGS[0], recv)
+      asm.call(C.rb_str_bytesize)
+
+      out_opnd = ctx.stack_push
+      asm.mov(out_opnd, C_RET)
+
+      true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_getbyte(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_str_getbyte')
@@ -2852,7 +2868,7 @@ module RubyVM::RJIT
       register_cfunc_method(String, :empty?, :jit_rb_str_empty_p)
       register_cfunc_method(String, :to_s, :jit_rb_str_to_s)
       register_cfunc_method(String, :to_str, :jit_rb_str_to_s)
-      #register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)
+      register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)
       #register_cfunc_method(String, :<<, :jit_rb_str_concat)
       #register_cfunc_method(String, :+@, :jit_rb_str_uplus)
 
