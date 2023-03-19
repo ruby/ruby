@@ -625,6 +625,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_min) }
   end
 
+  def C.rb_vm_setclassvariable
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_setclassvariable) }
+  end
+
   def C.rb_vm_setinstancevariable
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_setinstancevariable) }
   end

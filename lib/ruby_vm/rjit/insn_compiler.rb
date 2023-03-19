@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 82/102
+      # 83/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -31,7 +31,7 @@ module RubyVM::RJIT
       when :getinstancevariable then getinstancevariable(jit, ctx, asm)
       when :setinstancevariable then setinstancevariable(jit, ctx, asm)
       when :getclassvariable then getclassvariable(jit, ctx, asm)
-      # setclassvariable
+      when :setclassvariable then setclassvariable(jit, ctx, asm)
       when :opt_getconstant_path then opt_getconstant_path(jit, ctx, asm)
       when :getconstant then getconstant(jit, ctx, asm)
       # setconstant
@@ -556,7 +556,22 @@ module RubyVM::RJIT
       KeepCompiling
     end
 
-    # setclassvariable
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def setclassvariable(jit, ctx, asm)
+      # rb_vm_setclassvariable can raise exceptions.
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], [CFP, C.rb_control_frame_t.offsetof(:iseq)])
+      asm.mov(C_ARGS[1], CFP)
+      asm.mov(C_ARGS[2], jit.operand(0))
+      asm.mov(C_ARGS[3], ctx.stack_pop(1))
+      asm.mov(C_ARGS[4], jit.operand(1))
+      asm.call(C.rb_vm_setclassvariable)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -1251,6 +1266,9 @@ module RubyVM::RJIT
 
     # checkmatch
 
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def checkkeyword(jit, ctx, asm)
       # When a keyword is unspecified past index 32, a hash will be used
       # instead. This can only happen in iseqs taking more than 32 keywords.
