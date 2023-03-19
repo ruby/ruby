@@ -1494,7 +1494,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             }
             else if (is_option_with_optarg("rjit", '-', true, false, false)) {
 #if USE_RJIT
-                extern void rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt);
+                extern void rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt);
                 FEATURE_SET(opt->features, FEATURE_BIT(rjit));
                 rb_rjit_setup_options(s, &opt->rjit);
 #else

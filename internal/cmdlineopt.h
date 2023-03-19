@@ -24,7 +24,7 @@ typedef struct ruby_cmdline_options {
     ruby_features_t warn;
     unsigned int dump;
 #if USE_RJIT
-    struct rjit_options rjit;
+    struct rb_rjit_options rjit;
 #endif
 
     int sflag, xflag;

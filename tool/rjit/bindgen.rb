@@ -588,7 +588,7 @@ generator = BindingGenerator.new(
     rb_thread_struct
     rb_jit_func_t
     rb_iseq_param_keyword
-    rjit_options
+    rb_rjit_options
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[

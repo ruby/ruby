@@ -251,7 +251,7 @@ module RubyVM::RJIT # :nodoc: all
 
     def rjit_opts
       addr = Primitive.cexpr! 'SIZET2NUM((VALUE)&rb_rjit_opts)'
-      rjit_options.new(addr)
+      rb_rjit_options.new(addr)
     end
 
     def rjit_cancel_all(reason)
@@ -1139,6 +1139,19 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_rjit_options
+    @rb_rjit_options ||= CType::Struct.new(
+      "rb_rjit_options", Primitive.cexpr!("SIZEOF(struct rb_rjit_options)"),
+      on: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), on)")],
+      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), call_threshold)")],
+      exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), exec_mem_size)")],
+      stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), stats)")],
+      trace_exits: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), trace_exits)")],
+      dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), dump_disasm)")],
+      pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), pause)")],
+    )
+  end
+
   def C.rb_rjit_runtime_counters
     @rb_rjit_runtime_counters ||= CType::Struct.new(
       "rb_rjit_runtime_counters", Primitive.cexpr!("SIZEOF(struct rb_rjit_runtime_counters)"),
@@ -1298,19 +1311,6 @@ module RubyVM::RJIT # :nodoc: all
       blocking: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), blocking)")],
       name: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), name)")],
       ext_config: [self.rb_ext_config, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ext_config)")],
-    )
-  end
-
-  def C.rjit_options
-    @rjit_options ||= CType::Struct.new(
-      "rjit_options", Primitive.cexpr!("SIZEOF(struct rjit_options)"),
-      on: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), on)")],
-      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), call_threshold)")],
-      exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), exec_mem_size)")],
-      stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), stats)")],
-      trace_exits: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), trace_exits)")],
-      dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), dump_disasm)")],
-      pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rjit_options *)NULL)), pause)")],
     )
   end
 

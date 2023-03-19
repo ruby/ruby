@@ -63,7 +63,7 @@
 // A copy of RJIT portion of MRI options since RJIT initialization.  We
 // need them as RJIT threads still can work when the most MRI data were
 // freed.
-struct rjit_options rb_rjit_opts;
+struct rb_rjit_options rb_rjit_opts;
 
 // true if RJIT is enabled.
 bool rb_rjit_enabled = false;
@@ -112,7 +112,7 @@ VALUE rb_rjit_line_samples = 0;
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--rjit-" name " needs an argument"), 0))
 
 void
-rb_rjit_setup_options(const char *s, struct rjit_options *rjit_opt)
+rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
 {
     const size_t l = strlen(s);
     if (l == 0) {
@@ -384,7 +384,7 @@ rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p)
 }
 
 void
-rb_rjit_init(const struct rjit_options *opts)
+rb_rjit_init(const struct rb_rjit_options *opts)
 {
     VM_ASSERT(rb_rjit_enabled);
 
