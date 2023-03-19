@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 79/102
+      # 80/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -54,7 +54,7 @@ module RubyVM::RJIT
       when :concatarray then concatarray(jit, ctx, asm)
       when :splatarray then splatarray(jit, ctx, asm)
       when :newhash then newhash(jit, ctx, asm)
-      # newrange
+      when :newrange then newrange(jit, ctx, asm)
       when :pop then pop(jit, ctx, asm)
       when :dup then dup(jit, ctx, asm)
       when :dupn then dupn(jit, ctx, asm)
@@ -1002,7 +1002,27 @@ module RubyVM::RJIT
       KeepCompiling
     end
 
-    # newrange
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def newrange(jit, ctx, asm)
+      flag = jit.operand(0)
+
+      # rb_range_new() allocates and can raise
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      # val = rb_range_new(low, high, (int)flag);
+      asm.mov(C_ARGS[0], ctx.stack_opnd(1))
+      asm.mov(C_ARGS[1], ctx.stack_opnd(0))
+      asm.mov(C_ARGS[2], flag)
+      asm.call(C.rb_range_new)
+
+      ctx.stack_pop(2)
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]

@@ -545,6 +545,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_obj_is_kind_of) }
   end
 
+  def C.rb_range_new
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_range_new) }
+  end
+
   def C.rb_reg_last_match
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_last_match) }
   end
