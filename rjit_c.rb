@@ -449,6 +449,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM(rb_rjit_global_events) }
   end
 
+  def C.rb_ary_clear
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_clear) }
+  end
+
   def C.rb_ary_entry_internal
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_entry_internal) }
   end
@@ -463,6 +467,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_ary_store
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_store) }
+  end
+
+  def C.rb_ary_tmp_new_from_values
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_tmp_new_from_values) }
   end
 
   def C.rb_backref_get
@@ -563,6 +571,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_reg_match_pre
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_match_pre) }
+  end
+
+  def C.rb_reg_new_ary
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_new_ary) }
   end
 
   def C.rb_reg_nth_match

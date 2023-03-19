@@ -18,7 +18,7 @@ module RubyVM::RJIT
       asm.incr_counter(:rjit_insns_count)
       asm.comment("Insn: #{insn.name}")
 
-      # 80/102
+      # 81/102
       case insn.name
       when :nop then nop(jit, ctx, asm)
       when :getlocal then getlocal(jit, ctx, asm)
@@ -784,7 +784,49 @@ module RubyVM::RJIT
       KeepCompiling
     end
 
-    # toregexp
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def toregexp(jit, ctx, asm)
+      opt = jit.operand(0, signed: true)
+      cnt = jit.operand(1)
+
+      # Save the PC and SP because this allocates an object and could
+      # raise an exception.
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.lea(:rax, ctx.sp_opnd(-C.VALUE.size * cnt)) # values_ptr
+      ctx.stack_pop(cnt)
+
+      asm.mov(C_ARGS[0], 0)
+      asm.mov(C_ARGS[1], cnt)
+      asm.mov(C_ARGS[2], :rax) # values_ptr
+      asm.call(C.rb_ary_tmp_new_from_values)
+
+      # Save the array so we can clear it later
+      asm.push(C_RET)
+      asm.push(C_RET) # Alignment
+
+      asm.mov(C_ARGS[0], ary)
+      asm.mov(C_ARGS[1], opt)
+      asm.call(C.rb_reg_new_ary)
+
+      # The actual regex is in RAX now.  Pop the temp array from
+      # rb_ary_tmp_new_from_values into C arg regs so we can clear it
+      asm.pop(:rcx) # Alignment
+      asm.pop(:rcx) # ary
+
+      # The value we want to push on the stack is in RAX right now
+      stack_ret = ctx.stack_push
+      asm.mov(stack_ret, C_RET)
+
+      # Clear the temp array.
+      asm.mov(C_ARGS[0], :rcx) # ary
+      asm.call(C.rb_ary_clear)
+
+      KeepCompiling
+    end
+
     # intern
 
     # @param jit [RubyVM::RJIT::JITState]
