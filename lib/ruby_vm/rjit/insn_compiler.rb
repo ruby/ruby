@@ -2511,6 +2511,59 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_kernel_instance_of(jit, ctx, asm, argc, known_recv_class)
+      if argc != 1
+        return false
+      end
+
+      # If this is a super call we might not know the class
+      if known_recv_class.nil?
+        return false
+      end
+
+      # Important note: The output code will simply `return true/false`.
+      # Correctness follows from:
+      #  - `known_recv_class` implies there is a guard scheduled before here
+      #    for a particular `CLASS_OF(lhs)`.
+      #  - We guard that rhs is identical to the compile-time sample
+      #  - For a particular `CLASS_OF(lhs)`, `rb_obj_class(lhs)` does not change.
+      #    (because for any singleton class `s`, `s.superclass.equal?(s.attached_object.class)`)
+
+      sample_rhs = jit.peek_at_stack(0)
+      sample_lhs = jit.peek_at_stack(1)
+
+      # Filters out cases where the C implementation raises
+      unless C.RB_TYPE_P(sample_rhs, C::RUBY_T_CLASS) || C.RB_TYPE_P(sample_rhs, C::RUBY_T_MODULE)
+        return false
+      end
+
+      # We need to grab the class here to deal with singleton classes.
+      # Instance of grabs the "real class" of the object rather than the
+      # singleton class.
+      sample_lhs_real_class = C.rb_obj_class(sample_lhs)
+
+      sample_instance_of = (sample_lhs_real_class == sample_rhs)
+
+      side_exit = side_exit(jit, ctx)
+      asm.comment('Kernel#instance_of?')
+      asm.mov(:rax, to_value(sample_rhs))
+      asm.cmp(ctx.stack_opnd(0), :rax)
+      asm.jne(counted_exit(side_exit, :send_instance_of_class_mismatch))
+
+      ctx.stack_pop(2)
+
+      stack_ret = ctx.stack_push
+      if sample_instance_of
+        asm.mov(stack_ret, Qtrue)
+      else
+        asm.mov(stack_ret, Qfalse)
+      end
+      return true;
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_obj_not(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('rb_obj_not')
@@ -2759,7 +2812,7 @@ module RubyVM::RJIT
       register_cfunc_method(Kernel, :nil?, :jit_rb_false)
       register_cfunc_method(Kernel, :is_a?, :jit_rb_kernel_is_a)
       register_cfunc_method(Kernel, :kind_of?, :jit_rb_kernel_is_a)
-      #register_cfunc_method(Kernel, :instance_of?, :jit_rb_kernel_instance_of)
+      register_cfunc_method(Kernel, :instance_of?, :jit_rb_kernel_instance_of)
 
       register_cfunc_method(BasicObject, :==, :jit_rb_obj_equal)
       register_cfunc_method(BasicObject, :equal?, :jit_rb_obj_equal)

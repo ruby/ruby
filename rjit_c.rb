@@ -310,6 +310,10 @@ module RubyVM::RJIT # :nodoc: all
     def obj_is_kind_of(obj, c)
       Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
     end
+
+    def rb_obj_class(obj)
+      Primitive.cexpr! 'rb_obj_class(obj)'
+    end
   end
 
   #
@@ -1220,6 +1224,7 @@ module RubyVM::RJIT # :nodoc: all
       send_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_arity)")],
       send_c_tracing: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_c_tracing)")],
       send_is_a_class_mismatch: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_is_a_class_mismatch)")],
+      send_instance_of_class_mismatch: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_instance_of_class_mismatch)")],
       send_blockarg_not_nil_or_proxy: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_blockarg_not_nil_or_proxy)")],
       send_blockiseq: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_blockiseq)")],
       send_block_handler: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_block_handler)")],
