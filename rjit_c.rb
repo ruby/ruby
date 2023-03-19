@@ -307,10 +307,6 @@ module RubyVM::RJIT # :nodoc: all
       }
     end
 
-    def obj_is_kind_of(obj, c)
-      Primitive.cexpr! 'rb_obj_is_kind_of(obj, c)'
-    end
-
     def rb_obj_class(obj)
       Primitive.cexpr! 'rb_obj_class(obj)'
     end
