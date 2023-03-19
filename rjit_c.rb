@@ -310,6 +310,25 @@ module RubyVM::RJIT # :nodoc: all
     def rb_obj_class(obj)
       Primitive.cexpr! 'rb_obj_class(obj)'
     end
+
+    def rb_sym2id(sym)
+      Primitive.cexpr! 'SIZET2NUM((size_t)rb_sym2id(sym))'
+    end
+
+    def rb_callable_method_entry_or_negative(klass, mid)
+      cme_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_callable_method_entry_or_negative(klass, (ID)NUM2SIZET(mid)))'
+      return nil if cme_addr == 0
+      rb_callable_method_entry_t.new(cme_addr)
+    end
+
+    def rb_method_basic_definition_p(klass, mid)
+      Primitive.cexpr! 'RBOOL(rb_method_basic_definition_p(klass, (ID)NUM2SIZET(mid)))'
+    end
+
+    def UNDEFINED_METHOD_ENTRY_P(cme)
+      _cme_addr = cme.to_i
+      Primitive.cexpr! 'RBOOL(UNDEFINED_METHOD_ENTRY_P((const rb_callable_method_entry_t *)NUM2SIZET(_cme_addr)))'
+    end
   end
 
   #
@@ -352,6 +371,7 @@ module RubyVM::RJIT # :nodoc: all
   C::METHOD_VISI_PRIVATE = Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PRIVATE) }
   C::METHOD_VISI_PROTECTED = Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PROTECTED) }
   C::METHOD_VISI_PUBLIC = Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_PUBLIC) }
+  C::METHOD_VISI_UNDEF = Primitive.cexpr! %q{ SIZET2NUM(METHOD_VISI_UNDEF) }
   C::OBJ_TOO_COMPLEX_SHAPE_ID = Primitive.cexpr! %q{ SIZET2NUM(OBJ_TOO_COMPLEX_SHAPE_ID) }
   C::OPTIMIZED_METHOD_TYPE_BLOCK_CALL = Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_BLOCK_CALL) }
   C::OPTIMIZED_METHOD_TYPE_CALL = Primitive.cexpr! %q{ SIZET2NUM(OPTIMIZED_METHOD_TYPE_CALL) }
@@ -431,6 +451,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.block_type_iseq
     Primitive.cexpr! %q{ SIZET2NUM(block_type_iseq) }
+  end
+
+  def C.idRespond_to_missing
+    Primitive.cexpr! %q{ SIZET2NUM(idRespond_to_missing) }
   end
 
   def C.imemo_iseq

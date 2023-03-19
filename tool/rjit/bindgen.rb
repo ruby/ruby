@@ -401,6 +401,7 @@ generator = BindingGenerator.new(
       METHOD_VISI_PRIVATE
       METHOD_VISI_PROTECTED
       METHOD_VISI_PUBLIC
+      METHOD_VISI_UNDEF
       OBJ_TOO_COMPLEX_SHAPE_ID
       OPTIMIZED_METHOD_TYPE_BLOCK_CALL
       OPTIMIZED_METHOD_TYPE_CALL
@@ -492,6 +493,7 @@ generator = BindingGenerator.new(
       rb_cTrueClass
       rb_rjit_global_events
       rb_mRubyVMFrozenCore
+      idRespond_to_missing
     ],
   },
   funcs: %w[

@@ -2947,6 +2947,95 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_obj_respond_to(jit, ctx, asm, argc, known_recv_class)
+      # respond_to(:sym) or respond_to(:sym, true)
+      if argc != 1 && argc != 2
+        return false
+      end
+
+      if known_recv_class.nil?
+        return false
+      end
+
+      recv_class = known_recv_class
+
+      # Get the method_id from compile time. We will later add a guard against it.
+      mid_sym = jit.peek_at_stack(argc - 1)
+      unless static_symbol?(mid_sym)
+        return false
+      end
+      mid = C.rb_sym2id(mid_sym)
+
+      target_cme = C.rb_callable_method_entry_or_negative(recv_class, mid)
+
+      # Should never be null, as in that case we will be returned a "negative CME"
+      assert_equal(false, target_cme.nil?)
+
+      cme_def_type =
+        if C.UNDEFINED_METHOD_ENTRY_P(target_cme)
+          C::VM_METHOD_TYPE_UNDEF
+        else
+          target_cme.def.type
+        end
+
+      if cme_def_type == C::VM_METHOD_TYPE_REFINED
+        return false
+      end
+
+      visibility = if cme_def_type == C::VM_METHOD_TYPE_UNDEF
+        C::METHOD_VISI_UNDEF
+      else
+        C.METHOD_ENTRY_VISI(target_cme)
+      end
+
+      result =
+        case visibility
+        in C::METHOD_VISI_UNDEF
+          Qfalse # No method => false
+        in C::METHOD_VISI_PUBLIC
+          Qtrue # Public method => true regardless of include_all
+        else
+          return false # not public and include_all not known, can't compile
+        end
+
+      if result != Qtrue
+        # Only if respond_to_missing? hasn't been overridden
+        # In the future, we might want to jit the call to respond_to_missing?
+        unless Invariants.assume_method_basic_definition(jit, recv_class, C.idRespond_to_missing)
+          return false
+        end
+      end
+
+      # Invalidate this block if method lookup changes for the method being queried. This works
+      # both for the case where a method does or does not exist, as for the latter we asked for a
+      # "negative CME" earlier.
+      Invariants.assume_method_lookup_stable(jit, target_cme)
+
+      # Generate a side exit
+      side_exit = side_exit(jit, ctx)
+
+      if argc == 2
+        # pop include_all argument (we only use its type info)
+        ctx.stack_pop(1)
+      end
+
+      sym_opnd = ctx.stack_pop(1)
+      _recv_opnd = ctx.stack_pop(1)
+
+      # This is necessary because we have no guarantee that sym_opnd is a constant
+      asm.comment('guard known mid')
+      asm.mov(:rax, to_value(mid_sym))
+      asm.cmp(sym_opnd, :rax)
+      asm.jne(side_exit)
+
+      putobject(jit, ctx, asm, val: result)
+
+      true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_thread_s_current(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('Thread.current')
@@ -2999,7 +3088,7 @@ module RubyVM::RJIT
       # rb_ary_empty_p() method in array.c
       register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
 
-      #register_cfunc_method(Kernel, :respond_to?, :jit_obj_respond_to)
+      register_cfunc_method(Kernel, :respond_to?, :jit_obj_respond_to)
       #register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
 
       # Thread.current
