@@ -838,6 +838,20 @@ module RubyVM::RJIT
       end
     end
 
+    def xor(dst, src)
+      case [dst, src]
+      # XOR r/m64, r64 (Mod 11: reg)
+      in [R64 => dst_reg, R64 => src_reg]
+        # REX.W + 31 /r
+        # MR: Operand 1: ModRM:r/m (r, w), Operand 2: ModRM:reg (r)
+        insn(
+          prefix: REX_W,
+          opcode: 0x31,
+          mod_rm: ModRM[mod: Mod11, reg: src_reg, rm: dst_reg],
+        )
+      end
+    end
+
     #
     # Utilities
     #

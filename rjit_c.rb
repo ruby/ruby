@@ -364,6 +364,7 @@ module RubyVM::RJIT # :nodoc: all
   C::RMODULE_IS_REFINEMENT = Primitive.cexpr! %q{ SIZET2NUM(RMODULE_IS_REFINEMENT) }
   C::ROBJECT_EMBED = Primitive.cexpr! %q{ SIZET2NUM(ROBJECT_EMBED) }
   C::RSTRUCT_EMBED_LEN_MASK = Primitive.cexpr! %q{ SIZET2NUM(RSTRUCT_EMBED_LEN_MASK) }
+  C::RUBY_ENCODING_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_ENCODING_MASK) }
   C::RUBY_EVENT_CLASS = Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_CLASS) }
   C::RUBY_EVENT_C_CALL = Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_C_CALL) }
   C::RUBY_EVENT_C_RETURN = Primitive.cexpr! %q{ SIZET2NUM(RUBY_EVENT_C_RETURN) }
@@ -603,6 +604,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_reg_nth_match) }
   end
 
+  def C.rb_str_buf_append
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_buf_append) }
+  end
+
   def C.rb_str_bytesize
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_str_bytesize) }
   end
@@ -681,6 +686,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rjit_str_neq_internal
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_str_neq_internal) }
+  end
+
+  def C.rjit_str_simple_append
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_str_simple_append) }
   end
 
   def C.CALL_DATA

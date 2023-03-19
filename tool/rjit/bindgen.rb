@@ -475,6 +475,7 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_UNDEF
       VM_METHOD_TYPE_ZSUPER
       VM_SPECIAL_OBJECT_VMCORE
+      RUBY_ENCODING_MASK
     ],
   },
   values: {
@@ -546,6 +547,8 @@ generator = BindingGenerator.new(
     rb_str_intern
     rb_vm_setclassvariable
     rb_str_bytesize
+    rjit_str_simple_append
+    rb_str_buf_append
   ],
   types: %w[
     CALL_DATA

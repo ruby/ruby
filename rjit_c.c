@@ -170,6 +170,12 @@ rjit_str_neq_internal(VALUE str1, VALUE str2)
     return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
 }
 
+static VALUE
+rjit_str_simple_append(VALUE str1, VALUE str2)
+{
+    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
+}
+
 // The code we generate in gen_send_cfunc() doesn't fire the c_return TracePoint event
 // like the interpreter. When tracing for c_return is enabled, we patch the code after
 // the C method return to call into this to fire the event.

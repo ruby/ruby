@@ -321,6 +321,14 @@ module RubyVM::RJIT
       EOS
     end
 
+    def test_xor
+      asm = Assembler.new
+      asm.xor(:rax, :rbx)
+      assert_compile(asm, <<~EOS)
+        0x0: xor rax, rbx
+      EOS
+    end
+
     private
 
     def rel32(offset)

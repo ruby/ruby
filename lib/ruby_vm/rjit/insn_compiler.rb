@@ -2786,6 +2786,75 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_str_concat(jit, ctx, asm, argc, known_recv_class)
+      # The << operator can accept integer codepoints for characters
+      # as the argument. We only specially optimise string arguments.
+      # If the peeked-at compile time argument is something other than
+      # a string, assume it won't be a string later either.
+      comptime_arg = jit.peek_at_stack(0)
+      unless C.RB_TYPE_P(comptime_arg, C::RUBY_T_STRING)
+        return false
+      end
+
+      # Generate a side exit
+      side_exit = side_exit(jit, ctx)
+
+      # Guard that the concat argument is a string
+      asm.mov(:rax, ctx.stack_opnd(0))
+      guard_object_is_string(asm, :rax, :rcx, side_exit)
+
+      # Guard buffers from GC since rb_str_buf_append may allocate.
+      jit_save_sp(ctx, asm)
+
+      concat_arg = ctx.stack_pop(1)
+      recv = ctx.stack_pop(1)
+
+      # Test if string encodings differ. If different, use rb_str_append. If the same,
+      # use rb_yjit_str_simple_append, which calls rb_str_cat.
+      asm.comment('<< on strings')
+
+      # Take receiver's object flags XOR arg's flags. If any
+      # string-encoding flags are different between the two,
+      # the encodings don't match.
+      recv_reg = :rax
+      asm.mov(recv_reg, recv)
+      concat_arg_reg = :rcx
+      asm.mov(concat_arg_reg, concat_arg)
+      asm.mov(recv_reg, [recv_reg, C.RBasic.offsetof(:flags)])
+      asm.mov(concat_arg_reg, [concat_arg_reg, C.RBasic.offsetof(:flags)])
+      asm.xor(recv_reg, concat_arg_reg)
+      asm.test(recv_reg, C::RUBY_ENCODING_MASK)
+
+      # Push once, use the resulting operand in both branches below.
+      stack_ret = ctx.stack_push
+
+      enc_mismatch = asm.new_label('enc_mismatch')
+      asm.jnz(enc_mismatch)
+
+      # If encodings match, call the simple append function and jump to return
+      asm.mov(C_ARGS[0], recv)
+      asm.mov(C_ARGS[1], concat_arg)
+      asm.call(C.rjit_str_simple_append)
+      ret_label = asm.new_label('func_return')
+      asm.mov(stack_ret, C_RET)
+      asm.jmp(ret_label)
+
+      # If encodings are different, use a slower encoding-aware concatenate
+      asm.write_label(enc_mismatch)
+      asm.mov(C_ARGS[0], recv)
+      asm.mov(C_ARGS[1], concat_arg)
+      asm.call(C.rb_str_buf_append)
+      asm.mov(stack_ret, C_RET)
+      # Drop through to return
+
+      asm.write_label(ret_label)
+
+      true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_rb_str_getbyte(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 1
       asm.comment('rb_str_getbyte')
@@ -2870,7 +2939,7 @@ module RubyVM::RJIT
       register_cfunc_method(String, :to_s, :jit_rb_str_to_s)
       register_cfunc_method(String, :to_str, :jit_rb_str_to_s)
       register_cfunc_method(String, :bytesize, :jit_rb_str_bytesize)
-      #register_cfunc_method(String, :<<, :jit_rb_str_concat)
+      register_cfunc_method(String, :<<, :jit_rb_str_concat)
       #register_cfunc_method(String, :+@, :jit_rb_str_uplus)
 
       # rb_ary_empty_p() method in array.c
@@ -2991,6 +3060,17 @@ module RubyVM::RJIT
 
       # Compare the result with T_ARRAY
       asm.cmp(flags_reg, C::RUBY_T_ARRAY)
+      asm.jne(side_exit)
+    end
+
+    def guard_object_is_string(asm, object_reg, flags_reg, side_exit)
+      asm.comment('guard object is string')
+      # Pull out the type mask
+      asm.mov(flags_reg, [object_reg, C.RBasic.offsetof(:flags)])
+      asm.and(flags_reg, C::RUBY_T_MASK)
+
+      # Compare the result with T_STRING
+      asm.cmp(flags_reg, C::RUBY_T_STRING)
       asm.jne(side_exit)
     end
 
