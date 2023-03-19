@@ -3036,6 +3036,29 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def jit_rb_f_block_given_p(jit, ctx, asm, argc, _known_recv_class)
+      asm.comment('block_given?')
+
+      # Same as rb_vm_frame_block_handler
+      jit_get_lep(jit, asm, reg: :rax)
+      asm.mov(:rax, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # block_handler
+
+      ctx.stack_pop(1)
+      out_opnd = ctx.stack_push
+
+      # Return `block_handler != VM_BLOCK_HANDLER_NONE`
+      asm.cmp(:rax, C::VM_BLOCK_HANDLER_NONE)
+      asm.mov(:rax, Qfalse)
+      asm.mov(:rcx, Qtrue)
+      asm.cmovne(:rax, :rcx) # block_given
+      asm.mov(out_opnd, :rax)
+
+      true
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def jit_thread_s_current(jit, ctx, asm, argc, _known_recv_class)
       return false if argc != 0
       asm.comment('Thread.current')
@@ -3089,7 +3112,7 @@ module RubyVM::RJIT
       register_cfunc_method(Array, :empty?, :jit_rb_ary_empty_p)
 
       register_cfunc_method(Kernel, :respond_to?, :jit_obj_respond_to)
-      #register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
+      register_cfunc_method(Kernel, :block_given?, :jit_rb_f_block_given_p)
 
       # Thread.current
       register_cfunc_method(C.rb_singleton_class(Thread), :current, :jit_thread_s_current)

@@ -243,6 +243,20 @@ module RubyVM::RJIT
       end
     end
 
+    def cmovne(dst, src)
+      case [dst, src]
+      # CMOVNE r64, r/m64 (Mod 11: reg)
+      in [R64 => dst_reg, R64 => src_reg]
+        # REX.W + 0F 45 /r
+        # RM: Operand 1: ModRM:reg (r, w), Operand 2: ModRM:r/m (r)
+        insn(
+          prefix: REX_W,
+          opcode: [0x0f, 0x45],
+          mod_rm: ModRM[mod: Mod11, reg: dst_reg, rm: src_reg],
+        )
+      end
+    end
+
     def cmovnz(dst, src)
       case [dst, src]
       # CMOVNZ r64, r/m64 (Mod 11: reg)

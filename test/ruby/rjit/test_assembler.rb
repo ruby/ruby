@@ -93,6 +93,14 @@ module RubyVM::RJIT
       EOS
     end
 
+    def test_cmovne
+      asm = Assembler.new
+      asm.cmovne(:rax, :rbx) # CMOVNE r64, r/m64 (Mod 11: reg)
+      assert_compile(asm, <<~EOS) # cmovne == cmovnz
+        0x0: cmovne rax, rbx
+      EOS
+    end
+
     def test_cmovnz
       asm = Assembler.new
       asm.cmovnz(:rax, :rbx) # CMOVNZ r64, r/m64 (Mod 11: reg)
