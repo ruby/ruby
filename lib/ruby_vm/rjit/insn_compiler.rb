@@ -44,7 +44,7 @@ module RubyVM::RJIT
       when :putstring then putstring(jit, ctx, asm)
       when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
-      # toregexp
+      when :toregexp then toregexp(jit, ctx, asm)
       # intern
       when :newarray then newarray(jit, ctx, asm)
       # newarraykwsplat
@@ -807,7 +807,7 @@ module RubyVM::RJIT
       asm.push(C_RET)
       asm.push(C_RET) # Alignment
 
-      asm.mov(C_ARGS[0], ary)
+      asm.mov(C_ARGS[0], C_RET)
       asm.mov(C_ARGS[1], opt)
       asm.call(C.rb_reg_new_ary)
 
