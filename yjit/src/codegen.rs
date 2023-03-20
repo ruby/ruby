@@ -7226,7 +7226,7 @@ fn gen_toregexp(
     asm.cpop_into(ary);
 
     // The value we want to push on the stack is in RAX right now
-    let stack_ret = ctx.stack_push(Type::Unknown);
+    let stack_ret = ctx.stack_push(Type::UnknownHeap);
     asm.mov(stack_ret, val);
 
     // Clear the temp array.
