@@ -2911,7 +2911,7 @@ module RubyVM::RJIT
     def jit_rb_ary_empty_p(jit, ctx, asm, argc, _known_recv_class)
       array_reg = :rax
       asm.mov(array_reg, ctx.stack_pop(1))
-      len_opnd = jit_array_len(asm, array_reg, :rcx)
+      jit_array_len(asm, array_reg, :rcx)
 
       asm.test(:rcx, :rcx)
       asm.mov(:rax, Qfalse)
