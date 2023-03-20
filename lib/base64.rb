@@ -25,6 +25,8 @@ module Base64
   # The alphabet described in RFC 4648 and implemented by
   # +urlsafe_encode64+ and +urlsafe_decode64+.
   URL_SAFE_ALPHABET = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
+  # The padded alphabet described in RFC 4648 and implemented by
+  # +urlsafe_encode64+ and +urlsafe_decode64+.
   PADDED_URL_SAFE_ALPHABET = "-0123456789=ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"
   
   module_function
