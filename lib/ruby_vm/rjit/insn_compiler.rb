@@ -1497,6 +1497,12 @@ module RubyVM::RJIT
         asm.incr_counter(:invokeblock_none)
         CantCompile
       elsif comptime_handler & 0x3 == 0x1 # VM_BH_ISEQ_BLOCK_P
+        # Disabled until basictest is fixed
+        disabled = true
+        if disabled
+          return CantCompile
+        end
+
         asm.comment('get local EP')
         ep_reg = :rax
         jit_get_lep(jit, asm, reg: ep_reg)
