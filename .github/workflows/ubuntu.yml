@@ -101,8 +101,10 @@ jobs:
           $SETARCH ./miniruby -e '(("a".."z").to_a+("A".."Z").to_a+("0".."9").to_a+%w[foo bar test zzz]).each{|basename|File.write("#{basename}.rb", "raise %(do not load #{basename}.rb)")}'
         if: ${{ matrix.test_task == 'check' }}
       - name: make ${{ matrix.test_task }}
-        run: |
-          $SETARCH make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`} RUBYOPT=-w
+        run: >-
+          $SETARCH make -s ${{ matrix.test_task }}
+            ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+            ${{ contains(matrix.test_task, 'bundle') && '' || 'RUBYOPT=-w' }}
         timeout-minutes: 40
         env:
           RUBY_TESTOPTS: "-q --tty=no"
