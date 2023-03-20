@@ -377,6 +377,7 @@ generator = BindingGenerator.new(
   src_path: src_path,
   consts: {
     LONG: %w[
+      UNLIMITED_ARGUMENTS
       VM_ENV_DATA_INDEX_ME_CREF
       VM_ENV_DATA_INDEX_SPECVAL
     ],
@@ -447,6 +448,7 @@ generator = BindingGenerator.new(
       VM_CALL_FCALL
       VM_CALL_KWARG
       VM_CALL_KW_SPLAT
+      VM_CALL_KW_SPLAT_MUT
       VM_CALL_KW_SPLAT_bit
       VM_CALL_OPT_SEND
       VM_CALL_TAILCALL

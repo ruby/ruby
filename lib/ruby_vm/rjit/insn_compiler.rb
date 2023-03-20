@@ -4705,7 +4705,7 @@ module RubyVM::RJIT
 
         return 0
       else
-        return jit_setup_parameters_complex(jit, ctx, asm, calling.flags, calling.argc, iseq)
+        return jit_setup_parameters_complex(jit, ctx, asm, calling.flags, calling.argc, iseq, arg_setup_type:)
       end
     end
 
@@ -4713,10 +4713,99 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
-      # We don't support setup_parameters_complex
-      asm.incr_counter(:send_iseq_complex)
-      return CantCompile
+    def jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq, arg_setup_type: nil)
+      min_argc = iseq.body.param.lead_num + iseq.body.param.post_num
+      max_argc = (iseq.body.param.flags.has_rest == false) ? min_argc + iseq.body.param.opt_num : C::UNLIMITED_ARGUMENTS
+      kw_flag = flags & (C::VM_CALL_KWARG | C::VM_CALL_KW_SPLAT | C::VM_CALL_KW_SPLAT_MUT)
+      opt_pc = 0
+      keyword_hash = nil
+      flag_keyword_hash = nil
+      given_argc = argc
+
+      if kw_flag & C::VM_CALL_KWARG != 0
+        asm.incr_counter(:send_iseq_complex_kwarg)
+        return CantCompile
+      end
+
+      if flags & C::VM_CALL_ARGS_SPLAT != 0 && flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_iseq_complex_kw_splat)
+        return CantCompile
+      elsif flags & C::VM_CALL_ARGS_SPLAT != 0
+        asm.incr_counter(:send_iseq_complex_splat)
+        return CantCompile
+      else
+        if argc > 0 && kw_flag & C::VM_CALL_KW_SPLAT != 0
+          asm.incr_counter(:send_iseq_complex_kw_splat)
+          return CantCompile
+        end
+      end
+
+      if flag_keyword_hash && C.RB_TYPE_P(flag_keyword_hash, C::RUBY_T_HASH)
+        raise NotImplementedError # unreachable
+      end
+
+      if kw_flag != 0 && iseq.body.param.flags.accepts_no_kwarg
+        asm.incr_counter(:send_iseq_complex_accepts_no_kwarg)
+        return CantCompile
+      end
+
+      case arg_setup_type
+      when :arg_setup_block
+        asm.incr_counter(:send_iseq_complex_arg_setup_block)
+        return CantCompile
+      end
+
+      if given_argc < min_argc
+        asm.incr_counter(:send_iseq_complex_arity)
+        return CantCompile
+      end
+
+      if given_argc > max_argc && max_argc != C::UNLIMITED_ARGUMENTS
+        asm.incr_counter(:send_iseq_complex_arity)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_lead
+        asm.incr_counter(:send_iseq_complex_has_lead)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_rest || iseq.body.param.flags.has_post
+        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_post
+        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_opt
+        asm.incr_counter(:send_iseq_complex_has_opt)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_rest
+        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        return CantCompile
+      end
+
+      if iseq.body.param.flags.has_kw
+        asm.incr_counter(:send_iseq_complex_has_kw)
+        return CantCompile
+      elsif iseq.body.param.flags.has_kwrest
+        asm.incr_counter(:send_iseq_complex_has_kwrest)
+        return CantCompile
+      elsif !keyword_hash.nil? && keyword_hash.size > 0 # && arg_setup_type == :arg_setup_method
+        raise NotImplementedError # unreachable
+      end
+
+      if iseq.body.param.flags.has_block
+        asm.incr_counter(:send_iseq_complex_has_block)
+        return CantCompile
+      end
+
+      return opt_pc
     end
 
     # CALLER_SETUP_ARG: Return CantCompile if not supported

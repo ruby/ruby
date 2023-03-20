@@ -349,6 +349,7 @@ module RubyVM::RJIT # :nodoc: all
 
   ### RJIT bindgen begin ###
 
+  C::UNLIMITED_ARGUMENTS = Primitive.cexpr! %q{ LONG2NUM(UNLIMITED_ARGUMENTS) }
   C::VM_ENV_DATA_INDEX_ME_CREF = Primitive.cexpr! %q{ LONG2NUM(VM_ENV_DATA_INDEX_ME_CREF) }
   C::VM_ENV_DATA_INDEX_SPECVAL = Primitive.cexpr! %q{ LONG2NUM(VM_ENV_DATA_INDEX_SPECVAL) }
   C::ARRAY_REDEFINED_OP_FLAG = Primitive.cexpr! %q{ SIZET2NUM(ARRAY_REDEFINED_OP_FLAG) }
@@ -419,6 +420,7 @@ module RubyVM::RJIT # :nodoc: all
   C::VM_CALL_FCALL = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FCALL) }
   C::VM_CALL_KWARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KWARG) }
   C::VM_CALL_KW_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT) }
+  C::VM_CALL_KW_SPLAT_MUT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT_MUT) }
   C::VM_CALL_KW_SPLAT_bit = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT_bit) }
   C::VM_CALL_OPT_SEND = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_OPT_SEND) }
   C::VM_CALL_TAILCALL = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_TAILCALL) }
@@ -1294,7 +1296,18 @@ module RubyVM::RJIT # :nodoc: all
       send_block_not_nil: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_block_not_nil)")],
       send_block_not_proxy: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_block_not_proxy)")],
       send_iseq_kwparam: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_kwparam)")],
-      send_iseq_complex: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex)")],
+      send_iseq_complex_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_kwarg)")],
+      send_iseq_complex_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_kw_splat)")],
+      send_iseq_complex_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_splat)")],
+      send_iseq_complex_accepts_no_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_accepts_no_kwarg)")],
+      send_iseq_complex_arg_setup_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_arg_setup_block)")],
+      send_iseq_complex_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_arity)")],
+      send_iseq_complex_has_lead: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_lead)")],
+      send_iseq_complex_has_rest_or_post: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_rest_or_post)")],
+      send_iseq_complex_has_opt: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_opt)")],
+      send_iseq_complex_has_kw: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_kw)")],
+      send_iseq_complex_has_kwrest: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_kwrest)")],
+      send_iseq_complex_has_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_complex_has_block)")],
       send_cfunc_variadic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_variadic)")],
       send_cfunc_too_many_args: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_too_many_args)")],
       send_cfunc_ruby_array_varg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_cfunc_ruby_array_varg)")],
