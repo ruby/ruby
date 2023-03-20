@@ -505,6 +505,7 @@ extern VALUE rb_reg_new_ary(VALUE ary, int opt);
 extern void rb_vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *cfp, ID id, VALUE val, ICVARC ic);
 extern VALUE rb_str_bytesize(VALUE str);
 extern const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID mid);
+extern VALUE rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_block *captured, int argc, const VALUE *argv);
 
 #include "rjit_c.rbinc"
 

@@ -1536,8 +1536,47 @@ module RubyVM::RJIT
           send_shift: 0, frame_type: C::VM_FRAME_MAGIC_BLOCK,
         )
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
-        asm.incr_counter(:invokeblock_ifunc)
-        CantCompile
+        # We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
+        if calling.flags & C::VM_CALL_ARGS_SPLAT != 0
+          asm.incr_counter(:invokeblock_ifunc_args_splat)
+          return CantCompile
+        end
+        if calling.flags & C::VM_CALL_KW_SPLAT != 0
+          asm.incr_counter(:invokeblock_ifunc_kw_splat)
+          return CantCompile
+        end
+
+        asm.comment('get local EP')
+        jit_get_lep(jit, asm, reg: :rax)
+        asm.mov(:rcx, [:rax, C.VALUE.size * C::VM_ENV_DATA_INDEX_SPECVAL]) # block_handler_opnd
+
+        asm.comment('guard block_handler type');
+        side_exit = side_exit(jit, ctx)
+        asm.mov(:rax, :rcx) # block_handler_opnd
+        asm.and(:rax, 0x3) # tag_opnd: block_handler is a tagged pointer
+        asm.cmp(:rax, 0x3) # VM_BH_IFUNC_P
+        tag_changed_exit = counted_exit(side_exit, :invokeblock_tag_changed)
+        jit_chain_guard(:jne, jit, ctx, asm, tag_changed_exit)
+
+        # The cfunc may not be leaf
+        jit_prepare_routine_call(jit, ctx, asm) # clobbers :rax
+
+        asm.comment('call ifunc')
+        asm.and(:rcx, ~0x3) # captured_opnd
+        asm.lea(:rax, ctx.sp_opnd(-calling.argc * C.VALUE.size)) # argv
+        asm.mov(C_ARGS[0], EC)
+        asm.mov(C_ARGS[1], :rcx) # captured_opnd
+        asm.mov(C_ARGS[2], calling.argc)
+        asm.mov(C_ARGS[3], :rax) # argv
+        asm.call(C.rb_vm_yield_with_cfunc)
+
+        ctx.stack_pop(calling.argc)
+        stack_ret = ctx.stack_push
+        asm.mov(stack_ret, C_RET)
+
+        # Share the successor with other chains
+        jump_to_next_insn(jit, ctx, asm)
+        EndBlock
       elsif symbol?(comptime_handler)
         asm.incr_counter(:invokeblock_symbol)
         CantCompile

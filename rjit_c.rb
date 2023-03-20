@@ -701,6 +701,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_throw) }
   end
 
+  def C.rb_vm_yield_with_cfunc
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_yield_with_cfunc) }
+  end
+
   def C.rjit_full_cfunc_return
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rjit_full_cfunc_return) }
   end
@@ -1316,13 +1320,14 @@ module RubyVM::RJIT # :nodoc: all
       invokesuper_me_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokesuper_me_changed)")],
       invokesuper_same_me: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokesuper_same_me)")],
       invokeblock_none: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_none)")],
-      invokeblock_ifunc: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_ifunc)")],
       invokeblock_symbol: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_symbol)")],
       invokeblock_proc: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_proc)")],
       invokeblock_tag_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_tag_changed)")],
       invokeblock_iseq_block_changed: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_iseq_block_changed)")],
       invokeblock_iseq_arity: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_iseq_arity)")],
       invokeblock_iseq_arg0_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_iseq_arg0_splat)")],
+      invokeblock_ifunc_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_ifunc_args_splat)")],
+      invokeblock_ifunc_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), invokeblock_ifunc_kw_splat)")],
       getivar_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getivar_megamorphic)")],
       getivar_not_heap: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getivar_not_heap)")],
       getivar_special_const: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getivar_special_const)")],

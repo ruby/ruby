@@ -553,6 +553,7 @@ generator = BindingGenerator.new(
     rjit_str_simple_append
     rb_str_buf_append
     rb_str_dup
+    rb_vm_yield_with_cfunc
   ],
   types: %w[
     CALL_DATA
