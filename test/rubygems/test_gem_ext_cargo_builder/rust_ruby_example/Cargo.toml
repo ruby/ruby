@@ -7,4 +7,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-rb-sys = "0.9.67"
+rb-sys = "0.9.68"
