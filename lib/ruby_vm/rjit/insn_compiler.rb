@@ -1497,12 +1497,6 @@ module RubyVM::RJIT
         asm.incr_counter(:invokeblock_none)
         CantCompile
       elsif comptime_handler & 0x3 == 0x1 # VM_BH_ISEQ_BLOCK_P
-        # Disabled until basictest is fixed
-        disabled = true
-        if disabled
-          return CantCompile
-        end
-
         asm.comment('get local EP')
         ep_reg = :rax
         jit_get_lep(jit, asm, reg: ep_reg)
@@ -1527,25 +1521,15 @@ module RubyVM::RJIT
         block_changed_exit = counted_exit(side_exit, :invokeblock_iseq_block_changed)
         jit_chain_guard(:jne, jit, ctx, asm, block_changed_exit)
 
-        jit_call_iseq_setup(
-          jit, ctx, asm, nil, flags, argc, comptime_iseq, :captured,
+        opt_pc = jit_callee_setup_block_arg(jit, ctx, asm, flags, argc, comptime_iseq, arg_setup_type: :arg_setup_block)
+        if opt_pc == CantCompile
+          return CantCompile
+        end
+
+        jit_call_iseq_setup_normal(
+          jit, ctx, asm, nil, flags, argc, comptime_iseq, :captured, opt_pc,
           send_shift: 0, frame_type: C::VM_FRAME_MAGIC_BLOCK,
         )
-        #gen_send_iseq(
-        #    jit,
-        #    ctx,
-        #    asm,
-        #    ocb,
-        #    comptime_iseq,
-        #    ci,
-        #    VM_FRAME_MAGIC_BLOCK,
-        #    None,
-        #    0,
-        #    None,
-        #    flags,
-        #    argc,
-        #    Some(captured_opnd),
-        #)
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
         asm.incr_counter(:invokeblock_ifunc)
         CantCompile
@@ -4028,7 +4012,7 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep:)
+    def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep: nil)
       # We will not have side exits from here. Adjust the stack.
       if flags & C::VM_CALL_OPT_SEND != 0
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
@@ -4638,6 +4622,35 @@ module RubyVM::RJIT
       end
 
       return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
+    end
+
+    # vm_callee_setup_block_arg: Set up args and return opt_pc (or CantCompile)
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def jit_callee_setup_block_arg(jit, ctx, asm, flags, argc, iseq, arg_setup_type:)
+      if C.rb_simple_iseq_p(iseq)
+        if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+          return CantCompile
+        end
+
+        if arg_setup_type == :arg_setup_block &&
+            argc == 1 &&
+            iseq.body.param.flags.has_lead &&
+            !iseq.body.param.flags.ambiguous_param0
+          asm.incr_counter(:invokeblock_iseq_arg0_splat)
+          return CantCompile
+        end
+
+        if argc != iseq.body.param.lead_num
+          asm.incr_counter(:invokeblock_iseq_arity)
+          return CantCompile
+        end
+
+        return 0
+      else
+        return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
+      end
     end
 
     # setup_parameters_complex

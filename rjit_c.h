@@ -89,6 +89,8 @@ RJIT_RUNTIME_COUNTERS(
     invokeblock_proc,
     invokeblock_tag_changed,
     invokeblock_iseq_block_changed,
+    invokeblock_iseq_arity,
+    invokeblock_iseq_arg0_splat,
 
     getivar_megamorphic,
     getivar_not_heap,
