@@ -393,9 +393,17 @@ dln_open(const char *file)
             }
             else {
                 if (libruby_name) {
-                    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+                    const size_t len = strlen(libruby_name);
+                    char *const tmp = ALLOCA_N(char, len + 1);
+                    if (tmp) {
+                        memcpy(tmp, libruby_name, len + 1);
+                        libruby_name = tmp;
+                    }
                 }
                 dlclose(handle);
+                if (libruby_name) {
+                    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+                }
                 error = incompatible;
                 goto failed;
             }
