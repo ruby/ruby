@@ -395,10 +395,8 @@ dln_open(const char *file)
                 if (libruby_name) {
                     const size_t len = strlen(libruby_name);
                     char *const tmp = ALLOCA_N(char, len + 1);
-                    if (tmp) {
-                        memcpy(tmp, libruby_name, len + 1);
-                        libruby_name = tmp;
-                    }
+                    if (tmp) memcpy(tmp, libruby_name, len + 1);
+                    libruby_name = tmp;
                 }
                 dlclose(handle);
                 if (libruby_name) {
