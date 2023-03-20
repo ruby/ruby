@@ -146,7 +146,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
     assert_match "Successfully yanked", @ui.output
@@ -186,7 +186,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     url_with_port = "#{webauthn_verification_url}?port=#{port}"
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device.", @ui.output
+    assert_match "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @ui.output
     refute_match "Successfully yanked", @ui.output

@@ -273,7 +273,7 @@ module Gem::GemcutterUtilities
     thread.report_on_exception = false
 
     url_with_port = "#{webauthn_url}?port=#{port}"
-    say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device."
+    say "You have enabled multi-factor authentication. Please visit #{url_with_port} to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, you can re-run the gem signin command with the `--otp [your_code]` option."
 
     thread.join
     if error = thread[:error]
