@@ -5967,7 +5967,7 @@ rb_stat_W(VALUE obj)
 static VALUE
 rb_stat_ww(VALUE obj)
 {
-#ifdef S_IROTH
+#ifdef S_IWOTH
     struct stat *st = get_stat(obj);
     if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
         return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
