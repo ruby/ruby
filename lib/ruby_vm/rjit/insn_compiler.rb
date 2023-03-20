@@ -1,5 +1,8 @@
 module RubyVM::RJIT
   class InsnCompiler
+    # struct rb_calling_info. Storing flags instead of ci.
+    CallingInfo = Struct.new(:argc, :flags)
+
     # @param ocb [CodeBlock]
     # @param exit_compiler [RubyVM::RJIT::ExitCompiler]
     def initialize(cb, ocb, exit_compiler)
@@ -1484,8 +1487,10 @@ module RubyVM::RJIT
       # Get call info
       cd = C.rb_call_data.new(jit.operand(0))
       ci = cd.ci
-      argc = C.vm_ci_argc(ci)
-      flags = C.vm_ci_flag(ci)
+      calling = CallingInfo.new(
+        argc: C.vm_ci_argc(ci),
+        flags: C.vm_ci_flag(ci),
+      )
 
       # Get block_handler
       cfp = jit.cfp
@@ -1521,13 +1526,13 @@ module RubyVM::RJIT
         block_changed_exit = counted_exit(side_exit, :invokeblock_iseq_block_changed)
         jit_chain_guard(:jne, jit, ctx, asm, block_changed_exit)
 
-        opt_pc = jit_callee_setup_block_arg(jit, ctx, asm, flags, argc, comptime_iseq, arg_setup_type: :arg_setup_block)
+        opt_pc = jit_callee_setup_block_arg(jit, ctx, asm, calling, comptime_iseq, arg_setup_type: :arg_setup_block)
         if opt_pc == CantCompile
           return CantCompile
         end
 
         jit_call_iseq_setup_normal(
-          jit, ctx, asm, nil, flags, argc, comptime_iseq, :captured, opt_pc,
+          jit, ctx, asm, nil, calling.flags, calling.argc, comptime_iseq, :captured, opt_pc,
           send_shift: 0, frame_type: C::VM_FRAME_MAGIC_BLOCK,
         )
       elsif comptime_handler & 0x3 == 0x3 # VM_BH_IFUNC_P
@@ -4628,28 +4633,40 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_callee_setup_block_arg(jit, ctx, asm, flags, argc, iseq, arg_setup_type:)
+    def jit_callee_setup_block_arg(jit, ctx, asm, calling, iseq, arg_setup_type:)
       if C.rb_simple_iseq_p(iseq)
-        if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+        if jit_caller_setup_arg(jit, ctx, asm, calling.flags) == CantCompile
           return CantCompile
         end
 
         if arg_setup_type == :arg_setup_block &&
-            argc == 1 &&
+            calling.argc == 1 &&
             iseq.body.param.flags.has_lead &&
             !iseq.body.param.flags.ambiguous_param0
           asm.incr_counter(:invokeblock_iseq_arg0_splat)
           return CantCompile
         end
 
-        if argc != iseq.body.param.lead_num
-          asm.incr_counter(:invokeblock_iseq_arity)
-          return CantCompile
+        if calling.argc != iseq.body.param.lead_num
+          if arg_setup_type == :arg_setup_block
+            if calling.argc < iseq.body.param.lead_num
+              (iseq.body.param.lead_num - calling.argc).times do
+                asm.mov(ctx.stack_push, Qnil)
+              end
+              calling.argc = iseq.body.param.lead_num # fill rest parameters
+            elsif calling.argc > iseq.body.param.lead_num
+              ctx.stack_pop(calling.argc - iseq.body.param.lead_num)
+              calling.argc = iseq.body.param.lead_num # simply truncate arguments
+            end
+          else # not used yet
+            asm.incr_counter(:invokeblock_iseq_arity)
+            return CantCompile
+          end
         end
 
         return 0
       else
-        return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
+        return jit_setup_parameters_complex(jit, ctx, asm, calling.flags, calling.argc, iseq)
       end
     end
 
