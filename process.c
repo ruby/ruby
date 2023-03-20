@@ -514,8 +514,8 @@ clear_pid_cache(void)
 static inline void
 rb_process_atfork(void)
 {
-  clear_pid_cache();
-  rb_thread_atfork(); /* calls mjit_resume() */
+    clear_pid_cache();
+    rb_thread_atfork(); /* calls mjit_resume() */
 }
 
 /*
@@ -9054,6 +9054,11 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
+
+    /* pid_t must be signed, since fork() can return -1 */
+    const rb_pid_t half_max_pidt = (rb_pid_t)1 << (sizeof(rb_pid_t) * CHAR_BIT - 2);
+    const rb_pid_t max_pidt = 2 * (half_max_pidt - 1) + 1;
+    if (!POSFIXABLE(max_pidt)) rb_gc_register_address(&cached_pid);
 
     InitVM(process);
 }
