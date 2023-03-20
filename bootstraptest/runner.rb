@@ -118,7 +118,7 @@ BT = Class.new(bt) do
             r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
             w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
           end
-        rescue => e
+        rescue
           r.close if r
         else
           r.close_on_exec = true
