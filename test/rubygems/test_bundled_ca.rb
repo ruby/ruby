@@ -15,7 +15,7 @@ require "rubygems/request"
 # The tested hosts are explained in detail here: https://github.com/rubygems/rubygems/commit/5e16a5428f973667cabfa07e94ff939e7a83ebd9
 #
 
-class TestBundledCA < Gem::TestCase
+class TestGemBundledCA < Gem::TestCase
   def bundled_certificate_store
     store = OpenSSL::X509::Store.new
 

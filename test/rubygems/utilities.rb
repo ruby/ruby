@@ -168,7 +168,7 @@ end
 #
 # Example:
 #
-#   HTTPResponseFactory.create(
+#   Gem::HTTPResponseFactory.create(
 #     body: "",
 #     code: 301,
 #     msg: "Moved Permanently",
@@ -176,7 +176,7 @@ end
 #   )
 #
 
-class HTTPResponseFactory
+class Gem::HTTPResponseFactory
   def self.create(body:, code:, msg:, headers: {})
     response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
     response.instance_variable_set(:@body, body)
@@ -374,7 +374,7 @@ end
 #
 # This class was added to flush out problems in Rubinius' IO implementation.
 
-class TempIO < Tempfile
+class Gem::TempIO < Tempfile
   ##
   # Creates a new TempIO that will be initialized to contain +string+.
 
@@ -392,4 +392,9 @@ class TempIO < Tempfile
     flush
     Gem.read_binary path
   end
+end
+
+class Gem::TestCase
+  TempIO = Gem::TempIO
+  HTTPResponseFactory = Gem::HTTPResponseFactory
 end

@@ -4,7 +4,7 @@ require_relative "helper"
 require "rubygems"
 require "shellwords"
 
-class TestConfig < Gem::TestCase
+class TestGemConfig < Gem::TestCase
   def test_datadir
     util_make_gems
     spec = Gem::Specification.find_by_name("a")
