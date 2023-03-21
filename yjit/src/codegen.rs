@@ -781,8 +781,13 @@ pub fn gen_single_block(
     // Instruction sequence to compile
     let iseq = blockid.iseq;
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let iseq_size: u16 = iseq_size.try_into().unwrap();
-    let mut insn_idx: u16 = blockid.idx;
+    let iseq_size: IseqIdx = if let Ok(size) = iseq_size.try_into() {
+        size
+    } else {
+        // ISeq too large to compile
+        return Err(());
+    };
+    let mut insn_idx: IseqIdx = blockid.idx;
 
     // Initialize a JIT state object
     let mut jit = JITState::new(blockid, ctx.clone(), cb.get_write_ptr(), ec);
