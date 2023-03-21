@@ -579,6 +579,8 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(0..10, :===, 11)
     assert_operator(5..nil, :===, 11)
     assert_not_operator(5..nil, :===, 0)
+    assert_operator(nil..10, :===, 0)
+    assert_operator(nil..nil, :===, 0)
   end
 
   def test_eqq_string
