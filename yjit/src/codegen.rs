@@ -5708,7 +5708,7 @@ fn gen_send_iseq(
             unsafe { rb_yjit_array_len(array) as u32}
         };
 
-        if opt_num == 0 && required_num != array_length as i32 {
+        if opt_num == 0 && required_num != array_length as i32 + argc - 1 {
             gen_counter_incr!(asm, send_iseq_splat_arity_error);
             return CantCompile;
         }
