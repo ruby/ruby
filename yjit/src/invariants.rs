@@ -389,11 +389,20 @@ pub fn block_assumptions_free(blockref: BlockRef) {
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
-pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u16) {
+pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: std::os::raw::c_uint) {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
     }
+
+    // Try to downcast the iseq index
+    let insn_idx: IseqIdx = if let Ok(idx) = insn_idx.try_into() {
+        idx
+    } else {
+        // The index is too large, YJIT can't possibily have code for it,
+        // so there is nothing to invalidate.
+        return;
+    };
 
     if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
         // We can't generate code in these situations, so no need to invalidate.

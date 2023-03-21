@@ -3677,3 +3677,16 @@ assert_equal "foo", %q{
 
   literal("foo")
 }
+
+# regression test for accidentally having a parameter truncated
+# due to Rust/C signature mismatch. Used to crash with
+# > [BUG] rb_vm_insn_addr2insn: invalid insn address ...
+# or
+# > ... `Err` value: TryFromIntError(())'
+assert_normal_exit %q{
+  n = 16384
+  eval(
+    "def foo(arg); " + "_=arg;" * n + '_=1;' + "Object; end"
+  )
+  foo 1
+}
