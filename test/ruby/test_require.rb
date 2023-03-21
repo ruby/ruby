@@ -562,9 +562,6 @@ class TestRequire < Test::Unit::TestCase
 
       assert_equal(true, (t1_res ^ t2_res), bug5754 + " t1:#{t1_res} t2:#{t2_res}")
       assert_equal([:pre, :post], scratch, bug5754)
-
-      assert_match(/circular require/, output)
-      assert_match(/in #{__method__}'$/o, output)
     }
   ensure
     $VERBOSE = verbose

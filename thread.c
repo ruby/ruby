@@ -5040,6 +5040,17 @@ rb_thread_shield_new(void)
     return thread_shield;
 }
 
+bool
+rb_thread_shield_owned(VALUE self)
+{
+    VALUE mutex = GetThreadShieldPtr(self);
+    if (!mutex) return false;
+
+    rb_mutex_t *m = mutex_ptr(mutex);
+
+    return m->fiber == GET_EC()->fiber_ptr;
+}
+
 /*
  * Wait a thread shield.
  *
