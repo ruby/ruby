@@ -329,6 +329,10 @@ module RubyVM::RJIT # :nodoc: all
       _cme_addr = cme.to_i
       Primitive.cexpr! 'RBOOL(UNDEFINED_METHOD_ENTRY_P((const rb_callable_method_entry_t *)NUM2SIZET(_cme_addr)))'
     end
+
+    def RCLASS_ORIGIN(klass)
+      Primitive.cexpr! 'RCLASS_ORIGIN(klass)'
+    end
   end
 
   #

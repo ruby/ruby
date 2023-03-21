@@ -3876,7 +3876,7 @@ module RubyVM::RJIT
           C::FL_TEST_RAW(rbasic_klass, C::RMODULE_IS_REFINEMENT) != 0
         return CantCompile
       end
-      comptime_superclass = C.rb_class_get_superclass(current_defined_class)
+      comptime_superclass = C.rb_class_get_superclass(C.RCLASS_ORIGIN(current_defined_class))
 
       # Don't JIT calls that aren't simple
       # Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
@@ -3904,12 +3904,6 @@ module RubyVM::RJIT
       cme = C.rb_callable_method_entry(comptime_superclass, mid)
 
       if cme.nil?
-        return CantCompile
-      end
-
-      # workaround -- TODO: Why does this happen?
-      if me.to_i == cme.to_i
-        asm.incr_counter(:invokesuper_same_me)
         return CantCompile
       end
 
