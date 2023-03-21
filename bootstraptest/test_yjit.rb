@@ -3662,3 +3662,18 @@ assert_equal '[1, 2, 3]', %q{
   end
   send(:bar, 1, 2, 3)
 }
+
+# Fix splat block arg bad compilation
+assert_equal "foo", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    sql << v
+  end
+
+  literal("foo")
+}
