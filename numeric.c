@@ -3058,7 +3058,7 @@ num_step(int argc, VALUE *argv, VALUE from)
                                     num_step_size, from, to, step, FALSE);
         }
 
-        return SIZED_ENUMERATOR(from, 2, ((VALUE [2]){to, step}), num_step_size);
+        return SIZED_ENUMERATOR_KW(from, 2, ((VALUE [2]){to, step}), num_step_size, FALSE);
     }
 
     desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
