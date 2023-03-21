@@ -366,7 +366,7 @@ class TestGem < Gem::TestCase
     install_specs bundler_latest, bundler_previous
 
     File.open("Gemfile.lock", "w") do |f|
-      f.write <<-L.gsub(/ {8}/, "")
+      f.write <<~L
         GEM
           remote: https://rubygems.org/
           specs:
@@ -400,7 +400,7 @@ class TestGem < Gem::TestCase
     install_specs bundler_latest, bundler_previous
 
     File.open("Gemfile.lock", "w") do |f|
-      f.write <<-L.gsub(/ {8}/, "")
+      f.write <<~L
         GEM
           remote: https://rubygems.org/
           specs:
@@ -424,7 +424,7 @@ class TestGem < Gem::TestCase
 
   def test_activate_bin_path_gives_proper_error_for_bundler_when_underscore_selection_given
     File.open("Gemfile.lock", "w") do |f|
-      f.write <<-L.gsub(/ {8}/, "")
+      f.write <<~L
         GEM
           remote: https://rubygems.org/
           specs:
