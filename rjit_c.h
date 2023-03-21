@@ -58,7 +58,8 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_complex_arg_setup_block,
     send_iseq_complex_arity,
     send_iseq_complex_has_lead,
-    send_iseq_complex_has_rest_or_post,
+    send_iseq_complex_has_rest,
+    send_iseq_complex_has_post,
     send_iseq_complex_has_opt,
     send_iseq_complex_has_kw,
     send_iseq_complex_has_kwrest,
@@ -92,7 +93,6 @@ RJIT_RUNTIME_COUNTERS(
     send_bmethod_blockarg,
 
     invokesuper_me_changed,
-    invokesuper_same_me,
 
     invokeblock_none,
     invokeblock_symbol,

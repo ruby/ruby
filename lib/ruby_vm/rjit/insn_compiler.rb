@@ -4765,12 +4765,12 @@ module RubyVM::RJIT
       end
 
       if iseq.body.param.flags.has_rest || iseq.body.param.flags.has_post
-        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        asm.incr_counter(iseq.body.param.flags.has_rest ? :send_iseq_complex_has_rest : :send_iseq_complex_has_pos)
         return CantCompile
       end
 
       if iseq.body.param.flags.has_post
-        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        asm.incr_counter(:send_iseq_complex_has_post)
         return CantCompile
       end
 
@@ -4780,7 +4780,7 @@ module RubyVM::RJIT
       end
 
       if iseq.body.param.flags.has_rest
-        asm.incr_counter(:send_iseq_complex_has_rest_or_post)
+        asm.incr_counter(:send_iseq_complex_has_rest)
         return CantCompile
       end
 
