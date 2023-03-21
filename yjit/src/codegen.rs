@@ -5181,9 +5181,9 @@ fn move_rest_args_to_stack(array: Opnd, num_args: u32, ctx: &mut Context, asm: &
 
     let array_len_opnd = get_array_len(asm, array);
 
-    asm.comment("Side exit if length is less than required");
+    asm.comment("Side exit if length doesn't not equal remaining args");
     asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(counted_exit!(ocb, side_exit, send_iseq_has_rest_and_splat_not_equal));
+    asm.jbe(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal));
 
     asm.comment("Push arguments from array");
 
@@ -5410,6 +5410,11 @@ fn gen_send_iseq(
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     if iseq_has_rest && captured_opnd.is_some() {
         gen_counter_incr!(asm, send_iseq_has_rest_and_captured);
+        return CantCompile;
+    }
+
+    if iseq_has_rest && unsafe { get_iseq_flags_has_block(iseq) } {
+        gen_counter_incr!(asm, send_iseq_has_rest_and_block);
         return CantCompile;
     }
 
