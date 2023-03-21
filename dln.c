@@ -385,10 +385,10 @@ dln_open(const char *file)
         const char *libruby_name = NULL;
         if (dln_incompatible_library_p(handle, &libruby_name)) {
             if (dln_disable_dlclose()) {
+                /* dlclose() segfaults */
                 if (libruby_name) {
                     dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
                 }
-                /* dlclose(handle) segfaults */
                 dln_fatalerror("%s - %s", incompatible, file);
             }
             else {
