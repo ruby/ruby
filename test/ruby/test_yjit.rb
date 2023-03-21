@@ -1336,13 +1336,24 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
+    # Separate thread so we don't deadlock when
+    # the child ruby blocks writing the stats to fd 3
+    stats = ''
+    stats_reader = Thread.new do
+      stats = stats_r.read
+      stats_r.close
+    end
     out, err, status = EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout, ios: {3 => stats_w}
     )
     stats_w.close
-    stats = stats_r.read
+    stats_reader.join(timeout)
     stats = Marshal.load(stats) if !stats.empty?
-    stats_r.close
     [status, out, err, stats]
+  ensure
+    stats_reader&.kill
+    stats_reader&.join(timeout)
+    stats_r&.close
+    stats_w&.close
   end
 end
