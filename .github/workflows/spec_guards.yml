@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
-      - uses: ruby/setup-ruby@e6689b4deb1cb2062ea45315001f687c0b52111b # v1.144.1
+      - uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1 # v1.144.2
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
