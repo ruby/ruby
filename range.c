@@ -1789,8 +1789,12 @@ range_string_range_p(VALUE beg, VALUE end)
 }
 
 static inline VALUE
-range_include_fallback(VALUE beg, VALUE end)
+range_include_fallback(VALUE beg, VALUE end, VALUE val)
 {
+    if (NIL_P(beg) && NIL_P(end)) {
+        if (linear_object_p(val)) return Qtrue;
+    }
+
     if (NIL_P(beg) || NIL_P(end)) {
         rb_raise(rb_eTypeError, "cannot determine inclusion in beginless/endless ranges");
     }
@@ -1828,7 +1832,7 @@ range_string_cover_internal(VALUE range, VALUE val)
         }
     }
 
-    return range_include_fallback(beg, end);
+    return range_include_fallback(beg, end, val);
 }
 
 static VALUE
@@ -1846,7 +1850,7 @@ range_include_internal(VALUE range, VALUE val)
         return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
     }
 
-    return range_include_fallback(beg, end);
+    return range_include_fallback(beg, end, val);
 }
 
 static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
