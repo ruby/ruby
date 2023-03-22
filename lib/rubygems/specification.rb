@@ -501,8 +501,6 @@ class Gem::Specification < Gem::BasicSpecification
     @platform = @new_platform.to_s
 
     invalidate_memoized_attributes
-
-    @new_platform
   end
 
   ##
