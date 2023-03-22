@@ -164,14 +164,14 @@ class Gem::Request
   # environment variables.
 
   def self.get_proxy_from_env(scheme = "http")
-    _scheme = scheme.downcase
-    _SCHEME = scheme.upcase
-    env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
+    downcase_scheme = scheme.downcase
+    upcase_scheme = scheme.upcase
+    env_proxy = ENV["#{downcase_scheme}_proxy"] || ENV["#{upcase_scheme}_PROXY"]
 
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return ["https", "http"].include?(_scheme) ?
+      return ["https", "http"].include?(downcase_scheme) ?
         :no_proxy : get_proxy_from_env("http")
     end
 
@@ -179,8 +179,8 @@ class Gem::Request
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
     if uri && uri.user.nil? && uri.password.nil?
-      user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
-      password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
+      user     = ENV["#{downcase_scheme}_proxy_user"] || ENV["#{upcase_scheme}_PROXY_USER"]
+      password = ENV["#{downcase_scheme}_proxy_pass"] || ENV["#{upcase_scheme}_PROXY_PASS"]
 
       uri.user     = Gem::UriFormatter.new(user).escape
       uri.password = Gem::UriFormatter.new(password).escape
