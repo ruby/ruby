@@ -386,6 +386,7 @@ module RubyVM::RJIT # :nodoc: all
   C::RARRAY_EMBED_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_FLAG) }
   C::RARRAY_EMBED_LEN_MASK = Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_LEN_MASK) }
   C::RARRAY_EMBED_LEN_SHIFT = Primitive.cexpr! %q{ SIZET2NUM(RARRAY_EMBED_LEN_SHIFT) }
+  C::RHASH_PASS_AS_KEYWORDS = Primitive.cexpr! %q{ SIZET2NUM(RHASH_PASS_AS_KEYWORDS) }
   C::RMODULE_IS_REFINEMENT = Primitive.cexpr! %q{ SIZET2NUM(RMODULE_IS_REFINEMENT) }
   C::ROBJECT_EMBED = Primitive.cexpr! %q{ SIZET2NUM(ROBJECT_EMBED) }
   C::RSTRUCT_EMBED_LEN_MASK = Primitive.cexpr! %q{ SIZET2NUM(RSTRUCT_EMBED_LEN_MASK) }
@@ -403,6 +404,7 @@ module RubyVM::RJIT # :nodoc: all
   C::RUBY_SYMBOL_FLAG = Primitive.cexpr! %q{ SIZET2NUM(RUBY_SYMBOL_FLAG) }
   C::RUBY_T_ARRAY = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ARRAY) }
   C::RUBY_T_CLASS = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_CLASS) }
+  C::RUBY_T_HASH = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_HASH) }
   C::RUBY_T_ICLASS = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_ICLASS) }
   C::RUBY_T_MASK = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MASK) }
   C::RUBY_T_MODULE = Primitive.cexpr! %q{ SIZET2NUM(RUBY_T_MODULE) }
@@ -1274,6 +1276,11 @@ module RubyVM::RJIT # :nodoc: all
       rjit_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), rjit_insns_count)")],
       send_args_splat_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_kw_splat)")],
       send_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat)")],
+      send_args_splat_not_array: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_not_array)")],
+      send_args_splat_length_not_equal: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_length_not_equal)")],
+      send_args_splat_opt_num: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_opt_num)")],
+      send_args_splat_arity_error: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_arity_error)")],
+      send_args_splat_ruby2_hash: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_ruby2_hash)")],
       send_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_kw_splat)")],
       send_kwarg: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_kwarg)")],
       send_klass_megamorphic: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_klass_megamorphic)")],

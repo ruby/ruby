@@ -3315,6 +3315,31 @@ module RubyVM::RJIT
       asm.jne(side_exit)
     end
 
+    # clobbers object_reg
+    def guard_object_is_not_ruby2_keyword_hash(asm, object_reg, flags_reg, side_exit)
+      asm.comment('guard object is not ruby2 keyword hash')
+
+      not_ruby2_keyword = asm.new_label('not_ruby2_keyword')
+      asm.test(object_reg, C::RUBY_IMMEDIATE_MASK)
+      asm.jnz(not_ruby2_keyword)
+
+      asm.cmp(object_reg, Qfalse)
+      asm.je(not_ruby2_keyword)
+
+      asm.mov(flags_reg, [object_reg, C.RBasic.offsetof(:flags)])
+      type_reg = object_reg
+      asm.mov(type_reg, flags_reg)
+      asm.and(type_reg, C::RUBY_T_MASK)
+
+      asm.cmp(type_reg, C::RUBY_T_HASH)
+      asm.jne(not_ruby2_keyword)
+
+      asm.test(flags_reg, C::RHASH_PASS_AS_KEYWORDS)
+      asm.jnz(side_exit)
+
+      asm.write_label(not_ruby2_keyword)
+    end
+
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
@@ -4028,7 +4053,7 @@ module RubyVM::RJIT
       end
     end
 
-    # vm_call_iseq_setup
+    # vm_call_iseq_setup (ISEQ only)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
@@ -4051,7 +4076,26 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep: nil)
-      # We will not have side exits from here. Adjust the stack.
+      # Push splat args, which was skipped in jit_caller_setup_arg.
+      if flags & C::VM_CALL_ARGS_SPLAT != 0
+        if iseq.body.param.opt_num != 0
+          asm.incr_counter(:send_args_splat_opt_num) # not supported yet
+          return CantCompile
+        end
+
+        array_length = jit.peek_at_stack(flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)&.length || 0 # blockarg is not popped yet
+        if iseq.body.param.lead_num != array_length + argc - 1
+          asm.incr_counter(:send_args_splat_arity_error)
+          return CantCompile
+        end
+
+        # We are going to assume that the splat fills all the remaining arguments.
+        # In the generated code we test if this is true and if not side exit.
+        argc = argc - 1 + array_length
+        jit_caller_setup_arg_splat(jit, ctx, asm, array_length)
+      end
+
+      # We will not have side exits from here. Adjust the stack, which was skipped in jit_call_opt_send.
       if flags & C::VM_CALL_OPT_SEND != 0
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       end
@@ -4316,8 +4360,7 @@ module RubyVM::RJIT
         asm.incr_counter(:send_optimized_send_send)
         return CantCompile
       end
-      # Ideally, we want to shift the stack here, but it's not safe until you reach the point
-      # where you never exit. `send_shift` signals to lazily shift the stack by this amount.
+      # Lazily handle stack shift in jit_call_iseq_setup_normal
       send_shift += 1
 
       kw_splat = flags & C::VM_CALL_KW_SPLAT != 0
@@ -4426,6 +4469,7 @@ module RubyVM::RJIT
       EndBlock
     end
 
+    # vm_call_opt_send (lazy part)
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
@@ -4613,14 +4657,14 @@ module RubyVM::RJIT
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], cfp_reg)
     end
 
-    # vm_callee_setup_arg: Set up args and return opt_pc (or CantCompile)
+    # vm_callee_setup_arg (ISEQ only): Set up args and return opt_pc (or CantCompile)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_callee_setup_arg(jit, ctx, asm, flags, argc, iseq)
       if flags & C::VM_CALL_KW_SPLAT == 0
         if C.rb_simple_iseq_p(iseq)
-          if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+          if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
             return CantCompile
           end
           if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
@@ -4806,19 +4850,91 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
-    def jit_caller_setup_arg(jit, ctx, asm, flags)
+    def jit_caller_setup_arg(jit, ctx, asm, flags, splat: false)
       if flags & C::VM_CALL_ARGS_SPLAT != 0 && flags & C::VM_CALL_KW_SPLAT != 0
         asm.incr_counter(:send_args_splat_kw_splat)
         return CantCompile
       elsif flags & C::VM_CALL_ARGS_SPLAT != 0
-        asm.incr_counter(:send_args_splat)
-        return CantCompile
+        if splat
+          # Lazily handle splat in jit_call_iseq_setup_normal
+        else
+          # splat is not supported in this path
+          asm.incr_counter(:send_args_splat)
+          return CantCompile
+        end
       elsif flags & C::VM_CALL_KW_SPLAT != 0
         asm.incr_counter(:send_args_kw_splat)
         return CantCompile
       elsif flags & C::VM_CALL_KWARG != 0
         asm.incr_counter(:send_kwarg)
         return CantCompile
+      end
+    end
+
+    # vm_caller_setup_arg_splat (+ CALLER_SETUP_ARG):
+    # Pushes arguments from an array to the stack that are passed with a splat (i.e. *args).
+    # It optimistically compiles to a static size that is the exact number of arguments needed for the function.
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def jit_caller_setup_arg_splat(jit, ctx, asm, required_args)
+      side_exit = side_exit(jit, ctx)
+
+      asm.comment('push_splat_args')
+
+      array_opnd = ctx.stack_opnd(0)
+      array_reg = :rax
+      asm.mov(array_reg, array_opnd)
+
+      guard_object_is_heap(asm, array_reg, counted_exit(side_exit, :send_args_splat_not_array))
+      guard_object_is_array(asm, array_reg, :rcx, counted_exit(side_exit, :send_args_splat_not_array))
+
+      array_len_opnd = :rcx
+      jit_array_len(asm, array_reg, array_len_opnd)
+
+      asm.comment('Side exit if length is not equal to remaining args')
+      asm.cmp(array_len_opnd, required_args)
+      asm.jne(counted_exit(side_exit, :send_args_splat_length_not_equal))
+
+      asm.comment('Check last argument is not ruby2keyword hash')
+
+      ary_opnd = :rcx
+      jit_array_ptr(asm, array_reg, ary_opnd) # clobbers array_reg
+
+      last_array_value = :rax
+      asm.mov(last_array_value, [ary_opnd, (required_args - 1) * C.VALUE.size])
+
+      ruby2_exit = counted_exit(side_exit, :send_args_splat_ruby2_hash);
+      guard_object_is_not_ruby2_keyword_hash(asm, last_array_value, :rcx, ruby2_exit) # clobbers :rax
+
+      asm.comment('Push arguments from array')
+      array_opnd = ctx.stack_pop(1)
+
+      if required_args > 0
+        # Load the address of the embedded array
+        # (struct RArray *)(obj)->as.ary
+        array_reg = :rax
+        asm.mov(array_reg, array_opnd)
+
+        # Conditionally load the address of the heap array
+        # (struct RArray *)(obj)->as.heap.ptr
+        flags_opnd = [array_reg, C.RBasic.offsetof(:flags)]
+        asm.test(flags_opnd, C::RARRAY_EMBED_FLAG)
+        heap_ptr_opnd = [array_reg, C.RArray.offsetof(:as, :heap, :ptr)]
+        # Load the address of the embedded array
+        # (struct RArray *)(obj)->as.ary
+        asm.lea(:rcx, [array_reg, C.RArray.offsetof(:as, :ary)])
+        asm.mov(:rax, heap_ptr_opnd)
+        asm.cmovnz(:rax, :rcx)
+        ary_opnd = :rax
+
+        (0...required_args).each do |i|
+          top = ctx.stack_push
+          asm.mov(:rcx, [ary_opnd, i * C.VALUE.size])
+          asm.mov(top, :rcx)
+        end
+
+        asm.comment('end push_each')
       end
     end
 
@@ -4851,6 +4967,20 @@ module RubyVM::RJIT
 
       # Select the array length value
       asm.cmovz(len_reg, [array_reg, C.RArray.offsetof(:as, :heap, :len)])
+    end
+
+    # Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
+    def jit_array_ptr(asm, array_reg, ary_opnd)
+      asm.comment('get array pointer for embedded or heap')
+
+      flags_opnd = [array_reg, C.RBasic.offsetof(:flags)]
+      asm.test(flags_opnd, C::RARRAY_EMBED_FLAG)
+      heap_ptr_opnd = [array_reg, C.RArray.offsetof(:as, :heap, :ptr)]
+      # Load the address of the embedded array
+      # (struct RArray *)(obj)->as.ary
+      asm.lea(array_reg, [array_reg, C.RArray.offsetof(:as, :ary)])
+      asm.mov(ary_opnd, heap_ptr_opnd)
+      asm.cmovnz(ary_opnd, array_reg)
     end
 
     def assert_equal(left, right)

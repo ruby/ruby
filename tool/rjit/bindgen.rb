@@ -428,6 +428,7 @@ generator = BindingGenerator.new(
       RUBY_T_ARRAY
       RUBY_T_CLASS
       RUBY_T_ICLASS
+      RUBY_T_HASH
       RUBY_T_MASK
       RUBY_T_MODULE
       RUBY_T_STRING
@@ -480,6 +481,7 @@ generator = BindingGenerator.new(
       VM_SPECIAL_OBJECT_VMCORE
       RUBY_ENCODING_MASK
       RUBY_FL_FREEZE
+      RHASH_PASS_AS_KEYWORDS
     ],
   },
   values: {
