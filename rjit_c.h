@@ -20,10 +20,11 @@ RJIT_RUNTIME_COUNTERS(
     vm_insns_count,
     rjit_insns_count,
 
+    send_args_splat_kw_splat,
     send_args_splat,
-    send_klass_megamorphic,
     send_kw_splat,
     send_kwarg,
+    send_klass_megamorphic,
     send_missing_cme,
     send_private,
     send_protected_check_failed,

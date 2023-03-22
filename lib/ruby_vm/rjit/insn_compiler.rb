@@ -4807,13 +4807,16 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_caller_setup_arg(jit, ctx, asm, flags)
-      if flags & C::VM_CALL_ARGS_SPLAT != 0
-        # We don't support vm_caller_setup_arg_splat
+      if flags & C::VM_CALL_ARGS_SPLAT != 0 && flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_args_splat_kw_splat)
+        return CantCompile
+      elsif flags & C::VM_CALL_ARGS_SPLAT != 0
         asm.incr_counter(:send_args_splat)
         return CantCompile
-      end
-      if flags & (C::VM_CALL_KWARG | C::VM_CALL_KW_SPLAT) != 0
-        # We don't support keyword args either
+      elsif flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_args_kw_splat)
+        return CantCompile
+      elsif flags & C::VM_CALL_KWARG != 0
         asm.incr_counter(:send_kwarg)
         return CantCompile
       end
