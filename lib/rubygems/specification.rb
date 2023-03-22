@@ -1150,8 +1150,8 @@ class Gem::Specification < Gem::BasicSpecification
   def self.load(file)
     return unless file
 
-    _spec = @load_cache_mutex.synchronize { @load_cache[file] }
-    return _spec if _spec
+    spec = @load_cache_mutex.synchronize { @load_cache[file] }
+    return spec if spec
 
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
@@ -1161,22 +1161,22 @@ class Gem::Specification < Gem::BasicSpecification
     code.tap(&Gem::UNTAINT)
 
     begin
-      _spec = eval code, binding, file
+      spec = eval code, binding, file
 
-      if Gem::Specification === _spec
-        _spec.loaded_from = File.expand_path file.to_s
+      if Gem::Specification === spec
+        spec.loaded_from = File.expand_path file.to_s
         @load_cache_mutex.synchronize do
           prev = @load_cache[file]
           if prev
-            _spec = prev
+            spec = prev
           else
-            @load_cache[file] = _spec
+            @load_cache[file] = spec
           end
         end
-        return _spec
+        return spec
       end
 
-      warn "[#{file}] isn't a Gem::Specification (#{_spec.class} instead)."
+      warn "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
     rescue SignalException, SystemExit
       raise
     rescue SyntaxError, StandardError => e
