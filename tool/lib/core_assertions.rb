@@ -760,7 +760,7 @@ eom
 
         seq.each do |i|
           next if i == first
-          t = (tmax * i).to_f
+          t = tmax * i.fdiv(first)
           *arg = pre.call(i)
           message = "[#{i}]: in #{t}s"
           Timeout.timeout(t, nil, message) do
