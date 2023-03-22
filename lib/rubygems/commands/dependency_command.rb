@@ -89,10 +89,9 @@ use with other commands.
 
   def display_pipe(specs) # :nodoc:
     specs.each do |spec|
-      unless spec.dependencies.empty?
-        spec.dependencies.sort_by(&:name).each do |dep|
-          say "#{dep.name} --version '#{dep.requirement}'"
-        end
+      next if spec.dependencies.empty?
+      spec.dependencies.sort_by(&:name).each do |dep|
+        say "#{dep.name} --version '#{dep.requirement}'"
       end
     end
   end

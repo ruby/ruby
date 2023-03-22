@@ -141,10 +141,9 @@ class Gem::SpecificationPolicy
         error "#{entry} value is too large (#{value.size} > 1024)"
       end
 
-      if METADATA_LINK_KEYS.include? key
-        if value !~ VALID_URI_PATTERN
-          error "#{entry} has invalid link: #{value.inspect}"
-        end
+      next unless METADATA_LINK_KEYS.include? key
+      if value !~ VALID_URI_PATTERN
+        error "#{entry} has invalid link: #{value.inspect}"
       end
     end
   end
@@ -196,28 +195,27 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
         !version.prerelease? && [">", ">="].include?(op)
       end
 
-      if open_ended
-        op, dep_version = dep.requirement.requirements.first
+      next unless open_ended
+      op, dep_version = dep.requirement.requirements.first
 
-        segments = dep_version.segments
+      segments = dep_version.segments
 
-        base = segments.first 2
+      base = segments.first 2
 
-        recommendation = if [">", ">="].include?(op) && segments == [0]
-          "  use a bounded requirement, such as '~> x.y'"
-        else
-          bugfix = if op == ">"
-            ", '> #{dep_version}'"
-          elsif op == ">=" && base != segments
-            ", '>= #{dep_version}'"
-          end
-
-          "  if #{dep.name} is semantically versioned, use:\n" \
-          "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join "."}'#{bugfix}"
+      recommendation = if [">", ">="].include?(op) && segments == [0]
+        "  use a bounded requirement, such as '~> x.y'"
+      else
+        bugfix = if op == ">"
+          ", '> #{dep_version}'"
+        elsif op == ">=" && base != segments
+          ", '>= #{dep_version}'"
         end
 
-        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
+        "  if #{dep.name} is semantically versioned, use:\n" \
+        "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join "."}'#{bugfix}"
       end
+
+      warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
     end
     if warning_messages.any?
       warning_messages.each {|warning_message| warning warning_message }
@@ -368,15 +366,14 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     licenses = @specification.licenses
 
     licenses.each do |license|
-      unless Gem::Licenses.match?(license)
-        suggestions = Gem::Licenses.suggestions(license)
-        message = <<-WARNING
+      next if Gem::Licenses.match?(license)
+      suggestions = Gem::Licenses.suggestions(license)
+      message = <<-WARNING
 license value '#{license}' is invalid.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        WARNING
-        message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
-        warning(message)
-      end
+      WARNING
+      message += "Did you mean #{suggestions.map {|s| "'#{s}'" }.join(", ")}?\n" unless suggestions.nil?
+      warning(message)
     end
 
     warning <<-WARNING if licenses.empty?

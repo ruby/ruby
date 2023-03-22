@@ -354,25 +354,23 @@ class Gem::Installer
 
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
-      if hook.call(self) == false
-        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
+      next unless hook.call(self) == false
+      location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
-        message = "pre-install hook#{location} failed for #{spec.full_name}"
-        raise Gem::InstallError, message
-      end
+      message = "pre-install hook#{location} failed for #{spec.full_name}"
+      raise Gem::InstallError, message
     end
   end
 
   def run_post_build_hooks # :nodoc:
     Gem.post_build_hooks.each do |hook|
-      if hook.call(self) == false
-        FileUtils.rm_rf gem_dir
+      next unless hook.call(self) == false
+      FileUtils.rm_rf gem_dir
 
-        location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
+      location = " at #{$1}" if hook.inspect =~ /[ @](.*:\d+)/
 
-        message = "post-build hook#{location} failed for #{spec.full_name}"
-        raise Gem::InstallError, message
-      end
+      message = "post-build hook#{location} failed for #{spec.full_name}"
+      raise Gem::InstallError, message
     end
   end
 
