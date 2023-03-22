@@ -15,7 +15,7 @@ class TestGemSourceVendor < Gem::TestCase
     git       = Gem::Source::Git.new "a", "a", nil
     installed = Gem::Source::Installed.new
 
-    assert_equal(0, vendor.<=>(vendor),    "vendor <=> vendor")
+    assert_equal(0, vendor.<=>(vendor),    "vendor <=> vendor") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(1, vendor.<=>(remote),    "vendor <=> remote")
     assert_equal(-1, remote.<=>(vendor), "remote <=> vendor")

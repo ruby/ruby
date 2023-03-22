@@ -231,7 +231,7 @@ class TestGemPlatform < Gem::TestCase
     my = Gem::Platform.new %w[cpu my_platform 1]
     other = Gem::Platform.new %w[cpu other_platform 1]
 
-    assert(my === my)
+    assert(my === my) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     refute(other === my)
     refute(my === other)
   end

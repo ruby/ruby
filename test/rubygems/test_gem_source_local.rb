@@ -92,7 +92,7 @@ class TestGemSourceLocal < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, local.<=>(local), "local <=> local")
+    assert_equal(0, local.<=>(local), "local <=> local") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(-1, remote.<=>(local), "remote <=> local")
     assert_equal(1, local.<=>(remote), "local <=> remote")
