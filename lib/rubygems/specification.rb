@@ -167,8 +167,6 @@ class Gem::Specification < Gem::BasicSpecification
                                         v.inspect
                                       when String
                                         v.dump
-                                      when Numeric
-                                        "default_value(:#{k})"
                                       else
                                         "default_value(:#{k}).dup"
     end
