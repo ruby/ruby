@@ -1170,7 +1170,7 @@ assert_equal 'can not set constants with non-shareable objects by non-main Racto
 }
 
 # define_method is not allowed
-assert_equal "defined with an un-shareable Proc in a different Ractor", %q{
+assert_equal "Cannot call method defined with an un-shareable Proc in a different Ractor", %q{
   str = "foo"
   define_method(:buggy){|i| str << "#{i}"}
   begin
