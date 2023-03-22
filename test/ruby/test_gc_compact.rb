@@ -415,4 +415,32 @@ class TestGCCompact < Test::Unit::TestCase
       assert_include(ObjectSpace.dump(ary[0]), '"embedded":true')
     end;
   end
+
+  def test_moving_objects_between_size_pools_keeps_shape_frozen_status
+    # [Bug #19536]
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
+      class A
+        def add_ivars
+          @a = @b = @c = @d = 1
+        end
+
+        def set_a
+          @a = 10
+        end
+      end
+
+      a = A.new
+      a.add_ivars
+      a.freeze
+
+      b = A.new
+      b.add_ivars
+      b.set_a # Set the inline cache in set_a
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_raise(FrozenError) { a.set_a }
+    end;
+  end
 end
