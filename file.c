@@ -5879,10 +5879,8 @@ rb_stat_wr(VALUE obj)
     if ((st->st_mode & (S_IROTH)) == S_IROTH) {
         return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
-    else {
-        return Qnil;
-    }
 #endif
+    return Qnil;
 }
 
 /*
@@ -5972,10 +5970,8 @@ rb_stat_ww(VALUE obj)
     if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
         return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
-    else {
-        return Qnil;
-    }
 #endif
+    return Qnil;
 }
 
 /*
