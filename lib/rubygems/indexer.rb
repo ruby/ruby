@@ -200,7 +200,7 @@ class Gem::Indexer
       rescue SignalException
         alert_error "Received signal, exiting"
         raise
-      rescue Exception => e
+      rescue StandardError => e
         msg = ["Unable to process #{gemfile}",
                "#{e.message} (#{e.class})",
                "\t#{e.backtrace.join "\n\t"}"].join("\n")

@@ -1527,7 +1527,7 @@ class TestGem < Gem::TestCase
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
-    with_plugin("exception") { Gem.load_env_plugins }
+    with_plugin("scripterror") { Gem.load_env_plugins }
     begin
       assert_equal :loaded, TEST_PLUGIN_EXCEPTION
     rescue StandardError

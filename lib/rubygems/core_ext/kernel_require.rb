@@ -70,7 +70,7 @@ module Kernel
 
         begin
           Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease)
-        rescue Exception
+        rescue StandardError
           RUBYGEMS_ACTIVATION_MONITOR.exit
           raise
         end unless resolved_path

@@ -1011,7 +1011,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
       begin
         load plugin
-      rescue ::Exception => e
+      rescue ScriptError, StandardError => e
         details = "#{plugin.inspect}: #{e.message} (#{e.class})"
         warn "Error loading RubyGems plugin #{details}"
       end

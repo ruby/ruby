@@ -1179,7 +1179,7 @@ class Gem::Specification < Gem::BasicSpecification
       warn "[#{file}] isn't a Gem::Specification (#{_spec.class} instead)."
     rescue SignalException, SystemExit
       raise
-    rescue SyntaxError, Exception => e
+    rescue SyntaxError, StandardError => e
       warn "Invalid gemspec in [#{file}]: #{e}"
     end
 
