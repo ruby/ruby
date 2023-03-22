@@ -1526,7 +1526,7 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    sec = RUBY_PLATFORM =~ /freebsd/ ? 6 : 3
+    sec = 3
     code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
     IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
@@ -1543,6 +1543,7 @@ class TestProcess < Test::Unit::TestCase
       end
       t1 = Time.now
       diff = t1 - t0
+      sec = RUBY_PLATFORM =~ /freebsd/ ? sec * 2 : sec
       assert_operator(diff, :<, sec,
                   ->{"#{bug11340}: #{diff} seconds to interrupt Process.wait"})
       f.puts
