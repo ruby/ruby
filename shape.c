@@ -136,22 +136,19 @@ rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
     shape->edge_name = edge_name;
     shape->next_iv_index = 0;
     shape->parent_id = parent_id;
+    shape->edges = NULL;
 
     return shape;
 }
 
 static rb_shape_t *
-rb_shape_alloc_with_size_pool_index(ID edge_name, rb_shape_t * parent, uint8_t size_pool_index)
+rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
 {
     rb_shape_t * shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
-    shape->size_pool_index = size_pool_index;
+    shape->type = (uint8_t)type;
+    shape->size_pool_index = parent->size_pool_index;
+    shape->capacity = parent->capacity;
     return shape;
-}
-
-static rb_shape_t *
-rb_shape_alloc(ID edge_name, rb_shape_t * parent)
-{
-    return rb_shape_alloc_with_size_pool_index(edge_name, parent, parent->size_pool_index);
 }
 
 static rb_shape_t*
@@ -182,11 +179,7 @@ get_next_shape_internal(rb_shape_t * shape, ID id, enum shape_type shape_type, b
             else {
                 *variation_created = had_edges;
 
-                rb_shape_t * new_shape = rb_shape_alloc(id, shape);
-
-                new_shape->type = (uint8_t)shape_type;
-                new_shape->capacity = shape->capacity;
-                new_shape->edges = NULL;
+                rb_shape_t * new_shape = rb_shape_alloc(id, shape, shape_type);
 
                 switch (shape_type) {
                   case SHAPE_IVAR:
