@@ -144,7 +144,6 @@ class Gem::Package::TarReader::Entry
 
   def pos=(new_pos)
     seek(new_pos, IO::SEEK_SET)
-    new_pos
   end
 
   def size
