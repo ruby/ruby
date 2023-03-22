@@ -194,7 +194,7 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, remote.<=>(remote), "remote <=> remote")
+    assert_equal(0, remote.<=>(remote), "remote <=> remote") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(-1, remote.<=>(specific), "remote <=> specific")
     assert_equal(1, specific.<=>(remote), "specific <=> remote")
@@ -215,7 +215,7 @@ class TestGemSource < Gem::TestCase
     sourceA = Gem::Source.new "http://example.com/a"
     sourceB = Gem::Source.new "http://example.com/b"
 
-    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA")
+    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     assert_equal(1, sourceA.<=>(sourceB), "sourceA <=> sourceB")
     assert_equal(1, sourceB.<=>(sourceA), "sourceB <=> sourceA")
   end
