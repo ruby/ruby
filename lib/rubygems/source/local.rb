@@ -79,15 +79,14 @@ class Gem::Source::Local < Gem::Source
     found = []
 
     @specs.each do |n, data|
-      if n.name == gem_name
-        s = data[1].spec
+      next unless n.name == gem_name
+      s = data[1].spec
 
-        if version.satisfied_by?(s.version)
-          if prerelease
-            found << s
-          elsif !s.version.prerelease? || version.prerelease?
-            found << s
-          end
+      if version.satisfied_by?(s.version)
+        if prerelease
+          found << s
+        elsif !s.version.prerelease? || version.prerelease?
+          found << s
         end
       end
     end
