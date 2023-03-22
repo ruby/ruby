@@ -33,7 +33,6 @@ class Gem::Source::SpecificFile < Gem::Source
   def fetch_spec(name) # :nodoc:
     return @spec if name == @name
     raise Gem::Exception, "Unable to find '#{name}'"
-    @spec
   end
 
   def download(spec, dir = nil) # :nodoc:
