@@ -1031,9 +1031,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_path(path)
     path = path.dup.freeze
-    spec = @@spec_with_requirable_file[path] ||= (stubs.find do |s|
+    spec = @@spec_with_requirable_file[path] ||= stubs.find do |s|
       s.contains_requirable_file? path
-    end || NOT_FOUND)
+    end || NOT_FOUND
+
     spec.to_spec
   end
 
@@ -1050,9 +1051,10 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.find_active_stub_by_path(path)
-    stub = @@active_stub_with_requirable_file[path] ||= (stubs.find do |s|
+    stub = @@active_stub_with_requirable_file[path] ||= stubs.find do |s|
       s.activated? && s.contains_requirable_file?(path)
-    end || NOT_FOUND)
+    end || NOT_FOUND
+
     stub.this
   end
 
