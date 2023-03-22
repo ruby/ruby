@@ -171,8 +171,7 @@ class Gem::Request
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return ["https", "http"].include?(downcase_scheme) ?
-        :no_proxy : get_proxy_from_env("http")
+      return ["https", "http"].include?(downcase_scheme) ? :no_proxy : get_proxy_from_env("http")
     end
 
     require "uri"
