@@ -763,7 +763,7 @@ eom
           t = tmax * i.fdiv(first)
           *arg = pre.call(i)
           message = "[#{i}]: in #{t}s"
-          Timeout.timeout(t, nil, message) do
+          Timeout.timeout(t, Timeout::Error, message) do
             st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             yield(*arg)
             assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
