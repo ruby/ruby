@@ -237,7 +237,7 @@ class Gem::CommandManager
         load_error = e
       end
       Gem::Commands.const_get(const_name).new
-    rescue Exception => e
+    rescue StandardError => e
       e = load_error if load_error
 
       alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")

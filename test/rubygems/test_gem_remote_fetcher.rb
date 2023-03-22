@@ -1158,7 +1158,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     server.ssl_context.tmp_dh_callback = proc { TEST_KEY_DH2048 }
     t = Thread.new do
       server.start
-    rescue Exception => ex
+    rescue StandardError => ex
       puts "ERROR during server thread: #{ex.message}"
       raise
     ensure
@@ -1210,7 +1210,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
     th = Thread.new do
       s.start
-    rescue Exception => ex
+    rescue StandardError => ex
       abort "ERROR during server thread: #{ex.message}"
     ensure
       s.shutdown

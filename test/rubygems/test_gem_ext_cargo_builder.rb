@@ -41,7 +41,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     assert_match(/Finished/, output)
     assert_match(/release/, output)
     assert_ffi_handle bundle, "Init_rust_ruby_example"
-  rescue Exception => e
+  rescue StandardError => e
     pp output if output
 
     raise(e)
@@ -67,7 +67,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     assert_ffi_handle bundle, "hello_from_rubygems"
     assert_ffi_handle bundle, "hello_from_rubygems_version"
     refute_ffi_handle bundle, "should_never_exist"
-  rescue Exception => e
+  rescue StandardError => e
     pp output if output
 
     raise(e)
