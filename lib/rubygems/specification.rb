@@ -2673,7 +2673,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
     invalidate_memoized_attributes
 
-    return @version
+    return
   end
 
   def stubbed?
