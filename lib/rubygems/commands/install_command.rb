@@ -262,7 +262,7 @@ You can use `i` command instead of `install`.
     return unless errors
 
     errors.each do |x|
-      return unless Gem::SourceFetchProblem === x
+      next unless Gem::SourceFetchProblem === x
 
       require_relative "../uri"
       msg = "Unable to pull data from '#{Gem::Uri.redact(x.source.uri)}': #{x.error.message}"

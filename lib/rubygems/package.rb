@@ -391,7 +391,7 @@ EOM
 
         extract_tar_gz entry, destination_dir, pattern
 
-        return # ignore further entries
+        break # ignore further entries
       end
     end
   end
