@@ -9058,7 +9058,15 @@ Init_process(void)
     /* pid_t must be signed, since fork() can return -1 */
     const rb_pid_t half_max_pidt = (rb_pid_t)1 << (sizeof(rb_pid_t) * CHAR_BIT - 2);
     const rb_pid_t max_pidt = 2 * (half_max_pidt - 1) + 1;
+
+    /* rb_pid_t is 32 bits on some platforms, which will cause a warning on GCC
+     * due to POSFIXABLE always returning true. */
+RBIMPL_WARNING_PUSH()
+#if RBIMPL_COMPILER_IS(GCC)
+RBIMPL_WARNING_IGNORED(-Wtype-limits)
+#endif
     if (!POSFIXABLE(max_pidt)) rb_gc_register_address(&cached_pid);
+RBIMPL_WARNING_POP()
 
     InitVM(process);
 }
