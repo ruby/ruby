@@ -575,7 +575,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # Executables included in the gem.
   #
-  # For example, the rake gem has rake as an executable. You don’t specify the
+  # For example, the rake gem has rake as an executable. You don't specify the
   # full path (as in bin/rake); all application-style files are expected to be
   # found in bindir.  These files must be executable Ruby files.  Files that
   # use bash or other interpreters will not work.
@@ -596,7 +596,7 @@ class Gem::Specification < Gem::BasicSpecification
   # extconf.rb-style files used to compile extensions.
   #
   # These files will be run when the gem is installed, causing the C (or
-  # whatever) code to be compiled on the user’s machine.
+  # whatever) code to be compiled on the user's machine.
   #
   # Usage:
   #
