@@ -2464,6 +2464,30 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
+    if comptime_receiver.shape_too_complex() {
+        // Fall back to calling rb_ivar_defined
+
+        // Save the PC and SP because the callee may allocate
+        // Note that this modifies REG_SP, which is why we do it first
+        jit_prepare_routine_call(jit, ctx, asm);
+
+        // Call rb_ivar_defined(recv, ivar_name)
+        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+
+        // if (rb_ivar_defined(recv, ivar_name)) {
+        //  val = pushval;
+        // }
+        asm.test(def_result, Opnd::UImm(255));
+        let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+
+        // Push the return value onto the stack
+        let out_type = if pushval.special_const_p() { Type::UnknownImm } else { Type::Unknown };
+        let stack_ret = ctx.stack_push(out_type);
+        asm.mov(stack_ret, out_value);
+
+        return KeepCompiling
+    }
+
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
         let shape = rb_shape_get_shape_by_id(shape_id);

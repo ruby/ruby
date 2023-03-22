@@ -111,6 +111,21 @@ assert_equal '[nil, "instance-variable", nil, "instance-variable"]', %q{
   [obj.foo, (obj.add; obj.foo), (obj.remove; obj.foo), (obj.add; obj.foo)]
 }
 
+assert_equal '["instance-variable", 5]', %q{
+  # defined? on object too complex for shape information
+  class Foo
+    def initialize
+      100.times { |i| instance_variable_set("@foo#{i}", i) }
+    end
+
+    def foo
+      [defined?(@foo5), @foo5]
+    end
+  end
+
+  Foo.new.foo
+}
+
 assert_equal '0', %q{
   # This is a regression test for incomplete invalidation from
   # opt_setinlinecache. This test might be brittle, so
