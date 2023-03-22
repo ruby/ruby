@@ -746,7 +746,7 @@ eom
       def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
         first = seq.first
         *arg = pre.call(first)
-        times = (0..(rehearsal || (2 * first))).filter_map do
+        times = (0..(rehearsal || (2 * first))).map do
           st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           yield(*arg)
           t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
