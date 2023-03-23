@@ -886,8 +886,9 @@ module Bundler
     end
 
     def additional_base_requirements_for_resolve(resolution_packages, last_resolve)
-      return resolution_packages unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
+      return resolution_packages unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
       converge_specs(@originally_locked_specs - last_resolve).each do |locked_spec|
+        next if locked_spec.source.is_a?(Source::Path)
         resolution_packages.base_requirements[locked_spec.name] = Gem::Requirement.new(">= #{locked_spec.version}")
       end
       resolution_packages
