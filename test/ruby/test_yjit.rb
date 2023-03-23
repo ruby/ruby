@@ -1216,6 +1216,25 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_str_concat_encoding_mismatch
+    assert_compiles(<<~'RUBY', result: "incompatible character encodings: ASCII-8BIT and EUC-JP")
+      def bar(a, b)
+        a << b
+      rescue => e
+        e.message
+      end
+
+      def foo(a, b, h)
+        h[nil]
+        bar(a, b) # Ruby call, not set cfp->pc
+      end
+
+      h = Hash.new { nil }
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+      foo("\x80".b, "\xA1A1".force_encoding("EUC-JP"), h)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
