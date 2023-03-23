@@ -3737,3 +3737,45 @@ assert_normal_exit %q{
   )
   foo 1
 }
+
+# Regression test for CantCompile not using starting_ctx
+assert_normal_exit %q{
+  class Integer
+    def ===(other)
+      false
+    end
+  end
+
+  def my_func(x)
+    case x
+    when 1
+      1
+    when 2
+      2
+    else
+      3
+    end
+  end
+
+  my_func(1)
+}
+
+# Regression test for CantCompile not using starting_ctx
+assert_equal "ArgumentError", %q{
+  def literal(*args, &block)
+    s = ''.dup
+    args = [1, 2, 3]
+    literal_append(s, *args, &block)
+    s
+  end
+
+  def literal_append(sql, v)
+    [sql.inspect, v.inspect]
+  end
+
+  begin
+    literal("foo")
+  rescue ArgumentError
+    "ArgumentError"
+  end
+}
