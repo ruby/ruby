@@ -78,6 +78,20 @@ describe "Struct.new" do
     end
   end
 
+  ruby_version_is ""..."3.3" do
+    it "raises ArgumentError if not provided any arguments" do
+      -> { Struct.new }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "works when not provided any arguments" do
+      c = Struct.new
+      c.should be_kind_of(Class)
+      c.superclass.should == Struct
+    end
+  end
+
   it "raises ArgumentError when there is a duplicate member" do
     -> { Struct.new(:foo, :foo) }.should raise_error(ArgumentError, "duplicate member: foo")
   end
