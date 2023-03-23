@@ -100,6 +100,19 @@ class TestCall < Test::Unit::TestCase
     }
   end
 
+  def test_call_bmethod_proc
+    pr = proc{|sym| sym}
+    define_singleton_method(:a, &pr)
+    ary = [10]
+    assert_equal(10, a(*ary))
+
+    pr = proc{|*sym| sym}
+    define_singleton_method(:a, &pr)
+    ary = [10]
+    assert_equal([10], a(*ary))
+    assert_equal([10], a(10))
+  end
+
   def test_call_splat_order
     bug12860 = '[ruby-core:77701] [Bug# 12860]'
     ary = [1, 2]
