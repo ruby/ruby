@@ -1496,7 +1496,7 @@ gem 'other', version
 
   def test_install_extension_and_script
     pend "Makefile creation crashes on jruby" if Gem.java_platform?
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
