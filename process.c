@@ -359,7 +359,7 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
 
-static VALUE cached_pid = Qnil;
+static rb_pid_t cached_pid;
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
@@ -499,16 +499,17 @@ parent_redirect_close(int fd)
 static VALUE
 get_pid(void)
 {
-    if (UNLIKELY(NIL_P(cached_pid))) {
-        cached_pid = PIDT2NUM(getpid());
+    if (UNLIKELY(!cached_pid)) { /* 0 is not a valid pid */
+        cached_pid = getpid();
     }
-    return cached_pid;
+    /* pid should be likely POSFIXABLE() */
+    return PIDT2NUM(cached_pid);
 }
 
 static void
 clear_pid_cache(void)
 {
-    cached_pid = Qnil;
+    cached_pid = 0;
 }
 
 /*
@@ -9049,19 +9050,6 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
-
-    /* pid_t must be signed, since fork() can return -1 */
-    const rb_pid_t half_max_pidt = (rb_pid_t)1 << (sizeof(rb_pid_t) * CHAR_BIT - 2);
-    const rb_pid_t max_pidt = 2 * (half_max_pidt - 1) + 1;
-
-    /* rb_pid_t is 32 bits on some platforms, which will cause a warning on GCC
-     * due to POSFIXABLE always returning true. */
-RBIMPL_WARNING_PUSH()
-#if RBIMPL_COMPILER_IS(GCC)
-RBIMPL_WARNING_IGNORED(-Wtype-limits)
-#endif
-    if (!POSFIXABLE(max_pidt)) rb_gc_register_address(&cached_pid);
-RBIMPL_WARNING_POP()
 
     InitVM(process);
 }
