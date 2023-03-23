@@ -4479,8 +4479,10 @@ fn jit_rb_str_concat(
     // Guard that the concat argument is a string
     guard_object_is_string(ctx, asm, ctx.stack_opnd(0), StackOpnd(0), side_exit);
 
-    // Guard buffers from GC since rb_str_buf_append may allocate.
-    gen_save_sp(asm, ctx);
+    // Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
+    // other Ractors may trigger global invalidation, so we need ctx.clear_local_types().
+    // PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
+    jit_prepare_routine_call(jit, ctx, asm);
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
