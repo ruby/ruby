@@ -57,8 +57,11 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
 
         ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
-        VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
+#if SIZEOF_PTRDIFF_T > SIZEOF_INT
+        VM_ASSERT(n <= (ptrdiff_t)UINT_MAX);
+#endif
+        VM_ASSERT((unsigned int)n <= ISEQ_BODY(iseq)->iseq_size);
         ASSUME(n >= 0);
         size_t pos = n; /* no overflow */
         if (LIKELY(pos)) {
