@@ -2450,37 +2450,84 @@ fn gen_definedivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
-    _ocb: &mut OutlinedCb,
+    ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
+    // Defer compilation so we can specialize base on a runtime receiver
+    if !jit.at_current_insn() {
+        defer_compilation(jit, ctx, asm, ocb);
+        return EndBlock;
+    }
+
     let ivar_name = jit.get_arg(0).as_u64();
+    // Value that will be pushed on the stack if the ivar is defined. In practice this is always the
+    // string "instance-variable". If the ivar is not defined, nil will be pushed instead.
     let pushval = jit.get_arg(2);
 
     // Get the receiver
     let recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
 
-    // Save the PC and SP because the callee may allocate
-    // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, ctx, asm);
+    // Specialize base on compile time values
+    let comptime_receiver = jit.peek_at_self();
 
-    // Call rb_ivar_defined(recv, ivar_name)
-    let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+    if comptime_receiver.shape_too_complex() {
+        // Fall back to calling rb_ivar_defined
 
-    // if (rb_ivar_defined(recv, ivar_name)) {
-    //  val = pushval;
-    // }
-    asm.test(def_result, Opnd::UImm(255));
-    let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+        // Save the PC and SP because the callee may allocate
+        // Note that this modifies REG_SP, which is why we do it first
+        jit_prepare_routine_call(jit, ctx, asm);
 
-    // Push the return value onto the stack
-    let out_type = if pushval.special_const_p() {
-        Type::UnknownImm
-    } else {
-        Type::Unknown
+        // Call rb_ivar_defined(recv, ivar_name)
+        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+
+        // if (rb_ivar_defined(recv, ivar_name)) {
+        //  val = pushval;
+        // }
+        asm.test(def_result, Opnd::UImm(255));
+        let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+
+        // Push the return value onto the stack
+        let out_type = if pushval.special_const_p() { Type::UnknownImm } else { Type::Unknown };
+        let stack_ret = ctx.stack_push(out_type);
+        asm.mov(stack_ret, out_value);
+
+        return KeepCompiling
+    }
+
+    let shape_id = comptime_receiver.shape_id_of();
+    let ivar_exists = unsafe {
+        let shape = rb_shape_get_shape_by_id(shape_id);
+        let mut ivar_index: u32 = 0;
+        rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
     };
-    let stack_ret = ctx.stack_push(out_type);
-    asm.mov(stack_ret, out_value);
 
-    KeepCompiling
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Guard heap object (recv_opnd must be used before stack_pop)
+    guard_object_is_heap(ctx, asm, recv, SelfOpnd, side_exit);
+
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
+
+    asm.comment("guard shape");
+    asm.cmp(shape_opnd, Opnd::UImm(shape_id as u64));
+    let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        ctx,
+        asm,
+        ocb,
+        GET_IVAR_MAX_DEPTH,
+        megamorphic_side_exit,
+    );
+
+    let result = if ivar_exists { pushval } else { Qnil };
+    jit_putobject(jit, ctx, asm, result);
+
+    // Jump to next instruction. This allows guard chains to share the same successor.
+    jump_to_next_insn(jit, ctx, asm, ocb);
+
+    return EndBlock;
 }
 
 fn gen_checktype(
