@@ -347,7 +347,7 @@ class Gem::Uninstaller
 
     msg << "If you remove this gem, these dependencies will not be met."
     msg << "Continue with Uninstall?"
-    return ask_yes_no(msg.join("\n"), false)
+    ask_yes_no(msg.join("\n"), false)
   end
 
   ##

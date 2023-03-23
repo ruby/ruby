@@ -573,7 +573,7 @@ class Gem::TestCase < Test::Unit::TestCase
       head = Gem::Util.popen(@git, "rev-parse", "HEAD").strip
     end
 
-    return name, git_spec.version, directory, head
+    [name, git_spec.version, directory, head]
   end
 
   ##
@@ -734,7 +734,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Gem::Specification.reset
 
-    return spec
+    spec
   end
 
   ##
@@ -869,7 +869,7 @@ class Gem::TestCase < Test::Unit::TestCase
       FileUtils.rm spec.spec_file
     end
 
-    return spec
+    spec
   end
 
   ##
@@ -1441,7 +1441,7 @@ Also, a list:
       io.write vendor_spec.to_ruby
     end
 
-    return name, vendor_spec.version, directory
+    [name, vendor_spec.version, directory]
   end
 
   ##

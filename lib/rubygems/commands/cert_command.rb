@@ -179,7 +179,7 @@ class Gem::Commands::CertCommand < Gem::Command
     key = Gem::Security.create_key(algorithm)
     key_path = Gem::Security.write key, "gem-private_key.pem", 0600, passphrase
 
-    return key, key_path
+    [key, key_path]
   end
 
   def certificates_matching(filter)

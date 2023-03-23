@@ -377,7 +377,7 @@ class Gem::Version
       return lhs <=> rhs
     end
 
-    return 0
+    0
   end
 
   def canonical_segments
@@ -413,6 +413,6 @@ class Gem::Version
     string_start = _segments.index {|s| s.is_a?(String) }
     string_segments = segments
     numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    return numeric_segments, string_segments
+    [numeric_segments, string_segments]
   end
 end

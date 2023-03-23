@@ -356,7 +356,7 @@ By default, this RubyGems will install gem as:
       say "Set the GEM_HOME environment variable if you want RDoc generated"
     end
 
-    return false
+    false
   end
 
   def install_default_bundler_gem(bin_dir)
@@ -432,7 +432,7 @@ By default, this RubyGems will install gem as:
     mkdir_p lib_dir, :mode => 0755
     mkdir_p bin_dir, :mode => 0755
 
-    return lib_dir, bin_dir
+    [lib_dir, bin_dir]
   end
 
   def generate_default_man_dir

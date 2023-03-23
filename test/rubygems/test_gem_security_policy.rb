@@ -536,6 +536,6 @@ class TestGemSecurityPolicy < Gem::TestCase
     digests    = { Gem::Security::DIGEST_NAME => { 0 => data } }
     signatures = { 0 => sign(data, key) }
 
-    return digests, signatures
+    [digests, signatures]
   end
 end if Gem::HAVE_OPENSSL

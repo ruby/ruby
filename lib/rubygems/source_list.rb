@@ -36,7 +36,7 @@ class Gem::SourceList
 
     list.replace ary
 
-    return list
+    list
   end
 
   def initialize_copy(other) # :nodoc:

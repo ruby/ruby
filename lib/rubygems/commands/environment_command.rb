@@ -16,7 +16,7 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
           platform        display the supported gem platforms
           <omitted>       display everything
     EOF
-    return args.gsub(/^\s+/, "")
+    args.gsub(/^\s+/, "")
   end
 
   def description # :nodoc:
@@ -170,6 +170,6 @@ lib/rubygems/defaults/operating_system.rb
       end
     end
 
-    return nil
+    nil
   end
 end
