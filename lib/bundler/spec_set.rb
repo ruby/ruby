@@ -78,8 +78,8 @@ module Bundler
       lookup.dup
     end
 
-    def materialize(deps, platforms = [nil])
-      materialized = self.for(deps, true, platforms)
+    def materialize(deps)
+      materialized = self.for(deps, true)
 
       SpecSet.new(materialized)
     end
@@ -100,7 +100,9 @@ module Bundler
     def incomplete_ruby_specs?(deps)
       return false if @specs.empty?
 
-      materialize(deps, [Gem::Platform::RUBY]).incomplete_specs.any?
+      materialized = self.for(deps, true, [Gem::Platform::RUBY])
+
+      SpecSet.new(materialized).incomplete_specs.any?
     end
 
     def missing_specs
