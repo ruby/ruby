@@ -806,6 +806,10 @@ pub fn gen_single_block(
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
+        // Set the starting_ctx so we can use it for side_exiting
+        // if status == CantCompile
+        let starting_ctx = ctx.clone();
+
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
@@ -869,9 +873,10 @@ pub fn gen_single_block(
             }
 
             // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
-            // the exit this generates would be wrong. We could save a copy of the entry context
-            // and assert that ctx is the same here.
-            gen_exit(jit.pc, &ctx, &mut asm);
+            // the exit this generates would be wrong. There are some changes that are safe to make
+            // like popping from the stack (but not writing). We are assuming here that only safe
+            // changes were made and using the starting_ctx.
+            gen_exit(jit.pc, &starting_ctx, &mut asm);
 
             // If this is the first instruction in the block, then
             // the entry address is the address for block_entry_exit
