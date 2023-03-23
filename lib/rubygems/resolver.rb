@@ -144,7 +144,7 @@ class Gem::Resolver
     activation_request =
       Gem::Resolver::ActivationRequest.new spec, dep, possible
 
-    return spec, activation_request
+    [spec, activation_request]
   end
 
   def requests(s, act, reqs=[]) # :nodoc:
@@ -212,7 +212,7 @@ class Gem::Resolver
 
     matching_platform = select_local_platforms all
 
-    return matching_platform, all
+    [matching_platform, all]
   end
 
   ##

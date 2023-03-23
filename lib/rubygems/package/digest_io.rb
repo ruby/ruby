@@ -35,7 +35,7 @@ class Gem::Package::DigestIO
 
     yield digest_io
 
-    return digests
+    digests
   end
 
   ##

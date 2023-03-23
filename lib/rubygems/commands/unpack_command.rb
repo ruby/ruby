@@ -129,7 +129,7 @@ command help for an example.
       return this_path if File.exist? this_path
     end
 
-    return nil
+    nil
   end
 
   ##

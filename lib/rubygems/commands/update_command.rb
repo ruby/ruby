@@ -232,7 +232,7 @@ command to remove old versions.
     highest_remote_tup = highest_remote_name_tuple(rubygems_update)
     target = highest_remote_tup ? highest_remote_tup.version : version
 
-    return target, requirement
+    [target, requirement]
   end
 
   def update_gem(name, version = Gem::Requirement.default)
