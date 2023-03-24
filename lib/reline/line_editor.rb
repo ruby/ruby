@@ -1940,8 +1940,10 @@ class Reline::LineEditor
   end
 
   private def key_delete(key)
-    if @config.editing_mode_is?(:vi_insert, :emacs)
+    if @config.editing_mode_is?(:vi_insert)
       ed_delete_next_char(key)
+    elsif @config.editing_mode_is?(:emacs)
+      em_delete(key)
     end
   end
 
@@ -2647,7 +2649,7 @@ class Reline::LineEditor
   alias_method :kill_whole_line, :em_kill_line
 
   private def em_delete(key)
-    if (not @is_multiline and @line.empty?) or (@is_multiline and @line.empty? and @buffer_of_lines.size == 1)
+    if @line.empty? and (not @is_multiline or @buffer_of_lines.size == 1) and key == "\C-d".ord
       @line = nil
       if @buffer_of_lines.size > 1
         scroll_down(@highest_in_all - @first_line_started_from)
