@@ -84,7 +84,7 @@ class Gem::CommandManager
   # Return the authoritative instance of the command manager.
 
   def self.instance
-    @command_manager ||= new
+    @instance ||= new
   end
 
   ##
@@ -99,7 +99,7 @@ class Gem::CommandManager
   # Reset the authoritative instance of the command manager.
 
   def self.reset
-    @command_manager = nil
+    @instance = nil
   end
 
   ##

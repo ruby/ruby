@@ -2236,7 +2236,7 @@ class Gem::Specification < Gem::BasicSpecification
   # The platform this gem runs on.  See Gem::Platform for details.
 
   def platform
-    @new_platform ||= Gem::Platform::RUBY
+    @new_platform ||= Gem::Platform::RUBY # rubocop:disable Naming/MemoizedInstanceVariableName
   end
 
   def pretty_print(q) # :nodoc:
@@ -2711,6 +2711,8 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @installed_by_version ||= nil
+
+    nil
   end
 
   def flatten_require_paths # :nodoc:
