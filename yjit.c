@@ -335,7 +335,7 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
 
 // Is anyone listening for :c_call and :c_return event currently?
 bool
-rb_c_method_tracing_currently_enabled(rb_execution_context_t *ec)
+rb_c_method_tracing_currently_enabled(const rb_execution_context_t *ec)
 {
     rb_event_flag_t tracing_events;
     if (rb_multi_ractor_p()) {

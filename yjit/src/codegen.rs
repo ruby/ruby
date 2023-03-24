@@ -4712,7 +4712,7 @@ fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenF
 fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
     // Defer to C implementation in yjit.c
     unsafe {
-        rb_c_method_tracing_currently_enabled(jit.ec as *mut rb_execution_context_struct)
+        rb_c_method_tracing_currently_enabled(jit.ec)
     }
 }
 
