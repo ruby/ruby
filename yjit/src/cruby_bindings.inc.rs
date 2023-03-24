@@ -1210,7 +1210,7 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_yjit_get_page_size() -> u32;
     pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
-    pub fn rb_c_method_tracing_currently_enabled(ec: *mut rb_execution_context_t) -> bool;
+    pub fn rb_c_method_tracing_currently_enabled(ec: *const rb_execution_context_t) -> bool;
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
