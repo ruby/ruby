@@ -158,9 +158,12 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_resize_zero_internal
     buffer = IO::Buffer.new(1)
-    buffer.resize(0)
 
+    buffer.resize(0)
     assert_equal 0, buffer.size
+
+    buffer.resize(1)
+    assert_equal 1, buffer.size
   end
 
   def test_resize_zero_external
