@@ -591,7 +591,7 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
 /*
  *  call-seq:
- *     Dir.fdopendir(integer) -> aDir
+ *     Dir.for_fd(integer) -> aDir
  *
  *  Returns a Dir representing the directory specified by the given
  *  directory file descriptor. Note that the returned Dir will not
