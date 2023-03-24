@@ -1422,6 +1422,11 @@ rb_io_buffer_resize(VALUE self, size_t size)
 #endif
 
     if (data->flags & RB_IO_BUFFER_INTERNAL) {
+        if (size == 0) {
+            io_buffer_free(data);
+            return;
+        }
+
         void *base = realloc(data->base, size);
 
         if (!base) {
