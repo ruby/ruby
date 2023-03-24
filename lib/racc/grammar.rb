@@ -993,10 +993,6 @@ module Racc
         @to_s = '$end'
         @serialized = 'false'
         @string = false
-      when ErrorSymbolValue
-        @to_s = 'error'
-        @serialized = 'Object.new'
-        @string = false
       else
         raise ArgumentError, "unknown symbol value: #{value.class}"
       end
