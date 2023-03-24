@@ -2846,7 +2846,9 @@ fn gen_setinstancevariable(
             let global_ptr = asm.load(unsafe { &rb_yjit_should_run_wb as *const _ as usize }.into());
             let must_wb_opnd = asm.load(Opnd::mem(8, global_ptr, 0));
             asm.cmp(must_wb_opnd, 0.into());
-            asm.je(skip_wb);
+            asm.jne(run_wb); // Unlikely, CPU will predict not taken by default because it's a forward branch
+
+            asm.jmp(skip_wb); // Unconditional branch, we skip the WB by default
 
             asm_comment!(asm, "write barrier");
             asm.write_label(run_wb);
