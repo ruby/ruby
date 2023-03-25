@@ -458,19 +458,18 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
 
 /*
  *  Document-method: Fiber::Scheduler#io_read
- *  call-seq: io_read(io, buffer, length) -> read length or -errno
+ *  call-seq: io_read(io, buffer, minimum_length) -> read length or -errno
  *
- *  Invoked by IO#read to read +length+ bytes from +io+ into a specified
- *  +buffer+ (see IO::Buffer).
+ *  Invoked by IO#read or IO#Buffer.read to read +length+ bytes from +io+ into a
+ *  specified +buffer+ (see IO::Buffer).
  *
- *  The +length+ argument is the "minimum length to be read".
- *  If the IO buffer size is 8KiB, but the +length+ is +1024+ (1KiB), up to
- *  8KiB might be read, but at least 1KiB will be.
- *  Generally, the only case where less data than +length+ will be read is if
- *  there is an error reading the data.
+ *  The +minimum_length+ argument is the "minimum length to be read". If the IO
+ *  buffer size is 8KiB, but the +length+ is +1024+ (1KiB), up to 8KiB might be
+ *  read, but at least 1KiB will be. Generally, the only case where less data
+ *  than +length+ will be read is if there is an error reading the data.
  *
- *  Specifying a +length+ of 0 is valid and means try reading at least once
- *  and return any available data.
+ *  Specifying a +length+ of 0 is valid and means try reading at least once and
+ *  return any available data.
  *
  *  Suggested implementation should try to read from +io+ in a non-blocking
  *  manner and call #io_wait if the +io+ is not ready (which will yield control
@@ -478,8 +477,8 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
  *
  *  See IO::Buffer for an interface available to return data.
  *
- *  Expected to return number of bytes read, or, in case of an error, <tt>-errno</tt>
- *  (negated number corresponding to system's error code).
+ *  Expected to return number of bytes read, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
  *
  *  The method should be considered _experimental_.
  */
@@ -513,28 +512,29 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
 
 /*
  *  Document-method: Scheduler#io_write
- *  call-seq: io_write(io, buffer, length) -> written length or -errno
+ *  call-seq: io_write(io, buffer, minimum_length) -> written length or -errno
  *
- *  Invoked by IO#write to write +length+ bytes to +io+ from
+ *  Invoked by IO#write or IO::Buffer#write to write +length+ bytes to +io+ from
  *  from a specified +buffer+ (see IO::Buffer).
  *
- *  The +length+ argument is the "(minimum) length to be written".
- *  If the IO buffer size is 8KiB, but the +length+ specified is 1024 (1KiB),
- *  at most 8KiB will be written, but at least 1KiB will be.
- *  Generally, the only case where less data than +length+ will be written is if
- *  there is an error writing the data.
+ *  The +minimum_length+ argument is the "minimum length to be written". If the
+ *  IO buffer size is 8KiB, but the +length+ specified is 1024 (1KiB), at most
+ *  8KiB will be written, but at least 1KiB will be. Generally, the only case
+ *  where less data than +minimum_length+ will be written is if there is an
+ *  error writing the data.
  *
- *  Specifying a +length+ of 0 is valid and means try writing at least once,
- *  as much data as possible.
+ *  Specifying a +length+ of 0 is valid and means try writing at least once, as
+ *  much data as possible.
  *
  *  Suggested implementation should try to write to +io+ in a non-blocking
  *  manner and call #io_wait if the +io+ is not ready (which will yield control
  *  to other fibers).
  *
- *  See IO::Buffer for an interface available to get data from buffer efficiently.
+ *  See IO::Buffer for an interface available to get data from buffer
+ *  efficiently.
  *
- *  Expected to return number of bytes written, or, in case of an error, <tt>-errno</tt>
- *  (negated number corresponding to system's error code).
+ *  Expected to return number of bytes written, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
  *
  *  The method should be considered _experimental_.
  */
