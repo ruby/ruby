@@ -4131,7 +4131,7 @@ module RubyVM::RJIT
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_call_cfunc(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
-      if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+      if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
         return CantCompile
       end
       if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
@@ -4185,7 +4185,23 @@ module RubyVM::RJIT
         end
       end
 
-      # We will not have side exits from here. Adjust the stack.
+      # Push splat args, which was skipped in jit_caller_setup_arg.
+      if flags & C::VM_CALL_ARGS_SPLAT != 0
+        required_args = cfunc.argc - (argc - 1)
+        # + 1 for self
+        if required_args + 1 >= C_ARGS.size
+          asm.incr_counter(:send_cfunc_too_many_args)
+          return CantCompile
+        end
+
+        # We are going to assume that the splat fills all the remaining arguments.
+        # So the number of args should just equal the number of args the cfunc takes.
+        # In the generated code we test if this is true and if not side exit.
+        argc = cfunc.argc
+        jit_caller_setup_arg_splat(jit, ctx, asm, required_args)
+      end
+
+      # We will not have side exits from here. Adjust the stack, which was skipped in jit_call_opt_send.
       if flags & C::VM_CALL_OPT_SEND != 0
         jit_call_opt_send_shift_stack(ctx, asm, argc, send_shift:)
       end
@@ -4856,7 +4872,7 @@ module RubyVM::RJIT
         return CantCompile
       elsif flags & C::VM_CALL_ARGS_SPLAT != 0
         if splat
-          # Lazily handle splat in jit_call_iseq_setup_normal
+          # Lazily handle splat in jit_call_iseq_setup_normal, jit_call_cfunc_with_frame
         else
           # splat is not supported in this path
           asm.incr_counter(:send_args_splat)
