@@ -2846,6 +2846,8 @@ ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
     return ST_CONTINUE;
 }
 
+void rb_exc_check_circular_cause(VALUE exc);
+
 static VALUE
 exception_loader(VALUE exc, VALUE obj)
 {
@@ -2859,6 +2861,8 @@ exception_loader(VALUE exc, VALUE obj)
     if (RB_TYPE_P(exc, T_CLASS)) return obj; // maybe called from Marshal's TYPE_USERDEF
 
     rb_ivar_foreach(obj, ivar_copy_i, exc);
+
+    rb_exc_check_circular_cause(exc);
 
     if (rb_attr_get(exc, id_bt) == rb_attr_get(exc, id_bt_locations)) {
         rb_ivar_set(exc, id_bt_locations, Qnil);
