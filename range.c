@@ -1885,6 +1885,49 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  - An internal call to <tt><=></tt> returns +nil+;
  *    that is, the operands are not comparable.
  *
+ * Beginless ranges cover all values of the same type before the end,
+ * excluding the end for exclusive ranges. Beginless ranges cover
+ * ranges that end before the end of the beginless range, or at the
+ * end of the beginless range for inclusive ranges.
+ *
+ *    (..2).cover?(1)     # => true
+ *    (..2).cover?(2)     # => true
+ *    (..2).cover?(3)     # => false
+ *    (...2).cover?(2)    # => false
+ *    (..2).cover?("2")   # => false
+ *    (..2).cover?(..2)   # => true
+ *    (..2).cover?(...2)  # => true
+ *    (..2).cover?(.."2") # => false
+ *    (...2).cover?(..2)  # => false
+ *
+ * Endless ranges cover all values of the same type after the
+ * beginning. Endless exclusive ranges do not cover endless
+ * inclusive ranges.
+ *
+ *    (2..).cover?(1)     # => false
+ *    (2..).cover?(3)     # => true
+ *    (2...).cover?(3)    # => true
+ *    (2..).cover?(2)     # => true
+ *    (2..).cover?("2")   # => false
+ *    (2..).cover?(2..)   # => true
+ *    (2..).cover?(2...)  # => true
+ *    (2..).cover?("2"..) # => false
+ *    (2...).cover?(2..)  # => false
+ *    (2...).cover?(3...) # => true
+ *    (2...).cover?(3..)  # => false
+ *    (3..).cover?(2..)   # => false
+ *
+ * Ranges that are both beginless and endless cover all values and
+ * ranges, and return true for all arguments, with the exception that
+ * beginless and endless exclusive ranges do not cover endless
+ * inclusive ranges.
+ *
+ *    (nil...).cover?(Object.new) # => true
+ *    (nil...).cover?(nil...)     # => true
+ *    (nil..).cover?(nil...)      # => true
+ *    (nil...).cover?(nil..)      # => false
+ *    (nil...).cover?(1..)        # => false
+ *
  *  Related: Range#include?.
  *
  */
@@ -1923,7 +1966,16 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
     if (!NIL_P(val_beg) && !NIL_P(val_end) && r_less(val_beg, val_end) > (EXCL(val) ? -1 : 0)) return FALSE;
     if (!NIL_P(val_beg) && !r_cover_p(range, beg, end, val_beg)) return FALSE;
 
-    cmp_end = r_less(end, val_end);
+
+    if (!NIL_P(val_end) && !NIL_P(end)) {
+        VALUE r_cmp_end = rb_funcall(end, id_cmp, 1, val_end);
+        if (NIL_P(r_cmp_end)) return FALSE;
+        cmp_end = rb_cmpint(r_cmp_end, end, val_end);
+    }
+    else {
+        cmp_end = r_less(end, val_end);
+    }
+
 
     if (EXCL(range) == EXCL(val)) {
         return cmp_end >= 0;
