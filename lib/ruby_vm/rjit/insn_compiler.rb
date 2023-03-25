@@ -4722,7 +4722,7 @@ module RubyVM::RJIT
       return jit_setup_parameters_complex(jit, ctx, asm, flags, argc, iseq)
     end
 
-    # vm_callee_setup_block_arg: Set up args and return opt_pc (or CantCompile)
+    # vm_callee_setup_block_arg (ISEQ only): Set up args and return opt_pc (or CantCompile)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
@@ -4763,7 +4763,7 @@ module RubyVM::RJIT
       end
     end
 
-    # setup_parameters_complex
+    # setup_parameters_complex (ISEQ only)
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
@@ -4785,8 +4785,7 @@ module RubyVM::RJIT
         asm.incr_counter(:send_iseq_complex_kw_splat)
         return CantCompile
       elsif flags & C::VM_CALL_ARGS_SPLAT != 0
-        asm.incr_counter(:send_iseq_complex_splat)
-        return CantCompile
+        # Lazily handle splat in jit_call_iseq_setup_normal
       else
         if argc > 0 && kw_flag & C::VM_CALL_KW_SPLAT != 0
           asm.incr_counter(:send_iseq_complex_kw_splat)
@@ -4825,7 +4824,7 @@ module RubyVM::RJIT
       end
 
       if iseq.body.param.flags.has_rest || iseq.body.param.flags.has_post
-        asm.incr_counter(iseq.body.param.flags.has_rest ? :send_iseq_complex_has_rest : :send_iseq_complex_has_pos)
+        asm.incr_counter(iseq.body.param.flags.has_rest ? :send_iseq_complex_has_rest : :send_iseq_complex_has_post)
         return CantCompile
       end
 

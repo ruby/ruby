@@ -59,7 +59,6 @@ RJIT_RUNTIME_COUNTERS(
     send_iseq_kwparam,
     send_iseq_complex_kwarg,
     send_iseq_complex_kw_splat,
-    send_iseq_complex_splat,
     send_iseq_complex_accepts_no_kwarg,
     send_iseq_complex_arg_setup_block,
     send_iseq_complex_arity,
