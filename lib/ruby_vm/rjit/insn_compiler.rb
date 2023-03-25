@@ -4078,15 +4078,19 @@ module RubyVM::RJIT
     def jit_call_iseq_setup_normal(jit, ctx, asm, cme, flags, argc, iseq, block_handler, opt_pc, send_shift:, frame_type:, prev_ep: nil)
       # Push splat args, which was skipped in jit_caller_setup_arg.
       if flags & C::VM_CALL_ARGS_SPLAT != 0
-        if iseq.body.param.opt_num != 0
-          asm.incr_counter(:send_args_splat_opt_num) # not supported yet
+        lead_num = iseq.body.param.lead_num
+        opt_num = iseq.body.param.opt_num
+
+        array_length = jit.peek_at_stack(flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)&.length || 0 # blockarg is not popped yet
+        if opt_num == 0 && lead_num != array_length + argc - 1
+          asm.incr_counter(:send_args_splat_arity_error)
           return CantCompile
         end
 
-        array_length = jit.peek_at_stack(flags & C::VM_CALL_ARGS_BLOCKARG != 0 ? 1 : 0)&.length || 0 # blockarg is not popped yet
-        if iseq.body.param.lead_num != array_length + argc - 1
-          asm.incr_counter(:send_args_splat_arity_error)
-          return CantCompile
+        remaining_opt = (opt_num + lead_num) - (array_length + argc - 1)
+        if opt_num > 0
+          # We are going to jump to the correct offset based on how many optional params are remaining.
+          opt_pc = iseq.body.param.opt_table[opt_num - remaining_opt]
         end
 
         # We are going to assume that the splat fills all the remaining arguments.
@@ -4694,7 +4698,7 @@ module RubyVM::RJIT
 
           return 0
         elsif C.rb_iseq_only_optparam_p(iseq)
-          if jit_caller_setup_arg(jit, ctx, asm, flags) == CantCompile
+          if jit_caller_setup_arg(jit, ctx, asm, flags, splat: true) == CantCompile
             return CantCompile
           end
           if jit_caller_remove_empty_kw_splat(jit, ctx, asm, flags) == CantCompile
@@ -4728,7 +4732,7 @@ module RubyVM::RJIT
     # @param asm [RubyVM::RJIT::Assembler]
     def jit_callee_setup_block_arg(jit, ctx, asm, calling, iseq, arg_setup_type:)
       if C.rb_simple_iseq_p(iseq)
-        if jit_caller_setup_arg(jit, ctx, asm, calling.flags) == CantCompile
+        if jit_caller_setup_arg(jit, ctx, asm, calling.flags, splat: true) == CantCompile
           return CantCompile
         end
 
