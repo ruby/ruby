@@ -538,6 +538,19 @@ dummy
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
+  def test_encoding_with_keep_script_lines
+    enc = Encoding::EUC_JP
+    code = "__ENCODING__".encode(enc)
+
+    assert_equal(enc, eval(code))
+
+    node = RubyVM::AbstractSyntaxTree.parse(code, keep_script_lines: false)
+    assert_equal(enc, node.children[2].children[0])
+
+    node = RubyVM::AbstractSyntaxTree.parse(code, keep_script_lines: true)
+    assert_equal(enc, node.children[2].children[0])
+  end
+
   def test_e_option
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
