@@ -686,10 +686,9 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_bug_19316
-    omit "skip this test for [Bug #19316] for a while."
     n = 2 ** 64
     # foo's extra param and the splats are relevant
-    assert_compiles(<<~'RUBY', result: [[n, -n], [n, -n]])
+    assert_compiles(<<~'RUBY', result: [[n, -n], [n, -n]], exits: :any)
       def foo(_, a, b, c)
         [a & b, ~c]
       end
