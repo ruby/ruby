@@ -6066,6 +6066,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
 #if defined(HAVE_PREAD) || defined(HAVE_PWRITE)
 struct prdwr_internal_arg {
+    VALUE io;
     int fd;
     void *buf;
     size_t count;
@@ -6075,17 +6076,28 @@ struct prdwr_internal_arg {
 
 #if defined(HAVE_PREAD)
 static VALUE
-internal_pread_func(void *arg)
+internal_pread_func(void *_arg)
 {
-    struct prdwr_internal_arg *p = arg;
-    return (VALUE)pread(p->fd, p->buf, p->count, p->offset);
+    struct prdwr_internal_arg *arg = _arg;
+
+    return (VALUE)pread(arg->fd, arg->buf, arg->count, arg->offset);
 }
 
 static VALUE
-pread_internal_call(VALUE arg)
+pread_internal_call(VALUE _arg)
 {
-    struct prdwr_internal_arg *p = (struct prdwr_internal_arg *)arg;
-    return rb_thread_io_blocking_region(internal_pread_func, p, p->fd);
+    struct prdwr_internal_arg *arg = (struct prdwr_internal_arg *)_arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pread_memory(scheduler, arg->io, arg->offset, arg->buf, arg->count, 0);
+
+        if (!UNDEF_P(result)) {
+            return rb_fiber_scheduler_io_result_apply(result);
+        }
+    }
+
+    return rb_thread_io_blocking_region(internal_pread_func, arg, arg->fd);
 }
 
 /*
@@ -6122,7 +6134,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     VALUE len, offset, str;
     rb_io_t *fptr;
     ssize_t n;
-    struct prdwr_internal_arg arg;
+    struct prdwr_internal_arg arg = {.io = io};
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
@@ -6158,9 +6170,19 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
 
 #if defined(HAVE_PWRITE)
 static VALUE
-internal_pwrite_func(void *ptr)
+internal_pwrite_func(void *_arg)
 {
-    struct prdwr_internal_arg *arg = ptr;
+    struct prdwr_internal_arg *arg = _arg;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_io_pwrite_memory(scheduler, arg->io, arg->offset, arg->buf, arg->count, 0);
+
+        if (!UNDEF_P(result)) {
+            return rb_fiber_scheduler_io_result_apply(result);
+        }
+    }
+
 
     return (VALUE)pwrite(arg->fd, arg->buf, arg->count, arg->offset);
 }
@@ -6195,7 +6217,7 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
 {
     rb_io_t *fptr;
     ssize_t n;
-    struct prdwr_internal_arg arg;
+    struct prdwr_internal_arg arg = {.io = io};
     VALUE tmp;
 
     if (!RB_TYPE_P(str, T_STRING))
