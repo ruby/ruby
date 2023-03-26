@@ -4732,7 +4732,7 @@ p_kw		: p_kw_label p_expr
                     /*%%%*/
                         $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
                     /*% %*/
-                    /*% ripper: rb_ary_new_from_args(2, get_value($1), Qnil) %*/
+                    /*% ripper: rb_ary_new_from_args(2, get_value(assignable(p, $1)), Qnil) %*/
                     }
                 ;
 

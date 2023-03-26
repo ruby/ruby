@@ -502,6 +502,14 @@ eot
         [:aryptn, nil, nil, [:var_field, [:@ident, "a", [1, 13]]], nil],
         [[:var_ref, [:@ident, "a", [1, 17]]]],
         nil]],
+
+    [__LINE__, %q{ case 0; in {a:}; a; end } ] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:hshptn, nil, [[[:@label, "a:", [1, 12]], nil]], nil],
+        [[:var_ref, [:@ident, "a", [1, 17]]]],
+          nil]],
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do
