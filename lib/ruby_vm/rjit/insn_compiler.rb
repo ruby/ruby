@@ -4858,8 +4858,12 @@ module RubyVM::RJIT
       end
 
       if iseq.body.param.flags.has_block
-        asm.incr_counter(:send_iseq_complex_has_block)
-        return CantCompile
+        if iseq.body.local_iseq.to_i == iseq.to_i
+          # Do nothing
+        else
+          asm.incr_counter(:send_iseq_complex_has_block)
+          return CantCompile
+        end
       end
 
       return opt_pc
