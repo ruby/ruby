@@ -1765,6 +1765,7 @@ PACKED_STRUCT_UNALIGNED(struct time_object {
      (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
      (tobj1)->vtm.zone = (tobj2)->vtm.zone)
 
+static int zone_localtime(VALUE zone, VALUE time);
 static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
   do { \
@@ -1776,10 +1777,20 @@ static VALUE time_get_tm(VALUE, struct time_object *);
     do { \
         MAKE_TM(time, tobj); \
         if (!(cond)) { \
-            VALUE zone = (tobj)->vtm.zone; \
-            if (!NIL_P(zone)) zone_localtime(zone, (time)); \
+            force_make_tm(time, tobj); \
         } \
     } while (0)
+
+static inline void
+force_make_tm(VALUE time, struct time_object *tobj)
+{
+    VALUE zone = tobj->vtm.zone;
+    if (!NIL_P(zone) && zone != str_empty && zone != str_utc) {
+        if (zone_localtime(zone, time)) return;
+    }
+    tobj->tm_got = 0;
+    time_get_tm(time, tobj);
+}
 
 static void
 time_mark(void *ptr)
@@ -2038,19 +2049,20 @@ vtm_add_day(struct vtm *vtm, int day)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = subv(vtm->year, INT2FIX(1));
-                vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
+                if (vtm->yday != 0)
+                    vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
                 const int8_t *days_in_month = days_in_month_in_v(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
             else {
                 vtm->mday--;
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
-            vtm->wday = (vtm->wday + 6) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 6) % 7;
         }
         else {
             int leap = leap_year_v_p(vtm->year);
@@ -2063,13 +2075,13 @@ vtm_add_day(struct vtm *vtm, int day)
             else if (vtm->mday == days_in_month_of(leap)[vtm->mon-1]) {
                 vtm->mon++;
                 vtm->mday = 1;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
             else {
                 vtm->mday++;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
-            vtm->wday = (vtm->wday + 1) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 1) % 7;
         }
     }
 }
@@ -2407,6 +2419,7 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     if (utc == UTC_ZONE) {
         tobj->timew = timegmw(&vtm);
+        vtm.isdst = 0; /* No DST in UTC */
         vtm_day_wraparound(&vtm);
         tobj->vtm = vtm;
         tobj->tm_got = 1;

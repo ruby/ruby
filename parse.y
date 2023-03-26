@@ -6454,12 +6454,6 @@ lex_getline(struct parser_params *p)
     if (NIL_P(line)) return line;
     must_be_ascii_compatible(line);
     if (RB_OBJ_FROZEN(line)) line = rb_str_dup(line); // needed for RubyVM::AST.of because script_lines in iseq is deep-frozen
-#ifndef RIPPER
-    if (p->debug_lines) {
-	rb_enc_associate(line, p->enc);
-	rb_ary_push(p->debug_lines, line);
-    }
-#endif
     p->line_count++;
     return line;
 }
@@ -6606,7 +6600,7 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end)
 #endif
 
 static int
-nextline(struct parser_params *p)
+nextline(struct parser_params *p, int set_encoding)
 {
     VALUE v = p->lex.nextline;
     p->lex.nextline = 0;
@@ -6624,6 +6618,12 @@ nextline(struct parser_params *p)
 	    lex_goto_eol(p);
 	    return -1;
 	}
+#ifndef RIPPER
+	if (p->debug_lines) {
+	    if (set_encoding) rb_enc_associate(v, p->enc);
+	    rb_ary_push(p->debug_lines, v);
+	}
+#endif
 	p->cr_seen = FALSE;
     }
     else if (NIL_P(v)) {
@@ -6655,12 +6655,12 @@ parser_cr(struct parser_params *p, int c)
 }
 
 static inline int
-nextc(struct parser_params *p)
+nextc0(struct parser_params *p, int set_encoding)
 {
     int c;
 
     if (UNLIKELY((p->lex.pcur == p->lex.pend) || p->eofp || RTEST(p->lex.nextline))) {
-	if (nextline(p)) return -1;
+	if (nextline(p, set_encoding)) return -1;
     }
     c = (unsigned char)*p->lex.pcur++;
     if (UNLIKELY(c == '\r')) {
@@ -6669,6 +6669,7 @@ nextc(struct parser_params *p)
 
     return c;
 }
+#define nextc(p) nextc0(p, TRUE)
 
 static void
 pushback(struct parser_params *p, int c)
@@ -8455,7 +8456,7 @@ set_file_encoding(struct parser_params *p, const char *str, const char *send)
 static void
 parser_prepare(struct parser_params *p)
 {
-    int c = nextc(p);
+    int c = nextc0(p, FALSE);
     p->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
     switch (c) {
       case '#':
@@ -8467,6 +8468,11 @@ parser_prepare(struct parser_params *p)
 	    (unsigned char)p->lex.pcur[1] == 0xbf) {
 	    p->enc = rb_utf8_encoding();
 	    p->lex.pcur += 2;
+#ifndef RIPPER
+	    if (p->debug_lines) {
+		rb_enc_associate(p->lex.lastline, p->enc);
+	    }
+#endif
 	    p->lex.pbeg = p->lex.pcur;
 	    return;
 	}
@@ -10984,9 +10990,9 @@ is_private_local_id(ID name)
 static int
 shadowing_lvar_0(struct parser_params *p, ID name)
 {
-    if (is_private_local_id(name)) return 1;
     if (dyna_in_block(p)) {
 	if (dvar_curr(p, name)) {
+	    if (is_private_local_id(name)) return 1;
 	    yyerror0("duplicated argument name");
 	}
 	else if (dvar_defined(p, name) || local_id(p, name)) {
@@ -10999,6 +11005,7 @@ shadowing_lvar_0(struct parser_params *p, ID name)
     }
     else {
 	if (local_id(p, name)) {
+	    if (is_private_local_id(name)) return 1;
 	    yyerror0("duplicated argument name");
 	}
     }

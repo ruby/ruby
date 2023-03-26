@@ -263,10 +263,11 @@ rb_default_home_dir(VALUE result)
 {
     WCHAR *dir = rb_w32_home_dir();
     if (!dir) {
-	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
     }
     append_wstr(result, dir, -1,
-		       rb_w32_filecp(), rb_filesystem_encoding());
+                       CP_UTF8, rb_utf8_encoding());
+
     xfree(dir);
     return result;
 }

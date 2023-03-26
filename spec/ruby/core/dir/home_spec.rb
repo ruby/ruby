@@ -19,6 +19,17 @@ describe "Dir.home" do
     it "returns a non-frozen string" do
       Dir.home.should_not.frozen?
     end
+
+    platform_is :windows do
+      ruby_version_is "3.0" do
+        it "returns the home directory with forward slashs and as UTF-8" do
+          ENV['HOME'] = "C:\\rubyspäc\\home"
+          home = Dir.home
+          home.should == "C:/rubyspäc/home"
+          home.encoding.should == Encoding::UTF_8
+        end
+      end
+    end
   end
 
   describe "when called with the current user name" do

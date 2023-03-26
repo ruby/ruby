@@ -268,7 +268,7 @@ EOS
 print <<EOS if $unicode_emoji_version
   CONFIG["UNICODE_EMOJI_VERSION"] = #{$unicode_emoji_version.dump}
 EOS
-print <<EOS if /darwin/ =~ arch
+print prefix.start_with?("/System/") ? <<EOS : <<EOS if /darwin/ =~ arch
   if sdkroot = ENV["SDKROOT"]
     sdkroot = sdkroot.dup
   elsif File.exist?(File.join(CONFIG["prefix"], "include")) ||
@@ -278,6 +278,8 @@ print <<EOS if /darwin/ =~ arch
     sdkroot.chomp!
   end
   CONFIG["SDKROOT"] = sdkroot
+EOS
+  CONFIG["SDKROOT"] = ""
 EOS
 print <<EOS
   CONFIG["platform"] = #{platform || '"$(arch)"'}

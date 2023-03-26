@@ -256,6 +256,12 @@ the content.  Note that empty lines and lines consisting solely of literal tabs
 and spaces will be ignored for the purposes of determining indentation, but
 escaped tabs and spaces are considered non-indentation characters.
 
+For the purpose of measuring an indentation, a horizontal tab is regarded as a
+sequence of one to eight spaces such that the column position corresponding to
+its end is a multiple of eight.  The amount to be removed is counted in terms
+of the number of spaces.  If the boundary appears in the middle of a tab, that
+tab is not removed.
+
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
 quotes:

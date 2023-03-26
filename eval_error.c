@@ -311,6 +311,17 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtr
 }
 
 void
+rb_exc_check_circular_cause(VALUE exc)
+{
+    VALUE cause = exc, shown_causes = 0;
+    do {
+        if (shown_cause_p(cause, &shown_causes)) {
+            rb_raise(rb_eArgError, "circular causes");
+        }
+    } while (!NIL_P(cause = rb_attr_get(cause, id_cause)));
+}
+
+void
 rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
 {
     volatile VALUE eclass;

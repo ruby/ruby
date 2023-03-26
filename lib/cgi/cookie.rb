@@ -42,7 +42,7 @@ class CGI
 
     TOKEN_RE = %r"\A[[!-~]&&[^()<>@,;:\\\"/?=\[\]{}]]+\z"
     PATH_VALUE_RE = %r"\A[[ -~]&&[^;]]*\z"
-    DOMAIN_VALUE_RE = %r"\A(?<label>(?!-)[-A-Za-z0-9]+(?<!-))(?:\.\g<label>)*\z"
+    DOMAIN_VALUE_RE = %r"\A\.?(?<label>(?!-)[-A-Za-z0-9]+(?<!-))(?:\.\g<label>)*\z"
 
     # Create a new CGI::Cookie object.
     #

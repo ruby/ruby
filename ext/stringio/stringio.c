@@ -1233,8 +1233,9 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else {
-	if (n < e - s) {
-	    if (e - s < 1024) {
+	if (n < e - s + arg->chomp) {
+	    /* unless chomping, RS at the end does not matter */
+	    if (e - s < 1024 || n == e - s) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
 			e = p + (arg->chomp ? 0 : n);

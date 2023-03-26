@@ -2530,6 +2530,13 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     ], [
 	AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $stack_dir)
     ])
+
+    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+            [rb_cv_tls_supported=yes],
+            [rb_cv_tls_supported=no])])
+    AS_IF([test x"$rb_cv_tls_supported" != xyes],
+        [AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ], [
     RUBY_STACK_GROW_DIRECTION($target_cpu, dir)
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)

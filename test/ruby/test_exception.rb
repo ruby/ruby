@@ -1412,6 +1412,18 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end;
   end
 
+  def test_marshal_circular_cause
+    begin
+      raise RuntimeError, "err", [], cause: Exception.new
+    rescue => e
+    end
+    dump = Marshal.dump(e).sub(/o:\x0EException\x08;.0;.0;.0/, "@\x05")
+    assert_raise_with_message(ArgumentError, /circular cause/, ->{dump.inspect}) do
+      e = Marshal.load(dump)
+      assert_same(e, e.cause)
+    end
+  end
+
   def test_super_in_method_missing
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

@@ -2568,7 +2568,7 @@ rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx)
                     if (ec->vm_stack) {
                         VALUE *p = ec->vm_stack;
                         VALUE *sp = ec->cfp->sp;
-                        while (p <= sp) {
+                        while (p < sp) {
                             if (!rb_special_const_p(*p)) {
                                 cb(*p, ctx);
                             }
@@ -3831,6 +3831,9 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
+#if EXTSTATIC
+    vm->static_ext_inits = st_init_strtable();
+#endif
 }
 
 /* top self */

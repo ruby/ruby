@@ -237,6 +237,17 @@ describe :kernel_require, shared: true do
       }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
+
+    ruby_bug "#17340", ''...'3.3' do
+      it "loads a file concurrently" do
+        path = File.expand_path "concurrent_require_fixture.rb", CODE_LOADING_DIR
+        ScratchPad.record(@object)
+        -> {
+          @object.require(path)
+        }.should_not complain(/circular require considered harmful/, verbose: true)
+        ScratchPad.recorded.join
+      end
+    end
   end
 
   describe "(non-extensioned path)" do

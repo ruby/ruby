@@ -684,4 +684,20 @@ class TestYJIT < Test::Unit::TestCase
     stats_r.close
     [status, out, err, stats]
   end
+
+  def test_bug_19316
+    n = 2 ** 64
+    # foo's extra param and the splats are relevant
+    assert_compiles(<<~'RUBY', result: [[n, -n], [n, -n]], exits: :any)
+      def foo(_, a, b, c)
+        [a & b, ~c]
+      end
+
+      n = 2 ** 64
+      args = [0, -n, n, n-1]
+
+      GC.stress = true
+      [foo(*args), foo(*args)]
+    RUBY
+  end
 end
