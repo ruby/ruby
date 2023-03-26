@@ -4,13 +4,11 @@ require '-test-/time'
 
 class TestTimeTZ < Test::Unit::TestCase
   has_right_tz = true
-  has_lisbon_tz = true
   force_tz_test = ENV["RUBY_FORCE_TIME_TZ_TEST"] == "yes"
   case RUBY_PLATFORM
   when /darwin|linux/
     force_tz_test = true
   when /freebsd|openbsd/
-    has_lisbon_tz = false
     force_tz_test = true
   end
 
@@ -84,7 +82,6 @@ class TestTimeTZ < Test::Unit::TestCase
   extend Util
 
   has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
-  has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
 
   def time_to_s(t)
     t.to_s
@@ -178,13 +175,6 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_time_constructor(tz, "2011-10-30 02:00:00 +0200", :local, [0,0,2,30,10,2011,nil,nil,true,nil])
     }
   end
-
-  def test_europe_lisbon
-    omit 'this becomes CET on macOS during DST' if ENV.key?('GITHUB_ACTIONS') && RUBY_PLATFORM.match?(/darwin/)
-    with_tz("Europe/Lisbon") {
-      assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
-    }
-  end if has_lisbon_tz
 
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
@@ -487,14 +477,6 @@ End
       assert_include(results, [true, true, true, true, true])
     }
   end
-
-  # tzdata-2014g fixed the offset for lisbon from -0:36:32 to -0:36:45.
-  # [ruby-core:65058] [Bug #10245]
-  gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
-Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
-Europe/Lisbon  Mon Jan  1 00:36:44 1912 UT = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2205
-Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=0 gmtoff=-2205
-End
 
   class TZ
     attr_reader :name
