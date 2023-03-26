@@ -4989,16 +4989,15 @@ module RubyVM::RJIT
     end
 
     # Generate RARRAY_CONST_PTR_TRANSIENT (part of RARRAY_AREF)
-    def jit_array_ptr(asm, array_reg, ary_opnd)
+    def jit_array_ptr(asm, array_reg, ary_opnd) # clobbers array_reg
       asm.comment('get array pointer for embedded or heap')
 
       flags_opnd = [array_reg, C.RBasic.offsetof(:flags)]
       asm.test(flags_opnd, C::RARRAY_EMBED_FLAG)
-      heap_ptr_opnd = [array_reg, C.RArray.offsetof(:as, :heap, :ptr)]
       # Load the address of the embedded array
       # (struct RArray *)(obj)->as.ary
-      asm.lea(array_reg, [array_reg, C.RArray.offsetof(:as, :ary)])
-      asm.mov(ary_opnd, heap_ptr_opnd)
+      asm.mov(ary_opnd, [array_reg, C.RArray.offsetof(:as, :heap, :ptr)])
+      asm.lea(array_reg, [array_reg, C.RArray.offsetof(:as, :ary)]) # clobbers array_reg
       asm.cmovnz(ary_opnd, array_reg)
     end
 
