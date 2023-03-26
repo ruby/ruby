@@ -800,6 +800,10 @@ END
         true
       end
     end
+
+    assert_syntax_error(%q{
+      0 => [a, *a]
+    }, /duplicated variable name/)
   end
 
   def test_find_pattern
@@ -868,6 +872,10 @@ END
         false
       end
     end
+
+    assert_syntax_error(%q{
+      0 => [*a, a, b, *b]
+    }, /duplicated variable name/)
   end
 
   def test_hash_pattern
