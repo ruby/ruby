@@ -24,6 +24,7 @@ RJIT_RUNTIME_COUNTERS(
     send_args_splat,
     send_args_splat_not_array,
     send_args_splat_length_not_equal,
+    send_args_splat_cfunc_var_args,
     send_args_splat_arity_error,
     send_args_splat_ruby2_hash,
     send_kw_splat,

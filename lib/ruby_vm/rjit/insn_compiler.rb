@@ -4152,7 +4152,7 @@ module RubyVM::RJIT
     def jit_call_cfunc_with_frame(jit, ctx, asm, cme, flags, argc, block_handler, known_recv_class, send_shift:)
       cfunc = cme.def.body.cfunc
 
-      if argc + 1 > 6
+      if argc + 1 > C_ARGS.size
         asm.incr_counter(:send_cfunc_too_many_args)
         return CantCompile
       end
@@ -4191,6 +4191,12 @@ module RubyVM::RJIT
 
       # Push splat args, which was skipped in jit_caller_setup_arg.
       if flags & C::VM_CALL_ARGS_SPLAT != 0
+        # We aren't handling a vararg cfuncs with splat currently.
+        if cfunc.argc == -1
+          asm.incr_counter(:send_args_splat_cfunc_var_args)
+          return CantCompile
+        end
+
         required_args = cfunc.argc - (argc - 1)
         # + 1 for self
         if required_args + 1 >= C_ARGS.size
