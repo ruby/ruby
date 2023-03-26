@@ -201,6 +201,7 @@ class TestTimeTZ < Test::Unit::TestCase
   end
 
   def test_europe_lisbon
+    omit 'this becomes CET on macOS during DST' if ENV.key?('GITHUB_ACTIONS') && RUBY_PLATFORM.match?(/darwin/)
     with_tz("Europe/Lisbon") {
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
