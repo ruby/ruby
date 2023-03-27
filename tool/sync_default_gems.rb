@@ -520,8 +520,6 @@ module SyncDefaultGems
 
     failed_commits = []
 
-    ENV["FILTER_BRANCH_SQUELCH_WARNING"] = "1"
-
     require 'shellwords'
     filter = [
       ENV.fetch('RUBY', 'ruby').shellescape,
@@ -595,7 +593,9 @@ module SyncDefaultGems
 
       puts "Update commit message: #{sha}"
 
-      IO.popen(%W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD], &:read)
+      IO.popen({"FILTER_BRANCH_SQUELCH_WARNING" => "1"},
+               %W[git filter-branch -f --msg-filter #{[filter, repo, sha].join(' ')} -- HEAD~1..HEAD],
+               &:read)
       unless $?.success?
         puts "Failed to modify commit message of #{sha}"
         break
