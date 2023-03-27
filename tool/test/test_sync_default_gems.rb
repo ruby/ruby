@@ -73,4 +73,77 @@ module Test_SyncDefaultGems
       assert_message_filter(expected, trailers, [expected, "", trailers].join("\n"))
     end
   end
+
+  class TestSyncWithCommits < Test::Unit::TestCase
+    def setup
+      super
+      @target = nil
+      pend "No git" unless system("git --version", out: IO::NULL)
+      @testdir = Dir.mktmpdir("sync")
+      @git_config = ENV["GIT_CONFIG_GLOBAL"]
+      ENV["GIT_CONFIG_GLOBAL"] = @testdir + "/gitconfig"
+      system(*%W"git config --global user.email test@ruby-lang.org")
+      system(*%W"git config --global user.name", "Ruby")
+      @target = "sync-test"
+      SyncDefaultGems::REPOSITORIES[@target.to_sym] = ["ruby/#{@target}", "default"]
+      @sha = {}
+      @origdir = Dir.pwd
+      Dir.chdir(@testdir)
+      ["src", @target].each do |dir|
+        system(*%W"git init -q -b default #{dir}", exception: true)
+        Dir.mkdir("#{dir}/tool")
+        File.write("#{dir}/tool/ok", "#!/bin/sh\n""echo ok\n")
+        system(*%W"git add tool/ok", exception: true, chdir: dir)
+        system(*%W"git commit -q -m", "Add tool #{dir}", exception: true, chdir: dir)
+        @sha[dir] = IO.popen(%W[git log --format=%H -1], chdir: dir, &:read).chomp
+      end
+      system(*%W"git remote add #{@target} ../#{@target}", exception: true, chdir: "src")
+    end
+
+    def teardown
+      if @target
+        Dir.chdir(@origdir)
+        SyncDefaultGems::REPOSITORIES.delete(@target.to_sym)
+        ENV["GIT_CONFIG_GLOBAL"] = @git_config
+        FileUtils.rm_rf(@testdir)
+      end
+      super
+    end
+
+    def capture_process_output_to(outputs)
+      IO.pipe do |r, w|
+        orig = outputs.map {|out| out.dup}
+        outputs.each {|out| out.reopen(w)}
+        w.close
+        reader = Thread.start {r.read}
+        yield
+      ensure
+        outputs.each {|out| o = orig.shift; out.reopen(o); o.close}
+        return reader.value
+      end
+    end
+
+    def capture_process_outputs
+      out = err = nil
+      synchronize do
+        out = capture_process_output_to(STDOUT) do
+          err = capture_process_output_to(STDERR) do
+            yield
+          end
+        end
+      end
+      return out, err
+    end
+
+    def test_skip_tool
+      system(*%W"git rm -q tool/ok", exception: true, chdir: @target)
+      system(*%W"git commit -q -m", "Remove tool", exception: true, chdir: @target)
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        Dir.chdir("src") do
+          SyncDefaultGems.sync_default_gems_with_commits(@target, true)
+        end
+      end
+      assert_equal(@sha["src"], IO.popen(%W[git log --format=%H -1], chdir: "src", &:read).chomp, out)
+    end
+  end
 end

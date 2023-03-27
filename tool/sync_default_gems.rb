@@ -583,6 +583,22 @@ module SyncDefaultGems
         next
       end
 
+      tools = pipe_readlines(%W"git diff --name-only -z HEAD~..HEAD -- test/lib/ tool/")
+      unless tools.empty?
+        system(*%W"git checkout HEAD~ --", *tools)
+        if system(*%W"git diff --quiet HEAD~")
+          `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
+          puts "Skip commit #{sha} only for tools"
+          next
+        end
+        unless system(*%W"git commit --amend --no-edit --", *tools)
+          failed_commits << sha
+          `git reset HEAD~ --` && `git checkout .` && `git clean -fd`
+          puts "Failed to pick #{sha}"
+          next
+        end
+      end
+
       head = `git log --format=%H -1 HEAD`.chomp
       system(*%w"git reset --quiet HEAD~ --")
       amend = replace_rdoc_ref_all
